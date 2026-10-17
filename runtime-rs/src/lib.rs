@@ -22,6 +22,8 @@
 #![forbid(unsafe_code)]
 
 pub mod context;
+#[cfg(feature = "experimental-functional")]
+pub mod functional;
 mod hash_input;
 pub mod ledger;
 mod natives;
