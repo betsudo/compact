@@ -1,0 +1,41 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export enum Choice { first, second, third }
+export ledger bytes: Bytes<3>;
+export ledger small: Uint<16>;
+export ledger wide: Uint<128>;
+export ledger choice: Choice;
+constructor() {
+  bytes = "xyz"; small = 9; wide = 9; choice = Choice.third;
+}
+export circuit choose(literals: Boolean): Boolean {
+  if (disclose(literals)) {
+    bytes = "abc";
+    small = 257;
+    wide = 18446744073709551616;
+    choice = Choice.second;
+  } else {
+    bytes = default<Bytes<3>>;
+    small = default<Uint<16>>;
+    wide = default<Uint<128>>;
+    choice = default<Choice>;
+  }
+  assert((small == 257) == disclose(literals), "small literal/default");
+  assert((wide == 18446744073709551616) == disclose(literals), "wide literal/default");
+  assert((choice == Choice.second) == disclose(literals), "enum literal/default");
+  return bytes == "abc";
+}
