@@ -8,6 +8,11 @@
 
 mod context_free;
 mod declarations;
+pub(crate) mod functional;
+pub(super) mod functional_items;
+mod functional_metadata;
+mod functional_paths;
+mod functional_render;
 mod lower;
 use crate::source_diagnostics::RefusalObserver;
 mod model;

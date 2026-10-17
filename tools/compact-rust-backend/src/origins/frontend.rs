@@ -176,6 +176,15 @@ impl FrontendArtifacts {
         render::render(self, options)
     }
 
+    /// Opt-in ledger8 functional prototype. Source evidence comes exclusively
+    /// from this retained frontend invocation; originless IR cannot enable it.
+    pub fn render_functional_ledger8(
+        &self,
+        options: render::RenderOptions,
+    ) -> Result<render::FrontendRender, render::FunctionalCompileFailure> {
+        render::render_functional(self, options)
+    }
+
     /// Move completed entries into an existing empty locked staging parent.
     /// Reject preexisting destination entries; this is not final publication.
     /// Pending metadata status and retained IR/origin/proof-info bytes are
