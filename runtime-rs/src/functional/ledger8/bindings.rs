@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Physical Ledger8 slot bindings; logical identities remain target neutral.
-use super::super::{Cell, Counter, Map, SlotId};
+use super::super::{Cell, Counter, Map, Set, SlotId};
 use crate::{CompactError, ledger::CellValue};
 #[derive(Clone, Copy)]
 pub struct CellBinding {
@@ -48,12 +48,24 @@ impl MapBinding {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct SetBinding {
+    id: SlotId,
+    path: &'static [u8],
+}
+impl SetBinding {
+    pub const fn new(id: SlotId, path: &'static [u8]) -> Self {
+        Self { id, path }
+    }
+}
+
 /// Immutable uniquely keyed declarations; not certification of handwritten types.
 #[derive(Clone, Copy)]
 pub struct Ledger8Bindings<'a> {
     cells: &'a [CellBinding],
     counters: &'a [CounterBinding],
     maps: &'a [MapBinding],
+    sets: &'a [SetBinding],
 }
 impl<'a> Ledger8Bindings<'a> {
     pub fn new(cells: &'a [CellBinding]) -> Result<Self, CompactError> {
@@ -98,7 +110,48 @@ impl<'a> Ledger8Bindings<'a> {
             cells,
             counters,
             maps,
+            sets: &[],
         })
+    }
+    /// Extend immutable bindings without changing existing constructor signatures.
+    /// Rebinding a nonempty Set table is refused rather than discarding authority.
+    pub fn bind_sets(mut self, sets: &'a [SetBinding]) -> Result<Self, CompactError> {
+        if !self.sets.is_empty() {
+            return Err(CompactError::InvalidLedgerCell(
+                "Set bindings already installed".into(),
+            ));
+        }
+        for (index, set) in sets.iter().enumerate() {
+            for (id, path) in self
+                .declarations()
+                .chain(sets[..index].iter().map(|set| (set.id, set.path)))
+            {
+                distinct(set.id, set.path, id, path)?;
+            }
+        }
+        self.sets = sets;
+        Ok(self)
+    }
+    fn declarations(self) -> impl Iterator<Item = (SlotId, &'static [u8])> + 'a {
+        self.cells
+            .iter()
+            .map(|v| (v.id, v.path))
+            .chain(self.counters.iter().map(|v| (v.id, v.path)))
+            .chain(self.maps.iter().map(|v| (v.id, v.path)))
+            .chain(self.sets.iter().map(|v| (v.id, v.path)))
+    }
+    pub(super) fn set<T: CellValue>(
+        self,
+        set: Set<T>,
+    ) -> Result<crate::slots::SetSlot<T>, CompactError> {
+        let binding = self
+            .sets
+            .iter()
+            .find(|binding| binding.id == set.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!("unbound logical Set {}", set.id().index()))
+            })?;
+        Ok(crate::slots::SetSlot::new(binding.path))
     }
     pub(super) fn slot<T: CellValue>(
         self,

@@ -32,12 +32,14 @@
 //! guarantee. Branches must likewise construct and execute only the selected arm.
 
 mod circuit;
-mod map;
 pub mod ledger8;
+mod map;
+mod set;
 mod slots;
 mod witness;
 pub use circuit::{Circuit, Executor, Rule};
 pub use map::{Map, MapRead, MapWrite};
+pub use set::{Set, SetRead, SetWrite};
 pub use slots::{Cell, CellRead, CellWrite, Counter, CounterIncrement, CounterRead, SlotId};
 pub use witness::{Witness, WitnessCall, WitnessId};
 
