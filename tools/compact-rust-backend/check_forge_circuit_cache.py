@@ -7,6 +7,7 @@
 
 These two fixtures are examples, not a cache whitelist. All matching current
 circuits may use Forge; --uncached-zkir retains fresh key-generation qualification.
+--compiler-cache-policy exercises the actual public compiler preparation boundary.
 """
 
 import argparse
@@ -15,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import re
 import shutil
 import subprocess
 import sys
@@ -33,20 +35,65 @@ ROOT = Path(__file__).resolve().parents[2]
 QUALIFICATIONS = Path(__file__).with_name("forge_circuit_qualification.json")
 
 
-def main():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--proof-runner", type=Path, required=True)
     parser.add_argument("--forge", type=Path, default=FORGE)
     parser.add_argument("--params-dir", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, help="otherwise Forge uses its normal default/env")
-    parser.add_argument("--uncached-zkir", type=Path, help="qualify fresh legacy keys; bypass Forge")
+    generation = parser.add_mutually_exclusive_group()
+    generation.add_argument("--uncached-zkir", type=Path, help="qualify fresh legacy keys; bypass Forge")
+    generation.add_argument("--compiler-cache-policy", type=Path,
+                            help="qualify public compiler local-cache preparation with this independent policy")
     parser.add_argument("--report", type=Path, required=True)
-    args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def compiler_command(args, qualification, output):
+    flags = ["--skip-zk"]
+    if args.compiler_cache_policy is not None:
+        flags = ["--zkir-cache", "local", "--zkir-cache-policy", args.compiler_cache_policy]
+        if args.cache_dir is not None:
+            flags += ["--zkir-cache-dir", args.cache_dir]
+    return [args.compiler, "--target", "rust", *flags, "--rust-runtime-root",
+            ROOT, ROOT / qualification["compact_source"], output]
+
+
+def acquisition_path(stderr, circuit):
+    """Require exactly one helper decision for this actual circuit name."""
+    name = re.escape(circuit)
+    routes = []
+    for line in stderr.splitlines():
+        cache = re.fullmatch(r"ZKIR local cache (hit|miss): " + name + r"; fresh k=[0-9]+ model checked", line)
+        ordinary = re.fullmatch(r"ZKIR ordinary key generation: " + name + r"; (automatic tiny-circuit bypass|explicit unavailable policy)", line)
+        if cache:
+            routes.append("forge-" + cache.group(1))
+        elif ordinary:
+            routes.append("auto-bypass" if ordinary.group(1) == "automatic tiny-circuit bypass" else "unavailable-keygen")
+    require(len(routes) == 1, "missing or ambiguous acquisition diagnostic for circuit " + circuit)
+    return routes[0]
+
+
+def validate_stats_provider(forge, policy):
+    """Bind metrics to the provider actually selected by the compiler policy."""
+    selected = json.loads(policy.read_text())["forge"]["path"]
+    require(Path(selected).resolve(strict=True) == Path(forge).resolve(strict=True),
+            "stats Forge executable differs from compiler policy provider")
+
+
+def main():
+    args = parse_args()
+    if args.compiler_cache_policy is not None:
+        args.compiler_cache_policy = args.compiler_cache_policy.resolve(strict=True)
+        if args.cache_dir is not None:
+            args.cache_dir = args.cache_dir.resolve()
     for name in ("compiler", "proof_runner", "params_dir"):
         setattr(args, name, getattr(args, name).resolve(strict=True))
     if not args.uncached_zkir:
         args.forge = args.forge.resolve(strict=True)
+    if args.compiler_cache_policy is not None:
+        validate_stats_provider(args.forge, args.compiler_cache_policy)
     start = time.perf_counter()
     child_env = dict(os.environ, MIDNIGHT_PP=str(args.params_dir), COMPACT_ZKIR_FORGE_BIN=str(args.forge))
     if args.cache_dir is not None:
@@ -54,10 +101,14 @@ def main():
     forge_circuits.validate_consumer()
     qualifications = json.loads(QUALIFICATIONS.read_text())
     report = {"scope": "two proof smoke examples of the matching profile; not a circuit whitelist",
-              "mode": "uncached" if args.uncached_zkir else "forge", "cases": [],
+              "mode": "compiler-local" if args.compiler_cache_policy else ("uncached" if args.uncached_zkir else "forge"), "cases": [],
               "consumer": CONSUMER, "forge_profile": PROFILE,
               "proof_runner_sha256": digest(args.proof_runner),
               "compiler_sha256": digest(args.compiler)}
+
+    if args.compiler_cache_policy is not None:
+        report["compiler_cache_policy_sha256"] = digest(args.compiler_cache_policy)
+        report["preparation_scope"] = "public compiler phase includes fresh ZKIR and local artifact preparation; no second adapter/keygen"
 
     def stats():
         argv = [str(args.forge)]
@@ -91,18 +142,30 @@ def main():
 
             with tempfile.TemporaryDirectory(prefix="compact-forge-test-") as temp:
                 output = Path(temp) / "generated"
-                run([args.compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root",
-                     ROOT, ROOT / q["compact_source"], output], "compile")
+                compiled = run(compiler_command(args, q, output), "compile")
                 check_manifest(output)
                 circuit = q["circuit"]
                 source = output / "zkir" / f"{circuit}.zkir"
                 self.assertEqual(digest(args.params_dir / f"bls_midnight_2p{q['k']}"),
                                  q["parameter_digest"])
                 if q.get("rust_fixture"):
-                    run(["rustfmt", "--edition", "2024", output / "contract/lib.rs"], "format")
-                    self.assertEqual((output / "contract/lib.rs").read_bytes(),
+                    formatted = output / "contract/lib.rs"
+                    if args.compiler_cache_policy is not None:
+                        # Normalize a private comparison copy, preserving the
+                        # compiler's live output/manifest for the new mode.
+                        formatted = Path(temp) / "fixture-comparison.rs"
+                        shutil.copyfile(output / "contract/lib.rs", formatted)
+                    run(["rustfmt", "--edition", "2024", formatted], "format")
+                    self.assertEqual(formatted.read_bytes(),
                                      (ROOT / q["rust_fixture"]).read_bytes())
-                if args.uncached_zkir:
+                if args.compiler_cache_policy is not None:
+                    row["acquisition_path"] = acquisition_path(compiled.stderr, circuit)
+                    # The actual public compiler already materialized these.
+                    # Never run a second adapter/model/keygen in this mode.
+                    paths = {"source": source, "binary_ir": source.with_suffix(".bzkir"),
+                             "prover": output / "keys" / f"{circuit}.prover",
+                             "verifier": output / "keys" / f"{circuit}.verifier"}
+                elif args.uncached_zkir:
                     (output / "keys").mkdir(exist_ok=True)
                     run([args.uncached_zkir, "compile", source,
                          output / "keys" / f"{circuit}.prover",
@@ -131,6 +194,10 @@ def main():
                     expected_success=False)
                 for kind, path in paths.items():
                     self.assertEqual(digest(path), artifact_hashes[kind], "artifact mutated by consumer")
+                if args.compiler_cache_policy is not None:
+                    check_manifest(output)
+                    self.assertEqual(digest(args.compiler_cache_policy),
+                                     report["compiler_cache_policy_sha256"], "compiler cache policy changed")
             row["complete_case_wall_seconds"] = time.perf_counter() - case_start
 
         def test_counter_two_branches(self):
@@ -143,6 +210,10 @@ def main():
         unittest.defaultTestLoader.loadTestsFromTestCase(CircuitTests))
     if not args.uncached_zkir:
         report["stats_after"] = stats()
+    if args.compiler_cache_policy is not None:
+        report["acquisition_path_counts"] = {path: sum(row.get("acquisition_path") == path for row in report["cases"])
+            for path in ("forge-hit", "forge-miss", "auto-bypass", "unavailable-keygen")}
+        report["mode_scope"] = "compiler-local selects public preparation; per-case acquisition_path states whether Forge was used"
     report.update(passed=result.wasSuccessful(), tests_run=result.testsRun,
                   complete_wall_seconds=time.perf_counter() - start,
                   cumulative_child_largest_process_maxrss_bytes=(

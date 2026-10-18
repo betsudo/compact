@@ -210,5 +210,65 @@ class ForgeHarnessTests(unittest.TestCase):
             cache.compile_circuit(self.source, self.source, self.root/'verifier', '/actual/zkir', {})
 
 
+class PublicCompilerCacheArgumentsTests(unittest.TestCase):
+    def test_public_mode_is_exclusive_and_has_no_skip_zk_or_second_preparation(self):
+        import check_forge_circuit_cache as smoke
+        base=["--compiler", "/compiler", "--proof-runner", "/proof-runner",
+              "--params-dir", "/params", "--report", "/report"]
+        ordinary=smoke.parse_args(base)
+        qualification={"compact_source":"examples/tiny.compact"}
+        self.assertIn("--skip-zk",smoke.compiler_command(ordinary,qualification,Path("/output")))
+        public=smoke.parse_args([*base,"--compiler-cache-policy","/policy","--cache-dir","/cache"])
+        command=smoke.compiler_command(public,qualification,Path("/output"))
+        self.assertNotIn("--skip-zk",command)
+        self.assertEqual(command[command.index("--zkir-cache")+1],"local")
+        self.assertEqual(command[command.index("--zkir-cache-policy")+1],Path("/policy"))
+        self.assertEqual(command[command.index("--zkir-cache-dir")+1],Path("/cache"))
+        with self.assertRaises(SystemExit):
+            smoke.parse_args([*base,"--compiler-cache-policy","/policy","--uncached-zkir","/zkir"])
+
+
+class PublicCompilerAcquisitionTests(unittest.TestCase):
+    def test_all_actual_routes_and_exact_circuit_names(self):
+        import check_forge_circuit_cache as smoke
+        for diagnostic, expected in [
+            ("ZKIR local cache hit: actual; fresh k=6 model checked", "forge-hit"),
+            ("ZKIR local cache miss: actual; fresh k=9 model checked", "forge-miss"),
+            ("ZKIR ordinary key generation: actual; automatic tiny-circuit bypass", "auto-bypass"),
+            ("ZKIR ordinary key generation: actual; explicit unavailable policy", "unavailable-keygen"),
+        ]:
+            with self.subTest(expected=expected):
+                other = "ZKIR local cache hit: another; fresh k=6 model checked"
+                self.assertEqual(smoke.acquisition_path(other + "\n" + diagnostic, "actual"), expected)
+        self.assertEqual(smoke.acquisition_path("ZKIR local cache hit: a.b; fresh k=8 model checked", "a.b"), "forge-hit")
+
+    def test_missing_malformed_or_ambiguous_decisions_refuse(self):
+        import check_forge_circuit_cache as smoke
+        valid = "ZKIR local cache hit: actual; fresh k=6 model checked"
+        for text in ["", "ZKIR local cache hit: another; fresh k=6 model checked",
+                     valid + " trailing", valid + "\n" + valid,
+                     valid + "\nZKIR ordinary key generation: actual; automatic tiny-circuit bypass",
+                     "ZKIR local cache hit: axb; fresh k=8 model checked"]:
+            with self.subTest(text=text), self.assertRaises(cache.CompatibilityError):
+                smoke.acquisition_path(text, "a.b" if "axb" in text else "actual")
+
+    def test_stats_provider_identity_before_any_subprocess(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as private:
+            root = Path(private)
+            actual, other = root / "actual", root / "other"
+            actual.write_bytes(b"provider")
+            other.write_bytes(b"different provider")
+            policy = root / "policy.json"
+            policy.write_text(json.dumps({"forge": {"path": str(actual)}}))
+            alias = root / "alias"
+            alias.symlink_to(actual)
+            with patch.object(smoke.subprocess, "run", side_effect=AssertionError("provider must not execute")):
+                smoke.validate_stats_provider(alias, policy)
+                with self.assertRaises(cache.CompatibilityError):
+                    smoke.validate_stats_provider(other, policy)
+
+
 if __name__ == '__main__':
     unittest.main()
