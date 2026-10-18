@@ -80,3 +80,18 @@ pub trait CounterRead: Executor {
 pub trait CounterIncrement: Executor {
     fn increment(self, counter: Counter, amount: u16) -> Result<Self, CompactError>;
 }
+
+/// Comparison retains its dedicated official VM operation and observation cost.
+pub trait CounterCompare: Executor {
+    fn counter_less_than(
+        self,
+        counter: Counter,
+        threshold: u64,
+    ) -> Result<(Self, bool), CompactError>;
+}
+pub trait CounterDecrement: Executor {
+    fn decrement(self, counter: Counter, amount: u16) -> Result<Self, CompactError>;
+}
+pub trait CounterReset: Executor {
+    fn reset_counter(self, counter: Counter) -> Result<Self, CompactError>;
+}

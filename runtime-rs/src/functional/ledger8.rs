@@ -15,6 +15,7 @@
 
 //! Ledger8 interpreters delegate existing frames, slots and metered witnesses.
 mod bindings;
+mod counters;
 mod lists;
 mod maps;
 mod native;
