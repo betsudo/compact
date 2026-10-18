@@ -172,7 +172,7 @@ impl Renderer<'_> {
                 ) {
                     return Err(invalid(
                         &binding.path,
-                        "functional witness signature mismatch or exact opaque result requires a separate transport adapter",
+                        "functional witness signature mismatch",
                     ));
                 }
                 let argument_types = witness
@@ -193,15 +193,27 @@ impl Renderer<'_> {
                         declaration: *declaration,
                     });
                 }
-                self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type>));
                 let argument = super::functional_witnesses::argument_value(
                     arguments.iter().map(value).collect(),
                 );
-                syn::parse_quote! {
-                    #current.witness(
-                        crate::runtime::functional::Witness::<#argument_type, #result_type>::new(crate::runtime::functional::WitnessId::new(#id)),
-                        #argument,
-                    )
+                if crate::pure_semantics::hash_encoding::contains_opaque(&witness.result) {
+                    let mode: syn::Type =
+                        syn::parse_quote!(crate::runtime::functional::ledger8::ExactWitnessOutput);
+                    self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type, #mode>));
+                    syn::parse_quote! {
+                        #current.witness_in(
+                            crate::runtime::functional::Witness::<#argument_type, #result_type, #mode>::with_mode(crate::runtime::functional::WitnessId::new(#id)),
+                            #argument,
+                        )
+                    }
+                } else {
+                    self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type>));
+                    syn::parse_quote! {
+                        #current.witness(
+                            crate::runtime::functional::Witness::<#argument_type, #result_type>::new(crate::runtime::functional::WitnessId::new(#id)),
+                            #argument,
+                        )
+                    }
                 }
             }
             Operation::CellRead(slot) => {
@@ -288,6 +300,12 @@ impl Renderer<'_> {
 fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
     let ty =
         rust_type(&binding.value.ty).map_err(|error| invalid(&binding.path, error.to_string()))?;
+    if let Some(expression) = super::render::pure::expression(binding, &ty, value, |input| {
+        let name = name(input);
+        syn::parse_quote!(#name)
+    })? {
+        return Ok(super::functional_paths::expression(expression));
+    }
     Ok(match operation {
         Operation::Literal(literal) => match literal {
             Literal::Unit => syn::parse_quote!(()),
@@ -313,14 +331,6 @@ fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, Recording
             syn::parse_quote!(#ty::#variant)
         }
         Operation::Default => syn::parse_quote!(<#ty as ::core::default::Default>::default()),
-        Operation::Equal(left, right) => {
-            let (left, right) = (value(left), value(right));
-            syn::parse_quote!(#left == #right)
-        }
-        Operation::NotEqual(left, right) => {
-            let (left, right) = (value(left), value(right));
-            syn::parse_quote!(#left != #right)
-        }
         _ => {
             return Err(invalid(
                 &binding.path,

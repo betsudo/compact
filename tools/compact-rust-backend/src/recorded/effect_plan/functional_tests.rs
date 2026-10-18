@@ -300,10 +300,7 @@ fn capability_refusal_is_typed_and_no_target_is_inferred_from_node_names() {
 
 #[test]
 fn both_branches_are_projected_and_unsupported_nodes_refuse_without_shape_fallback() {
-    let checked = checked(Some(Operation::Add(
-        value(2, Type::Field),
-        value(2, Type::Field),
-    )));
+    let checked = checked(Some(Operation::TransientHash(value(2, Type::Field))));
     let authority = AuthorityDouble::node_spans();
     assert!(
         matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
@@ -515,12 +512,24 @@ fn field_witness_keeps_checked_signature_guard_and_explicit_target_requirement()
 }
 
 #[test]
-fn opaque_witness_output_keeps_source_bound_projection_refusal() {
+fn opaque_witness_output_requires_explicit_exact_target_capability() {
     let checked = witness_checked(Type::OpaqueBytes);
     let authority = AuthorityDouble::node_spans();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    assert_eq!(program.effects()[1].capability(), Capability::ExactWitness);
+    assert_eq!(program.effects()[1].guard(), GuardId(1));
+    assert_eq!(program.effects()[1].privacy(), Privacy::Unknown);
+    let target = Ledger8Target {
+        capabilities: &[
+            Capability::Pure,
+            Capability::Require,
+            Capability::Select,
+            Capability::TypedWitness,
+        ],
+    };
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
-        Err(ProjectionRefusal::UnsupportedWitnessSignature { path, declaration: 0 }) if path == "checked[1]")
+        matches!(FunctionalProgram::project(&checked, &authority, target),
+        Err(ProjectionRefusal::MissingTargetCapability { path, capability: Capability::ExactWitness }) if path == "checked[1]")
     );
 }
 
@@ -541,4 +550,35 @@ fn missing_witness_source_and_target_capability_are_not_inferred_from_guard_or_t
         matches!(FunctionalProgram::project(&checked, &authority, target),
         Err(ProjectionRefusal::MissingTargetCapability { path, capability: Capability::BooleanWitness }) if path == "checked[1]")
     );
+}
+
+#[test]
+fn witness_rendering_selects_exact_mode_for_nested_opaque_results_only() {
+    use quote::ToTokens;
+    for (result, exact) in [
+        (Type::Field, false),
+        (
+            Type::Tuple {
+                elements: vec![Type::Field, Type::OpaqueBytes],
+            },
+            true,
+        ),
+    ] {
+        let checked = witness_checked(result);
+        let authority = AuthorityDouble::node_spans();
+        let program =
+            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+        let rendered = super::super::functional_render::render(&program).unwrap();
+        let body = rendered.body.to_token_stream().to_string();
+        let bounds = rendered
+            .executor_bounds
+            .iter()
+            .map(ToTokens::to_token_stream)
+            .map(|tokens| tokens.to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert_eq!(body.contains(". witness_in ("), exact);
+        assert_eq!(body.contains(". witness ("), !exact);
+        assert_eq!(bounds.contains("ExactWitnessOutput"), exact);
+    }
 }

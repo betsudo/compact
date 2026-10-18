@@ -98,9 +98,11 @@ Compact + retained invocation origins
 
 ## Current bounded operations
 
-The initial projection includes checked literals/defaults, enums, equality,
-Cell reads/writes, Counter reads/increments, assertions, conditionals, and
-typed witnesses whose checked results use the existing aligned-value transport.
+The current projection includes checked literals/defaults, enums, aggregates,
+projections, Field and unsigned arithmetic, comparisons, conversions, Cell
+reads/writes, Counter reads/increments, assertions, conditionals, and typed witnesses.
+Pure value syntax shares the existing checked ordinary renderer. Expressions
+remain inside successful binds, so later producers do not run after a failure.
 Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
 results, have generated consumer coverage. Existing Boolean witness APIs remain
 compatible. Arguments and result types are checked against retained declarations;
@@ -111,11 +113,17 @@ IDs still distinguish callbacks, including zero arguments versus one Unit and a
 single tuple argument versus multiple arguments. These are mechanical adapters
 to the existing `TryWitnesses` trait, not a new callback language.
 
-Calls, conversions, other Counter operations, collections, hashes and exact
-opaque witness results are still refused by this projection. Opaque results need
-the separately qualified exact transport; ordinary aligned conversion must not
-silently replace it. These refusals are a
-capability boundary, not a claim that the ordinary Rust backend lacks them.
+Opaque witness results select the explicit Ledger8 `ExactWitnessOutput` strategy,
+which delegates existing exact metered frame encoding. Opaque arguments alone do
+not select exact output encoding. The default witness constructor and two-type
+parameter call remain compatible. Exact in-memory transport does not promise
+that opaque values can pass later proof serialization checks.
+
+Calls, other Counter operations, collections and hashes are still refused by this
+projection. Ordinary-backend conversion restrictions also remain authoritative.
+Vector construction is supported; vector indexing currently reaches tuple
+projection and is tracked separately in #674. These boundaries must not be
+interpreted as a claim of full language or proof coverage.
 
 The generated witness adapter currently uses `DefaultDB`, matching the existing
 generated `LedgerView`. Other database adapters require separate work.
@@ -185,7 +193,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **9 tests**, **28 behavioral scenarios**
+The current finite consumer run covers **12 tests**, **45 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -197,6 +205,10 @@ defaults, with equality checks through the generated execution body.
 The eighth source exercises typed witnesses, distinct IDs sharing Rust signatures,
 zero/single/multiple arguments, inactive and denied branches, metered ledger reads,
 and independent expected callback arguments, private outputs and state.
+The ninth source exercises exact opaque witness outputs, nested products,
+returned-value use and failure after an exact result. The tenth adds shared pure
+arithmetic, aggregates, non-Copy projection and conversion boundary controls.
+These preserve opaque witness bytes without relaxing opaque-cell storage rules.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

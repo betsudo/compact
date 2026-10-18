@@ -32,16 +32,15 @@ pub(super) fn supported(
     arguments: &[Value],
     result: &Type,
 ) -> bool {
-    !crate::pure_semantics::hash_encoding::contains_opaque(result)
-        && declaration.is_some_and(|declaration| {
-            declaration.result == *result
-                && declaration.parameters.len() == arguments.len()
-                && declaration
-                    .parameters
-                    .iter()
-                    .zip(arguments)
-                    .all(|(parameter, argument)| parameter.ty == argument.ty)
-        })
+    declaration.is_some_and(|declaration| {
+        declaration.result == *result
+            && declaration.parameters.len() == arguments.len()
+            && declaration
+                .parameters
+                .iter()
+                .zip(arguments)
+                .all(|(parameter, argument)| parameter.ty == argument.ty)
+    })
 }
 
 /// Preserve the original single-argument surface, using tuples only to carry
@@ -188,7 +187,7 @@ mod tests {
         assert!(!supported(Some(&declaration), &[argument], &Type::Boolean));
     }
     #[test]
-    fn exact_opaque_results_are_not_silently_encoded_as_aligned_values() {
+    fn opaque_results_retain_checked_signature_validation() {
         for result in [
             Type::OpaqueBytes,
             Type::OpaqueString,
@@ -197,7 +196,7 @@ mod tests {
             },
         ] {
             let declaration = declaration(result.clone());
-            assert!(!supported(
+            assert!(supported(
                 Some(&declaration),
                 &[Value {
                     id: 0,

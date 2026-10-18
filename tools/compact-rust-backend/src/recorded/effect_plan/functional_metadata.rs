@@ -88,6 +88,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::CounterIncrement => "counter_increment",
         Capability::BooleanWitness => "boolean_witness",
         Capability::TypedWitness => "typed_witness",
+        Capability::ExactWitness => "exact_witness",
         Capability::Require => "require",
         Capability::Select => "select",
     }

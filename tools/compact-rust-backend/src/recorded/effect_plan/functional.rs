@@ -33,6 +33,7 @@ pub(crate) enum Capability {
     CounterIncrement,
     BooleanWitness,
     TypedWitness,
+    ExactWitness,
     Require,
     Select,
 }
@@ -53,6 +54,7 @@ impl Ledger8Target {
             Capability::CounterIncrement,
             Capability::BooleanWitness,
             Capability::TypedWitness,
+            Capability::ExactWitness,
             Capability::Require,
             Capability::Select,
         ],
@@ -273,7 +275,20 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EnumVariant { .. }
                 | Operation::Default
                 | Operation::Equal(_, _)
-                | Operation::NotEqual(_, _) => Capability::Pure,
+                | Operation::NotEqual(_, _)
+                | Operation::StructConstruct { .. }
+                | Operation::StructProject { .. }
+                | Operation::TupleProject { .. }
+                | Operation::Tuple { .. }
+                | Operation::Vector { .. }
+                | Operation::Add(..)
+                | Operation::Subtract(..)
+                | Operation::Multiply(..)
+                | Operation::UnsignedAdd(..)
+                | Operation::UnsignedSubtract(..)
+                | Operation::UnsignedMultiply(..)
+                | Operation::Compare { .. }
+                | Operation::Convert { .. } => Capability::Pure,
                 Operation::CellRead(_) => Capability::CellRead,
                 Operation::CellWrite { .. } => Capability::CellWrite,
                 Operation::CounterRead { .. } => Capability::CounterRead,
@@ -293,7 +308,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                             declaration: declaration.0,
                         });
                     }
-                    if signature.is_some_and(|signature| {
+                    if crate::pure_semantics::hash_encoding::contains_opaque(&binding.value.ty) {
+                        Capability::ExactWitness
+                    } else if signature.is_some_and(|signature| {
                         signature.parameters.len() == 1
                             && signature.parameters[0].ty == crate::ir::Type::Boolean
                             && signature.result == crate::ir::Type::Boolean
@@ -307,12 +324,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::If { .. } => Capability::Select,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::StructConstruct { .. }
-                | Operation::StructProject { .. }
-                | Operation::TupleProject { .. }
-                | Operation::Tuple { .. }
-                | Operation::Vector { .. }
-                | Operation::VectorMap { .. }
+                Operation::VectorMap { .. }
                 | Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
                 | Operation::OwnPublicKey
@@ -328,13 +340,6 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::UpgradeFromTransient(..)
                 | Operation::TransientHash(..)
                 | Operation::TransientCommit { .. }
-                | Operation::Add(..)
-                | Operation::Subtract(..)
-                | Operation::Multiply(..)
-                | Operation::UnsignedAdd(..)
-                | Operation::UnsignedSubtract(..)
-                | Operation::UnsignedMultiply(..)
-                | Operation::Compare { .. }
                 | Operation::JubjubPointX(..)
                 | Operation::JubjubPointY(..)
                 | Operation::JubjubScalarFromNative(..)
@@ -343,7 +348,6 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::ConstructJubjubPoint { .. }
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
-                | Operation::Convert { .. }
                 | Operation::Merkle { .. }
                 | Operation::List { .. }
                 | Operation::CellWriteCoin { .. }

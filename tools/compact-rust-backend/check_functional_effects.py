@@ -44,9 +44,11 @@ SOURCES = {
     "chunked_fixture": FIXTURES / "chunked.compact",
     "pure_fixture": FIXTURES / "pure_values.compact",
     "typed_fixture": FIXTURES / "typed_witnesses.compact",
+    "exact_fixture": FIXTURES / "exact_witnesses.compact",
+    "composition_fixture": FIXTURES / "pure_composition.compact",
 }
-EXPECTED_TESTS = 9
-EXPECTED_SCENARIOS = 28  # Existing 25 + inactive, refused, successful typed-witness paths.
+EXPECTED_TESTS = 12
+EXPECTED_SCENARIOS = 45  # Existing 44 + refusal after an exact witness result.
 
 
 def digest(path):
@@ -143,6 +145,7 @@ def main():
         "sources": {str(path.relative_to(ROOT)): digest(path) for path in SOURCES.values()},
         "runtime_sources": {str(path.relative_to(ROOT)): digest(path) for path in runtime_premises},
         "consumer_sha256": digest(FIXTURES / "consumer.rs"),
+        "composition_consumer_sha256": digest(FIXTURES / "consumer_pure_composition.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -185,6 +188,14 @@ def main():
             library = destination / "contract/lib.rs"
             if "CHECKED_PROGRAM" not in library.read_text():
                 raise ValueError("opt-in module missing: " + alias)
+            if alias == "exact_fixture":
+                _, separator, functional_source = library.read_text().partition("pub mod functional {")
+                if not separator:
+                    raise ValueError("exact fixture functional module missing")
+                if (len(re.findall(r"\.\s*witness\s*\(", functional_source)) != 2
+                        or len(re.findall(r"\.\s*witness_in\s*\(", functional_source)) != 3
+                        or functional_source.count("ExactWitnessOutput") != 6):
+                    raise ValueError("exact fixture must emit two ordinary and three exact witness operations")
             report["generated"][alias] = {"library_sha256": digest(library),
                 "manifest_sha256": digest(destination / "compiler/contract-manifest.json"),
                 "ir_sha256": digest(destination / "contract/compact-rust-ir.json"),
@@ -205,7 +216,11 @@ def main():
             raise ValueError("chunked source did not produce a multi-component physical path")
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
-        shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/integration.rs")
+        (consumer / "support").mkdir()
+        shutil.copyfile(FIXTURES / "consumer_pure_composition.rs", consumer / "support/pure_composition.rs")
+        (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes()
+            + b'\ninclude!("../support/pure_composition.rs");\n')
+        report["composed_consumer_sha256"] = digest(consumer / "tests/integration.rs")
         root_lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde_version = next(row["version"] for row in root_lock["package"] if row["name"] == "serde_json")
         text = ['[workspace]', '[package]', 'name = "functional-effect-consumer"',
@@ -301,7 +316,9 @@ def main():
                                (ROOT / "Cargo.lock", report["repository_lock_sha256"]),
                                (consumer / "Cargo.lock", report["consumer_lock_sha256"]),
                                (FIXTURES / "consumer.rs", report["consumer_sha256"]),
-                               (consumer / "tests/integration.rs", report["consumer_sha256"])]:
+                               (FIXTURES / "consumer_pure_composition.rs", report["composition_consumer_sha256"]),
+                               (consumer / "support/pure_composition.rs", report["composition_consumer_sha256"]),
+                               (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))
         report["passed"] = True

@@ -46,52 +46,25 @@ pub(super) fn render(
             syn::parse_quote!(#ty::#variant)
         }
         Operation::Default => syn::parse_quote!(<#ty as ::core::default::Default>::default()),
-        Operation::StructConstruct { fields: inputs } => {
-            let crate::ir::Type::Struct { fields, .. } = &binding.value.ty else {
-                unreachable!("checked struct construction")
-            };
-            let members = fields
-                .iter()
-                .map(|f| ident(&f.name))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| invalid(path, e.to_string()))?;
-            let inputs: Vec<_> = inputs.iter().map(value).collect();
-            syn::parse_quote!(#ty { #(#members: #inputs),* })
-        }
-        Operation::StructProject {
-            value: input,
-            field,
-            ..
-        } => {
-            let member = ident(field).map_err(|e| invalid(path, e.to_string()))?;
+        Operation::StructConstruct { .. }
+        | Operation::StructProject { .. }
+        | Operation::TupleProject { .. }
+        | Operation::Vector { .. }
+        | Operation::Tuple { .. }
+        | Operation::Add(..)
+        | Operation::Subtract(..)
+        | Operation::Multiply(..)
+        | Operation::Compare { .. }
+        | Operation::Equal(..)
+        | Operation::NotEqual(..)
+        | Operation::UnsignedAdd(..)
+        | Operation::UnsignedSubtract(..)
+        | Operation::UnsignedMultiply(..)
+        | Operation::Convert { .. } => pure::expression(binding, &ty, value, |input| {
             let source = name(input);
-            crate::retained_value(syn::parse_quote!(#source.#member), &binding.value.ty)
-        }
-        Operation::TupleProject {
-            value: input,
-            index,
-        } => {
-            let source = name(input);
-            let member = syn::Index::from(*index);
-            crate::retained_value(syn::parse_quote!(#source.#member), &binding.value.ty)
-        }
-        Operation::Vector { elements } => {
-            let Type::Vector { element, .. } = &binding.value.ty else {
-                unreachable!("checked vector output");
-            };
-            if elements.is_empty() {
-                let element =
-                    crate::rust_type(element).map_err(|error| invalid(path, error.to_string()))?;
-                syn::parse_quote!(runtime::FixedVector::<#element, 0>::new([]))
-            } else {
-                let elements: Vec<_> = elements.iter().map(value).collect();
-                syn::parse_quote!(runtime::FixedVector::new([#(#elements),*]))
-            }
-        }
-        Operation::Tuple { elements } => {
-            let elements: Vec<_> = elements.iter().map(value).collect();
-            syn::parse_quote!((#(#elements,)*))
-        }
+            syn::parse_quote!(#source)
+        })?
+        .expect("matched shared checked value expression"),
         Operation::CreateZswapInput { coin } => {
             steps.push(zswap::input(coin));
             syn::parse_quote!(())
@@ -164,16 +137,6 @@ pub(super) fn render(
             let input = value(input);
             syn::parse_quote!(runtime::keccak256(#input))
         }
-        Operation::Add(a, b) | Operation::Subtract(a, b) | Operation::Multiply(a, b) => {
-            let (a, b) = (value(a), value(b));
-            if matches!(binding.operation, Operation::Multiply(..)) {
-                syn::parse_quote!(#a * #b)
-            } else if matches!(binding.operation, Operation::Subtract(..)) {
-                syn::parse_quote!(#a - #b)
-            } else {
-                syn::parse_quote!(#a + #b)
-            }
-        }
         Operation::JubjubPointX(input) | Operation::JubjubPointY(input) => {
             let coordinate = if matches!(binding.operation, Operation::JubjubPointX(_)) {
                 crate::jubjub_value::Coordinate::X
@@ -208,30 +171,6 @@ pub(super) fn render(
             crate::jubjub_value::Operation::Add(operand(left), operand(right)),
             path,
         )?,
-        Operation::Compare {
-            operator,
-            left,
-            right,
-        } => {
-            use crate::ir::ComparisonOperator;
-            let (left, right) = (value(left), value(right));
-            match operator {
-                ComparisonOperator::Less => syn::parse_quote!(#left.value() < #right.value()),
-                ComparisonOperator::LessEqual => syn::parse_quote!(#left.value() <= #right.value()),
-                ComparisonOperator::Greater => syn::parse_quote!(#left.value() > #right.value()),
-                ComparisonOperator::GreaterEqual => {
-                    syn::parse_quote!(#left.value() >= #right.value())
-                }
-            }
-        }
-        Operation::Equal(a, b) | Operation::NotEqual(a, b) => {
-            let (a, b) = (value(a), value(b));
-            if matches!(binding.operation, Operation::NotEqual(..)) {
-                syn::parse_quote!(#a != #b)
-            } else {
-                syn::parse_quote!(#a == #b)
-            }
-        }
         Operation::DegradeToTransient(input) => {
             let input = value(input);
             syn::parse_quote!(runtime::degrade_to_transient(#input))
@@ -254,45 +193,6 @@ pub(super) fn render(
             );
             syn::parse_quote!(runtime::transient_commit(#input, #opening))
         }
-        Operation::UnsignedAdd(a, b)
-        | Operation::UnsignedSubtract(a, b)
-        | Operation::UnsignedMultiply(a, b) => {
-            // The native syntax helper only uses the variant as an operation tag;
-            // operands have already been evaluated once in SSA source order.
-            let max = unsigned_max(&binding.value.ty).into();
-            let left = Box::new(crate::ir::Expr::Unit);
-            let right = Box::new(crate::ir::Expr::Unit);
-            let op = match &binding.operation {
-                Operation::UnsignedAdd(..) => crate::ir::Expr::UnsignedAdd { max, left, right },
-                Operation::UnsignedSubtract(..) => {
-                    crate::ir::Expr::UnsignedSubtract { max, left, right }
-                }
-                Operation::UnsignedMultiply(..) => {
-                    crate::ir::Expr::UnsignedMultiply { max, left, right }
-                }
-                _ => unreachable!("unsigned arithmetic arm"),
-            };
-            crate::unsigned_arithmetic_syntax(
-                &op,
-                value(a),
-                value(b),
-                unsigned_max(&a.ty),
-                unsigned_max(&b.ty),
-                unsigned_max(&binding.value.ty),
-            )
-            .map_err(|e| invalid(path, e.to_string()))?
-        }
-        Operation::Convert { value: input, kind } => match kind {
-            Conversion::Coerce => {
-                crate::coerce_expression(value(input), &input.ty, &binding.value.ty, 0)
-            }
-            Conversion::UnsignedCast => crate::unsigned_cast_syntax(
-                value(input),
-                unsigned_max(&input.ty),
-                unsigned_max(&binding.value.ty),
-            ),
-        }
-        .map_err(|e| invalid(path, e.to_string()))?,
         Operation::Merkle { slot, operation } => {
             return merkle::render(binding, *slot, operation, declarations, steps);
         }
