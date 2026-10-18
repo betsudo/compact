@@ -36,7 +36,7 @@ points. An optional local artifact-cache adapter is a separate delivery slice.
 The shared guarded-Jubjub compiler correction changes affected v2 circuit bytes;
 regenerate matching prover/verifier artifacts and qualify them before replacing
 any deployed verifier identity. ZKIR-v3 native/Keccak qualification remains separate
-from v2 ledger proof/application support.
+from v2 ledger proof/application support. See the [Keccak profile audit record](../audit/2026-10-18-keccak-profile-boundary.md) for the exact boundary and remaining qualification.
 
 The separate authenticated historical qualification has an accepted 974-case
 receipt for its frozen `ab132650` epoch and external inputs. Its Git metadata
