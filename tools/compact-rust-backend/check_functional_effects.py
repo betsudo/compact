@@ -53,7 +53,7 @@ SOURCES = {
     "list_fixture": FIXTURES / "scalar_lists.compact",
     "counter_more_fixture": FIXTURES / "counter_more.compact",
 }
-EXPECTED_TESTS = 28
+EXPECTED_TESTS = 31
 EXPECTED_SCENARIOS = 86  # Existing 76 + 10 remaining Counter scenarios.
 
 
@@ -158,6 +158,8 @@ def main():
         "set_consumer_sha256": digest(FIXTURES / "consumer_scalar_sets.rs"),
         "list_consumer_sha256": digest(FIXTURES / "consumer_scalar_lists.rs"),
         "counter_more_consumer_sha256": digest(FIXTURES / "consumer_counter_more.rs"),
+        "witness_refusal_consumer_sha256": digest(FIXTURES / "consumer_witness_refusals.rs"),
+        "adapter_refusal_scope": "3 Rust tests exercise two interpreters/ordinary-exact transports; not four-route contract scenarios",
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -260,7 +262,8 @@ def main():
                                                ("consumer_nested_map_remove.rs", "nested_map_remove.rs"),
                                                ("consumer_scalar_sets.rs", "scalar_sets.rs"),
                                                ("consumer_scalar_lists.rs", "scalar_lists.rs"),
-                                               ("consumer_counter_more.rs", "counter_more.rs")):
+                                               ("consumer_counter_more.rs", "counter_more.rs"),
+                                               ("consumer_witness_refusals.rs", "witness_refusals.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -374,6 +377,8 @@ def main():
                                (consumer / "support/scalar_lists.rs", report["list_consumer_sha256"]),
                                (FIXTURES / "consumer_counter_more.rs", report["counter_more_consumer_sha256"]),
                                (consumer / "support/counter_more.rs", report["counter_more_consumer_sha256"]),
+                               (FIXTURES / "consumer_witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
+                               (consumer / "support/witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))
