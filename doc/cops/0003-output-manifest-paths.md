@@ -54,6 +54,10 @@ independent of Forge or key generation.
 The pinned upstream file SHA256 is
 `46cbad33712d15be298fd43629b4ccf6e6dc4132de421deac8704a132c0987ef`.
 Moving branch names alone are not comparison authority.
+The same pinned tree's `compiler/json.ss` contains both the unescaped object-key
+writer and the malformed control-character escape; its SHA256 is
+`eadefc32393b499a58f8a53911ea98618a46b1d75e888824c75761a7d43a812b`.
+This is source evidence for the shared TS path, not an upstream runtime test.
 
 ## Mitigation and ownership
 
@@ -63,7 +67,12 @@ argument and request zero-terminated checksum output, which keeps the first 64
 hexadecimal characters stable for escaped filenames. Retain the original SHA256
 algorithm, manifest version fields and generated artifact bytes.
 Encode object keys using the existing JSON string-value escaper, retaining the
-historical conversion of non-string keys. This does not change number parsing.
+historical conversion of non-string keys. The inherited string escaper also
+formatted otherwise-unhandled U+0000–U+001F controls as `uXXXX` without the required
+backslash and passed a character to an integer formatter. Emit standard
+`\uXXXX` using the character's integer value. The same existing escaper serves
+keys and values; the regression includes U+0001 in both and retains all previous
+path, hash and byte-size checks. This does not change number parsing.
 
 Before: `file-exists?("contract")` depends on cwd.
 After: `file-exists?(output_root + "/contract")` describes the actual output.

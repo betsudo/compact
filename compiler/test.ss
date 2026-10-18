@@ -67874,14 +67874,19 @@ groups than for single tests.
             `(,name ("type" . "file") ("size" . ,size) ("hash" . ,hash)))
           (define (write-file pathname text)
             (call-with-output-file pathname (lambda (op) (display text op))))
+          (define (check-json-string pathname text)
+            (let ([expected (list (cons text text))])
+              (call-with-output-file pathname (lambda (op) (print-json op expected)))
+              (equal? (read-json-file pathname) expected)))
           (let* ([generated (read-json-file (format "~a/compiler/contract-manifest.json" testdir))]
                  [root (format "~a/manifest ' $ ; `literal` \\\noutput" testdir)]
-                 [nested "nested ' \" $ ; \\\nbranch"]
+                 [nested "nested ' \" $ ; \\\nbranch\x1;"]
                  [manifest (format "~a/compiler/contract-manifest.json" root)])
             ;; These actual output directories are not caller-cwd lookups.
             (and (assoc "compiler" generated)
                  (assoc "contract" generated)
                  (assoc "zkir" generated)
+                 (check-json-string (format "~a/json-escaping.json" testdir) nested)
                  (begin
                    (for-each (lambda (directory) (mkdir-p (format "~a/~a" root directory)))
                      '("compiler" "contract" "zkir" "keys"))

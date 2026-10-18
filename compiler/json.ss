@@ -416,7 +416,7 @@
               [else
                 (if (char<=? #\x20 c #\x10ffff)
                     (put-char op c)
-                    (fprintf op "u~4,'0x" c))]))))
+                    (fprintf op "\\u~4,'0x" (char->integer c)))]))))
       (put-char op #\"))
     (define (f json depth)
       (cond
