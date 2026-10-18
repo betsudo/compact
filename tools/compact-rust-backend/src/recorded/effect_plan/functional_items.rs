@@ -217,49 +217,8 @@ fn render(
             )
         })
         .collect::<Result<Vec<_>, RecordingGap>>()?;
-    let witness_cases = rendered
-        .witnesses
-        .iter()
-        .map(|witness| {
-            let declaration = checked
-                .declarations()
-                .witness(witness.declaration)
-                .ok_or_else(|| {
-                    invalid("functional.witness", "checked witness declaration missing")
-                })?;
-            let method = ident(&declaration.name)
-                .map_err(|error| invalid("functional.witness", error.to_string()))?;
-            let id = witness.id;
-            Ok(quote::quote!(#id => self.0.#method(
-            context.witness_context_with(crate::ledger_contract::LedgerView {
-                    state: context.query.state.get_ref(), meter,
-                }), arguments,
-            )))
-        })
-        .collect::<Result<Vec<_>, RecordingGap>>()?;
-    let witness_adapter: Option<syn::Item> = if witness_cases.is_empty() {
-        None
-    } else {
-        // DefaultDB is explicit: the current generated LedgerView uses it.
-        // Other database targets must supply their own separately checked bridge.
-        Some(syn::parse_quote! {
-            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
-                crate::runtime::functional::ledger8::WitnessHandler<Private, crate::runtime::ledger::DefaultDB, bool, bool>
-                for WitnessAdapter<'_, W>
-            {
-                fn call(
-                    &self, id: crate::runtime::functional::WitnessId, arguments: bool,
-                    context: &crate::runtime::context::CircuitContext<Private>,
-                    meter: &crate::runtime::context::WitnessReadMeter<'_>,
-                ) -> Result<(Private, bool), crate::runtime::CompactError> {
-                    match id.index() {
-                        #(#witness_cases),*,
-                        _ => Err(crate::runtime::CompactError::InvalidLedgerCell("unknown checked witness identity".into())),
-                    }
-                }
-            }
-        })
-    };
+    let witness_adapters =
+        super::functional_witnesses::adapters(checked.declarations(), &rendered.witnesses)?;
     let body = rendered.body;
     let bounds = rendered.executor_bounds;
     let (witness_generic, witness_argument, native, recorded) = if rendered.witnesses.is_empty() {
@@ -321,7 +280,7 @@ fn render(
 
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
-            #witness_adapter
+            #(#witness_adapters)*
 
             pub fn ledger8_bindings()
                 -> Result<crate::runtime::functional::ledger8::Ledger8Bindings<'static>, crate::runtime::CompactError>

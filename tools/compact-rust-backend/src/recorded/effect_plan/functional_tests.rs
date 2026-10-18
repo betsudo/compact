@@ -498,8 +498,25 @@ fn boolean_witness_uses_retained_signature_and_stays_guarded_with_unknown_privac
 }
 
 #[test]
-fn valid_recorded_witness_outside_functional_signature_refuses_predictably() {
+fn field_witness_keeps_checked_signature_guard_and_explicit_target_requirement() {
     let checked = witness_checked(Type::Field);
+    let authority = AuthorityDouble::node_spans();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    assert_eq!(program.effects()[1].capability(), Capability::TypedWitness);
+    assert_eq!(program.effects()[1].guard(), GuardId(1));
+    assert_eq!(program.effects()[1].privacy(), Privacy::Unknown);
+    let target = Ledger8Target {
+        capabilities: &[Capability::Pure, Capability::Require, Capability::Select],
+    };
+    assert!(
+        matches!(FunctionalProgram::project(&checked, &authority, target),
+        Err(ProjectionRefusal::MissingTargetCapability { path, capability: Capability::TypedWitness }) if path == "checked[1]")
+    );
+}
+
+#[test]
+fn opaque_witness_output_keeps_source_bound_projection_refusal() {
+    let checked = witness_checked(Type::OpaqueBytes);
     let authority = AuthorityDouble::node_spans();
     assert!(
         matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),

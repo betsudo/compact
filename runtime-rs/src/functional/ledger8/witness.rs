@@ -19,6 +19,7 @@ use super::{NativeLedger8, RecordedLedger8};
 use crate::{
     CompactError,
     context::{CircuitContext, WitnessReadMeter},
+    fab::AlignedValue,
     ledger::DB,
 };
 
@@ -26,8 +27,9 @@ pub struct NoWitnesses;
 
 /// Generated handlers map a checked WitnessId to the existing typed witness API
 /// and project the existing metered ledger view. Handwritten handlers and their
-/// host effects are not certified by this interface. Exact opaque transport is
-/// deliberately outside this Boolean-only prototype.
+/// host effects are not certified by this interface. Ordinary aligned results
+/// reuse the existing frame conversion. Exact opaque transport requires a
+/// separately checked bridge and is not selected by this interface.
 ///
 /// The borrowed context matches the existing frame callback API; a handwritten
 /// handler can bypass the meter by reading it directly. Generated handlers must
@@ -56,14 +58,17 @@ impl<Private, D: DB, Args, T, H: WitnessHandler<Private, D, Args, T>>
     }
 }
 
-impl<Private, D: DB, W: WitnessHandler<Private, D, bool, bool>> WitnessCall<bool, bool>
-    for NativeLedger8<'_, Private, D, W>
+impl<Private, D: DB, Args, T, W> WitnessCall<Args, T> for NativeLedger8<'_, Private, D, W>
+where
+    W: WitnessHandler<Private, D, Args, T>,
+    T: Clone,
+    AlignedValue: From<T>,
 {
     fn witness(
         self,
-        witness: Witness<bool, bool>,
-        arguments: bool,
-    ) -> Result<(Self, bool), CompactError> {
+        witness: Witness<Args, T>,
+        arguments: Args,
+    ) -> Result<(Self, T), CompactError> {
         let (frame, value) = self.frame.try_witness_metered(|context, meter| {
             self.witnesses.call(witness.id(), arguments, context, meter)
         })?;
@@ -77,14 +82,17 @@ impl<Private, D: DB, W: WitnessHandler<Private, D, bool, bool>> WitnessCall<bool
         ))
     }
 }
-impl<Private, D: DB, W: WitnessHandler<Private, D, bool, bool>> WitnessCall<bool, bool>
-    for RecordedLedger8<'_, Private, D, W>
+impl<Private, D: DB, Args, T, W> WitnessCall<Args, T> for RecordedLedger8<'_, Private, D, W>
+where
+    W: WitnessHandler<Private, D, Args, T>,
+    T: Clone,
+    AlignedValue: From<T>,
 {
     fn witness(
         self,
-        witness: Witness<bool, bool>,
-        arguments: bool,
-    ) -> Result<(Self, bool), CompactError> {
+        witness: Witness<Args, T>,
+        arguments: Args,
+    ) -> Result<(Self, T), CompactError> {
         let (frame, value) = self.frame.try_witness_metered(|context, meter| {
             self.witnesses.call(witness.id(), arguments, context, meter)
         })?;

@@ -43,9 +43,10 @@ SOURCES = {
     "collision_fixture": FIXTURES / "collisions.compact",
     "chunked_fixture": FIXTURES / "chunked.compact",
     "pure_fixture": FIXTURES / "pure_values.compact",
+    "typed_fixture": FIXTURES / "typed_witnesses.compact",
 }
-EXPECTED_TESTS = 8
-EXPECTED_SCENARIOS = 25  # Existing 23 + literal/default branches for bytes, Uint and enum.
+EXPECTED_TESTS = 9
+EXPECTED_SCENARIOS = 28  # Existing 25 + inactive, refused, successful typed-witness paths.
 
 
 def digest(path):

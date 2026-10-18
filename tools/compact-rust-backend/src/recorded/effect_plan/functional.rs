@@ -32,6 +32,7 @@ pub(crate) enum Capability {
     CounterRead,
     CounterIncrement,
     BooleanWitness,
+    TypedWitness,
     Require,
     Select,
 }
@@ -51,6 +52,7 @@ impl Ledger8Target {
             Capability::CounterRead,
             Capability::CounterIncrement,
             Capability::BooleanWitness,
+            Capability::TypedWitness,
             Capability::Require,
             Capability::Select,
         ],
@@ -281,24 +283,90 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                     arguments,
                 } => {
                     let signature = self.checked.declarations().witness(*declaration);
-                    if !signature.is_some_and(|signature| {
-                        signature.parameters.len() == 1
-                            && signature.parameters[0].ty == crate::ir::Type::Boolean
-                            && signature.result == crate::ir::Type::Boolean
-                    }) || arguments.len() != 1
-                        || arguments[0].ty != crate::ir::Type::Boolean
-                        || binding.value.ty != crate::ir::Type::Boolean
-                    {
+                    if !super::functional_witnesses::supported(
+                        signature,
+                        arguments,
+                        &binding.value.ty,
+                    ) {
                         return Err(ProjectionRefusal::UnsupportedWitnessSignature {
                             path: binding.path.clone(),
                             declaration: declaration.0,
                         });
                     }
-                    Capability::BooleanWitness
+                    if signature.is_some_and(|signature| {
+                        signature.parameters.len() == 1
+                            && signature.parameters[0].ty == crate::ir::Type::Boolean
+                            && signature.result == crate::ir::Type::Boolean
+                    }) {
+                        Capability::BooleanWitness
+                    } else {
+                        Capability::TypedWitness
+                    }
                 }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
-                _ => {
+                // Deliberately exhaustive: every new checked operation needs
+                // an explicit functional admission or refusal decision.
+                Operation::StructConstruct { .. }
+                | Operation::StructProject { .. }
+                | Operation::TupleProject { .. }
+                | Operation::Tuple { .. }
+                | Operation::Vector { .. }
+                | Operation::VectorMap { .. }
+                | Operation::CreateZswapInput { .. }
+                | Operation::CreateZswapOutput { .. }
+                | Operation::OwnPublicKey
+                | Operation::KernelSelf
+                | Operation::KernelClaim { .. }
+                | Operation::KernelMintShielded { .. }
+                | Operation::PersistentCommit { .. }
+                | Operation::FieldToBytes32(..)
+                | Operation::PersistentHash(..)
+                | Operation::Keccak256(..)
+                | Operation::HashToCurve(..)
+                | Operation::DegradeToTransient(..)
+                | Operation::UpgradeFromTransient(..)
+                | Operation::TransientHash(..)
+                | Operation::TransientCommit { .. }
+                | Operation::Add(..)
+                | Operation::Subtract(..)
+                | Operation::Multiply(..)
+                | Operation::UnsignedAdd(..)
+                | Operation::UnsignedSubtract(..)
+                | Operation::UnsignedMultiply(..)
+                | Operation::Compare { .. }
+                | Operation::JubjubPointX(..)
+                | Operation::JubjubPointY(..)
+                | Operation::JubjubScalarFromNative(..)
+                | Operation::EcMulGenerator(..)
+                | Operation::EcNeg(..)
+                | Operation::ConstructJubjubPoint { .. }
+                | Operation::EcMul { .. }
+                | Operation::EcAdd { .. }
+                | Operation::Convert { .. }
+                | Operation::Merkle { .. }
+                | Operation::List { .. }
+                | Operation::CellWriteCoin { .. }
+                | Operation::MapMember { .. }
+                | Operation::MapInsert { .. }
+                | Operation::MapRemove { .. }
+                | Operation::MapLookup { .. }
+                | Operation::MapInsertDefault { .. }
+                | Operation::MapReset { .. }
+                | Operation::MapSize { .. }
+                | Operation::MapIsEmpty { .. }
+                | Operation::SetMember { .. }
+                | Operation::SetInsert { .. }
+                | Operation::SetInsertCoin { .. }
+                | Operation::SetRemove { .. }
+                | Operation::SetReset { .. }
+                | Operation::SetSize { .. }
+                | Operation::SetIsEmpty { .. }
+                | Operation::CounterDecrement { .. }
+                | Operation::CounterReset { .. }
+                | Operation::CounterLessThan { .. }
+                | Operation::Call { .. }
+                | Operation::PureCall { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });

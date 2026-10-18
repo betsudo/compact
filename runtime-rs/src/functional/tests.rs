@@ -18,4 +18,5 @@ mod bindings;
 mod counter;
 mod ledger8;
 mod sequencing;
+mod typed_witnesses;
 mod witness;

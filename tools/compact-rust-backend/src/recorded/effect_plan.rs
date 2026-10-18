@@ -24,6 +24,7 @@ pub(super) mod functional_items;
 mod functional_metadata;
 mod functional_paths;
 mod functional_render;
+mod functional_witnesses;
 mod lower;
 use crate::source_diagnostics::RefusalObserver;
 mod model;

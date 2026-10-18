@@ -165,23 +165,25 @@ impl Renderer<'_> {
                 let witness = self.declarations.witness(*declaration).ok_or_else(|| {
                     invalid(&binding.path, "functional witness declaration missing")
                 })?;
-                let [argument] = arguments.as_slice() else {
+                if !super::functional_witnesses::supported(
+                    Some(witness),
+                    arguments,
+                    &binding.value.ty,
+                ) {
                     return Err(invalid(
                         &binding.path,
-                        "functional witness requires one Boolean argument",
-                    ));
-                };
-                if witness.result != Type::Boolean
-                    || binding.value.ty != Type::Boolean
-                    || witness.parameters.len() != 1
-                    || witness.parameters[0].ty != Type::Boolean
-                    || argument.ty != Type::Boolean
-                {
-                    return Err(invalid(
-                        &binding.path,
-                        "functional witness requires a Boolean to Boolean signature",
+                        "functional witness signature mismatch or exact opaque result requires a separate transport adapter",
                     ));
                 }
+                let argument_types = witness
+                    .parameters
+                    .iter()
+                    .map(|parameter| parameter.ty.clone())
+                    .collect::<Vec<_>>();
+                let argument_type = super::functional_witnesses::argument_type(&argument_types)
+                    .map_err(|error| invalid(&binding.path, error.to_string()))?;
+                let result_type = rust_type(&witness.result)
+                    .map_err(|error| invalid(&binding.path, error.to_string()))?;
                 let id = u32::try_from(declaration.0).map_err(|_| {
                     invalid(&binding.path, "functional witness identity exceeds u32")
                 })?;
@@ -191,11 +193,13 @@ impl Renderer<'_> {
                         declaration: *declaration,
                     });
                 }
-                self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<bool, bool>));
-                let argument = value(argument);
+                self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type>));
+                let argument = super::functional_witnesses::argument_value(
+                    arguments.iter().map(value).collect(),
+                );
                 syn::parse_quote! {
                     #current.witness(
-                        crate::runtime::functional::Witness::<bool, bool>::new(crate::runtime::functional::WitnessId::new(#id)),
+                        crate::runtime::functional::Witness::<#argument_type, #result_type>::new(crate::runtime::functional::WitnessId::new(#id)),
                         #argument,
                     )
                 }
