@@ -33,6 +33,8 @@ pub(crate) enum Capability {
     ShieldedMint,
     ZswapInput,
     ZswapOutput,
+    QualifiedCellWrite,
+    QualifiedSetInsert,
     Hashing,
     FieldEncoding,
     Jubjub,
@@ -83,6 +85,8 @@ impl Ledger8Target {
             Capability::ShieldedMint,
             Capability::ZswapInput,
             Capability::ZswapOutput,
+            Capability::QualifiedCellWrite,
+            Capability::QualifiedSetInsert,
             Capability::Hashing,
             Capability::FieldEncoding,
             Capability::Jubjub,
@@ -373,6 +377,18 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
                 Operation::CreateZswapInput { .. } => Capability::ZswapInput,
                 Operation::CreateZswapOutput { .. } => Capability::ZswapOutput,
+                Operation::CellWriteCoin { .. } | Operation::SetInsertCoin { .. } => {
+                    match super::functional_qualified_storage::access(binding)
+                        .expect("matched checked qualified storage operation")
+                    {
+                        super::functional_qualified_storage::QualifiedAccess::CellWrite => {
+                            Capability::QualifiedCellWrite
+                        }
+                        super::functional_qualified_storage::QualifiedAccess::SetInsert => {
+                            Capability::QualifiedSetInsert
+                        }
+                    }
+                }
                 Operation::PersistentHash(_)
                 | Operation::PersistentCommit { .. }
                 | Operation::TransientCommit { .. }
@@ -513,9 +529,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::Keccak256(..)
-                | Operation::CellWriteCoin { .. }
-                | Operation::SetInsertCoin { .. } => {
+                Operation::Keccak256(..) => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
@@ -633,3 +647,7 @@ mod crypto_tests;
 #[cfg(test)]
 #[path = "functional_kernel_tests.rs"]
 mod kernel_tests;
+
+#[cfg(test)]
+#[path = "functional_qualified_storage_integration_tests.rs"]
+mod qualified_storage_tests;

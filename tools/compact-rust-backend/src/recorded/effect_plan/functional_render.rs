@@ -313,6 +313,28 @@ impl Renderer<'_> {
                 let otherwise = self.block(otherwise, syn::parse_quote!(__compact_execution))?;
                 syn::parse_quote!(if #condition { #then } else { #otherwise })
             }
+            Operation::CellWriteCoin { .. } | Operation::SetInsertCoin { .. } => {
+                let step = super::functional_qualified_storage::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                )?
+                .expect("matched checked qualified storage operation");
+                match step.slot {
+                    super::functional_qualified_storage::QualifiedSlot::Cell(slot) => {
+                        if !self.slots.iter().any(|present| present.id == slot.id) {
+                            self.slots.push(slot);
+                        }
+                    }
+                    super::functional_qualified_storage::QualifiedSlot::Set(slot) => {
+                        if !self.sets.iter().any(|present| present.id == slot.id) {
+                            self.sets.push(slot);
+                        }
+                    }
+                }
+                self.bound(step.bound);
+                step.expression
+            }
             Operation::OwnPublicKey
             | Operation::KernelSelf
             | Operation::KernelClaim { .. }

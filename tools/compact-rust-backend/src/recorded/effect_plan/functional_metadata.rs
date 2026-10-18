@@ -89,6 +89,8 @@ fn capability(value: Capability) -> &'static str {
         Capability::ShieldedMint => "shielded_mint",
         Capability::ZswapInput => "zswap_input",
         Capability::ZswapOutput => "zswap_output",
+        Capability::QualifiedCellWrite => "qualified_cell_write",
+        Capability::QualifiedSetInsert => "qualified_set_insert",
         Capability::Hashing => "hashing",
         Capability::FieldEncoding => "field_encoding",
         Capability::Jubjub => "jubjub",
