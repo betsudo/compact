@@ -25,6 +25,7 @@ use crate::origins::{
     transport::{UntrustedTransport, model::Extent},
 };
 use crate::{RenderError, RenderedContract, ir::Contract};
+use std::collections::BTreeMap;
 use syn::visit_mut::VisitMut;
 #[path = "functional_sources.rs"]
 mod functional_sources;
@@ -116,6 +117,7 @@ pub struct FrontendRender {
     metadata: MetadataStatus,
     fingerprint: InvocationFingerprint,
     recording_diagnostics: Vec<RecordingDiagnostic>,
+    functional_assets: BTreeMap<String, String>,
 }
 impl FrontendRender {
     pub fn recording_diagnostics(&self) -> &[RecordingDiagnostic] {
@@ -123,6 +125,13 @@ impl FrontendRender {
     }
     pub fn rendered(&self) -> &RenderedContract {
         &self.rendered
+    }
+    /// Review-only files required by an opt-in generated library's include_str!
+    /// constants. Write these unchanged relative to lib.rs when publishing it.
+    /// Default rendering returns an empty map. These files are not execution
+    /// authority or authenticated source/proof certificates.
+    pub fn functional_assets(&self) -> &BTreeMap<String, String> {
+        &self.functional_assets
     }
     pub fn metadata(&self) -> &MetadataStatus {
         &self.metadata
@@ -194,6 +203,7 @@ fn render_selected<E: From<Box<NativeCompileFailure>>>(
         }
         .boxed()
     })?;
+    let mut functional_assets = BTreeMap::new();
     if let Some(fail) = functional {
         if !contract
             .stateful_circuits
@@ -209,8 +219,10 @@ fn render_selected<E: From<Box<NativeCompileFailure>>>(
             binding.snapshots.as_ref(),
             &artifacts.receipt.cwd,
         );
-        let mut module = crate::recorded::render_functional_contract(&contract, &sources)
+        let functional = crate::recorded::render_functional_contract(&contract, &sources)
             .map_err(|error| fail(format!("{error:?}")))?;
+        let mut module = functional.module;
+        functional_assets = functional.assets;
         crate::CompactSignatureLint.visit_item_mod_mut(&mut module);
         crate::CompactBooleanLiterals.visit_item_mod_mut(&mut module);
         let mut file =
@@ -305,6 +317,7 @@ fn render_selected<E: From<Box<NativeCompileFailure>>>(
         metadata,
         fingerprint: artifacts.fingerprint(),
         recording_diagnostics: recorder.take_completed(),
+        functional_assets,
     })
 }
 

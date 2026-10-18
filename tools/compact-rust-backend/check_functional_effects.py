@@ -53,6 +53,38 @@ def digest(path):
 
 
 
+def generated_manifest_snapshot(output):
+    """Authenticate every declared asset and exact checked-program membership."""
+    if not __debug__:
+        raise RuntimeError("manifest validation requires Python without -O/-OO")
+    from check_compactc_target import check_manifest
+    check_manifest(output)
+    manifest_path = output / "compiler/contract-manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    files = {}
+    def visit(path, entries):
+        for name, entry in entries.items():
+            if name == "type":
+                continue
+            child = path / name
+            if entry["type"] == "directory":
+                visit(child, entry)
+            else:
+                files[str(child.relative_to(output))] = digest(child)
+    for directory in ("compiler", "contract", "zkir"):
+        visit(output / directory, manifest[directory])
+    sidecars = output / "contract/checked-programs"
+    actual = {str(path.relative_to(output)) for path in sidecars.rglob("*") if path.is_file()}
+    declared = {name for name in files if name.startswith("contract/checked-programs/")}
+    if actual != declared:
+        raise ValueError("checked-program assets differ from manifest")
+    return {"manifest_sha256": digest(manifest_path), "assets": files,
+            "declared_asset_bytes": sum((output / name).stat().st_size for name in files),
+            "checked_program_bytes": sum((output / name).stat().st_size for name in declared),
+            "total_output_bytes": sum((output / name).stat().st_size for name in files)
+                + (0 if "compiler/contract-manifest.json" in files else manifest_path.stat().st_size)}
+
+
 def scheme_compiler(compiler, environment):
     """Resolve precisely the executable selected by compactc, relative to its cwd."""
     selected = environment.get("COMPACTC_SCHEME")
@@ -80,6 +112,8 @@ def scheme_compiler(compiler, environment):
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError("qualification requires Python without -O/-OO")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="new absent retained output directory")
@@ -154,7 +188,8 @@ def main():
                 "manifest_sha256": digest(destination / "compiler/contract-manifest.json"),
                 "ir_sha256": digest(destination / "contract/compact-rust-ir.json"),
                 "functional_bytes": library.stat().st_size,
-                "functional_lines": len(library.read_text().splitlines())}
+                "functional_lines": len(library.read_text().splitlines()),
+                "authenticated_assets": generated_manifest_snapshot(destination)}
             baseline = output / (alias + "-default")
             run("compile-default-" + alias, [compiler, "--target", "rust", "--skip-zk",
                 "--rust-require-recording", "--rust-runtime-root", ROOT, source, baseline])
@@ -162,6 +197,7 @@ def main():
             original = baseline / "contract/lib.rs"
             report["generated"][alias].update(default_library_sha256=digest(original),
                 default_bytes=original.stat().st_size, default_lines=len(original.read_text().splitlines()),
+                default_authenticated_assets=generated_manifest_snapshot(baseline),
                 size_scope="opt-in adds request module and retains legacy APIs; not total LOC reduction")
         chunked = json.loads((output / "chunked_fixture/contract/compact-rust-ir.json").read_text())
         if not any(len(field.get("path", [])) > 1 for field in chunked["ledger_fields"]):
@@ -243,6 +279,10 @@ def main():
         for alias in SOURCES:
             check_manifest(output / alias)
             check_manifest(output / (alias + "-default"))
+            if generated_manifest_snapshot(output / alias) != report["generated"][alias]["authenticated_assets"]:
+                raise ValueError("generated manifest/assets changed during execution: " + alias)
+            if generated_manifest_snapshot(output / (alias + "-default")) != report["generated"][alias]["default_authenticated_assets"]:
+                raise ValueError("default manifest/assets changed during execution: " + alias)
             if digest(output / alias / "contract/lib.rs") != report["generated"][alias]["library_sha256"]:
                 raise ValueError("generated library changed during execution: " + alias)
             if digest(output / (alias + "-default") / "contract/lib.rs") != report["generated"][alias]["default_library_sha256"]:

@@ -18,6 +18,18 @@
 use super::functional_paths::rust_type;
 use super::{functional::FunctionalProgram, functional_render, invalid};
 use crate::{RecordingGap, ident};
+use std::collections::BTreeMap;
+
+/// Rust syntax and its review-only assets travel together until publication.
+/// Asset names are private locators, never circuit or execution identities.
+pub(crate) struct FunctionalArtifacts {
+    pub module: syn::ItemMod,
+    pub assets: BTreeMap<String, String>,
+}
+
+#[cfg(test)]
+#[path = "functional_artifact_tests.rs"]
+mod artifact_tests;
 
 /// Issued by retained frontend ingress for the original borrowed circuit only.
 /// This is an occurrence/snapshot binding, not consumed-source authentication.
@@ -62,7 +74,7 @@ impl super::functional::SourceAuthority for RootOrigin<'_> {
 pub(crate) fn render_contract(
     contract: &crate::ir::Contract,
     sources: &dyn FunctionalSources,
-) -> Result<syn::ItemMod, RecordingGap> {
+) -> Result<FunctionalArtifacts, RecordingGap> {
     let ledger = contract
         .ledger_fields
         .iter()
@@ -84,10 +96,12 @@ pub(crate) fn render_contract(
         .map(|item| (item.name.as_str(), item))
         .collect();
     let mut items = Vec::new();
-    for original in contract
+    let mut assets = BTreeMap::new();
+    for (ordinal, original) in contract
         .stateful_circuits
         .iter()
         .filter(|item| !item.internal)
+        .enumerate()
     {
         let source = sources.root(original).ok_or_else(|| {
             invalid(
@@ -116,17 +130,25 @@ pub(crate) fn render_contract(
                 ),
             )
         })?;
-        items.push(render(&program)?);
+        // Only a compiler-assigned ordinal enters the filename. Source names,
+        // including normalized collisions and path characters, are data only.
+        let asset_path = format!("checked-programs/program-{ordinal}.json");
+        items.push(render(&program, &asset_path)?);
+        assets.insert(asset_path, super::functional_metadata::metadata(&program));
     }
-    Ok(syn::parse_quote! {
+    let module = syn::parse_quote! {
         /// Experimental immutable requests over the compiler's checked effect graph.
         pub mod functional {
             #(#items)*
         }
-    })
+    };
+    Ok(FunctionalArtifacts { module, assets })
 }
 
-pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod, RecordingGap> {
+fn render(
+    program: &FunctionalProgram<'_, '_>,
+    metadata_path: &str,
+) -> Result<syn::ItemMod, RecordingGap> {
     let checked = program.checked();
     let root = checked.declarations().root().ok_or_else(|| {
         invalid(
@@ -160,7 +182,6 @@ pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod
         })
         .collect::<Vec<syn::Stmt>>();
     let rendered = functional_render::render(program)?;
-    let metadata = super::functional_metadata::metadata(program);
     let slot_bindings = rendered
         .slots
         .iter()
@@ -293,7 +314,7 @@ pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod
         pub mod #module {
 
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = #metadata;
+            pub const CHECKED_PROGRAM: &str = include_str!(#metadata_path);
 
             const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[#(#slot_bindings),*];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[#(#counter_bindings),*];
