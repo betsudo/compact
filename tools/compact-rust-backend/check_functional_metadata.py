@@ -39,6 +39,10 @@ def main():
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     output = args.output.resolve()
+    # Nested generated crates would inherit the repository Cargo workspace,
+    # invalidating the independent relocation/dependency-resolution control.
+    if output.is_relative_to(ROOT):
+        parser.error("output must be outside the repository to avoid Cargo workspace inheritance")
     if output.exists() or output.is_symlink():
         parser.error("output must be absent")
     output.mkdir(parents=True)
@@ -114,14 +118,17 @@ def main():
                     run(destination.name, [*argv, source, destination])
                     generated_manifest_snapshot(destination)
                     paths[owner, mode] = destination
-            old_default = paths["baseline", "default"] / "contract"
-            new_default = paths["candidate", "default"] / "contract"
-            old_files = {str(p.relative_to(old_default)): p.read_bytes()
-                         for p in old_default.rglob("*") if p.is_file()}
-            new_files = {str(p.relative_to(new_default)): p.read_bytes()
-                         for p in new_default.rglob("*") if p.is_file()}
-            if old_files != new_files:
-                raise ValueError("default generated contract changed: " + alias)
+            def tree_bytes(directory, *, functional=False):
+                return {str(path.relative_to(directory)): path.read_bytes()
+                        for path in directory.rglob("*") if path.is_file()
+                        and not (functional and (
+                            path.relative_to(directory).as_posix() in {
+                                "contract/lib.rs", "compiler/contract-manifest.json"}
+                            or path.relative_to(directory).as_posix().startswith("contract/checked-programs/")))}
+            if tree_bytes(paths["baseline", "default"]) != tree_bytes(paths["candidate", "default"]):
+                raise ValueError("default generated output tree changed: " + alias)
+            if tree_bytes(paths["baseline", "functional"], functional=True) != tree_bytes(paths["candidate", "functional"], functional=True):
+                raise ValueError("functional output tree changed outside controlled metadata assets: " + alias)
             old_lib = (paths["baseline", "functional"] / "contract/lib.rs").read_text()
             original = {}
             original_modules = {}
@@ -256,7 +263,8 @@ def main():
         if hashes != {str(path): digest(path) for path in premises}:
             raise ValueError("source/compiler/runtime premises changed")
         report.update(passed=True, source_count=len(SOURCES), export_count=total,
-            controls=["default contract bytes unchanged", "all metadata exact bytes unchanged",
+            controls=["entire default output tree bytes unchanged",
+                      "functional output tree unchanged outside controlled metadata assets", "all metadata exact bytes unchanged",
                       "relocated Cargo check", "sidecar Cargo package inclusion",
                       "missing sidecar compile refusal", "valid JSON tamper manifest refusal",
                       "undeclared sidecar refusal", "restored sidecar compilation",
