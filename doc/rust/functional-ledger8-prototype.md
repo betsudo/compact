@@ -20,8 +20,9 @@ compactc --target rust --rust-functional-ledger8 --skip-zk \
   examples/rust_backend/let_return_oracle.compact ./generated
 ```
 
-`--skip-zk` skips key generation. The compiler still emits the circuit inputs;
-proof qualification is a separate operation. The generated Cargo dependency
+`--skip-zk` skips key generation. Proof qualification is a separate operation;
+inspect the emitted circuit inputs rather than assuming every native entry is
+proof-bearing. The generated Cargo dependency
 enables `experimental-functional`. Registry runtime mode is refused because
 this prototype is not a published runtime release.
 
@@ -99,11 +100,21 @@ Compact + retained invocation origins
 
 The initial projection includes checked literals/defaults, enums, equality,
 Cell reads/writes, Counter reads/increments, assertions, conditionals, and
-Boolean witnesses with one Boolean argument and a Boolean result. Existing
-ordinary APIs can support operations outside this experimental subset.
+typed witnesses whose checked results use the existing aligned-value transport.
+Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
+results, have generated consumer coverage. Existing Boolean witness APIs remain
+compatible. Arguments and result types are checked against retained declarations;
+the existing metered frames own gas, private state and private outputs.
 
-Calls, conversions, other Counter operations, collections, hashes and other
-witness signatures are refused by this projection. These refusals are a
+Equal emitted Rust signatures share one handler implementation. Checked witness
+IDs still distinguish callbacks, including zero arguments versus one Unit and a
+single tuple argument versus multiple arguments. These are mechanical adapters
+to the existing `TryWitnesses` trait, not a new callback language.
+
+Calls, conversions, other Counter operations, collections, hashes and exact
+opaque witness results are still refused by this projection. Opaque results need
+the separately qualified exact transport; ordinary aligned conversion must not
+silently replace it. These refusals are a
 capability boundary, not a claim that the ordinary Rust backend lacks them.
 
 The generated witness adapter currently uses `DefaultDB`, matching the existing
@@ -174,7 +185,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The accepted finite consumer run covers **8 tests**, **25 behavioral scenarios**
+The current finite consumer run covers **9 tests**, **28 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -183,6 +194,9 @@ existing consuming error API does not return that context. These numbers are
 fixture coverage, not language conformance or proof coverage. The seventh source
 fixture adds both branches for byte, small/wide unsigned and enum literals or
 defaults, with equality checks through the generated execution body.
+The eighth source exercises typed witnesses, distinct IDs sharing Rust signatures,
+zero/single/multiple arguments, inactive and denied branches, metered ledger reads,
+and independent expected callback arguments, private outputs and state.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug
@@ -263,3 +277,29 @@ need their own evidence.
 
 Tracking: [issue #663](https://github.com/betsudo/compact/issues/663).
 Architecture history: ADR-0542 in the `midnight` Obsidian vault.
+
+## Typed Field-witness proof qualification
+
+The additional local helper checks one complete stateful Field-witness fixture:
+
+```sh
+python3 tools/compact-rust-backend/check_functional_witness_proof.py --help
+```
+
+Provide the explicit matching compiler, parameters, target directory, qualified
+Forge binary, uncached ZKIR binary and a new private cache directory. Each of its
+three laps freshly generates the source, executes functional recording, compares
+ordinary observed preparation, and sends the **functional-derived** preparation
+to the existing prover and ledger-application checks. Independent assertions check
+the Field result, private state, callback event, exact private output and applied
+ledger value. First-store, repeat-store and uncached key generation are separate.
+
+The negative fixture changes only a private verifier copy to malformed bytes.
+Its refusal establishes corrupt-key handling; it does not establish rejection of
+a well-formed verifier for a different circuit. No proof or verdict is cached.
+
+A witness-only entry can be native-only: the existing `witness_argument.compact`
+source is marked `proof_required: false` and emits no ZKIR. The qualification uses
+its own complete stateful fixture rather than relaxing manifest checks or
+removing exports from a larger contract. One proved Field witness is not proof
+coverage for every supported argument/result signature or opaque transport.
