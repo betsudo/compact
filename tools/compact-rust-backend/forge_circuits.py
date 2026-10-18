@@ -47,7 +47,12 @@ BUILD = '340e0b3bd94394d987c1b2a073bb411afb755e7164934ca15e8d8cb02b77b879'
 # Candidate public Forge4ad82c8e, qualified against real consumer cases before
 # adoption. Preserve the original build's separately recorded legacy contract.
 PUBLIC_BUILD = 'bd1a54e776b8af58fb6ed682489b82d265aca4175040bd90c4acafa6db843e9f'
-QUALIFIED_BUILDS = frozenset({BUILD, PUBLIC_BUILD})
+# Local Darwin candidate from Forge d64f52d: independently computed recipe
+# fingerprint and cold/warm/restored/uncached consumer smoke checked under #679.
+# Broader contract/CI qualification is still separate; Linux has a distinct
+# fingerprint and is not admitted by this native record.
+CURRENT_NATIVE_BUILD = '0172564d119544356b838d69a731d056a9e8ffe5a21c5b33d8c176c934183efc'
+QUALIFIED_BUILDS = frozenset({BUILD, PUBLIC_BUILD, CURRENT_NATIVE_BUILD})
 SERIALIZATION = {'binary_ir': 'ir-source[v2]',
                  'prover_key': 'prover-key[v7](ir-source[v2])',
                  'verifier_key': 'verifier-key[v6]'}
