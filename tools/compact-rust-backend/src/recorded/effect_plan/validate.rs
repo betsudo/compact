@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 //! Scope, use-before-definition, operation signatures and branch joins.
 use super::{RecordingGap, declarations::Declarations, invalid, model::*};
 use crate::ir::{LedgerFieldKind, Type};
