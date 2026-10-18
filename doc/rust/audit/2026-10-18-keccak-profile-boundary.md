@@ -2,7 +2,7 @@
 
 **Recorded:** 18 October 2026, Asia/Kuala_Lumpur  
 **Implementation inspected:** `3739976cacdfd0f439fc54af63463750cbf9c31d`  
-**Related:** [#581](https://github.com/betsudo/compact/issues/581), [#666](https://github.com/betsudo/compact/issues/666), vault ADR-0432 / ADR-0557
+**Related:** [#581](https://github.com/betsudo/compact/issues/581), [#666](https://github.com/betsudo/compact/issues/666)
 
 This is an engineering capability/qualification record. It is not a security audit, a new proof result or authorization to upgrade the target.
 
@@ -56,4 +56,4 @@ Enabling native-only functionality would be a separate API/target policy decisio
 
 ## Record ownership
 
-The planning/history source is the midnight vault note **“Keccak — Native support versus the pinned Ledger8 proof profile — 2026-10-18”**. The broader [delivery guide](../ledger8-delivery-and-completion.md) records current features and the remaining release criteria. This repository copy publishes the explanation and source anchors; it does not publish the private historical evidence archive or supersede its original receipts.
+The problem is a target mismatch: native hashing and checked syntax cannot establish compatibility with the selected proving and ledger-application graph. The decision is to retain the v2 refusal until a separately qualified target demonstrates that complete path. [#581](https://github.com/betsudo/compact/issues/581) and [#666](https://github.com/betsudo/compact/issues/666) provide public tracking; the [delivery guide](../ledger8-delivery-and-completion.md) explains current features and release criteria. This record is self-contained and does not claim historical ADRs or raw qualification archives are published here.

@@ -383,6 +383,10 @@ jobs:
           # The final native gate repeats this exact command after its tests.
           cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings
 
+      - name: Check generated functional Ledger8 consumers
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -418,6 +422,7 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_archive_consumer.py --manifest target/rust-runtime-release.json
 
       - name: Retain Rust runtime packages and manifest
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rust-runtime-packages-${{ github.sha }}
@@ -425,6 +430,7 @@ jobs:
             target/rust-runtime-release.json
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
+            ${{ runner.temp }}/compact-functional-consumer.json
             target/package/midnight-compact-runtime-macros-*.crate
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error

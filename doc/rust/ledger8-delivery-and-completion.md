@@ -248,12 +248,11 @@ The next useful engineering work is **real-application functional qualification,
 
 ## Source and decision map
 
-- Current API/qualification guide: `doc/rust/functional-ledger8-prototype.md` at the reviewed source revision.
-- Planning authority: midnight vault, “Ledger8 completion — Next ten deliveries — 2026-10-18” and “666 — Functional Ledger8 completion — Execution”.
-- Domain decisions: ADR-0542 and ADR-0544–0561 in the vault. Historical proposed 0.4.0 API sketches are not current delivered interfaces.
-- Proof/input isolation: ADR-0560. Qualification versus reproducibility hardening: ADR-0561 / #655.
-- Local receipts: `final-freeze-gates.json`, `final-consumer.json`, `final-core.json`, `final-domain.json`, `final-receipt-reconciliation.json` and `final-acceptance-audit.md` bind the accepted delivery. `publication-qualification-pipeline.json` and `publication-final-acceptance-audit.md` accept its formatting successor separately.
-- This page is a dated local explanation. It does not publish the private evidence archive, close issues, merge PRs or create new release requirements by itself.
+- Current API and qualification scope: [functional Ledger8 prototype](functional-ledger8-prototype.md), at the reviewed source revision. Historical API sketches are not delivered interfaces.
+- Completion problem: individual checked-operation admission does not establish full-contract behavior or proof acceptance. [#666](https://github.com/betsudo/compact/issues/666) tracks the bounded functional delivery; the release still needs the explicit application and packaging criteria above.
+- Proof/input isolation decision: preserve immutable source and tool premises, separate current functional proof producers from ordinary comparison paths, and keep actual proofs, verification, negative controls and uncached generation executing. A cache hit is not a proof result.
+- Qualification versus reproducibility: an accepted finite receipt establishes its recorded scenarios at its recorded revisions. The clean historical 974-case public reproduction is tracked by [#653](https://github.com/betsudo/compact/issues/653). Forge/lifecycle reproducibility hardening is a separate obligation tracked by [#655](https://github.com/betsudo/compact/issues/655); later source changes need a valid qualification bridge or a new run.
+- Qualification records name their compiler/runtime/source identities and limits. This guide summarizes those decisions without requiring access to private planning notes; it does not claim the associated historical ADRs or evidence archives are published here.
+- This page is a dated explanation. It does not close issues, merge PRs or create new release requirements by itself.
 
-
-Related audit record: [Keccak and the pinned Ledger8 proof profile](audit/2026-10-18-keccak-profile-boundary.md). This repository copy is a dated publication of the midnight-vault guide; its recorded implementation and qualification revisions remain authoritative.
+Related audit record: [Keccak and the pinned Ledger8 proof profile](audit/2026-10-18-keccak-profile-boundary.md). Recorded implementation and qualification revisions remain authoritative.
