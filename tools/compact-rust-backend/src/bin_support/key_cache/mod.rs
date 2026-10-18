@@ -23,6 +23,7 @@ mod paths;
 mod policy;
 mod process;
 mod publication;
+mod report;
 use error::{CacheError, Result, require};
 use serde::Deserialize;
 use std::{
@@ -41,6 +42,8 @@ struct Options {
     policy: Option<PathBuf>,
     cache: Option<PathBuf>,
     final_output: Option<PathBuf>,
+    #[serde(default)]
+    report: bool,
 }
 pub struct Request<'a> {
     pub source: &'a Path,
@@ -134,7 +137,7 @@ fn prepare(options: Options) -> Result<()> {
     require(options.schema == 1, "unsupported internal request schema")?;
     // No provider, policy, parameters or output access for empty circuit sets.
     if !options.inputs.try_exists()? {
-        return Ok(());
+        return report::emit(options.report, &report::Report::new());
     }
     require(
         !options.inputs.is_symlink(),
@@ -143,7 +146,7 @@ fn prepare(options: Options) -> Result<()> {
     let inputs = options.inputs.canonicalize()?;
     let before = roster(&inputs)?;
     if before.is_empty() {
-        return Ok(());
+        return report::emit(options.report, &report::Report::new());
     }
     let policy_path = options.policy.as_ref().ok_or_else(|| {
         CacheError::Refused("--zkir-cache-policy required for local key preparation".into())
@@ -187,6 +190,7 @@ fn prepare(options: Options) -> Result<()> {
     )?;
     let mut parameters = BTreeMap::new();
     let mut prepared = BTreeMap::new();
+    let mut receipt = report::Report::new();
     let unchanged = |parameters: &BTreeMap<u8, String>,
                      forge_available: Option<bool>,
                      store_identity: &Option<(PathBuf, PathBuf)>|
@@ -280,7 +284,7 @@ fn prepare(options: Options) -> Result<()> {
             }
             forge_available = Some(available);
         }
-        if use_forge && let Some(provider) = &provider {
+        let acquisition = if use_forge && let Some(provider) = &provider {
             let (hit, artifacts) = provider
                 .prepare(
                     Request {
@@ -297,6 +301,11 @@ fn prepare(options: Options) -> Result<()> {
                 if hit { "hit" } else { "miss" },
                 model.k
             );
+            if hit {
+                report::Acquisition::ForgeHit
+            } else {
+                report::Acquisition::ForgeMiss
+            }
         } else {
             eprintln!(
                 "ZKIR ordinary key generation: {name}; {}",
@@ -311,12 +320,34 @@ fn prepare(options: Options) -> Result<()> {
                 fallback(&policy, &source, &destination, &model)
                     .map_err(|error| CacheError::Refused(format!("circuit {name}: {error}")))?,
             );
+            if use_forge {
+                report::Acquisition::UnavailableKeygen
+            } else {
+                report::Acquisition::AutoBypass
+            }
+        };
+        if options.report {
+            receipt.circuits.push(report::Circuit {
+                name: name.clone(),
+                source_sha256: sha.clone(),
+                k: model.k,
+                rows: model.rows,
+                parameter_sha256: model.parameter_sha.clone(),
+                acquisition_path: acquisition,
+                artifacts: prepared
+                    .get(name)
+                    .ok_or_else(|| {
+                        CacheError::Refused("prepared circuit artifact record missing".into())
+                    })?
+                    .clone(),
+            });
         }
         unchanged(&parameters, forge_available, &store_identity)?;
     }
     unchanged(&parameters, forge_available, &store_identity)?;
     publication::publish(stage.path(), &inputs, &options.keys, &prepared)?;
-    unchanged(&parameters, forge_available, &store_identity)
+    unchanged(&parameters, forge_available, &store_identity)?;
+    report::emit(options.report, &receipt)
 }
 fn fallback(
     policy: &policy::Policy,
@@ -383,6 +414,7 @@ mod tests {
             policy: Some(s.path().join("absent-policy")),
             cache: None,
             final_output: None,
+            report: false,
         })
         .unwrap();
         assert!(!s.path().join("keys").exists());
@@ -448,6 +480,7 @@ esac
             policy: Some(policy_path.clone()),
             cache: Some(stage.path().join("must-not-exist")),
             final_output: None,
+            report: false,
         };
         let p = policy::Policy::read(&policy_path).unwrap();
         assert!(!p.uses_forge(8));
@@ -561,6 +594,7 @@ esac
                 policy: Some(policy_path.clone()),
                 cache: Some(cache),
                 final_output: None,
+                report: false,
             })
             .unwrap_err();
             assert!(error.to_string().contains("must be disjoint"));
@@ -618,6 +652,7 @@ esac
                 policy: Some(policy_path.clone()),
                 cache: None,
                 final_output: Some(output.clone()),
+                report: false,
             })
             .unwrap_err();
             assert!(
