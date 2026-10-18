@@ -160,3 +160,83 @@ fn vector_map_middle_cast_failure_stops_later_marker_and_untaken_cast_is_safe() 
         }
     }
 }
+
+#[test]
+fn vector_map_failure_preserves_the_prior_witness_prefix_and_suppresses_the_later_marker() {
+    for selected in [false, true] {
+        let values = runtime::FixedVector([
+            runtime::BoundedUint::<65535>::new(1).unwrap(),
+            runtime::BoundedUint::<65535>::new(300).unwrap(),
+            runtime::BoundedUint::<65535>::new(3).unwrap(),
+        ]);
+        let error = selected.then_some("unsigned value 300 exceeds Compact maximum 255");
+        let (result, witnesses) = vector_map_case!(prefixed, [selected, values.clone()], error);
+        let mut events = vec![(7, Field::from(99_u64), Field::from(0_u64))];
+        if !selected {
+            events.push((8, Field::from(3_u64), Field::from(99_u64)));
+        }
+        for witness in &witnesses {
+            assert_eq!(*witness.0.borrow(), events);
+        }
+        if let Some(result) = result {
+            assert_eq!(result.result.original, values);
+            assert_eq!(
+                result.result.mapped.0.map(|value| value.value()),
+                [7_u128; 3]
+            );
+            assert_eq!(result.context.private_state, 9);
+            assert_eq!(
+                result.private_transcript_outputs,
+                vec![
+                    runtime::fab::AlignedValue::from(Field::from(99_u64)),
+                    runtime::fab::AlignedValue::from(Field::from(3_u64))
+                ]
+            );
+            assert_eq!(
+                vector_map_fixture::ledger_slots::stored
+                    .inspect(result.context.query.state.get_ref())
+                    .unwrap(),
+                Field::from(3_u64)
+            );
+        }
+    }
+}
+#[test]
+fn vector_map_nested_maps_and_body_assertions_respect_the_enclosing_branch() {
+    for (selected, permit) in [(false, false), (true, true), (true, false)] {
+        let values = runtime::FixedVector([Field::from(2_u64), Field::from(4_u64)]);
+        let error = (selected && !permit).then_some("failed assert: map body denied");
+        let (result, witnesses) =
+            vector_map_case!(nested, [selected, permit, values.clone()], error);
+        let events = if error.is_none() {
+            vec![(7, Field::from(4_u64), Field::from(0_u64))]
+        } else {
+            vec![]
+        };
+        for witness in &witnesses {
+            assert_eq!(*witness.0.borrow(), events);
+        }
+        if let Some(result) = result {
+            let expected = if selected {
+                [[3_u64, 4], [5, 6]]
+            } else {
+                [[7, 7], [7, 7]]
+            };
+            assert_eq!(
+                result.result.0.map(|inner| inner.0),
+                expected.map(|inner| inner.map(Field::from))
+            );
+            assert_eq!(result.context.private_state, 8);
+            assert_eq!(
+                result.private_transcript_outputs,
+                vec![runtime::fab::AlignedValue::from(Field::from(4_u64))]
+            );
+            assert_eq!(
+                vector_map_fixture::ledger_slots::stored
+                    .inspect(result.context.query.state.get_ref())
+                    .unwrap(),
+                Field::from(4_u64)
+            );
+        }
+    }
+}

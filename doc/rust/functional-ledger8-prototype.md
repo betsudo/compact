@@ -223,7 +223,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **35 tests**, **95 behavioral scenarios**
+The current finite consumer run covers **38 tests**, **100 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -256,10 +256,11 @@ first operation after empty-pop.
 The sixteenth source covers the remaining Counter operations with u16 amount
 boundaries, strict full-width comparisons, reset and assertion ordering.
 The seventeenth source covers VectorMap empty/single/multiple inputs, owned
-captures, source reuse, selected fallible casts and certified pure helpers.
-Three additional Rust tests check generated unknown-witness dispatch on both
+captures, source reuse, selected fallible casts and certified pure helpers,
+plus prior witness/write prefixes and real nested Map/assert execution.
+Four additional Rust tests check generated unknown-witness dispatch on both
 interpreters and aligned/exact transports. These adapter controls are separate
-from the 95 four-route contract scenarios. Under `experimental-functional`,
+from the 100 four-route contract scenarios. Under `experimental-functional`,
 unknown generated IDs return `UnknownWitnessIdentity { id }`; handwritten
 callback errors are preserved.
 

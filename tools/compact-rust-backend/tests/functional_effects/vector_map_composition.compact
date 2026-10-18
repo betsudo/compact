@@ -42,3 +42,18 @@ export circuit checked(selected: Boolean, values: Vector<3, Uint<16>>): CheckedR
   stored = disclose(marker(3 as Field));
   return CheckedReceipt { mapped: disclose(mapped), original: disclose(values) };
 }
+export circuit prefixed(selected: Boolean, values: Vector<3, Uint<16>>): CheckedReceipt {
+  stored = disclose(marker(99 as Field));
+  const mapped = map((x: Uint<16>): Uint<8> => selected ? x as Uint<8> : 7 as Uint<8>, values);
+  stored = disclose(marker(3 as Field));
+  return CheckedReceipt { mapped: disclose(mapped), original: disclose(values) };
+}
+export circuit nested(selected: Boolean, permit: Boolean, values: Vector<2, Field>): Vector<2, Vector<2, Field>> {
+  const mapped = selected ? map((x: Field): Vector<2, Field> => {
+    assert(permit, "map body denied");
+    const inner: Vector<2, Field> = [x, x + 1];
+    return map((y: Field): Field => bump(y), inner);
+  }, values) : [[7 as Field, 7], [7 as Field, 7]];
+  stored = disclose(marker(4 as Field));
+  return disclose(mapped);
+}

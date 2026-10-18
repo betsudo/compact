@@ -182,3 +182,91 @@ fn handwritten_witness_errors_pass_through_both_existing_frame_transports() {
     }
     assert_eq!(later.get(), 0);
 }
+
+#[test]
+fn generated_adapter_refuses_a_known_identity_requested_through_the_wrong_signature() {
+    use c::functional::typed as program;
+    use typed_fixture::ledger_contract as c;
+    // Resolve the checked identity from this freshly generated contract's IR,
+    // using the same documented name ordering as the declaration registry.
+    let ir: serde_json::Value = serde_json::from_str(include_str!(
+        "../../typed_fixture/contract/compact-rust-ir.json"
+    ))
+    .unwrap();
+    let mut declarations = ir["witnesses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .collect::<Vec<_>>();
+    declarations.sort_by_key(|declaration| declaration["name"].as_str().unwrap());
+    let position = declarations
+        .iter()
+        .position(|declaration| declaration["name"] == "first")
+        .unwrap();
+    assert_eq!(
+        declarations[position]["parameters"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        declarations[position]["parameters"][0]["ty"]["kind"],
+        "field"
+    );
+    assert_eq!(declarations[position]["result"]["kind"], "field");
+    assert!(
+        declarations
+            .iter()
+            .any(|declaration| declaration["name"] == "gate"
+                && declaration["result"]["kind"] == "boolean")
+    );
+    let id = u32::try_from(position).unwrap();
+    fn request<E: runtime::functional::Executor + runtime::functional::WitnessCall<bool, bool>>(
+        executor: E,
+        id: u32,
+        later: &std::cell::Cell<usize>,
+    ) -> Result<E::Outcome<()>, CompactError> {
+        runtime::functional::Circuit::begin(executor)
+            .witness(
+                runtime::functional::Witness::<bool, bool>::new(
+                    runtime::functional::WitnessId::new(id),
+                ),
+                true,
+            )
+            .bind(|_, circuit| {
+                circuit.try_returning(|| {
+                    later.set(later.get() + 1);
+                    Ok(())
+                })
+            })
+            .finish()
+    }
+    let context = || {
+        c::initial_state(ConstructorContext::new(7_u64))
+            .unwrap()
+            .into_circuit_context(ContractAddress::default())
+    };
+    let witnesses: [TypedWitnesses; 2] = std::array::from_fn(|_| TypedWitnesses::default());
+    let later = std::cell::Cell::new(0);
+    let native = NativeLedger8::new(context(), program::ledger8_bindings().unwrap())
+        .with_witnesses(program::WitnessAdapter(&witnesses[0]));
+    let recorded = RecordedLedger8::new(context(), program::ledger8_bindings().unwrap())
+        .with_witnesses(program::WitnessAdapter(&witnesses[1]));
+    let first = request(native, id, &later)
+        .err()
+        .expect("known Field witness must not dispatch through Boolean signature");
+    let second = request(recorded, id, &later)
+        .err()
+        .expect("known Field witness must not dispatch through Boolean signature");
+    assert_eq!(first, CompactError::UnknownWitnessIdentity { id });
+    assert_eq!(first, second);
+    assert_eq!(
+        first.to_string(),
+        format!("unknown checked witness identity {id}")
+    );
+    assert_eq!(later.get(), 0);
+    for witness in &witnesses {
+        assert!(witness.0.borrow().is_empty());
+    }
+}

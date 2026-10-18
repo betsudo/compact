@@ -166,7 +166,9 @@ fn historic_history_reset_delegates_existing_slots() {
         .unwrap()
         .finish(());
     let reference = slot.insert(context(true), Field::from(7_u64)).unwrap();
+    let insert_gas = reference.gas_cost;
     let reference = slot.reset_history(reference.context).unwrap();
+    assert_eq!(native.gas_cost, insert_gas + reference.gas_cost);
     assert_eq!(
         bytes(native.context.query.state.get_ref()),
         bytes(reference.context.query.state.get_ref())
@@ -176,6 +178,53 @@ fn historic_history_reset_delegates_existing_slots() {
         bytes(recorded.execution.context.query.state.get_ref())
     );
     assert_eq!(native.gas_cost, recorded.execution.gas_cost);
+    let reference_recorded = slot
+        .record_insert(
+            crate::recording::RecordingFrame::new(context(true)),
+            Field::from(7_u64),
+        )
+        .unwrap();
+    let reference_recorded = slot
+        .record_reset_history(reference_recorded)
+        .unwrap()
+        .finish(());
+    assert_eq!(
+        reference_recorded.execution.gas_cost,
+        recorded.execution.gas_cost
+    );
+    assert_eq!(
+        reference.context.query.effects,
+        native.context.query.effects
+    );
+    assert_eq!(
+        native.context.query.effects,
+        recorded.execution.context.query.effects
+    );
+    assert_eq!(
+        reference_recorded.execution.context.query.effects,
+        recorded.execution.context.query.effects
+    );
+    assert_eq!(
+        serde_json::to_value(reference_recorded.public.verify_ops()).unwrap(),
+        serde_json::to_value(recorded.public.verify_ops()).unwrap()
+    );
+    let reference_replay = reference_recorded
+        .public
+        .initial()
+        .query(
+            reference_recorded.public.verify_ops(),
+            None,
+            &INITIAL_COST_MODEL,
+        )
+        .unwrap();
+    assert_eq!(
+        bytes(reference_replay.context.state.get_ref()),
+        bytes(native.context.query.state.get_ref())
+    );
+    assert_eq!(
+        reference_replay.context.effects,
+        native.context.query.effects
+    );
     let replay = recorded
         .public
         .initial()
@@ -315,56 +364,35 @@ fn filling_all_eight_leaves_sets_full_before_any_reset() {
 }
 
 #[test]
-fn out_of_tree_index_keeps_existing_native_and_recorded_slot_outcomes() {
+fn out_of_tree_index_keeps_existing_native_and_recorded_slot_refusals() {
     let tree: Merkle<Field, 3, false> = Merkle::new(ID);
     let slot = crate::slots::MerkleSlot::<Field, 3, false>::new(&[0, 0]);
     for position in [8_u128, u64::MAX as u128] {
         let index = BoundedUint::new(position).unwrap();
-        let reference = slot.insert_index(context(false), Field::from(7_u64), index);
-        let candidate = NativeLedger8::new(context(false), bindings(false)).merkle_insert_index(
-            tree,
-            Field::from(7_u64),
-            index,
-        );
-        match (reference, candidate) {
-            (Ok(reference), Ok(candidate)) => {
-                let candidate = candidate.finish(());
-                assert_eq!(
-                    bytes(reference.context.query.state.get_ref()),
-                    bytes(candidate.context.query.state.get_ref())
-                );
-                assert_eq!(reference.gas_cost, candidate.gas_cost);
-            }
-            (Err(reference), Err(candidate)) => assert_eq!(reference, candidate),
-            _ => panic!("native indexed insertion policy changed"),
-        }
-        let reference = slot.record_insert_index(
-            crate::recording::RecordingFrame::new(context(false)),
-            Field::from(7_u64),
-            index,
-        );
-        let candidate = RecordedLedger8::new(context(false), bindings(false)).merkle_insert_index(
-            tree,
-            Field::from(7_u64),
-            index,
-        );
-        match (reference, candidate) {
-            (Ok(reference), Ok(candidate)) => {
-                let reference = reference.finish(());
-                let candidate = candidate.finish(());
-                assert_eq!(
-                    bytes(reference.execution.context.query.state.get_ref()),
-                    bytes(candidate.execution.context.query.state.get_ref())
-                );
-                assert_eq!(reference.execution.gas_cost, candidate.execution.gas_cost);
-                assert_eq!(
-                    serde_json::to_value(reference.public.verify_ops()).unwrap(),
-                    serde_json::to_value(candidate.public.verify_ops()).unwrap()
-                );
-            }
-            (Err(reference), Err(candidate)) => assert_eq!(reference, candidate),
-            _ => panic!("recorded indexed insertion policy changed"),
-        }
+        let reference = slot
+            .insert_index(context(false), Field::from(7_u64), index)
+            .err()
+            .expect("out-of-tree index is refused");
+        let candidate = NativeLedger8::new(context(false), bindings(false))
+            .merkle_insert_index(tree, Field::from(7_u64), index)
+            .err()
+            .expect("functional index is refused");
+        assert!(matches!(reference, CompactError::LedgerQueryRejected(_)));
+        assert_eq!(reference, candidate);
+        let reference = slot
+            .record_insert_index(
+                crate::recording::RecordingFrame::new(context(false)),
+                Field::from(7_u64),
+                index,
+            )
+            .err()
+            .expect("recorded out-of-tree index is refused");
+        let candidate = RecordedLedger8::new(context(false), bindings(false))
+            .merkle_insert_index(tree, Field::from(7_u64), index)
+            .err()
+            .expect("functional recorded index is refused");
+        assert!(matches!(reference, CompactError::LedgerQueryRejected(_)));
+        assert_eq!(reference, candidate);
     }
 }
 

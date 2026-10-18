@@ -73,6 +73,7 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
         "root_origin": origin(program.root_origin()),
         "required_capabilities": program.requirements().iter().copied().map(capability).collect::<Vec<_>>(),
         "inventory_semantics": "guards_and_occurrences_not_a_linear_execution_schedule",
+        "map_body_semantics": "lexical_static_occurrences_with_branch_guards; a body may execute per selected element and zero times for an empty vector; not a linear execution trace",
         "guards": guards,
         "inputs": inputs,
         "effects": effects,
@@ -134,3 +135,7 @@ fn origin(value: OriginEvidence<'_>) -> Value {
         "snapshot_correspondence": snapshot,
     })
 }
+
+#[cfg(test)]
+#[path = "functional_metadata_map_tests.rs"]
+mod map_tests;
