@@ -328,4 +328,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    if "--core-five" in sys.argv:
+        sys.argv.remove("--core-five")
+        from check_functional_core_case import lifecycle
+        raise SystemExit(lifecycle.main())
     raise SystemExit(main())

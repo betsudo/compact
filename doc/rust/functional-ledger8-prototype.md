@@ -389,3 +389,22 @@ The nineteenth source exercises all sixteen admitted hashing, Field encoding and
 The current finite consumer includes 23 whole sources, 56 Rust tests and 160 behavioral scenarios across four routes. Intent and qualified-storage cases compare commitment-index maps and Zswap plans in addition to state, effects, gas, witness order and replay. Manual qualified references derive from the original slot tests with only their generated-crate import changed, and both original and private-copy hashes are guarded. Held allocations and provisional cursors are explicitly test premises; these scenarios do not establish offer provenance or transaction validity.
 
 The exhaustive current checked-operation match admits 71 of 72 top-level variants, with Keccak refused. Nested List operations (6), Merkle variants (7, covering 9 forms) and kernel claim kinds (3) are separate dimensions. This is bounded checked-node accounting; it does not close frontend gaps #516, #610, #661 or #674, nor imply complete language or proof coverage. Actual functional proof, verification and ledger application remain separately qualified.
+
+### Actual proof qualification
+
+Two explicit runners share one lifecycle implementation:
+
+- `check_functional_proof.py --core-five`: two Merkle branches, hashing, Jubjub and exact witness transport.
+- `check_functional_domain_proof.py`: original kernel, composite Zswap, qualified Cell and qualified Set selectors over five complete contracts.
+
+Both accept `--compile-only`. Real runs generate current source output on every lap and execute cold Forge, warm Forge and separate uncached key-generation lanes. Proofs, verification, assertions and application/refusal checks always execute. The small existing proof helper retains its original default behavior when `--core-five` is absent. Ordinary builds and unit tests do not require Forge.
+
+Set `MIDNIGHT_LEDGER_TEST_STATIC_DIR` to the existing `ledger/static` directory from the exact Ledger 8.1.3 revision pinned by Cargo.lock when running funded scenarios. The runner authenticates its path, membership and content before/after execution. It does not create a substitute fee fixture or relax funding checks. Built-in proof-material validation remains owned by the official providers.
+
+For either entry point, supply explicit absolute paths for `--compiler`, `--params-dir`, `--target-dir`, `--forge`, `--uncached-zkir`, an initially absent private `--cache-dir`, and a fresh `--report`. `--help` lists the complete interface. Keep the compiler, runtime, sources and helper assets frozen during qualification; failed receipts are preserved.
+
+Original compiler output remains immutable and strictly manifest-checked. Keys and binary ZKIR are generated only in a byte-identical private execution copy; exactly the selected artifact additions are allowed. Private wrappers retain independently frozen original IR. Actual functional recordings feed the original preparation/proof/application path; ordinary recording is comparison only.
+
+Core Merkle and crypto cases retain the original balancing-disabled `check_transaction` lane. Exact witness transport retains funded default-strict application; these are distinct qualification claims.
+
+Domain success markers distinguish call-proof verification, intentionally relaxed balancing diagnostics and funded default-strict application. Original offer/allocation mismatches, strict deficits, empty-transcript and replay refusals remain separate controls. This matrix does not prove ownPublicKey authentication, every Merkle operation, arbitrary contract composition, wallet ownership or network acceptance. Existing checked program/resource budgets still apply; admitting a node is not unbounded composition coverage.
