@@ -24,7 +24,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-/// Keep failed Rust-target runs out of the requested output directory.
+/// Keep failed Rust and explicit local-cache TS runs out of the output directory.
 pub(crate) struct StagedOutput {
     path: PathBuf,
     published: bool,

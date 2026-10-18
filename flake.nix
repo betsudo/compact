@@ -241,7 +241,7 @@
               lockFile = ./tools/compact-rust-backend/Cargo.lock;
               outputHashes."midnight-base-crypto-1.0.2" = "sha256-iNrhLPBGrWxeospwl8eW4TtYNlk+vY5Y564OTRjwBoM=";
             };
-            cargoBuildFlags = [ "--bin" "compactc" ];
+            cargoBuildFlags = [ "--bin" "compactc" "--bin" "compact-zkir-cache" ];
             # Compiler-backed gates run in build-compiler.yml against the full
             # workspace; this derivation packages just the public command.
             doCheck = false;
@@ -252,8 +252,9 @@
             '';
           } // pkgs.lib.optionalAttrs (pkgs.lib.hasSuffix "linux" system) {
             postFixup = ''
-              ${pkgs.buildPackages.binutils}/bin/readelf -lW "$out/bin/compactc" > "$TMPDIR/compact-rust-cli-program-headers" || exit 1
-              ${pkgs.buildPackages.binutils}/bin/readelf -dW "$out/bin/compactc" > "$TMPDIR/compact-rust-cli-dynamic-section" || exit 1
+              for binary in compactc compact-zkir-cache; do
+              ${pkgs.buildPackages.binutils}/bin/readelf -lW "$out/bin/$binary" > "$TMPDIR/compact-rust-cli-program-headers" || exit 1
+              ${pkgs.buildPackages.binutils}/bin/readelf -dW "$out/bin/$binary" > "$TMPDIR/compact-rust-cli-dynamic-section" || exit 1
               if ${pkgs.buildPackages.gnugrep}/bin/grep -Eq '(^|[[:space:]])INTERP([[:space:]]|$)' "$TMPDIR/compact-rust-cli-program-headers"; then
                 echo "compact-rust-cli must not require an ELF interpreter" >&2
                 exit 1
@@ -266,6 +267,7 @@
               else
                 test "$?" -eq 1 || exit 1
               fi
+              done
               echo "compact-rust-cli: static ELF verified for ${system}"
             '';
           });
@@ -332,11 +334,12 @@
               mkdir -p $out/bin
               cp obj/compactc $out/bin/compactc-scheme
               cp ${packages.compact-rust-cli}/bin/compactc $out/bin/compactc
+              cp ${packages.compact-rust-cli}/bin/compact-zkir-cache $out/bin/compact-zkir-cache
               mkdir -p $out/share
               cp -R ${packages.compact-rust-cli}/share/compactc $out/share/compactc
               cp obj/format-compact $out/bin
               cp obj/fixup-compact $out/bin
-              chmod +x $out/bin/compactc $out/bin/compactc-scheme
+              chmod +x $out/bin/compactc $out/bin/compactc-scheme $out/bin/compact-zkir-cache
               chmod +x $out/bin/format-compact
               chmod +x $out/bin/fixup-compact
             '';
@@ -387,9 +390,10 @@
 
               cp obj/compiler/compactc $out/bin/compactc-scheme
               cp ${packages.compact-rust-cli}/bin/compactc $out/bin/compactc
+              cp ${packages.compact-rust-cli}/bin/compact-zkir-cache $out/bin/compact-zkir-cache
               mkdir -p $out/share
               cp -R ${packages.compact-rust-cli}/share/compactc $out/share/compactc
-              chmod +x $out/bin/compactc $out/bin/compactc-scheme
+              chmod +x $out/bin/compactc $out/bin/compactc-scheme $out/bin/compact-zkir-cache
 
               for exe in format-compact fixup-compact; do
                 cp "obj/compiler/$exe" $out/bin
@@ -426,6 +430,7 @@
               cp bin/compactc $out/bin
               mv $out/bin/compactc $out/bin/compactc.bin
               cp bin/compactc-scheme $out/bin/compactc-scheme
+              cp bin/compact-zkir-cache $out/bin/compact-zkir-cache
               cp ${zkir.packages.${system}.zkir}/bin/zkir $out/lib/zkir
               cp ${zkir-v3.packages.${system}.zkir-v3}/bin/zkir $out/lib/zkir-v3
 
@@ -448,7 +453,7 @@
             # Fail the portable Darwin build if any executable still needs one.
             doInstallCheck = isDarwin;
             installCheckPhase = ''
-              for exe in bin/compactc.bin bin/compactc-scheme bin/format-compact bin/fixup-compact lib/zkir lib/zkir-v3; do
+              for exe in bin/compactc.bin bin/compact-zkir-cache bin/compactc-scheme bin/format-compact bin/fixup-compact lib/zkir lib/zkir-v3; do
                 otool -L "$out/$exe" > "$TMPDIR/compactc-libraries"
                 if grep -Eq '^[[:space:]]+/nix/store/' "$TMPDIR/compactc-libraries"; then
                   cat "$TMPDIR/compactc-libraries" >&2

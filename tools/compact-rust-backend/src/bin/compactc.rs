@@ -16,6 +16,8 @@
 //! The public Compact compiler command. Chez owns analysis and proof artifacts;
 //! the Rust backend owns Rust syntax and the generated crate's package boundary.
 
+#[path = "../bin_support/key_cache/paths.rs"]
+mod cache_paths;
 #[path = "../bin_support/input.rs"]
 mod input;
 #[path = "../bin_support/staged_output.rs"]
@@ -62,6 +64,18 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     let mut forwarded = Vec::with_capacity(args.len());
     let mut arguments = args.into_iter();
     while let Some(argument) = arguments.next() {
+        if ["--zkir-cache", "--zkir-cache-policy", "--zkir-cache-dir"]
+            .iter()
+            .any(|key| argument == *key)
+        {
+            forwarded.push(argument);
+            // Queries retain their existing priority; validate missing cache
+            // values only after the help/version path has returned.
+            if let Some(value) = arguments.next() {
+                forwarded.push(value);
+            }
+            continue;
+        }
         if argument == "--rust-functional-ledger8" {
             if targets.functional_ledger8 {
                 return Err("--rust-functional-ledger8 may be given only once".into());
@@ -483,6 +497,122 @@ fn write_functional_assets(
     Ok(())
 }
 
+/// Parse shared cache options without enabling the test-only environment shim.
+fn local_key_cache(args: &[OsString]) -> Result<bool, Box<dyn Error>> {
+    let mut seen = std::collections::BTreeSet::new();
+    let mut local = false;
+    let mut iter = args.iter();
+    while let Some(argument) = iter.next() {
+        if ["--zkir-cache", "--zkir-cache-policy", "--zkir-cache-dir"]
+            .iter()
+            .any(|key| argument == key)
+        {
+            if !seen.insert(argument) {
+                return Err("duplicate ZKIR cache option".into());
+            }
+            let value = iter.next().ok_or("missing ZKIR cache option value")?;
+            if argument == "--zkir-cache" {
+                local = match value.to_str() {
+                    Some("off") => false,
+                    Some("local") => true,
+                    _ => return Err("--zkir-cache must be off or local".into()),
+                };
+            }
+        }
+    }
+    Ok(local)
+}
+/// Final output authority lives here, not in the helper's private frontend stage.
+struct CacheOutputGuard {
+    store: PathBuf,
+    output: PathBuf,
+    protected: Vec<PathBuf>,
+}
+fn cache_output_guard(
+    args: &[OsString],
+    local: bool,
+) -> Result<Option<CacheOutputGuard>, Box<dyn Error>> {
+    if !local {
+        return Ok(None);
+    }
+    let mut directory = None;
+    let mut policy = None;
+    let mut skip = false;
+    let mut operands = Vec::new();
+    let mut arguments = args.iter();
+    while let Some(argument) = arguments.next() {
+        if [
+            "--zkir-cache",
+            "--zkir-cache-policy",
+            "--zkir-cache-dir",
+            "--sourceRoot",
+            "--compact-path",
+        ]
+        .iter()
+        .any(|key| argument == key)
+        {
+            let value = arguments.next().ok_or("missing compiler option value")?;
+            if argument == "--zkir-cache-dir" {
+                directory = Some(PathBuf::from(value));
+            }
+            if argument == "--zkir-cache-policy" {
+                policy = Some(PathBuf::from(value));
+            }
+        } else if argument == "--skip-zk" {
+            skip = true;
+        } else if !argument.to_string_lossy().starts_with('-') {
+            operands.push(argument);
+        }
+    }
+    // Public contract: --skip-zk wins and retains historical target behavior.
+    if skip {
+        return Ok(None);
+    }
+    // Only admit the CLI's documented trailing source/output shape. Defer other
+    // flag semantics to Scheme; never allocate a staging lock for bad operands.
+    if operands.len() != 2
+        || args.len() < 2
+        || operands[0] != &args[args.len() - 2]
+        || operands[1] != &args[args.len() - 1]
+    {
+        return Err("local ZKIR cache requires trailing source and output operands".into());
+    }
+    let output = PathBuf::from(operands[1]);
+    let store = cache_paths::effective_cache(directory.as_deref())?;
+    let mut protected = vec![PathBuf::from(operands[0])];
+    if let Some(policy) = policy {
+        protected.push(policy);
+    }
+    let guard = CacheOutputGuard {
+        store,
+        output,
+        protected,
+    };
+    recheck_cache_output(&Some(&guard))?;
+    Ok(Some(guard))
+}
+fn recheck_cache_output(guard: &Option<&CacheOutputGuard>) -> Result<(), Box<dyn Error>> {
+    if let Some(guard) = guard {
+        cache_paths::require_disjoint(&guard.store, &[&guard.output])?;
+        for path in &guard.protected {
+            cache_paths::require_disjoint(&guard.output, &[path])?;
+        }
+    }
+    Ok(())
+}
+
+fn cache_helper_path() -> Result<(OsString, PathBuf), Box<dyn Error>> {
+    let executable = env::current_exe()?;
+    let directory = executable
+        .parent()
+        .ok_or("compiler executable has no parent")?;
+    let mut paths = vec![directory.to_path_buf()];
+    if let Some(existing) = env::var_os("PATH") {
+        paths.extend(env::split_paths(&existing));
+    }
+    Ok((env::join_paths(paths)?, directory.to_path_buf()))
+}
+
 fn run() -> Result<i32, Box<dyn Error>> {
     let (targets, mut args) = select_targets(env::args_os().skip(1).collect())?;
     let compiler = scheme_compiler()?;
@@ -513,9 +643,42 @@ fn run() -> Result<i32, Box<dyn Error>> {
         let status = Command::new(compiler).args(&args).status()?;
         return Ok(status.code().unwrap_or(1));
     }
+    let local_cache = local_key_cache(&args)?;
+    let cache_guard = cache_output_guard(&args, local_cache)?;
+    // Resolving our own bin directory does not touch helper/policy/parameters.
+    // Scheme invokes the helper only after a nonempty fresh v2 circuit set.
+    let helper_path = if cache_guard.is_some() {
+        Some(cache_helper_path()?)
+    } else {
+        None
+    };
     if !targets.rust {
-        let status = Command::new(compiler).args(&args).status()?;
-        return Ok(status.code().unwrap_or(1));
+        let mut command = Command::new(compiler);
+        if let Some((path, directory)) = &helper_path {
+            command
+                .env("PATH", path)
+                .env("COMPACT_ZKIR_CACHE_HELPER_DIRECTORY", directory)
+                .env(
+                    "COMPACT_ZKIR_CACHE_FINAL_OUTPUT",
+                    cache_guard
+                        .as_ref()
+                        .ok_or("cache output guard missing")?
+                        .output
+                        .as_os_str(),
+                );
+        }
+        if cache_guard.is_some() {
+            let output = PathBuf::from(args.last().ok_or("output missing")?);
+            let staging = StagedOutput::new(&output)?;
+            args.pop();
+            let status = command.args(&args).arg(staging.path()).status()?;
+            if status.success() {
+                recheck_cache_output(&cache_guard.as_ref())?;
+                staging.publish(&output)?;
+            }
+            return Ok(status.code().unwrap_or(1));
+        }
+        return Ok(command.args(&args).status()?.code().unwrap_or(1));
     }
     if args.len() < 2 {
         return Err(
@@ -538,7 +701,14 @@ fn run() -> Result<i32, Box<dyn Error>> {
     if !targets.ts {
         args.push(OsString::from("--skip-ts"));
     }
-    let artifacts = match ConfiguredFrontend::new(compiler.as_os_str()).invoke(FrontendRequest {
+    let mut frontend = ConfiguredFrontend::new(compiler.as_os_str());
+    if let Some((path, directory)) = helper_path {
+        frontend = frontend
+            .with_environment("PATH", path)
+            .with_environment("COMPACT_ZKIR_CACHE_HELPER_DIRECTORY", directory)
+            .with_environment("COMPACT_ZKIR_CACHE_FINAL_OUTPUT", output.as_os_str());
+    }
+    let artifacts = match frontend.invoke(FrontendRequest {
         source: source.clone(),
         arguments: args,
         stage_parent: staging.path().to_path_buf(),
@@ -688,6 +858,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
     }
     fs::write(contract_dir.join("Cargo.toml"), manifest)?;
     refresh_manifest(staging.path())?;
+    recheck_cache_output(&cache_guard.as_ref())?;
     staging.publish(&output)?;
     Ok(0)
 }
@@ -1223,5 +1394,167 @@ mod tests {
             assert!(matches!(parse(&args), Err(message) if message.contains(expected)));
         }
         assert!(!parse(&["--target=rust"]).unwrap().0.functional_ledger8);
+    }
+}
+
+#[cfg(test)]
+mod key_cache_flag_tests {
+    use super::*;
+    fn args(values: &[&str]) -> Vec<OsString> {
+        values.iter().map(OsString::from).collect()
+    }
+    #[test]
+    fn cache_is_explicit_and_flags_are_unambiguous() {
+        assert!(!local_key_cache(&args(&["source.compact", "out"])).unwrap());
+        assert!(
+            local_key_cache(&args(&["--zkir-cache", "local", "source.compact", "out"])).unwrap()
+        );
+        assert!(!local_key_cache(&args(&["--zkir-cache", "off"])).unwrap());
+        for values in [
+            &["--zkir-cache"][..],
+            &["--zkir-cache", "http"],
+            &["--zkir-cache", "local", "--zkir-cache", "off"],
+            &["--zkir-cache-policy", "a", "--zkir-cache-policy", "b"],
+        ] {
+            assert!(local_key_cache(&args(values)).is_err());
+        }
+    }
+    #[test]
+    fn skip_zk_does_not_resolve_even_invalid_cache_path() {
+        assert!(
+            cache_output_guard(
+                &args(&[
+                    "--zkir-cache",
+                    "local",
+                    "--zkir-cache-dir",
+                    "",
+                    "--skip-zk",
+                    "source.compact",
+                    "out"
+                ]),
+                true
+            )
+            .unwrap()
+            .is_none()
+        );
+        assert!(
+            cache_output_guard(
+                &args(&[
+                    "--zkir-cache",
+                    "local",
+                    "--zkir-cache-dir",
+                    "",
+                    "source.compact",
+                    "out"
+                ]),
+                true
+            )
+            .is_err()
+        );
+    }
+    #[test]
+    fn final_output_overlap_is_refused_before_staging() {
+        let directory =
+            std::env::temp_dir().join(format!("compact-final-cache-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(directory.join("pinned"), b"cache stays").unwrap();
+        let values = vec![
+            OsString::from("--zkir-cache"),
+            OsString::from("local"),
+            OsString::from("--zkir-cache-dir"),
+            directory.as_os_str().to_owned(),
+            OsString::from("source.compact"),
+            directory.as_os_str().to_owned(),
+        ];
+        assert!(cache_output_guard(&values, true).is_err());
+        assert_eq!(
+            std::fs::read(directory.join("pinned")).unwrap(),
+            b"cache stays"
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
+    fn target_selection_does_not_preempt_queries_for_missing_cache_value() {
+        let (_, forwarded) = select_targets(args(&["--help", "--zkir-cache"])).unwrap();
+        assert_eq!(forwarded, args(&["--help", "--zkir-cache"]));
+        assert!(local_key_cache(&args(&["--zkir-cache"])).is_err());
+    }
+    #[test]
+    fn non_skip_local_preflight_preserves_source_and_explicit_policy() {
+        let directory =
+            std::env::temp_dir().join(format!("compact-protected-operands-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let output = directory.join("old output");
+        std::fs::create_dir_all(&output).unwrap();
+        std::fs::write(output.join("pinned"), b"old output stays").unwrap();
+        let outside_source = directory.join("source.compact");
+        std::fs::write(&outside_source, b"original source").unwrap();
+        let outside_policy = directory.join("policy.json");
+        std::fs::write(&outside_policy, b"not parsed by preflight").unwrap();
+        let inside_source = output.join("source.compact");
+        std::fs::write(&inside_source, b"source must survive").unwrap();
+        let inside_policy = output.join("policy.json");
+        std::fs::write(&inside_policy, b"policy must survive").unwrap();
+        let command = |source: &Path, policy: &Path| {
+            vec![
+                OsString::from("--zkir-cache"),
+                OsString::from("local"),
+                OsString::from("--zkir-cache-dir"),
+                directory.join("separate cache").into_os_string(),
+                OsString::from("--zkir-cache-policy"),
+                policy.as_os_str().to_owned(),
+                source.as_os_str().to_owned(),
+                output.as_os_str().to_owned(),
+            ]
+        };
+        for values in [
+            command(&inside_source, &outside_policy),
+            command(&outside_source, &inside_policy),
+        ] {
+            assert!(cache_output_guard(&values, true).is_err());
+            assert_eq!(
+                std::fs::read(output.join("pinned")).unwrap(),
+                b"old output stays"
+            );
+            assert_eq!(
+                std::fs::read(&inside_source).unwrap(),
+                b"source must survive"
+            );
+            assert_eq!(
+                std::fs::read(&inside_policy).unwrap(),
+                b"policy must survive"
+            );
+        }
+        #[cfg(unix)]
+        {
+            let source_alias = directory.join("source-alias");
+            let policy_alias = directory.join("policy-alias");
+            std::os::unix::fs::symlink(&inside_source, &source_alias).unwrap();
+            std::os::unix::fs::symlink(&inside_policy, &policy_alias).unwrap();
+            assert!(cache_output_guard(&command(&source_alias, &outside_policy), true).is_err());
+            assert!(cache_output_guard(&command(&outside_source, &policy_alias), true).is_err());
+        }
+        let values = command(&outside_source, &outside_policy);
+        let guard = cache_output_guard(&values, true).unwrap();
+        assert!(guard.is_some());
+        recheck_cache_output(&guard.as_ref()).unwrap();
+        assert!(!directory.join("separate cache").exists());
+        assert!(!directory.join(".old output.compactc.lock").exists());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
+    fn malformed_local_operands_are_refused_before_staging() {
+        for values in [
+            args(&["--zkir-cache", "local", "source.compact"]),
+            args(&[
+                "--zkir-cache",
+                "local",
+                "source.compact",
+                "out",
+                "--trace-passes",
+            ]),
+        ] {
+            assert!(cache_output_guard(&values, true).is_err());
+        }
     }
 }

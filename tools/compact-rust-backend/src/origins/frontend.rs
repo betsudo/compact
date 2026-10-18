@@ -58,19 +58,38 @@ pub struct FrontendRequest {
 
 pub struct ConfiguredFrontend {
     executable: OsString,
+    environment: Vec<(OsString, OsString)>,
 }
 impl ConfiguredFrontend {
     pub fn new(executable: impl Into<OsString>) -> Self {
         Self {
             executable: executable.into(),
+            environment: Vec::new(),
         }
+    }
+
+    /// Configure this child only. Values are never included in receipts/logs.
+    pub fn with_environment(
+        mut self,
+        key: impl Into<OsString>,
+        value: impl Into<OsString>,
+    ) -> Self {
+        self.environment.push((key.into(), value.into()));
+        self
+    }
+
+    fn command(&self) -> Command {
+        let mut command = Command::new(&self.executable);
+        command.envs(self.environment.iter().map(|(key, value)| (key, value)));
+        command
     }
 
     pub fn invoke(&self, request: FrontendRequest) -> Result<FrontendArtifacts, FrontendError> {
         let cwd = std::env::current_dir().map_err(io_error)?;
         let stage = FreshStage::new(&request.stage_parent)?;
         let executable_fingerprint = executable_hash(&self.executable);
-        let status = Command::new(&self.executable)
+        let status = self
+            .command()
             .args(&request.arguments)
             .arg("--emit-rust-ir")
             .arg(&request.source)
@@ -315,4 +334,25 @@ fn executable_hash(executable: &OsString) -> Option<[u8; 32]> {
         remaining -= read as u64;
     }
     Some(hash.finalize().into())
+}
+
+#[cfg(all(test, unix))]
+mod child_environment_tests {
+    use super::*;
+    #[test]
+    fn environment_override_is_private_to_child() {
+        let before = std::env::var_os("COMPACT_FRONTEND_ENV_UNIT");
+        let frontend = ConfiguredFrontend::new("/bin/sh")
+            .with_environment("COMPACT_FRONTEND_ENV_UNIT", "private-test-value");
+        let output = frontend
+            .command()
+            .arg("-c")
+            .arg("printf '%s' \"$COMPACT_FRONTEND_ENV_UNIT\"")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"private-test-value");
+        assert_eq!(std::env::var_os("COMPACT_FRONTEND_ENV_UNIT"), before);
+        assert!(ConfiguredFrontend::new("/bin/sh").environment.is_empty());
+    }
 }

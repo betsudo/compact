@@ -24,6 +24,9 @@ The following flags, if present, affect the compiler's behavior as follows:
   --vscode causes error messages to be printed on a single line so they are
     rendered properly within the VS Code extension for Compact.
 
+  --zkir-cache off|local selects optional qualified local artifact reuse (default off).
+  --zkir-cache-policy FILE independently qualifies the local tools and parameters.
+  --zkir-cache-dir DIRECTORY overrides the local Forge store.
   --skip-zk causes the compiler to skip the generation of proving keys.
     Generating proving keys can be time-consuming, so this option is useful when
     debugging only the Typescript output.  The compiler also skips, after

@@ -22,6 +22,7 @@
           )
   (import (except (chezscheme) errorf)
           (utils)
+          (json)
           (config-params)
           (nanopass)
           (langs)
@@ -45,6 +46,34 @@
     (pass-name condition-pass-name))
 
   (define zkir-warning-issued (make-parameter #f))
+
+  ;; Fixed command only: dynamic paths are JSON data, never shell interpolation.
+  ;; The public native coordinator owns atomic directory publication. Direct
+  ;; internal Scheme invocation retains its existing publication boundary.
+  (define (prepare-local-zkir output)
+    (let ([directory (getenv "COMPACT_ZKIR_CACHE_HELPER_DIRECTORY")])
+      (when (and directory (not (file-regular? (format "~a/compact-zkir-cache" directory))))
+        (external-errorf "packaged compact-zkir-cache helper missing from compiler bin directory")))
+    (let ([previous (getenv "COMPACT_ZKIR_CACHE_REQUEST")]
+          [request (let-values ([(op get) (open-string-output-port)])
+                     (print-json-compact op
+                       `(("schema" . 1)
+                         ("inputs" . ,(format "~a/zkir" output))
+                         ("keys" . ,(format "~a/keys" output))
+                         ("policy" . ,(or (zkir-cache-policy) (void)))
+                         ("cache" . ,(or (zkir-cache-directory) (void)))
+                         ("final_output" . ,(or (getenv "COMPACT_ZKIR_CACHE_FINAL_OUTPUT") (void)))))
+                     (get))])
+      (dynamic-wind
+        (lambda () (putenv "COMPACT_ZKIR_CACHE_REQUEST" request))
+        (lambda ()
+          (let ([status (system "if [ -n \"$COMPACT_ZKIR_CACHE_HELPER_DIRECTORY\" ]; then exec \"$COMPACT_ZKIR_CACHE_HELPER_DIRECTORY/compact-zkir-cache\"; else exec compact-zkir-cache; fi")])
+            (unless (zero? status)
+              (external-errorf "qualified local ZKIR preparation failed (status ~d); check helper packaging and policy diagnostics" status))))
+        ;; Chez cannot unset via putenv. Absent becomes an inert empty sentinel;
+        ;; an existing value is restored exactly, including on failure.
+        (lambda () (putenv "COMPACT_ZKIR_CACHE_REQUEST" (or previous ""))))))
+
 
   (define generate-everything
     (case-lambda
@@ -160,6 +189,11 @@
                             (run-passes (if (feature-zkir-v3) zkir-v3-passes zkir-passes) circuit-ir))
                           (unless (null? (pending-conditions)) (raise (make-halt-condition)))
                           (unless (skip-zk)
+                            (if (equal? (zkir-cache-mode) "local")
+                                (unless (null? proof-circuit-name*)
+                                  (when (feature-zkir-v3)
+                                    (external-errorf "local ZKIR cache is qualified for v2 only; v3 is not supported"))
+                                  (prepare-local-zkir output-directory-pathname))
                             (if (zero? (system "command -v zkir > /dev/null"))
                                 ;; If we have zero circuits, the zkir directory won't exist,
                                 ;; and zkir will fail to read it. Skip in that case silently.
@@ -174,7 +208,7 @@
                                 (unless (zkir-warning-issued)
                                   (zkir-warning-issued #t)
                                   (fprintf (console-error-port)
-                                    "Warning: ZKIR not found; skipping final circuit compilation.\n"))))
+                                    "Warning: ZKIR not found; skipping final circuit compilation.\n")))))
                           (unless (skip-ts)
                             (with-target-ports
                              '((contract.js . "contract/index.js")
