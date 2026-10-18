@@ -15,7 +15,8 @@
 
 //! A stable consuming execution carrier, not a stored effect graph.
 use super::{
-    Cell, CellRead, CellWrite, Counter, CounterIncrement, CounterRead, Witness, WitnessCall,
+    Cell, CellRead, CellWrite, Counter, CounterIncrement, CounterRead, Map, MapRead, MapWrite,
+    Witness, WitnessCall,
 };
 use crate::CompactError;
 
@@ -95,6 +96,87 @@ impl<E: Executor> Circuit<E, ()> {
         Self {
             state: self.state.and_then(|(executor, ())| {
                 executor.increment(counter, amount).map(|next| (next, ()))
+            }),
+        }
+    }
+
+    /// Map operands follow the same eager-argument contract as Cell operations.
+    pub fn map_member<K, V>(self, map: Map<K, V>, key: K) -> Circuit<E, bool>
+    where
+        E: MapRead<K, V>,
+    {
+        Circuit {
+            state: self
+                .state
+                .and_then(|(executor, ())| executor.map_member(map, key)),
+        }
+    }
+    pub fn map_lookup<K, V>(self, map: Map<K, V>, key: K) -> Circuit<E, V>
+    where
+        E: MapRead<K, V>,
+    {
+        Circuit {
+            state: self
+                .state
+                .and_then(|(executor, ())| executor.map_lookup(map, key)),
+        }
+    }
+    pub fn map_size<K, V>(self, map: Map<K, V>) -> Circuit<E, u64>
+    where
+        E: MapRead<K, V>,
+    {
+        Circuit {
+            state: self.state.and_then(|(executor, ())| executor.map_size(map)),
+        }
+    }
+    pub fn map_is_empty<K, V>(self, map: Map<K, V>) -> Circuit<E, bool>
+    where
+        E: MapRead<K, V>,
+    {
+        Circuit {
+            state: self
+                .state
+                .and_then(|(executor, ())| executor.map_is_empty(map)),
+        }
+    }
+    pub fn map_insert<K, V>(self, map: Map<K, V>, key: K, value: V) -> Self
+    where
+        E: MapWrite<K, V>,
+    {
+        Self {
+            state: self.state.and_then(|(executor, ())| {
+                executor.map_insert(map, key, value).map(|next| (next, ()))
+            }),
+        }
+    }
+    pub fn map_remove<K, V>(self, map: Map<K, V>, key: K) -> Self
+    where
+        E: MapWrite<K, V>,
+    {
+        Self {
+            state: self
+                .state
+                .and_then(|(executor, ())| executor.map_remove(map, key).map(|next| (next, ()))),
+        }
+    }
+    pub fn map_reset<K, V>(self, map: Map<K, V>) -> Self
+    where
+        E: MapWrite<K, V>,
+    {
+        Self {
+            state: self
+                .state
+                .and_then(|(executor, ())| executor.map_reset(map).map(|next| (next, ()))),
+        }
+    }
+    pub fn map_insert_default<K, V>(self, map: Map<K, V>, key: K) -> Self
+    where
+        E: MapWrite<K, V>,
+        V: Default,
+    {
+        Self {
+            state: self.state.and_then(|(executor, ())| {
+                executor.map_insert_default(map, key).map(|next| (next, ()))
             }),
         }
     }

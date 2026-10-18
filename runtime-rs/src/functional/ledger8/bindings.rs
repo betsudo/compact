@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Physical Ledger8 slot bindings; logical identities remain target neutral.
-use super::super::{Cell, Counter, SlotId};
+use super::super::{Cell, Counter, Map, SlotId};
 use crate::{CompactError, ledger::CellValue};
 #[derive(Clone, Copy)]
 pub struct CellBinding {
@@ -37,11 +37,23 @@ impl CounterBinding {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct MapBinding {
+    id: SlotId,
+    path: &'static [u8],
+}
+impl MapBinding {
+    pub const fn new(id: SlotId, path: &'static [u8]) -> Self {
+        Self { id, path }
+    }
+}
+
 /// Immutable uniquely keyed declarations; not certification of handwritten types.
 #[derive(Clone, Copy)]
 pub struct Ledger8Bindings<'a> {
     cells: &'a [CellBinding],
     counters: &'a [CounterBinding],
+    maps: &'a [MapBinding],
 }
 impl<'a> Ledger8Bindings<'a> {
     pub fn new(cells: &'a [CellBinding]) -> Result<Self, CompactError> {
@@ -50,6 +62,13 @@ impl<'a> Ledger8Bindings<'a> {
     pub fn with_counters(
         cells: &'a [CellBinding],
         counters: &'a [CounterBinding],
+    ) -> Result<Self, CompactError> {
+        Self::with_maps(cells, counters, &[])
+    }
+    pub fn with_maps(
+        cells: &'a [CellBinding],
+        counters: &'a [CounterBinding],
+        maps: &'a [MapBinding],
     ) -> Result<Self, CompactError> {
         for (i, cell) in cells.iter().enumerate() {
             for other in &cells[..i] {
@@ -64,7 +83,22 @@ impl<'a> Ledger8Bindings<'a> {
                 distinct(counter.id, counter.path, cell.id, cell.path)?;
             }
         }
-        Ok(Self { cells, counters })
+        for (i, map) in maps.iter().enumerate() {
+            for other in &maps[..i] {
+                distinct(map.id, map.path, other.id, other.path)?;
+            }
+            for cell in cells {
+                distinct(map.id, map.path, cell.id, cell.path)?;
+            }
+            for counter in counters {
+                distinct(map.id, map.path, counter.id, counter.path)?;
+            }
+        }
+        Ok(Self {
+            cells,
+            counters,
+            maps,
+        })
     }
     pub(super) fn slot<T: CellValue>(
         self,
@@ -81,6 +115,19 @@ impl<'a> Ledger8Bindings<'a> {
                 ))
             })?;
         Ok(crate::slots::CellSlot::new(binding.path))
+    }
+    pub(super) fn map<K: CellValue, V>(
+        self,
+        map: Map<K, V>,
+    ) -> Result<crate::slots::MapSlot<K, V>, CompactError> {
+        let binding = self
+            .maps
+            .iter()
+            .find(|binding| binding.id == map.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!("unbound logical Map {}", map.id().index()))
+            })?;
+        Ok(crate::slots::MapSlot::new(binding.path))
     }
     pub(super) fn counter(
         self,
