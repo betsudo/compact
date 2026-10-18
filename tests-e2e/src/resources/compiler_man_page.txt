@@ -64,3 +64,5 @@ The following flags, if present, affect the compiler's behavior as follows:
     Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.
   --rust-runtime-registry pins the compiler's matching runtime package version
     without copying runtime sources. That version must be published to build.
+  --rust-functional-ledger8 adds experimental immutable checked programs.
+    Requires --target rust and a source runtime; unsupported effects are refused.
