@@ -36,6 +36,7 @@ pub(crate) enum Capability {
     ExactWitness,
     Require,
     Select,
+    Call,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -57,6 +58,7 @@ impl Ledger8Target {
             Capability::ExactWitness,
             Capability::Require,
             Capability::Select,
+            Capability::Call,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -322,6 +324,8 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
+                Operation::Call { .. } => Capability::Call,
+                Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
                 Operation::VectorMap { .. }
@@ -368,9 +372,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::SetIsEmpty { .. }
                 | Operation::CounterDecrement { .. }
                 | Operation::CounterReset { .. }
-                | Operation::CounterLessThan { .. }
-                | Operation::Call { .. }
-                | Operation::PureCall { .. } => {
+                | Operation::CounterLessThan { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
@@ -398,16 +400,21 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 capability,
                 origin,
             });
-            if let Operation::If {
-                condition,
-                then,
-                otherwise,
-            } = &binding.operation
-            {
-                let then_guard = self.branch(guard, condition, true);
-                self.block(then, then_guard, authority)?;
-                let else_guard = self.branch(guard, condition, false);
-                self.block(otherwise, else_guard, authority)?;
+            match &binding.operation {
+                Operation::If {
+                    condition,
+                    then,
+                    otherwise,
+                } => {
+                    let then_guard = self.branch(guard, condition, true);
+                    self.block(then, then_guard, authority)?;
+                    let else_guard = self.branch(guard, condition, false);
+                    self.block(otherwise, else_guard, authority)?;
+                }
+                // Calls have their own validated formal scope but inherit the
+                // caller's effective execution guard. Inspect every nested node.
+                Operation::Call { body, .. } => self.block(body, guard, authority)?,
+                _ => {}
             }
         }
         Ok(())
@@ -447,3 +454,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
 #[cfg(test)]
 #[path = "functional_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "functional_calls_tests.rs"]
+mod calls_tests;

@@ -46,9 +46,10 @@ SOURCES = {
     "typed_fixture": FIXTURES / "typed_witnesses.compact",
     "exact_fixture": FIXTURES / "exact_witnesses.compact",
     "composition_fixture": FIXTURES / "pure_composition.compact",
+    "call_fixture": FIXTURES / "local_calls.compact",
 }
-EXPECTED_TESTS = 12
-EXPECTED_SCENARIOS = 45  # Existing 44 + refusal after an exact witness result.
+EXPECTED_TESTS = 14
+EXPECTED_SCENARIOS = 50  # Existing 45 + 5 local/certified-pure call scenarios.
 
 
 def digest(path):
@@ -146,6 +147,7 @@ def main():
         "runtime_sources": {str(path.relative_to(ROOT)): digest(path) for path in runtime_premises},
         "consumer_sha256": digest(FIXTURES / "consumer.rs"),
         "composition_consumer_sha256": digest(FIXTURES / "consumer_pure_composition.rs"),
+        "call_consumer_sha256": digest(FIXTURES / "consumer_local_calls.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -217,9 +219,12 @@ def main():
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / "support").mkdir()
-        shutil.copyfile(FIXTURES / "consumer_pure_composition.rs", consumer / "support/pure_composition.rs")
-        (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes()
-            + b'\ninclude!("../support/pure_composition.rs");\n')
+        includes = b""
+        for source_name, destination_name in (("consumer_pure_composition.rs", "pure_composition.rs"),
+                                               ("consumer_local_calls.rs", "local_calls.rs")):
+            shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
+            includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
+        (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
         report["composed_consumer_sha256"] = digest(consumer / "tests/integration.rs")
         root_lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde_version = next(row["version"] for row in root_lock["package"] if row["name"] == "serde_json")
@@ -318,6 +323,8 @@ def main():
                                (FIXTURES / "consumer.rs", report["consumer_sha256"]),
                                (FIXTURES / "consumer_pure_composition.rs", report["composition_consumer_sha256"]),
                                (consumer / "support/pure_composition.rs", report["composition_consumer_sha256"]),
+                               (FIXTURES / "consumer_local_calls.rs", report["call_consumer_sha256"]),
+                               (consumer / "support/local_calls.rs", report["call_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

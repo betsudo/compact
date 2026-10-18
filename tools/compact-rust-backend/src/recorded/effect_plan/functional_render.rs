@@ -229,6 +229,32 @@ impl Renderer<'_> {
                 let condition = value(condition);
                 syn::parse_quote!(#current.require(crate::runtime::functional::Rule::new(#condition, #message)))
             }
+            Operation::Call {
+                arguments,
+                parameters,
+                body,
+                ..
+            } => {
+                let mut formals = Vec::<syn::Stmt>::new();
+                for (parameter, argument) in parameters.iter().zip(arguments) {
+                    if parameter.ty == Type::Unit {
+                        continue;
+                    }
+                    let formal = name(parameter);
+                    let argument = value(argument);
+                    let ty = rust_type(&parameter.ty)
+                        .map_err(|error| invalid(&binding.path, error.to_string()))?;
+                    formals.push(syn::parse_quote!(let #formal: #ty = #argument;));
+                }
+                let body = self.block(body, current.clone())?;
+                syn::parse_quote!({ #(#formals)* #body })
+            }
+            Operation::PureCall { .. } => {
+                let expression =
+                    super::render::pure::certified_call(binding, self.declarations, value)?;
+                let expression = super::functional_paths::expression(expression);
+                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+            }
             Operation::If {
                 condition,
                 then,

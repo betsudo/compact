@@ -340,18 +340,7 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(if !#condition { return Err(runtime::CompactError::AssertionFailed(#message.to_owned())); }));
             syn::parse_quote!(())
         }
-        Operation::PureCall {
-            declaration,
-            arguments,
-        } => {
-            let certified = declarations
-                .certified_pure(*declaration)
-                .ok_or_else(|| invalid(path, "missing checked pure declaration"))?;
-            let method =
-                ident(&certified.source().name).map_err(|e| invalid(path, e.to_string()))?;
-            let arguments: Vec<_> = arguments.iter().map(value).collect();
-            syn::parse_quote!(crate::pure_circuits::#method(#(#arguments),*)?)
-        }
+        Operation::PureCall { .. } => pure::certified_call(binding, declarations, value)?,
         Operation::Call { .. } | Operation::If { .. } | Operation::VectorMap { .. } => {
             unreachable!("control operations are rendered by block traversal")
         }

@@ -119,7 +119,12 @@ not select exact output encoding. The default witness constructor and two-type
 parameter call remain compatible. Exact in-memory transport does not promise
 that opaque values can pass later proof serialization checks.
 
-Calls, other Counter operations, collections and hashes are still refused by this
+Checked local calls inline their retained bodies on the same carrier. Certified
+pure calls reuse the existing pure Rust functions, including supported pure Fold.
+Both nested branches remain statically checked; only selected calls execute.
+This does not implement the separate direct stateful Fold gap (#661).
+
+Other Counter operations, collections and hashes are still refused by this
 projection. Ordinary-backend conversion restrictions also remain authoritative.
 Vector construction is supported; vector indexing currently reaches tuple
 projection and is tracked separately in #674. These boundaries must not be
@@ -193,7 +198,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **12 tests**, **45 behavioral scenarios**
+The current finite consumer run covers **14 tests**, **50 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -209,6 +214,8 @@ The ninth source exercises exact opaque witness outputs, nested products,
 returned-value use and failure after an exact result. The tenth adds shared pure
 arithmetic, aggregates, non-Copy projection and conversion boundary controls.
 These preserve opaque witness bytes without relaxing opaque-cell storage rules.
+The eleventh source covers repeated local calls, fresh formals, metered witness
+reads, failure inside a callee and certified pure Fold.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

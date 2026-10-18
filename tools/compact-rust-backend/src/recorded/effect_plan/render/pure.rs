@@ -152,5 +152,28 @@ pub(in super::super) fn expression(
     Ok(Some(expression))
 }
 
+/// Invoke only the exact source declaration certified by the checked environment.
+/// Arguments are already evaluated SSA operands; this helper adds no admission.
+pub(in super::super) fn certified_call(
+    binding: &Binding,
+    declarations: &Declarations,
+    operand: impl Fn(&Value) -> syn::Expr,
+) -> Result<syn::Expr, RecordingGap> {
+    let Operation::PureCall {
+        declaration,
+        arguments,
+    } = &binding.operation
+    else {
+        return Err(invalid(&binding.path, "expected checked pure call"));
+    };
+    let certified = declarations
+        .certified_pure(*declaration)
+        .ok_or_else(|| invalid(&binding.path, "missing checked pure declaration"))?;
+    let method = ident(&certified.source().name)
+        .map_err(|error| invalid(&binding.path, error.to_string()))?;
+    let arguments: Vec<_> = arguments.iter().map(operand).collect();
+    Ok(syn::parse_quote!(crate::pure_circuits::#method(#(#arguments),*)?))
+}
+
 #[cfg(test)]
 mod tests;

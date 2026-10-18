@@ -91,6 +91,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::ExactWitness => "exact_witness",
         Capability::Require => "require",
         Capability::Select => "select",
+        Capability::Call => "call",
     }
 }
 
