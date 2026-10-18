@@ -447,7 +447,10 @@
                    (fprintf op " ")
                    (indent depth))
                (let ([a (car json+)])
-                 (fprintf op "\"~a\": " (car a))
+                 ;; Object keys use the same JSON escaping as string values.
+                 ;; Keep the historical ~a conversion for non-string keys.
+                 (print-string (format "~a" (car a)))
+                 (put-string op ": ")
                  (f (cdr a) depth))
                (let ([json* (cdr json+)])
                  (unless (null? json*)

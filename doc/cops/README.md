@@ -8,6 +8,7 @@ CoPS records a concrete problem and its evidence across Compact backends and ups
 |---|---|---|
 | [CoPS-001 — Ledger decoding resource limits](0001-ledger-decoding-resource-limits.md) |Encoded input size does not establish total decoded memory/CPU bounds |0.3.0 mitigation delivered in9ffd7880; pinned TS/ledger8 comparison complete; aggregate containment tracked in#495 |
 | [CoPS-002 — Rust contract client and provider boundaries](0002-rust-contract-client-and-provider-boundaries.md) | Application-facing Rust provider/client layer comparable to MidnightJS | Local ProofLab slice delivered in #497; broader #496 remains proposed, not a 0.3.0 gate |
+| [CoPS-003 — Output manifest path handling](0003-output-manifest-paths.md) | Working-directory and pathname handling can omit generated trees or break checksum commands | Local shared compiler mitigation under qualification; #682 |
 
 ## Rules
 

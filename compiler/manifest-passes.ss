@@ -26,12 +26,25 @@
 
   (define (save-manifest ir output-directory-pathname manifest-dir*)
     (define manifest-version-string "1")
+    ;; A pathname is one POSIX argument, never executable shell text. Splitting
+    ;; a literal quote as '\'' preserves every other byte inside single quotes.
+    (define (shell-argument pathname)
+      (let-values ([(op get) (open-string-output-port)])
+        (put-char op #\')
+        (string-for-each
+          (lambda (c)
+            (if (char=? c #\')
+                (display "'\\''" op)
+                (put-char op c)))
+          pathname)
+        (put-char op #\')
+        (get)))
     (define (sha256-hash pathname)
       (define (hex-digit? c)
         (or (char<=? #\0 c #\9)
             (char<=? #\a c #\f)
             (char<=? #\A c #\F)))
-      (let-values ([(stdout stderr) (shell (format "exec sha256sum -b '~a'" pathname))])
+      (let-values ([(stdout stderr) (shell (format "exec sha256sum -b -z -- ~a" (shell-argument pathname)))])
         (unless (string=? stderr "")
           (external-errorf "attempt to invoke sha256sum failed with message ~a" stderr))
         (unless (>= (string-length stdout) 64)
@@ -55,7 +68,7 @@
                [fn* (directory-list pathname)]
                [fn* (sort string<? fn*)]
                [fn* (remove "contract-manifest.json" fn*)])
-          (let-values ([(dir-fn* file-fn*) (partition file-directory? fn*)])
+          (let-values ([(dir-fn* file-fn*) (partition (lambda (fn) (file-directory? (format "~a/~a" pathname fn))) fn*)])
             (cons
               fn
               (cons*
@@ -79,7 +92,7 @@
             "runtime-version"
             runtime-version-string)
           (map (dir-entry output-directory-pathname)
-               (filter file-exists? manifest-dir*)))))
+               (filter (lambda (fn) (file-exists? (format "~a/~a" output-directory-pathname fn))) manifest-dir*)))))
     ir)
 
   (define-passes manifest-passes
