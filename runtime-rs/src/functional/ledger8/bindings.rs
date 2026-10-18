@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Physical Ledger8 slot bindings; logical identities remain target neutral.
-use super::super::{Cell, Counter, Map, Set, SlotId};
+use super::super::{Cell, Counter, List, Map, Set, SlotId};
 use crate::{CompactError, ledger::CellValue};
 #[derive(Clone, Copy)]
 pub struct CellBinding {
@@ -59,6 +59,18 @@ impl SetBinding {
     }
 }
 
+/// Physical path for one checked List declaration.
+#[derive(Clone, Copy)]
+pub struct ListBinding {
+    id: SlotId,
+    path: &'static [u8],
+}
+impl ListBinding {
+    pub const fn new(id: SlotId, path: &'static [u8]) -> Self {
+        Self { id, path }
+    }
+}
+
 /// Immutable uniquely keyed declarations; not certification of handwritten types.
 #[derive(Clone, Copy)]
 pub struct Ledger8Bindings<'a> {
@@ -66,6 +78,7 @@ pub struct Ledger8Bindings<'a> {
     counters: &'a [CounterBinding],
     maps: &'a [MapBinding],
     sets: &'a [SetBinding],
+    lists: &'a [ListBinding],
 }
 impl<'a> Ledger8Bindings<'a> {
     pub fn new(cells: &'a [CellBinding]) -> Result<Self, CompactError> {
@@ -111,6 +124,7 @@ impl<'a> Ledger8Bindings<'a> {
             counters,
             maps,
             sets: &[],
+            lists: &[],
         })
     }
     /// Extend immutable bindings without changing existing constructor signatures.
@@ -132,6 +146,41 @@ impl<'a> Ledger8Bindings<'a> {
         self.sets = sets;
         Ok(self)
     }
+    /// Extend bindings without changing existing constructor signatures.
+    /// Existing nonempty List bindings cannot be replaced silently.
+    pub fn bind_lists(mut self, lists: &'a [ListBinding]) -> Result<Self, CompactError> {
+        if !self.lists.is_empty() {
+            return Err(CompactError::InvalidLedgerCell(
+                "List bindings already installed".into(),
+            ));
+        }
+        for (index, list) in lists.iter().enumerate() {
+            for (id, path) in self
+                .declarations()
+                .chain(lists[..index].iter().map(|list| (list.id, list.path)))
+            {
+                distinct(list.id, list.path, id, path)?;
+            }
+        }
+        self.lists = lists;
+        Ok(self)
+    }
+    pub(super) fn list<T: CellValue>(
+        self,
+        list: List<T>,
+    ) -> Result<crate::slots::ListSlot<T>, CompactError> {
+        let binding = self
+            .lists
+            .iter()
+            .find(|binding| binding.id == list.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!(
+                    "unbound logical List {}",
+                    list.id().index()
+                ))
+            })?;
+        Ok(crate::slots::ListSlot::new(binding.path))
+    }
     fn declarations(self) -> impl Iterator<Item = (SlotId, &'static [u8])> + 'a {
         self.cells
             .iter()
@@ -139,6 +188,7 @@ impl<'a> Ledger8Bindings<'a> {
             .chain(self.counters.iter().map(|v| (v.id, v.path)))
             .chain(self.maps.iter().map(|v| (v.id, v.path)))
             .chain(self.sets.iter().map(|v| (v.id, v.path)))
+            .chain(self.lists.iter().map(|v| (v.id, v.path)))
     }
     pub(super) fn set<T: CellValue>(
         self,
