@@ -227,7 +227,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **40 tests**, **115 behavioral scenarios**
+The current finite consumer run covers **45 tests**, **127 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -264,7 +264,7 @@ captures, source reuse, selected fallible casts and certified pure helpers,
 plus prior witness/write prefixes and real nested Map/assert execution.
 Four additional Rust tests check generated unknown-witness dispatch on both
 interpreters and aligned/exact transports. These adapter controls are separate
-from the 115 four-route contract scenarios. Under `experimental-functional`,
+from the 127 four-route contract scenarios. Under `experimental-functional`,
 unknown generated IDs return `UnknownWitnessIdentity { id }`; handwritten
 callback errors are preserved.
 The eighteenth source exercises all nine plain/historic Merkle execution forms,
@@ -376,3 +376,7 @@ source is marked `proof_required: false` and emits no ZKIR. The qualification us
 its own complete stateful fixture rather than relaxing manifest checks or
 removing exports from a larger contract. One proved Field witness is not proof
 coverage for every supported argument/result signature or opaque transport.
+
+### Pinned Ledger8 crypto expressions
+
+The nineteenth source exercises all sixteen admitted hashing, Field encoding and Jubjub operations. The finite comparison checks independent official primitive results, opaque values, invalid scalar/point refusals and callback order. Compact `(0,0)` remains an accepted identity sentinel. Keccak remains refused because this compiler target uses ZKIR v2; host availability does not establish proof support. The crypto extraction leaves all eighteen predecessor default generated libraries byte-identical. This consumer executes no proofs; proof qualification is a separate gate.

@@ -426,6 +426,9 @@ pub(super) fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr
     })? {
         return Ok(super::functional_paths::expression(expression));
     }
+    if let Some(expression) = super::render::crypto::expression(binding, value)? {
+        return Ok(super::functional_paths::expression(expression));
+    }
     Ok(match operation {
         Operation::Literal(literal) => match literal {
             Literal::Unit => syn::parse_quote!(()),

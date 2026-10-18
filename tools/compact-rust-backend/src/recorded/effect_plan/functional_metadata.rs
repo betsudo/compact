@@ -83,6 +83,9 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
 fn capability(value: Capability) -> &'static str {
     match value {
         Capability::Pure => "pure",
+        Capability::Hashing => "hashing",
+        Capability::FieldEncoding => "field_encoding",
+        Capability::Jubjub => "jubjub",
         Capability::CellRead => "cell_read",
         Capability::CellWrite => "cell_write",
         Capability::CounterRead => "counter_read",

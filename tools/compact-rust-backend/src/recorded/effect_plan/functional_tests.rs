@@ -35,7 +35,7 @@ fn binding(value: Value, operation: Operation) -> Binding {
         operation,
     }
 }
-fn checked(branch_operation: Option<Operation>) -> CheckedPlan {
+fn checked(branch_operation: Option<(Operation, Type)>) -> CheckedPlan {
     let slot = CellSlot {
         declaration: super::super::model::LedgerId(0),
         index: 0,
@@ -63,8 +63,8 @@ fn checked(branch_operation: Option<Operation>) -> CheckedPlan {
     let literal = value(2, Type::Field);
     let condition = value(3, Type::Boolean);
     let mut otherwise = Vec::new();
-    if let Some(operation) = branch_operation {
-        otherwise.push(binding(value(8, Type::Field), operation));
+    if let Some((operation, ty)) = branch_operation {
+        otherwise.push(binding(value(8, ty), operation));
     }
     otherwise.push(binding(
         unit(6),
@@ -300,7 +300,12 @@ fn capability_refusal_is_typed_and_no_target_is_inferred_from_node_names() {
 
 #[test]
 fn both_branches_are_projected_and_unsupported_nodes_refuse_without_shape_fallback() {
-    let checked = checked(Some(Operation::TransientHash(value(2, Type::Field))));
+    // Keccak has valid checked native syntax, but the pinned target remains
+    // ZKIRv2. Keep the unsupported operation in the otherwise branch.
+    let checked = checked(Some((
+        Operation::Keccak256(value(2, Type::Field)),
+        Type::Bytes { length: 32 },
+    )));
     let authority = AuthorityDouble::node_spans();
     assert!(
         matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),

@@ -54,9 +54,10 @@ SOURCES = {
     "counter_more_fixture": FIXTURES / "counter_more.compact",
     "vector_map_fixture": FIXTURES / "vector_map_composition.compact",
     "merkle_fixture": FIXTURES / "merkle_operations.compact",
+    "crypto_fixture": FIXTURES / "crypto_operations.compact",
 }
-EXPECTED_TESTS = 40
-EXPECTED_SCENARIOS = 115  # Existing 86 + 14 VectorMap + 15 Merkle; 4 adapter tests are separate.
+EXPECTED_TESTS = 45
+EXPECTED_SCENARIOS = 127  # Existing 115 + 12 crypto scenarios; 4 adapter tests are separate.
 
 
 def digest(path):
@@ -163,6 +164,7 @@ def main():
         "vector_map_consumer_sha256": digest(FIXTURES / "consumer_vector_map_composition.rs"),
         "witness_refusal_consumer_sha256": digest(FIXTURES / "consumer_witness_refusals.rs"),
         "merkle_consumer_sha256": digest(FIXTURES / "consumer_merkle_operations.rs"),
+        "crypto_consumer_sha256": digest(FIXTURES / "consumer_crypto_operations.rs"),
         "adapter_refusal_scope": "4 Rust tests exercise two interpreters/ordinary-exact transports; not four-route contract scenarios",
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
@@ -275,7 +277,8 @@ def main():
                                                ("consumer_counter_more.rs", "counter_more.rs"),
                                                ("consumer_vector_map_composition.rs", "vector_map_composition.rs"),
                                                ("consumer_witness_refusals.rs", "witness_refusals.rs"),
-                                               ("consumer_merkle_operations.rs", "merkle_operations.rs")):
+                                               ("consumer_merkle_operations.rs", "merkle_operations.rs"),
+                                               ("consumer_crypto_operations.rs", "crypto_operations.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -395,6 +398,8 @@ def main():
                                (consumer / "support/witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (FIXTURES / "consumer_merkle_operations.rs", report["merkle_consumer_sha256"]),
                                (consumer / "support/merkle_operations.rs", report["merkle_consumer_sha256"]),
+                               (FIXTURES / "consumer_crypto_operations.rs", report["crypto_consumer_sha256"]),
+                               (consumer / "support/crypto_operations.rs", report["crypto_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))
