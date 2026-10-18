@@ -141,7 +141,8 @@ separate phase and is not admitted as ordinary Set insertion.
 List push/pop/reset, length, emptiness and head use existing slots. `ListRead`,
 `ListWrite` and `ListHead<T, M>` keep the checked generated Maybe carrier
 separate from simple inspection and mutation. Only head requires a defaultable
-element. Existing empty-pop behavior is preserved.
+element. The existing empty-pop operation succeeds and writes `Null` at the List path;
+subsequent operations retain the original slot behavior.
 
 Other Counter operations, remaining collections and hashes are still refused by
 this projection. Ordinary-backend conversion restrictions also remain authoritative.
@@ -217,7 +218,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **23 tests**, **75 behavioral scenarios**
+The current finite consumer run covers **24 tests**, **76 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -245,7 +246,8 @@ state; this does not demonstrate generated nested insertion or constructors.
 The fourteenth source exercises six scalar Set operations, owned element
 uniqueness, populated/empty observations and chunked paths.
 The fifteenth source exercises List heads before and immediately after each pop,
-owned head values, reset, guarded witnesses and the existing empty-pop policy.
+owned head values, reset, guarded witnesses, exact empty-pop state and the
+first operation after empty-pop.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

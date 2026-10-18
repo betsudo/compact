@@ -52,8 +52,8 @@ SOURCES = {
     "set_fixture": FIXTURES / "scalar_sets.compact",
     "list_fixture": FIXTURES / "scalar_lists.compact",
 }
-EXPECTED_TESTS = 23
-EXPECTED_SCENARIOS = 75  # Existing 68 + 7 scalar List scenarios.
+EXPECTED_TESTS = 24
+EXPECTED_SCENARIOS = 76  # Existing 68 + 8 scalar List scenarios.
 
 
 def digest(path):

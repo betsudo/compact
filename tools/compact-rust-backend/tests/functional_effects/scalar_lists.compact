@@ -87,3 +87,6 @@ export circuit guarded(selected: Boolean, permit: Boolean, after: Boolean): Fiel
 }
 // Official Ledger8 empty pop succeeds and leaves the List leaf Null, not its initial empty Array.
 export circuit emptyPop(): [] { items.popFront(); }
+
+// The succeeding empty pop leaves Null; the next ordinary List length query rejects it.
+export circuit emptyPopThenLength(): Uint<64> { pop(); return count(); }

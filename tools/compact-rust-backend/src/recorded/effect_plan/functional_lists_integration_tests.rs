@@ -181,7 +181,8 @@ fn list_packaging_preserves_physical_path_and_no_list_requests() {
     };
     let simple = Contract {
         stateful_circuits: vec![simple],
-        ledger_fields: vec![],
+        // Retain a declared List: only use, not declaration, adds bindings.
+        ledger_fields: vec![field()],
         ..contract
     };
     let text = super::super::functional_items::render_contract(&simple, &authority)

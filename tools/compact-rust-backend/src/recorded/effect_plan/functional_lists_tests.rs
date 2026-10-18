@@ -228,3 +228,98 @@ fn unrelated_operations_do_not_evaluate_list_operands() {
         .is_none()
     );
 }
+
+#[test]
+fn canonical_but_malformed_maybe_shapes_keep_native_layout_refusals() {
+    let valid_root = root(5);
+    let field = field();
+    let checked = checked(&valid_root, &field);
+    for mutation in ["element", "name", "order"] {
+        let mut malformed = valid_root.result.clone();
+        let Type::Struct { fields, .. } = &mut malformed else {
+            unreachable!()
+        };
+        match mutation {
+            "element" => fields[1].ty = Type::Boolean,
+            "name" => fields[0].name = "present".into(),
+            "order" => fields.swap(0, 1),
+            _ => unreachable!(),
+        }
+        // Register this actual source shape independently, so the assertion
+        // exercises native Maybe layout validation rather than canonical-name
+        // conflict rejection against the good source's definition.
+        let malformed_root = StatefulCircuit {
+            result: malformed.clone(),
+            ..valid_root.clone()
+        };
+        let fields = HashMap::from([("items", &field)]);
+        let calls = HashMap::from([("root", &malformed_root)]);
+        let types = super::super::type_environment::TypeEnvironment::from_sources(
+            &malformed_root,
+            &fields,
+            &HashMap::new(),
+            &HashMap::new(),
+            &calls,
+        )
+        .unwrap();
+        let declarations = Declarations::new(&fields, &HashMap::new()).with_type_environment(types);
+        let mut binding = list_binding(&checked).clone();
+        binding.value.ty = malformed;
+        let expected = super::super::validate::lists::head_type(
+            &declarations,
+            &Type::Field,
+            &binding.value.ty,
+            &binding.path,
+        )
+        .unwrap_err();
+        assert_eq!(
+            expected.detail, "List head result differs from native Maybe type",
+            "{mutation}"
+        );
+        let actual = match declaration(&binding, &declarations) {
+            Err(error) => error,
+            Ok(_) => panic!("invalid {mutation} Maybe accepted"),
+        };
+        assert_eq!(actual, expected, "{mutation}");
+    }
+}
+
+#[test]
+fn currently_eligible_list_codecs_also_have_default_capability() {
+    // stored_value requires value_type + derives_supported: tuples recursively
+    // stop at arity8. Default uses the same value domain and tuple bound12.
+    // Therefore no canonical, resource-valid List element currently reaches
+    // the nondefaultable-head refusal. Keep the production guard for future
+    // domain changes; do not manufacture an impossible checked declaration.
+    let mut examples = vec![
+        Type::Field,
+        Type::Boolean,
+        Type::Bytes { length: 0 },
+        Type::OpaqueString,
+        Type::OpaqueBytes,
+        Type::Unsigned {
+            max: u128::MAX.to_string(),
+        },
+        Type::Tuple { elements: vec![] },
+        Type::Tuple {
+            elements: vec![Type::Field; 8],
+        },
+    ];
+    let nested = Type::Tuple {
+        elements: vec![Type::OpaqueString, Type::Field],
+    };
+    examples.push(Type::Vector {
+        element: Box::new(nested),
+        length: 0,
+    });
+    for element in examples {
+        assert!(
+            super::super::validate::list_element_type(&element),
+            "{element:?}"
+        );
+        assert!(
+            super::super::validate::default_value_type(&element),
+            "{element:?}"
+        );
+    }
+}

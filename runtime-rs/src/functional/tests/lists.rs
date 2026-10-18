@@ -183,36 +183,70 @@ fn list_read_gas_failure_stops_later_producers() {
     assert_eq!(calls.get(), 0);
 }
 #[test]
-fn empty_pop_matches_existing_slots_without_new_policy() {
+fn empty_pop_succeeds_writes_null_and_matches_reference_replay() {
     let slot = crate::slots::ListSlot::<Field>::new(&[0, 0]);
-    let reference = slot.pop_front(context());
-    let candidate = NativeLedger8::new(context(), bindings()).list_pop_front(LIST);
-    match (reference, candidate) {
-        (Ok(reference), Ok(candidate)) => {
-            let candidate = candidate.finish(());
-            assert_eq!(
-                bytes(reference.context.query.state.get_ref()),
-                bytes(candidate.context.query.state.get_ref())
-            );
-            assert_eq!(reference.gas_cost, candidate.gas_cost);
-        }
-        (Err(reference), Err(candidate)) => assert_eq!(reference, candidate),
-        _ => panic!("native empty-pop policy changed"),
+    let reference = slot
+        .pop_front(context())
+        .expect("official empty pop succeeds");
+    let native = NativeLedger8::new(context(), bindings())
+        .list_pop_front(LIST)
+        .expect("functional empty pop succeeds")
+        .finish(());
+    let reference_recorded = slot
+        .record_pop_front(crate::recording::RecordingFrame::new(context()))
+        .expect("official recorded empty pop succeeds")
+        .finish(());
+    let recorded = RecordedLedger8::new(context(), bindings())
+        .list_pop_front(LIST)
+        .expect("functional recorded empty pop succeeds")
+        .finish(());
+    for state in [
+        reference.context.query.state.get_ref(),
+        native.context.query.state.get_ref(),
+        reference_recorded.execution.context.query.state.get_ref(),
+        recorded.execution.context.query.state.get_ref(),
+    ] {
+        let StateValue::Array(chunks) = state else {
+            panic!("expected chunked state")
+        };
+        let StateValue::Array(fields) = chunks.get(0).unwrap() else {
+            panic!("expected field chunk")
+        };
+        assert!(matches!(fields.get(0).unwrap(), StateValue::Null));
+        assert_eq!(bytes(state), bytes(native.context.query.state.get_ref()));
     }
-    let reference = slot.record_pop_front(crate::recording::RecordingFrame::new(context()));
-    let candidate = RecordedLedger8::new(context(), bindings()).list_pop_front(LIST);
-    match (reference, candidate) {
-        (Ok(reference), Ok(candidate)) => {
-            let reference = reference.finish(());
-            let candidate = candidate.finish(());
-            assert_eq!(
-                bytes(reference.execution.context.query.state.get_ref()),
-                bytes(candidate.execution.context.query.state.get_ref())
-            );
-            assert_eq!(reference.execution.gas_cost, candidate.execution.gas_cost);
-        }
-        (Err(reference), Err(candidate)) => assert_eq!(reference, candidate),
-        _ => panic!("recorded empty-pop policy changed"),
+    assert_eq!(reference.gas_cost, native.gas_cost);
+    assert_eq!(native.gas_cost, recorded.execution.gas_cost);
+    assert_eq!(
+        reference_recorded.execution.gas_cost,
+        recorded.execution.gas_cost
+    );
+    assert_eq!(
+        reference.context.query.effects,
+        native.context.query.effects
+    );
+    assert_eq!(
+        reference_recorded.execution.context.query.effects,
+        recorded.execution.context.query.effects
+    );
+    assert_eq!(
+        native.context.query.effects,
+        recorded.execution.context.query.effects
+    );
+    assert_eq!(
+        serde_json::to_value(reference_recorded.public.verify_ops()).unwrap(),
+        serde_json::to_value(recorded.public.verify_ops()).unwrap()
+    );
+    for public in [&reference_recorded.public, &recorded.public] {
+        let replay = public
+            .initial()
+            .query(public.verify_ops(), None, &INITIAL_COST_MODEL)
+            .unwrap();
+        assert_eq!(
+            bytes(replay.context.state.get_ref()),
+            bytes(native.context.query.state.get_ref())
+        );
+        assert_eq!(replay.context.effects, native.context.query.effects);
     }
 }
 
@@ -351,4 +385,53 @@ fn list_binding_aliases_cover_every_existing_kind_and_both_binding_orders() {
     );
     let sets = [SetBinding::new(SlotId::new(52), &[0, 1])];
     assert!(bindings().bind_sets(&sets).is_ok());
+}
+
+#[test]
+fn list_head_and_push_gas_refusals_stop_later_producers() {
+    for head in [true, false] {
+        let mut first = context();
+        first.gas_limit = Some(RunningCost::ZERO);
+        let mut second = context();
+        second.gas_limit = Some(RunningCost::ZERO);
+        let calls = std::cell::Cell::new(0);
+        let native = Circuit::begin(NativeLedger8::new(first, bindings()));
+        let recorded = Circuit::begin(RecordedLedger8::new(second, bindings()));
+        let native = if head {
+            native
+                .list_head::<_, (bool, Field)>(LIST)
+                .bind(|_, circuit| circuit.returning(()))
+        } else {
+            native.list_push_front(LIST, Field::from(7_u64))
+        };
+        let recorded = if head {
+            recorded
+                .list_head::<_, (bool, Field)>(LIST)
+                .bind(|_, circuit| circuit.returning(()))
+        } else {
+            recorded.list_push_front(LIST, Field::from(7_u64))
+        };
+        let native = native
+            .bind(|(), circuit| {
+                circuit.try_returning(|| {
+                    calls.set(calls.get() + 1);
+                    Ok(())
+                })
+            })
+            .finish();
+        let recorded = recorded
+            .bind(|(), circuit| {
+                circuit.try_returning(|| {
+                    calls.set(calls.get() + 1);
+                    Ok(())
+                })
+            })
+            .finish();
+        assert!(matches!(native, Err(CompactError::LedgerQueryRejected(_))));
+        assert!(matches!(
+            recorded,
+            Err(CompactError::LedgerQueryRejected(_))
+        ));
+        assert_eq!(calls.get(), 0);
+    }
 }

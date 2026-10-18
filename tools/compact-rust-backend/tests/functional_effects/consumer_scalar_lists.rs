@@ -165,18 +165,40 @@ fn scalar_list_empty_pop_keeps_the_existing_ordinary_policy() {
         c::functional::emptyPop::Program::new().execute_native(context()),
         c::functional::emptyPop::Program::new().execute_recorded(context()),
         None,
-    );
-    if let Some(result) = result {
-        assert_eq!(result.context.query.state, reference.context.query.state);
-        let mut state = result.context.query.state.get_ref();
-        for index in list_fixture::ledger_slots::items.path() {
-            let runtime::ledger::StateValue::Array(fields) = state else {
-                panic!("expected list physical-path array");
-            };
-            state = fields.get(*index as usize).unwrap();
-        }
-        assert!(matches!(state, runtime::ledger::StateValue::Null));
-        assert_eq!(result.context.private_state, 7);
-        assert!(result.private_transcript_outputs.is_empty());
+    )
+    .expect("all four official empty-pop routes must succeed");
+    assert_eq!(result.context.query.state, reference.context.query.state);
+    let mut state = result.context.query.state.get_ref();
+    for index in list_fixture::ledger_slots::items.path() {
+        let runtime::ledger::StateValue::Array(fields) = state else {
+            panic!("expected list physical-path array");
+        };
+        state = fields.get(*index as usize).unwrap();
     }
+    assert!(matches!(state, runtime::ledger::StateValue::Null));
+    assert_eq!(result.context.private_state, 7);
+    assert!(result.private_transcript_outputs.is_empty());
+}
+
+#[test]
+fn scalar_list_length_after_empty_pop_keeps_the_precise_official_refusal() {
+    use list_fixture::ledger_contract as c;
+    let context = || {
+        c::initial_state(ConstructorContext::new(7_u64))
+            .unwrap()
+            .into_circuit_context(ContractAddress::default())
+    };
+    let reference = c::emptyPopThenLength(context())
+        .err()
+        .expect("List length must reject the Null left by empty pop");
+    assert!(matches!(reference, CompactError::LedgerQueryRejected(_)));
+    let message = reference.to_string();
+    let result = outcomes(
+        c::emptyPopThenLength(context()),
+        c::recorded::emptyPopThenLength(context()),
+        c::functional::emptyPopThenLength::Program::new().execute_native(context()),
+        c::functional::emptyPopThenLength::Program::new().execute_recorded(context()),
+        Some(&message),
+    );
+    assert!(result.is_none());
 }
