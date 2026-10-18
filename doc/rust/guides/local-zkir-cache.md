@@ -72,3 +72,38 @@ not be mutated by negative fixtures.
 This first boundary supports local CLI transport and Ledger8 ZKIR v2. It does not
 admit v3, HTTP or a different backend through matching source syntax. Retain the
 separate direct official key-generation qualification path when adopting it.
+
+## Explicit generation requests in tests
+
+Some tests generate current ZKIR with `--skip-zk`, then invoke `zkir compile`
+themselves. The optional test wrapper can route those requests to the same
+native provider. Supply all four pins; ordinary imports and the existing Python
+force-qualification route retain their previous behavior.
+
+```sh
+python3 tools/compact-rust-backend/forge_circuits.py \
+  --native-helper /qualified/bin/compact-zkir-cache \
+  --native-helper-sha256 "$HELPER_SHA256" \
+  --native-policy qualified-policy.json \
+  --native-policy-sha256 "$POLICY_SHA256" \
+  --cache-dir ./job-cache --params-dir /qualified/parameters \
+  -- test-command
+```
+
+The wrapper prepares only the requested circuit in an owned temporary directory.
+Its native receipt contains the already-computed fresh model, parameter identity,
+actual acquisition path and authenticated artifact hashes. It performs no second
+model compilation. Copies remain private; every proof and assertion still runs.
+Source, policy, tools, parameters and path bindings are checked during the request.
+Child output uses disk spools with bounded memory reads, not a disk quota.
+
+`forge_ci.py plan` accepts the optional group `--native-script`, `--native-policy`
+and `--native-helper`. It binds the selected script, tools, policy and declared
+source inventory to the existing snapshot lifecycle. Native snapshots default to
+256 MiB; this per-snapshot limit does not cap total repository cache storage.
+
+`check_native_ci.sh` retains the full native CI command list.
+`check_native_ci_smoke.sh` exercises two real proof fixtures for lifecycle
+qualification and is not a substitute for that full gate. Exact Linux enrollment,
+immutable published Forge provisioning and hosted workflow adoption remain
+separate requirements. No hosted acceleration is claimed by these local tools.

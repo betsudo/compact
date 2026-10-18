@@ -17,6 +17,8 @@
 
 """Local Forge CI orchestration. The official helper owns cache identity/metrics."""
 import argparse
+import hashlib
+import re
 import json
 import os
 from pathlib import Path
@@ -124,10 +126,14 @@ def bootstrap(args):
     return value
 
 
-def tool_bindings(compiler, proof_runner, helper):
+def tool_bindings(compiler, proof_runner, helper, native=None):
     compiler = compiler.resolve(strict=True)
     paths = dict(compiler=compiler, scheme=compiler.with_name('compactc-scheme'),
                  proof_runner=proof_runner, helper=helper)
+    if native:
+        paths.update(native_helper=Path(native["helper"]), native_policy=Path(native["policy"]),
+                     actual_zkir=Path(native["zkir"]), native_script=Path(native["script"]),
+                     forge=Path(native["forge"]))
     return {name: dict(path=str(path.resolve(strict=True)), sha256=file_hash(path.resolve(strict=True)))
             for name, path in paths.items()}
 
@@ -135,6 +141,65 @@ def tool_bindings(compiler, proof_runner, helper):
 def check_tools(invocation):
     for name, row in invocation['tools'].items():
         require(file_hash(Path(row['path'])) == row['sha256'], name + ' changed after planning')
+    if invocation.get('native'):
+        native = invocation['native']
+        for name, expected in native['expected_tools'].items():
+            require(invocation['tools'][name]['sha256'] == expected, 'independent native pin differs: ' + name)
+        require(native_workload_inputs(Path(native['script'])) == sorted(native['inputs']),
+                'native workload membership changed after planning')
+        for name, expected in native['inputs'].items():
+            require(file_hash(ROOT / name) == expected, 'native workload changed: ' + name)
+        parameters(Path(invocation['params_dir']), dict(parameters=native['parameters']))
+
+
+def validate_invocation(invocation, key):
+    """Reconcile execution aliases with the keyed workload and pinned policy."""
+    if not invocation.get('native'):
+        return
+    native, tools = invocation['native'], invocation['tools']
+    workload = adapter.read_json(key['workload'])
+    require(workload['tools'] == {name: row['sha256'] for name, row in tools.items()},
+            'native tool map differs from keyed workload')
+    require(workload['selector'] == 'native-script' and key['selector'] == 'ledger8-v2'
+            and Path(key['workspace']).resolve(strict=True) == ROOT.resolve(), 'native workload identity mismatch')
+    script = Path(workload['script'])
+    require(not script.is_absolute() and '..' not in script.parts, 'unsafe keyed script path')
+    expected_script = (ROOT / script).resolve(strict=True)
+    require(Path(native['script']).resolve(strict=True) == expected_script
+            == Path(tools['native_script']['path']).resolve(strict=True), 'executed native script differs from keyed script')
+    for name, tool in (('helper', 'native_helper'), ('policy', 'native_policy'), ('zkir', 'actual_zkir'), ('forge', 'forge')):
+        require(Path(native[name]).resolve(strict=True) == Path(tools[tool]['path']).resolve(strict=True),
+                'native execution path differs from bound tool: ' + name)
+    require(Path(invocation['forge']).resolve(strict=True) == Path(tools['forge']['path']).resolve(strict=True),
+            'invocation Forge differs from bound executable')
+    policy_path = Path(tools['native_policy']['path'])
+    require(file_hash(policy_path) == tools['native_policy']['sha256'], 'native policy changed')
+    policy = load(policy_path)
+    require(workload['policy'] == tools['native_policy']['sha256'], 'policy differs from keyed workload')
+    require(Path(invocation['params_dir']).resolve(strict=True) == Path(key['params_dir']).resolve(strict=True)
+            == Path(policy['parameter_directory']).resolve(strict=True), 'native parameter directory differs from key/policy')
+    for name, tool in (('forge', 'forge'), ('zkir', 'actual_zkir')):
+        require(Path(policy[name]['path']).resolve(strict=True) == Path(tools[tool]['path']).resolve(strict=True)
+                and policy[name]['sha256'] == tools[tool]['sha256'], 'native tool differs from pinned policy: ' + name)
+    expected_tools = dict(native_policy=tools['native_policy']['sha256'], forge=policy['forge']['sha256'], actual_zkir=policy['zkir']['sha256'])
+    require(native['expected_tools'] == expected_tools, 'duplicated native tool pins differ from policy')
+    expected_params = {'bls_midnight_2p' + k: value for k, value in policy['parameters'].items()}
+    key_params = {row['name']: row['sha256'] for row in key['parameters']}
+    require(len(key_params) == len(key['parameters']) and native['parameters'] == key_params == expected_params
+            and all((Path(invocation['params_dir']) / row['name']).stat().st_size == row['bytes'] for row in key['parameters']),
+            'native parameter declarations differ from key/policy')
+    require(type(native['tiny_max_k']) is int and native['selection'] == workload['selection'] == policy.get('selection', 'auto')
+            and native['tiny_max_k'] == workload['tiny_max_k'] == policy.get('tiny_max_k', 8)
+            and native['build_fingerprint'] == policy['build_fingerprint'], 'native selection/build differs from key/policy')
+    producer = key['tool']
+    require(producer['binary_sha256'] == tools['forge']['sha256']
+            and all(producer['root'][name] == policy[name] for name in ('profile', 'ledger_revision', 'build_fingerprint')),
+            'keyed producer differs from native policy')
+    key_inputs = {row['path']: row['sha256'] for row in key['inputs']}
+    require(len(key_inputs) == len(key['inputs']) and key_inputs == native['inputs']
+            and sorted(key_inputs) == native_workload_inputs(expected_script)
+            and all((ROOT / row['path']).stat().st_size == row['bytes'] for row in key['inputs']),
+            'native workload membership changed: source declarations differ from keyed inventory')
 
 
 def helper_command(invocation, *args):
@@ -144,6 +209,8 @@ def helper_command(invocation, *args):
 
 
 def helper(invocation, directory, phase, *args):
+    if invocation.get('native') and phase != 'key':
+        validate_invocation(invocation, load(directory / 'key.json'))
     check_tools(invocation)
     value = adapter.read_json(execute(helper_command(invocation, *args), directory, phase))
     check_tools(invocation)
@@ -159,23 +226,133 @@ def workload_inputs(q):
     return sorted(names)
 
 
+def native_workload_inputs(script):
+    """Complete source inventory: no suffix filter can hide a relevant new file."""
+    roots = ['compiler', 'srcMaps', 'examples', 'test-center/test-contracts', 'testkit-rs',
+             '_sources', 'nix', 'third_party',
+             'tools', 'tests-rust-backend', '.github/workflows', '.github/actions', '.github/scripts']
+    roots += [path.name for path in ROOT.glob('runtime*') if path.is_dir()]
+    excluded = {'target', 'node_modules', '__pycache__', '.git', '.venv', 'coverage',
+                'artifacts', 'out', 'gen', 'dist', 'reports', 'logs', '.direnv', '.parcel-cache'}
+    compiler_outputs = {'testdir', 'javascript-code', 'javascript-tests.ts', 'testfile.compact', 'compactc-version.ss'}
+    names = {'Cargo.toml', 'Cargo.lock', 'flake.nix', 'flake.lock'}
+    def ignored(path):
+        relative = path.relative_to(ROOT)
+        return (bool(excluded.intersection(relative.parts)) or path.name == '.DS_Store'
+                or (relative.parts[0] == 'compiler' and len(relative.parts) > 1
+                    and relative.parts[1] in compiler_outputs))
+
+    def walk_error(error):
+        raise error
+
+    for tree in roots:
+        root = ROOT / tree
+        require(not root.is_symlink(), 'native workload symlink refused: ' + str(root))
+        if not root.exists():
+            continue
+        for directory, directories, files in os.walk(root, topdown=True, followlinks=False,
+                                                     onerror=walk_error):
+            directory = Path(directory)
+            retained = []
+            for name in directories:
+                path = directory / name
+                if ignored(path):
+                    continue
+                require(not path.is_symlink(), 'native workload symlink refused: ' + str(path))
+                retained.append(name)
+            directories[:] = retained
+            for name in files:
+                path = directory / name
+                if ignored(path):
+                    continue
+                require(not path.is_symlink(), 'native workload symlink refused: ' + str(path))
+                if path.is_file():
+                    names.add(path.relative_to(ROOT).as_posix())
+    script = script.resolve(strict=True)
+    require(script.is_relative_to(ROOT.resolve()), 'native script must be repository-owned')
+    names.add(script.relative_to(ROOT.resolve()).as_posix())
+    for name in names:
+        file_hash(ROOT / name)
+    return sorted(names)
+
+
+def native_configuration(args):
+    selected = [getattr(args, 'native_' + name, None) for name in ('script', 'policy', 'helper')]
+    require(not any(selected) or all(selected), 'native-script, native-policy and native-helper require all three')
+    if not any(selected):
+        return None
+    script, policy_path, native_helper = [path.resolve(strict=True) for path in selected]
+    require(script.suffix == '.sh', 'native script must be a repository-owned shell file')
+    with policy_path.open('rb') as stream:
+        policy_bytes = stream.read(16777217)
+    require(len(policy_bytes) <= 16777216, 'native policy exceeds JSON bound')
+    policy = adapter.read_json(policy_bytes)
+    required = {'schema', 'forge', 'zkir', 'profile', 'ledger_revision', 'build_fingerprint',
+                'serialization', 'keygen_recipe', 'parameter_directory', 'parameters', 'unavailable'}
+    require(isinstance(policy, dict) and required <= set(policy) <= required | {'selection', 'tiny_max_k'},
+            'unsupported native policy fields')
+    require(type(policy['schema']) is int and policy['schema'] == 1
+            and policy['profile'] == adapter.PROFILE and policy['ledger_revision'] == adapter.REVISION
+            and policy['serialization'] == adapter.SERIALIZATION
+            and policy['keygen_recipe'] == 'library-keygen/default-options/no-rng', 'native policy profile/recipe mismatch')
+    require(policy.get('selection', 'auto') in ('auto', 'force')
+            and type(policy.get('tiny_max_k', 8)) is int and 0 <= policy.get('tiny_max_k', 8) <= 255
+            and policy['unavailable'] in ('refuse', 'keygen'), 'invalid native acquisition policy')
+    require(re.fullmatch('[0-9a-f]{64}', policy['build_fingerprint']) is not None, 'invalid independent native build pin')
+    for name in ('forge', 'zkir'):
+        row = policy[name]
+        require(isinstance(row, dict) and set(row) == {'path', 'sha256'}
+                and Path(row['path']).is_absolute() and file_hash(Path(row['path'])) == row['sha256'],
+                'actual ' + name + ' differs from native policy')
+    require(args.forge.resolve(strict=True) == Path(policy['forge']['path']).resolve(strict=True), 'planned Forge differs from native policy')
+    require(Path(policy['parameter_directory']).is_absolute()
+            and args.params_dir.resolve(strict=True) == Path(policy['parameter_directory']).resolve(strict=True), 'native parameter directory mismatch')
+    require(isinstance(policy['parameters'], dict) and policy['parameters'], 'native parameters must be declared')
+    declared = {}
+    for k, expected in policy['parameters'].items():
+        require(re.fullmatch('0|[1-9][0-9]{0,2}', k) is not None and int(k) <= 255
+                and re.fullmatch('[0-9a-f]{64}', expected) is not None, 'invalid native parameter pin')
+        declared['bls_midnight_2p' + k] = expected
+    names = native_workload_inputs(script)
+    return dict(script=str(script), policy=str(policy_path), helper=str(native_helper),
+                zkir=str(Path(policy['zkir']['path']).resolve(strict=True)), forge=str(Path(policy['forge']['path']).resolve(strict=True)),
+                expected_tools=dict(native_policy=hashlib.sha256(policy_bytes).hexdigest(),
+                                    forge=policy['forge']['sha256'], actual_zkir=policy['zkir']['sha256']), parameters=declared,
+                build_fingerprint=policy['build_fingerprint'], selection=policy.get('selection', 'auto'),
+                tiny_max_k=policy.get('tiny_max_k', 8), inputs={name: file_hash(ROOT / name) for name in names})
+
+
 def plan(args):
+    native = native_configuration(args)
     q = load(QUALIFICATION)
+    if native:
+        q = dict(q, parameters=native['parameters'], build_fingerprint=native['build_fingerprint'])
     parameters(args.params_dir, q)
     args.output.mkdir(parents=True, exist_ok=False)
     profile(args.forge, q, args.output)
-    tools = tool_bindings(args.compiler, args.proof_runner, args.helper)
+    tools = tool_bindings(args.compiler, args.proof_runner, args.helper, native)
     invocation = dict(forge=str(args.forge), params_dir=str(args.params_dir), tools=tools)
+    if native:
+        invocation['native'] = native
+        check_tools(invocation)
+        version = execute([native['zkir'], '--version'], args.output, 'native-zkir-version').strip()
+        require(version in ('zkir 2.1.1', 'midnight-zkir 2.1.1'), 'native actual ZKIR version mismatch')
+        check_tools(invocation)
     # Executable bytes join declared source bytes in the helper's workload identity.
     workload = json.dumps(dict(selector=q['proof_selector'], target='rust',
                          rust_runtime_root='workspace', proofs=3, corrupt_verifier=True,
                          tools={name: row['sha256'] for name, row in tools.items()}), sort_keys=True)
+    if native:
+        workload = json.dumps(dict(selector='native-script', script=str(Path(native['script']).relative_to(ROOT.resolve())),
+                                   policy=tools['native_policy']['sha256'], selection=native['selection'],
+                                   tiny_max_k=native['tiny_max_k'], scope='fresh script status, no proof-count inference',
+                                   tools={name: row['sha256'] for name, row in tools.items()}), sort_keys=True)
     argv = ['key', '--workspace', ROOT, '--params-dir', args.params_dir,
             '--profile', q['selector'], '--workload', workload, '--generation', args.generation,
             '--output', args.output / 'key.json']
     for name in q['parameters']:
         argv += ['--parameter', name]
-    for name in workload_inputs(q):
+    for name in sorted(native['inputs']) if native else workload_inputs(q):
         argv += ['--input', name]
     if args.github_output:
         argv += ['--github-output', args.github_output]
@@ -216,10 +393,33 @@ def exercise(invocation, directory, q):
         write(directory / 'artifacts.json', hashes)
 
 
+def exercise_native(invocation, directory):
+    native, tools = invocation['native'], invocation['tools']
+    env = dict(os.environ, MIDNIGHT_PP=invocation['params_dir'], COMPACTC=tools['compiler']['path'],
+               COMPACT_RUST_PROOF_RUNNER=tools['proof_runner']['path'],
+               COMPACT_ZKIR_MODE='forge', COMPACT_ZKIR_REAL=tools['actual_zkir']['path'])
+    # Explicit four pins; native helper alone owns model/acquisition checks.
+    argv = [sys.executable, '-B', Path(__file__).with_name('forge_circuits.py'),
+            '--forge', invocation['forge'], '--cache-dir', directory / 'cache',
+            '--params-dir', invocation['params_dir'], '--receipt-dir', directory / 'events',
+            '--native-helper', tools['native_helper']['path'], '--native-helper-sha256', tools['native_helper']['sha256'],
+            '--native-policy', tools['native_policy']['path'], '--native-policy-sha256', tools['native_policy']['sha256'],
+            '--', 'bash', native['script']]
+    check_tools(invocation)
+    validate_invocation(invocation, load(directory / 'key.json'))
+    execute(argv, directory, 'native-script', env=env)
+    validate_invocation(invocation, load(directory / 'key.json'))
+    check_tools(invocation)
+
+
 def run(args):
     directory = args.plan.resolve(strict=True)
     invocation = load(directory / 'invocation.json')
     q = load(QUALIFICATION)
+    if invocation.get('native'):
+        q = dict(q, parameters=invocation['native']['parameters'], build_fingerprint=invocation['native']['build_fingerprint'])
+    if args.max_bytes is None:
+        args.max_bytes = 268435456 if invocation.get('native') else DEFAULT_BUDGET
     require(args.max_bytes > 0, 'byte budget must be positive')
     if args.snapshot_out:
         require(not args.snapshot_out.resolve().is_relative_to((directory / 'cache').resolve()),
@@ -229,6 +429,7 @@ def run(args):
     planned_tools = json.loads(load(directory / 'key.json')['workload'])['tools']
     require(planned_tools == {name: row['sha256'] for name, row in invocation['tools'].items()},
             'invocation tool hashes differ from the helper workload')
+    validate_invocation(invocation, load(directory / 'key.json'))
     check_tools(invocation)
     parameters(Path(invocation['params_dir']), q)
     common = ['--key', directory / 'key.json', '--cache-dir', directory / 'cache']
@@ -236,8 +437,12 @@ def run(args):
            '--snapshot', args.snapshot, '--max-bytes', args.max_bytes)
     helper(invocation, directory, 'baseline', 'baseline', *common, '--output', directory / 'baseline.json')
     try:
-        exercise(invocation, directory, q)
+        if invocation.get('native'):
+            exercise_native(invocation, directory)
+        else:
+            exercise(invocation, directory, q)
         if args.uncached_zkir:
+            validate_invocation(invocation, load(directory / 'key.json'))
             execute([sys.executable, '-B', Path(__file__).with_name('check_forge_circuit_cache.py'),
                      '--compiler', invocation['tools']['compiler']['path'],
                      '--proof-runner', invocation['tools']['proof_runner']['path'],
@@ -258,11 +463,16 @@ def run(args):
     if args.snapshot_out:
         key = load(directory / 'key.json')
         scope = [item for row in key['parameters'] for item in ['--parameter-digest', row['sha256']]]
+        validate_invocation(invocation, key)
         execute([invocation['forge'], '--profile', q['selector'], '--cache-dir', directory / 'cache',
                  'snapshot', '--output', args.snapshot_out, '--partition', key['partition'],
                  '--max-bytes', args.max_bytes, *scope], directory, 'snapshot')
         check_tools(invocation)
-    write(directory / 'run.json', dict(passed=True, proof_scenarios=3, corrupt_verifier_rejected=True))
+    validate_invocation(invocation, load(directory / 'key.json'))
+    value = (dict(passed=True, mode='native-script', proof_scenarios=None,
+                  scope='supplied script exited successfully; no inferred specification/proof coverage')
+             if invocation.get('native') else dict(passed=True, proof_scenarios=3, corrupt_verifier_rejected=True))
+    write(directory / 'run.json', value)
     return report
 
 
@@ -280,12 +490,15 @@ def main(argv=None):
             p.add_argument('--helper', type=Path, required=True)
             p.add_argument('--generation', required=True)
             p.add_argument('--github-output', type=Path)
+            p.add_argument('--native-script', type=Path)
+            p.add_argument('--native-policy', type=Path)
+            p.add_argument('--native-helper', type=Path)
     p = subs.add_parser('run')
     p.add_argument('--plan', type=Path, required=True)
     p.add_argument('--snapshot', type=Path, required=True)
     p.add_argument('--uncached-zkir', type=Path)
     p.add_argument('--snapshot-out', type=Path)
-    p.add_argument('--max-bytes', type=int, default=DEFAULT_BUDGET)
+    p.add_argument('--max-bytes', type=int)
     args = parser.parse_args(argv)
     for name, value in vars(args).items():
         if isinstance(value, Path):

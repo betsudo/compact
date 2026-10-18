@@ -305,5 +305,208 @@ class ForgeCiTests(unittest.TestCase):
         self.assertLess(len(stderr.getvalue()), 8400)
 
 
+class NativeForgeCiTests(unittest.TestCase):
+    # Reuse the existing fake lifecycle; none of these tests qualify real proofs.
+    setUp = ForgeCiTests.setUp
+    run_args = ForgeCiTests.run_args
+
+    def fake_execute(self, argv, directory, phase, *, env=None, failure=False):
+        value = ForgeCiTests.fake_execute(self, argv, directory, phase, env=env, failure=failure)
+        if phase == 'key':
+            argv = list(map(str, argv))
+            path = Path(argv[argv.index('--output') + 1])
+            key = ci.load(path)
+            key.update(selector='ledger8-v2', workspace=str(self.root.resolve()), params_dir=str(self.params.resolve()),
+                tool=dict(binary_sha256=ci.file_hash(self.forge), root=dict(profile=ci.adapter.PROFILE,
+                    ledger_revision=ci.adapter.REVISION, build_fingerprint=self.q['build_fingerprint'])),
+                inputs=[dict(path=argv[i+1], sha256=ci.file_hash(self.root/argv[i+1]), bytes=(self.root/argv[i+1]).stat().st_size)
+                        for i, value in enumerate(argv) if value == '--input'],
+                parameters=[dict(name=argv[i+1], sha256=ci.file_hash(self.params/argv[i+1]), bytes=(self.params/argv[i+1]).stat().st_size)
+                            for i, value in enumerate(argv) if value == '--parameter'])
+            path.write_text(json.dumps(key))
+            return json.dumps(key)
+        if phase == 'native-zkir-version':
+            return 'zkir 2.1.1\n'
+        if phase == 'native-script':
+            self.native_env = env
+            if getattr(self, 'native_failure', False):
+                raise ValueError('native script failed')
+            if getattr(self, 'mutate_script', False):
+                self.script.write_text('changed during script')
+        return value
+
+    def native_args(self, name='native-plan'):
+        for name_path in ('Cargo.toml', 'flake.nix', 'flake.lock'):
+            (self.root / name_path).write_text('fixed source')
+        self.script = self.root / 'tools/native-proof.sh'
+        self.script.write_text('set -euo pipefail\n# supplied full command owner\n')
+        self.zkir = self.root / 'actual-zkir'
+        self.zkir.write_text('actual pinned ZKIR bytes')
+        self.native_helper = self.root / 'native-helper'
+        self.native_helper.write_text('actual native helper bytes')
+        self.policy = self.root / (name + '-policy.json')
+        ci.write(self.policy, dict(schema=1, forge=dict(path=str(self.forge), sha256=ci.file_hash(self.forge)),
+            zkir=dict(path=str(self.zkir), sha256=ci.file_hash(self.zkir)), profile=ci.adapter.PROFILE,
+            ledger_revision=ci.adapter.REVISION, build_fingerprint=self.q['build_fingerprint'],
+            serialization=ci.adapter.SERIALIZATION, keygen_recipe='library-keygen/default-options/no-rng',
+            parameter_directory=str(self.params), parameters={'10':ci.file_hash(self.param)}, unavailable='refuse'))
+        return argparse.Namespace(compiler=self.compiler, forge=self.forge, proof_runner=self.proof,
+            helper=self.helper, params_dir=self.params, output=self.root/name, generation='native-1',
+            github_output=None, native_script=self.script, native_policy=self.policy, native_helper=self.native_helper)
+
+    def test_native_plan_run_uses_explicit_pins_and_no_inferred_proof_count(self):
+        args = self.native_args()
+        ci.plan(args)
+        workload = json.loads(ci.load(args.output/'key.json')['workload'])
+        self.assertEqual(workload['selector'], 'native-script')
+        self.assertEqual(workload['tiny_max_k'], 8)
+        self.assertEqual(workload['tools']['actual_zkir'], ci.file_hash(self.zkir))
+        ci.run(self.run_args(args.output))
+        command = self.commands['native-script']
+        for flag in ('--native-helper', '--native-helper-sha256', '--native-policy', '--native-policy-sha256'):
+            self.assertIn(flag, command)
+        self.assertEqual(command[-3:], ['--', 'bash', str(self.script.resolve())])
+        self.assertEqual(self.native_env['COMPACTC'], str(self.compiler.resolve()))
+        self.assertEqual(self.native_env['COMPACT_RUST_PROOF_RUNNER'], str(self.proof.resolve()))
+        self.assertLess(self.phases.index('restore'), self.phases.index('native-script'))
+        self.assertLess(self.phases.index('baseline'), self.phases.index('native-script'))
+        self.assertIsNone(ci.load(args.output/'run.json')['proof_scenarios'])
+        self.assertNotIn('compile', self.phases)
+
+    def test_native_group_is_all_or_none_before_output_creation(self):
+        args = self.native_args()
+        for name in ('native_script', 'native_policy', 'native_helper'):
+            broken = argparse.Namespace(**vars(args))
+            setattr(broken, name, None)
+            with self.assertRaisesRegex(ValueError, 'all three'):
+                ci.plan(broken)
+            self.assertFalse(args.output.exists())
+
+    def test_full_inventory_includes_unknown_suffixes_actions_and_new_members(self):
+        args = self.native_args()
+        for relative in ('examples/complete.compact', 'test-center/test-contracts/opaque.blob',
+                         '.github/actions/custom/action.yml', 'runtime-rs/src/fresh.rs',
+                         '_sources/pinned.unknown-format', 'nix/recipe.unknown-format',
+                         'third_party/dependency.unknown-format'):
+            path = self.root/relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('full workload source')
+        for relative in ('compiler/testdir/generated.json', 'tools/node_modules/derived.js', 'runtime-rs/target/derived.json'):
+            path = self.root/relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('not source')
+        ci.plan(args)
+        invocation = ci.load(args.output/'invocation.json')
+        self.assertNotIn('compiler/testdir/generated.json', invocation['native']['inputs'])
+        self.assertNotIn('tools/node_modules/derived.js', invocation['native']['inputs'])
+        self.assertIn('test-center/test-contracts/opaque.blob', invocation['native']['inputs'])
+        self.assertIn('.github/actions/custom/action.yml', invocation['native']['inputs'])
+        for relative in ('_sources/pinned.unknown-format', 'nix/recipe.unknown-format',
+                         'third_party/dependency.unknown-format'):
+            self.assertIn(relative, invocation['native']['inputs'])
+        (self.root/'nix/new.source-format').write_text('new membership')
+        with self.assertRaisesRegex(ValueError, 'membership changed'):
+            ci.run(self.run_args(args.output))
+        self.assertNotIn('restore', self.phases)
+
+    def test_native_inventory_prunes_ignored_trees_before_opening_them(self):
+        args = self.native_args()
+        ignored_roots = [self.root / relative for relative in
+                         ('tools/node_modules', 'runtime-rs/target', 'compiler/testdir')]
+        for root in ignored_roots:
+            (root / 'deep').mkdir(parents=True)
+            (root / 'deep/ignored.blob').write_text('not a workload input')
+        included = self.root / 'tools/included.unknown-format'
+        included.write_text('included regardless of suffix')
+        real_scandir = ci.os.scandir
+        opened = []
+
+        def guarded_scandir(path):
+            path = Path(path)
+            self.assertFalse(any(path == root or root in path.parents for root in ignored_roots),
+                             'ignored subtree must never be opened: ' + str(path))
+            opened.append(path)
+            return real_scandir(path)
+
+        with patch.object(ci.os, 'scandir', side_effect=guarded_scandir):
+            inputs = ci.native_workload_inputs(args.native_script)
+        self.assertIn('tools/included.unknown-format', inputs)
+        self.assertIn(self.root / 'tools', opened)
+        self.assertFalse(any('ignored.blob' in name for name in inputs))
+
+    def test_native_policy_and_actual_tools_remain_live(self):
+        for changed in ('policy', 'zkir', 'forge', 'param'):
+            with self.subTest(changed=changed):
+                # Each attempt gets fresh plan/source identities, not a saved verdict.
+                args = self.native_args('plan-' + changed)
+                ci.plan(args)
+                path = getattr(self, changed)
+                original = path.read_bytes()
+                path.write_bytes(b'live mutation')
+                try:
+                    with self.assertRaises(ValueError):
+                        ci.run(self.run_args(args.output))
+                    self.assertFalse((args.output/'run.json').exists())
+                finally:
+                    path.write_bytes(original)
+
+    def test_native_failure_propagates_and_post_script_mutation_refuses(self):
+        for field in ('native_failure', 'mutate_script'):
+            with self.subTest(field=field):
+                args = self.native_args('plan-' + field)
+                ci.plan(args)
+                setattr(self, field, True)
+                with self.assertRaises(ValueError):
+                    ci.run(self.run_args(args.output))
+                self.assertFalse((args.output/'run.json').exists())
+                self.assertIn('native-script', self.phases)
+                setattr(self, field, False)
+
+    def test_duplicated_execution_fields_cannot_rewrite_the_keyed_invocation(self):
+        for field in ('script', 'invocation-forge', 'params-dir', 'parameters', 'selection', 'tiny_max_k',
+                      'inputs', 'policy', 'helper', 'zkir', 'forge', 'expected_tools', 'build_fingerprint'):
+            with self.subTest(field=field):
+                args = self.native_args('rewrite-' + field)
+                alternative = self.root/'tools/alternate.sh'
+                alternative.write_text('set -e\n# already inventoried, different workload\n')
+                other_forge = self.root/'same-bytes-forge'
+                other_forge.write_bytes(self.forge.read_bytes())
+                other_params = self.root/'other-params'
+                other_params.mkdir(exist_ok=True)
+                (other_params/self.param.name).write_bytes(self.param.read_bytes())
+                ci.plan(args)
+                path = args.output/'invocation.json'
+                invocation = ci.load(path)
+                native = invocation['native']
+                if field == 'script':
+                    native[field] = str(alternative.resolve())
+                elif field == 'invocation-forge':
+                    invocation['forge'] = str(other_forge.resolve())
+                elif field == 'params-dir':
+                    invocation['params_dir'] = str(other_params.resolve())
+                elif field in ('policy', 'helper', 'zkir', 'forge'):
+                    copied = self.root/('copied-' + field)
+                    copied.write_bytes(Path(native[field]).read_bytes())
+                    native[field] = str(copied.resolve())
+                elif field == 'parameters':
+                    native[field] = {'bls_midnight_2p10':'0'*64}
+                elif field == 'selection':
+                    native[field] = 'force'
+                elif field == 'tiny_max_k':
+                    native[field] = 9
+                elif field == 'inputs':
+                    native[field].pop('Cargo.lock')
+                elif field == 'expected_tools':
+                    native[field]['forge'] = '0'*64
+                else:
+                    native[field] = '0'*64
+                path.write_text(json.dumps(invocation))
+                with self.assertRaises(ValueError):
+                    ci.run(self.run_args(args.output))
+                self.assertNotIn('restore', self.phases)
+                self.assertNotIn('native-script', self.phases)
+                self.assertFalse((args.output/'run.json').exists())
+
+
 if __name__ == '__main__':
     unittest.main()
