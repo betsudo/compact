@@ -52,9 +52,10 @@ SOURCES = {
     "set_fixture": FIXTURES / "scalar_sets.compact",
     "list_fixture": FIXTURES / "scalar_lists.compact",
     "counter_more_fixture": FIXTURES / "counter_more.compact",
+    "vector_map_fixture": FIXTURES / "vector_map_composition.compact",
 }
-EXPECTED_TESTS = 31
-EXPECTED_SCENARIOS = 86  # Existing 76 + 10 remaining Counter scenarios.
+EXPECTED_TESTS = 35
+EXPECTED_SCENARIOS = 95  # Existing 86 + 9 VectorMap scenarios; 3 adapter tests are separate.
 
 
 def digest(path):
@@ -158,6 +159,7 @@ def main():
         "set_consumer_sha256": digest(FIXTURES / "consumer_scalar_sets.rs"),
         "list_consumer_sha256": digest(FIXTURES / "consumer_scalar_lists.rs"),
         "counter_more_consumer_sha256": digest(FIXTURES / "consumer_counter_more.rs"),
+        "vector_map_consumer_sha256": digest(FIXTURES / "consumer_vector_map_composition.rs"),
         "witness_refusal_consumer_sha256": digest(FIXTURES / "consumer_witness_refusals.rs"),
         "adapter_refusal_scope": "3 Rust tests exercise two interpreters/ordinary-exact transports; not four-route contract scenarios",
         "phases": [], "generated": {},
@@ -263,6 +265,7 @@ def main():
                                                ("consumer_scalar_sets.rs", "scalar_sets.rs"),
                                                ("consumer_scalar_lists.rs", "scalar_lists.rs"),
                                                ("consumer_counter_more.rs", "counter_more.rs"),
+                                               ("consumer_vector_map_composition.rs", "vector_map_composition.rs"),
                                                ("consumer_witness_refusals.rs", "witness_refusals.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
@@ -377,6 +380,8 @@ def main():
                                (consumer / "support/scalar_lists.rs", report["list_consumer_sha256"]),
                                (FIXTURES / "consumer_counter_more.rs", report["counter_more_consumer_sha256"]),
                                (consumer / "support/counter_more.rs", report["counter_more_consumer_sha256"]),
+                               (FIXTURES / "consumer_vector_map_composition.rs", report["vector_map_consumer_sha256"]),
+                               (consumer / "support/vector_map_composition.rs", report["vector_map_consumer_sha256"]),
                                (FIXTURES / "consumer_witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (consumer / "support/witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:

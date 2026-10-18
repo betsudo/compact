@@ -40,6 +40,7 @@ pub(crate) enum Capability {
     Require,
     Select,
     Call,
+    VectorMap,
     MapRead,
     MapLookup,
     MapRemove,
@@ -74,6 +75,7 @@ impl Ledger8Target {
             Capability::Require,
             Capability::Select,
             Capability::Call,
+            Capability::VectorMap,
             Capability::MapRead,
             Capability::MapLookup,
             Capability::MapRemove,
@@ -424,11 +426,11 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
+                Operation::VectorMap { .. } => Capability::VectorMap,
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::VectorMap { .. }
-                | Operation::CreateZswapInput { .. }
+                Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
                 | Operation::OwnPublicKey
                 | Operation::KernelSelf
@@ -494,7 +496,11 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 }
                 // Calls have their own validated formal scope but inherit the
                 // caller's effective execution guard. Inspect every nested node.
-                Operation::Call { body, .. } => self.block(body, guard, authority)?,
+                Operation::Call { body, .. } | Operation::VectorMap { body, .. } => {
+                    // Static occurrence evidence is checked even for empty maps;
+                    // this does not claim each element executes its body.
+                    self.block(body, guard, authority)?;
+                }
                 _ => {}
             }
         }
@@ -551,3 +557,7 @@ mod sets_tests;
 #[cfg(test)]
 #[path = "functional_lists_integration_tests.rs"]
 mod lists_tests;
+
+#[cfg(test)]
+#[path = "functional_vector_map_tests.rs"]
+mod vector_map_tests;

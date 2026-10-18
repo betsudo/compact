@@ -96,11 +96,11 @@ pub(super) fn render(
     })
 }
 
-fn name(value: &Value) -> syn::Ident {
+pub(super) fn name(value: &Value) -> syn::Ident {
     format_ident!("__compact_effect_{}", value.id)
 }
 
-fn value(value: &Value) -> syn::Expr {
+pub(super) fn value(value: &Value) -> syn::Expr {
     if value.ty == Type::Unit {
         syn::parse_quote!(())
     } else {
@@ -293,6 +293,11 @@ impl Renderer<'_> {
                 let expression = super::functional_paths::expression(expression);
                 syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
             }
+            Operation::VectorMap { .. } => {
+                let expression =
+                    super::functional_pure_blocks::vector_map(binding, self.declarations)?;
+                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+            }
             Operation::If {
                 condition,
                 then,
@@ -396,7 +401,7 @@ impl Renderer<'_> {
     }
 }
 
-fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
+pub(super) fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
     let ty =
         rust_type(&binding.value.ty).map_err(|error| invalid(&binding.path, error.to_string()))?;
     if let Some(expression) = super::render::pure::expression(binding, &ty, value, |input| {

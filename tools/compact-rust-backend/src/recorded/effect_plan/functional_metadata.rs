@@ -95,6 +95,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::Require => "require",
         Capability::Select => "select",
         Capability::Call => "call",
+        Capability::VectorMap => "vector_map",
         Capability::MapRead => "map_read",
         Capability::MapLookup => "map_lookup",
         Capability::MapRemove => "map_remove",

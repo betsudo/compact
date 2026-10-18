@@ -102,6 +102,10 @@ The current projection includes checked literals/defaults, enums, aggregates,
 projections, Field and unsigned arithmetic, comparisons, conversions, Cell
 reads/writes, Counter reads/increments/decrements/reset/less-than, assertions,
 conditionals, and typed witnesses.
+Generic checked context-free VectorMap bodies use `FixedVector::try_map` and
+ordered Result producers, including nested conditionals and certified pure calls.
+Every body node is statically admitted even for an empty vector. Direct Fold
+source forms remain scoped by #661.
 Pure value syntax shares the existing checked ordinary renderer. Expressions
 remain inside successful binds, so later producers do not run after a failure.
 Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
@@ -219,7 +223,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **28 tests**, **86 behavioral scenarios**
+The current finite consumer run covers **35 tests**, **95 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -251,6 +255,13 @@ owned head values, reset, guarded witnesses, exact empty-pop state and the
 first operation after empty-pop.
 The sixteenth source covers the remaining Counter operations with u16 amount
 boundaries, strict full-width comparisons, reset and assertion ordering.
+The seventeenth source covers VectorMap empty/single/multiple inputs, owned
+captures, source reuse, selected fallible casts and certified pure helpers.
+Three additional Rust tests check generated unknown-witness dispatch on both
+interpreters and aligned/exact transports. These adapter controls are separate
+from the 95 four-route contract scenarios. Under `experimental-functional`,
+unknown generated IDs return `UnknownWitnessIdentity { id }`; handwritten
+callback errors are preserved.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

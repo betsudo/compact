@@ -25,6 +25,7 @@ mod functional_lists;
 mod functional_maps;
 mod functional_metadata;
 mod functional_paths;
+mod functional_pure_blocks;
 mod functional_render;
 mod functional_sets;
 mod functional_witnesses;
