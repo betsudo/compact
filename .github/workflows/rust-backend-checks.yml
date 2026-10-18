@@ -95,8 +95,9 @@ jobs:
           PY
           cp .github/workflows/rust-backend-checks.yml "$RUST_CHECK_RECEIPTS/workflow.yml"
 
-      - name: Cache locked dependency downloads
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      - name: Restore locked dependency downloads
+        id: download-cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cargo/registry/index/
@@ -104,9 +105,9 @@ jobs:
             ~/.cargo/git/db/
           key: rust-bounded-${{ runner.os }}-${{ runner.arch }}-${{ matrix.toolchain }}-${{ matrix.key }}-all-features-nodebug-downloads-${{ hashFiles('Cargo.lock', 'tools/compact-rust-backend/Cargo.lock') }}
 
-      - name: Cache bounded compilation
+      - name: Restore bounded compilation
         id: build-cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ env.CARGO_TARGET_DIR }}
           key: rust-bounded-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.toolchain }}-${{ matrix.key }}-all-features-nodebug-${{ hashFiles('Cargo.lock', 'tools/compact-rust-backend/Cargo.lock', '.cargo/**', '.github/workflows/rust-backend-checks.yml') }}-${{ github.sha }}
@@ -208,6 +209,32 @@ jobs:
           path: ${{ env.RUST_CHECK_RECEIPTS }}
           if-no-files-found: warn
           retention-days: 14
+
+      # PR/manual runs may restore compatible trusted caches, but never save
+      # another multi-GiB target copy under their own head/ref. Publish only
+      # after this lane's checks, lock accounting and receipt upload succeed.
+      - name: Save dependency downloads from successful trusted push
+        if: >-
+          success() && github.event_name == 'push' &&
+          github.ref == 'refs/heads/codex/rust-backend-ast' &&
+          steps.download-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ steps.download-cache.outputs.cache-primary-key }}
+
+      - name: Save bounded compilation from successful trusted push
+        if: >-
+          success() && github.event_name == 'push' &&
+          github.ref == 'refs/heads/codex/rust-backend-ast' &&
+          steps.build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ env.CARGO_TARGET_DIR }}
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
 
   public-python:
     name: Rust / public Python controls
