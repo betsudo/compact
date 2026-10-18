@@ -122,6 +122,12 @@ pub(crate) fn build<'a>(
                     });
                     }
                     LedgerFieldKind::Map { key, value } => {
+                        // Structural Map values have no CellValue codec. As with
+                        // PublicState, omit their scalar-only witness view;
+                        // key-only circuit operations still use the typed slot.
+                        if matches!(value, crate::ir::Type::LedgerMap { .. }) {
+                            return Ok(());
+                        }
                         let key = native_header::carrier(key, observer)?;
                         let value = native_header::carrier(value, observer)?;
                         ledger_view_methods.push(syn::parse_quote! {
@@ -163,4 +169,92 @@ pub(crate) fn build<'a>(
         trait_methods,
         ledger_view_methods,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::Type;
+
+    #[test]
+    fn nested_map_does_not_hide_supported_witness_ledger_views() {
+        let field = |id: &str, index, declaration| LedgerField {
+            id: id.into(),
+            index,
+            path: vec![1, index],
+            source: None,
+            declaration,
+        };
+        let nested = field(
+            "outer",
+            0,
+            LedgerFieldKind::Map {
+                key: Type::Boolean,
+                value: Type::LedgerMap {
+                    key: Box::new(Type::Field),
+                    value: Box::new(Type::Field),
+                },
+            },
+        );
+        let scalar = field(
+            "scalar",
+            1,
+            LedgerFieldKind::Map {
+                key: Type::Boolean,
+                value: Type::Field,
+            },
+        );
+        let cell = field("stored", 2, LedgerFieldKind::Cell { ty: Type::Field });
+        let witness = WitnessDeclaration {
+            source: None,
+            name: "mark".into(),
+            parameters: vec![],
+            result: Type::Field,
+        };
+        let witnesses = [witness];
+        let syntax = build(&witnesses, &[&nested, &scalar, &cell], None).unwrap();
+        assert_eq!(syntax.declarations.len(), 1);
+        assert_eq!(syntax.trait_methods.len(), 1);
+        let names: Vec<_> = syntax
+            .ledger_view_methods
+            .iter()
+            .map(|method| method.sig.ident.to_string())
+            .collect();
+        assert_eq!(names, ["scalar", "stored"]);
+        let methods = syntax.ledger_view_methods;
+        let output = quote::quote!(#(#methods)*).to_string();
+        assert!(output.contains("MeteredMapView"));
+        assert!(output.contains("scalar . witness_view (self . meter)"));
+        assert!(output.contains("stored . witness_read (self . meter)"));
+        assert!(!output.contains("MapNode"));
+    }
+
+    #[test]
+    fn scalar_map_witness_view_still_refuses_non_value_key() {
+        let invalid_key = Type::LedgerMap {
+            key: Box::new(Type::Field),
+            value: Box::new(Type::Field),
+        };
+        let field = LedgerField {
+            id: "invalid".into(),
+            index: 0,
+            path: vec![],
+            source: None,
+            declaration: LedgerFieldKind::Map {
+                key: invalid_key.clone(),
+                value: Type::Field,
+            },
+        };
+        let witnesses = [WitnessDeclaration {
+            source: None,
+            name: "mark".into(),
+            parameters: vec![],
+            result: Type::Field,
+        }];
+        let error = match build(&witnesses, &[&field], None) {
+            Ok(_) => panic!("invalid scalar Map key was accepted"),
+            Err(error) => error,
+        };
+        assert!(matches!(error, RenderError::UnsupportedLedgerValueType(ty) if ty == invalid_key));
+    }
 }
