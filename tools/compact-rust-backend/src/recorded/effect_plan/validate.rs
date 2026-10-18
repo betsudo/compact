@@ -13,7 +13,7 @@ pub(super) use fab::{aligned_fab_type, fixed_aligned_fab_type, keccak_input_type
 mod domain;
 pub(super) mod lists;
 pub(super) mod maps;
-mod merkle;
+pub(super) mod merkle;
 mod operations;
 pub(super) use merkle::root_type;
 mod pure;

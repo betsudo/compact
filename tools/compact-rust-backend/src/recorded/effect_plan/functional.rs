@@ -50,6 +50,12 @@ pub(crate) enum Capability {
     ListRead,
     ListHead,
     ListWrite,
+    MerkleInspect,
+    MerkleCheckRoot,
+    MerkleInsert,
+    MerkleInsertHash,
+    MerkleReset,
+    MerkleResetHistory,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -85,6 +91,12 @@ impl Ledger8Target {
             Capability::ListRead,
             Capability::ListHead,
             Capability::ListWrite,
+            Capability::MerkleInspect,
+            Capability::MerkleCheckRoot,
+            Capability::MerkleInsert,
+            Capability::MerkleInsertHash,
+            Capability::MerkleReset,
+            Capability::MerkleResetHistory,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -185,6 +197,11 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedMerkleDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedListDeclaration {
         path: String,
@@ -423,6 +440,32 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                         super::functional_lists::ListAccess::Write => Capability::ListWrite,
                     }
                 }
+                Operation::Merkle { slot, .. } => {
+                    let tree =
+                        super::functional_merkle::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedMerkleDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Merkle operation");
+                    match tree.access {
+                        super::functional_merkle::MerkleAccess::Inspect => {
+                            Capability::MerkleInspect
+                        }
+                        super::functional_merkle::MerkleAccess::CheckRoot => {
+                            Capability::MerkleCheckRoot
+                        }
+                        super::functional_merkle::MerkleAccess::Insert => Capability::MerkleInsert,
+                        super::functional_merkle::MerkleAccess::InsertHash => {
+                            Capability::MerkleInsertHash
+                        }
+                        super::functional_merkle::MerkleAccess::Reset => Capability::MerkleReset,
+                        super::functional_merkle::MerkleAccess::ResetHistory => {
+                            Capability::MerkleResetHistory
+                        }
+                    }
+                }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
@@ -453,7 +496,6 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::ConstructJubjubPoint { .. }
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
-                | Operation::Merkle { .. }
                 | Operation::CellWriteCoin { .. }
                 | Operation::SetInsertCoin { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
@@ -561,3 +603,7 @@ mod lists_tests;
 #[cfg(test)]
 #[path = "functional_vector_map_tests.rs"]
 mod vector_map_tests;
+
+#[cfg(test)]
+#[path = "functional_merkle_integration_tests.rs"]
+mod merkle_tests;

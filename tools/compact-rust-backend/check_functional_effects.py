@@ -53,9 +53,10 @@ SOURCES = {
     "list_fixture": FIXTURES / "scalar_lists.compact",
     "counter_more_fixture": FIXTURES / "counter_more.compact",
     "vector_map_fixture": FIXTURES / "vector_map_composition.compact",
+    "merkle_fixture": FIXTURES / "merkle_operations.compact",
 }
-EXPECTED_TESTS = 38
-EXPECTED_SCENARIOS = 100  # Existing 86 + 14 VectorMap scenarios; 4 adapter tests are separate.
+EXPECTED_TESTS = 40
+EXPECTED_SCENARIOS = 115  # Existing 86 + 14 VectorMap + 15 Merkle; 4 adapter tests are separate.
 
 
 def digest(path):
@@ -161,6 +162,7 @@ def main():
         "counter_more_consumer_sha256": digest(FIXTURES / "consumer_counter_more.rs"),
         "vector_map_consumer_sha256": digest(FIXTURES / "consumer_vector_map_composition.rs"),
         "witness_refusal_consumer_sha256": digest(FIXTURES / "consumer_witness_refusals.rs"),
+        "merkle_consumer_sha256": digest(FIXTURES / "consumer_merkle_operations.rs"),
         "adapter_refusal_scope": "4 Rust tests exercise two interpreters/ordinary-exact transports; not four-route contract scenarios",
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
@@ -254,6 +256,12 @@ def main():
                for name in ("items", "labels")):
             raise ValueError("List fixtures must retain multi-component physical paths")
         report["list_physical_paths"] = {name: list_fields[name]["path"] for name in ("items", "labels")}
+        merkle_ir = json.loads((output / "merkle_fixture/contract/compact-rust-ir.json").read_text())
+        merkle_fields = {field["id"]: field for field in merkle_ir["ledger_fields"]}
+        if any(name not in merkle_fields or len(merkle_fields[name].get("path", [])) < 2
+               for name in ("plain", "historic")):
+            raise ValueError("Merkle fixtures must retain multi-component physical paths")
+        report["merkle_physical_paths"] = {name: merkle_fields[name]["path"] for name in ("plain", "historic")}
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / "support").mkdir()
@@ -266,7 +274,8 @@ def main():
                                                ("consumer_scalar_lists.rs", "scalar_lists.rs"),
                                                ("consumer_counter_more.rs", "counter_more.rs"),
                                                ("consumer_vector_map_composition.rs", "vector_map_composition.rs"),
-                                               ("consumer_witness_refusals.rs", "witness_refusals.rs")):
+                                               ("consumer_witness_refusals.rs", "witness_refusals.rs"),
+                                               ("consumer_merkle_operations.rs", "merkle_operations.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -384,6 +393,8 @@ def main():
                                (consumer / "support/vector_map_composition.rs", report["vector_map_consumer_sha256"]),
                                (FIXTURES / "consumer_witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (consumer / "support/witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
+                               (FIXTURES / "consumer_merkle_operations.rs", report["merkle_consumer_sha256"]),
+                               (consumer / "support/merkle_operations.rs", report["merkle_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

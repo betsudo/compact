@@ -106,6 +106,12 @@ fn capability(value: Capability) -> &'static str {
         Capability::ListRead => "list_read",
         Capability::ListHead => "list_head",
         Capability::ListWrite => "list_write",
+        Capability::MerkleInspect => "merkle_inspect",
+        Capability::MerkleCheckRoot => "merkle_check_root",
+        Capability::MerkleInsert => "merkle_insert",
+        Capability::MerkleInsertHash => "merkle_insert_hash",
+        Capability::MerkleReset => "merkle_reset",
+        Capability::MerkleResetHistory => "merkle_reset_history",
     }
 }
 

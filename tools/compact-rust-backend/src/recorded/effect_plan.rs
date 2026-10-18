@@ -23,6 +23,7 @@ pub(crate) mod functional;
 pub(super) mod functional_items;
 mod functional_lists;
 mod functional_maps;
+mod functional_merkle;
 mod functional_metadata;
 mod functional_paths;
 mod functional_pure_blocks;

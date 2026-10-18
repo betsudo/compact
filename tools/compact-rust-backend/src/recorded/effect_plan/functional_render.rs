@@ -19,6 +19,7 @@
 //! nor an inactive branch is evaluated after a preceding operation fails.
 use super::functional_lists::FunctionalListSlot;
 use super::functional_maps::FunctionalMapSlot;
+use super::functional_merkle::FunctionalMerkleSlot;
 use super::functional_paths::rust_type;
 use super::functional_sets::FunctionalSetSlot;
 use super::{
@@ -53,6 +54,7 @@ pub(super) struct RenderedFunctional {
     pub maps: Vec<FunctionalMapSlot>,
     pub sets: Vec<FunctionalSetSlot>,
     pub lists: Vec<FunctionalListSlot>,
+    pub merkle: Vec<FunctionalMerkleSlot>,
     pub witnesses: Vec<FunctionalWitness>,
 }
 
@@ -67,6 +69,7 @@ pub(super) fn render(
         maps: Vec::new(),
         sets: Vec::new(),
         lists: Vec::new(),
+        merkle: Vec::new(),
         witnesses: Vec::new(),
         executor_bounds: Vec::new(),
     };
@@ -92,6 +95,7 @@ pub(super) fn render(
         maps: renderer.maps,
         sets: renderer.sets,
         lists: renderer.lists,
+        merkle: renderer.merkle,
         witnesses: renderer.witnesses,
     })
 }
@@ -116,6 +120,7 @@ struct Renderer<'a> {
     maps: Vec<FunctionalMapSlot>,
     sets: Vec<FunctionalSetSlot>,
     lists: Vec<FunctionalListSlot>,
+    merkle: Vec<FunctionalMerkleSlot>,
     witnesses: Vec<FunctionalWitness>,
     executor_bounds: Vec<syn::TypeParamBound>,
 }
@@ -342,6 +347,17 @@ impl Renderer<'_> {
                     }
                     self.bound(list.bound);
                     list.expression
+                } else if let Some(tree) = super::functional_merkle::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.merkle.iter().any(|present| present.id == tree.slot.id) {
+                        self.merkle.push(tree.slot);
+                    }
+                    self.bound(tree.bound);
+                    tree.expression
                 } else {
                     let expression = pure(binding, operation)?;
                     syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
