@@ -43,6 +43,9 @@ pub(crate) enum Capability {
     MapWrite,
     SetRead,
     SetWrite,
+    ListRead,
+    ListHead,
+    ListWrite,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -71,6 +74,9 @@ impl Ledger8Target {
             Capability::MapWrite,
             Capability::SetRead,
             Capability::SetWrite,
+            Capability::ListRead,
+            Capability::ListHead,
+            Capability::ListWrite,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -171,6 +177,11 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedListDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedSetDeclaration {
         path: String,
@@ -386,6 +397,21 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                         super::functional_sets::SetAccess::Write => Capability::SetWrite,
                     }
                 }
+                Operation::List { slot, .. } => {
+                    let list =
+                        super::functional_lists::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedListDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked List operation");
+                    match list.access {
+                        super::functional_lists::ListAccess::Read => Capability::ListRead,
+                        super::functional_lists::ListAccess::Head => Capability::ListHead,
+                        super::functional_lists::ListAccess::Write => Capability::ListWrite,
+                    }
+                }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
@@ -417,7 +443,6 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
                 | Operation::Merkle { .. }
-                | Operation::List { .. }
                 | Operation::CellWriteCoin { .. }
                 | Operation::SetInsertCoin { .. }
                 | Operation::CounterDecrement { .. }
@@ -516,3 +541,7 @@ mod maps_tests;
 #[cfg(test)]
 #[path = "functional_sets_integration_tests.rs"]
 mod sets_tests;
+
+#[cfg(test)]
+#[path = "functional_lists_integration_tests.rs"]
+mod lists_tests;

@@ -98,6 +98,9 @@ fn capability(value: Capability) -> &'static str {
         Capability::MapWrite => "map_write",
         Capability::SetRead => "set_read",
         Capability::SetWrite => "set_write",
+        Capability::ListRead => "list_read",
+        Capability::ListHead => "list_head",
+        Capability::ListWrite => "list_write",
     }
 }
 
