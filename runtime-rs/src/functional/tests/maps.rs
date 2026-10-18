@@ -17,7 +17,7 @@
 use super::super::ledger8::{
     CellBinding, CounterBinding, Ledger8Bindings, MapBinding, NativeLedger8, RecordedLedger8,
 };
-use super::super::{Executor, Map, MapRead, MapWrite, SlotId};
+use super::super::{Executor, Map, MapLookup, MapRead, MapRemove, MapWrite, SlotId};
 use crate::{
     CompactError, Field,
     context::{CircuitContext, ConstructorContext, ConstructorResult},
@@ -42,7 +42,13 @@ struct MapObservation {
     populated_size: u64,
     finally_empty: bool,
 }
-fn exercise<E: Executor + MapRead<bool, Field> + MapWrite<bool, Field>>(
+fn exercise<
+    E: Executor
+        + MapRead<bool, Field>
+        + MapLookup<bool, Field>
+        + MapRemove<bool, Field>
+        + MapWrite<bool, Field>,
+>(
     executor: E,
 ) -> Result<E::Outcome<MapObservation>, CompactError> {
     let (executor, empty) = executor.map_is_empty(MAP)?;
@@ -270,4 +276,133 @@ fn map_reads_enforce_existing_zero_gas_limit_before_later_producers() {
         Err(CompactError::LedgerQueryRejected(_))
     ));
     assert_eq!(calls.get(), 0);
+}
+
+fn nested_context() -> CircuitContext<u64, DefaultDB> {
+    use crate::{
+        fab::AlignedValue,
+        ledger::{LedgerHashMap, constructor_cell},
+    };
+    let child = |value| {
+        StateValue::Map(LedgerHashMap::new().insert(
+            AlignedValue::from(true),
+            constructor_cell::<_, DefaultDB>(Field::from(value)),
+        ))
+    };
+    let entries = LedgerHashMap::new()
+        .insert(AlignedValue::from(true), child(10_u64))
+        .insert(AlignedValue::from(false), child(90_u64));
+    ConstructorResult::new(
+        ConstructorContext::new(73_u64),
+        contract_state(vec![StateValue::Array(
+            vec![StateValue::Map(entries)].into(),
+        )]),
+    )
+    .into_circuit_context(ContractAddress::default())
+}
+#[test]
+fn nested_maps_inspect_and_remove_without_scalar_value_codec() {
+    use crate::slots::MapNode;
+    let map: Map<bool, MapNode<bool, Field>> = Map::new(MAP.id());
+    fn run<
+        E: Executor
+            + MapRead<bool, crate::slots::MapNode<bool, Field>>
+            + MapRemove<bool, crate::slots::MapNode<bool, Field>>,
+    >(
+        executor: E,
+        map: Map<bool, crate::slots::MapNode<bool, Field>>,
+    ) -> Result<E::Outcome<u64>, CompactError> {
+        let (executor, size) = executor.map_size(map)?;
+        assert_eq!(size, 2);
+        let (executor, present) = executor.map_member(map, true)?;
+        assert!(present);
+        let executor = executor.map_remove(map, true)?;
+        let (executor, present) = executor.map_member(map, true)?;
+        assert!(!present);
+        // Removing the now-absent child preserves its sibling and size.
+        let executor = executor.map_remove(map, true)?;
+        let (executor, sibling) = executor.map_member(map, false)?;
+        assert!(sibling);
+        let (executor, size) = executor.map_size(map)?;
+        assert_eq!(size, 1);
+        let (executor, empty) = executor.map_is_empty(map)?;
+        assert!(!empty);
+        Ok(executor.finish(size))
+    }
+    let bindings = Ledger8Bindings::with_maps(&[], &[], &BINDINGS).unwrap();
+    let native = run(NativeLedger8::new(nested_context(), bindings), map).unwrap();
+    let recorded = run(RecordedLedger8::new(nested_context(), bindings), map).unwrap();
+    assert_eq!(native.result, 1);
+    assert_eq!(native.result, recorded.execution.result);
+    assert_eq!(native.gas_cost, recorded.execution.gas_cost);
+    assert_eq!(native.context.private_state, 73);
+    assert_eq!(recorded.execution.context.private_state, 73);
+    assert!(native.private_transcript_outputs.is_empty());
+    assert!(recorded.execution.private_transcript_outputs.is_empty());
+    // Compare the entire surviving child, not membership alone.
+    let StateValue::Array(chunks) = native.context.query.state.get_ref() else {
+        panic!("expected chunk array")
+    };
+    let StateValue::Array(fields) = chunks.get(0).unwrap() else {
+        panic!("expected nested fields")
+    };
+    let StateValue::Map(entries) = fields.get(0).unwrap() else {
+        panic!("expected outer Map")
+    };
+    let sibling = entries.get(&crate::fab::AlignedValue::from(false)).unwrap();
+    let expected = StateValue::Map(crate::ledger::LedgerHashMap::new().insert(
+        crate::fab::AlignedValue::from(true),
+        crate::ledger::constructor_cell::<_, DefaultDB>(Field::from(90_u64)),
+    ));
+    assert_eq!(bytes(&sibling), bytes(&expected));
+    assert_eq!(
+        bytes(native.context.query.state.get_ref()),
+        bytes(recorded.execution.context.query.state.get_ref())
+    );
+    let replay = recorded
+        .public
+        .initial()
+        .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL)
+        .unwrap();
+    assert_eq!(
+        bytes(replay.context.state.get_ref()),
+        bytes(recorded.execution.context.query.state.get_ref())
+    );
+    assert_eq!(
+        replay.context.effects,
+        recorded.execution.context.query.effects
+    );
+}
+#[test]
+fn nested_map_guards_and_unbound_identity_preserve_refusals() {
+    use super::super::{Circuit, Rule};
+    let map: Map<bool, crate::slots::MapNode<bool, Field>> = Map::new(MAP.id());
+    let empty = Ledger8Bindings::new(&[]).unwrap();
+    let native = NativeLedger8::new(nested_context(), empty)
+        .map_member(map, true)
+        .err()
+        .unwrap();
+    let recorded = RecordedLedger8::new(nested_context(), empty)
+        .map_member(map, true)
+        .err()
+        .unwrap();
+    assert_eq!(native, recorded);
+    assert!(matches!(native, CompactError::InvalidLedgerCell(_)));
+    let native = Circuit::begin(NativeLedger8::new(nested_context(), empty))
+        .require(Rule::new(false, "nested map guard"))
+        .map_remove(map, true)
+        .finish()
+        .err()
+        .unwrap();
+    let recorded = Circuit::begin(RecordedLedger8::new(nested_context(), empty))
+        .require(Rule::new(false, "nested map guard"))
+        .map_remove(map, true)
+        .finish()
+        .err()
+        .unwrap();
+    assert_eq!(
+        native,
+        CompactError::AssertionFailed("nested map guard".into())
+    );
+    assert_eq!(native, recorded);
 }

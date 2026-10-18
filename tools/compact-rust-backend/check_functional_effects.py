@@ -48,9 +48,11 @@ SOURCES = {
     "composition_fixture": FIXTURES / "pure_composition.compact",
     "call_fixture": FIXTURES / "local_calls.compact",
     "map_fixture": FIXTURES / "scalar_maps.compact",
+    "nested_fixture": FIXTURES / "nested_map_remove.compact",
+    "set_fixture": FIXTURES / "scalar_sets.compact",
 }
-EXPECTED_TESTS = 16
-EXPECTED_SCENARIOS = 56  # Existing 50 + 6 scalar Map operation/refusal scenarios.
+EXPECTED_TESTS = 20
+EXPECTED_SCENARIOS = 68  # Existing 62 + 6 scalar Set scenarios.
 
 
 def digest(path):
@@ -150,6 +152,8 @@ def main():
         "composition_consumer_sha256": digest(FIXTURES / "consumer_pure_composition.rs"),
         "call_consumer_sha256": digest(FIXTURES / "consumer_local_calls.rs"),
         "map_consumer_sha256": digest(FIXTURES / "consumer_scalar_maps.rs"),
+        "nested_consumer_sha256": digest(FIXTURES / "consumer_nested_map_remove.rs"),
+        "set_consumer_sha256": digest(FIXTURES / "consumer_scalar_sets.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -224,13 +228,27 @@ def main():
                for name in ("table", "ownedTable")):
             raise ValueError("Map fixture tables must retain multi-component physical paths")
         report["map_physical_paths"] = {name: map_fields[name]["path"] for name in ("table", "ownedTable")}
+        nested_ir = json.loads((output / "nested_fixture/contract/compact-rust-ir.json").read_text())
+        outer_fields = [field for field in nested_ir["ledger_fields"] if field["id"] == "outer"]
+        if len(outer_fields) != 1 or len(outer_fields[0].get("path", [])) < 2:
+            raise ValueError("nested Map fixture must retain its full multi-component physical path")
+        report["nested_map_physical_path"] = outer_fields[0]["path"]
+        report["nested_map_scope"] = "official held state seeds populated children; no generated nested constructor/insertion claim"
+        set_ir = json.loads((output / "set_fixture/contract/compact-rust-ir.json").read_text())
+        set_fields = {field["id"]: field for field in set_ir["ledger_fields"]}
+        if any(name not in set_fields or len(set_fields[name].get("path", [])) < 2
+               for name in ("values", "labels")):
+            raise ValueError("Set fixtures must retain multi-component physical paths")
+        report["set_physical_paths"] = {name: set_fields[name]["path"] for name in ("values", "labels")}
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / "support").mkdir()
         includes = b""
         for source_name, destination_name in (("consumer_pure_composition.rs", "pure_composition.rs"),
                                                ("consumer_local_calls.rs", "local_calls.rs"),
-                                               ("consumer_scalar_maps.rs", "scalar_maps.rs")):
+                                               ("consumer_scalar_maps.rs", "scalar_maps.rs"),
+                                               ("consumer_nested_map_remove.rs", "nested_map_remove.rs"),
+                                               ("consumer_scalar_sets.rs", "scalar_sets.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -336,6 +354,10 @@ def main():
                                (consumer / "support/local_calls.rs", report["call_consumer_sha256"]),
                                (FIXTURES / "consumer_scalar_maps.rs", report["map_consumer_sha256"]),
                                (consumer / "support/scalar_maps.rs", report["map_consumer_sha256"]),
+                               (FIXTURES / "consumer_nested_map_remove.rs", report["nested_consumer_sha256"]),
+                               (consumer / "support/nested_map_remove.rs", report["nested_consumer_sha256"]),
+                               (FIXTURES / "consumer_scalar_sets.rs", report["set_consumer_sha256"]),
+                               (consumer / "support/scalar_sets.rs", report["set_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

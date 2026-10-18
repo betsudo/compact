@@ -148,9 +148,11 @@ fn all_eight_scalar_map_operations_have_typed_bounds_and_one_logical_binding() {
         .iter()
         .map(|b| b.to_token_stream().to_string())
         .collect();
-    assert_eq!(bounds.len(), 2);
+    assert_eq!(bounds.len(), 4);
     assert!(bounds.iter().any(|b| b.contains("MapRead")));
     assert!(bounds.iter().any(|b| b.contains("MapWrite")));
+    assert!(bounds.iter().any(|b| b.contains("MapLookup")));
+    assert!(bounds.iter().any(|b| b.contains("MapRemove")));
     let source = rendered.body.to_token_stream().to_string();
     for method in [
         "map_member",
@@ -184,7 +186,7 @@ fn scalar_owned_key_and_value_use_existing_codec_eligibility() {
     assert!(rendered.contains("clone"));
 }
 #[test]
-fn nested_map_membership_is_ordinary_valid_but_has_a_precise_functional_refusal() {
+fn nested_map_membership_preserves_structural_type_without_requesting_scalar_lookup() {
     let field = field(
         Type::Boolean,
         Type::LedgerMap {
@@ -212,40 +214,19 @@ fn nested_map_membership_is_ordinary_valid_but_has_a_precise_functional_refusal(
     };
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let Err(ProjectionRefusal::UnsupportedMapDeclaration {
-        path,
-        declaration,
-        cause,
-    }) = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED)
-    else {
-        panic!("nested Map was not explicitly refused")
-    };
-    let expected_path = checked
-        .plan()
-        .body
-        .bindings
-        .iter()
-        .find(|binding| matches!(binding.operation, Operation::MapMember { .. }))
-        .expect("ordinary nested Map membership was checked")
-        .path
-        .clone();
-    assert_eq!(declaration, 0);
-    assert_eq!(path, expected_path);
-    assert_eq!(cause.path, expected_path);
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
     assert_eq!(
-        cause.code,
-        crate::recorded::RecordingGapCode::UnsupportedExpression
+        program.requirements().iter().copied().collect::<Vec<_>>(),
+        [Capability::MapRead]
     );
-    assert_eq!(cause.ir_node, "RecordedPlan");
-    // Scalar projection asks the canonical type environment to validate V.
-    // LedgerMap is a structural declaration, not a checked SSA value, so this
-    // earlier domain refusal precedes the scalar codec eligibility check.
-    assert_eq!(
-        cause.detail,
-        "type is outside checked recording value domain"
-    );
-    assert!(cause.resource.is_none());
+    let rendered = super::super::functional_render::render(&program).unwrap();
+    assert_eq!(rendered.executor_bounds.len(), 1);
+    let bound = rendered.executor_bounds[0].to_token_stream().to_string();
+    assert!(bound.contains("MapRead < bool , crate :: runtime :: slots :: MapNode < bool , crate :: runtime :: Field > >"));
+    assert!(!bound.contains("MapLookup"));
+    assert!(!bound.contains("MapWrite"));
 }
+
 #[test]
 fn map_target_capability_is_required_before_emission() {
     let field = field(Type::Boolean, Type::Field);
@@ -335,4 +316,190 @@ fn readonly_and_writeonly_maps_do_not_request_the_other_capability() {
         assert_eq!(bounds[0].contains("MapWrite"), write);
         assert_eq!(bounds[0].contains("MapRead"), !write);
     }
+}
+
+#[test]
+fn nested_map_removal_uses_structural_remove_not_scalar_write() {
+    let field = field(
+        Type::Boolean,
+        Type::LedgerMap {
+            key: Box::new(Type::Boolean),
+            value: Box::new(Type::Field),
+        },
+    );
+    let root = StatefulCircuit {
+        source: None,
+        name: "root".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "key".into(),
+            ty: Type::Boolean,
+        }],
+        actions: vec![StateAction::MapRemove {
+            field: "entries".into(),
+            index: 0,
+            key: input("key"),
+        }],
+        result: Type::Boolean,
+        return_value: StateReturn::Expression {
+            value: Expr::MapMember {
+                field: "entries".into(),
+                index: 0,
+                key: Box::new(input("key")),
+            },
+        },
+    };
+    let checked = checked(&root, &field);
+    let authority = Authority::new();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    assert!(program.requirements().contains(&Capability::MapRemove));
+    assert!(!program.requirements().contains(&Capability::MapWrite));
+    let rendered = super::super::functional_render::render(&program).unwrap();
+    let bounds = rendered
+        .executor_bounds
+        .iter()
+        .map(|b| b.to_token_stream().to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(bounds.len(), 2);
+    assert!(bounds.iter().any(|b| b.contains("MapRemove")));
+    assert!(
+        rendered
+            .body
+            .to_token_stream()
+            .to_string()
+            .contains("map_remove")
+    );
+}
+
+#[test]
+fn nested_scalar_operations_refuse_at_the_declaration_before_operand_evaluation() {
+    let nested = Type::LedgerMap {
+        key: Box::new(Type::Boolean),
+        value: Box::new(Type::Field),
+    };
+    let field = field(Type::Boolean, nested.clone());
+    for operation in ["lookup", "insert", "insert_default", "reset"] {
+        // A nested Map cannot be an SSA argument. A lookup denotes the same
+        // declared nested type, but is itself intentionally not a scalar codec.
+        // Every mutation must refuse its declaration before visiting operands.
+        let lookup = Expr::MapLookup {
+            field: "entries".into(),
+            index: 0,
+            key: Box::new(input("key")),
+        };
+        let actions = match operation {
+            "lookup" => vec![StateAction::Expression {
+                value: lookup.clone(),
+            }],
+            "insert" => vec![StateAction::MapInsert {
+                field: "entries".into(),
+                index: 0,
+                key: input("key"),
+                value: lookup.clone(),
+            }],
+            "insert_default" => vec![StateAction::MapInsertDefault {
+                field: "entries".into(),
+                index: 0,
+                key: input("key"),
+            }],
+            "reset" => vec![StateAction::MapReset {
+                field: "entries".into(),
+                index: 0,
+            }],
+            _ => unreachable!(),
+        };
+        let root = StatefulCircuit {
+            source: None,
+            name: "root".into(),
+            internal: false,
+            parameters: vec![Parameter {
+                name: "key".into(),
+                ty: Type::Boolean,
+            }],
+            actions,
+            result: Type::Unit,
+            return_value: StateReturn::Unit,
+        };
+        let fields = HashMap::from([("entries", &field)]);
+        let circuits = HashMap::from([("root", &root)]);
+        let cause = super::super::check_with_calls_observed(
+            &root,
+            &fields,
+            &HashMap::new(),
+            &HashMap::new(),
+            &circuits,
+            None,
+        )
+        .unwrap_err();
+        let cause = match cause {
+            super::super::DiagnosticPlanError::Unsupported(rejection) => rejection.gap,
+            other => panic!("expected declaration lowering refusal: {other:?}"),
+        };
+        let path = if operation == "lookup" {
+            "actions[0].value"
+        } else {
+            "actions[0]"
+        };
+        assert_eq!(
+            cause,
+            super::super::invalid(path, "type is outside checked recording value domain"),
+            "{operation}"
+        );
+    }
+}
+
+#[test]
+fn lookup_and_remove_request_their_own_target_capabilities() {
+    let field = field(Type::Boolean, Type::Field);
+    let authority = Authority::new();
+    let mut lookup = root(Type::Boolean, Type::Field);
+    lookup.actions.clear();
+    lookup.result = Type::Field;
+    lookup.return_value = StateReturn::Expression {
+        value: Expr::MapLookup {
+            field: "entries".into(),
+            index: 0,
+            key: Box::new(input("key")),
+        },
+    };
+    let checked_lookup = checked(&lookup, &field);
+    let target = Ledger8Target {
+        capabilities: &[
+            Capability::Pure,
+            Capability::MapRead,
+            Capability::MapRemove,
+            Capability::MapWrite,
+        ],
+    };
+    assert!(matches!(
+        FunctionalProgram::project(&checked_lookup, &authority, target),
+        Err(ProjectionRefusal::MissingTargetCapability {
+            capability: Capability::MapLookup,
+            ..
+        })
+    ));
+    let mut remove = lookup;
+    remove.actions = vec![StateAction::MapRemove {
+        field: "entries".into(),
+        index: 0,
+        key: input("key"),
+    }];
+    remove.result = Type::Unit;
+    remove.return_value = StateReturn::Unit;
+    let checked_remove = checked(&remove, &field);
+    let target = Ledger8Target {
+        capabilities: &[
+            Capability::Pure,
+            Capability::MapRead,
+            Capability::MapLookup,
+            Capability::MapWrite,
+        ],
+    };
+    assert!(matches!(
+        FunctionalProgram::project(&checked_remove, &authority, target),
+        Err(ProjectionRefusal::MissingTargetCapability {
+            capability: Capability::MapRemove,
+            ..
+        })
+    ));
 }

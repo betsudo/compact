@@ -38,7 +38,11 @@ pub(crate) enum Capability {
     Select,
     Call,
     MapRead,
+    MapLookup,
+    MapRemove,
     MapWrite,
+    SetRead,
+    SetWrite,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -62,7 +66,11 @@ impl Ledger8Target {
             Capability::Select,
             Capability::Call,
             Capability::MapRead,
+            Capability::MapLookup,
+            Capability::MapRemove,
             Capability::MapWrite,
+            Capability::SetRead,
+            Capability::SetWrite,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -163,6 +171,11 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedSetDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedMapDeclaration {
         path: String,
@@ -347,10 +360,30 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                                 cause,
                             })?
                             .expect("matched checked Map operation");
-                    if map.write {
-                        Capability::MapWrite
-                    } else {
-                        Capability::MapRead
+                    match map.access {
+                        super::functional_maps::MapAccess::Read => Capability::MapRead,
+                        super::functional_maps::MapAccess::Lookup => Capability::MapLookup,
+                        super::functional_maps::MapAccess::Remove => Capability::MapRemove,
+                        super::functional_maps::MapAccess::Write => Capability::MapWrite,
+                    }
+                }
+                Operation::SetMember { slot, .. }
+                | Operation::SetInsert { slot, .. }
+                | Operation::SetRemove { slot, .. }
+                | Operation::SetReset { slot }
+                | Operation::SetSize { slot }
+                | Operation::SetIsEmpty { slot } => {
+                    let set =
+                        super::functional_sets::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedSetDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Set operation");
+                    match set.access {
+                        super::functional_sets::SetAccess::Read => Capability::SetRead,
+                        super::functional_sets::SetAccess::Write => Capability::SetWrite,
                     }
                 }
                 Operation::Assert { .. } => Capability::Require,
@@ -386,13 +419,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::Merkle { .. }
                 | Operation::List { .. }
                 | Operation::CellWriteCoin { .. }
-                | Operation::SetMember { .. }
-                | Operation::SetInsert { .. }
                 | Operation::SetInsertCoin { .. }
-                | Operation::SetRemove { .. }
-                | Operation::SetReset { .. }
-                | Operation::SetSize { .. }
-                | Operation::SetIsEmpty { .. }
                 | Operation::CounterDecrement { .. }
                 | Operation::CounterReset { .. }
                 | Operation::CounterLessThan { .. } => {
@@ -485,3 +512,7 @@ mod calls_tests;
 #[cfg(test)]
 #[path = "functional_maps_tests.rs"]
 mod maps_tests;
+
+#[cfg(test)]
+#[path = "functional_sets_integration_tests.rs"]
+mod sets_tests;

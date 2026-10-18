@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Maps operations keep the carrier state private to its parent module.
-use super::super::{Map, MapRead, MapWrite};
+use super::super::{Map, MapLookup, MapRead, MapRemove, MapWrite};
 use super::{Circuit, Executor};
 impl<E: Executor> Circuit<E, ()> {
     /// Map operands follow the same eager-argument contract as Cell operations.
@@ -30,7 +30,7 @@ impl<E: Executor> Circuit<E, ()> {
     }
     pub fn map_lookup<K, V>(self, map: Map<K, V>, key: K) -> Circuit<E, V>
     where
-        E: MapRead<K, V>,
+        E: MapLookup<K, V>,
     {
         Circuit {
             state: self
@@ -68,7 +68,7 @@ impl<E: Executor> Circuit<E, ()> {
     }
     pub fn map_remove<K, V>(self, map: Map<K, V>, key: K) -> Self
     where
-        E: MapWrite<K, V>,
+        E: MapRemove<K, V>,
     {
         Self {
             state: self

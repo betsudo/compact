@@ -17,7 +17,7 @@ mod merkle;
 mod operations;
 pub(super) use merkle::root_type;
 mod pure;
-mod sets;
+pub(super) mod sets;
 mod storage;
 mod vector_map;
 pub(super) use storage::{list_element_type, map_key_type, merkle_leaf_type, set_element_type};

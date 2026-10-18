@@ -93,7 +93,11 @@ fn capability(value: Capability) -> &'static str {
         Capability::Select => "select",
         Capability::Call => "call",
         Capability::MapRead => "map_read",
+        Capability::MapLookup => "map_lookup",
+        Capability::MapRemove => "map_remove",
         Capability::MapWrite => "map_write",
+        Capability::SetRead => "set_read",
+        Capability::SetWrite => "set_write",
     }
 }
 

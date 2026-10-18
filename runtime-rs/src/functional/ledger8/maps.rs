@@ -14,31 +14,19 @@
 // limitations under the License.
 
 //! Scalar Map interpretation delegates existing slots and owned frames.
-use super::super::{Map, MapRead, MapWrite};
+use super::super::{Map, MapLookup, MapRead, MapRemove, MapWrite};
 use super::{NativeLedger8, RecordedLedger8};
 use crate::{
     CompactError,
     ledger::{CellValue, DB},
 };
 
-impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapRead<K, V>
+impl<Private, D: DB, W, K: CellValue + Clone, V> MapRead<K, V>
     for NativeLedger8<'_, Private, D, W>
 {
     fn map_member(self, map: Map<K, V>, key: K) -> Result<(Self, bool), CompactError> {
         let slot = self.bindings.map(map)?;
         let (frame, value) = self.frame.apply(|context| slot.member(context, key))?;
-        Ok((
-            Self {
-                frame,
-                bindings: self.bindings,
-                witnesses: self.witnesses,
-            },
-            value,
-        ))
-    }
-    fn map_lookup(self, map: Map<K, V>, key: K) -> Result<(Self, V), CompactError> {
-        let slot = self.bindings.map(map)?;
-        let (frame, value) = self.frame.apply(|context| slot.lookup(context, key))?;
         Ok((
             Self {
                 frame,
@@ -73,7 +61,35 @@ impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapRead<K, V>
         ))
     }
 }
-
+impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapLookup<K, V>
+    for NativeLedger8<'_, Private, D, W>
+{
+    fn map_lookup(self, map: Map<K, V>, key: K) -> Result<(Self, V), CompactError> {
+        let slot = self.bindings.map(map)?;
+        let (frame, value) = self.frame.apply(|context| slot.lookup(context, key))?;
+        Ok((
+            Self {
+                frame,
+                bindings: self.bindings,
+                witnesses: self.witnesses,
+            },
+            value,
+        ))
+    }
+}
+impl<Private, D: DB, W, K: CellValue + Clone, V> MapRemove<K, V>
+    for NativeLedger8<'_, Private, D, W>
+{
+    fn map_remove(self, map: Map<K, V>, key: K) -> Result<Self, CompactError> {
+        let slot = self.bindings.map(map)?;
+        let (frame, ()) = self.frame.apply(|context| slot.remove(context, key))?;
+        Ok(Self {
+            frame,
+            bindings: self.bindings,
+            witnesses: self.witnesses,
+        })
+    }
+}
 impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapWrite<K, V>
     for NativeLedger8<'_, Private, D, W>
 {
@@ -82,15 +98,6 @@ impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapWrite<K, V>
         let (frame, ()) = self
             .frame
             .apply(|context| slot.insert(context, key, value))?;
-        Ok(Self {
-            frame,
-            bindings: self.bindings,
-            witnesses: self.witnesses,
-        })
-    }
-    fn map_remove(self, map: Map<K, V>, key: K) -> Result<Self, CompactError> {
-        let slot = self.bindings.map(map)?;
-        let (frame, ()) = self.frame.apply(|context| slot.remove(context, key))?;
         Ok(Self {
             frame,
             bindings: self.bindings,
@@ -121,25 +128,12 @@ impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapWrite<K, V>
         })
     }
 }
-
-impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapRead<K, V>
+impl<Private, D: DB, W, K: CellValue + Clone, V> MapRead<K, V>
     for RecordedLedger8<'_, Private, D, W>
 {
     fn map_member(self, map: Map<K, V>, key: K) -> Result<(Self, bool), CompactError> {
         let slot = self.bindings.map(map)?;
         let (frame, value) = slot.record_member(self.frame, key)?;
-        Ok((
-            Self {
-                frame,
-                bindings: self.bindings,
-                witnesses: self.witnesses,
-            },
-            value,
-        ))
-    }
-    fn map_lookup(self, map: Map<K, V>, key: K) -> Result<(Self, V), CompactError> {
-        let slot = self.bindings.map(map)?;
-        let (frame, value) = slot.record_lookup(self.frame, key)?;
         Ok((
             Self {
                 frame,
@@ -174,22 +168,41 @@ impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapRead<K, V>
         ))
     }
 }
-
-impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapWrite<K, V>
+impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapLookup<K, V>
     for RecordedLedger8<'_, Private, D, W>
 {
-    fn map_insert(self, map: Map<K, V>, key: K, value: V) -> Result<Self, CompactError> {
+    fn map_lookup(self, map: Map<K, V>, key: K) -> Result<(Self, V), CompactError> {
         let slot = self.bindings.map(map)?;
-        let frame = slot.record_insert(self.frame, key, value)?;
+        let (frame, value) = slot.record_lookup(self.frame, key)?;
+        Ok((
+            Self {
+                frame,
+                bindings: self.bindings,
+                witnesses: self.witnesses,
+            },
+            value,
+        ))
+    }
+}
+impl<Private, D: DB, W, K: CellValue + Clone, V> MapRemove<K, V>
+    for RecordedLedger8<'_, Private, D, W>
+{
+    fn map_remove(self, map: Map<K, V>, key: K) -> Result<Self, CompactError> {
+        let slot = self.bindings.map(map)?;
+        let frame = slot.record_remove(self.frame, key)?;
         Ok(Self {
             frame,
             bindings: self.bindings,
             witnesses: self.witnesses,
         })
     }
-    fn map_remove(self, map: Map<K, V>, key: K) -> Result<Self, CompactError> {
+}
+impl<Private, D: DB, W, K: CellValue + Clone, V: CellValue> MapWrite<K, V>
+    for RecordedLedger8<'_, Private, D, W>
+{
+    fn map_insert(self, map: Map<K, V>, key: K, value: V) -> Result<Self, CompactError> {
         let slot = self.bindings.map(map)?;
-        let frame = slot.record_remove(self.frame, key)?;
+        let frame = slot.record_insert(self.frame, key, value)?;
         Ok(Self {
             frame,
             bindings: self.bindings,

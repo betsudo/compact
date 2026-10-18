@@ -4,7 +4,7 @@
 //! Slot identity and element eligibility come from the immutable declaration registry.
 use super::*;
 
-pub(super) fn element<'a>(
+pub(in super::super) fn element<'a>(
     declarations: &'a Declarations,
     slot: SetSlot,
     path: &str,

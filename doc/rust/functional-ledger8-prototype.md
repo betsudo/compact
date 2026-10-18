@@ -127,7 +127,16 @@ This does not implement the separate direct stateful Fold gap (#661).
 Scalar Map membership, lookup, insertion, removal, default insertion, reset,
 size and emptiness use the existing typed slots on both interpreters. Logical
 bindings preserve each declaration's full physical path. Nested Map declarations
-are currently refused by this projection and have a separate interface refinement.
+support membership, size, emptiness and removal without a scalar value codec.
+The traits separate structural `MapRead`/`MapRemove` from scalar
+`MapLookup`/`MapWrite`. Nested lookup, insertion and reset remain refused.
+Unsupported nested Map witness accessors are omitted, matching `PublicState`;
+scalar Map and Cell witness views remain available. This does not add nested
+Map inspection inside witnesses.
+
+Scalar Set membership, insertion, removal, reset, size and emptiness reuse the
+existing Set slots through `SetRead` and `SetWrite`. Coin allocation is a
+separate phase and is not admitted as ordinary Set insertion.
 
 Other Counter operations, remaining collections and hashes are still refused by
 this projection. Ordinary-backend conversion restrictions also remain authoritative.
@@ -203,7 +212,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **16 tests**, **56 behavioral scenarios**
+The current finite consumer run covers **20 tests**, **68 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -225,6 +234,11 @@ The twelfth source exercises all eight scalar Map operations through ordinary
 private helpers and checked calls, with owned values and chunked paths. Direct
 nested-source normalization remains limited in the ordinary frontend (#516 and
 #610); helper composition does not establish direct-syntax parity.
+The thirteenth source exercises nested Map inspection/removal, selected guards
+and failure prefixes. Its populated child Maps are seeded through official held
+state; this does not demonstrate generated nested insertion or constructors.
+The fourteenth source exercises six scalar Set operations, owned element
+uniqueness, populated/empty observations and chunked paths.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

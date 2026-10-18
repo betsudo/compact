@@ -1,0 +1,60 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct Receipt { before: Uint<64>; present: Boolean; removed: Boolean; sibling: Boolean; after: Uint<64>; empty: Boolean; }
+export ledger padding0: Field;
+export ledger padding1: Field;
+export ledger padding2: Field;
+export ledger padding3: Field;
+export ledger padding4: Field;
+export ledger padding5: Field;
+export ledger padding6: Field;
+export ledger padding7: Field;
+export ledger padding8: Field;
+export ledger padding9: Field;
+export ledger padding10: Field;
+export ledger padding11: Field;
+export ledger padding12: Field;
+export ledger padding13: Field;
+export ledger padding14: Field;
+export ledger padding15: Field;
+export ledger stored: Field;
+export ledger outer: Map<Boolean, Map<Field, Field>>;
+witness mark(value: Field): Field;
+constructor() { stored = 3; }
+circuit count(): Uint<64> { return outer.size(); }
+circuit removeChild(key: Boolean): [] { outer.remove(disclose(key)); }
+export circuit inspect(key: Boolean, sibling: Boolean): Receipt {
+  const before = count();
+  const present = outer.member(disclose(key));
+  removeChild(key);
+  const removed = outer.member(disclose(key));
+  const retained = outer.member(disclose(sibling));
+  const after = count();
+  const empty = outer.isEmpty();
+  stored = disclose(mark(17 as Field));
+  return Receipt { before: before, present: present, removed: removed, sibling: retained, after: after, empty: empty };
+}
+export circuit guarded(selected: Boolean, permit: Boolean, after: Boolean, key: Boolean): Boolean {
+  if (disclose(selected)) {
+    assert(disclose(permit), "nested denied");
+    removeChild(key);
+    stored = disclose(mark(17 as Field));
+    assert(disclose(after), "nested after denied");
+    stored = disclose(mark(18 as Field));
+  }
+  return outer.member(disclose(key));
+}

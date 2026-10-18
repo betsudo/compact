@@ -1,0 +1,79 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct Receipt { present: Boolean; beforeResetEmpty: Boolean; size: Uint<64>; afterRemove: Boolean; remainingSize: Uint<64>; resetEmpty: Boolean; resetSize: Uint<64>; ownedPresent: Boolean; ownedSize: Uint<64>; ownedAfterRemove: Boolean; ownedFinalSize: Uint<64>; }
+export ledger padding0: Field;
+export ledger padding1: Field;
+export ledger padding2: Field;
+export ledger padding3: Field;
+export ledger padding4: Field;
+export ledger padding5: Field;
+export ledger padding6: Field;
+export ledger padding7: Field;
+export ledger padding8: Field;
+export ledger padding9: Field;
+export ledger padding10: Field;
+export ledger padding11: Field;
+export ledger padding12: Field;
+export ledger padding13: Field;
+export ledger padding14: Field;
+export ledger padding15: Field;
+export ledger stored: Field;
+export ledger values: Set<Field>;
+export ledger labels: Set<Opaque<"string">>;
+witness nextValue(value: Field): Field;
+constructor() { stored = 3; values.insert(11 as Field); }
+// Direct nested ADT mutation/size lowering remains tracked by #516/CoPS003.
+circuit insertValue(value: Field): [] { values.insert(disclose(value)); }
+circuit removeValue(value: Field): [] { values.remove(disclose(value)); }
+circuit resetValues(): [] { values.resetToDefault(); }
+circuit valueCount(): Uint<64> { return values.size(); }
+circuit insertLabel(value: Opaque<"string">): [] { labels.insert(disclose(value)); }
+circuit removeLabel(value: Opaque<"string">): [] { labels.remove(disclose(value)); }
+circuit labelCount(): Uint<64> { return labels.size(); }
+export circuit exercise(value: Field, label: Opaque<"string">): Receipt {
+  const next = nextValue(value);
+  stored = disclose(next);
+  insertValue(next);
+  const present = values.member(disclose(next));
+  const size = valueCount();
+  removeValue(next);
+  const afterRemove = values.member(disclose(next));
+  const remainingSize = valueCount();
+  const beforeResetEmpty = values.isEmpty();
+  resetValues();
+  const resetEmpty = values.isEmpty();
+  const resetSize = valueCount();
+  insertLabel(label);
+  insertLabel(label);
+  const ownedPresent = labels.member(disclose(label));
+  const ownedSize = labelCount();
+  removeLabel(label);
+  const ownedAfterRemove = labels.member(disclose(label));
+  const ownedFinalSize = labelCount();
+  return Receipt { present: present, beforeResetEmpty: beforeResetEmpty, size: size, afterRemove: afterRemove, remainingSize: remainingSize, resetEmpty: resetEmpty, resetSize: resetSize, ownedPresent: ownedPresent, ownedSize: ownedSize, ownedAfterRemove: ownedAfterRemove, ownedFinalSize: ownedFinalSize };
+}
+export circuit guarded(selected: Boolean, permit: Boolean, after: Boolean): Field {
+  if (disclose(selected)) {
+    assert(disclose(permit), "set denied");
+    const next = nextValue(11 as Field);
+    insertValue(next);
+    stored = disclose(next);
+    assert(disclose(after), "set after denied");
+    stored = disclose(nextValue(stored.read()));
+  } else { stored = 9; }
+  return stored.read();
+}
