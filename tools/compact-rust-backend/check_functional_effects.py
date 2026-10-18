@@ -47,9 +47,10 @@ SOURCES = {
     "exact_fixture": FIXTURES / "exact_witnesses.compact",
     "composition_fixture": FIXTURES / "pure_composition.compact",
     "call_fixture": FIXTURES / "local_calls.compact",
+    "map_fixture": FIXTURES / "scalar_maps.compact",
 }
-EXPECTED_TESTS = 14
-EXPECTED_SCENARIOS = 50  # Existing 45 + 5 local/certified-pure call scenarios.
+EXPECTED_TESTS = 16
+EXPECTED_SCENARIOS = 56  # Existing 50 + 6 scalar Map operation/refusal scenarios.
 
 
 def digest(path):
@@ -148,6 +149,7 @@ def main():
         "consumer_sha256": digest(FIXTURES / "consumer.rs"),
         "composition_consumer_sha256": digest(FIXTURES / "consumer_pure_composition.rs"),
         "call_consumer_sha256": digest(FIXTURES / "consumer_local_calls.rs"),
+        "map_consumer_sha256": digest(FIXTURES / "consumer_scalar_maps.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -216,12 +218,19 @@ def main():
         chunked = json.loads((output / "chunked_fixture/contract/compact-rust-ir.json").read_text())
         if not any(len(field.get("path", [])) > 1 for field in chunked["ledger_fields"]):
             raise ValueError("chunked source did not produce a multi-component physical path")
+        map_ir = json.loads((output / "map_fixture/contract/compact-rust-ir.json").read_text())
+        map_fields = {field["id"]: field for field in map_ir["ledger_fields"]}
+        if any(name not in map_fields or len(map_fields[name].get("path", [])) < 2
+               for name in ("table", "ownedTable")):
+            raise ValueError("Map fixture tables must retain multi-component physical paths")
+        report["map_physical_paths"] = {name: map_fields[name]["path"] for name in ("table", "ownedTable")}
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / "support").mkdir()
         includes = b""
         for source_name, destination_name in (("consumer_pure_composition.rs", "pure_composition.rs"),
-                                               ("consumer_local_calls.rs", "local_calls.rs")):
+                                               ("consumer_local_calls.rs", "local_calls.rs"),
+                                               ("consumer_scalar_maps.rs", "scalar_maps.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -325,6 +334,8 @@ def main():
                                (consumer / "support/pure_composition.rs", report["composition_consumer_sha256"]),
                                (FIXTURES / "consumer_local_calls.rs", report["call_consumer_sha256"]),
                                (consumer / "support/local_calls.rs", report["call_consumer_sha256"]),
+                               (FIXTURES / "consumer_scalar_maps.rs", report["map_consumer_sha256"]),
+                               (consumer / "support/scalar_maps.rs", report["map_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

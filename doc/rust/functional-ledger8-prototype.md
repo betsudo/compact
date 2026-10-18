@@ -124,8 +124,13 @@ pure calls reuse the existing pure Rust functions, including supported pure Fold
 Both nested branches remain statically checked; only selected calls execute.
 This does not implement the separate direct stateful Fold gap (#661).
 
-Other Counter operations, collections and hashes are still refused by this
-projection. Ordinary-backend conversion restrictions also remain authoritative.
+Scalar Map membership, lookup, insertion, removal, default insertion, reset,
+size and emptiness use the existing typed slots on both interpreters. Logical
+bindings preserve each declaration's full physical path. Nested Map declarations
+are currently refused by this projection and have a separate interface refinement.
+
+Other Counter operations, remaining collections and hashes are still refused by
+this projection. Ordinary-backend conversion restrictions also remain authoritative.
 Vector construction is supported; vector indexing currently reaches tuple
 projection and is tracked separately in #674. These boundaries must not be
 interpreted as a claim of full language or proof coverage.
@@ -198,7 +203,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **14 tests**, **50 behavioral scenarios**
+The current finite consumer run covers **16 tests**, **56 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -216,6 +221,10 @@ arithmetic, aggregates, non-Copy projection and conversion boundary controls.
 These preserve opaque witness bytes without relaxing opaque-cell storage rules.
 The eleventh source covers repeated local calls, fresh formals, metered witness
 reads, failure inside a callee and certified pure Fold.
+The twelfth source exercises all eight scalar Map operations through ordinary
+private helpers and checked calls, with owned values and chunked paths. Direct
+nested-source normalization remains limited in the ordinary frontend (#516 and
+#610); helper composition does not establish direct-syntax parity.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

@@ -217,6 +217,39 @@ fn render(
             )
         })
         .collect::<Result<Vec<_>, RecordingGap>>()?;
+    let map_bindings = rendered
+        .maps
+        .iter()
+        .map(|slot| {
+            let declaration = checked
+                .declarations()
+                .field(slot.declaration)
+                .ok_or_else(|| invalid("functional.slot", "checked Map declaration missing"))?;
+            let path = declaration.physical_path();
+            let id = slot.id;
+            Ok(
+                quote::quote!(crate::runtime::functional::ledger8::MapBinding::new(
+                    crate::runtime::functional::SlotId::new(#id), &[#(#path),*],
+                )),
+            )
+        })
+        .collect::<Result<Vec<_>, RecordingGap>>()?;
+    // Keep non-Map request packaging byte-stable.
+    let has_maps = !map_bindings.is_empty();
+    let map_constants = if !has_maps {
+        quote::quote!()
+    } else {
+        quote::quote!(const MAPS: &[crate::runtime::functional::ledger8::MapBinding] = &[#(#map_bindings),*];)
+    };
+    let ledger_bindings = if !has_maps {
+        quote::quote!(
+            crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
+        )
+    } else {
+        quote::quote!(
+            crate::runtime::functional::ledger8::Ledger8Bindings::with_maps(CELLS, COUNTERS, MAPS)
+        )
+    };
     let witness_adapters =
         super::functional_witnesses::adapters(checked.declarations(), &rendered.witnesses)?;
     let body = rendered.body;
@@ -277,6 +310,7 @@ fn render(
 
             const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[#(#slot_bindings),*];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[#(#counter_bindings),*];
+            #map_constants
 
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
@@ -285,7 +319,7 @@ fn render(
             pub fn ledger8_bindings()
                 -> Result<crate::runtime::functional::ledger8::Ledger8Bindings<'static>, crate::runtime::CompactError>
             {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
+                #ledger_bindings
             }
 
             /// Immutable checked request. Creating it performs no ledger or witness work.

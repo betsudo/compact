@@ -37,6 +37,8 @@ pub(crate) enum Capability {
     Require,
     Select,
     Call,
+    MapRead,
+    MapWrite,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -59,6 +61,8 @@ impl Ledger8Target {
             Capability::Require,
             Capability::Select,
             Capability::Call,
+            Capability::MapRead,
+            Capability::MapWrite,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -159,6 +163,11 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedMapDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedWitnessSignature {
         path: String,
@@ -322,6 +331,28 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                         Capability::TypedWitness
                     }
                 }
+                Operation::MapMember { slot, .. }
+                | Operation::MapLookup { slot, .. }
+                | Operation::MapInsert { slot, .. }
+                | Operation::MapInsertDefault { slot, .. }
+                | Operation::MapRemove { slot, .. }
+                | Operation::MapReset { slot }
+                | Operation::MapSize { slot }
+                | Operation::MapIsEmpty { slot } => {
+                    let map =
+                        super::functional_maps::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedMapDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Map operation");
+                    if map.write {
+                        Capability::MapWrite
+                    } else {
+                        Capability::MapRead
+                    }
+                }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
@@ -355,14 +386,6 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::Merkle { .. }
                 | Operation::List { .. }
                 | Operation::CellWriteCoin { .. }
-                | Operation::MapMember { .. }
-                | Operation::MapInsert { .. }
-                | Operation::MapRemove { .. }
-                | Operation::MapLookup { .. }
-                | Operation::MapInsertDefault { .. }
-                | Operation::MapReset { .. }
-                | Operation::MapSize { .. }
-                | Operation::MapIsEmpty { .. }
                 | Operation::SetMember { .. }
                 | Operation::SetInsert { .. }
                 | Operation::SetInsertCoin { .. }
@@ -458,3 +481,7 @@ mod tests;
 #[cfg(test)]
 #[path = "functional_calls_tests.rs"]
 mod calls_tests;
+
+#[cfg(test)]
+#[path = "functional_maps_tests.rs"]
+mod maps_tests;

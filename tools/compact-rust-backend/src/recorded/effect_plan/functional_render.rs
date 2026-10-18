@@ -17,6 +17,7 @@
 //!
 //! Successful binds delimit operand evaluation. Neither a later clone/default
 //! nor an inactive branch is evaluated after a preceding operation fails.
+use super::functional_maps::FunctionalMapSlot;
 use super::functional_paths::rust_type;
 use super::{
     RecordingGap, declarations::Declarations, functional::FunctionalProgram, invalid, model::*,
@@ -47,6 +48,7 @@ pub(super) struct RenderedFunctional {
     pub executor_bounds: Vec<syn::TypeParamBound>,
     pub slots: Vec<FunctionalCellSlot>,
     pub counters: Vec<FunctionalCounterSlot>,
+    pub maps: Vec<FunctionalMapSlot>,
     pub witnesses: Vec<FunctionalWitness>,
 }
 
@@ -58,6 +60,7 @@ pub(super) fn render(
         declarations: checked.declarations(),
         slots: Vec::new(),
         counters: Vec::new(),
+        maps: Vec::new(),
         witnesses: Vec::new(),
         executor_bounds: Vec::new(),
     };
@@ -80,6 +83,7 @@ pub(super) fn render(
         executor_bounds: renderer.executor_bounds,
         slots: renderer.slots,
         counters: renderer.counters,
+        maps: renderer.maps,
         witnesses: renderer.witnesses,
     })
 }
@@ -101,6 +105,7 @@ struct Renderer<'a> {
     declarations: &'a Declarations,
     slots: Vec<FunctionalCellSlot>,
     counters: Vec<FunctionalCounterSlot>,
+    maps: Vec<FunctionalMapSlot>,
     witnesses: Vec<FunctionalWitness>,
     executor_bounds: Vec<syn::TypeParamBound>,
 }
@@ -266,8 +271,21 @@ impl Renderer<'_> {
                 syn::parse_quote!(if #condition { #then } else { #otherwise })
             }
             operation => {
-                let expression = pure(binding, operation)?;
-                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                if let Some(map) = super::functional_maps::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.maps.iter().any(|present| present.id == map.slot.id) {
+                        self.maps.push(map.slot);
+                    }
+                    self.bound(map.bound);
+                    map.expression
+                } else {
+                    let expression = pure(binding, operation)?;
+                    syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                }
             }
         };
         Ok(syn::parse_quote!((#execution).bind(|(), __compact_execution| #step)))
