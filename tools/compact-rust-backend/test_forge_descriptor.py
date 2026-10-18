@@ -74,15 +74,15 @@ class PublicForgeDescriptorTests(legacy.ForgeCacheBoundaryTests):
         with patch.object(cache, 'QUALIFIED_BUILDS', cache.QUALIFIED_BUILDS | {candidate}):
             self.validate()
             descriptor = deepcopy(self.value['descriptor'])
-            for field, value in (
-                ('keygen_recipe', 'unqualified-options'),
-                ('serialization', dict(cache.SERIALIZATION, verifier_key='verifier-key[v7]')),
-                ('input_version', {'major': 3, 'minor': 1}),
+            for field, value, diagnostic in (
+                ('keygen_recipe', 'unqualified-options', 'key-generation'),
+                ('serialization', dict(cache.SERIALIZATION, verifier_key='verifier-key[v7]'), 'serialization'),
+                ('input_version', {'major': 3, 'minor': 1}, 'dialect'),
             ):
                 with self.subTest(field=field):
                     self.value['descriptor'] = dict(deepcopy(descriptor), **{field: value})
                     self.write_descriptor()
-                    with self.assertRaises(cache.CompatibilityError):
+                    with self.assertRaisesRegex(cache.CompatibilityError, diagnostic):
                         self.validate()
             self.value.pop('descriptor')
             with self.assertRaisesRegex(cache.CompatibilityError, 'descriptor'):

@@ -16,11 +16,28 @@ and permissions are unchanged. The split actions use the same reviewed
 
 ## Why this precedes more Forge caching
 
-The owner's observed cache inventory contained about10.05GB of target archives
-within11.55GB total, exceeding the stated10GB cache budget. Automatically saving
+The owner's observed cache inventory contained about 10.05 GB of target archives
+within 11.55 GB total, exceeding the stated 10 GB cache budget. Automatically saving
 another large target for every PR head competes with reusable dependency and
 future circuit-artifact snapshots. Trusted branch publication reduces future
-write amplification while PRs can still restore compatible base-branch caches.
+write amplification. PRs based directly on `codex/rust-backend-ast` can restore
+its compatible caches, subject to GitHub's cache scope and key matching rules.
+
+## Cold-build trade-off
+
+GitHub permits restore from the current ref, the default branch, and a PR's
+immediate base branch; it does not give a stacked PR access to every ancestor's
+caches. The repository's default branch is `main`, not the Rust-AST branch.
+A stacked PR based on a non-publishing feature branch can therefore build cold
+on each update once its old PR-scoped entries are unavailable. Changing locks
+or workflow/configuration hashes can also prevent a compatible target restore.
+See [GitHub's cache access rules](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache).
+
+This local candidate trades PR-local persistence for less archive publication.
+Cold stacked-PR build time against the 45-minute lane timeout remains unmeasured;
+observe it before broad adoption. A save establishes only the current matrix
+lane's success, not success of independent jobs or the entire workflow. Cached
+compilation outputs never substitute for the ordinary tests or required gate.
 
 This is **future write suppression**, not a global retention cap or immediate
 space reclamation. Existing entries remain under GitHub's retention/eviction
