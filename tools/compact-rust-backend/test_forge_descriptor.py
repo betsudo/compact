@@ -17,6 +17,7 @@
 from copy import deepcopy
 import json
 import unittest
+from unittest.mock import patch
 
 import forge_circuits as cache
 import test_forge_cache as legacy
@@ -59,6 +60,33 @@ class PublicForgeDescriptorTests(legacy.ForgeCacheBoundaryTests):
         del self.value['descriptor']
         with self.assertRaisesRegex(cache.CompatibilityError, 'descriptor'):
             self.validate()
+
+    def test_future_allowlisted_build_keeps_all_descriptor_controls(self):
+        # A hypothetical policy addition is not a qualification of any tool.
+        # Exercise the dangerous transition: the old public-build-only guard
+        # skipped the descriptor entirely for a third allowlisted fingerprint.
+        candidate = 'e' * 64
+        self.value['build_fingerprint'] = candidate
+        self.manifest['build_fingerprint'] = candidate
+        self.value['descriptor']['record']['build_fingerprint'] = candidate
+        (self.base / 'manifest.json').write_text(json.dumps(self.manifest))
+        self.write_descriptor()
+        with patch.object(cache, 'QUALIFIED_BUILDS', cache.QUALIFIED_BUILDS | {candidate}):
+            self.validate()
+            descriptor = deepcopy(self.value['descriptor'])
+            for field, value in (
+                ('keygen_recipe', 'unqualified-options'),
+                ('serialization', dict(cache.SERIALIZATION, verifier_key='verifier-key[v7]')),
+                ('input_version', {'major': 3, 'minor': 1}),
+            ):
+                with self.subTest(field=field):
+                    self.value['descriptor'] = dict(deepcopy(descriptor), **{field: value})
+                    self.write_descriptor()
+                    with self.assertRaises(cache.CompatibilityError):
+                        self.validate()
+            self.value.pop('descriptor')
+            with self.assertRaisesRegex(cache.CompatibilityError, 'descriptor'):
+                self.validate()
 
     def test_descriptor_policy_mutations_refuse_even_with_matching_sidecar(self):
         original = deepcopy(self.value['descriptor'])

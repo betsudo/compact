@@ -113,7 +113,7 @@ def zkir_executable(env):
 
 
 def validate_descriptor(value, manifest, base):
-    """The public build must bind its descriptor to the checked legacy export."""
+    """Modern qualified builds bind their descriptor to the checked export."""
     descriptor = value.get('descriptor')
     fields = {'schema', 'record', 'materialized', 'input_format', 'input_version',
               'keygen_recipe', 'serialization'}
@@ -193,7 +193,10 @@ def validate_export(value, source, params, *, expected_source=None):
     require(set(paths) == set(declared) == KINDS, 'incomplete Forge export')
     require(digest(source) == expected_source and paths['source'].read_bytes() == source.read_bytes(),
             'current circuit changed during Forge preparation')
-    if value['build_fingerprint'] == PUBLIC_BUILD:
+    # Only the original, separately qualified build predates descriptors.
+    # Every later allowlisted build must satisfy the complete modern contract;
+    # adding a qualification must not accidentally select the legacy path.
+    if value['build_fingerprint'] != BUILD:
         validate_descriptor(value, manifest, base)
     return paths, manifest
 
