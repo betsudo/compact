@@ -313,6 +313,18 @@ impl Renderer<'_> {
                 let otherwise = self.block(otherwise, syn::parse_quote!(__compact_execution))?;
                 syn::parse_quote!(if #condition { #then } else { #otherwise })
             }
+            Operation::OwnPublicKey
+            | Operation::KernelSelf
+            | Operation::KernelClaim { .. }
+            | Operation::KernelMintShielded { .. }
+            | Operation::CreateZswapInput { .. }
+            | Operation::CreateZswapOutput { .. } => {
+                let kernel =
+                    super::functional_kernel::render(binding, self.declarations, current.clone())?
+                        .expect("matched checked circuit Kernel operation");
+                self.bound(kernel.bound);
+                kernel.expression
+            }
             operation => {
                 if let Some(map) = super::functional_maps::render(
                     binding,

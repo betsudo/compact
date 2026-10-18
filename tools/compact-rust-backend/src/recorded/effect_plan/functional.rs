@@ -27,6 +27,12 @@ use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Capability {
     Pure,
+    ExecutionIdentity,
+    KernelAddress,
+    KernelClaims,
+    ShieldedMint,
+    ZswapInput,
+    ZswapOutput,
     Hashing,
     FieldEncoding,
     Jubjub,
@@ -71,6 +77,12 @@ impl Ledger8Target {
     pub(crate) const PINNED: Self = Self {
         capabilities: &[
             Capability::Pure,
+            Capability::ExecutionIdentity,
+            Capability::KernelAddress,
+            Capability::KernelClaims,
+            Capability::ShieldedMint,
+            Capability::ZswapInput,
+            Capability::ZswapOutput,
             Capability::Hashing,
             Capability::FieldEncoding,
             Capability::Jubjub,
@@ -355,6 +367,12 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::UnsignedMultiply(..)
                 | Operation::Compare { .. }
                 | Operation::Convert { .. } => Capability::Pure,
+                Operation::OwnPublicKey => Capability::ExecutionIdentity,
+                Operation::KernelSelf => Capability::KernelAddress,
+                Operation::KernelClaim { .. } => Capability::KernelClaims,
+                Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
+                Operation::CreateZswapInput { .. } => Capability::ZswapInput,
+                Operation::CreateZswapOutput { .. } => Capability::ZswapOutput,
                 Operation::PersistentHash(_)
                 | Operation::PersistentCommit { .. }
                 | Operation::TransientCommit { .. }
@@ -495,13 +513,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::CreateZswapInput { .. }
-                | Operation::CreateZswapOutput { .. }
-                | Operation::OwnPublicKey
-                | Operation::KernelSelf
-                | Operation::KernelClaim { .. }
-                | Operation::KernelMintShielded { .. }
-                | Operation::Keccak256(..)
+                Operation::Keccak256(..)
                 | Operation::CellWriteCoin { .. }
                 | Operation::SetInsertCoin { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
@@ -617,3 +629,7 @@ mod merkle_tests;
 #[cfg(test)]
 #[path = "functional_crypto_tests.rs"]
 mod crypto_tests;
+
+#[cfg(test)]
+#[path = "functional_kernel_tests.rs"]
+mod kernel_tests;

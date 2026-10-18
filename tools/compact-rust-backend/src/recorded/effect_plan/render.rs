@@ -19,6 +19,7 @@ use super::{RecordingGap, declarations::Declarations, invalid, model::*};
 use crate::{ident, rust_type};
 use proc_macro2::Span;
 pub(super) mod crypto;
+pub(super) mod effect_values;
 mod leaf;
 mod lists;
 mod maps;

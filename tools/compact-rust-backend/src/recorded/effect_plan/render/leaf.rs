@@ -74,22 +74,7 @@ pub(super) fn render(
             syn::parse_quote!(())
         }
         Operation::KernelClaim { kind, value: input } => {
-            use crate::ir::KernelClaimKind;
-            let input = value(input);
-            let claim: syn::Expr = match kind {
-                KernelClaimKind::Nullifier => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::Nullifier(
-                        runtime::ledger::CoinNullifier(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinSpend => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinSpend(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinReceive => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinReceive(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-            };
+            let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));
             syn::parse_quote!(())
         }
@@ -107,7 +92,7 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.own_coin_public_key()?;));
-            syn::parse_quote!(#ty { bytes: runtime::FixedBytes::new(#observed) })
+            effect_values::identity(&ty, syn::parse_quote!(#observed))
         }
         Operation::KernelSelf => {
             let observed = syn::Ident::new(
@@ -115,7 +100,7 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.kernel_self()?;));
-            syn::parse_quote!(#ty { bytes: runtime::ledger::contract_address_bytes(&#observed) })
+            effect_values::address(&ty, syn::parse_quote!(#observed))
         }
         Operation::PersistentCommit { .. }
         | Operation::FieldToBytes32(_)

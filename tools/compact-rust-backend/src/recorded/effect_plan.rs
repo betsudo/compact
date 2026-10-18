@@ -21,6 +21,7 @@ mod context_free;
 mod declarations;
 pub(crate) mod functional;
 pub(super) mod functional_items;
+mod functional_kernel;
 mod functional_lists;
 mod functional_maps;
 mod functional_merkle;

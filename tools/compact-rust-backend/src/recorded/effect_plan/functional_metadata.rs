@@ -83,6 +83,12 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
 fn capability(value: Capability) -> &'static str {
     match value {
         Capability::Pure => "pure",
+        Capability::ExecutionIdentity => "execution_identity",
+        Capability::KernelAddress => "kernel_address",
+        Capability::KernelClaims => "kernel_claims",
+        Capability::ShieldedMint => "shielded_mint",
+        Capability::ZswapInput => "zswap_input",
+        Capability::ZswapOutput => "zswap_output",
         Capability::Hashing => "hashing",
         Capability::FieldEncoding => "field_encoding",
         Capability::Jubjub => "jubjub",
