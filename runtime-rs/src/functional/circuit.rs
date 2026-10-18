@@ -103,6 +103,20 @@ impl<E: Executor> Circuit<E, ()> {
     where
         E: WitnessCall<Args, T>,
     {
+        self.witness_in(witness, arguments)
+    }
+
+    /// Execute a witness using an explicitly selected interpreter strategy.
+    /// Like `witness`, ordinary arguments are eager; defer fallible producers
+    /// inside a successful bind. Strategy selection does not certify callbacks.
+    pub fn witness_in<Args, T, Mode>(
+        self,
+        witness: Witness<Args, T, Mode>,
+        arguments: Args,
+    ) -> Circuit<E, T>
+    where
+        E: WitnessCall<Args, T, Mode>,
+    {
         Circuit {
             state: self
                 .state

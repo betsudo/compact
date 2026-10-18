@@ -25,11 +25,17 @@ use crate::{
 
 pub struct NoWitnesses;
 
+/// Select the existing exact opaque-bearing private-output encoding.
+/// This is an in-memory transport choice, not a proof-serialization guarantee.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExactWitnessOutput;
+
 /// Generated handlers map a checked WitnessId to the existing typed witness API
 /// and project the existing metered ledger view. Handwritten handlers and their
 /// host effects are not certified by this interface. Ordinary aligned results
-/// reuse the existing frame conversion. Exact opaque transport requires a
-/// separately checked bridge and is not selected by this interface.
+/// reuse the existing frame conversion. A separately selected ExactWitnessOutput
+/// strategy delegates the existing exact frame conversion; neither strategy
+/// certifies that its output can pass later proof-serialization checks.
 ///
 /// The borrowed context matches the existing frame callback API; a handwritten
 /// handler can bypass the meter by reading it directly. Generated handlers must
@@ -58,51 +64,31 @@ impl<Private, D: DB, Args, T, H: WitnessHandler<Private, D, Args, T>>
     }
 }
 
-impl<Private, D: DB, Args, T, W> WitnessCall<Args, T> for NativeLedger8<'_, Private, D, W>
-where
-    W: WitnessHandler<Private, D, Args, T>,
-    T: Clone,
-    AlignedValue: From<T>,
-{
-    fn witness(
-        self,
-        witness: Witness<Args, T>,
-        arguments: Args,
-    ) -> Result<(Self, T), CompactError> {
-        let (frame, value) = self.frame.try_witness_metered(|context, meter| {
-            self.witnesses.call(witness.id(), arguments, context, meter)
-        })?;
-        Ok((
-            Self {
-                frame,
-                bindings: self.bindings,
-                witnesses: self.witnesses,
-            },
-            value,
-        ))
-    }
+// Only frame ownership differs between the native and recorded interpreters.
+// Keep their four transport implementations mechanical; codecs remain in frames.
+macro_rules! witness_bridge {
+    ($adapter:ident, $mode:ty, $method:ident, $($transport_bound:tt)*) => {
+        impl<Private, D: DB, Args, T, W> WitnessCall<Args, T, $mode>
+            for $adapter<'_, Private, D, W>
+        where
+            W: WitnessHandler<Private, D, Args, T>,
+            T: Clone,
+            $($transport_bound)*
+        {
+            fn witness(
+                self,
+                witness: Witness<Args, T, $mode>,
+                arguments: Args,
+            ) -> Result<(Self, T), CompactError> {
+                let (frame, value) = self.frame.$method(|context, meter| {
+                    self.witnesses.call(witness.id(), arguments, context, meter)
+                })?;
+                Ok((Self { frame, bindings: self.bindings, witnesses: self.witnesses }, value))
+            }
+        }
+    };
 }
-impl<Private, D: DB, Args, T, W> WitnessCall<Args, T> for RecordedLedger8<'_, Private, D, W>
-where
-    W: WitnessHandler<Private, D, Args, T>,
-    T: Clone,
-    AlignedValue: From<T>,
-{
-    fn witness(
-        self,
-        witness: Witness<Args, T>,
-        arguments: Args,
-    ) -> Result<(Self, T), CompactError> {
-        let (frame, value) = self.frame.try_witness_metered(|context, meter| {
-            self.witnesses.call(witness.id(), arguments, context, meter)
-        })?;
-        Ok((
-            Self {
-                frame,
-                bindings: self.bindings,
-                witnesses: self.witnesses,
-            },
-            value,
-        ))
-    }
-}
+witness_bridge!(NativeLedger8, (), try_witness_metered, AlignedValue: From<T>,);
+witness_bridge!(RecordedLedger8, (), try_witness_metered, AlignedValue: From<T>,);
+witness_bridge!(NativeLedger8, ExactWitnessOutput, try_witness_metered_exact, T: crate::HashInputValue,);
+witness_bridge!(RecordedLedger8, ExactWitnessOutput, try_witness_metered_exact, T: crate::HashInputValue,);

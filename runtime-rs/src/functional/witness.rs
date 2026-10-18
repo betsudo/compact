@@ -31,12 +31,19 @@ impl WitnessId {
 
 /// Identity supplied by a checked generated witness declaration.
 /// Handwritten construction is not a proof of witness or privacy authority.
-pub struct Witness<Args, T> {
+pub struct Witness<Args, T, Mode = ()> {
     id: WitnessId,
-    types: PhantomData<fn(Args) -> T>,
+    types: PhantomData<fn(Args, Mode) -> T>,
 }
 impl<Args, T> Witness<Args, T> {
     pub const fn new(id: WitnessId) -> Self {
+        Self::with_mode(id)
+    }
+}
+impl<Args, T, Mode> Witness<Args, T, Mode> {
+    /// Select an interpreter strategy explicitly, without certifying its authority.
+    /// Ordinary callers retain `new` and its unambiguous default mode.
+    pub const fn with_mode(id: WitnessId) -> Self {
         Self {
             id,
             types: PhantomData,
@@ -46,14 +53,17 @@ impl<Args, T> Witness<Args, T> {
         self.id
     }
 }
-impl<Args, T> Copy for Witness<Args, T> {}
-impl<Args, T> Clone for Witness<Args, T> {
+impl<Args, T, Mode> Copy for Witness<Args, T, Mode> {}
+impl<Args, T, Mode> Clone for Witness<Args, T, Mode> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-pub trait WitnessCall<Args, T>: Executor {
-    fn witness(self, witness: Witness<Args, T>, arguments: Args)
-    -> Result<(Self, T), CompactError>;
+pub trait WitnessCall<Args, T, Mode = ()>: Executor {
+    fn witness(
+        self,
+        witness: Witness<Args, T, Mode>,
+        arguments: Args,
+    ) -> Result<(Self, T), CompactError>;
 }

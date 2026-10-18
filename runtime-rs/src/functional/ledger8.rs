@@ -21,4 +21,4 @@ mod witness;
 pub use bindings::{CellBinding, CounterBinding, Ledger8Bindings};
 pub use native::NativeLedger8;
 pub use recorded::RecordedLedger8;
-pub use witness::{NoWitnesses, WitnessHandler};
+pub use witness::{ExactWitnessOutput, NoWitnesses, WitnessHandler};
