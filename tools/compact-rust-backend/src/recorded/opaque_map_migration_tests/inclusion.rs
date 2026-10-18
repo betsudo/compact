@@ -96,14 +96,19 @@ fn typed_products_map_topology_and_binding_names_preserve_complete_old_writes() 
                     .unwrap();
                 slot["declaration"]["value"] =
                     json!({"kind":"ledger_map","key":{"kind":"field"},"value":{"kind":"field"}});
-                // The original unrelated witness ledger view exposes every Map
-                // value and cannot express a nested Map. Keep that native refusal
-                // explicit before isolating the key-only complete contract.
-                assert!(matches!(
-                    crate::render_with_capabilities(&contract(v.clone())),
-                    Err(RenderError::Located { error, .. })
-                        if matches!(*error, RenderError::UnsupportedLedgerValueType(Type::LedgerMap { .. }))
-                ));
+                // #675 expands current native admission without changing the
+                // historical complete witness-free intersection tested below.
+                let full = contract(v.clone());
+                assert!(!full.witnesses.is_empty());
+                let current = assert_current(&full, name);
+                assert!(current.contains("record_member"));
+                assert!(current.contains("record_insert"));
+                assert!(
+                    crate::render_with_capabilities(&full)
+                        .unwrap()
+                        .source
+                        .contains("witness_metered")
+                );
                 v["witnesses"] = json!([]);
                 // Preserve both public Counter effects of the actual write helper;
                 // remove only its timestamp witness and dependent Cell assignment.

@@ -104,11 +104,21 @@ fn key_only_maps_do_not_require_scalar_value_codecs_or_witness_view_support() {
             .find(|f| f["id"] == "records")
             .unwrap()["declaration"]["value"] = ty;
         if label == "nested_map" {
+            // Current native admission expanded in #675: unrelated witnesses
+            // no longer require an impossible scalar view of this nested Map.
+            // This full-witness input is NOT relabeled a historical positive.
+            let full = contract(v.clone());
+            assert!(!full.witnesses.is_empty());
+            let current = assert_current(&full);
+            assert!(current.contains("record_remove"));
             assert!(
-                matches!(crate::render_with_capabilities(&contract(v.clone())), Err(RenderError::Located { error, .. }) if matches!(*error, RenderError::UnsupportedLedgerValueType(Type::LedgerMap { .. })))
+                crate::render_with_capabilities(&full)
+                    .unwrap()
+                    .source
+                    .contains("witness_metered")
             );
-            // Separate complete witness-free input: retain both write counters.
-            // The original witness view cannot represent this Map's value.
+            // Preserve the separate complete witness-free historical control
+            // and both original public write counters unchanged below.
             v["witnesses"] = json!([]);
             named(&mut v, "recordWrite")["actions"]
                 .as_array_mut()
