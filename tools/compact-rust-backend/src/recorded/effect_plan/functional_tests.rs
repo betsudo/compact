@@ -582,3 +582,202 @@ fn witness_rendering_selects_exact_mode_for_nested_opaque_results_only() {
         assert_eq!(bounds.contains("ExactWitnessOutput"), exact);
     }
 }
+
+// These plans use a literal at SSA0, unlike the earlier parameter-based fixtures.
+struct CounterAuthority {
+    source: SourceLocation,
+    missing: Option<usize>,
+}
+impl CounterAuthority {
+    fn new() -> Self {
+        Self {
+            source: SourceLocation {
+                file: "retained-counter.compact".into(),
+                line: 2,
+                column: 1,
+            },
+            missing: None,
+        }
+    }
+}
+impl SourceAuthority for CounterAuthority {
+    fn origin<'source>(&'source self, site: SourceSite<'_>) -> OriginEvidence<'source> {
+        if matches!(site, SourceSite::Value { id, .. } if self.missing == Some(id)) {
+            OriginEvidence::Unknown
+        } else {
+            OriginEvidence::BoundOriginalNode(&self.source)
+        }
+    }
+}
+
+fn remaining_counter_checked(
+    kind: usize,
+    invalid_operand: bool,
+) -> Result<CheckedPlan, crate::RecordingGap> {
+    use super::super::model::{CounterSlot, LedgerId};
+    let slot = CounterSlot {
+        declaration: LedgerId(0),
+        index: 0,
+    };
+    let field = LedgerField {
+        source: None,
+        id: "counter".into(),
+        index: 0,
+        path: vec![1, 2],
+        declaration: LedgerFieldKind::Counter,
+    };
+    let operand_type = Type::Unsigned {
+        max: if invalid_operand {
+            "255".into()
+        } else if kind == 0 {
+            u64::MAX.to_string()
+        } else {
+            u16::MAX.to_string()
+        },
+    };
+    let operand = value(0, operand_type);
+    let result = value(1, if kind == 0 { Type::Boolean } else { Type::Unit });
+    let operation = match kind {
+        0 => Operation::CounterLessThan {
+            slot,
+            threshold: operand.clone(),
+        },
+        1 => Operation::CounterDecrement {
+            slot,
+            amount: operand.clone(),
+        },
+        2 => Operation::CounterReset { slot },
+        _ => unreachable!(),
+    };
+    let root = StatefulCircuit {
+        source: None,
+        name: "example".into(),
+        internal: false,
+        parameters: vec![],
+        actions: vec![],
+        result: result.ty.clone(),
+        return_value: if kind == 0 {
+            StateReturn::Expression {
+                value: crate::ir::Expr::Boolean { value: false },
+            }
+        } else {
+            StateReturn::Unit
+        },
+    };
+    let mut bindings = vec![];
+    if kind != 2 {
+        bindings.push(binding(
+            operand,
+            Operation::Literal(Literal::Unsigned(if invalid_operand {
+                1
+            } else if kind == 0 {
+                u64::MAX as u128
+            } else {
+                u16::MAX as u128
+            })),
+        ));
+    }
+    bindings.push(binding(result.clone(), operation));
+    CheckedPlan::validate(
+        Plan {
+            parameters: vec![],
+            result_type: result.ty.clone(),
+            body: Block { bindings, result },
+        },
+        Declarations::new(&HashMap::from([("counter", &field)]), &HashMap::new()).with_root(&root),
+    )
+}
+
+#[test]
+fn remaining_counter_operations_request_only_their_own_capability_and_slot() {
+    use quote::ToTokens;
+    for (kind, capability, method, trait_name) in [
+        (
+            0,
+            Capability::CounterCompare,
+            "counter_less_than",
+            "CounterCompare",
+        ),
+        (
+            1,
+            Capability::CounterDecrement,
+            "decrement",
+            "CounterDecrement",
+        ),
+        (2, Capability::CounterReset, "reset_counter", "CounterReset"),
+    ] {
+        let checked = remaining_counter_checked(kind, false).unwrap();
+        let authority = CounterAuthority::new();
+        let program =
+            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+        assert!(program.requirements().contains(&capability));
+        let rendered = super::super::functional_render::render(&program).unwrap();
+        assert_eq!(rendered.counters.len(), 1);
+        assert_eq!(rendered.counters[0].declaration.0, 0);
+        let bounds = rendered
+            .executor_bounds
+            .iter()
+            .map(ToTokens::to_token_stream)
+            .map(|tokens| tokens.to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            bounds,
+            vec![format!("crate :: runtime :: functional :: {trait_name}")]
+        );
+        let body = rendered.body.to_token_stream().to_string();
+        assert!(body.contains(&format!(". {method} (")));
+        assert!(!body.contains("CounterIncrement"));
+        if kind == 0 {
+            assert!(body.contains("as u64"));
+        }
+        if kind == 1 {
+            assert!(body.contains("as u16"));
+        }
+    }
+}
+
+#[test]
+fn remaining_counter_capability_and_source_refusals_stay_precise() {
+    for (kind, capability) in [
+        (0, Capability::CounterCompare),
+        (1, Capability::CounterDecrement),
+        (2, Capability::CounterReset),
+    ] {
+        let checked = remaining_counter_checked(kind, false).unwrap();
+        let authority = CounterAuthority::new();
+        let target = Ledger8Target {
+            capabilities: &[Capability::Pure],
+        };
+        assert!(
+            matches!(FunctionalProgram::project(&checked, &authority, target),
+            Err(ProjectionRefusal::MissingTargetCapability { path, capability: actual }) if path == "checked[1]" && actual == capability)
+        );
+    }
+}
+
+#[test]
+fn remaining_counter_bad_operand_bounds_keep_the_original_checked_refusal() {
+    for kind in [0, 1] {
+        let error = remaining_counter_checked(kind, true).unwrap_err();
+        assert_eq!(error.path, "checked[1]");
+        assert_eq!(
+            error.detail,
+            "operation input/output types are incompatible"
+        );
+    }
+}
+
+#[test]
+fn remaining_counter_nodes_do_not_bypass_source_authority() {
+    for kind in 0..3 {
+        let checked = remaining_counter_checked(kind, false).unwrap();
+        let authority = CounterAuthority {
+            missing: Some(1),
+            ..CounterAuthority::new()
+        };
+        assert!(
+            matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+            Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "checked[1]")
+        );
+    }
+}

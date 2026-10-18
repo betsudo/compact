@@ -173,6 +173,29 @@ impl Renderer<'_> {
                 let amount = value(amount);
                 syn::parse_quote!(#current.increment(#counter, (#amount).value() as u16))
             }
+            Operation::CounterDecrement { slot, amount } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(
+                    crate::runtime::functional::CounterDecrement
+                ));
+                // Checked validation requires exactly Uint16, so no truncation.
+                let amount = value(amount);
+                syn::parse_quote!(#current.decrement(#counter, (#amount).value() as u16))
+            }
+            Operation::CounterReset { slot } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(crate::runtime::functional::CounterReset));
+                syn::parse_quote!(#current.reset_counter(#counter))
+            }
+            Operation::CounterLessThan { slot, threshold } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(
+                    crate::runtime::functional::CounterCompare
+                ));
+                // Checked validation requires exactly Uint64, including u64::MAX.
+                let threshold = value(threshold);
+                syn::parse_quote!(#current.counter_less_than(#counter, (#threshold).value() as u64))
+            }
             Operation::Witness {
                 declaration,
                 arguments,

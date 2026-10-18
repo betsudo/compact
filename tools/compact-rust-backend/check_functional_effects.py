@@ -51,9 +51,10 @@ SOURCES = {
     "nested_fixture": FIXTURES / "nested_map_remove.compact",
     "set_fixture": FIXTURES / "scalar_sets.compact",
     "list_fixture": FIXTURES / "scalar_lists.compact",
+    "counter_more_fixture": FIXTURES / "counter_more.compact",
 }
-EXPECTED_TESTS = 24
-EXPECTED_SCENARIOS = 76  # Existing 68 + 8 scalar List scenarios.
+EXPECTED_TESTS = 28
+EXPECTED_SCENARIOS = 86  # Existing 76 + 10 remaining Counter scenarios.
 
 
 def digest(path):
@@ -156,6 +157,7 @@ def main():
         "nested_consumer_sha256": digest(FIXTURES / "consumer_nested_map_remove.rs"),
         "set_consumer_sha256": digest(FIXTURES / "consumer_scalar_sets.rs"),
         "list_consumer_sha256": digest(FIXTURES / "consumer_scalar_lists.rs"),
+        "counter_more_consumer_sha256": digest(FIXTURES / "consumer_counter_more.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -257,7 +259,8 @@ def main():
                                                ("consumer_scalar_maps.rs", "scalar_maps.rs"),
                                                ("consumer_nested_map_remove.rs", "nested_map_remove.rs"),
                                                ("consumer_scalar_sets.rs", "scalar_sets.rs"),
-                                               ("consumer_scalar_lists.rs", "scalar_lists.rs")):
+                                               ("consumer_scalar_lists.rs", "scalar_lists.rs"),
+                                               ("consumer_counter_more.rs", "counter_more.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
@@ -369,6 +372,8 @@ def main():
                                (consumer / "support/scalar_sets.rs", report["set_consumer_sha256"]),
                                (FIXTURES / "consumer_scalar_lists.rs", report["list_consumer_sha256"]),
                                (consumer / "support/scalar_lists.rs", report["list_consumer_sha256"]),
+                               (FIXTURES / "consumer_counter_more.rs", report["counter_more_consumer_sha256"]),
+                               (consumer / "support/counter_more.rs", report["counter_more_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

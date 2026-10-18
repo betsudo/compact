@@ -100,7 +100,8 @@ Compact + retained invocation origins
 
 The current projection includes checked literals/defaults, enums, aggregates,
 projections, Field and unsigned arithmetic, comparisons, conversions, Cell
-reads/writes, Counter reads/increments, assertions, conditionals, and typed witnesses.
+reads/writes, Counter reads/increments/decrements/reset/less-than, assertions,
+conditionals, and typed witnesses.
 Pure value syntax shares the existing checked ordinary renderer. Expressions
 remain inside successful binds, so later producers do not run after a failure.
 Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
@@ -144,7 +145,7 @@ separate from simple inspection and mutation. Only head requires a defaultable
 element. The existing empty-pop operation succeeds and writes `Null` at the List path;
 subsequent operations retain the original slot behavior.
 
-Other Counter operations, remaining collections and hashes are still refused by
+Merkle operations, remaining effects and hashes are still refused by
 this projection. Ordinary-backend conversion restrictions also remain authoritative.
 Vector construction is supported; vector indexing currently reaches tuple
 projection and is tracked separately in #674. These boundaries must not be
@@ -218,7 +219,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **24 tests**, **76 behavioral scenarios**
+The current finite consumer run covers **28 tests**, **86 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -248,6 +249,8 @@ uniqueness, populated/empty observations and chunked paths.
 The fifteenth source exercises List heads before and immediately after each pop,
 owned head values, reset, guarded witnesses, exact empty-pop state and the
 first operation after empty-pop.
+The sixteenth source covers the remaining Counter operations with u16 amount
+boundaries, strict full-width comparisons, reset and assertion ordering.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

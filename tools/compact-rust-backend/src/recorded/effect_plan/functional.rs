@@ -31,6 +31,9 @@ pub(crate) enum Capability {
     CellWrite,
     CounterRead,
     CounterIncrement,
+    CounterDecrement,
+    CounterReset,
+    CounterCompare,
     BooleanWitness,
     TypedWitness,
     ExactWitness,
@@ -62,6 +65,9 @@ impl Ledger8Target {
             Capability::CellWrite,
             Capability::CounterRead,
             Capability::CounterIncrement,
+            Capability::CounterDecrement,
+            Capability::CounterReset,
+            Capability::CounterCompare,
             Capability::BooleanWitness,
             Capability::TypedWitness,
             Capability::ExactWitness,
@@ -328,6 +334,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::CellWrite { .. } => Capability::CellWrite,
                 Operation::CounterRead { .. } => Capability::CounterRead,
                 Operation::CounterIncrement { .. } => Capability::CounterIncrement,
+                Operation::CounterDecrement { .. } => Capability::CounterDecrement,
+                Operation::CounterReset { .. } => Capability::CounterReset,
+                Operation::CounterLessThan { .. } => Capability::CounterCompare,
                 Operation::Witness {
                     declaration,
                     arguments,
@@ -444,10 +453,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EcAdd { .. }
                 | Operation::Merkle { .. }
                 | Operation::CellWriteCoin { .. }
-                | Operation::SetInsertCoin { .. }
-                | Operation::CounterDecrement { .. }
-                | Operation::CounterReset { .. }
-                | Operation::CounterLessThan { .. } => {
+                | Operation::SetInsertCoin { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
