@@ -24,14 +24,14 @@ use midnight_zkir::IrSource;
 use midnight_zswap::ZSWAP_EXPECTED_FILES;
 use serde_json::json;
 
-pub(super) fn run(verify_only: bool) -> Result<(), Box<dyn Error>> {
+pub(super) fn run(verify_only: bool, requested_k: BTreeSet<u8>) -> Result<(), Box<dyn Error>> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(prepare(verify_only))
+        .block_on(prepare(verify_only, requested_k))
 }
 
-async fn prepare(verify_only: bool) -> Result<(), Box<dyn Error>> {
+async fn prepare(verify_only: bool, requested_k: BTreeSet<u8>) -> Result<(), Box<dyn Error>> {
     let files = ZSWAP_EXPECTED_FILES
         .iter()
         .chain(DUST_EXPECTED_FILES.iter())
@@ -42,7 +42,7 @@ async fn prepare(verify_only: bool) -> Result<(), Box<dyn Error>> {
     let provider =
         MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, files.clone())?;
     let mut assets = Vec::new();
-    let mut sizes = BTreeSet::new();
+    let mut sizes = requested_k.clone();
     for (name, expected_hash, description) in files {
         if !verify_only {
             provider.fetch(name).await?;
@@ -79,18 +79,19 @@ async fn prepare(verify_only: bool) -> Result<(), Box<dyn Error>> {
             "bytes": file.get_ref().metadata()?.len(),
         }));
     }
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&json!({
-            "format": "compact-proof-material/v1",
-            "mode": if verify_only { "verify-only" } else { "prepare" },
-            "cache_directory": provider.dir,
-            "asset_count": assets.len(),
-            "assets": assets,
-            "parameter_count": parameters.len(),
-            "parameters": parameters,
-            "verification": "all files checked against locked upstream SHA256 tables",
-        }))?
-    );
+    let mut receipt = json!({
+        "format": "compact-proof-material/v1",
+        "mode": if verify_only { "verify-only" } else { "prepare" },
+        "cache_directory": provider.dir,
+        "asset_count": assets.len(),
+        "assets": assets,
+        "parameter_count": parameters.len(),
+        "parameters": parameters,
+        "verification": "all files checked against locked upstream SHA256 tables",
+    });
+    if !requested_k.is_empty() {
+        receipt["requested_parameter_k"] = json!(requested_k);
+    }
+    println!("{}", serde_json::to_string_pretty(&receipt)?);
     Ok(())
 }

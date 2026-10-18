@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn material_option_errors_stop_before_material_preparation() {
-        let usage = "usage: compact-rust-proof-smoke --prepare-proof-material [--verify-only]";
+        let usage = "usage: compact-rust-proof-smoke --prepare-proof-material [--verify-only] [--parameter-k K ...]";
         for supplied in [
             vec!["--invalid", "unconsumed"],
             vec!["--verify-only", "extra", "unconsumed"],

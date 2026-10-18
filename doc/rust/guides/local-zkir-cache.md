@@ -107,3 +107,26 @@ source inventory to the existing snapshot lifecycle. Native snapshots default to
 qualification and is not a substitute for that full gate. Exact Linux enrollment,
 immutable published Forge provisioning and hosted workflow adoption remain
 separate requirements. No hosted acceleration is claimed by these local tools.
+
+## Prepare public proof material explicitly
+
+An empty runner also needs the official built-in Zswap/Dust keys and SRS.
+The existing preparation command accepts additional parameter sizes:
+
+```sh
+cargo run --profile proof-checks --locked --offline \
+  -p compact-rust-proof-smoke -- \
+  --prepare-proof-material --parameter-k 7 --parameter-k 17
+```
+
+Set `MIDNIGHT_PP` to an owned parameter directory. This explicit command may
+download missing material through the official provider, which checks the
+locked upstream hashes. Requested sizes are deduplicated and combined with the
+sizes required by authenticated built-in circuits. Unknown sizes are refused
+by the provider. Cargo's `--offline` flag concerns dependencies; it does not
+disable this explicit material download.
+
+Add `--verify-only` to check the same set without downloading or repairing it.
+Missing or corrupt material is an error. With no `--parameter-k` options, the
+existing default receipt and built-in preparation behavior are unchanged.
+Preparing material neither runs tests nor qualifies a cache or backend profile.
