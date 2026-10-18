@@ -28,3 +28,5 @@ mod maps;
 mod sets;
 
 mod lists;
+
+mod merkle;

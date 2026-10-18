@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Physical Ledger8 slot bindings; logical identities remain target neutral.
-use super::super::{Cell, Counter, List, Map, Set, SlotId};
+use super::super::{Cell, Counter, List, Map, Merkle, Set, SlotId};
 use crate::{CompactError, ledger::CellValue};
 #[derive(Clone, Copy)]
 pub struct CellBinding {
@@ -71,6 +71,24 @@ impl ListBinding {
     }
 }
 
+/// Complete physical Merkle declaration; type parameters must match its kind.
+#[derive(Clone, Copy)]
+pub struct MerkleBinding {
+    id: SlotId,
+    path: &'static [u8],
+    depth: u8,
+    historic: bool,
+}
+impl MerkleBinding {
+    pub const fn new(id: SlotId, path: &'static [u8], depth: u8, historic: bool) -> Self {
+        Self {
+            id,
+            path,
+            depth,
+            historic,
+        }
+    }
+}
 /// Immutable uniquely keyed declarations; not certification of handwritten types.
 #[derive(Clone, Copy)]
 pub struct Ledger8Bindings<'a> {
@@ -79,6 +97,7 @@ pub struct Ledger8Bindings<'a> {
     maps: &'a [MapBinding],
     sets: &'a [SetBinding],
     lists: &'a [ListBinding],
+    merkle: &'a [MerkleBinding],
 }
 impl<'a> Ledger8Bindings<'a> {
     pub fn new(cells: &'a [CellBinding]) -> Result<Self, CompactError> {
@@ -125,6 +144,7 @@ impl<'a> Ledger8Bindings<'a> {
             maps,
             sets: &[],
             lists: &[],
+            merkle: &[],
         })
     }
     /// Extend immutable bindings without changing existing constructor signatures.
@@ -181,6 +201,49 @@ impl<'a> Ledger8Bindings<'a> {
             })?;
         Ok(crate::slots::ListSlot::new(binding.path))
     }
+    pub fn bind_merkle(mut self, trees: &'a [MerkleBinding]) -> Result<Self, CompactError> {
+        if !self.merkle.is_empty() {
+            return Err(CompactError::InvalidLedgerCell(
+                "Merkle bindings already installed".into(),
+            ));
+        }
+        for (index, tree) in trees.iter().enumerate() {
+            if !(2..=32).contains(&tree.depth) {
+                return Err(CompactError::InvalidLedgerCell(
+                    "Merkle depth outside ledger8 range".into(),
+                ));
+            }
+            for (id, path) in self
+                .declarations()
+                .chain(trees[..index].iter().map(|tree| (tree.id, tree.path)))
+            {
+                distinct(tree.id, tree.path, id, path)?;
+            }
+        }
+        self.merkle = trees;
+        Ok(self)
+    }
+    pub(super) fn merkle<T: CellValue, const DEPTH: u8, const HISTORIC: bool>(
+        self,
+        tree: Merkle<T, DEPTH, HISTORIC>,
+    ) -> Result<crate::slots::MerkleSlot<T, DEPTH, HISTORIC>, CompactError> {
+        let binding = self
+            .merkle
+            .iter()
+            .find(|binding| binding.id == tree.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!(
+                    "unbound logical Merkle tree {}",
+                    tree.id().index()
+                ))
+            })?;
+        if binding.depth != DEPTH || binding.historic != HISTORIC {
+            return Err(CompactError::InvalidLedgerCell(
+                "Merkle depth or history kind mismatch".into(),
+            ));
+        }
+        Ok(crate::slots::MerkleSlot::new(binding.path))
+    }
     fn declarations(self) -> impl Iterator<Item = (SlotId, &'static [u8])> + 'a {
         self.cells
             .iter()
@@ -189,6 +252,7 @@ impl<'a> Ledger8Bindings<'a> {
             .chain(self.maps.iter().map(|v| (v.id, v.path)))
             .chain(self.sets.iter().map(|v| (v.id, v.path)))
             .chain(self.lists.iter().map(|v| (v.id, v.path)))
+            .chain(self.merkle.iter().map(|v| (v.id, v.path)))
     }
     pub(super) fn set<T: CellValue>(
         self,

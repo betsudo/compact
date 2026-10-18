@@ -21,6 +21,7 @@ use crate::CompactError;
 mod counters;
 mod lists;
 mod maps;
+mod merkle;
 mod sets;
 
 /// A selected interpreter owns its execution state and final result policy.
