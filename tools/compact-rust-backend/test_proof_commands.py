@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import tempfile
 import unittest
 import tomllib
 from unittest.mock import patch
@@ -62,15 +63,18 @@ class ProofCommands(unittest.TestCase):
 
     def test_capability_preflight_precedes_proofs_and_retains_later_live_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         command = ("env -u LD_LIBRARY_PATH nix develop .#compiler --command env "
                    "COMPACTC=compactc python3 -X faulthandler -u "
                    "tools/compact-rust-backend/check_rejections.py")
-        self.assertEqual(workflow.count(command), 2)
-        first, last = workflow.index(command), workflow.rindex(command)
+        self.assertEqual(workflow.count(command), 1)
+        first = workflow.index(command)
         self.assertLess(workflow.index("- name: Build compiler"), first)
         self.assertLess(first, workflow.index("- name: Run compiler tests"))
         self.assertLess(first, workflow.index("--prepare-proof-material"))
-        self.assertLess(workflow.index("--consumer --proof"), last)
+        live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
+        self.assertEqual(native.count(live), 1)
+        self.assertLess(native.index("--consumer --proof"), native.index(live))
 
     def test_workspace_clippy_runs_before_proofs_and_remains_in_the_final_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
@@ -84,15 +88,52 @@ class ProofCommands(unittest.TestCase):
         expected = "cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings"
         commands = [line.strip() for line in workflow.splitlines()
                     if line.lstrip().startswith("cargo clippy --workspace ")]
-        self.assertEqual(commands, [expected, expected])
+        self.assertEqual(commands, [expected])
         early_step = workflow[early:prepare]
         self.assertEqual(early_step.count(expected), 1)
         self.assertNotIn("continue-on-error", early_step)
         self.assertNotIn("MIDNIGHT_PP", early_step)
         final_step = workflow[final:workflow.index("      - name: Rehearse Rust runtime packages\n", final)]
-        self.assertIn(expected, final_step)
-        self.assertIn("check_compactc_target.py --consumer --proof", final_step)
-        self.assertIn("cargo test --workspace --exclude compact --locked", final_step)
+        invocation = "run: bash tools/compact-rust-backend/check_native_ci.sh"
+        self.assertEqual(final_step.count(invocation), 1)
+        self.assertEqual(workflow.count(invocation), 1)
+        self.assertNotIn("continue-on-error", final_step)
+        native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
+        self.assertIn("set -e -o pipefail", native)
+        self.assertEqual(native.count(expected), 1)
+        self.assertIn("check_compactc_target.py --consumer --proof", native)
+        self.assertIn("cargo test --workspace --exclude compact --locked", native)
+
+    def test_native_script_stops_after_a_failed_proof_command(self):
+        # Exercise the actual shell boundary without generating or caching proofs.
+        with tempfile.TemporaryDirectory(prefix="native failure ") as temporary:
+            root = Path(temporary)
+            trace = root / "commands"
+            for name in ("df", "du", "cargo", "nix"):
+                tool = root / name
+                status = 47 if name == "nix" else 0
+                tool.write_text('#!/bin/sh\nprintf "%s\\0" "' + name + '" "$@" >> "$TRACE"\n'
+                                + 'printf "\\n" >> "$TRACE"\n'
+                                + f"exit {status}\n")
+                tool.chmod(0o755)
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
+                       TRACE=str(trace), GITHUB_WORKSPACE=str(root),
+                       CARGO_TARGET_DIR=str(root), RUNNER_TEMP=str(root))
+            env.pop("COMPACTC", None)
+            result = subprocess.run(["bash", ROOT / "tools/compact-rust-backend/check_native_ci.sh"],
+                                    cwd=ROOT, env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 47, result.stderr)
+            commands = [line.rstrip("\0").split("\0") for line in trace.read_text().splitlines()]
+            self.assertEqual(len(commands), 4, commands)
+            self.assertEqual(commands[2], ["cargo", "fmt", "--all", "--", "--check"])
+            self.assertEqual(commands[3][:5], ["nix", "develop", ".#compiler", "--command", "env"])
+            self.assertIn("COMPACTC=compactc", commands[3])
+            self.assertIn("COMPACT_RUST_WALLET_HANDOFF=" + str(root / "compact-counter-wallet-handoff.bin"),
+                          commands[3])
+            self.assertIn("COMPACT_RUST_DEPLOY_HANDOFF=" + str(root / "compact-counter-deploy-handoff.bin"),
+                          commands[3])
+            self.assertEqual(commands[3][-3:], ["tools/compact-rust-backend/check_compactc_target.py",
+                                               "--consumer", "--proof"])
 
     def test_existing_run_options_and_all_executable_arguments_survive(self):
         for prefix in (["cargo", "run"], ["cargo", "+1.99.0", "run"]):

@@ -102,7 +102,10 @@ and `--native-helper`. It binds the selected script, tools, policy and declared
 source inventory to the existing snapshot lifecycle. Native snapshots default to
 256 MiB; this per-snapshot limit does not cap total repository cache storage.
 
-`check_native_ci.sh` retains the full native CI command list.
+The Linux compiler job calls `check_native_ci.sh` once. That script retains the
+full native CI command list and stops on a failed proof or assertion command.
+This shared entry point runs uncached unless explicitly wrapped by a qualified
+provider; extracting it does not enable Forge in Linux CI.
 `check_native_ci_smoke.sh` exercises two real proof fixtures for lifecycle
 qualification and is not a substitute for that full gate. Exact Linux enrollment,
 immutable published Forge provisioning and hosted workflow adoption remain
