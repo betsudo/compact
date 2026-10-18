@@ -30,6 +30,7 @@ import json
 import os
 from pathlib import Path
 import re
+import runpy
 import shutil
 import subprocess
 import sys
@@ -254,6 +255,7 @@ def _copy(source, destination, receipt, env):
 
 
 def compile_circuit(source, prover, verifier, real_zkir, env):
+    original_source = Path(source)
     source = Path(source)
     require(not source.is_symlink(), 'current ZKIR symlink refused')
     source = source.resolve(strict=True)
@@ -264,6 +266,21 @@ def compile_circuit(source, prover, verifier, real_zkir, env):
             'circuit input/output paths must be distinct')
     require(all(not path.is_symlink() and not path.resolve().is_relative_to(store) for path in destinations),
             'refusing output symlink or Forge storage target')
+    native = None
+    if any(key in env for key in ('COMPACT_ZKIR_NATIVE_HELPER', 'COMPACT_ZKIR_NATIVE_HELPER_SHA256',
+                                  'COMPACT_ZKIR_NATIVE_POLICY', 'COMPACT_ZKIR_NATIVE_POLICY_SHA256')):
+        native = runpy.run_path(str(Path(__file__).with_name('forge_native.py')))
+    if native is not None and native['selected'](env):
+        receipt = native['compile_circuit'](original_source, prover, verifier, real_zkir, env)
+        print(f"(k={receipt['k']}, rows={receipt['rows']})")
+        print('COMPACT_FORGE ' + json.dumps(receipt, sort_keys=True), file=sys.stderr)
+        if env.get('COMPACT_ZKIR_EVENTS'):
+            directory = Path(env['COMPACT_ZKIR_EVENTS'])
+            directory.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(mode='w', prefix='prepare-', suffix='.json', dir=directory, delete=False) as stream:
+                json.dump(receipt, stream, indent=2)
+                stream.write('\n')
+        return receipt
     # The actual CLI supplies fresh model metrics and independently serializes
     # current IR. This is NOT keygen; label it honestly even on a Forge miss.
     version = subprocess.run([str(real_zkir), '--version'], env=env, check=True, capture_output=True, text=True)
@@ -302,6 +319,9 @@ def configure_environment(environment, directory, *, real_zkir=None):
     require(mode in ('forge', 'uncached'), 'COMPACT_ZKIR_MODE must be forge or uncached')
     if mode == 'uncached':
         return env
+    if any(key in env for key in ('COMPACT_ZKIR_NATIVE_HELPER', 'COMPACT_ZKIR_NATIVE_HELPER_SHA256',
+                                  'COMPACT_ZKIR_NATIVE_POLICY', 'COMPACT_ZKIR_NATIVE_POLICY_SHA256')):
+        runpy.run_path(str(Path(__file__).with_name('forge_native.py')))['selected'](env)
     real = real_zkir or zkir_executable(env)
     real = Path(real).resolve(strict=True) if real is not None else None
     directory = Path(directory).resolve()
@@ -330,6 +350,10 @@ def command(argv, env):
 
 def provenance(env):
     mode = env.get('COMPACT_ZKIR_MODE', 'uncached')
+    if mode == 'forge' and any(key.startswith('COMPACT_ZKIR_NATIVE_') for key in env):
+        return {'mode': mode, 'provider_on_generation_requests': 'pinned native helper policy',
+                'legacy_cli_keygen_on_generation_requests': 'policy-dependent; see actual acquisition_path',
+                'scope': 'Native automatic/force policy may use Forge or actual keygen; proofs/assertions always execute.'}
     return {'mode': mode, 'provider_on_generation_requests': 'Forge prepare' if mode == 'forge' else 'actual zkir compile',
             'legacy_cli_keygen_on_generation_requests': mode == 'uncached',
             'actual_zkir': env.get('COMPACT_ZKIR_REAL'), 'events_directory': env.get('COMPACT_ZKIR_EVENTS'),
@@ -373,6 +397,10 @@ def main():
     parser.add_argument('--forge', type=Path)
     parser.add_argument('--cache-dir', type=Path)
     parser.add_argument('--params-dir', type=Path)
+    parser.add_argument('--native-helper', type=Path)
+    parser.add_argument('--native-helper-sha256')
+    parser.add_argument('--native-policy', type=Path)
+    parser.add_argument('--native-policy-sha256')
     parser.add_argument('--receipt-dir', type=Path)
     parser.add_argument('argv', nargs=argparse.REMAINDER)
     args = parser.parse_args()
@@ -388,6 +416,10 @@ def main():
                        ('MIDNIGHT_PP', args.params_dir)):
         if value is not None:
             env[key] = str(value.resolve())
+    for key, value in (('COMPACT_ZKIR_NATIVE_HELPER', args.native_helper), ('COMPACT_ZKIR_NATIVE_HELPER_SHA256', args.native_helper_sha256),
+                       ('COMPACT_ZKIR_NATIVE_POLICY', args.native_policy), ('COMPACT_ZKIR_NATIVE_POLICY_SHA256', args.native_policy_sha256)):
+        if value is not None:
+            env[key] = str(value.resolve()) if isinstance(value, Path) else value
     with tempfile.TemporaryDirectory(prefix='compact-forge-harness-') as temporary:
         configured = configure_environment(env, Path(temporary))
         if args.receipt_dir:
