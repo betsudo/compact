@@ -153,8 +153,9 @@ Merkle inspection, root checks, append/index/hash/default insertion, reset and
 historic reset use existing typed slots. Descriptors and bindings retain depth
 and history kind; history reset is unavailable for plain trees.
 
-Remaining circuit effects and hashes are still refused by
-this projection. Ordinary-backend conversion restrictions also remain authoritative.
+The existing checked Ledger8 kernel, identity, shielded-intent and qualified Cell/Set
+operations have explicit target adapters. Keccak remains refused under pinned ZKIR v2.
+Ordinary-backend conversion restrictions remain authoritative.
 Vector construction is supported; vector indexing currently reaches tuple
 projection and is tracked separately in #674. These boundaries must not be
 interpreted as a claim of full language or proof coverage.
@@ -227,7 +228,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **45 tests**, **127 behavioral scenarios**
+The current finite consumer run covers **56 tests**, **160 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -264,7 +265,7 @@ captures, source reuse, selected fallible casts and certified pure helpers,
 plus prior witness/write prefixes and real nested Map/assert execution.
 Four additional Rust tests check generated unknown-witness dispatch on both
 interpreters and aligned/exact transports. These adapter controls are separate
-from the 127 four-route contract scenarios. Under `experimental-functional`,
+from the 160 four-route contract scenarios. Under `experimental-functional`,
 unknown generated IDs return `UnknownWitnessIdentity { id }`; handwritten
 callback errors are preserved.
 The eighteenth source exercises all nine plain/historic Merkle execution forms,
@@ -380,3 +381,11 @@ coverage for every supported argument/result signature or opaque transport.
 ### Pinned Ledger8 crypto expressions
 
 The nineteenth source exercises all sixteen admitted hashing, Field encoding and Jubjub operations. The finite comparison checks independent official primitive results, opaque values, invalid scalar/point refusals and callback order. Compact `(0,0)` remains an accepted identity sentinel. Keccak remains refused because this compiler target uses ZKIR v2; host availability does not establish proof support. The crypto extraction leaves all eighteen predecessor default generated libraries byte-identical. This consumer executes no proofs; proof qualification is a separate gate.
+
+### Explicit Ledger8 circuit domains
+
+`ledger8` capability traits isolate execution identity, kernel claims, shielded minting, Zswap input/output intents and qualified Cell/Set storage. They consume official ledger types and delegate existing frame/slot operations. Qualified storage consumes allocation authority already held by the context; it does not allocate outputs. Constructors retain their existing lowering and gain no functional executor implementation.
+
+The current finite consumer includes 23 whole sources, 56 Rust tests and 160 behavioral scenarios across four routes. Intent and qualified-storage cases compare commitment-index maps and Zswap plans in addition to state, effects, gas, witness order and replay. Manual qualified references derive from the original slot tests with only their generated-crate import changed, and both original and private-copy hashes are guarded. Held allocations and provisional cursors are explicitly test premises; these scenarios do not establish offer provenance or transaction validity.
+
+The exhaustive current checked-operation match admits 71 of 72 top-level variants, with Keccak refused. Nested List operations (6), Merkle variants (7, covering 9 forms) and kernel claim kinds (3) are separate dimensions. This is bounded checked-node accounting; it does not close frontend gaps #516, #610, #661 or #674, nor imply complete language or proof coverage. Actual functional proof, verification and ledger application remain separately qualified.

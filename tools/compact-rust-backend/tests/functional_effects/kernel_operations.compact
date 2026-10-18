@@ -1,0 +1,23 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger marker: Field;
+export struct Receipt { address: ContractAddress; key: ZswapCoinPublicKey; }
+witness stamp(step: Uint<8>): [];
+constructor() { marker = 0; }
+export circuit exercise(selected: Boolean, permit: Boolean, value: Bytes<32>, amount: Uint<64>): Receipt {
+  marker = 1;
+  assert(disclose(permit), "kernel denied");
+  stamp(1);
+  const address = kernel.self();
+  const key = selected ? ownPublicKey() : default<ZswapCoinPublicKey>;
+  stamp(2);
+  kernel.claimZswapNullifier(disclose(value));
+  kernel.claimZswapCoinSpend(disclose(value));
+  kernel.claimZswapCoinReceive(disclose(value));
+  kernel.mintShielded(disclose(value), disclose(amount));
+  stamp(3);
+  marker = 9;
+  return disclose(Receipt { address: address, key: key });
+}

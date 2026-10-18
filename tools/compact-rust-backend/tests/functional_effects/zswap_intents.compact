@@ -1,0 +1,16 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger marker: Field;
+witness stamp(step: Uint<8>): [];
+constructor() { marker = 0; }
+export circuit exercise(input: QualifiedShieldedCoinInfo, coin: ShieldedCoinInfo, recipient: Either<ZswapCoinPublicKey, ContractAddress>, selected: Boolean, permit: Boolean): [] {
+  marker = 1;
+  assert(disclose(permit), "intents denied");
+  stamp(1);
+  createZswapInput(input);
+  if (disclose(selected)) { createZswapOutput(coin, recipient); }
+  stamp(2);
+  marker = 9;
+}

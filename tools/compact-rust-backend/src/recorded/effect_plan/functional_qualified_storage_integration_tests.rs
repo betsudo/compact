@@ -72,12 +72,20 @@ fn qualified_storage_requires_precise_target_and_source_before_emission() {
         assert_eq!(rendered.slots.len(), usize::from(!set));
         assert_eq!(rendered.sets.len(), usize::from(set));
         let target = Ledger8Target {
-            capabilities: &[Capability::Pure, Capability::CellWrite, Capability::SetWrite],
+            capabilities: &[
+                Capability::Pure,
+                Capability::CellWrite,
+                Capability::SetWrite,
+            ],
         };
         assert!(
             matches!(FunctionalProgram::project(&checked,&authority,target),Err(ProjectionRefusal::MissingTargetCapability{capability:actual,..})if actual==capability)
         );
-        let effect = program.effects().iter().find(|effect| effect.capability() == capability).expect("qualified storage occurrence");
+        let effect = program
+            .effects()
+            .iter()
+            .find(|effect| effect.capability() == capability)
+            .expect("qualified storage occurrence");
         let missing = Authority {
             missing: Some(effect.binding().value.id),
             ..Authority::new()
