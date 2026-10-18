@@ -16,17 +16,24 @@
 //! Ledger8 interpreters delegate existing frames, slots and metered witnesses.
 mod bindings;
 mod counters;
+mod kernel;
 mod lists;
 mod maps;
 mod merkle;
 mod native;
 mod recorded;
+mod qualified_storage;
 mod sets;
 mod witness;
 pub use bindings::{
     CellBinding, CounterBinding, Ledger8Bindings, ListBinding, MapBinding, MerkleBinding,
     SetBinding,
 };
+pub use kernel::{
+    ExecutionIdentity, KernelAddress, KernelClaims, ShieldedMint, ZswapInput, ZswapOutput,
+};
 pub use native::NativeLedger8;
 pub use recorded::RecordedLedger8;
 pub use witness::{ExactWitnessOutput, NoWitnesses, WitnessHandler};
+
+pub use qualified_storage::{QualifiedCellWrite, QualifiedSetInsert};
