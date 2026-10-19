@@ -63,6 +63,41 @@ class OwnerTests(unittest.TestCase):
         self.assertIn('prepared["live"]()', source)
 
 
+    def test_qualified_mode_never_reprovisions_or_repeats_finite_laps(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            paths = {}
+            for name in ('compiler', 'proof', 'helper', 'finite'):
+                paths[name] = base/name
+                paths[name].write_text('current tool')
+            with patch.object(owner.platform, 'system', return_value='Linux'), patch.object(owner.platform, 'machine', return_value='x86_64'), patch.object(owner, 'execute') as execute, patch.object(owner, 'run_qualified', return_value=0) as qualified:
+                result = owner.main(['--compiler',str(paths['compiler']), '--qualification-dir',str(paths['finite']),
+                    '--proof-runner',str(paths['proof']), '--helper',str(paths['helper']), '--output',str(base/'new-output')])
+                self.assertEqual(result, 0)
+                execute.assert_not_called()
+                self.assertEqual(qualified.call_count, 1)
+                self.assertEqual(qualified.call_args.args[:4], (paths['compiler'], paths['proof'], paths['finite'], paths['helper']))
+            with self.assertRaisesRegex(ValueError, 'together'):
+                owner.main(['--compiler',str(paths['compiler']), '--qualification-dir',str(paths['finite']), '--output',str(base/'missing-group')])
+            self.assertFalse((base/'missing-group').exists())
+
+    def test_linux_owner_workflow_is_linux_only_and_preserves_two_lap_qualification(self):
+        workflow = (owner.ROOT/'.github/workflows/forge-local-ci.yml').read_text()
+        apple = workflow.split('  proof:',1)[1].split('  linux-candidate:',1)[0]
+        self.assertNotIn("inputs.qualification == 'linux-owner'", apple)
+        self.assertIn("if: inputs.qualification == 'linux-native'", workflow)
+        self.assertIn("if: inputs.qualification == 'linux-owner'", workflow)
+        self.assertEqual(workflow.count('run_native_ci_forge.py'), 1)
+        command = workflow.split('      - name: Execute the single original native owner',1)[1].split('      # Deliberately',1)[0]
+        self.assertIn('--qualification-dir "$LINUX_REPORT"',command)
+        self.assertIn('--proof-runner "$LINUX_PROOF_RUNNER"',command)
+        self.assertNotIn('qualify_linux_native.py',command)
+        self.assertIn("('linux-native', 'linux-owner')", workflow)
+        push = workflow.split('  push:',1)[1].split('  workflow_call:',1)[0]
+        for dependency in ('.github/scripts/**', '.github/workflows/compiler-producer.yml', '.github/workflows/build-compiler.yml'):
+            self.assertIn(dependency,push)
+
+
 class AdmissionTests(unittest.TestCase):
     def fixture(self, base):
         native = owner.native

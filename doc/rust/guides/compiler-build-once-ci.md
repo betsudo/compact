@@ -121,3 +121,22 @@ qualification, same-head compiler handoff and wrapped full-owner acceptance rema
 pending. Earlier accepted Linux receipts retain their own source identity and
 cannot qualify this candidate. Aggregate cache budget/rollout remains on hold;
 the per-snapshot cap is not a repository-wide storage limit.
+
+### Focused `linux-owner` manual qualification
+
+The existing Forge qualification workflow adds a manual `linux-owner` selection.
+It runs only the same-platform Linux compiler producer/import and Linux consumer;
+Apple is not selected. Existing provisioning, authenticated fixtures, all 13 SRS
+and current five small finite laps execute once, then the qualified-input mode of
+`run_native_ci_forge.py` admits those exact current tools/receipts and runs the
+original native owner once. It neither repeats provisioning/finite qualification
+nor invokes the two-full-lap driver. `linux-native` retains that original two-lap
+qualification independently. Missing qualification inputs or stale/mutated
+premises refuse before native plan execution.
+
+This focused route leaves the ordinary Compiler Build license gate unchanged.
+Its eventual successful receipt would qualify this finite orchestration, not
+remove inherited full-tree header debt or replace ordinary required checks.
+Current-head hosted execution and value measurements remain pending. Push routing
+now includes producer/caller/handoff scripts so a change to those dependencies
+cannot silently miss trusted-branch Forge qualification.

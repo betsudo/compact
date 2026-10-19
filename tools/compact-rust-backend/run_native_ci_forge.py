@@ -57,7 +57,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    for name in ("qualification-dir", "proof-runner", "helper"):
+        parser.add_argument("--" + name, type=Path)
     args = parser.parse_args(argv)
+    selected = (args.qualification_dir, args.proof_runner, args.helper)
+    native.require(not any(selected) or all(selected), "qualified input requires directory, proof runner and helper together")
     native.require(platform.system() == "Linux" and platform.machine() == "x86_64", "actual x86_64 Linux required")
     compiler = args.compiler.resolve(strict=True)
     output = args.output.resolve()
@@ -68,6 +72,12 @@ def main(argv=None):
     env.pop("COMPACTC_SCHEME", None)
     env.pop("COMPACT_ZKIR_SHIM", None)
     env["COMPACT_ZKIR_MODE"] = "uncached"
+    if args.qualification_dir:
+        # Existing workflow already performed provisioning and its five finite laps.
+        # Reuse the same admission/owner code, never repeat either expensive phase.
+        return run_qualified(compiler, args.proof_runner.resolve(strict=True),
+            args.qualification_dir.resolve(strict=True), args.helper.resolve(strict=True), output,
+            ROOT / "tools/compact-rust-backend/forge_native_qualification.json", env, wrapper_sha)
     metadata = json.loads(execute(["nix", "flake", "metadata", PUBLIC, "--json"], env, capture=True))
     forge_source = Path(metadata["path"])
     rust_expr = ('let f = builtins.getFlake "' + PUBLIC + '"; '
@@ -108,6 +118,12 @@ def main(argv=None):
     admitted = output / "admitted"
     admitted.mkdir()
     helper = forge / "bin/midnight-zkir-forge-ci"
+    return run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha)
+
+
+def run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha):
+    """Admit fresh finite receipts and execute one unchanged native owner only."""
+    config = native.configuration(native.read(config_path))
     prepared = native.prepare_native(SimpleNamespace(qualification_dir=qdir, config=config_path, helper=helper, output=admitted))
     native.require(prepared["compiler"] == compiler and prepared["proof"] == proof,
                    "finite qualification is not bound to current job tools")

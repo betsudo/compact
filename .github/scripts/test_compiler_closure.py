@@ -218,7 +218,7 @@ class ForgeReuseTests(unittest.TestCase):
         forge = (owner.ROOT/'.github/workflows/forge-local-ci.yml').read_text()
         push = forge.split('  push:', 1)[1].split('  workflow_call:', 1)[0]
         import re
-        self.assertEqual(tuple(re.findall(r"      - '([^']+)'", push)), paths.PATTERNS[:20])
+        self.assertEqual(tuple(re.findall(r"      - '([^']+)'", push)), paths.PATTERNS)
         for path in ('.github/scripts/compiler_closure.py', '.github/workflows/compiler-producer.yml', '.github/workflows/build-compiler.yml'):
             self.assertTrue(paths.selected([path]))
         self.assertNotIn('  pull_request:', forge)

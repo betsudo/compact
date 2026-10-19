@@ -10,7 +10,7 @@ on:
       qualification:
         description: Consumer to qualify (Linux candidate does not publish caches)
         type: choice
-        options: [apple, linux-candidate, linux-native]
+        options: [apple, linux-candidate, linux-native, linux-owner]
         default: apple
         required: true
   push:
@@ -36,6 +36,9 @@ on:
       - 'nix/**'
       - '.github/actions/**'
       - '.github/workflows/forge-local-ci.yml'
+      - '.github/scripts/**'
+      - '.github/workflows/compiler-producer.yml'
+      - '.github/workflows/build-compiler.yml'
 
   workflow_call:
     inputs:
@@ -76,7 +79,7 @@ jobs:
       system: aarch64-darwin
 
   standalone-linux-compiler:
-    if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
+    if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
       contents: read
@@ -250,9 +253,9 @@ jobs:
   linux-candidate:
     needs: standalone-linux-compiler
     name: Forge / Linux candidate qualification
-    if: always() && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
+    if: always() && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.qualification == 'linux-native' && 240 || 180 }}
+    timeout-minutes: ${{ (inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner') && 240 || 180 }}
     permissions:
       contents: read
       actions: read
@@ -364,7 +367,7 @@ jobs:
           import json, os, pathlib, subprocess
           runner = pathlib.Path(os.environ['LINUX_PROOF_RUNNER'])
           sizes = ['6', '8']
-          if os.environ['QUALIFICATION_MODE'] == 'linux-native':
+          if os.environ['QUALIFICATION_MODE'] in ('linux-native', 'linux-owner'):
               config = json.loads(pathlib.Path('tools/compact-rust-backend/forge_native_qualification.json').read_text())
               sizes = sorted(config['parameters'], key=int)
           requested = [item for size in sizes for item in ['--parameter-k', size]]
@@ -387,6 +390,13 @@ jobs:
             --qualification-dir "$LINUX_REPORT" \
             --config tools/compact-rust-backend/forge_native_qualification.json \
             --helper "$FORGE_HELPER" --output "$NATIVE_REPORT"
+      - name: Execute the single original native owner after current finite qualification
+        if: inputs.qualification == 'linux-owner'
+        run: |
+          python3 -B tools/compact-rust-backend/run_native_ci_forge.py \
+            --compiler "$COMPACTC" --qualification-dir "$LINUX_REPORT" \
+            --proof-runner "$LINUX_PROOF_RUNNER" --helper "$FORGE_HELPER" \
+            --output "$RUNNER_TEMP/forge-linux-single-owner"
       # Deliberately no actions/cache restore/save or reusable key publication.
       - name: Retain original Linux qualification diagnostics
         if: always()
@@ -397,6 +407,8 @@ jobs:
             ${{ runner.temp }}/forge-linux-provision/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.log
+            ${{ runner.temp }}/forge-linux-single-owner/*.json
+            ${{ runner.temp }}/forge-linux-single-owner/native-plan/*.json
             ${{ runner.temp }}/forge-linux-native/*.json
             ${{ runner.temp }}/forge-linux-native/*.stdout
             ${{ runner.temp }}/forge-linux-native/*.stderr
