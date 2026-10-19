@@ -19,20 +19,98 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  compiler-linux:
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+
+  compiler-darwin:
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: aarch64-darwin
+
+  forge-paths:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      forge: ${{ steps.paths.outputs.forge }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: python3 .github/scripts/forge_paths.py --base "$BASE_SHA" --merge "$MERGE_SHA" --github-output "$GITHUB_OUTPUT"
+
+  forge-apple:
+    needs: [compiler-darwin, forge-paths]
+    if: always() && github.event_name == 'pull_request' && needs.forge-paths.outputs.forge == 'true'
+    uses: ./.github/workflows/forge-local-ci.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      compiler-artifact-id: ${{ needs.compiler-darwin.outputs.artifact-id }}
+      compiler-producer-result: ${{ needs.compiler-darwin.result }}
+      compiler-producer-attempt: ${{ needs.compiler-darwin.outputs.producer-attempt }}
+
   build-macos:
+    needs: compiler-darwin
+    if: always()
     name: Build Rust target on Apple Silicon
     runs-on: macos-latest
     permissions:
       contents: read
+      actions: read
     timeout-minutes: 180
     steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-darwin.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-darwin.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-darwin.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
       - name: Checkout compactc repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Nix
         uses: ./.github/actions/setup-nix-cache
         with:
           skip_cache: 'true'
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-darwin.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-darwin.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system aarch64-darwin \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
       - name: Setup Rust toolchain for generated consumers
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
@@ -47,11 +125,8 @@ jobs:
       - name: Fetch locked generated-consumer dependencies
         run: cargo fetch --locked
 
-      - name: Build compactc and run Rust consumers
-        run: |
-          compiler=$(nix build .#compactc --no-link --print-out-paths)
-          COMPACTC="$compiler/bin/compactc" \
-            python3 tools/compact-rust-backend/check_compactc_target.py --consumer
+      - name: Run original Rust consumers with imported compiler
+        run: python3 tools/compact-rust-backend/check_compactc_target.py --consumer
 
   license-check:
     name: No new full-header violations
@@ -105,17 +180,51 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: 0
     permissions:
       contents: read
-    needs: license-check
+      actions: read
+    needs: [license-check, compiler-linux]
+    if: always()
     # It takes 90+ minutes to build without Nix caching
     timeout-minutes: 180
     steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+          LICENSE_RESULT: ${{ needs.license-check.result }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+          test "$LICENSE_RESULT" = success
       - name: Checkout compactc repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Nix with cache
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
@@ -276,8 +385,9 @@ jobs:
             exit 1
           fi
 
-      - name: Build compiler
+      - name: Realize remaining default package outputs
         run: |
+          # The exact compiler is already imported; preserve other default outputs.
           nix build
 
       - name: Check Rust capability refusals before expensive qualification

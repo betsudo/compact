@@ -37,31 +37,21 @@ on:
       - '.github/actions/**'
       - '.github/workflows/forge-local-ci.yml'
 
-  pull_request:
-    # Optional proof qualification only for inputs that affect this lane.
-    # No temporary stack branch names; required checks stay unconditional.
-    paths:
-      - 'compiler/**'
-      - 'third_party/compiler/**'
-      - 'srcMaps/**'
-      - 'runtime/**'
-      - 'test-center/**'
-      - 'runtime-rs/**'
-      - 'runtime-rs-macros/**'
-      - 'testkit-rs/**'
-      - 'tools/compact-rust-backend/**'
-      - 'tools/compact-rust-proof-smoke/**'
-      - 'tests-rust-backend/**'
-      - 'examples/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'flake.nix'
-      - 'flake.lock'
-      - '_sources/**'
-      - 'nix/**'
-      - '.github/actions/**'
-      - '.github/workflows/forge-local-ci.yml'
+  workflow_call:
+    inputs:
+      compiler-artifact-id:
+        description: Exact same-run Darwin producer artifact ID
+        required: true
+        type: string
+      compiler-producer-result:
+        description: Caller producer result; a failed/missing producer never rebuilds here
+        required: true
+        type: string
 
+      compiler-producer-attempt:
+        description: Actual successful producer attempt, not the current consumer rerun attempt
+        required: true
+        type: string
 permissions: {}
 concurrency:
   group: forge-proof-${{ github.event.pull_request.number || github.ref }}
@@ -77,16 +67,45 @@ env:
   PYTHONDONTWRITEBYTECODE: 1
 
 jobs:
+  standalone-darwin-compiler:
+    if: inputs.compiler-producer-result == '' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.qualification == 'apple'))
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: aarch64-darwin
+
+  standalone-linux-compiler:
+    if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+
   proof:
+    needs: standalone-darwin-compiler
     name: Forge / Apple Silicon proof qualification
-    if: github.event_name != 'workflow_dispatch' || inputs.qualification == 'apple'
+    if: always() && (inputs.compiler-producer-result != '' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.qualification == 'apple'))
     runs-on: macos-15
     timeout-minutes: 90
     permissions:
       contents: read
+      actions: read
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/forge-proof
     steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ inputs.compiler-producer-result || needs.standalone-darwin-compiler.result }}
+          ARTIFACT_ID: ${{ inputs.compiler-artifact-id || needs.standalone-darwin-compiler.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ inputs.compiler-producer-attempt || needs.standalone-darwin-compiler.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$ARTIFACT_ID"
+          test -n "$PRODUCER_ATTEMPT"
+          echo "COMPILER_PRODUCER_ATTEMPT=$PRODUCER_ATTEMPT" >> "$GITHUB_ENV"
+          echo "COMPILER_ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
       - name: Allocate job-local paths
         run: |
           {
@@ -98,11 +117,27 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Setup Nix without private cache credentials
         uses: ./.github/actions/setup-nix-cache
         with:
           skip_cache: 'true'
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$COMPILER_ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system aarch64-darwin \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$COMPILER_ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
       - name: Install exact Rust toolchain
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
         with:
@@ -118,12 +153,10 @@ jobs:
         run: |
           test "$(uname -m)" = arm64
           forge=$(nix build github:betsudo/forge/4ad82c8e1e687b64b7a440679fb8f648358106f0 --no-link --print-out-paths)
-          compiler=$(nix build .#compactc --no-link --print-out-paths)
           zkir=$(nix build --impure --expr '(builtins.getFlake (toString ./.)).inputs.zkir.packages.aarch64-darwin.zkir' --no-link --print-out-paths)
           {
             echo "FORGE=$forge/bin/midnight-zkir-forge"
             echo "HELPER=$forge/bin/midnight-zkir-forge-ci"
-            echo "COMPACTC=$compiler/bin/compactc"
             echo "ZKIR=$zkir/bin/zkir"
           } >> "$GITHUB_ENV"
           echo "$zkir/bin" >> "$GITHUB_PATH"
@@ -215,20 +248,34 @@ jobs:
           key: ${{ steps.save.outputs.key }}
 
   linux-candidate:
+    needs: standalone-linux-compiler
     name: Forge / Linux candidate qualification
-    if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
+    if: always() && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.qualification == 'linux-native' && 240 || 180 }}
     permissions:
       contents: read
+      actions: read
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/forge-linux
       FORGE_REF: github:betsudo/forge/d64f52db7239b0ca4891fb0316dca6adb54a5db5
       QUALIFICATION_MODE: ${{ inputs.qualification }}
     steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.standalone-linux-compiler.result }}
+          ARTIFACT_ID: ${{ needs.standalone-linux-compiler.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.standalone-linux-compiler.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$ARTIFACT_ID"
+          test -n "$PRODUCER_ATTEMPT"
+          echo "COMPILER_PRODUCER_ATTEMPT=$PRODUCER_ATTEMPT" >> "$GITHUB_ENV"
+          echo "COMPILER_ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
       - name: Checkout qualification source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Allocate private qualification paths
         run: |
@@ -262,6 +309,21 @@ jobs:
       - name: Check qualification refusal controls
         run: |
           python3 -B -m unittest discover -s tools/compact-rust-backend -p 'test_qualify_linux*.py' -v
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$COMPILER_ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$COMPILER_ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
       - name: Build pinned public Forge, independent Rust compiler and current Compact
         run: |
           nix flake metadata "$FORGE_REF" --json > "$LINUX_PROVISION/forge-flake.json"
@@ -274,14 +336,12 @@ jobs:
           ' --no-link --print-out-paths --max-jobs 1 --cores 2)
           forge=$(nix build "$FORGE_REF" --no-link --print-out-paths --max-jobs 1 --cores 2)
           nix derivation show "$forge" > "$LINUX_PROVISION/forge-derivation.json"
-          compiler=$(nix build .#compactc --no-link --print-out-paths --max-jobs 1 --cores 2)
           zkir=$(nix build --impure --expr '(builtins.getFlake (toString ./.)).inputs.zkir.packages.x86_64-linux.zkir' --no-link --print-out-paths --max-jobs 1 --cores 2)
           {
             echo "FORGE=$forge/bin/zkir-forge"
             echo "FORGE_HELPER=$forge/bin/midnight-zkir-forge-ci"
             echo "FORGE_SOURCE=$forge_source"
             echo "FORGE_RUSTC=$forge_rust/bin/rustc"
-            echo "COMPACTC=$compiler/bin/compactc"
             echo "ZKIR=$zkir/bin/zkir"
           } >> "$GITHUB_ENV"
           echo "$zkir/bin" >> "$GITHUB_PATH"

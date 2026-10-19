@@ -29,6 +29,9 @@ historical baseline and explicitly selected manual graph controls.
 
 ## Public regression and CI checks
 
+- [Compiler build-once CI candidate](compiler-build-once-ci.md): same-platform
+  material handoff, retained proof gates and explicit unqualified boundaries.
+
 - [Required Rust-AST checks](required-checks.md): stable aggregate, core/MSRV and
   public Python controls, with explicit branch-rule activation after merge.
 - [Qualification evidence inventory](../recording-effect-algebra/qualification-evidence-summary.md):
