@@ -252,12 +252,12 @@ jobs:
 
   forge-linux-material:
     if: github.event_name == 'workflow_dispatch' && inputs.qualification == 'linux-owner'
-    uses: betsudo/forge/.github/workflows/qualify-linux.yml@7118b3e80ef4ac8abe7285fd948c59e706166a68
+    uses: betsudo/forge/.github/workflows/qualify-linux.yml@6098556ce269695e6ce95e76f3b8e6bcdf16832d
     permissions:
       contents: read
     with:
       material-only: true
-      producer-source: 7118b3e80ef4ac8abe7285fd948c59e706166a68
+      producer-source: 6098556ce269695e6ce95e76f3b8e6bcdf16832d
 
   linux-candidate:
     needs: [standalone-linux-compiler, forge-linux-material]
