@@ -30,6 +30,37 @@ enable reuse in the full Linux compiler lane. The full native suite and an
 explicit aggregate cache-retention policy remain separate adoption gates. Its
 256 MiB job-local snapshot limit does not change the production cache budget.
 
+The manual `qualification=linux-native` choice first repeats that finite
+qualification against the actual current tools, then runs the unchanged full
+native command list twice: cold and through a verified restored snapshot. Each
+lap also retains the independent uncached key-generation proof tests.
+
+This is an explicit capacity experiment using the existing automatic policy with
+`tiny_max_k=16`; the ordinary compiler default remains 8. All lower-k circuits
+still run fresh model/parameter checks, ordinary key generation and their original
+proofs and assertions. The retained full workload has 290 acquisitions and one
+k17 circuit. Its estimated cache payload fits 256 MiB; actual full Linux snapshot
+size, source/model/artifact accounting and test-name equality must establish that.
+A changed cohort or excess budget refuses qualification. The job never filters
+tests, truncates an old store or publishes reusable keys. This experiment does
+not yet establish a repository-wide 10 GB retention guarantee.
+
+The initial [Linux fixture run](https://github.com/betsudo/compact/actions/runs/39210134875)
+passed at Compact `e6adf75f5`, with independent receipt review. Its independently
+derived Forge fingerprint is
+`9dbd59f1254a3f432d43158113a38efa833692f68293f22ab083b2fadf58c292`.
+Two real fixture cases ran in each of five laps, with equal artifacts and the
+expected private verifier refusal every time. Cold had two misses; warm and
+restored each had two hits and no key generation. Auto bypass and uncached
+generation left logical provider requests unchanged.
+
+Complete fixture-test times were 1.792 s cold, 1.585 s warm, 1.587 s restored,
+1.674 s auto and 1.479 s uncached. Warm reuse was slightly slower than ordinary
+generation for these tiny circuits. The complete hosted job took 47m57s,
+including 41m59s combined Forge/compiler/ZKIR provisioning and 5m05s consumer
+build. These observations qualify compatibility and lifecycle, not full-suite
+acceleration or the capacity experiment above.
+
 ## Matching tools
 
 The active consumer uses the official ledger **8.1.3** revision

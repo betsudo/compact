@@ -10,7 +10,7 @@ on:
       qualification:
         description: Consumer to qualify (Linux candidate does not publish caches)
         type: choice
-        options: [apple, linux-candidate]
+        options: [apple, linux-candidate, linux-native]
         default: apple
         required: true
   push:
@@ -216,14 +216,15 @@ jobs:
 
   linux-candidate:
     name: Forge / Linux candidate qualification
-    if: github.event_name == 'workflow_dispatch' && inputs.qualification == 'linux-candidate'
+    if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native')
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: ${{ inputs.qualification == 'linux-native' && 240 || 180 }}
     permissions:
       contents: read
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/forge-linux
       FORGE_REF: github:betsudo/forge/d64f52db7239b0ca4891fb0316dca6adb54a5db5
+      QUALIFICATION_MODE: ${{ inputs.qualification }}
     steps:
       - name: Checkout qualification source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -238,6 +239,7 @@ jobs:
             echo "MIDNIGHT_PP=$RUNNER_TEMP/forge-linux-params"
             echo "LINUX_PROVISION=$RUNNER_TEMP/forge-linux-provision"
             echo "LINUX_REPORT=$RUNNER_TEMP/forge-linux-qualification"
+            echo "NATIVE_REPORT=$RUNNER_TEMP/forge-linux-native"
           } >> "$GITHUB_ENV"
       - name: Setup public Nix without private cache credentials
         uses: ./.github/actions/setup-nix-cache
@@ -254,7 +256,7 @@ jobs:
           python-version: '3.13'
       - name: Check qualification refusal controls
         run: |
-          python3 -B -m unittest discover -s tools/compact-rust-backend -p 'test_qualify_linux_forge.py' -v
+          python3 -B -m unittest discover -s tools/compact-rust-backend -p 'test_qualify_linux*.py' -v
       - name: Build pinned public Forge, independent Rust compiler and current Compact
         run: |
           nix flake metadata "$FORGE_REF" --json > "$LINUX_PROVISION/forge-flake.json"
@@ -271,6 +273,7 @@ jobs:
           zkir=$(nix build --impure --expr '(builtins.getFlake (toString ./.)).inputs.zkir.packages.x86_64-linux.zkir' --no-link --print-out-paths --max-jobs 1 --cores 2)
           {
             echo "FORGE=$forge/bin/zkir-forge"
+            echo "FORGE_HELPER=$forge/bin/midnight-zkir-forge-ci"
             echo "FORGE_SOURCE=$forge_source"
             echo "FORGE_RUSTC=$forge_rust/bin/rustc"
             echo "COMPACTC=$compiler/bin/compactc"
@@ -286,10 +289,18 @@ jobs:
             --provenance "$LINUX_PROVISION/ledger-provenance.json" --github-env "$GITHUB_ENV"
       - name: Explicitly prepare and verify official proof material
         run: |
-          "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" --prepare-proof-material \
-            --parameter-k 6 --parameter-k 8 > "$LINUX_PROVISION/proof-material.json"
-          "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" --prepare-proof-material \
-            --verify-only --parameter-k 6 --parameter-k 8 > "$LINUX_PROVISION/proof-material-verified.json"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          runner = pathlib.Path(os.environ['CARGO_TARGET_DIR']) / 'proof-checks/compact-rust-proof-smoke'
+          sizes = ['6', '8']
+          if os.environ['QUALIFICATION_MODE'] == 'linux-native':
+              config = json.loads(pathlib.Path('tools/compact-rust-backend/forge_native_qualification.json').read_text())
+              sizes = sorted(config['parameters'], key=int)
+          requested = [item for size in sizes for item in ['--parameter-k', size]]
+          for name, flags in [('proof-material', []), ('proof-material-verified', ['--verify-only'])]:
+              with (pathlib.Path(os.environ['LINUX_PROVISION']) / (name + '.json')).open('x') as receipt:
+                  subprocess.run([str(runner), '--prepare-proof-material', *flags, *requested], stdout=receipt, check=True)
+          PY
       - name: Qualify cold, warm, restored, automatic and uncached real consumers
         run: |
           python3 -B tools/compact-rust-backend/qualify_linux_forge.py \
@@ -298,6 +309,13 @@ jobs:
             --source-manifest tools/compact-rust-backend/forge_linux_source.json \
             --forge-derivation "$LINUX_PROVISION/forge-derivation.json" \
             --params-dir "$MIDNIGHT_PP" --output "$LINUX_REPORT"
+      - name: Qualify every original native gate with cold and restored keys
+        if: inputs.qualification == 'linux-native'
+        run: |
+          python3 -B tools/compact-rust-backend/qualify_linux_native.py \
+            --qualification-dir "$LINUX_REPORT" \
+            --config tools/compact-rust-backend/forge_native_qualification.json \
+            --helper "$FORGE_HELPER" --output "$NATIVE_REPORT"
       # Deliberately no actions/cache restore/save or reusable key publication.
       - name: Retain original Linux qualification diagnostics
         if: always()
@@ -308,5 +326,12 @@ jobs:
             ${{ runner.temp }}/forge-linux-provision/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.log
+            ${{ runner.temp }}/forge-linux-native/*.json
+            ${{ runner.temp }}/forge-linux-native/*.stdout
+            ${{ runner.temp }}/forge-linux-native/*.stderr
+            ${{ runner.temp }}/forge-linux-native/cold/*.json
+            ${{ runner.temp }}/forge-linux-native/cold/events/*.json
+            ${{ runner.temp }}/forge-linux-native/restored/*.json
+            ${{ runner.temp }}/forge-linux-native/restored/events/*.json
           if-no-files-found: warn
           retention-days: 7
