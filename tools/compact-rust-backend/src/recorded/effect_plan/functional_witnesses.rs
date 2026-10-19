@@ -135,7 +135,7 @@ pub(super) fn adapters(
                 ) -> Result<(Private, #result), crate::runtime::CompactError> {
                     match id.index() {
                         #(#cases,)*
-                        _ => Err(crate::runtime::CompactError::InvalidLedgerCell("unknown checked witness identity".into())),
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity { id: id.index() }),
                     }
                 }
             }
@@ -205,5 +205,28 @@ mod tests {
                 &result
             ));
         }
+    }
+    #[test]
+    fn generated_unknown_identity_preserves_the_typed_id() {
+        use super::super::model::WitnessId;
+        use std::collections::HashMap;
+        let declaration = declaration(Type::Field);
+        let declarations =
+            Declarations::new(&HashMap::new(), &HashMap::from([("typed", &declaration)]));
+        let items = adapters(
+            &declarations,
+            &[FunctionalWitness {
+                id: 7,
+                declaration: WitnessId(0),
+            }],
+        )
+        .unwrap();
+        let text = quote::quote!(#(#items)*).to_string();
+        assert!(
+            text.contains("UnknownWitnessIdentity { id : id . index () }"),
+            "{text}"
+        );
+        assert!(!text.contains("InvalidLedgerCell"));
+        assert!(text.contains("7u32 =>"), "{text}");
     }
 }

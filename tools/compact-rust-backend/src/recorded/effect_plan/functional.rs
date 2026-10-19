@@ -31,18 +31,31 @@ pub(crate) enum Capability {
     CellWrite,
     CounterRead,
     CounterIncrement,
+    CounterDecrement,
+    CounterReset,
+    CounterCompare,
     BooleanWitness,
     TypedWitness,
     ExactWitness,
     Require,
     Select,
     Call,
+    VectorMap,
     MapRead,
     MapLookup,
     MapRemove,
     MapWrite,
     SetRead,
     SetWrite,
+    ListRead,
+    ListHead,
+    ListWrite,
+    MerkleInspect,
+    MerkleCheckRoot,
+    MerkleInsert,
+    MerkleInsertHash,
+    MerkleReset,
+    MerkleResetHistory,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -59,18 +72,31 @@ impl Ledger8Target {
             Capability::CellWrite,
             Capability::CounterRead,
             Capability::CounterIncrement,
+            Capability::CounterDecrement,
+            Capability::CounterReset,
+            Capability::CounterCompare,
             Capability::BooleanWitness,
             Capability::TypedWitness,
             Capability::ExactWitness,
             Capability::Require,
             Capability::Select,
             Capability::Call,
+            Capability::VectorMap,
             Capability::MapRead,
             Capability::MapLookup,
             Capability::MapRemove,
             Capability::MapWrite,
             Capability::SetRead,
             Capability::SetWrite,
+            Capability::ListRead,
+            Capability::ListHead,
+            Capability::ListWrite,
+            Capability::MerkleInspect,
+            Capability::MerkleCheckRoot,
+            Capability::MerkleInsert,
+            Capability::MerkleInsertHash,
+            Capability::MerkleReset,
+            Capability::MerkleResetHistory,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -171,6 +197,16 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedMerkleDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
+    },
+    UnsupportedListDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedSetDeclaration {
         path: String,
@@ -317,6 +353,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::CellWrite { .. } => Capability::CellWrite,
                 Operation::CounterRead { .. } => Capability::CounterRead,
                 Operation::CounterIncrement { .. } => Capability::CounterIncrement,
+                Operation::CounterDecrement { .. } => Capability::CounterDecrement,
+                Operation::CounterReset { .. } => Capability::CounterReset,
+                Operation::CounterLessThan { .. } => Capability::CounterCompare,
                 Operation::Witness {
                     declaration,
                     arguments,
@@ -386,14 +425,55 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                         super::functional_sets::SetAccess::Write => Capability::SetWrite,
                     }
                 }
+                Operation::List { slot, .. } => {
+                    let list =
+                        super::functional_lists::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedListDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked List operation");
+                    match list.access {
+                        super::functional_lists::ListAccess::Read => Capability::ListRead,
+                        super::functional_lists::ListAccess::Head => Capability::ListHead,
+                        super::functional_lists::ListAccess::Write => Capability::ListWrite,
+                    }
+                }
+                Operation::Merkle { slot, .. } => {
+                    let tree =
+                        super::functional_merkle::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedMerkleDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Merkle operation");
+                    match tree.access {
+                        super::functional_merkle::MerkleAccess::Inspect => {
+                            Capability::MerkleInspect
+                        }
+                        super::functional_merkle::MerkleAccess::CheckRoot => {
+                            Capability::MerkleCheckRoot
+                        }
+                        super::functional_merkle::MerkleAccess::Insert => Capability::MerkleInsert,
+                        super::functional_merkle::MerkleAccess::InsertHash => {
+                            Capability::MerkleInsertHash
+                        }
+                        super::functional_merkle::MerkleAccess::Reset => Capability::MerkleReset,
+                        super::functional_merkle::MerkleAccess::ResetHistory => {
+                            Capability::MerkleResetHistory
+                        }
+                    }
+                }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
+                Operation::VectorMap { .. } => Capability::VectorMap,
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::VectorMap { .. }
-                | Operation::CreateZswapInput { .. }
+                Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
                 | Operation::OwnPublicKey
                 | Operation::KernelSelf
@@ -416,13 +496,8 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::ConstructJubjubPoint { .. }
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
-                | Operation::Merkle { .. }
-                | Operation::List { .. }
                 | Operation::CellWriteCoin { .. }
-                | Operation::SetInsertCoin { .. }
-                | Operation::CounterDecrement { .. }
-                | Operation::CounterReset { .. }
-                | Operation::CounterLessThan { .. } => {
+                | Operation::SetInsertCoin { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
@@ -463,7 +538,11 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 }
                 // Calls have their own validated formal scope but inherit the
                 // caller's effective execution guard. Inspect every nested node.
-                Operation::Call { body, .. } => self.block(body, guard, authority)?,
+                Operation::Call { body, .. } | Operation::VectorMap { body, .. } => {
+                    // Static occurrence evidence is checked even for empty maps;
+                    // this does not claim each element executes its body.
+                    self.block(body, guard, authority)?;
+                }
                 _ => {}
             }
         }
@@ -516,3 +595,15 @@ mod maps_tests;
 #[cfg(test)]
 #[path = "functional_sets_integration_tests.rs"]
 mod sets_tests;
+
+#[cfg(test)]
+#[path = "functional_lists_integration_tests.rs"]
+mod lists_tests;
+
+#[cfg(test)]
+#[path = "functional_vector_map_tests.rs"]
+mod vector_map_tests;
+
+#[cfg(test)]
+#[path = "functional_merkle_integration_tests.rs"]
+mod merkle_tests;

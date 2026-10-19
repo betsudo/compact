@@ -33,14 +33,24 @@
 
 mod circuit;
 pub mod ledger8;
+mod list;
 mod map;
+mod merkle;
 mod set;
 mod slots;
 mod witness;
 pub use circuit::{Circuit, Executor, Rule};
+pub use list::{List, ListHead, ListRead, ListWrite};
 pub use map::{Map, MapLookup, MapRead, MapRemove, MapWrite};
+pub use merkle::{
+    Merkle, MerkleCheckRoot, MerkleInsert, MerkleInsertHash, MerkleInspect, MerkleReset,
+    MerkleResetHistory,
+};
 pub use set::{Set, SetRead, SetWrite};
-pub use slots::{Cell, CellRead, CellWrite, Counter, CounterIncrement, CounterRead, SlotId};
+pub use slots::{
+    Cell, CellRead, CellWrite, Counter, CounterCompare, CounterDecrement, CounterIncrement,
+    CounterRead, CounterReset, SlotId,
+};
 pub use witness::{Witness, WitnessCall, WitnessId};
 
 #[cfg(test)]

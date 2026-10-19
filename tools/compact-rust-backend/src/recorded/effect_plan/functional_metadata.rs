@@ -73,6 +73,7 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
         "root_origin": origin(program.root_origin()),
         "required_capabilities": program.requirements().iter().copied().map(capability).collect::<Vec<_>>(),
         "inventory_semantics": "guards_and_occurrences_not_a_linear_execution_schedule",
+        "map_body_semantics": "lexical_static_occurrences_with_branch_guards; a body may execute per selected element and zero times for an empty vector; not a linear execution trace",
         "guards": guards,
         "inputs": inputs,
         "effects": effects,
@@ -86,18 +87,31 @@ fn capability(value: Capability) -> &'static str {
         Capability::CellWrite => "cell_write",
         Capability::CounterRead => "counter_read",
         Capability::CounterIncrement => "counter_increment",
+        Capability::CounterDecrement => "counter_decrement",
+        Capability::CounterReset => "counter_reset",
+        Capability::CounterCompare => "counter_compare",
         Capability::BooleanWitness => "boolean_witness",
         Capability::TypedWitness => "typed_witness",
         Capability::ExactWitness => "exact_witness",
         Capability::Require => "require",
         Capability::Select => "select",
         Capability::Call => "call",
+        Capability::VectorMap => "vector_map",
         Capability::MapRead => "map_read",
         Capability::MapLookup => "map_lookup",
         Capability::MapRemove => "map_remove",
         Capability::MapWrite => "map_write",
         Capability::SetRead => "set_read",
         Capability::SetWrite => "set_write",
+        Capability::ListRead => "list_read",
+        Capability::ListHead => "list_head",
+        Capability::ListWrite => "list_write",
+        Capability::MerkleInspect => "merkle_inspect",
+        Capability::MerkleCheckRoot => "merkle_check_root",
+        Capability::MerkleInsert => "merkle_insert",
+        Capability::MerkleInsertHash => "merkle_insert_hash",
+        Capability::MerkleReset => "merkle_reset",
+        Capability::MerkleResetHistory => "merkle_reset_history",
     }
 }
 
@@ -127,3 +141,7 @@ fn origin(value: OriginEvidence<'_>) -> Value {
         "snapshot_correspondence": snapshot,
     })
 }
+
+#[cfg(test)]
+#[path = "functional_metadata_map_tests.rs"]
+mod map_tests;

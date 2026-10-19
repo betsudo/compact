@@ -100,7 +100,12 @@ Compact + retained invocation origins
 
 The current projection includes checked literals/defaults, enums, aggregates,
 projections, Field and unsigned arithmetic, comparisons, conversions, Cell
-reads/writes, Counter reads/increments, assertions, conditionals, and typed witnesses.
+reads/writes, Counter reads/increments/decrements/reset/less-than, assertions,
+conditionals, and typed witnesses.
+Generic checked context-free VectorMap bodies use `FixedVector::try_map` and
+ordered Result producers, including nested conditionals and certified pure calls.
+Every body node is statically admitted even for an empty vector. Direct Fold
+source forms remain scoped by #661.
 Pure value syntax shares the existing checked ordinary renderer. Expressions
 remain inside successful binds, so later producers do not run after a failure.
 Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
@@ -138,7 +143,17 @@ Scalar Set membership, insertion, removal, reset, size and emptiness reuse the
 existing Set slots through `SetRead` and `SetWrite`. Coin allocation is a
 separate phase and is not admitted as ordinary Set insertion.
 
-Other Counter operations, remaining collections and hashes are still refused by
+List push/pop/reset, length, emptiness and head use existing slots. `ListRead`,
+`ListWrite` and `ListHead<T, M>` keep the checked generated Maybe carrier
+separate from simple inspection and mutation. Only head requires a defaultable
+element. The existing empty-pop operation succeeds and writes `Null` at the List path;
+subsequent operations retain the original slot behavior.
+
+Merkle inspection, root checks, append/index/hash/default insertion, reset and
+historic reset use existing typed slots. Descriptors and bindings retain depth
+and history kind; history reset is unavailable for plain trees.
+
+Remaining circuit effects and hashes are still refused by
 this projection. Ordinary-backend conversion restrictions also remain authoritative.
 Vector construction is supported; vector indexing currently reaches tuple
 projection and is tracked separately in #674. These boundaries must not be
@@ -212,7 +227,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The current finite consumer run covers **20 tests**, **68 behavioral scenarios**
+The current finite consumer run covers **40 tests**, **115 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -239,6 +254,22 @@ and failure prefixes. Its populated child Maps are seeded through official held
 state; this does not demonstrate generated nested insertion or constructors.
 The fourteenth source exercises six scalar Set operations, owned element
 uniqueness, populated/empty observations and chunked paths.
+The fifteenth source exercises List heads before and immediately after each pop,
+owned head values, reset, guarded witnesses, exact empty-pop state and the
+first operation after empty-pop.
+The sixteenth source covers the remaining Counter operations with u16 amount
+boundaries, strict full-width comparisons, reset and assertion ordering.
+The seventeenth source covers VectorMap empty/single/multiple inputs, owned
+captures, source reuse, selected fallible casts and certified pure helpers,
+plus prior witness/write prefixes and real nested Map/assert execution.
+Four additional Rust tests check generated unknown-witness dispatch on both
+interpreters and aligned/exact transports. These adapter controls are separate
+from the 115 four-route contract scenarios. Under `experimental-functional`,
+unknown generated IDs return `UnknownWitnessIdentity { id }`; handwritten
+callback errors are preserved.
+The eighteenth source exercises all nine plain/historic Merkle execution forms,
+real generated root digests, history retention/reset, full trees and indexed
+refusals, with state/effects/gas/replay comparisons.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug

@@ -26,7 +26,7 @@ pub(in crate::recorded::effect_plan) fn root_type() -> Type {
     }
 }
 
-fn leaf<'a>(
+pub(in crate::recorded::effect_plan) fn leaf<'a>(
     declarations: &'a Declarations,
     slot: MerkleSlot,
     path: &str,

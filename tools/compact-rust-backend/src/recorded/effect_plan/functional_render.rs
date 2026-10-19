@@ -17,7 +17,9 @@
 //!
 //! Successful binds delimit operand evaluation. Neither a later clone/default
 //! nor an inactive branch is evaluated after a preceding operation fails.
+use super::functional_lists::FunctionalListSlot;
 use super::functional_maps::FunctionalMapSlot;
+use super::functional_merkle::FunctionalMerkleSlot;
 use super::functional_paths::rust_type;
 use super::functional_sets::FunctionalSetSlot;
 use super::{
@@ -51,6 +53,8 @@ pub(super) struct RenderedFunctional {
     pub counters: Vec<FunctionalCounterSlot>,
     pub maps: Vec<FunctionalMapSlot>,
     pub sets: Vec<FunctionalSetSlot>,
+    pub lists: Vec<FunctionalListSlot>,
+    pub merkle: Vec<FunctionalMerkleSlot>,
     pub witnesses: Vec<FunctionalWitness>,
 }
 
@@ -64,6 +68,8 @@ pub(super) fn render(
         counters: Vec::new(),
         maps: Vec::new(),
         sets: Vec::new(),
+        lists: Vec::new(),
+        merkle: Vec::new(),
         witnesses: Vec::new(),
         executor_bounds: Vec::new(),
     };
@@ -88,15 +94,17 @@ pub(super) fn render(
         counters: renderer.counters,
         maps: renderer.maps,
         sets: renderer.sets,
+        lists: renderer.lists,
+        merkle: renderer.merkle,
         witnesses: renderer.witnesses,
     })
 }
 
-fn name(value: &Value) -> syn::Ident {
+pub(super) fn name(value: &Value) -> syn::Ident {
     format_ident!("__compact_effect_{}", value.id)
 }
 
-fn value(value: &Value) -> syn::Expr {
+pub(super) fn value(value: &Value) -> syn::Expr {
     if value.ty == Type::Unit {
         syn::parse_quote!(())
     } else {
@@ -111,6 +119,8 @@ struct Renderer<'a> {
     counters: Vec<FunctionalCounterSlot>,
     maps: Vec<FunctionalMapSlot>,
     sets: Vec<FunctionalSetSlot>,
+    lists: Vec<FunctionalListSlot>,
+    merkle: Vec<FunctionalMerkleSlot>,
     witnesses: Vec<FunctionalWitness>,
     executor_bounds: Vec<syn::TypeParamBound>,
 }
@@ -167,6 +177,29 @@ impl Renderer<'_> {
                 ));
                 let amount = value(amount);
                 syn::parse_quote!(#current.increment(#counter, (#amount).value() as u16))
+            }
+            Operation::CounterDecrement { slot, amount } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(
+                    crate::runtime::functional::CounterDecrement
+                ));
+                // Checked validation requires exactly Uint16, so no truncation.
+                let amount = value(amount);
+                syn::parse_quote!(#current.decrement(#counter, (#amount).value() as u16))
+            }
+            Operation::CounterReset { slot } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(crate::runtime::functional::CounterReset));
+                syn::parse_quote!(#current.reset_counter(#counter))
+            }
+            Operation::CounterLessThan { slot, threshold } => {
+                let counter = self.counter(*slot, &binding.path)?;
+                self.bound(syn::parse_quote!(
+                    crate::runtime::functional::CounterCompare
+                ));
+                // Checked validation requires exactly Uint64, including u64::MAX.
+                let threshold = value(threshold);
+                syn::parse_quote!(#current.counter_less_than(#counter, (#threshold).value() as u64))
             }
             Operation::Witness {
                 declaration,
@@ -265,6 +298,11 @@ impl Renderer<'_> {
                 let expression = super::functional_paths::expression(expression);
                 syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
             }
+            Operation::VectorMap { .. } => {
+                let expression =
+                    super::functional_pure_blocks::vector_map(binding, self.declarations)?;
+                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+            }
             Operation::If {
                 condition,
                 then,
@@ -298,6 +336,28 @@ impl Renderer<'_> {
                     }
                     self.bound(set.bound);
                     set.expression
+                } else if let Some(list) = super::functional_lists::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.lists.iter().any(|present| present.id == list.slot.id) {
+                        self.lists.push(list.slot);
+                    }
+                    self.bound(list.bound);
+                    list.expression
+                } else if let Some(tree) = super::functional_merkle::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.merkle.iter().any(|present| present.id == tree.slot.id) {
+                        self.merkle.push(tree.slot);
+                    }
+                    self.bound(tree.bound);
+                    tree.expression
                 } else {
                     let expression = pure(binding, operation)?;
                     syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
@@ -357,7 +417,7 @@ impl Renderer<'_> {
     }
 }
 
-fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
+pub(super) fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
     let ty =
         rust_type(&binding.value.ty).map_err(|error| invalid(&binding.path, error.to_string()))?;
     if let Some(expression) = super::render::pure::expression(binding, &ty, value, |input| {

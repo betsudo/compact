@@ -16,6 +16,7 @@
 //! Real Ledger8 parity plus explicit carrier failure/lifecycle controls.
 mod bindings;
 mod counter;
+mod counter_more;
 mod exact_witnesses;
 mod ledger8;
 mod sequencing;
@@ -25,3 +26,7 @@ mod witness;
 mod maps;
 
 mod sets;
+
+mod lists;
+
+mod merkle;

@@ -276,6 +276,46 @@ fn render(
             quote::quote!((#ledger_bindings)?.bind_sets(SETS)),
         )
     };
+    let list_bindings = rendered
+        .lists
+        .iter()
+        .map(|slot| {
+            let declaration = checked
+                .declarations()
+                .field(slot.declaration)
+                .ok_or_else(|| invalid("functional.slot", "checked List declaration missing"))?;
+            let path = declaration.physical_path();
+            let id = slot.id;
+            Ok(
+                quote::quote!(crate::runtime::functional::ledger8::ListBinding::new(
+                    crate::runtime::functional::SlotId::new(#id), &[#(#path),*],
+                )),
+            )
+        })
+        .collect::<Result<Vec<_>, RecordingGap>>()?;
+    // An unused List adds neither bindings nor syntax to existing requests.
+    let (list_constants, ledger_bindings) = if list_bindings.is_empty() {
+        (quote::quote!(), ledger_bindings)
+    } else {
+        (
+            quote::quote!(const LISTS:&[crate::runtime::functional::ledger8::ListBinding]=&[#(#list_bindings),*];),
+            quote::quote!((#ledger_bindings)?.bind_lists(LISTS)),
+        )
+    };
+    let merkle_bindings=rendered.merkle.iter().map(|slot|{
+        let declaration=checked.declarations().field(slot.declaration)
+            .ok_or_else(||invalid("functional.slot","checked Merkle declaration missing"))?;
+        let path=declaration.physical_path();let id=slot.id;let depth=slot.depth;let historic=slot.historic;
+        Ok(quote::quote!(crate::runtime::functional::ledger8::MerkleBinding::new(crate::runtime::functional::SlotId::new(#id),&[#(#path),*],#depth,#historic)))
+    }).collect::<Result<Vec<_>,RecordingGap>>()?;
+    let (merkle_constants, ledger_bindings) = if merkle_bindings.is_empty() {
+        (quote::quote!(), ledger_bindings)
+    } else {
+        (
+            quote::quote!(const MERKLE:&[crate::runtime::functional::ledger8::MerkleBinding]=&[#(#merkle_bindings),*];),
+            quote::quote!((#ledger_bindings)?.bind_merkle(MERKLE)),
+        )
+    };
     let witness_adapters =
         super::functional_witnesses::adapters(checked.declarations(), &rendered.witnesses)?;
     let body = rendered.body;
@@ -338,6 +378,8 @@ fn render(
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[#(#counter_bindings),*];
             #map_constants
             #set_constants
+            #list_constants
+            #merkle_constants
 
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
