@@ -1,0 +1,65 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct HashReceipt { encoded: Bytes<32>; digest: Bytes<32>; commitment: Bytes<32>; degraded: Field; hashed: Field; transient: Field; upgraded: Bytes<32>; }
+export struct CurveReceipt { curve: JubjubPoint; x: Field; y: Field; reconstructed: JubjubPoint; scalar: Field; generator: JubjubPoint; multiplied: JubjubPoint; added: JubjubPoint; negated: JubjubPoint; }
+export struct OpaqueReceipt { curve: JubjubPoint; hashed: Field; committed: Field; }
+export ledger stored: Field;
+export ledger storedPoint: JubjubPoint;
+witness marker(value: Field): Field;
+constructor() { stored = 0; storedPoint = ecMulGenerator(0); }
+export circuit hashing(seed: Field, opening: Bytes<32>): HashReceipt {
+  const encoded = seed as Bytes<32>;
+  const digest = persistentHash<Bytes<32>>(encoded);
+  const commitment = persistentCommit<Bytes<32>>(encoded, opening);
+  const degraded = degradeToTransient(digest);
+  const hashed = transientHash<Field>(degraded);
+  const transient = transientCommit<Field>(hashed, seed);
+  const upgraded = upgradeFromTransient(transient);
+  stored = disclose(marker(seed));
+  return HashReceipt { encoded: encoded, digest: digest, commitment: commitment, degraded: degraded, hashed: hashed, transient: transient, upgraded: upgraded };
+}
+export circuit jubjub(seed: Field, point: JubjubPoint): CurveReceipt {
+  const curve = hashToCurve<Field>(seed);
+  const x = jubjubPointX(point);
+  const y = jubjubPointY(point);
+  const reconstructed = constructJubjubPoint(x, y);
+  const scalar = jubjubScalarFromNative(seed);
+  const generator = ecMulGenerator(scalar);
+  const multiplied = ecMul(reconstructed, scalar);
+  const added = ecAdd(generator, multiplied);
+  const negated = ecNeg(added);
+  storedPoint = disclose(negated);
+  stored = disclose(marker(seed));
+  return CurveReceipt { curve: curve, x: x, y: y, reconstructed: reconstructed, scalar: scalar, generator: generator, multiplied: multiplied, added: added, negated: negated };
+}
+export circuit opaque(value: Opaque<"string">): OpaqueReceipt {
+  stored = 1;
+  return OpaqueReceipt { curve: hashToCurve<Opaque<"string">>(value), hashed: transientHash<Opaque<"string">>(value), committed: transientCommit<Opaque<"string">>(value, 7) };
+}
+export circuit raw(selected: Boolean, point: JubjubPoint, scalar: Field): JubjubPoint {
+  storedPoint = disclose(point);
+  const value = selected ? ecMul(point, scalar) : point;
+  storedPoint = disclose(value);
+  stored = disclose(marker(9 as Field));
+  return value;
+}
+export circuit construct(x: Field, y: Field): JubjubPoint {
+  const point = constructJubjubPoint(x, y);
+  storedPoint = disclose(point);
+  stored = disclose(marker(8 as Field));
+  return point;
+}

@@ -54,9 +54,14 @@ SOURCES = {
     "counter_more_fixture": FIXTURES / "counter_more.compact",
     "vector_map_fixture": FIXTURES / "vector_map_composition.compact",
     "merkle_fixture": FIXTURES / "merkle_operations.compact",
+    "crypto_fixture": FIXTURES / "crypto_operations.compact",
+    "kernel_fixture": FIXTURES / "kernel_operations.compact",
+    "intents_fixture": FIXTURES / "zswap_intents.compact",
+    "qualified_cell_fixture": ROOT / "examples/rust_backend/effect_plan_qualified_coin_source.compact",
+    "qualified_set_fixture": ROOT / "examples/rust_backend/effect_plan_qualified_set_source.compact",
 }
-EXPECTED_TESTS = 40
-EXPECTED_SCENARIOS = 115  # Existing 86 + 14 VectorMap + 15 Merkle; 4 adapter tests are separate.
+EXPECTED_TESTS = 56
+EXPECTED_SCENARIOS = 160  # 135 + 25 intent/qualified scenarios; 4 adapter tests are separate.
 
 
 def digest(path):
@@ -163,6 +168,11 @@ def main():
         "vector_map_consumer_sha256": digest(FIXTURES / "consumer_vector_map_composition.rs"),
         "witness_refusal_consumer_sha256": digest(FIXTURES / "consumer_witness_refusals.rs"),
         "merkle_consumer_sha256": digest(FIXTURES / "consumer_merkle_operations.rs"),
+        "crypto_consumer_sha256": digest(FIXTURES / "consumer_crypto_operations.rs"),
+        "kernel_consumer_sha256": digest(FIXTURES / "consumer_kernel_operations.rs"),
+        "intents_consumer_sha256": digest(FIXTURES / "consumer_zswap_intents.rs"),
+        "qualified_consumer_sha256": digest(FIXTURES / "consumer_qualified_storage.rs"),
+        "reference_sources": {str(path.relative_to(ROOT)): digest(path) for path in [ROOT / "tests-rust-backend/effect-plan-qualified-coin-source/support.rs", ROOT / "tests-rust-backend/effect-plan-qualified-set-source/support.rs"]},
         "adapter_refusal_scope": "4 Rust tests exercise two interpreters/ordinary-exact transports; not four-route contract scenarios",
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
@@ -275,9 +285,29 @@ def main():
                                                ("consumer_counter_more.rs", "counter_more.rs"),
                                                ("consumer_vector_map_composition.rs", "vector_map_composition.rs"),
                                                ("consumer_witness_refusals.rs", "witness_refusals.rs"),
-                                               ("consumer_merkle_operations.rs", "merkle_operations.rs")):
+                                               ("consumer_merkle_operations.rs", "merkle_operations.rs"),
+                                               ("consumer_crypto_operations.rs", "crypto_operations.rs"),
+                                               ("consumer_kernel_operations.rs", "kernel_operations.rs"),
+                                               ("consumer_zswap_intents.rs", "zswap_intents.rs"),
+                                               ("consumer_qualified_storage.rs", "qualified_storage.rs")):
             shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
             includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
+        # Derive references from the existing official-slot tests; only the generated crate alias changes.
+        report["reference_copies"] = {}
+        for kind, alias in (("coin", "qualified_cell_fixture"), ("set", "qualified_set_fixture")):
+            original = ROOT / f"tests-rust-backend/effect-plan-qualified-{kind}-source/support.rs"
+            text = original.read_text()
+            token = "use crate::{ledger_contract as c, ledger_slots as slots, runtime as r, types};"
+            if text.count(token) != 1:
+                raise ValueError("qualified reference import no longer matches exactly once")
+            rewritten = text.replace(token, f"use {alias}::{{ledger_contract as c, ledger_slots as slots, runtime as r, types}};")
+            destination = consumer / "support" / ("qualified_cell_support.rs" if kind == "coin" else "qualified_set_support.rs")
+            destination.write_text(rewritten)
+            report["reference_copies"][str(destination)] = digest(destination)
+        for alias in ("qualified_cell_fixture", "qualified_set_fixture"):
+            ir = json.loads((output / alias / "contract/compact-rust-ir.json").read_text())
+            if not any(len(field.get("path", [])) >= 2 for field in ir["ledger_fields"]):
+                raise ValueError("qualified fixture lost its multi-component physical path")
         (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
         report["composed_consumer_sha256"] = digest(consumer / "tests/integration.rs")
         root_lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
@@ -368,6 +398,12 @@ def main():
         for source, expected in report["runtime_sources"].items():
             if digest(ROOT / source) != expected:
                 raise ValueError("runtime changed during qualification: " + source)
+        for path, expected in report["reference_sources"].items():
+            if digest(ROOT / path) != expected:
+                raise ValueError("qualified reference source changed: " + path)
+        for path, expected in report["reference_copies"].items():
+            if digest(Path(path)) != expected:
+                raise ValueError("qualified reference copy changed: " + path)
         if scheme_compiler(compiler, environment) != scheme:
             raise ValueError("Scheme compiler selection changed during qualification")
         for path, expected in [(compiler, report["compiler_sha256"]),
@@ -395,6 +431,14 @@ def main():
                                (consumer / "support/witness_refusals.rs", report["witness_refusal_consumer_sha256"]),
                                (FIXTURES / "consumer_merkle_operations.rs", report["merkle_consumer_sha256"]),
                                (consumer / "support/merkle_operations.rs", report["merkle_consumer_sha256"]),
+                               (FIXTURES / "consumer_crypto_operations.rs", report["crypto_consumer_sha256"]),
+                               (consumer / "support/crypto_operations.rs", report["crypto_consumer_sha256"]),
+                               (FIXTURES / "consumer_kernel_operations.rs", report["kernel_consumer_sha256"]),
+                               (consumer / "support/kernel_operations.rs", report["kernel_consumer_sha256"]),
+                               (FIXTURES / "consumer_zswap_intents.rs", report["intents_consumer_sha256"]),
+                               (consumer / "support/zswap_intents.rs", report["intents_consumer_sha256"]),
+                               (FIXTURES / "consumer_qualified_storage.rs", report["qualified_consumer_sha256"]),
+                               (consumer / "support/qualified_storage.rs", report["qualified_consumer_sha256"]),
                                (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))

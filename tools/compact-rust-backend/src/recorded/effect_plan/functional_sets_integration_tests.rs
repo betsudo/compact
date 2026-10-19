@@ -240,7 +240,7 @@ fn read_only_and_write_only_sets_do_not_require_the_other_capability() {
 }
 
 #[test]
-fn genuine_checked_coin_allocation_is_not_admitted_as_scalar_set_write() {
+fn genuine_checked_coin_storage_requires_qualified_not_scalar_capability() {
     let contract: Contract = serde_json::from_str(include_str!(
         "../../../tests/qualified-coin-set-schema20-ir.json"
     ))
@@ -277,8 +277,23 @@ fn genuine_checked_coin_allocation_is_not_admitted_as_scalar_set_write() {
         .find(|b| matches!(b.operation, Operation::SetInsertCoin { .. }))
         .unwrap();
     let authority = Authority::new();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let effect = program
+        .effects()
+        .iter()
+        .find(|effect| effect.binding().path == binding.path)
+        .unwrap();
+    assert_eq!(effect.capability(), Capability::QualifiedSetInsert);
+    let capabilities = Ledger8Target::PINNED
+        .capabilities
+        .iter()
+        .copied()
+        .filter(|cap| *cap != Capability::QualifiedSetInsert)
+        .collect::<Vec<_>>();
+    let target = Ledger8Target {
+        capabilities: Box::leak(capabilities.into_boxed_slice()),
+    };
     assert!(
-        matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),
-        Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path == binding.path)
+        matches!(FunctionalProgram::project(&checked,&authority,target),Err(ProjectionRefusal::MissingTargetCapability{path,capability:Capability::QualifiedSetInsert})if path==binding.path)
     );
 }

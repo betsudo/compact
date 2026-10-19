@@ -329,7 +329,7 @@ fn block(
     Ok(())
 }
 
-fn cell<'a>(
+pub(super) fn cell<'a>(
     declarations: &'a Declarations,
     slot: CellSlot,
     path: &str,

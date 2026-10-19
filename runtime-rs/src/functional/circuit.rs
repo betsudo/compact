@@ -19,6 +19,7 @@ use super::{
 };
 use crate::CompactError;
 mod counters;
+mod ledger8_kernel;
 mod lists;
 mod maps;
 mod merkle;
@@ -175,3 +176,5 @@ impl<E: Executor, T> Circuit<E, T> {
         self.state.map(|(executor, value)| executor.finish(value))
     }
 }
+
+mod qualified_storage;

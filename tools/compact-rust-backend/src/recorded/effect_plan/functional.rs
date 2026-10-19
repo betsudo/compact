@@ -27,6 +27,17 @@ use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Capability {
     Pure,
+    ExecutionIdentity,
+    KernelAddress,
+    KernelClaims,
+    ShieldedMint,
+    ZswapInput,
+    ZswapOutput,
+    QualifiedCellWrite,
+    QualifiedSetInsert,
+    Hashing,
+    FieldEncoding,
+    Jubjub,
     CellRead,
     CellWrite,
     CounterRead,
@@ -68,6 +79,17 @@ impl Ledger8Target {
     pub(crate) const PINNED: Self = Self {
         capabilities: &[
             Capability::Pure,
+            Capability::ExecutionIdentity,
+            Capability::KernelAddress,
+            Capability::KernelClaims,
+            Capability::ShieldedMint,
+            Capability::ZswapInput,
+            Capability::ZswapOutput,
+            Capability::QualifiedCellWrite,
+            Capability::QualifiedSetInsert,
+            Capability::Hashing,
+            Capability::FieldEncoding,
+            Capability::Jubjub,
             Capability::CellRead,
             Capability::CellWrite,
             Capability::CounterRead,
@@ -349,6 +371,40 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::UnsignedMultiply(..)
                 | Operation::Compare { .. }
                 | Operation::Convert { .. } => Capability::Pure,
+                Operation::OwnPublicKey => Capability::ExecutionIdentity,
+                Operation::KernelSelf => Capability::KernelAddress,
+                Operation::KernelClaim { .. } => Capability::KernelClaims,
+                Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
+                Operation::CreateZswapInput { .. } => Capability::ZswapInput,
+                Operation::CreateZswapOutput { .. } => Capability::ZswapOutput,
+                Operation::CellWriteCoin { .. } | Operation::SetInsertCoin { .. } => {
+                    match super::functional_qualified_storage::access(binding)
+                        .expect("matched checked qualified storage operation")
+                    {
+                        super::functional_qualified_storage::QualifiedAccess::CellWrite => {
+                            Capability::QualifiedCellWrite
+                        }
+                        super::functional_qualified_storage::QualifiedAccess::SetInsert => {
+                            Capability::QualifiedSetInsert
+                        }
+                    }
+                }
+                Operation::PersistentHash(_)
+                | Operation::PersistentCommit { .. }
+                | Operation::TransientCommit { .. }
+                | Operation::TransientHash(_)
+                | Operation::HashToCurve(_) => Capability::Hashing,
+                Operation::FieldToBytes32(_)
+                | Operation::DegradeToTransient(_)
+                | Operation::UpgradeFromTransient(_) => Capability::FieldEncoding,
+                Operation::JubjubPointX(_)
+                | Operation::JubjubPointY(_)
+                | Operation::JubjubScalarFromNative(_)
+                | Operation::EcMulGenerator(_)
+                | Operation::EcNeg(_)
+                | Operation::ConstructJubjubPoint { .. }
+                | Operation::EcMul { .. }
+                | Operation::EcAdd { .. } => Capability::Jubjub,
                 Operation::CellRead(_) => Capability::CellRead,
                 Operation::CellWrite { .. } => Capability::CellWrite,
                 Operation::CounterRead { .. } => Capability::CounterRead,
@@ -473,31 +529,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::CreateZswapInput { .. }
-                | Operation::CreateZswapOutput { .. }
-                | Operation::OwnPublicKey
-                | Operation::KernelSelf
-                | Operation::KernelClaim { .. }
-                | Operation::KernelMintShielded { .. }
-                | Operation::PersistentCommit { .. }
-                | Operation::FieldToBytes32(..)
-                | Operation::PersistentHash(..)
-                | Operation::Keccak256(..)
-                | Operation::HashToCurve(..)
-                | Operation::DegradeToTransient(..)
-                | Operation::UpgradeFromTransient(..)
-                | Operation::TransientHash(..)
-                | Operation::TransientCommit { .. }
-                | Operation::JubjubPointX(..)
-                | Operation::JubjubPointY(..)
-                | Operation::JubjubScalarFromNative(..)
-                | Operation::EcMulGenerator(..)
-                | Operation::EcNeg(..)
-                | Operation::ConstructJubjubPoint { .. }
-                | Operation::EcMul { .. }
-                | Operation::EcAdd { .. }
-                | Operation::CellWriteCoin { .. }
-                | Operation::SetInsertCoin { .. } => {
+                Operation::Keccak256(..) => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
@@ -607,3 +639,15 @@ mod vector_map_tests;
 #[cfg(test)]
 #[path = "functional_merkle_integration_tests.rs"]
 mod merkle_tests;
+
+#[cfg(test)]
+#[path = "functional_crypto_tests.rs"]
+mod crypto_tests;
+
+#[cfg(test)]
+#[path = "functional_kernel_tests.rs"]
+mod kernel_tests;
+
+#[cfg(test)]
+#[path = "functional_qualified_storage_integration_tests.rs"]
+mod qualified_storage_tests;

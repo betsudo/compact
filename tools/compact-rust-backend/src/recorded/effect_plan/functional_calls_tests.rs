@@ -286,7 +286,7 @@ fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
         "helper",
         vec![],
         Type::Bytes { length: 32 },
-        Expr::PersistentHash {
+        Expr::Keccak256 {
             value: Box::new(Expr::FieldLiteral { value: "7".into() }),
         },
     );
@@ -297,10 +297,19 @@ fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
         call("helper", vec![]),
     );
     let checked = checked(&[root, helper], &[]);
+    let Operation::Call { body, .. } = &checked.plan().body.bindings.last().unwrap().operation
+    else {
+        unreachable!()
+    };
+    let unsupported = body
+        .bindings
+        .iter()
+        .find(|binding| matches!(binding.operation, Operation::Keccak256(_)))
+        .unwrap();
     let authority = Authority::new();
     assert!(matches!(
         FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
-        Err(ProjectionRefusal::OutsideFunctionalSubset { .. })
+        Err(ProjectionRefusal::OutsideFunctionalSubset { path }) if path==unsupported.path
     ));
 }
 

@@ -232,12 +232,12 @@ fn empty_maps_still_require_body_authority_and_require_capability() {
     ));
 }
 #[test]
-fn context_free_crypto_is_not_silently_granted_by_map_admission() {
+fn context_free_keccak_does_not_gain_pinned_zkir_v2_admission() {
     let root = root(
         Type::Field,
-        Type::Field,
+        Type::Bytes { length: 32 },
         0,
-        Expr::TransientHash {
+        Expr::Keccak256 {
             value: Box::new(input("item")),
         },
     );
@@ -249,7 +249,7 @@ fn context_free_crypto_is_not_silently_granted_by_map_admission() {
     let hash = body
         .bindings
         .iter()
-        .find(|b| matches!(b.operation, Operation::TransientHash(_)))
+        .find(|b| matches!(b.operation, Operation::Keccak256(_)))
         .unwrap();
     assert!(
         matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==hash.path)
@@ -329,4 +329,32 @@ fn unit_producers_execute_but_empty_tuple_aliases_are_retained() {
             "{expression}"
         );
     }
+}
+
+#[test]
+fn transient_hash_map_reuses_shared_owner_and_precise_capability() {
+    let root = root(
+        Type::OpaqueString,
+        Type::Field,
+        2,
+        Expr::TransientHash {
+            value: Box::new(input("item")),
+        },
+    );
+    let checked = checked(&root, &[]);
+    let authority = Authority::new();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    assert!(program.requirements().contains(&Capability::VectorMap));
+    assert!(program.requirements().contains(&Capability::Hashing));
+    let expression = super::super::functional_pure_blocks::vector_map(
+        map_binding(&checked),
+        checked.declarations(),
+    )
+    .unwrap()
+    .to_token_stream()
+    .to_string();
+    assert_eq!(expression.matches("transient_hash").count(), 1);
+    assert_eq!(expression.matches("exact_hash_input").count(), 1);
+    assert!(!expression.contains("frame"));
+    assert!(!expression.contains("__compact_execution"));
 }

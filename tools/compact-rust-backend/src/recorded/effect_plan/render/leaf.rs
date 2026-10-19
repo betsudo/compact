@@ -74,22 +74,7 @@ pub(super) fn render(
             syn::parse_quote!(())
         }
         Operation::KernelClaim { kind, value: input } => {
-            use crate::ir::KernelClaimKind;
-            let input = value(input);
-            let claim: syn::Expr = match kind {
-                KernelClaimKind::Nullifier => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::Nullifier(
-                        runtime::ledger::CoinNullifier(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinSpend => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinSpend(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinReceive => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinReceive(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-            };
+            let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));
             syn::parse_quote!(())
         }
@@ -107,7 +92,7 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.own_coin_public_key()?;));
-            syn::parse_quote!(#ty { bytes: runtime::FixedBytes::new(#observed) })
+            effect_values::identity(&ty, syn::parse_quote!(#observed))
         }
         Operation::KernelSelf => {
             let observed = syn::Ident::new(
@@ -115,83 +100,26 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.kernel_self()?;));
-            syn::parse_quote!(#ty { bytes: runtime::ledger::contract_address_bytes(&#observed) })
+            effect_values::address(&ty, syn::parse_quote!(#observed))
         }
-        Operation::PersistentCommit {
-            value: input,
-            opening,
-        } => {
-            let (input, opening) = (value(input), value(opening));
-            syn::parse_quote!(runtime::persistent_commit(#input, #opening))
-        }
-        Operation::FieldToBytes32(input) => crate::field_to_bytes_32_syntax(value(input)),
-        Operation::PersistentHash(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::persistent_hash(#input))
-        }
-        Operation::HashToCurve(input) => {
-            let input = crate::hash_input::syntax(value(input), &input.ty);
-            syn::parse_quote!(runtime::hash_to_curve(#input))
-        }
-        Operation::Keccak256(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::keccak256(#input))
-        }
-        Operation::JubjubPointX(input) | Operation::JubjubPointY(input) => {
-            let coordinate = if matches!(binding.operation, Operation::JubjubPointX(_)) {
-                crate::jubjub_value::Coordinate::X
-            } else {
-                crate::jubjub_value::Coordinate::Y
-            };
-            coordinate
-                .lower(operand(input))
-                .map(|(syntax, _)| syntax)
-                .map_err(|e| invalid(path, e.to_string()))?
-        }
-        Operation::JubjubScalarFromNative(input) => {
-            jubjub(crate::jubjub_value::Operation::Reduce(operand(input)), path)?
-        }
-        Operation::EcMulGenerator(input) => jubjub(
-            crate::jubjub_value::Operation::Generator(operand(input)),
-            path,
-        )?,
-        Operation::EcNeg(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::ec_neg(#input))
-        }
-        Operation::ConstructJubjubPoint { x, y } => {
-            let (x, y) = (value(x), value(y));
-            syn::parse_quote!(runtime::construct_jubjub_point(#x, #y)?)
-        }
-        Operation::EcMul { point, scalar } => jubjub(
-            crate::jubjub_value::Operation::Multiply(operand(point), operand(scalar)),
-            path,
-        )?,
-        Operation::EcAdd { left, right } => jubjub(
-            crate::jubjub_value::Operation::Add(operand(left), operand(right)),
-            path,
-        )?,
-        Operation::DegradeToTransient(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::degrade_to_transient(#input))
-        }
-        Operation::UpgradeFromTransient(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::upgrade_from_transient(#input))
-        }
-        Operation::TransientHash(input) => {
-            let input = crate::hash_input::syntax(value(input), &input.ty);
-            syn::parse_quote!(runtime::transient_hash(#input))
-        }
-        Operation::TransientCommit {
-            value: input,
-            opening,
-        } => {
-            let (input, opening) = (
-                crate::hash_input::syntax(value(input), &input.ty),
-                value(opening),
-            );
-            syn::parse_quote!(runtime::transient_commit(#input, #opening))
+        Operation::PersistentCommit { .. }
+        | Operation::FieldToBytes32(_)
+        | Operation::PersistentHash(_)
+        | Operation::HashToCurve(_)
+        | Operation::Keccak256(_)
+        | Operation::JubjubPointX(_)
+        | Operation::JubjubPointY(_)
+        | Operation::JubjubScalarFromNative(_)
+        | Operation::EcMulGenerator(_)
+        | Operation::EcNeg(_)
+        | Operation::ConstructJubjubPoint { .. }
+        | Operation::EcMul { .. }
+        | Operation::EcAdd { .. }
+        | Operation::DegradeToTransient(_)
+        | Operation::UpgradeFromTransient(_)
+        | Operation::TransientHash(_)
+        | Operation::TransientCommit { .. } => {
+            crypto::expression(binding, value)?.expect("matched shared checked crypto expression")
         }
         Operation::Merkle { slot, operation } => {
             return merkle::render(binding, *slot, operation, declarations, steps);
