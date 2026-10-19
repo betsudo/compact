@@ -6,6 +6,13 @@ name: Forge circuit qualification
 
 on:
   workflow_dispatch:
+    inputs:
+      qualification:
+        description: Consumer to qualify (Linux candidate does not publish caches)
+        type: choice
+        options: [apple, linux-candidate]
+        default: apple
+        required: true
   push:
     branches: [codex/rust-backend-ast]
     paths:
@@ -72,6 +79,7 @@ env:
 jobs:
   proof:
     name: Forge / Apple Silicon proof qualification
+    if: github.event_name != 'workflow_dispatch' || inputs.qualification == 'apple'
     runs-on: macos-15
     timeout-minutes: 90
     permissions:
@@ -205,3 +213,100 @@ jobs:
         with:
           path: ${{ env.SAVE_SNAPSHOT }}
           key: ${{ steps.save.outputs.key }}
+
+  linux-candidate:
+    name: Forge / Linux candidate qualification
+    if: github.event_name == 'workflow_dispatch' && inputs.qualification == 'linux-candidate'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target/forge-linux
+      FORGE_REF: github:betsudo/forge/d64f52db7239b0ca4891fb0316dca6adb54a5db5
+    steps:
+      - name: Checkout qualification source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Allocate private qualification paths
+        run: |
+          test "$(uname -m)" = x86_64
+          test "$(uname -s)" = Linux
+          mkdir "$RUNNER_TEMP/forge-linux-provision"
+          {
+            echo "MIDNIGHT_PP=$RUNNER_TEMP/forge-linux-params"
+            echo "LINUX_PROVISION=$RUNNER_TEMP/forge-linux-provision"
+            echo "LINUX_REPORT=$RUNNER_TEMP/forge-linux-qualification"
+          } >> "$GITHUB_ENV"
+      - name: Setup public Nix without private cache credentials
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          skip_cache: 'true'
+      - name: Install exact consumer Rust toolchain
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+        with:
+          toolchain: 1.99.0
+          components: rustfmt
+      - name: Install Python for qualification
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.13'
+      - name: Check qualification refusal controls
+        run: |
+          python3 -B -m unittest discover -s tools/compact-rust-backend -p 'test_qualify_linux_forge.py' -v
+      - name: Build pinned public Forge, independent Rust compiler and current Compact
+        run: |
+          nix flake metadata "$FORGE_REF" --json > "$LINUX_PROVISION/forge-flake.json"
+          forge_source=$(python3 -c 'import json,os; print(json.load(open(os.environ["LINUX_PROVISION"]+"/forge-flake.json"))["path"])')
+          # Resolve the same pinned toolchain independently of producer profile output.
+          forge_rust=$(nix build --impure --expr '
+            let f = builtins.getFlake "github:betsudo/forge/d64f52db7239b0ca4891fb0316dca6adb54a5db5";
+                pkgs = import f.inputs.nixpkgs { system = "x86_64-linux"; overlays = [(import f.inputs.rust-overlay)]; };
+            in pkgs.rust-bin.stable."1.98.1".minimal.override { extensions = ["rustfmt" "clippy"]; }
+          ' --no-link --print-out-paths --max-jobs 1 --cores 2)
+          forge=$(nix build "$FORGE_REF" --no-link --print-out-paths --max-jobs 1 --cores 2)
+          nix derivation show "$forge" > "$LINUX_PROVISION/forge-derivation.json"
+          compiler=$(nix build .#compactc --no-link --print-out-paths --max-jobs 1 --cores 2)
+          zkir=$(nix build --impure --expr '(builtins.getFlake (toString ./.)).inputs.zkir.packages.x86_64-linux.zkir' --no-link --print-out-paths --max-jobs 1 --cores 2)
+          {
+            echo "FORGE=$forge/bin/zkir-forge"
+            echo "FORGE_SOURCE=$forge_source"
+            echo "FORGE_RUSTC=$forge_rust/bin/rustc"
+            echo "COMPACTC=$compiler/bin/compactc"
+            echo "ZKIR=$zkir/bin/zkir"
+          } >> "$GITHUB_ENV"
+          echo "$zkir/bin" >> "$GITHUB_PATH"
+      - name: Build real consumer and authenticate locked ledger fixtures
+        run: |
+          cargo build --profile proof-checks --locked -p compact-rust-proof-smoke
+          cargo metadata --locked --format-version 1 > "$LINUX_PROVISION/cargo-metadata.json"
+          python3 -B tools/compact-rust-backend/resolve_ledger_test_static.py \
+            --metadata "$LINUX_PROVISION/cargo-metadata.json" --lock Cargo.lock \
+            --provenance "$LINUX_PROVISION/ledger-provenance.json" --github-env "$GITHUB_ENV"
+      - name: Explicitly prepare and verify official proof material
+        run: |
+          "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" --prepare-proof-material \
+            --parameter-k 6 --parameter-k 8 > "$LINUX_PROVISION/proof-material.json"
+          "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" --prepare-proof-material \
+            --verify-only --parameter-k 6 --parameter-k 8 > "$LINUX_PROVISION/proof-material-verified.json"
+      - name: Qualify cold, warm, restored, automatic and uncached real consumers
+        run: |
+          python3 -B tools/compact-rust-backend/qualify_linux_forge.py \
+            --compiler "$COMPACTC" --proof-runner "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" \
+            --forge "$FORGE" --zkir "$ZKIR" --forge-source "$FORGE_SOURCE" --rustc "$FORGE_RUSTC" \
+            --source-manifest tools/compact-rust-backend/forge_linux_source.json \
+            --forge-derivation "$LINUX_PROVISION/forge-derivation.json" \
+            --params-dir "$MIDNIGHT_PP" --output "$LINUX_REPORT"
+      # Deliberately no actions/cache restore/save or reusable key publication.
+      - name: Retain original Linux qualification diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: forge-linux-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/forge-linux-provision/*.json
+            ${{ runner.temp }}/forge-linux-qualification/*.json
+            ${{ runner.temp }}/forge-linux-qualification/*.log
+          if-no-files-found: warn
+          retention-days: 7

@@ -9,6 +9,27 @@ The optional [Forge proof workflow](../../../.github/workflows/forge-local-ci.ym
 prepares the same integration for CI. The required Rust-AST checks run without
 Forge; the proof workflow is a separate lane.
 
+### Manual Linux candidate qualification
+
+The same workflow accepts `qualification=linux-candidate` on manual dispatch.
+This selects one native x86_64 Linux job and skips the Apple job. It builds the
+current compiler and immutable public Forge commit
+`d64f52db7239b0ca4891fb0316dca6adb54a5db5` without publishing reusable caches.
+
+The candidate driver independently checks pinned Forge source bytes, the actual
+Nix derivation and its Rust compiler before comparing the producer fingerprint.
+It then reuses the existing two real circuit tests in five laps: forced cold,
+forced warm, verified snapshot restore, automatic tiny-circuit bypass and direct
+uncached key generation. Proofs, ledger application, assertions, fixture checks
+and private corrupt-verifier refusals execute in every lap. Artifact identities
+must agree across all laps. Original commands, statistics and complete test
+timings are retained in the diagnostic artifact, including failure receipts.
+
+This finite qualification does not add a production build allowlist entry or
+enable reuse in the full Linux compiler lane. The full native suite and an
+explicit aggregate cache-retention policy remain separate adoption gates. Its
+256 MiB job-local snapshot limit does not change the production cache budget.
+
 ## Matching tools
 
 The active consumer uses the official ledger **8.1.3** revision

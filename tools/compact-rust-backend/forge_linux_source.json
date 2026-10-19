@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "source_commit": "d64f52db7239b0ca4891fb0316dca6adb54a5db5",
+  "files": {
+    "Cargo.lock": "7496b7af5c2fe726ae0faad0554c6e72762bbcd769626b84abaac55c7c39912f",
+    "src/backend.rs": "5f2320cd335a96b40d132a7fe2e33208b5f788609c336239d23a63daf80a31c4",
+    "src/engine.rs": "828600ce0183ee050d5aadf184cc88922618b531639508c4c01c497e893ba393",
+    "src/zkir3.rs": "232356d94b8623f6b303922ff3a5f37643a58920d1c527a21740e5f9b7473509",
+    "src/worker.rs": "3ce67d942664a043ac3e59a70fbfd3f4d1cac243a26e16a6598fd62e3747b1fa",
+    "src/zkir31.rs": "ec9d96cb6441d3d58615d8dcd0251ce0b48ae5b26a5b1b906fd1ea93a081041c",
+    "Cargo.toml": "873ba38ffdf95f6aa4160637a2cd3fcd7c8bb531bb648b906ae4e6dae6d66fad",
+    "flake.lock": "2b4b855fc5522d5879bdcec4522675870fada77a97559a68dfedf7e9681128ad",
+    "src/domain.rs": "802c3a8c238876b9d61f2a200d252f601c1ac80cf9ffc1845440d03e05b79232",
+    "src/application.rs": "47e365f92cf202bc3a07986e62625d111722ac1229ccd10aa78531838983f6e5",
+    "build.rs": "523ffb26bff608af0271a29a3366e5c2fac71790c55c7b2fd846bfaba4e15f70",
+    "flake.nix": "57db246d572a2fe80c8c29f04176e316476f002042ee395276a4b83dae26dec9"
+  }
+}
