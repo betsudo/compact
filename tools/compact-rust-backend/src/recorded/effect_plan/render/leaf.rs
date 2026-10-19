@@ -46,52 +46,25 @@ pub(super) fn render(
             syn::parse_quote!(#ty::#variant)
         }
         Operation::Default => syn::parse_quote!(<#ty as ::core::default::Default>::default()),
-        Operation::StructConstruct { fields: inputs } => {
-            let crate::ir::Type::Struct { fields, .. } = &binding.value.ty else {
-                unreachable!("checked struct construction")
-            };
-            let members = fields
-                .iter()
-                .map(|f| ident(&f.name))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| invalid(path, e.to_string()))?;
-            let inputs: Vec<_> = inputs.iter().map(value).collect();
-            syn::parse_quote!(#ty { #(#members: #inputs),* })
-        }
-        Operation::StructProject {
-            value: input,
-            field,
-            ..
-        } => {
-            let member = ident(field).map_err(|e| invalid(path, e.to_string()))?;
+        Operation::StructConstruct { .. }
+        | Operation::StructProject { .. }
+        | Operation::TupleProject { .. }
+        | Operation::Vector { .. }
+        | Operation::Tuple { .. }
+        | Operation::Add(..)
+        | Operation::Subtract(..)
+        | Operation::Multiply(..)
+        | Operation::Compare { .. }
+        | Operation::Equal(..)
+        | Operation::NotEqual(..)
+        | Operation::UnsignedAdd(..)
+        | Operation::UnsignedSubtract(..)
+        | Operation::UnsignedMultiply(..)
+        | Operation::Convert { .. } => pure::expression(binding, &ty, value, |input| {
             let source = name(input);
-            crate::retained_value(syn::parse_quote!(#source.#member), &binding.value.ty)
-        }
-        Operation::TupleProject {
-            value: input,
-            index,
-        } => {
-            let source = name(input);
-            let member = syn::Index::from(*index);
-            crate::retained_value(syn::parse_quote!(#source.#member), &binding.value.ty)
-        }
-        Operation::Vector { elements } => {
-            let Type::Vector { element, .. } = &binding.value.ty else {
-                unreachable!("checked vector output");
-            };
-            if elements.is_empty() {
-                let element =
-                    crate::rust_type(element).map_err(|error| invalid(path, error.to_string()))?;
-                syn::parse_quote!(runtime::FixedVector::<#element, 0>::new([]))
-            } else {
-                let elements: Vec<_> = elements.iter().map(value).collect();
-                syn::parse_quote!(runtime::FixedVector::new([#(#elements),*]))
-            }
-        }
-        Operation::Tuple { elements } => {
-            let elements: Vec<_> = elements.iter().map(value).collect();
-            syn::parse_quote!((#(#elements,)*))
-        }
+            syn::parse_quote!(#source)
+        })?
+        .expect("matched shared checked value expression"),
         Operation::CreateZswapInput { coin } => {
             steps.push(zswap::input(coin));
             syn::parse_quote!(())
@@ -101,22 +74,7 @@ pub(super) fn render(
             syn::parse_quote!(())
         }
         Operation::KernelClaim { kind, value: input } => {
-            use crate::ir::KernelClaimKind;
-            let input = value(input);
-            let claim: syn::Expr = match kind {
-                KernelClaimKind::Nullifier => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::Nullifier(
-                        runtime::ledger::CoinNullifier(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinSpend => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinSpend(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-                KernelClaimKind::CoinReceive => {
-                    syn::parse_quote!(runtime::ledger::KernelClaim::CoinReceive(
-                        runtime::ledger::CoinCommitment(runtime::ledger::HashOutput((#input).into_array()))))
-                }
-            };
+            let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));
             syn::parse_quote!(())
         }
@@ -134,7 +92,7 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.own_coin_public_key()?;));
-            syn::parse_quote!(#ty { bytes: runtime::FixedBytes::new(#observed) })
+            effect_values::identity(&ty, syn::parse_quote!(#observed))
         }
         Operation::KernelSelf => {
             let observed = syn::Ident::new(
@@ -142,157 +100,27 @@ pub(super) fn render(
                 Span::call_site(),
             );
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.kernel_self()?;));
-            syn::parse_quote!(#ty { bytes: runtime::ledger::contract_address_bytes(&#observed) })
+            effect_values::address(&ty, syn::parse_quote!(#observed))
         }
-        Operation::PersistentCommit {
-            value: input,
-            opening,
-        } => {
-            let (input, opening) = (value(input), value(opening));
-            syn::parse_quote!(runtime::persistent_commit(#input, #opening))
+        Operation::PersistentCommit { .. }
+        | Operation::FieldToBytes32(_)
+        | Operation::PersistentHash(_)
+        | Operation::HashToCurve(_)
+        | Operation::Keccak256(_)
+        | Operation::JubjubPointX(_)
+        | Operation::JubjubPointY(_)
+        | Operation::JubjubScalarFromNative(_)
+        | Operation::EcMulGenerator(_)
+        | Operation::EcNeg(_)
+        | Operation::ConstructJubjubPoint { .. }
+        | Operation::EcMul { .. }
+        | Operation::EcAdd { .. }
+        | Operation::DegradeToTransient(_)
+        | Operation::UpgradeFromTransient(_)
+        | Operation::TransientHash(_)
+        | Operation::TransientCommit { .. } => {
+            crypto::expression(binding, value)?.expect("matched shared checked crypto expression")
         }
-        Operation::FieldToBytes32(input) => crate::field_to_bytes_32_syntax(value(input)),
-        Operation::PersistentHash(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::persistent_hash(#input))
-        }
-        Operation::HashToCurve(input) => {
-            let input = crate::hash_input::syntax(value(input), &input.ty);
-            syn::parse_quote!(runtime::hash_to_curve(#input))
-        }
-        Operation::Keccak256(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::keccak256(#input))
-        }
-        Operation::Add(a, b) | Operation::Subtract(a, b) | Operation::Multiply(a, b) => {
-            let (a, b) = (value(a), value(b));
-            if matches!(binding.operation, Operation::Multiply(..)) {
-                syn::parse_quote!(#a * #b)
-            } else if matches!(binding.operation, Operation::Subtract(..)) {
-                syn::parse_quote!(#a - #b)
-            } else {
-                syn::parse_quote!(#a + #b)
-            }
-        }
-        Operation::JubjubPointX(input) | Operation::JubjubPointY(input) => {
-            let coordinate = if matches!(binding.operation, Operation::JubjubPointX(_)) {
-                crate::jubjub_value::Coordinate::X
-            } else {
-                crate::jubjub_value::Coordinate::Y
-            };
-            coordinate
-                .lower(operand(input))
-                .map(|(syntax, _)| syntax)
-                .map_err(|e| invalid(path, e.to_string()))?
-        }
-        Operation::JubjubScalarFromNative(input) => {
-            jubjub(crate::jubjub_value::Operation::Reduce(operand(input)), path)?
-        }
-        Operation::EcMulGenerator(input) => jubjub(
-            crate::jubjub_value::Operation::Generator(operand(input)),
-            path,
-        )?,
-        Operation::EcNeg(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::ec_neg(#input))
-        }
-        Operation::ConstructJubjubPoint { x, y } => {
-            let (x, y) = (value(x), value(y));
-            syn::parse_quote!(runtime::construct_jubjub_point(#x, #y)?)
-        }
-        Operation::EcMul { point, scalar } => jubjub(
-            crate::jubjub_value::Operation::Multiply(operand(point), operand(scalar)),
-            path,
-        )?,
-        Operation::EcAdd { left, right } => jubjub(
-            crate::jubjub_value::Operation::Add(operand(left), operand(right)),
-            path,
-        )?,
-        Operation::Compare {
-            operator,
-            left,
-            right,
-        } => {
-            use crate::ir::ComparisonOperator;
-            let (left, right) = (value(left), value(right));
-            match operator {
-                ComparisonOperator::Less => syn::parse_quote!(#left.value() < #right.value()),
-                ComparisonOperator::LessEqual => syn::parse_quote!(#left.value() <= #right.value()),
-                ComparisonOperator::Greater => syn::parse_quote!(#left.value() > #right.value()),
-                ComparisonOperator::GreaterEqual => {
-                    syn::parse_quote!(#left.value() >= #right.value())
-                }
-            }
-        }
-        Operation::Equal(a, b) | Operation::NotEqual(a, b) => {
-            let (a, b) = (value(a), value(b));
-            if matches!(binding.operation, Operation::NotEqual(..)) {
-                syn::parse_quote!(#a != #b)
-            } else {
-                syn::parse_quote!(#a == #b)
-            }
-        }
-        Operation::DegradeToTransient(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::degrade_to_transient(#input))
-        }
-        Operation::UpgradeFromTransient(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::upgrade_from_transient(#input))
-        }
-        Operation::TransientHash(input) => {
-            let input = crate::hash_input::syntax(value(input), &input.ty);
-            syn::parse_quote!(runtime::transient_hash(#input))
-        }
-        Operation::TransientCommit {
-            value: input,
-            opening,
-        } => {
-            let (input, opening) = (
-                crate::hash_input::syntax(value(input), &input.ty),
-                value(opening),
-            );
-            syn::parse_quote!(runtime::transient_commit(#input, #opening))
-        }
-        Operation::UnsignedAdd(a, b)
-        | Operation::UnsignedSubtract(a, b)
-        | Operation::UnsignedMultiply(a, b) => {
-            // The native syntax helper only uses the variant as an operation tag;
-            // operands have already been evaluated once in SSA source order.
-            let max = unsigned_max(&binding.value.ty).into();
-            let left = Box::new(crate::ir::Expr::Unit);
-            let right = Box::new(crate::ir::Expr::Unit);
-            let op = match &binding.operation {
-                Operation::UnsignedAdd(..) => crate::ir::Expr::UnsignedAdd { max, left, right },
-                Operation::UnsignedSubtract(..) => {
-                    crate::ir::Expr::UnsignedSubtract { max, left, right }
-                }
-                Operation::UnsignedMultiply(..) => {
-                    crate::ir::Expr::UnsignedMultiply { max, left, right }
-                }
-                _ => unreachable!("unsigned arithmetic arm"),
-            };
-            crate::unsigned_arithmetic_syntax(
-                &op,
-                value(a),
-                value(b),
-                unsigned_max(&a.ty),
-                unsigned_max(&b.ty),
-                unsigned_max(&binding.value.ty),
-            )
-            .map_err(|e| invalid(path, e.to_string()))?
-        }
-        Operation::Convert { value: input, kind } => match kind {
-            Conversion::Coerce => {
-                crate::coerce_expression(value(input), &input.ty, &binding.value.ty, 0)
-            }
-            Conversion::UnsignedCast => crate::unsigned_cast_syntax(
-                value(input),
-                unsigned_max(&input.ty),
-                unsigned_max(&binding.value.ty),
-            ),
-        }
-        .map_err(|e| invalid(path, e.to_string()))?,
         Operation::Merkle { slot, operation } => {
             return merkle::render(binding, *slot, operation, declarations, steps);
         }
@@ -440,18 +268,7 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(if !#condition { return Err(runtime::CompactError::AssertionFailed(#message.to_owned())); }));
             syn::parse_quote!(())
         }
-        Operation::PureCall {
-            declaration,
-            arguments,
-        } => {
-            let certified = declarations
-                .certified_pure(*declaration)
-                .ok_or_else(|| invalid(path, "missing checked pure declaration"))?;
-            let method =
-                ident(&certified.source().name).map_err(|e| invalid(path, e.to_string()))?;
-            let arguments: Vec<_> = arguments.iter().map(value).collect();
-            syn::parse_quote!(crate::pure_circuits::#method(#(#arguments),*)?)
-        }
+        Operation::PureCall { .. } => pure::certified_call(binding, declarations, value)?,
         Operation::Call { .. } | Operation::If { .. } | Operation::VectorMap { .. } => {
             unreachable!("control operations are rendered by block traversal")
         }

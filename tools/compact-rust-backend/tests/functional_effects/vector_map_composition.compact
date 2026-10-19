@@ -1,0 +1,59 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct Owned { value: Field; text: Opaque<"string">; bytes: Opaque<"Uint8Array">; }
+export struct OwnedReceipt { mapped: Vector<3, Owned>; original: Vector<3, Field>; text: Opaque<"string">; }
+export struct CheckedReceipt { mapped: Vector<3, Uint<8>>; original: Vector<3, Uint<16>>; }
+export ledger stored: Field;
+witness marker(value: Field): Field;
+pure circuit bump(value: Field): Field { return value + 1; }
+pure circuit add(acc: Field, value: Field): Field { return acc + value; }
+pure circuit folded(value: Field): Field { return fold(add, value, [1 as Field, 2]); }
+export circuit owned(selected: Boolean, values: Vector<3, Field>, text: Opaque<"string">, bytes: Opaque<"Uint8Array">): OwnedReceipt {
+  const mapped = map((x: Field): Owned => Owned { value: selected ? bump(x) : folded(x), text: text, bytes: bytes }, values);
+  stored = 1;
+  return OwnedReceipt { mapped: mapped, original: values, text: text };
+}
+export circuit empty(values: Vector<0, Uint<16>>): Vector<0, Uint<8>> {
+  const mapped = map((x: Uint<16>): Uint<8> => x as Uint<8>, values);
+  stored = disclose(marker(0 as Field));
+  return disclose(mapped);
+}
+export circuit single(values: Vector<1, Uint<16>>): Vector<1, Uint<8>> {
+  const mapped = map((x: Uint<16>): Uint<8> => x as Uint<8>, values);
+  stored = disclose(marker(1 as Field));
+  return disclose(mapped);
+}
+export circuit checked(selected: Boolean, values: Vector<3, Uint<16>>): CheckedReceipt {
+  const mapped = map((x: Uint<16>): Uint<8> => selected ? x as Uint<8> : 7 as Uint<8>, values);
+  stored = disclose(marker(3 as Field));
+  return CheckedReceipt { mapped: disclose(mapped), original: disclose(values) };
+}
+export circuit prefixed(selected: Boolean, values: Vector<3, Uint<16>>): CheckedReceipt {
+  stored = disclose(marker(99 as Field));
+  const mapped = map((x: Uint<16>): Uint<8> => selected ? x as Uint<8> : 7 as Uint<8>, values);
+  stored = disclose(marker(3 as Field));
+  return CheckedReceipt { mapped: disclose(mapped), original: disclose(values) };
+}
+export circuit nested(selected: Boolean, permit: Boolean, values: Vector<2, Field>): Vector<2, Vector<2, Field>> {
+  const mapped = selected ? map((x: Field): Vector<2, Field> => {
+    assert(permit, "map body denied");
+    const inner: Vector<2, Field> = [x, x + 1];
+    return map((y: Field): Field => bump(y), inner);
+  }, values) : [[7 as Field, 7], [7 as Field, 7]];
+  stored = disclose(marker(4 as Field));
+  return disclose(mapped);
+}

@@ -18,10 +18,13 @@ use super::super::recording_plan::TypedPlan;
 use super::{RecordingGap, declarations::Declarations, invalid, model::*};
 use crate::{ident, rust_type};
 use proc_macro2::Span;
+pub(super) mod crypto;
+pub(super) mod effect_values;
 mod leaf;
 mod lists;
 mod maps;
 mod merkle;
+pub(super) mod pure;
 mod qualified_coins;
 #[cfg(test)]
 mod tests;
@@ -168,9 +171,6 @@ fn slot_name(
     ident(&declaration.id).map_err(|e| invalid(path, e.to_string()))
 }
 
-fn operand(input: &Value) -> (syn::Expr, crate::ir::Type) {
-    (value(input), input.ty.clone())
-}
 fn jubjub(
     operation: crate::jubjub_value::Operation,
     path: &str,

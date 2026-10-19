@@ -1,0 +1,29 @@
+{
+  "src/qualified_coin_cell.rs": {
+    "canonical_sha256": "bfd2eec2d326ddd4bd54e1bd5830ae6f61c4b2eec85e2e59a4cf98fdefdca732",
+    "overlay_sha256": "34fd1a476c227b5a965ec2a0bc108d279d388b4372efbb965117ee12eebc14ce",
+    "staged_file": "src__qualified_coin_cell.rs"
+  },
+  "src/qualified_coin_set/scenario.rs": {
+    "canonical_sha256": "1e17eff79be5cc0b8a6e347449f21110afe250165b7a182994c02bcb0fa2bbb8",
+    "overlay_sha256": "fb58a7e4a4cbf3ffbf6dbc9460e968fc064d52ee0cc6791c87ccbf0970cb98c6",
+    "staged_file": "src__qualified_coin_set__scenario.rs",
+    "private_overlay_destination": "src/functional_qualified_set_scenario.rs",
+    "note": "copy staged scenario under new module filename, retain original shared scenario for chunked ordinary instantiation"
+  },
+  "src/kernel_shielded_effects.rs": {
+    "canonical_sha256": "1ae3abec6367caa8cc7901eeb28e40d949c6059b1800f6b94000d80eb9f83e33",
+    "overlay_sha256": "b3c5de5640163d495f705f6616484a1cd4c20ba36b7f3dad4a20ec3f802945f4",
+    "staged_file": "src__kernel_shielded_effects.rs"
+  },
+  "src/composite_zswap.rs": {
+    "canonical_sha256": "854500f92c61eb801f8dcc52c80369ac0a41c274e6e016062ae2215f916eeeea",
+    "overlay_sha256": "f0551cacb61d3104a0839fa7f870b3acce3474938652063b66c9680891b8e674",
+    "staged_file": "src__composite_zswap.rs"
+  },
+  "src/qualified_coin_set.rs": {
+    "canonical_sha256": "1c928aa9c3ac6a0a454d17ed7e5ed4ffc936aeb1ad0ed3648de5b5091b5011be",
+    "overlay_sha256": "7f37229939972254e0ac8403efe0a9097b7c6fb261eee30596a462dad9475fca",
+    "staged_file": "src__qualified_coin_set.rs"
+  }
+}

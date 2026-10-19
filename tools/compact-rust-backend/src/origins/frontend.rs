@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Only this live configured-process boundary constructs an invocation receipt.
 //! The selected executable is trusted by configuration, not attested by a hash.
 use super::{
@@ -174,6 +189,17 @@ impl FrontendArtifacts {
         options: render::RenderOptions,
     ) -> Result<render::FrontendRender, Box<render::NativeCompileFailure>> {
         render::render(self, options)
+    }
+
+    /// Opt-in ledger8 functional prototype. Source evidence comes exclusively
+    /// from this retained frontend invocation; originless IR cannot enable it.
+    /// Publish the returned functional_assets() alongside the generated lib.rs;
+    /// its review constants include these files relative to that library.
+    pub fn render_functional_ledger8(
+        &self,
+        options: render::RenderOptions,
+    ) -> Result<render::FrontendRender, render::FunctionalCompileFailure> {
+        render::render_functional(self, options)
     }
 
     /// Move completed entries into an existing empty locked staging parent.

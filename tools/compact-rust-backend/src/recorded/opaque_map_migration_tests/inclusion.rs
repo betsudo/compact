@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 #[test]
 fn complete_old_map_write_admission_uses_real_transitive_helpers() {
@@ -96,14 +108,19 @@ fn typed_products_map_topology_and_binding_names_preserve_complete_old_writes() 
                     .unwrap();
                 slot["declaration"]["value"] =
                     json!({"kind":"ledger_map","key":{"kind":"field"},"value":{"kind":"field"}});
-                // The original unrelated witness ledger view exposes every Map
-                // value and cannot express a nested Map. Keep that native refusal
-                // explicit before isolating the key-only complete contract.
-                assert!(matches!(
-                    crate::render_with_capabilities(&contract(v.clone())),
-                    Err(RenderError::Located { error, .. })
-                        if matches!(*error, RenderError::UnsupportedLedgerValueType(Type::LedgerMap { .. }))
-                ));
+                // #675 expands current native admission without changing the
+                // historical complete witness-free intersection tested below.
+                let full = contract(v.clone());
+                assert!(!full.witnesses.is_empty());
+                let current = assert_current(&full, name);
+                assert!(current.contains("record_member"));
+                assert!(current.contains("record_insert"));
+                assert!(
+                    crate::render_with_capabilities(&full)
+                        .unwrap()
+                        .source
+                        .contains("witness_metered")
+                );
                 v["witnesses"] = json!([]);
                 // Preserve both public Counter effects of the actual write helper;
                 // remove only its timestamp witness and dependent Cell assignment.

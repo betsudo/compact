@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 #[test]
 fn malformed_slot_declaration_and_lexical_authority_remain_refused() {
@@ -80,7 +92,8 @@ fn native_errors_precede_recorded_routing_in_former_fallible_guard_sites() {
         );
     }
     // The old key-only Map check alone imposes no scalar value-codec rule.
-    // Complete native rendering rejects this ledger-container value instead.
+    // #675 admits unrelated witnesses without manufacturing scalar Map views.
+    // This expanded current boundary is not a historical source-valid positive.
     let mut v = fixture();
     for f in v["ledger_fields"].as_array_mut().unwrap() {
         if f["id"] == "records" || f["id"] == "custodyGrants" {
@@ -89,10 +102,18 @@ fn native_errors_precede_recorded_routing_in_former_fallible_guard_sites() {
         }
     }
     let c = contract(v);
+    assert!(!c.witnesses.is_empty());
+    let plan = Context::new(&c).checked().unwrap();
+    let steps = &plan.steps;
+    let text = quote::quote!(#(#steps)*).to_string();
     assert!(
-        crate::render_with_capabilities(&c).is_err(),
-        "nested ledger value is not counted as source-valid inclusion"
+        text.contains("record_member"),
+        "key-only nested Map query retained"
     );
+    assert!(text.contains("record_insert") && text.contains("record_remove"));
+    let output = crate::render_with_capabilities(&c).unwrap();
+    assert!(output.source.contains("witness_metered"));
+    assert_current(&c);
 }
 #[test]
 fn complete_helper_qualification_excludes_unsupported_children_and_recursion() {

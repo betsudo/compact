@@ -21,7 +21,8 @@ mod origins;
 mod source_diagnostics;
 pub use origins::diagnostic::{SourceDiagnostic, SourcePosition};
 pub use origins::frontend::render::{
-    FrontendRender, NativeCompileFailure, NativeFailureCause, RecordingRequirement, RenderOptions,
+    FrontendRender, FunctionalCompileFailure, NativeCompileFailure, NativeFailureCause,
+    RecordingRequirement, RenderOptions,
 };
 pub use origins::frontend::{
     ConfiguredFrontend, FrontendArtifacts, FrontendError, FrontendRequest, InvocationFingerprint,

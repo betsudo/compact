@@ -1,0 +1,48 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct Owned { text: Opaque<"string">; bytes: Opaque<"Uint8Array">; value: Field; }
+export struct Receipt { total: Field; text: Opaque<"string">; bytes: Opaque<"Uint8Array">; values: Vector<2, Owned>; }
+export struct UnsignedReceipt { difference: Uint<8>; product: Uint<16>; narrowed: Uint<8>; }
+export ledger stored: Field;
+witness marker(value: Field): Field;
+export circuit compose(seed: Field, text: Opaque<"string">, bytes: Opaque<"Uint8Array">): Receipt {
+  const owned = Owned { text: text, bytes: bytes, value: seed };
+  const tuple: [Owned, Field] = [owned, seed];
+  const vector: Vector<2, Owned> = [owned, tuple[0]];
+  const total = (tuple[0].value + 3) * (tuple[1] - 1);
+  stored = disclose(total);
+  return Receipt { total: stored.read(), text: tuple[0].text, bytes: owned.bytes, values: vector };
+}
+export circuit checked(left: Uint<8>, right: Uint<8>): UnsignedReceipt {
+  const difference = left - right;
+  const product: Uint<16> = left * right;
+  const field = product as Field;
+  const again = product;
+  const wide = again as Uint<129>;
+  const narrowed = wide as Uint<8>;
+  stored = disclose(marker(field));
+  return UnsignedReceipt { difference: disclose(difference), product: disclose(product), narrowed: disclose(narrowed) };
+}
+export circuit guarded(selected: Boolean, left: Uint<8>, right: Uint<8>): Field {
+  if (disclose(selected)) {
+    const difference = left - right;
+    const product: Uint<16> = left * right;
+    const narrowed = product as Uint<8>;
+    stored = disclose(marker((difference as Field) + (narrowed as Field)));
+  } else { stored = 9; }
+  return stored.read();
+}

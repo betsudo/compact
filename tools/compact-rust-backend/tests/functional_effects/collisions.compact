@@ -1,0 +1,35 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export ledger cell: Field;
+export circuit write(a$b: Field, a_b: Field, runtime: Field): Field {
+  cell = disclose(a$b);
+  cell = disclose(a_b);
+  return runtime;
+}
+export circuit many(a: Boolean, b: Boolean, c: Boolean, d: Boolean,
+                    e: Boolean, f: Boolean, g: Boolean, h: Boolean): Boolean {
+  assert(disclose(a), "a");
+  assert(disclose(b), "b");
+  assert(disclose(c), "c");
+  assert(disclose(d), "d");
+  assert(disclose(e), "e");
+  assert(disclose(f), "f");
+  assert(disclose(g), "g");
+  assert(disclose(h), "h");
+  cell = 1;
+  return disclose(h);
+}

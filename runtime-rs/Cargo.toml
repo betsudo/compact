@@ -26,6 +26,8 @@ readme = "README.md"
 include = ["Cargo.toml", "LICENSE", "README.md", "compatibility.json", "src/**", "tests/**"]
 
 [features]
+# Opt-in prototype; no default emitter or runtime behavior changes.
+experimental-functional = []
 ledger-transaction = ["dep:midnight-ledger", "dep:rand"]
 
 [dependencies]

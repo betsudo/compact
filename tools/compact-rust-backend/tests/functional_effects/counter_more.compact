@@ -1,0 +1,51 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export ledger padding0: Field;
+export ledger padding1: Field;
+export ledger padding2: Field;
+export ledger padding3: Field;
+export ledger padding4: Field;
+export ledger padding5: Field;
+export ledger padding6: Field;
+export ledger padding7: Field;
+export ledger padding8: Field;
+export ledger padding9: Field;
+export ledger padding10: Field;
+export ledger padding11: Field;
+export ledger padding12: Field;
+export ledger padding13: Field;
+export ledger padding14: Field;
+export ledger padding15: Field;
+export ledger total: Counter;
+constructor() { total.increment(7); }
+export circuit roundtrip(amount: Uint<16>): Uint<64> {
+  total.increment(disclose(amount));
+  total.decrement(disclose(amount));
+  return total.read();
+}
+export circuit reset(): Uint<64> {
+  total.resetToDefault();
+  return total.read();
+}
+export circuit compare(threshold: Uint<64>): Boolean {
+  return total.lessThan(disclose(threshold));
+}
+export circuit guarded(permit: Boolean): Uint<64> {
+  assert(disclose(permit), "counter decrement denied");
+  total.decrement(1);
+  return total.read();
+}

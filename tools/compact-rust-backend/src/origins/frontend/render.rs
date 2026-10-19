@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Native rendering runs once; metadata publication status is independently held.
 use super::{FrontendArtifacts, InvocationFingerprint, digest};
 use crate::origins::{
@@ -10,6 +25,10 @@ use crate::origins::{
     transport::{UntrustedTransport, model::Extent},
 };
 use crate::{RenderError, RenderedContract, ir::Contract};
+use std::collections::BTreeMap;
+use syn::visit_mut::VisitMut;
+#[path = "functional_sources.rs"]
+mod functional_sources;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RenderOptions {
@@ -64,11 +83,41 @@ impl std::error::Error for NativeCompileFailure {
     }
 }
 
+/// Errors of the new opt-in surface, without extending the existing exhaustive
+/// NativeFailureCause enum used by default callers.
+#[derive(Debug)]
+pub enum FunctionalCompileFailure {
+    Native(Box<NativeCompileFailure>),
+    Projection(String),
+}
+impl From<Box<NativeCompileFailure>> for FunctionalCompileFailure {
+    fn from(error: Box<NativeCompileFailure>) -> Self {
+        Self::Native(error)
+    }
+}
+impl std::fmt::Display for FunctionalCompileFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Native(error) => write!(f, "{error}"),
+            Self::Projection(detail) => write!(f, "functional prototype: {detail}"),
+        }
+    }
+}
+impl std::error::Error for FunctionalCompileFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Native(error) => Some(error.as_ref()),
+            Self::Projection(_) => None,
+        }
+    }
+}
+
 pub struct FrontendRender {
     rendered: RenderedContract,
     metadata: MetadataStatus,
     fingerprint: InvocationFingerprint,
     recording_diagnostics: Vec<RecordingDiagnostic>,
+    functional_assets: BTreeMap<String, String>,
 }
 impl FrontendRender {
     pub fn recording_diagnostics(&self) -> &[RecordingDiagnostic] {
@@ -76,6 +125,13 @@ impl FrontendRender {
     }
     pub fn rendered(&self) -> &RenderedContract {
         &self.rendered
+    }
+    /// Review-only files required by an opt-in generated library's include_str!
+    /// constants. Write these unchanged relative to lib.rs when publishing it.
+    /// Default rendering returns an empty map. These files are not execution
+    /// authority or authenticated source/proof certificates.
+    pub fn functional_assets(&self) -> &BTreeMap<String, String> {
+        &self.functional_assets
     }
     pub fn metadata(&self) -> &MetadataStatus {
         &self.metadata
@@ -97,6 +153,25 @@ pub(super) fn render(
     artifacts: &FrontendArtifacts,
     options: RenderOptions,
 ) -> Result<FrontendRender, Box<NativeCompileFailure>> {
+    render_selected(artifacts, options, None)
+}
+
+pub(super) fn render_functional(
+    artifacts: &FrontendArtifacts,
+    options: RenderOptions,
+) -> Result<FrontendRender, FunctionalCompileFailure> {
+    render_selected(
+        artifacts,
+        options,
+        Some(FunctionalCompileFailure::Projection),
+    )
+}
+
+fn render_selected<E: From<Box<NativeCompileFailure>>>(
+    artifacts: &FrontendArtifacts,
+    options: RenderOptions,
+    functional: Option<fn(String) -> E>,
+) -> Result<FrontendRender, E> {
     let contract: Contract = serde_json::from_slice(&artifacts.exact_ir).map_err(|error| {
         NativeCompileFailure {
             cause: NativeFailureCause::IrDecoding(error.to_string()),
@@ -128,6 +203,45 @@ pub(super) fn render(
         }
         .boxed()
     })?;
+    let mut functional_assets = BTreeMap::new();
+    if let Some(fail) = functional {
+        if !contract
+            .stateful_circuits
+            .iter()
+            .any(|circuit| !circuit.internal)
+        {
+            return Err(fail("functional ledger8 programs require an exported stateful circuit; pure-only contracts use the existing pure API".into()));
+        }
+        let sources = functional_sources::RetainedSources::new(
+            &contract,
+            binding.index.as_ref(),
+            binding.transport,
+            binding.snapshots.as_ref(),
+            &artifacts.receipt.cwd,
+        );
+        let functional = crate::recorded::render_functional_contract(&contract, &sources)
+            .map_err(|error| fail(format!("{error:?}")))?;
+        let mut module = functional.module;
+        functional_assets = functional.assets;
+        crate::CompactSignatureLint.visit_item_mod_mut(&mut module);
+        crate::CompactBooleanLiterals.visit_item_mod_mut(&mut module);
+        let mut file =
+            syn::parse_file(&rendered.source).map_err(|error| fail(error.to_string()))?;
+        let ledger = file
+            .items
+            .iter_mut()
+            .find_map(|item| match item {
+                syn::Item::Mod(item) if item.ident == "ledger_contract" => item.content.as_mut(),
+                _ => None,
+            })
+            .ok_or_else(|| fail("generated ledger_contract module missing".into()))?;
+        ledger.1.push(syn::Item::Mod(module));
+        rendered.source = format!(
+            "{}// Generated by compactc. Do not edit.\n\n{}",
+            crate::GENERATED_HEADER,
+            prettyplease::unparse(&file),
+        );
+    }
     if options.apply_frontend_proof_metadata {
         let bytes = artifacts
             .contract_info
@@ -183,7 +297,8 @@ pub(super) fn render(
                 diagnostic: None,
                 recording_diagnostics: recorder.take_completed(),
             }
-            .boxed());
+            .boxed()
+            .into());
         }
         let missing = recording_requirements(&rendered);
         if !missing.is_empty() {
@@ -193,7 +308,8 @@ pub(super) fn render(
                 diagnostic: None,
                 recording_diagnostics: recorder.take_completed(),
             }
-            .boxed());
+            .boxed()
+            .into());
         }
     }
     Ok(FrontendRender {
@@ -201,6 +317,7 @@ pub(super) fn render(
         metadata,
         fingerprint: artifacts.fingerprint(),
         recording_diagnostics: recorder.take_completed(),
+        functional_assets,
     })
 }
 
