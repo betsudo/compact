@@ -18,6 +18,18 @@
 use super::functional_paths::rust_type;
 use super::{functional::FunctionalProgram, functional_render, invalid};
 use crate::{RecordingGap, ident};
+use std::collections::BTreeMap;
+
+/// Rust syntax and its review-only assets travel together until publication.
+/// Asset names are private locators, never circuit or execution identities.
+pub(crate) struct FunctionalArtifacts {
+    pub module: syn::ItemMod,
+    pub assets: BTreeMap<String, String>,
+}
+
+#[cfg(test)]
+#[path = "functional_artifact_tests.rs"]
+mod artifact_tests;
 
 /// Issued by retained frontend ingress for the original borrowed circuit only.
 /// This is an occurrence/snapshot binding, not consumed-source authentication.
@@ -62,7 +74,7 @@ impl super::functional::SourceAuthority for RootOrigin<'_> {
 pub(crate) fn render_contract(
     contract: &crate::ir::Contract,
     sources: &dyn FunctionalSources,
-) -> Result<syn::ItemMod, RecordingGap> {
+) -> Result<FunctionalArtifacts, RecordingGap> {
     let ledger = contract
         .ledger_fields
         .iter()
@@ -84,10 +96,12 @@ pub(crate) fn render_contract(
         .map(|item| (item.name.as_str(), item))
         .collect();
     let mut items = Vec::new();
-    for original in contract
+    let mut assets = BTreeMap::new();
+    for (ordinal, original) in contract
         .stateful_circuits
         .iter()
         .filter(|item| !item.internal)
+        .enumerate()
     {
         let source = sources.root(original).ok_or_else(|| {
             invalid(
@@ -116,17 +130,25 @@ pub(crate) fn render_contract(
                 ),
             )
         })?;
-        items.push(render(&program)?);
+        // Only a compiler-assigned ordinal enters the filename. Source names,
+        // including normalized collisions and path characters, are data only.
+        let asset_path = format!("checked-programs/program-{ordinal}.json");
+        items.push(render(&program, &asset_path)?);
+        assets.insert(asset_path, super::functional_metadata::metadata(&program));
     }
-    Ok(syn::parse_quote! {
+    let module = syn::parse_quote! {
         /// Experimental immutable requests over the compiler's checked effect graph.
         pub mod functional {
             #(#items)*
         }
-    })
+    };
+    Ok(FunctionalArtifacts { module, assets })
 }
 
-pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod, RecordingGap> {
+fn render(
+    program: &FunctionalProgram<'_, '_>,
+    metadata_path: &str,
+) -> Result<syn::ItemMod, RecordingGap> {
     let checked = program.checked();
     let root = checked.declarations().root().ok_or_else(|| {
         invalid(
@@ -160,7 +182,6 @@ pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod
         })
         .collect::<Vec<syn::Stmt>>();
     let rendered = functional_render::render(program)?;
-    let metadata = super::functional_metadata::metadata(program);
     let slot_bindings = rendered
         .slots
         .iter()
@@ -196,49 +217,67 @@ pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod
             )
         })
         .collect::<Result<Vec<_>, RecordingGap>>()?;
-    let witness_cases = rendered
-        .witnesses
+    let map_bindings = rendered
+        .maps
         .iter()
-        .map(|witness| {
+        .map(|slot| {
             let declaration = checked
                 .declarations()
-                .witness(witness.declaration)
-                .ok_or_else(|| {
-                    invalid("functional.witness", "checked witness declaration missing")
-                })?;
-            let method = ident(&declaration.name)
-                .map_err(|error| invalid("functional.witness", error.to_string()))?;
-            let id = witness.id;
-            Ok(quote::quote!(#id => self.0.#method(
-            context.witness_context_with(crate::ledger_contract::LedgerView {
-                    state: context.query.state.get_ref(), meter,
-                }), arguments,
-            )))
+                .field(slot.declaration)
+                .ok_or_else(|| invalid("functional.slot", "checked Map declaration missing"))?;
+            let path = declaration.physical_path();
+            let id = slot.id;
+            Ok(
+                quote::quote!(crate::runtime::functional::ledger8::MapBinding::new(
+                    crate::runtime::functional::SlotId::new(#id), &[#(#path),*],
+                )),
+            )
         })
         .collect::<Result<Vec<_>, RecordingGap>>()?;
-    let witness_adapter: Option<syn::Item> = if witness_cases.is_empty() {
-        None
+    // Keep non-Map request packaging byte-stable.
+    let has_maps = !map_bindings.is_empty();
+    let map_constants = if !has_maps {
+        quote::quote!()
     } else {
-        // DefaultDB is explicit: the current generated LedgerView uses it.
-        // Other database targets must supply their own separately checked bridge.
-        Some(syn::parse_quote! {
-            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
-                crate::runtime::functional::ledger8::WitnessHandler<Private, crate::runtime::ledger::DefaultDB, bool, bool>
-                for WitnessAdapter<'_, W>
-            {
-                fn call(
-                    &self, id: crate::runtime::functional::WitnessId, arguments: bool,
-                    context: &crate::runtime::context::CircuitContext<Private>,
-                    meter: &crate::runtime::context::WitnessReadMeter<'_>,
-                ) -> Result<(Private, bool), crate::runtime::CompactError> {
-                    match id.index() {
-                        #(#witness_cases),*,
-                        _ => Err(crate::runtime::CompactError::InvalidLedgerCell("unknown checked witness identity".into())),
-                    }
-                }
-            }
-        })
+        quote::quote!(const MAPS: &[crate::runtime::functional::ledger8::MapBinding] = &[#(#map_bindings),*];)
     };
+    let ledger_bindings = if !has_maps {
+        quote::quote!(
+            crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
+        )
+    } else {
+        quote::quote!(
+            crate::runtime::functional::ledger8::Ledger8Bindings::with_maps(CELLS, COUNTERS, MAPS)
+        )
+    };
+    let set_bindings = rendered
+        .sets
+        .iter()
+        .map(|slot| {
+            let declaration = checked
+                .declarations()
+                .field(slot.declaration)
+                .ok_or_else(|| invalid("functional.slot", "checked Set declaration missing"))?;
+            let path = declaration.physical_path();
+            let id = slot.id;
+            Ok(
+                quote::quote!(crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(#id), &[#(#path),*],
+                )),
+            )
+        })
+        .collect::<Result<Vec<_>, RecordingGap>>()?;
+    // Keep existing request syntax identical when no Set capability is used.
+    let (set_constants, ledger_bindings) = if set_bindings.is_empty() {
+        (quote::quote!(), ledger_bindings)
+    } else {
+        (
+            quote::quote!(const SETS: &[crate::runtime::functional::ledger8::SetBinding] = &[#(#set_bindings),*];),
+            quote::quote!((#ledger_bindings)?.bind_sets(SETS)),
+        )
+    };
+    let witness_adapters =
+        super::functional_witnesses::adapters(checked.declarations(), &rendered.witnesses)?;
     let body = rendered.body;
     let bounds = rendered.executor_bounds;
     let (witness_generic, witness_argument, native, recorded) = if rendered.witnesses.is_empty() {
@@ -293,19 +332,21 @@ pub(super) fn render(program: &FunctionalProgram<'_, '_>) -> Result<syn::ItemMod
         pub mod #module {
 
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = #metadata;
+            pub const CHECKED_PROGRAM: &str = include_str!(#metadata_path);
 
             const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[#(#slot_bindings),*];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[#(#counter_bindings),*];
+            #map_constants
+            #set_constants
 
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
-            #witness_adapter
+            #(#witness_adapters)*
 
             pub fn ledger8_bindings()
                 -> Result<crate::runtime::functional::ledger8::Ledger8Bindings<'static>, crate::runtime::CompactError>
             {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
+                #ledger_bindings
             }
 
             /// Immutable checked request. Creating it performs no ledger or witness work.

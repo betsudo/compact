@@ -43,14 +43,53 @@ SOURCES = {
     "collision_fixture": FIXTURES / "collisions.compact",
     "chunked_fixture": FIXTURES / "chunked.compact",
     "pure_fixture": FIXTURES / "pure_values.compact",
+    "typed_fixture": FIXTURES / "typed_witnesses.compact",
+    "exact_fixture": FIXTURES / "exact_witnesses.compact",
+    "composition_fixture": FIXTURES / "pure_composition.compact",
+    "call_fixture": FIXTURES / "local_calls.compact",
+    "map_fixture": FIXTURES / "scalar_maps.compact",
+    "nested_fixture": FIXTURES / "nested_map_remove.compact",
+    "set_fixture": FIXTURES / "scalar_sets.compact",
 }
-EXPECTED_TESTS = 8
-EXPECTED_SCENARIOS = 25  # Existing 23 + literal/default branches for bytes, Uint and enum.
+EXPECTED_TESTS = 20
+EXPECTED_SCENARIOS = 68  # Existing 62 + 6 scalar Set scenarios.
 
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
+
+
+def generated_manifest_snapshot(output):
+    """Authenticate every declared asset and exact checked-program membership."""
+    if not __debug__:
+        raise RuntimeError("manifest validation requires Python without -O/-OO")
+    from check_compactc_target import check_manifest
+    check_manifest(output)
+    manifest_path = output / "compiler/contract-manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    files = {}
+    def visit(path, entries):
+        for name, entry in entries.items():
+            if name == "type":
+                continue
+            child = path / name
+            if entry["type"] == "directory":
+                visit(child, entry)
+            else:
+                files[str(child.relative_to(output))] = digest(child)
+    for directory in ("compiler", "contract", "zkir"):
+        visit(output / directory, manifest[directory])
+    sidecars = output / "contract/checked-programs"
+    actual = {str(path.relative_to(output)) for path in sidecars.rglob("*") if path.is_file()}
+    declared = {name for name in files if name.startswith("contract/checked-programs/")}
+    if actual != declared:
+        raise ValueError("checked-program assets differ from manifest")
+    return {"manifest_sha256": digest(manifest_path), "assets": files,
+            "declared_asset_bytes": sum((output / name).stat().st_size for name in files),
+            "checked_program_bytes": sum((output / name).stat().st_size for name in declared),
+            "total_output_bytes": sum((output / name).stat().st_size for name in files)
+                + (0 if "compiler/contract-manifest.json" in files else manifest_path.stat().st_size)}
 
 
 def scheme_compiler(compiler, environment):
@@ -80,6 +119,8 @@ def scheme_compiler(compiler, environment):
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError("qualification requires Python without -O/-OO")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="new absent retained output directory")
@@ -108,6 +149,11 @@ def main():
         "sources": {str(path.relative_to(ROOT)): digest(path) for path in SOURCES.values()},
         "runtime_sources": {str(path.relative_to(ROOT)): digest(path) for path in runtime_premises},
         "consumer_sha256": digest(FIXTURES / "consumer.rs"),
+        "composition_consumer_sha256": digest(FIXTURES / "consumer_pure_composition.rs"),
+        "call_consumer_sha256": digest(FIXTURES / "consumer_local_calls.rs"),
+        "map_consumer_sha256": digest(FIXTURES / "consumer_scalar_maps.rs"),
+        "nested_consumer_sha256": digest(FIXTURES / "consumer_nested_map_remove.rs"),
+        "set_consumer_sha256": digest(FIXTURES / "consumer_scalar_sets.rs"),
         "phases": [], "generated": {},
         "expected_rust_tests": EXPECTED_TESTS, "expected_scenarios": EXPECTED_SCENARIOS,
         "limits": ["No failed-call state or gas returned by the existing consuming API",
@@ -150,11 +196,20 @@ def main():
             library = destination / "contract/lib.rs"
             if "CHECKED_PROGRAM" not in library.read_text():
                 raise ValueError("opt-in module missing: " + alias)
+            if alias == "exact_fixture":
+                _, separator, functional_source = library.read_text().partition("pub mod functional {")
+                if not separator:
+                    raise ValueError("exact fixture functional module missing")
+                if (len(re.findall(r"\.\s*witness\s*\(", functional_source)) != 2
+                        or len(re.findall(r"\.\s*witness_in\s*\(", functional_source)) != 3
+                        or functional_source.count("ExactWitnessOutput") != 6):
+                    raise ValueError("exact fixture must emit two ordinary and three exact witness operations")
             report["generated"][alias] = {"library_sha256": digest(library),
                 "manifest_sha256": digest(destination / "compiler/contract-manifest.json"),
                 "ir_sha256": digest(destination / "contract/compact-rust-ir.json"),
                 "functional_bytes": library.stat().st_size,
-                "functional_lines": len(library.read_text().splitlines())}
+                "functional_lines": len(library.read_text().splitlines()),
+                "authenticated_assets": generated_manifest_snapshot(destination)}
             baseline = output / (alias + "-default")
             run("compile-default-" + alias, [compiler, "--target", "rust", "--skip-zk",
                 "--rust-require-recording", "--rust-runtime-root", ROOT, source, baseline])
@@ -162,13 +217,42 @@ def main():
             original = baseline / "contract/lib.rs"
             report["generated"][alias].update(default_library_sha256=digest(original),
                 default_bytes=original.stat().st_size, default_lines=len(original.read_text().splitlines()),
+                default_authenticated_assets=generated_manifest_snapshot(baseline),
                 size_scope="opt-in adds request module and retains legacy APIs; not total LOC reduction")
         chunked = json.loads((output / "chunked_fixture/contract/compact-rust-ir.json").read_text())
         if not any(len(field.get("path", [])) > 1 for field in chunked["ledger_fields"]):
             raise ValueError("chunked source did not produce a multi-component physical path")
+        map_ir = json.loads((output / "map_fixture/contract/compact-rust-ir.json").read_text())
+        map_fields = {field["id"]: field for field in map_ir["ledger_fields"]}
+        if any(name not in map_fields or len(map_fields[name].get("path", [])) < 2
+               for name in ("table", "ownedTable")):
+            raise ValueError("Map fixture tables must retain multi-component physical paths")
+        report["map_physical_paths"] = {name: map_fields[name]["path"] for name in ("table", "ownedTable")}
+        nested_ir = json.loads((output / "nested_fixture/contract/compact-rust-ir.json").read_text())
+        outer_fields = [field for field in nested_ir["ledger_fields"] if field["id"] == "outer"]
+        if len(outer_fields) != 1 or len(outer_fields[0].get("path", [])) < 2:
+            raise ValueError("nested Map fixture must retain its full multi-component physical path")
+        report["nested_map_physical_path"] = outer_fields[0]["path"]
+        report["nested_map_scope"] = "official held state seeds populated children; no generated nested constructor/insertion claim"
+        set_ir = json.loads((output / "set_fixture/contract/compact-rust-ir.json").read_text())
+        set_fields = {field["id"]: field for field in set_ir["ledger_fields"]}
+        if any(name not in set_fields or len(set_fields[name].get("path", [])) < 2
+               for name in ("values", "labels")):
+            raise ValueError("Set fixtures must retain multi-component physical paths")
+        report["set_physical_paths"] = {name: set_fields[name]["path"] for name in ("values", "labels")}
         consumer = output / "consumer"
         (consumer / "tests").mkdir(parents=True)
-        shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/integration.rs")
+        (consumer / "support").mkdir()
+        includes = b""
+        for source_name, destination_name in (("consumer_pure_composition.rs", "pure_composition.rs"),
+                                               ("consumer_local_calls.rs", "local_calls.rs"),
+                                               ("consumer_scalar_maps.rs", "scalar_maps.rs"),
+                                               ("consumer_nested_map_remove.rs", "nested_map_remove.rs"),
+                                               ("consumer_scalar_sets.rs", "scalar_sets.rs")):
+            shutil.copyfile(FIXTURES / source_name, consumer / "support" / destination_name)
+            includes += ('\ninclude!("../support/' + destination_name + '");\n').encode()
+        (consumer / "tests/integration.rs").write_bytes((FIXTURES / "consumer.rs").read_bytes() + includes)
+        report["composed_consumer_sha256"] = digest(consumer / "tests/integration.rs")
         root_lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde_version = next(row["version"] for row in root_lock["package"] if row["name"] == "serde_json")
         text = ['[workspace]', '[package]', 'name = "functional-effect-consumer"',
@@ -243,6 +327,10 @@ def main():
         for alias in SOURCES:
             check_manifest(output / alias)
             check_manifest(output / (alias + "-default"))
+            if generated_manifest_snapshot(output / alias) != report["generated"][alias]["authenticated_assets"]:
+                raise ValueError("generated manifest/assets changed during execution: " + alias)
+            if generated_manifest_snapshot(output / (alias + "-default")) != report["generated"][alias]["default_authenticated_assets"]:
+                raise ValueError("default manifest/assets changed during execution: " + alias)
             if digest(output / alias / "contract/lib.rs") != report["generated"][alias]["library_sha256"]:
                 raise ValueError("generated library changed during execution: " + alias)
             if digest(output / (alias + "-default") / "contract/lib.rs") != report["generated"][alias]["default_library_sha256"]:
@@ -260,7 +348,17 @@ def main():
                                (ROOT / "Cargo.lock", report["repository_lock_sha256"]),
                                (consumer / "Cargo.lock", report["consumer_lock_sha256"]),
                                (FIXTURES / "consumer.rs", report["consumer_sha256"]),
-                               (consumer / "tests/integration.rs", report["consumer_sha256"])]:
+                               (FIXTURES / "consumer_pure_composition.rs", report["composition_consumer_sha256"]),
+                               (consumer / "support/pure_composition.rs", report["composition_consumer_sha256"]),
+                               (FIXTURES / "consumer_local_calls.rs", report["call_consumer_sha256"]),
+                               (consumer / "support/local_calls.rs", report["call_consumer_sha256"]),
+                               (FIXTURES / "consumer_scalar_maps.rs", report["map_consumer_sha256"]),
+                               (consumer / "support/scalar_maps.rs", report["map_consumer_sha256"]),
+                               (FIXTURES / "consumer_nested_map_remove.rs", report["nested_consumer_sha256"]),
+                               (consumer / "support/nested_map_remove.rs", report["nested_consumer_sha256"]),
+                               (FIXTURES / "consumer_scalar_sets.rs", report["set_consumer_sha256"]),
+                               (consumer / "support/scalar_sets.rs", report["set_consumer_sha256"]),
+                               (consumer / "tests/integration.rs", report["composed_consumer_sha256"])]:
             if digest(path) != expected:
                 raise ValueError("qualification premise changed: " + str(path))
         report["passed"] = True

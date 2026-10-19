@@ -1,0 +1,48 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export struct Packet { value: Field; bytes: Bytes<3>; }
+export ledger fieldCell: Field;
+export ledger byteCell: Bytes<3>;
+export ledger packetCell: Packet;
+witness gate(allow: Boolean): Boolean;
+witness zeroUnit(): [];
+witness zeroField(): Field;
+witness oneUnit(value: []): Field;
+witness first(value: Field): Field;
+witness second(value: Field): Field;
+witness byteEcho(value: Bytes<3>): Bytes<3>;
+witness mixed(value: Field, bytes: Bytes<3>): Packet;
+witness product(packet: Packet): Packet;
+witness tupleMixed(pair: [Field, Bytes<3>]): Packet;
+export circuit typed(selected: Boolean, allow: Boolean, value: Field,
+                     bytes: Bytes<3>, packet: Packet, pair: [Field, Bytes<3>]): Field {
+  if (disclose(selected)) {
+    assert(disclose(gate(allow)), "typed denied");
+    zeroUnit();
+    fieldCell = disclose(zeroField());
+    fieldCell = disclose(oneUnit(default<[]>));
+    fieldCell = disclose(first(value));
+    fieldCell = disclose(second(fieldCell.read()));
+    byteCell = disclose(byteEcho(bytes));
+    packetCell = disclose(mixed(value, bytes));
+    packetCell = disclose(product(packet));
+    packetCell = disclose(tupleMixed(pair));
+  } else {
+    fieldCell = disclose(value);
+  }
+  return fieldCell.read();
+}

@@ -585,3 +585,466 @@ fn pure_values_literals_defaults_enums_and_equality_match_original() {
         );
     }
 }
+
+#[derive(Default)]
+struct TypedWitnesses(RefCell<Vec<(u64, &'static str)>>);
+
+impl TypedWitnesses {
+    fn event(&self, private: &u64, name: &'static str) -> u64 {
+        self.0.borrow_mut().push((*private, name));
+        *private + 1
+    }
+}
+
+impl typed_fixture::ledger_contract::Witnesses<u64> for TypedWitnesses {
+    fn gate(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        allow: bool,
+    ) -> (u64, bool) {
+        (self.event(context.private_state, "gate"), allow)
+    }
+    fn zeroUnit(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+    ) -> (u64, ()) {
+        (self.event(context.private_state, "zeroUnit"), ())
+    }
+    fn zeroField(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+    ) -> (u64, Field) {
+        (
+            self.event(context.private_state, "zeroField"),
+            Field::from(1_u64),
+        )
+    }
+    fn oneUnit(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        _value: (),
+    ) -> (u64, Field) {
+        (
+            self.event(context.private_state, "oneUnit"),
+            Field::from(2_u64),
+        )
+    }
+    fn first(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        value: Field,
+    ) -> (u64, Field) {
+        assert_eq!(value, Field::from(10_u64));
+        (
+            self.event(context.private_state, "first"),
+            Field::from(11_u64),
+        )
+    }
+    fn second(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        value: Field,
+    ) -> (u64, Field) {
+        assert_eq!(value, Field::from(11_u64));
+        assert_eq!(context.ledger.fieldCell().unwrap(), value);
+        (
+            self.event(context.private_state, "second"),
+            Field::from(22_u64),
+        )
+    }
+    fn byteEcho(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        value: runtime::FixedBytes<3>,
+    ) -> (u64, runtime::FixedBytes<3>) {
+        assert_eq!(value, runtime::FixedBytes::new(*b"abc"));
+        (
+            self.event(context.private_state, "byteEcho"),
+            runtime::FixedBytes::new(*b"def"),
+        )
+    }
+    fn mixed(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        value: Field,
+        bytes: runtime::FixedBytes<3>,
+    ) -> (u64, typed_fixture::types::Packet) {
+        assert_eq!(value, Field::from(10_u64));
+        assert_eq!(bytes, runtime::FixedBytes::new(*b"abc"));
+        (
+            self.event(context.private_state, "mixed"),
+            typed_fixture::types::Packet {
+                value: Field::from(20_u64),
+                bytes: runtime::FixedBytes::new(*b"def"),
+            },
+        )
+    }
+    fn product(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        packet: typed_fixture::types::Packet,
+    ) -> (u64, typed_fixture::types::Packet) {
+        assert_eq!(packet.value, Field::from(30_u64));
+        assert_eq!(packet.bytes, runtime::FixedBytes::new(*b"xyz"));
+        (self.event(context.private_state, "product"), packet)
+    }
+    fn tupleMixed(
+        &self,
+        context: WitnessContext<'_, u64, typed_fixture::ledger_contract::LedgerView<'_>>,
+        pair: (Field, runtime::FixedBytes<3>),
+    ) -> (u64, typed_fixture::types::Packet) {
+        assert_eq!(
+            pair,
+            (Field::from(40_u64), runtime::FixedBytes::new(*b"uvw"))
+        );
+        (
+            self.event(context.private_state, "tupleMixed"),
+            typed_fixture::types::Packet {
+                value: Field::from(40_u64),
+                bytes: runtime::FixedBytes::new(*b"uvw"),
+            },
+        )
+    }
+}
+
+#[test]
+fn typed_witnesses_preserve_identity_arity_values_order_and_guarding() {
+    use typed_fixture::ledger_contract as c;
+    for (selected, allow) in [(false, false), (true, false), (true, true)] {
+        let context = || {
+            c::initial_state(ConstructorContext::new(7_u64))
+                .unwrap()
+                .into_circuit_context(ContractAddress::default())
+        };
+        let witnesses: [TypedWitnesses; 4] = std::array::from_fn(|_| TypedWitnesses::default());
+        let value = Field::from(10_u64);
+        let bytes = runtime::FixedBytes::new(*b"abc");
+        let packet = || typed_fixture::types::Packet {
+            value: Field::from(30_u64),
+            bytes: runtime::FixedBytes::new(*b"xyz"),
+        };
+        let pair = (Field::from(40_u64), runtime::FixedBytes::new(*b"uvw"));
+        let result = outcomes(
+            c::typed(
+                context(),
+                &witnesses[0],
+                selected,
+                allow,
+                value,
+                bytes,
+                packet(),
+                pair,
+            ),
+            c::recorded::typed(
+                context(),
+                &witnesses[1],
+                selected,
+                allow,
+                value,
+                bytes,
+                packet(),
+                pair,
+            ),
+            c::functional::typed::Program::new(selected, allow, value, bytes, packet(), pair)
+                .execute_native(context(), &witnesses[2]),
+            c::functional::typed::Program::new(selected, allow, value, bytes, packet(), pair)
+                .execute_recorded(context(), &witnesses[3]),
+            (selected && !allow).then_some("failed assert: typed denied"),
+        );
+        let names: &[&str] = if !selected {
+            &[]
+        } else if !allow {
+            &["gate"]
+        } else {
+            &[
+                "gate",
+                "zeroUnit",
+                "zeroField",
+                "oneUnit",
+                "first",
+                "second",
+                "byteEcho",
+                "mixed",
+                "product",
+                "tupleMixed",
+            ]
+        };
+        let events = names
+            .iter()
+            .enumerate()
+            .map(|(index, name)| (7 + index as u64, *name))
+            .collect::<Vec<_>>();
+        for witness in &witnesses {
+            assert_eq!(*witness.0.borrow(), events);
+        }
+        if let Some(result) = result {
+            assert_eq!(
+                result.result,
+                Field::from(if selected { 22_u64 } else { 10_u64 })
+            );
+            assert_eq!(result.context.private_state, 7 + names.len() as u64);
+            let state = result.context.query.state.get_ref();
+            assert_eq!(
+                typed_fixture::ledger_slots::fieldCell
+                    .inspect(state)
+                    .unwrap(),
+                result.result
+            );
+            if selected {
+                assert_eq!(
+                    typed_fixture::ledger_slots::byteCell
+                        .inspect(state)
+                        .unwrap(),
+                    runtime::FixedBytes::new(*b"def")
+                );
+                assert_eq!(
+                    typed_fixture::ledger_slots::packetCell
+                        .inspect(state)
+                        .unwrap(),
+                    typed_fixture::types::Packet {
+                        value: Field::from(40_u64),
+                        bytes: runtime::FixedBytes::new(*b"uvw")
+                    }
+                );
+                let expected: Vec<runtime::fab::AlignedValue> = vec![
+                    true.into(),
+                    ().into(),
+                    Field::from(1_u64).into(),
+                    Field::from(2_u64).into(),
+                    Field::from(11_u64).into(),
+                    Field::from(22_u64).into(),
+                    runtime::FixedBytes::new(*b"def").into(),
+                    typed_fixture::types::Packet {
+                        value: Field::from(20_u64),
+                        bytes: runtime::FixedBytes::new(*b"def"),
+                    }
+                    .into(),
+                    packet().into(),
+                    typed_fixture::types::Packet {
+                        value: Field::from(40_u64),
+                        bytes: runtime::FixedBytes::new(*b"uvw"),
+                    }
+                    .into(),
+                ];
+                assert_eq!(result.private_transcript_outputs, expected);
+            } else {
+                assert!(result.private_transcript_outputs.is_empty());
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+struct ExactWitnesses(
+    RefCell<Vec<(u64, &'static str)>>,
+    RefCell<Vec<String>>,
+    RefCell<Vec<String>>,
+);
+impl ExactWitnesses {
+    fn event(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        name: &'static str,
+    ) -> u64 {
+        self.0.borrow_mut().push((*context.private_state, name));
+        *context.private_state + 1
+    }
+}
+impl exact_fixture::ledger_contract::Witnesses<u64> for ExactWitnesses {
+    fn offset(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        value: Field,
+        text: runtime::OpaqueString,
+    ) -> (u64, Field) {
+        assert_eq!(value, Field::from(10_u64));
+        self.1.borrow_mut().push(text.0);
+        (self.event(context, "offset"), Field::from(42_u64))
+    }
+    fn observeText(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        value: runtime::OpaqueString,
+    ) -> (u64, Field) {
+        self.2.borrow_mut().push(value.0);
+        (self.event(context, "observeText"), Field::from(43_u64))
+    }
+    fn exactText(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        value: runtime::OpaqueString,
+    ) -> (u64, runtime::OpaqueString) {
+        assert_eq!(context.ledger.fieldCell().unwrap(), Field::from(42_u64));
+        (self.event(context, "text"), value)
+    }
+    fn exactBytes(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        value: runtime::OpaqueBytes,
+    ) -> (u64, runtime::OpaqueBytes) {
+        (self.event(context, "bytes"), value)
+    }
+    fn exactEnvelope(
+        &self,
+        context: WitnessContext<'_, u64, exact_fixture::ledger_contract::LedgerView<'_>>,
+        value: exact_fixture::types::Envelope,
+    ) -> (u64, exact_fixture::types::Envelope) {
+        (self.event(context, "envelope"), value)
+    }
+}
+
+#[test]
+fn exact_opaque_witnesses_preserve_source_bytes_and_nested_order() {
+    use exact_fixture::ledger_contract as c;
+    let cases = [
+        (true, true, true, "", vec![]),
+        (true, true, true, "a\0b", vec![1, 0, 2]),
+        (true, true, true, "é🦀\0", vec![255, 0, 0]),
+        (true, true, true, "\0", vec![0]),
+        (false, false, true, "ignored\0", vec![3, 0]),
+        (true, false, true, "denied\0", vec![4, 0]),
+        (true, true, false, "after\0", vec![5, 0]),
+    ];
+    for (selected, allow, proceed, text, bytes) in cases {
+        let context = || {
+            c::initial_state(ConstructorContext::new(7_u64))
+                .unwrap()
+                .into_circuit_context(ContractAddress::default())
+        };
+        let envelope = || exact_fixture::types::Envelope {
+            payload: exact_fixture::types::Payload {
+                text: runtime::OpaqueString::from(text),
+                bytes: runtime::OpaqueBytes(bytes.clone()),
+            },
+            marker: Field::from(17_u64),
+        };
+        let witnesses: [ExactWitnesses; 4] = std::array::from_fn(|_| ExactWitnesses::default());
+        let value = Field::from(10_u64);
+        let result = outcomes(
+            c::exact(
+                context(),
+                &witnesses[0],
+                selected,
+                allow,
+                proceed,
+                value,
+                runtime::OpaqueString::from(text),
+                runtime::OpaqueBytes(bytes.clone()),
+                envelope(),
+            ),
+            c::recorded::exact(
+                context(),
+                &witnesses[1],
+                selected,
+                allow,
+                proceed,
+                value,
+                runtime::OpaqueString::from(text),
+                runtime::OpaqueBytes(bytes.clone()),
+                envelope(),
+            ),
+            c::functional::exact::Program::new(
+                selected,
+                allow,
+                proceed,
+                value,
+                runtime::OpaqueString::from(text),
+                runtime::OpaqueBytes(bytes.clone()),
+                envelope(),
+            )
+            .execute_native(context(), &witnesses[2]),
+            c::functional::exact::Program::new(
+                selected,
+                allow,
+                proceed,
+                value,
+                runtime::OpaqueString::from(text),
+                runtime::OpaqueBytes(bytes.clone()),
+                envelope(),
+            )
+            .execute_recorded(context(), &witnesses[3]),
+            if selected && !allow {
+                Some("failed assert: exact denied")
+            } else if selected && !proceed {
+                Some("failed assert: after exact denied")
+            } else {
+                None
+            },
+        );
+        let names: &[&str] = if selected && allow && proceed {
+            &["offset", "text", "observeText", "bytes", "envelope"]
+        } else if selected && allow {
+            &["offset", "text"]
+        } else {
+            &[]
+        };
+        let expected_events = names
+            .iter()
+            .enumerate()
+            .map(|(index, name)| (7 + index as u64, *name))
+            .collect::<Vec<_>>();
+        for witness in &witnesses {
+            assert_eq!(*witness.0.borrow(), expected_events);
+            assert_eq!(
+                *witness.1.borrow(),
+                if selected && allow {
+                    vec![text.to_owned()]
+                } else {
+                    vec![]
+                }
+            );
+            assert_eq!(
+                *witness.2.borrow(),
+                if selected && allow && proceed {
+                    vec![text.to_owned()]
+                } else {
+                    vec![]
+                }
+            );
+        }
+        if let Some(result) = result {
+            assert_eq!(
+                result.result,
+                Field::from(if selected { 43_u64 } else { 10_u64 })
+            );
+            assert_eq!(result.context.private_state, 7 + names.len() as u64);
+            if selected {
+                let raw_atoms = |value: &runtime::fab::AlignedValue| {
+                    value
+                        .value
+                        .0
+                        .iter()
+                        .map(|atom| atom.0.clone())
+                        .collect::<Vec<_>>()
+                };
+                let field_atoms =
+                    |value| raw_atoms(&runtime::fab::AlignedValue::from(Field::from(value)));
+                let mut nested = vec![text.as_bytes().to_vec(), bytes.clone()];
+                nested.extend(field_atoms(17_u64));
+                let expected = vec![
+                    field_atoms(42_u64),
+                    vec![text.as_bytes().to_vec()],
+                    field_atoms(43_u64),
+                    vec![bytes.clone()],
+                    nested,
+                ];
+                assert_eq!(
+                    result
+                        .private_transcript_outputs
+                        .iter()
+                        .map(raw_atoms)
+                        .collect::<Vec<_>>(),
+                    expected
+                );
+                assert_eq!(
+                    exact_fixture::ledger_slots::fieldCell
+                        .inspect(result.context.query.state.get_ref())
+                        .unwrap(),
+                    Field::from(43_u64)
+                );
+            } else {
+                assert!(result.private_transcript_outputs.is_empty());
+            }
+        }
+    }
+}

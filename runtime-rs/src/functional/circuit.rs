@@ -18,6 +18,8 @@ use super::{
     Cell, CellRead, CellWrite, Counter, CounterIncrement, CounterRead, Witness, WitnessCall,
 };
 use crate::CompactError;
+mod maps;
+mod sets;
 
 /// A selected interpreter owns its execution state and final result policy.
 /// Custom implementations are not certified compiler or ledger authorities.
@@ -102,6 +104,20 @@ impl<E: Executor> Circuit<E, ()> {
     pub fn witness<Args, T>(self, witness: Witness<Args, T>, arguments: Args) -> Circuit<E, T>
     where
         E: WitnessCall<Args, T>,
+    {
+        self.witness_in(witness, arguments)
+    }
+
+    /// Execute a witness using an explicitly selected interpreter strategy.
+    /// Like `witness`, ordinary arguments are eager; defer fallible producers
+    /// inside a successful bind. Strategy selection does not certify callbacks.
+    pub fn witness_in<Args, T, Mode>(
+        self,
+        witness: Witness<Args, T, Mode>,
+        arguments: Args,
+    ) -> Circuit<E, T>
+    where
+        E: WitnessCall<Args, T, Mode>,
     {
         Circuit {
             state: self

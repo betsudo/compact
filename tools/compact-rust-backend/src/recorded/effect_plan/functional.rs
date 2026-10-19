@@ -32,8 +32,17 @@ pub(crate) enum Capability {
     CounterRead,
     CounterIncrement,
     BooleanWitness,
+    TypedWitness,
+    ExactWitness,
     Require,
     Select,
+    Call,
+    MapRead,
+    MapLookup,
+    MapRemove,
+    MapWrite,
+    SetRead,
+    SetWrite,
 }
 
 /// Only the pinned ledger8 adapter exists. Other target revisions are not
@@ -51,8 +60,17 @@ impl Ledger8Target {
             Capability::CounterRead,
             Capability::CounterIncrement,
             Capability::BooleanWitness,
+            Capability::TypedWitness,
+            Capability::ExactWitness,
             Capability::Require,
             Capability::Select,
+            Capability::Call,
+            Capability::MapRead,
+            Capability::MapLookup,
+            Capability::MapRemove,
+            Capability::MapWrite,
+            Capability::SetRead,
+            Capability::SetWrite,
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
@@ -153,6 +171,16 @@ pub(crate) enum ProjectionRefusal {
     },
     OutsideFunctionalSubset {
         path: String,
+    },
+    UnsupportedSetDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
+    },
+    UnsupportedMapDeclaration {
+        path: String,
+        declaration: usize,
+        cause: super::RecordingGap,
     },
     UnsupportedWitnessSignature {
         path: String,
@@ -271,7 +299,20 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EnumVariant { .. }
                 | Operation::Default
                 | Operation::Equal(_, _)
-                | Operation::NotEqual(_, _) => Capability::Pure,
+                | Operation::NotEqual(_, _)
+                | Operation::StructConstruct { .. }
+                | Operation::StructProject { .. }
+                | Operation::TupleProject { .. }
+                | Operation::Tuple { .. }
+                | Operation::Vector { .. }
+                | Operation::Add(..)
+                | Operation::Subtract(..)
+                | Operation::Multiply(..)
+                | Operation::UnsignedAdd(..)
+                | Operation::UnsignedSubtract(..)
+                | Operation::UnsignedMultiply(..)
+                | Operation::Compare { .. }
+                | Operation::Convert { .. } => Capability::Pure,
                 Operation::CellRead(_) => Capability::CellRead,
                 Operation::CellWrite { .. } => Capability::CellWrite,
                 Operation::CounterRead { .. } => Capability::CounterRead,
@@ -281,24 +322,107 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                     arguments,
                 } => {
                     let signature = self.checked.declarations().witness(*declaration);
-                    if !signature.is_some_and(|signature| {
-                        signature.parameters.len() == 1
-                            && signature.parameters[0].ty == crate::ir::Type::Boolean
-                            && signature.result == crate::ir::Type::Boolean
-                    }) || arguments.len() != 1
-                        || arguments[0].ty != crate::ir::Type::Boolean
-                        || binding.value.ty != crate::ir::Type::Boolean
-                    {
+                    if !super::functional_witnesses::supported(
+                        signature,
+                        arguments,
+                        &binding.value.ty,
+                    ) {
                         return Err(ProjectionRefusal::UnsupportedWitnessSignature {
                             path: binding.path.clone(),
                             declaration: declaration.0,
                         });
                     }
-                    Capability::BooleanWitness
+                    if crate::pure_semantics::hash_encoding::contains_opaque(&binding.value.ty) {
+                        Capability::ExactWitness
+                    } else if signature.is_some_and(|signature| {
+                        signature.parameters.len() == 1
+                            && signature.parameters[0].ty == crate::ir::Type::Boolean
+                            && signature.result == crate::ir::Type::Boolean
+                    }) {
+                        Capability::BooleanWitness
+                    } else {
+                        Capability::TypedWitness
+                    }
+                }
+                Operation::MapMember { slot, .. }
+                | Operation::MapLookup { slot, .. }
+                | Operation::MapInsert { slot, .. }
+                | Operation::MapInsertDefault { slot, .. }
+                | Operation::MapRemove { slot, .. }
+                | Operation::MapReset { slot }
+                | Operation::MapSize { slot }
+                | Operation::MapIsEmpty { slot } => {
+                    let map =
+                        super::functional_maps::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedMapDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Map operation");
+                    match map.access {
+                        super::functional_maps::MapAccess::Read => Capability::MapRead,
+                        super::functional_maps::MapAccess::Lookup => Capability::MapLookup,
+                        super::functional_maps::MapAccess::Remove => Capability::MapRemove,
+                        super::functional_maps::MapAccess::Write => Capability::MapWrite,
+                    }
+                }
+                Operation::SetMember { slot, .. }
+                | Operation::SetInsert { slot, .. }
+                | Operation::SetRemove { slot, .. }
+                | Operation::SetReset { slot }
+                | Operation::SetSize { slot }
+                | Operation::SetIsEmpty { slot } => {
+                    let set =
+                        super::functional_sets::declaration(binding, self.checked.declarations())
+                            .map_err(|cause| ProjectionRefusal::UnsupportedSetDeclaration {
+                                path: binding.path.clone(),
+                                declaration: slot.declaration.0,
+                                cause,
+                            })?
+                            .expect("matched checked Set operation");
+                    match set.access {
+                        super::functional_sets::SetAccess::Read => Capability::SetRead,
+                        super::functional_sets::SetAccess::Write => Capability::SetWrite,
+                    }
                 }
                 Operation::Assert { .. } => Capability::Require,
                 Operation::If { .. } => Capability::Select,
-                _ => {
+                Operation::Call { .. } => Capability::Call,
+                Operation::PureCall { .. } => Capability::Pure,
+                // Deliberately exhaustive: every new checked operation needs
+                // an explicit functional admission or refusal decision.
+                Operation::VectorMap { .. }
+                | Operation::CreateZswapInput { .. }
+                | Operation::CreateZswapOutput { .. }
+                | Operation::OwnPublicKey
+                | Operation::KernelSelf
+                | Operation::KernelClaim { .. }
+                | Operation::KernelMintShielded { .. }
+                | Operation::PersistentCommit { .. }
+                | Operation::FieldToBytes32(..)
+                | Operation::PersistentHash(..)
+                | Operation::Keccak256(..)
+                | Operation::HashToCurve(..)
+                | Operation::DegradeToTransient(..)
+                | Operation::UpgradeFromTransient(..)
+                | Operation::TransientHash(..)
+                | Operation::TransientCommit { .. }
+                | Operation::JubjubPointX(..)
+                | Operation::JubjubPointY(..)
+                | Operation::JubjubScalarFromNative(..)
+                | Operation::EcMulGenerator(..)
+                | Operation::EcNeg(..)
+                | Operation::ConstructJubjubPoint { .. }
+                | Operation::EcMul { .. }
+                | Operation::EcAdd { .. }
+                | Operation::Merkle { .. }
+                | Operation::List { .. }
+                | Operation::CellWriteCoin { .. }
+                | Operation::SetInsertCoin { .. }
+                | Operation::CounterDecrement { .. }
+                | Operation::CounterReset { .. }
+                | Operation::CounterLessThan { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });
@@ -326,16 +450,21 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 capability,
                 origin,
             });
-            if let Operation::If {
-                condition,
-                then,
-                otherwise,
-            } = &binding.operation
-            {
-                let then_guard = self.branch(guard, condition, true);
-                self.block(then, then_guard, authority)?;
-                let else_guard = self.branch(guard, condition, false);
-                self.block(otherwise, else_guard, authority)?;
+            match &binding.operation {
+                Operation::If {
+                    condition,
+                    then,
+                    otherwise,
+                } => {
+                    let then_guard = self.branch(guard, condition, true);
+                    self.block(then, then_guard, authority)?;
+                    let else_guard = self.branch(guard, condition, false);
+                    self.block(otherwise, else_guard, authority)?;
+                }
+                // Calls have their own validated formal scope but inherit the
+                // caller's effective execution guard. Inspect every nested node.
+                Operation::Call { body, .. } => self.block(body, guard, authority)?,
+                _ => {}
             }
         }
         Ok(())
@@ -375,3 +504,15 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
 #[cfg(test)]
 #[path = "functional_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "functional_calls_tests.rs"]
+mod calls_tests;
+
+#[cfg(test)]
+#[path = "functional_maps_tests.rs"]
+mod maps_tests;
+
+#[cfg(test)]
+#[path = "functional_sets_integration_tests.rs"]
+mod sets_tests;

@@ -17,7 +17,9 @@
 //!
 //! Successful binds delimit operand evaluation. Neither a later clone/default
 //! nor an inactive branch is evaluated after a preceding operation fails.
+use super::functional_maps::FunctionalMapSlot;
 use super::functional_paths::rust_type;
+use super::functional_sets::FunctionalSetSlot;
 use super::{
     RecordingGap, declarations::Declarations, functional::FunctionalProgram, invalid, model::*,
 };
@@ -47,6 +49,8 @@ pub(super) struct RenderedFunctional {
     pub executor_bounds: Vec<syn::TypeParamBound>,
     pub slots: Vec<FunctionalCellSlot>,
     pub counters: Vec<FunctionalCounterSlot>,
+    pub maps: Vec<FunctionalMapSlot>,
+    pub sets: Vec<FunctionalSetSlot>,
     pub witnesses: Vec<FunctionalWitness>,
 }
 
@@ -58,6 +62,8 @@ pub(super) fn render(
         declarations: checked.declarations(),
         slots: Vec::new(),
         counters: Vec::new(),
+        maps: Vec::new(),
+        sets: Vec::new(),
         witnesses: Vec::new(),
         executor_bounds: Vec::new(),
     };
@@ -80,6 +86,8 @@ pub(super) fn render(
         executor_bounds: renderer.executor_bounds,
         slots: renderer.slots,
         counters: renderer.counters,
+        maps: renderer.maps,
+        sets: renderer.sets,
         witnesses: renderer.witnesses,
     })
 }
@@ -101,6 +109,8 @@ struct Renderer<'a> {
     declarations: &'a Declarations,
     slots: Vec<FunctionalCellSlot>,
     counters: Vec<FunctionalCounterSlot>,
+    maps: Vec<FunctionalMapSlot>,
+    sets: Vec<FunctionalSetSlot>,
     witnesses: Vec<FunctionalWitness>,
     executor_bounds: Vec<syn::TypeParamBound>,
 }
@@ -165,23 +175,25 @@ impl Renderer<'_> {
                 let witness = self.declarations.witness(*declaration).ok_or_else(|| {
                     invalid(&binding.path, "functional witness declaration missing")
                 })?;
-                let [argument] = arguments.as_slice() else {
+                if !super::functional_witnesses::supported(
+                    Some(witness),
+                    arguments,
+                    &binding.value.ty,
+                ) {
                     return Err(invalid(
                         &binding.path,
-                        "functional witness requires one Boolean argument",
-                    ));
-                };
-                if witness.result != Type::Boolean
-                    || binding.value.ty != Type::Boolean
-                    || witness.parameters.len() != 1
-                    || witness.parameters[0].ty != Type::Boolean
-                    || argument.ty != Type::Boolean
-                {
-                    return Err(invalid(
-                        &binding.path,
-                        "functional witness requires a Boolean to Boolean signature",
+                        "functional witness signature mismatch",
                     ));
                 }
+                let argument_types = witness
+                    .parameters
+                    .iter()
+                    .map(|parameter| parameter.ty.clone())
+                    .collect::<Vec<_>>();
+                let argument_type = super::functional_witnesses::argument_type(&argument_types)
+                    .map_err(|error| invalid(&binding.path, error.to_string()))?;
+                let result_type = rust_type(&witness.result)
+                    .map_err(|error| invalid(&binding.path, error.to_string()))?;
                 let id = u32::try_from(declaration.0).map_err(|_| {
                     invalid(&binding.path, "functional witness identity exceeds u32")
                 })?;
@@ -191,13 +203,27 @@ impl Renderer<'_> {
                         declaration: *declaration,
                     });
                 }
-                self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<bool, bool>));
-                let argument = value(argument);
-                syn::parse_quote! {
-                    #current.witness(
-                        crate::runtime::functional::Witness::<bool, bool>::new(crate::runtime::functional::WitnessId::new(#id)),
-                        #argument,
-                    )
+                let argument = super::functional_witnesses::argument_value(
+                    arguments.iter().map(value).collect(),
+                );
+                if crate::pure_semantics::hash_encoding::contains_opaque(&witness.result) {
+                    let mode: syn::Type =
+                        syn::parse_quote!(crate::runtime::functional::ledger8::ExactWitnessOutput);
+                    self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type, #mode>));
+                    syn::parse_quote! {
+                        #current.witness_in(
+                            crate::runtime::functional::Witness::<#argument_type, #result_type, #mode>::with_mode(crate::runtime::functional::WitnessId::new(#id)),
+                            #argument,
+                        )
+                    }
+                } else {
+                    self.bound(syn::parse_quote!(crate::runtime::functional::WitnessCall<#argument_type, #result_type>));
+                    syn::parse_quote! {
+                        #current.witness(
+                            crate::runtime::functional::Witness::<#argument_type, #result_type>::new(crate::runtime::functional::WitnessId::new(#id)),
+                            #argument,
+                        )
+                    }
                 }
             }
             Operation::CellRead(slot) => {
@@ -213,6 +239,32 @@ impl Renderer<'_> {
                 let condition = value(condition);
                 syn::parse_quote!(#current.require(crate::runtime::functional::Rule::new(#condition, #message)))
             }
+            Operation::Call {
+                arguments,
+                parameters,
+                body,
+                ..
+            } => {
+                let mut formals = Vec::<syn::Stmt>::new();
+                for (parameter, argument) in parameters.iter().zip(arguments) {
+                    if parameter.ty == Type::Unit {
+                        continue;
+                    }
+                    let formal = name(parameter);
+                    let argument = value(argument);
+                    let ty = rust_type(&parameter.ty)
+                        .map_err(|error| invalid(&binding.path, error.to_string()))?;
+                    formals.push(syn::parse_quote!(let #formal: #ty = #argument;));
+                }
+                let body = self.block(body, current.clone())?;
+                syn::parse_quote!({ #(#formals)* #body })
+            }
+            Operation::PureCall { .. } => {
+                let expression =
+                    super::render::pure::certified_call(binding, self.declarations, value)?;
+                let expression = super::functional_paths::expression(expression);
+                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+            }
             Operation::If {
                 condition,
                 then,
@@ -224,8 +276,32 @@ impl Renderer<'_> {
                 syn::parse_quote!(if #condition { #then } else { #otherwise })
             }
             operation => {
-                let expression = pure(binding, operation)?;
-                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                if let Some(map) = super::functional_maps::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.maps.iter().any(|present| present.id == map.slot.id) {
+                        self.maps.push(map.slot);
+                    }
+                    self.bound(map.bound);
+                    map.expression
+                } else if let Some(set) = super::functional_sets::render(
+                    binding,
+                    self.declarations,
+                    current.clone(),
+                    value,
+                )? {
+                    if !self.sets.iter().any(|present| present.id == set.slot.id) {
+                        self.sets.push(set.slot);
+                    }
+                    self.bound(set.bound);
+                    set.expression
+                } else {
+                    let expression = pure(binding, operation)?;
+                    syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                }
             }
         };
         Ok(syn::parse_quote!((#execution).bind(|(), __compact_execution| #step)))
@@ -284,6 +360,12 @@ impl Renderer<'_> {
 fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, RecordingGap> {
     let ty =
         rust_type(&binding.value.ty).map_err(|error| invalid(&binding.path, error.to_string()))?;
+    if let Some(expression) = super::render::pure::expression(binding, &ty, value, |input| {
+        let name = name(input);
+        syn::parse_quote!(#name)
+    })? {
+        return Ok(super::functional_paths::expression(expression));
+    }
     Ok(match operation {
         Operation::Literal(literal) => match literal {
             Literal::Unit => syn::parse_quote!(()),
@@ -309,14 +391,6 @@ fn pure(binding: &Binding, operation: &Operation) -> Result<syn::Expr, Recording
             syn::parse_quote!(#ty::#variant)
         }
         Operation::Default => syn::parse_quote!(<#ty as ::core::default::Default>::default()),
-        Operation::Equal(left, right) => {
-            let (left, right) = (value(left), value(right));
-            syn::parse_quote!(#left == #right)
-        }
-        Operation::NotEqual(left, right) => {
-            let (left, right) = (value(left), value(right));
-            syn::parse_quote!(#left != #right)
-        }
         _ => {
             return Err(invalid(
                 &binding.path,

@@ -22,6 +22,7 @@ mod leaf;
 mod lists;
 mod maps;
 mod merkle;
+pub(super) mod pure;
 mod qualified_coins;
 #[cfg(test)]
 mod tests;

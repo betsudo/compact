@@ -20,8 +20,9 @@ compactc --target rust --rust-functional-ledger8 --skip-zk \
   examples/rust_backend/let_return_oracle.compact ./generated
 ```
 
-`--skip-zk` skips key generation. The compiler still emits the circuit inputs;
-proof qualification is a separate operation. The generated Cargo dependency
+`--skip-zk` skips key generation. Proof qualification is a separate operation;
+inspect the emitted circuit inputs rather than assuming every native entry is
+proof-bearing. The generated Cargo dependency
 enables `experimental-functional`. Registry runtime mode is refused because
 this prototype is not a published runtime release.
 
@@ -97,14 +98,51 @@ Compact + retained invocation origins
 
 ## Current bounded operations
 
-The initial projection includes checked literals/defaults, enums, equality,
-Cell reads/writes, Counter reads/increments, assertions, conditionals, and
-Boolean witnesses with one Boolean argument and a Boolean result. Existing
-ordinary APIs can support operations outside this experimental subset.
+The current projection includes checked literals/defaults, enums, aggregates,
+projections, Field and unsigned arithmetic, comparisons, conversions, Cell
+reads/writes, Counter reads/increments, assertions, conditionals, and typed witnesses.
+Pure value syntax shares the existing checked ordinary renderer. Expressions
+remain inside successful binds, so later producers do not run after a failure.
+Zero, single and multiple arguments, plus Unit, Field, fixed Bytes and product
+results, have generated consumer coverage. Existing Boolean witness APIs remain
+compatible. Arguments and result types are checked against retained declarations;
+the existing metered frames own gas, private state and private outputs.
 
-Calls, conversions, other Counter operations, collections, hashes and other
-witness signatures are refused by this projection. These refusals are a
-capability boundary, not a claim that the ordinary Rust backend lacks them.
+Equal emitted Rust signatures share one handler implementation. Checked witness
+IDs still distinguish callbacks, including zero arguments versus one Unit and a
+single tuple argument versus multiple arguments. These are mechanical adapters
+to the existing `TryWitnesses` trait, not a new callback language.
+
+Opaque witness results select the explicit Ledger8 `ExactWitnessOutput` strategy,
+which delegates existing exact metered frame encoding. Opaque arguments alone do
+not select exact output encoding. The default witness constructor and two-type
+parameter call remain compatible. Exact in-memory transport does not promise
+that opaque values can pass later proof serialization checks.
+
+Checked local calls inline their retained bodies on the same carrier. Certified
+pure calls reuse the existing pure Rust functions, including supported pure Fold.
+Both nested branches remain statically checked; only selected calls execute.
+This does not implement the separate direct stateful Fold gap (#661).
+
+Scalar Map membership, lookup, insertion, removal, default insertion, reset,
+size and emptiness use the existing typed slots on both interpreters. Logical
+bindings preserve each declaration's full physical path. Nested Map declarations
+support membership, size, emptiness and removal without a scalar value codec.
+The traits separate structural `MapRead`/`MapRemove` from scalar
+`MapLookup`/`MapWrite`. Nested lookup, insertion and reset remain refused.
+Unsupported nested Map witness accessors are omitted, matching `PublicState`;
+scalar Map and Cell witness views remain available. This does not add nested
+Map inspection inside witnesses.
+
+Scalar Set membership, insertion, removal, reset, size and emptiness reuse the
+existing Set slots through `SetRead` and `SetWrite`. Coin allocation is a
+separate phase and is not admitted as ordinary Set insertion.
+
+Other Counter operations, remaining collections and hashes are still refused by
+this projection. Ordinary-backend conversion restrictions also remain authoritative.
+Vector construction is supported; vector indexing currently reaches tuple
+projection and is tracked separately in #674. These boundaries must not be
+interpreted as a claim of full language or proof coverage.
 
 The generated witness adapter currently uses `DefaultDB`, matching the existing
 generated `LedgerView`. Other database adapters require separate work.
@@ -114,6 +152,29 @@ generated `LedgerView`. Other database adapters require separate work.
 Each entry exposes `CHECKED_PROGRAM`, a review-only JSON inventory of typed
 inputs, effects, capabilities and branch guards. It is not an executable
 serialization, complete graph identity, proof certificate, or admission token.
+
+The inventory is stored beside `lib.rs`, in
+`checked-programs/program-<ordinal>.json`. Each constant uses a relative
+`include_str!`, preserving its public `&str` type and exact JSON bytes. The
+compiler assigns filenames from retained exported circuit order; source names
+remain JSON data. Keep these files when copying, packaging or building the
+crate. The publication manifest records their hashes alongside the Rust source and
+detects edits that do not also replace that manifest. It is not a signature or
+an external source of trust.
+
+Library callers of `render_functional_ledger8` must write every entry returned by
+`FrontendRender::functional_assets()` unchanged, relative to `lib.rs`. The CLI
+writes these assets inside its existing atomic publication stage. Default
+rendering returns no functional assets.
+
+In a matched local comparison of seven contracts (13 exported entries), this
+moves 9.9–22.1% of each `lib.rs` out of Rust source. Total output sizes change
+little: the JSON remains present and the manifest gains asset entries. These
+measurements concern readability and packaging, not execution performance.
+
+This separates review material from execution source. It does not remove the
+additional functional execution module, change recording authority, or establish
+a compile-time, binary-size or proof-performance improvement.
 
 Production origins currently use a clearly labeled coarse original-root
 fallback. They do not pretend to be exact failed-node spans. A binding to an
@@ -151,7 +212,7 @@ runs fresh assertions, rather than accepting a previous result. Rust dependencie
 must already be available locally because consumer Cargo commands use `--offline`.
 The helper also runs generated-package Clippy with warnings denied.
 
-The accepted finite consumer run covers **8 tests**, **25 behavioral scenarios**
+The current finite consumer run covers **20 tests**, **68 behavioral scenarios**
 and **four execution routes per scenario**: ordinary native, ordinary recorded,
 functional native and functional recorded. It checks successful values, state,
 effects, gas, private outputs and replay, plus expected failures and observable
@@ -160,6 +221,24 @@ existing consuming error API does not return that context. These numbers are
 fixture coverage, not language conformance or proof coverage. The seventh source
 fixture adds both branches for byte, small/wide unsigned and enum literals or
 defaults, with equality checks through the generated execution body.
+The eighth source exercises typed witnesses, distinct IDs sharing Rust signatures,
+zero/single/multiple arguments, inactive and denied branches, metered ledger reads,
+and independent expected callback arguments, private outputs and state.
+The ninth source exercises exact opaque witness outputs, nested products,
+returned-value use and failure after an exact result. The tenth adds shared pure
+arithmetic, aggregates, non-Copy projection and conversion boundary controls.
+These preserve opaque witness bytes without relaxing opaque-cell storage rules.
+The eleventh source covers repeated local calls, fresh formals, metered witness
+reads, failure inside a callee and certified pure Fold.
+The twelfth source exercises all eight scalar Map operations through ordinary
+private helpers and checked calls, with owned values and chunked paths. Direct
+nested-source normalization remains limited in the ordinary frontend (#516 and
+#610); helper composition does not establish direct-syntax parity.
+The thirteenth source exercises nested Map inspection/removal, selected guards
+and failure prefixes. Its populated child Maps are seeded through official held
+state; this does not demonstrate generated nested insertion or constructors.
+The fourteenth source exercises six scalar Set operations, owned element
+uniqueness, populated/empty observations and chunked paths.
 
 A separate measurement test performs **4,096 executions** across 16 alternating
 route samples; these are not additional behavioral coverage. In one local debug
@@ -169,12 +248,35 @@ recorded. Context setup and result checks were outside each measured interval;
 call execution and retaining complete results were inside. Noise and this tiny
 single-contract sample preclude a speedup claim. Allocations were not measured.
 
-Fresh default/opt-in compilation also records generated bytes and lines. All seven
-measured crates grew because opt-in publication **adds** the functional module
+Fresh default/opt-in compilation also records generated bytes and lines. In the
+initial embedded-metadata prototype, all seven measured crates grew because
+opt-in publication **adds** the functional module
 and retains ordinary APIs: for the read/write example, 7,737 → 15,349 bytes and
 194 → 312 lines. The experiment currently improves execution structure, not total
 generated-file size. Removing duplicate public surfaces requires a separate API
 compatibility decision.
+
+To qualify the metadata extraction against an embedded-metadata predecessor,
+retain that baseline compiler separately and select it explicitly:
+
+```sh
+python3 tools/compact-rust-backend/check_functional_metadata.py \
+  --baseline /path/to/embedded-metadata/compactc \
+  --candidate target/debug/compactc \
+  --output /tmp/compact-functional-metadata-run \
+  --report ./functional-metadata-run.json
+```
+
+Both compilers must use the same Scheme frontend. The output must be absent
+and outside the checkout, so Cargo does not associate relocated crates with the
+repository workspace. The helper checks exact metadata bytes and constant
+mapping, whole default-output equivalence, and functional-output equivalence
+except the metadata declarations, sidecar files and updated manifest. It builds
+relocated crates in both explicit source-runtime and bundled-source modes,
+checks Cargo's package file list, exercises missing/tampered/undeclared asset
+refusals, and restores the private mutation fixture. This tests local source
+runtime packaging; it does not establish registry distribution or a packaged
+tarball build. Keep the regular behavior and proof helpers as separate gates.
 
 Proof qualification additionally requires matching parameters, an explicitly
 qualified Forge executable, and the uncached `zkir` binary. Inspect the helper's
@@ -217,3 +319,29 @@ need their own evidence.
 
 Tracking: [issue #663](https://github.com/betsudo/compact/issues/663).
 Architecture history: ADR-0542 in the `midnight` Obsidian vault.
+
+## Typed Field-witness proof qualification
+
+The additional local helper checks one complete stateful Field-witness fixture:
+
+```sh
+python3 tools/compact-rust-backend/check_functional_witness_proof.py --help
+```
+
+Provide the explicit matching compiler, parameters, target directory, qualified
+Forge binary, uncached ZKIR binary and a new private cache directory. Each of its
+three laps freshly generates the source, executes functional recording, compares
+ordinary observed preparation, and sends the **functional-derived** preparation
+to the existing prover and ledger-application checks. Independent assertions check
+the Field result, private state, callback event, exact private output and applied
+ledger value. First-store, repeat-store and uncached key generation are separate.
+
+The negative fixture changes only a private verifier copy to malformed bytes.
+Its refusal establishes corrupt-key handling; it does not establish rejection of
+a well-formed verifier for a different circuit. No proof or verdict is cached.
+
+A witness-only entry can be native-only: the existing `witness_argument.compact`
+source is marked `proof_required: false` and emits no ZKIR. The qualification uses
+its own complete stateful fixture rather than relaxing manifest checks or
+removing exports from a larger contract. One proved Field witness is not proof
+coverage for every supported argument/result signature or opaque transport.

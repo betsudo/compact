@@ -26,6 +26,7 @@ mod source_diagnostic;
 #[path = "../bin_support/source_maps.rs"]
 mod source_maps;
 
+use std::collections::BTreeMap;
 use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
@@ -469,6 +470,19 @@ fn refresh_manifest(output: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn write_functional_assets(
+    contract_dir: &Path,
+    assets: &BTreeMap<String, String>,
+) -> Result<(), Box<dyn Error>> {
+    for (relative, contents) in assets {
+        // Compiler-assigned locators, written in the existing publication stage.
+        let path = contract_dir.join(relative);
+        fs::create_dir_all(path.parent().ok_or("functional asset has no parent")?)?;
+        fs::write(path, contents)?;
+    }
+    Ok(())
+}
+
 fn run() -> Result<i32, Box<dyn Error>> {
     let (targets, mut args) = select_targets(env::args_os().skip(1).collect())?;
     let compiler = scheme_compiler()?;
@@ -610,6 +624,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
     source_maps::rebase(staging.path(), &original_frontend, &output)?;
     let contract_dir = staging.path().join("contract");
     fs::write(contract_dir.join("lib.rs"), &rendered.source)?;
+    write_functional_assets(&contract_dir, issued.functional_assets())?;
     fs::write(
         contract_dir.join("rust-capabilities.json"),
         serde_json::to_vec_pretty(&rendered.capabilities)?,
@@ -720,6 +735,39 @@ mod tests {
     impl Drop for TempRoot {
         fn drop(&mut self) {
             fs::remove_dir_all(&self.0).unwrap();
+        }
+    }
+
+    #[test]
+    fn functional_asset_write_failure_preserves_output_and_removes_stage() {
+        for existing in [false, true] {
+            let root = TempRoot::new();
+            let output = root.0.join("result");
+            if existing {
+                fs::create_dir(&output).unwrap();
+                fs::write(output.join("previous.txt"), "complete previous output").unwrap();
+            }
+            let stage = StagedOutput::new(&output).unwrap();
+            let stage_path = stage.path().to_path_buf();
+            let contract = stage_path.join("contract");
+            fs::create_dir(&contract).unwrap();
+            fs::write(contract.join("checked-programs"), "blocks asset directory").unwrap();
+            let assets = std::collections::BTreeMap::from([(
+                "checked-programs/program-0.json".into(),
+                "review bytes".into(),
+            )]);
+            assert!(super::write_functional_assets(&contract, &assets).is_err());
+            drop(stage);
+            assert!(!stage_path.exists());
+            if existing {
+                assert_eq!(fs::read_dir(&output).unwrap().count(), 1);
+                assert_eq!(
+                    fs::read_to_string(output.join("previous.txt")).unwrap(),
+                    "complete previous output"
+                );
+            } else {
+                assert!(!output.exists());
+            }
         }
     }
 

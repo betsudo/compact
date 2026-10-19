@@ -116,11 +116,23 @@ def snapshot(directory: Path) -> dict[str, str]:
             for path in directory.rglob("*") if path.is_file()}
 
 
-def program_metadata(source: str) -> list[dict]:
+def program_metadata(library: Path) -> list[dict]:
     # This deliberately ASCII-only fixture uses ordinary JSON-compatible Rust
     # string escapes. This is a test extractor, not a general Rust parser.
+    from check_compactc_target import check_manifest
+    check_manifest(library.parent.parent)
+    source = library.read_text()
     strings = re.findall(r'pub const CHECKED_PROGRAM:\s*&str\s*=\s*("(?:[^"\\]|\\.)*")\s*;', source)
-    return [json.loads(json.loads(literal)) for literal in strings]
+    if strings:
+        return [json.loads(json.loads(literal)) for literal in strings]
+    paths = re.findall(
+        r'pub const CHECKED_PROGRAM:\s*&str\s*=\s*include_str!\s*\(\s*("[^"\n]+")\s*\)\s*;', source)
+    programs = []
+    for literal in paths:
+        relative = Path(json.loads(literal))
+        assert not relative.is_absolute() and ".." not in relative.parts
+        programs.append(json.loads((library.parent / relative).read_bytes()))
+    return programs
 
 
 def run(compiler: Path, scheme: Path, report: dict) -> None:
@@ -160,7 +172,7 @@ def run(compiler: Path, scheme: Path, report: dict) -> None:
             output = directory / f"{mode}-accepted"
             result, audit = compile_case(mode, True, output)
             assert result.returncode == 0, result.stderr
-            programs = program_metadata((output / "contract/lib.rs").read_text())
+            programs = program_metadata(output / "contract/lib.rs")
             assert {program["root"] for program in programs} == {"read", "update"}
             for program in programs:
                 origin = program["root_origin"]
@@ -227,6 +239,8 @@ def run(compiler: Path, scheme: Path, report: dict) -> None:
 
 
 def main() -> int:
+    if not __debug__:
+        raise RuntimeError("functional origin checks require Python assertions; omit -O")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--scheme", type=Path, required=True)

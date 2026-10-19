@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Physical Ledger8 slot bindings; logical identities remain target neutral.
-use super::super::{Cell, Counter, SlotId};
+use super::super::{Cell, Counter, Map, Set, SlotId};
 use crate::{CompactError, ledger::CellValue};
 #[derive(Clone, Copy)]
 pub struct CellBinding {
@@ -37,11 +37,35 @@ impl CounterBinding {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct MapBinding {
+    id: SlotId,
+    path: &'static [u8],
+}
+impl MapBinding {
+    pub const fn new(id: SlotId, path: &'static [u8]) -> Self {
+        Self { id, path }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct SetBinding {
+    id: SlotId,
+    path: &'static [u8],
+}
+impl SetBinding {
+    pub const fn new(id: SlotId, path: &'static [u8]) -> Self {
+        Self { id, path }
+    }
+}
+
 /// Immutable uniquely keyed declarations; not certification of handwritten types.
 #[derive(Clone, Copy)]
 pub struct Ledger8Bindings<'a> {
     cells: &'a [CellBinding],
     counters: &'a [CounterBinding],
+    maps: &'a [MapBinding],
+    sets: &'a [SetBinding],
 }
 impl<'a> Ledger8Bindings<'a> {
     pub fn new(cells: &'a [CellBinding]) -> Result<Self, CompactError> {
@@ -50,6 +74,13 @@ impl<'a> Ledger8Bindings<'a> {
     pub fn with_counters(
         cells: &'a [CellBinding],
         counters: &'a [CounterBinding],
+    ) -> Result<Self, CompactError> {
+        Self::with_maps(cells, counters, &[])
+    }
+    pub fn with_maps(
+        cells: &'a [CellBinding],
+        counters: &'a [CounterBinding],
+        maps: &'a [MapBinding],
     ) -> Result<Self, CompactError> {
         for (i, cell) in cells.iter().enumerate() {
             for other in &cells[..i] {
@@ -64,7 +95,63 @@ impl<'a> Ledger8Bindings<'a> {
                 distinct(counter.id, counter.path, cell.id, cell.path)?;
             }
         }
-        Ok(Self { cells, counters })
+        for (i, map) in maps.iter().enumerate() {
+            for other in &maps[..i] {
+                distinct(map.id, map.path, other.id, other.path)?;
+            }
+            for cell in cells {
+                distinct(map.id, map.path, cell.id, cell.path)?;
+            }
+            for counter in counters {
+                distinct(map.id, map.path, counter.id, counter.path)?;
+            }
+        }
+        Ok(Self {
+            cells,
+            counters,
+            maps,
+            sets: &[],
+        })
+    }
+    /// Extend immutable bindings without changing existing constructor signatures.
+    /// Rebinding a nonempty Set table is refused rather than discarding authority.
+    pub fn bind_sets(mut self, sets: &'a [SetBinding]) -> Result<Self, CompactError> {
+        if !self.sets.is_empty() {
+            return Err(CompactError::InvalidLedgerCell(
+                "Set bindings already installed".into(),
+            ));
+        }
+        for (index, set) in sets.iter().enumerate() {
+            for (id, path) in self
+                .declarations()
+                .chain(sets[..index].iter().map(|set| (set.id, set.path)))
+            {
+                distinct(set.id, set.path, id, path)?;
+            }
+        }
+        self.sets = sets;
+        Ok(self)
+    }
+    fn declarations(self) -> impl Iterator<Item = (SlotId, &'static [u8])> + 'a {
+        self.cells
+            .iter()
+            .map(|v| (v.id, v.path))
+            .chain(self.counters.iter().map(|v| (v.id, v.path)))
+            .chain(self.maps.iter().map(|v| (v.id, v.path)))
+            .chain(self.sets.iter().map(|v| (v.id, v.path)))
+    }
+    pub(super) fn set<T: CellValue>(
+        self,
+        set: Set<T>,
+    ) -> Result<crate::slots::SetSlot<T>, CompactError> {
+        let binding = self
+            .sets
+            .iter()
+            .find(|binding| binding.id == set.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!("unbound logical Set {}", set.id().index()))
+            })?;
+        Ok(crate::slots::SetSlot::new(binding.path))
     }
     pub(super) fn slot<T: CellValue>(
         self,
@@ -81,6 +168,19 @@ impl<'a> Ledger8Bindings<'a> {
                 ))
             })?;
         Ok(crate::slots::CellSlot::new(binding.path))
+    }
+    pub(super) fn map<K: CellValue, V>(
+        self,
+        map: Map<K, V>,
+    ) -> Result<crate::slots::MapSlot<K, V>, CompactError> {
+        let binding = self
+            .maps
+            .iter()
+            .find(|binding| binding.id == map.id())
+            .ok_or_else(|| {
+                CompactError::InvalidLedgerCell(format!("unbound logical Map {}", map.id().index()))
+            })?;
+        Ok(crate::slots::MapSlot::new(binding.path))
     }
     pub(super) fn counter(
         self,
