@@ -238,6 +238,7 @@ jobs:
           {
             echo "MIDNIGHT_PP=$RUNNER_TEMP/forge-linux-params"
             echo "LINUX_PROVISION=$RUNNER_TEMP/forge-linux-provision"
+            echo "LINUX_PROOF_RUNNER=$RUNNER_TEMP/forge-linux-provision/proof-smoke"
             echo "LINUX_REPORT=$RUNNER_TEMP/forge-linux-qualification"
             echo "NATIVE_REPORT=$RUNNER_TEMP/forge-linux-native"
           } >> "$GITHUB_ENV"
@@ -287,6 +288,12 @@ jobs:
       - name: Build real consumer and authenticate locked ledger fixtures
         run: |
           cargo build --profile proof-checks --locked -p compact-rust-proof-smoke
+          # Native gates rebuild Cargo's canonical outputs. Qualify these fresh
+          # bytes at a private stable path; keep every live identity check active.
+          # This runner owns finite/independent uncached smokes; original native
+          # gates retain their own source-bound consumer builds.
+          install -m 0500 "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" "$LINUX_PROOF_RUNNER"
+          cmp -- "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" "$LINUX_PROOF_RUNNER"
           cargo metadata --locked --format-version 1 > "$LINUX_PROVISION/cargo-metadata.json"
           python3 -B tools/compact-rust-backend/resolve_ledger_test_static.py \
             --metadata "$LINUX_PROVISION/cargo-metadata.json" --lock Cargo.lock \
@@ -295,7 +302,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, pathlib, subprocess
-          runner = pathlib.Path(os.environ['CARGO_TARGET_DIR']) / 'proof-checks/compact-rust-proof-smoke'
+          runner = pathlib.Path(os.environ['LINUX_PROOF_RUNNER'])
           sizes = ['6', '8']
           if os.environ['QUALIFICATION_MODE'] == 'linux-native':
               config = json.loads(pathlib.Path('tools/compact-rust-backend/forge_native_qualification.json').read_text())
@@ -308,7 +315,7 @@ jobs:
       - name: Qualify cold, warm, restored, automatic and uncached real consumers
         run: |
           python3 -B tools/compact-rust-backend/qualify_linux_forge.py \
-            --compiler "$COMPACTC" --proof-runner "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" \
+            --compiler "$COMPACTC" --proof-runner "$LINUX_PROOF_RUNNER" \
             --forge "$FORGE" --zkir "$ZKIR" --forge-source "$FORGE_SOURCE" --rustc "$FORGE_RUSTC" \
             --source-manifest tools/compact-rust-backend/forge_linux_source.json \
             --forge-derivation "$LINUX_PROVISION/forge-derivation.json" \

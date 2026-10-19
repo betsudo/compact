@@ -35,6 +35,11 @@ qualification against the actual current tools, then runs the unchanged full
 native command list twice: cold and through a verified restored snapshot. Each
 lap also retains the independent uncached key-generation proof tests.
 
+The finite qualification and independent uncached fixture smokes use a private
+copy of the freshly built proof runner, with live identity checks. Original
+native gates retain their own consumer builds from inventoried sources. Their
+rebuilt Cargo executables are not claimed byte-identical to that staged runner.
+
 This is an explicit capacity experiment using the existing automatic policy with
 `tiny_max_k=16`; the ordinary compiler default remains 8. All lower-k circuits
 still run fresh model/parameter checks, ordinary key generation and their original

@@ -19,6 +19,7 @@ import contextlib
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import sys
 import unittest
@@ -28,6 +29,22 @@ import forge_ci as ci
 
 
 class ForgeCiTests(unittest.TestCase):
+    def test_private_runner_survives_cargo_output_rebuild_but_refuses_own_mutation(self):
+        retained = self.root / 'tools' / 'qualified-proof-runner'
+        subprocess.run(['install', '-m', '0500', str(self.proof), str(retained)], check=True)
+        self.assertEqual(ci.file_hash(retained), ci.file_hash(self.proof))
+        self.assertFalse(retained.samefile(self.proof))
+        invocation = dict(tools=ci.tool_bindings(self.compiler, retained, self.helper))
+        ci.check_tools(invocation)
+        # An ordinary Cargo rebuild is allowed to replace its own output, not
+        # the separately qualified executable selected by the invocation.
+        self.proof.write_text('rebuilt Cargo output')
+        ci.check_tools(invocation)
+        retained.chmod(0o700)
+        retained.write_text('changed qualified runner')
+        with self.assertRaisesRegex(ValueError, 'proof_runner changed'):
+            ci.check_tools(invocation)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
