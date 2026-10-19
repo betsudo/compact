@@ -80,6 +80,7 @@ mod guarded_point_read;
 mod guarded_recording;
 mod impure_field_helper;
 mod inline_type_scope;
+mod js_counter_trace;
 mod jubjub_negation;
 mod kernel_shielded_effects;
 mod let_return;

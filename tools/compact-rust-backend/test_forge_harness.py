@@ -270,5 +270,128 @@ class PublicCompilerAcquisitionTests(unittest.TestCase):
                     smoke.validate_stats_provider(other, policy)
 
 
+class ExplicitFallbackQualificationTests(unittest.TestCase):
+    def test_both_targets_and_exclusive_fallback_arguments(self):
+        import check_forge_circuit_cache as smoke
+        base = ["--compiler", "/compiler", "--proof-runner", "/proof", "--params-dir", "/params", "--report", "/report"]
+        args = smoke.parse_args([*base, "--targets", "both", "--compiler-fallback-policy", "/policy"])
+        command = smoke.compiler_command(args, {"compact_source": "examples/tiny.compact"}, Path("/output"))
+        self.assertEqual([command[i + 1] for i, x in enumerate(command) if x == "--target"], ["ts", "rust"])
+        self.assertNotIn("--skip-zk", command)
+        self.assertEqual(command[command.index("--zkir-cache-policy") + 1], Path("/policy"))
+        with self.assertRaises(SystemExit):
+            smoke.parse_args([*base, "--compiler-fallback-policy", "/policy", "--compiler-cache-policy", "/other"])
+        with self.assertRaises(SystemExit):
+            smoke.parse_args([*base, "--compiler-fallback-policy", "/policy", "--uncached-zkir", "/zkir"])
+
+    def test_missing_provider_and_invalid_policy_controls(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as private:
+            root = Path(private)
+            policy = root / "policy.json"
+            absent = root / "missing-provider"
+            valid = dict(schema=1, selection="force", unavailable="keygen", forge={"path": str(absent)})
+            policy.write_text(json.dumps(valid))
+            with patch.object(smoke.subprocess, "run", side_effect=AssertionError("no provider process")):
+                self.assertEqual(smoke.validate_fallback_policy(policy), absent)
+                existing = root / "existing"
+                existing.write_bytes(b"provider")
+                symlink = root / "dangling"
+                symlink.symlink_to(absent)
+                for change in ({"selection": "auto"}, {"unavailable": "refuse"},
+                               {"forge": {}}, {"forge": {"path": "relative"}},
+                               {"forge": {"path": str(existing)}}, {"forge": {"path": str(symlink)}},
+                               {"forge": {"path": ""}}, {"schema": 2}):
+                    with self.subTest(change=change):
+                        policy.write_text(json.dumps({**valid, **change}))
+                        with self.assertRaises(cache.CompatibilityError):
+                            smoke.validate_fallback_policy(policy)
+                policy.write_text('{"schema":1,"schema":1}')
+                with self.assertRaises(ValueError):
+                    smoke.validate_fallback_policy(policy)
+
+
+class JsCounterQualificationTests(unittest.TestCase):
+    def test_node_overrides_refuse_before_lookup_and_node_path_is_absolute(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        for key in ("NODE_OPTIONS", "NODE_PATH", "NODE_V8_COVERAGE"):
+            with self.subTest(key=key), patch.object(smoke.shutil, "which", side_effect=AssertionError("must refuse before lookup")):
+                with self.assertRaisesRegex(cache.CompatibilityError, "NODE_"):
+                    smoke.js_node({key: "inherited override"})
+        with tempfile.TemporaryDirectory() as private:
+            node = Path(private) / "node"
+            node.write_bytes(b"pinned executable")
+            with patch.object(smoke.shutil, "which", return_value=str(node)):
+                self.assertEqual(smoke.js_node({"PATH": private}), node.resolve())
+
+    def test_swapped_preimage_requires_specific_failure(self):
+        import check_forge_circuit_cache as smoke
+        expected = "JS official preimage differs from replayed call proof inputs"
+        smoke.check_js_preimage_negative(subprocess.CompletedProcess([], 1, "", expected))
+        for code, error in ((0, expected), (2, expected), (1, "unrelated failure")):
+            with self.subTest(code=code, error=error), self.assertRaises(cache.CompatibilityError):
+                smoke.check_js_preimage_negative(subprocess.CompletedProcess([], code, "", error))
+
+    def test_original_producer_inventory_refuses_mutated_and_missing_components(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as private:
+            component = Path(private) / "implementation"
+            component.write_bytes(b"actual producer bytes")
+            actual = smoke.digest(component)
+            execution = {"producer_files_sha256": {str(component): actual}}
+            for field in ("runtime_entry", "onchain_entry", "onchain_wasm", "node_executable"):
+                execution[field] = str(component)
+                execution[field + "_sha256"] = actual
+            self.assertEqual(smoke.validate_js_producer_files(execution), {str(component): actual})
+            component.write_bytes(b"changed producer bytes")
+            with self.assertRaisesRegex(cache.CompatibilityError, "changed"):
+                smoke.validate_js_producer_files(execution)
+            component.write_bytes(b"actual producer bytes")
+            execution["node_executable"] = str(Path(private) / "unreported-node")
+            with self.assertRaisesRegex(cache.CompatibilityError, "missing"):
+                smoke.validate_js_producer_files(execution)
+            for inventory in ({}, {"relative": actual}, {str(component): "not a digest"}):
+                with self.subTest(inventory=inventory), self.assertRaises(cache.CompatibilityError):
+                    smoke.validate_js_producer_files({**execution, "producer_files_sha256": inventory})
+
+    def test_js_requires_both_targets(self):
+        import check_forge_circuit_cache as smoke
+        base = ["--compiler", "/compiler", "--proof-runner", "/proof", "--params-dir", "/params", "--report", "/report"]
+        with self.assertRaises(SystemExit):
+            smoke.parse_args([*base, "--js-runtime-root", "/runtime"])
+        self.assertEqual(smoke.parse_args([*base, "--targets", "both", "--js-runtime-root", "/runtime"]).js_runtime_root, Path("/runtime"))
+        self.assertIsNone(smoke.parse_args(base).js_runtime_root)
+
+    def test_actual_package_identity_and_absolute_path(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as private:
+            package = Path(private) / "package.json"
+            package.write_text(json.dumps(dict(name="@midnight-ntwrk/compact-runtime", version="test-explicit")))
+            self.assertEqual(smoke.validate_js_runtime(Path(private)), Path(private).resolve())
+            for value in (dict(name="other", version="1"), dict(name="@midnight-ntwrk/compact-runtime")):
+                package.write_text(json.dumps(value))
+                with self.assertRaises(cache.CompatibilityError):
+                    smoke.validate_js_runtime(Path(private))
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.validate_js_runtime(Path("relative"))
+
+    def test_both_exact_proof_markers_and_negative_attribution(self):
+        import check_forge_circuit_cache as smoke
+        passed = subprocess.CompletedProcess([], 0, "\n".join(smoke.JS_MARKERS), "")
+        smoke.check_js_success(passed)
+        for text in (smoke.JS_MARKERS[0], "\n".join((*smoke.JS_MARKERS, smoke.JS_MARKERS[0]))):
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.check_js_success(subprocess.CompletedProcess([], 0, text, ""))
+        message = "expected header tag 'midnight:verifier-key[v6]:'"
+        smoke.check_js_negative(subprocess.CompletedProcess([], 1, "", message))
+        for result in (subprocess.CompletedProcess([], 2, "", message), subprocess.CompletedProcess([], 1, "", "unrelated crash"), subprocess.CompletedProcess([], 0, "", message)):
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.check_js_negative(result)
+
+
 if __name__ == '__main__':
     unittest.main()

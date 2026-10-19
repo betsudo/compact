@@ -28,6 +28,7 @@ import unittest
 from check_compactc_target import check_manifest
 
 import forge_circuits
+import forge_native
 from forge_circuits import (BUILD, CONSUMER, FORGE, PROFILE, CompatibilityError,
                             digest, require, validate_export, prepare)
 
@@ -46,17 +47,31 @@ def parse_args(argv=None):
     generation.add_argument("--uncached-zkir", type=Path, help="qualify fresh legacy keys; bypass Forge")
     generation.add_argument("--compiler-cache-policy", type=Path,
                             help="qualify public compiler local-cache preparation with this independent policy")
+    generation.add_argument("--compiler-fallback-policy", type=Path,
+                            help="qualify explicit ordinary keygen with a deliberately absent Forge provider")
+    parser.add_argument("--targets", choices=("rust", "both"), default="rust",
+                        help="both emits TS and Rust; add --js-runtime-root to qualify actual JS execution too")
+    parser.add_argument("--js-runtime-root", type=Path, help="actual JS counter execution/proof; requires both targets")
     parser.add_argument("--report", type=Path, required=True)
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.js_runtime_root is not None and args.targets != "both":
+        parser.error("--js-runtime-root requires --targets both")
+    return args
+
+
+def compiler_policy(args):
+    return args.compiler_cache_policy or args.compiler_fallback_policy
 
 
 def compiler_command(args, qualification, output):
     flags = ["--skip-zk"]
-    if args.compiler_cache_policy is not None:
-        flags = ["--zkir-cache", "local", "--zkir-cache-policy", args.compiler_cache_policy]
+    policy = compiler_policy(args)
+    if policy is not None:
+        flags = ["--zkir-cache", "local", "--zkir-cache-policy", policy]
         if args.cache_dir is not None:
             flags += ["--zkir-cache-dir", args.cache_dir]
-    return [args.compiler, "--target", "rust", *flags, "--rust-runtime-root",
+    targets = ["--target", "ts", "--target", "rust"] if args.targets == "both" else ["--target", "rust"]
+    return [args.compiler, *targets, *flags, "--rust-runtime-root",
             ROOT, ROOT / qualification["compact_source"], output]
 
 
@@ -82,32 +97,120 @@ def validate_stats_provider(forge, policy):
             "stats Forge executable differs from compiler policy provider")
 
 
+def validate_fallback_policy(path):
+    """Missing provider is deliberate; never substitute a different stats/provider executable."""
+    policy = forge_native.decode(forge_native.read_bounded(path))
+    require(isinstance(policy, dict) and type(policy.get("schema")) is int and policy.get("schema") == 1
+            and policy.get("selection") == "force" and policy.get("unavailable") == "keygen",
+            "fallback qualification requires schema1 force selection and explicit keygen")
+    require(isinstance(policy.get("forge"), dict), "fallback policy requires provider identity")
+    provider = policy["forge"].get("path")
+    require(isinstance(provider, str) and provider and Path(provider).is_absolute(),
+            "fallback provider requires an explicit absolute missing path")
+    provider = Path(provider)
+    require(not provider.exists() and not provider.is_symlink(),
+            "fallback provider must actually be missing and not a symlink")
+    return provider
+
+
+JS_MARKERS = tuple(f"JS-derived Counter branch {branch} proved, verified, and ledger-applied under shared unbalanced smoke policy" for branch in (0, 1))
+
+
+def validate_js_runtime(path):
+    require(path.is_absolute(), "JS runtime package requires an explicit absolute path")
+    root = path.resolve(strict=True)
+    package = forge_native.decode(forge_native.read_bounded(root / "package.json"))
+    require(package.get("name") == "@midnight-ntwrk/compact-runtime"
+            and isinstance(package.get("version"), str) and package["version"], "actual compact-runtime package identity required")
+    return root
+
+
+def check_js_success(result):
+    require(result.returncode == 0 and all(result.stdout.splitlines().count(marker) == 1 for marker in JS_MARKERS),
+            "both actual JS-derived branch proof/application markers required")
+
+
+def check_js_negative(result):
+    require(result.returncode == 1 and "expected header tag 'midnight:verifier-key[v6]:'" in result.stderr,
+            "JS-derived negative must be exact verifier header refusal")
+
+
+def js_node(environment):
+    require(not any(key.startswith("NODE_") for key in environment),
+            "JS qualification refuses inherited NODE_* loader/runtime overrides")
+    selected = shutil.which("node", path=environment.get("PATH", ""))
+    require(selected is not None, "actual Node executable required")
+    return Path(selected).resolve(strict=True)
+
+
+def check_js_preimage_negative(result):
+    require(result.returncode == 1
+            and "JS official preimage differs from replayed call proof inputs" in result.stderr,
+            "swapped JS preimage must be refused by the exact call-input comparison")
+
+
+def validate_js_producer_files(execution):
+    files = execution.get("producer_files_sha256")
+    require(isinstance(files, dict) and 0 < len(files) <= 4096,
+            "original JS producer inventory required")
+    for path, expected in files.items():
+        require(isinstance(path, str) and Path(path).is_absolute()
+                and isinstance(expected, str) and re.fullmatch(r"[0-9a-f]{64}", expected),
+                "producer inventory needs absolute paths and SHA256 digests")
+        require(digest(Path(path)) == expected, "JS producer component changed")
+    for field in ("runtime_entry", "onchain_entry", "onchain_wasm", "node_executable"):
+        require(files.get(execution.get(field)) == execution.get(field + "_sha256")
+                and execution.get(field) in files, "selected producer component missing from original inventory")
+    return files
+
+
 def main():
     args = parse_args()
-    if args.compiler_cache_policy is not None:
-        args.compiler_cache_policy = args.compiler_cache_policy.resolve(strict=True)
+    for key in ("compiler_cache_policy", "compiler_fallback_policy"):
+        if getattr(args, key) is not None:
+            setattr(args, key, getattr(args, key).resolve(strict=True))
+    js_runtime = validate_js_runtime(args.js_runtime_root) if args.js_runtime_root is not None else None
+    js_capture = Path(__file__).with_name("capture_js_counter.mjs")
+    js_inputs = {str(path): digest(path) for path in (js_capture, js_runtime / "package.json")} if js_runtime else {}
+    policy = compiler_policy(args)
+    fallback = args.compiler_fallback_policy is not None
+    if policy is not None:
         if args.cache_dir is not None:
             args.cache_dir = args.cache_dir.resolve()
     for name in ("compiler", "proof_runner", "params_dir"):
         setattr(args, name, getattr(args, name).resolve(strict=True))
-    if not args.uncached_zkir:
+    if fallback:
+        missing_provider = validate_fallback_policy(policy)
+        require(args.cache_dir is not None,
+                "fallback qualification requires an explicit absent private cache directory")
+        if args.cache_dir is not None:
+            require(not args.cache_dir.exists() and not args.cache_dir.is_symlink(),
+                    "fallback qualification requires an absent private cache directory")
+    if not args.uncached_zkir and not fallback:
         args.forge = args.forge.resolve(strict=True)
     if args.compiler_cache_policy is not None:
         validate_stats_provider(args.forge, args.compiler_cache_policy)
     start = time.perf_counter()
-    child_env = dict(os.environ, MIDNIGHT_PP=str(args.params_dir), COMPACT_ZKIR_FORGE_BIN=str(args.forge))
+    child_env = dict(os.environ, MIDNIGHT_PP=str(args.params_dir),
+                     COMPACT_ZKIR_FORGE_BIN=str(missing_provider if fallback else args.forge))
     if args.cache_dir is not None:
         child_env["MIDNIGHT_ZKIR_FORGE_DIR"] = str(args.cache_dir.resolve())
+    node = js_node(child_env) if js_runtime else None
+    if node is not None:
+        js_inputs[str(node)] = digest(node)
     forge_circuits.validate_consumer()
     qualifications = json.loads(QUALIFICATIONS.read_text())
     report = {"scope": "two proof smoke examples of the matching profile; not a circuit whitelist",
-              "mode": "compiler-local" if args.compiler_cache_policy else ("uncached" if args.uncached_zkir else "forge"), "cases": [],
+              "mode": "compiler-explicit-unavailable-keygen" if fallback else ("compiler-local" if args.compiler_cache_policy else ("uncached" if args.uncached_zkir else "forge")), "targets": args.targets, "cases": [],
               "consumer": CONSUMER, "forge_profile": PROFILE,
               "proof_runner_sha256": digest(args.proof_runner),
               "compiler_sha256": digest(args.compiler)}
+    if js_runtime:
+        report["js_scope"] = "counter only: fresh generated JS execution, original Rust proofs plus independent JS-derived proof/application; let_return remains Rust-only"
+        report["js_source_inputs"] = js_inputs
 
-    if args.compiler_cache_policy is not None:
-        report["compiler_cache_policy_sha256"] = digest(args.compiler_cache_policy)
+    if policy is not None:
+        report["compiler_cache_policy_sha256"] = digest(policy)
         report["preparation_scope"] = "public compiler phase includes fresh ZKIR and local artifact preparation; no second adapter/keygen"
 
     def stats():
@@ -117,7 +220,7 @@ def main():
         return json.loads(subprocess.run(argv + ["stats"], check=True,
                                          capture_output=True, text=True).stdout)
 
-    if not args.uncached_zkir:
+    if not args.uncached_zkir and not fallback:
         report["stats_before"] = stats()
 
     class CircuitTests(unittest.TestCase):
@@ -142,6 +245,9 @@ def main():
 
             with tempfile.TemporaryDirectory(prefix="compact-forge-test-") as temp:
                 output = Path(temp) / "generated"
+                if fallback:
+                    validate_fallback_policy(policy)
+                    self.assertEqual(digest(policy), report["compiler_cache_policy_sha256"])
                 compiled = run(compiler_command(args, q, output), "compile")
                 check_manifest(output)
                 circuit = q["circuit"]
@@ -150,7 +256,7 @@ def main():
                                  q["parameter_digest"])
                 if q.get("rust_fixture"):
                     formatted = output / "contract/lib.rs"
-                    if args.compiler_cache_policy is not None:
+                    if policy is not None:
                         # Normalize a private comparison copy, preserving the
                         # compiler's live output/manifest for the new mode.
                         formatted = Path(temp) / "fixture-comparison.rs"
@@ -158,8 +264,10 @@ def main():
                     run(["rustfmt", "--edition", "2024", formatted], "format")
                     self.assertEqual(formatted.read_bytes(),
                                      (ROOT / q["rust_fixture"]).read_bytes())
-                if args.compiler_cache_policy is not None:
+                if policy is not None:
                     row["acquisition_path"] = acquisition_path(compiled.stderr, circuit)
+                    if fallback:
+                        self.assertEqual(row["acquisition_path"], "unavailable-keygen", "explicit fallback must not be automatic bypass")
                     # The actual public compiler already materialized these.
                     # Never run a second adapter/model/keygen in this mode.
                     paths = {"source": source, "binary_ir": source.with_suffix(".bzkir"),
@@ -186,18 +294,61 @@ def main():
                 row["artifact_hashes"] = artifact_hashes
                 proof = run([args.proof_runner, q["selector"], output], "proof_and_assertions")
                 self.assertIn(q["success_marker"], proof.stdout)
+                if js_runtime is not None and name == "counter":
+                    for path, expected in js_inputs.items():
+                        self.assertEqual(digest(Path(path)), expected, "JS producer/runtime package changed")
+                    modules = Path(temp) / "node_modules/@midnight-ntwrk"
+                    modules.mkdir(parents=True)
+                    (modules / "compact-runtime").symlink_to(js_runtime, target_is_directory=True)
+                    js_directory = Path(temp) / "js-inputs"
+                    run([node, js_capture, output / "contract", js_directory], "js_execution")
+                    execution = forge_native.decode(forge_native.read_bounded(js_directory / "execution.json"))
+                    self.assertEqual([case["branch"] for case in execution["cases"]], [0, 1])
+                    self.assertTrue(all(case["negative_argument_refused"] is True for case in execution["cases"]))
+                    self.assertEqual(digest(output / "contract/index.js"), execution["generated_index_sha256"])
+                    runtime_files = validate_js_producer_files(execution)
+                    self.assertEqual(Path(execution["node_executable"]).resolve(strict=True), node)
+                    self.assertEqual(execution["node_executable_sha256"], js_inputs[str(node)])
+                    self.assertTrue(Path(execution["runtime_entry"]).resolve(strict=True).is_relative_to(js_runtime))
+                    self.assertEqual(runtime_files.get(str(js_runtime / "package.json")),
+                                     js_inputs[str(js_runtime / "package.json")])
+                    row["js_execution_metadata"] = execution
+                    expected_files = {"execution.json", "branch-0.json", "branch-1.json",
+                                      "branch-0.preimage", "branch-1.preimage"}
+                    self.assertEqual({path.name for path in js_directory.iterdir()}, expected_files)
+                    js_files = {str(path): digest(path) for path in js_directory.iterdir() if path.is_file()}
+                    js_proof = run([args.proof_runner, "--js-counter-trace", output, js_directory], "js_proof_and_assertions")
+                    check_js_success(js_proof)
+                    wrong_inputs = Path(temp) / "js-swapped-preimages"
+                    shutil.copytree(js_directory, wrong_inputs, symlinks=False)
+                    first, second = (wrong_inputs / f"branch-{branch}.preimage" for branch in (0, 1))
+                    first_bytes, second_bytes = first.read_bytes(), second.read_bytes()
+                    first.write_bytes(second_bytes)
+                    second.write_bytes(first_bytes)
+                    mismatch = run([args.proof_runner, "--js-counter-trace", output, wrong_inputs],
+                                   "js_preimage_mismatch_control", expected_success=False)
+                    check_js_preimage_negative(mismatch)
                 # Keep negative mutation private; never alter persistent Forge exports.
                 negative = Path(temp) / "negative"
                 shutil.copytree(output, negative, symlinks=False)
                 (negative / "keys" / f"{circuit}.verifier").write_bytes(b"invalid verifier")
                 run([args.proof_runner, q["selector"], negative], "corrupt_verifier_control",
                     expected_success=False)
+                if js_runtime is not None and name == "counter":
+                    js_negative = run([args.proof_runner, "--js-counter-trace", negative, js_directory],
+                                      "js_corrupt_verifier_control", expected_success=False)
+                    check_js_negative(js_negative)
+                    for path, expected in {**js_inputs, **js_files, **runtime_files}.items():
+                        self.assertEqual(digest(Path(path)), expected, "JS execution/producer input changed")
+                    self.assertEqual({path.name for path in js_directory.iterdir()}, expected_files)
                 for kind, path in paths.items():
                     self.assertEqual(digest(path), artifact_hashes[kind], "artifact mutated by consumer")
-                if args.compiler_cache_policy is not None:
+                if policy is not None:
                     check_manifest(output)
-                    self.assertEqual(digest(args.compiler_cache_policy),
+                    self.assertEqual(digest(policy),
                                      report["compiler_cache_policy_sha256"], "compiler cache policy changed")
+                    if fallback:
+                        validate_fallback_policy(policy)
             row["complete_case_wall_seconds"] = time.perf_counter() - case_start
 
         def test_counter_two_branches(self):
@@ -208,12 +359,18 @@ def main():
 
     result = unittest.TextTestRunner(verbosity=2).run(
         unittest.defaultTestLoader.loadTestsFromTestCase(CircuitTests))
-    if not args.uncached_zkir:
+    if not args.uncached_zkir and not fallback:
         report["stats_after"] = stats()
-    if args.compiler_cache_policy is not None:
+    if policy is not None:
         report["acquisition_path_counts"] = {path: sum(row.get("acquisition_path") == path for row in report["cases"])
             for path in ("forge-hit", "forge-miss", "auto-bypass", "unavailable-keygen")}
-        report["mode_scope"] = "compiler-local selects public preparation; per-case acquisition_path states whether Forge was used"
+        report["mode_scope"] = ("explicit unavailable-keygen; missing provider is not invoked or queried for stats; original Rust proofs always execute; optional JS scope reported separately" if fallback else "compiler-local selects public preparation; per-case acquisition_path states whether Forge was used")
+        if fallback:
+            validate_fallback_policy(policy)
+            if args.cache_dir is not None:
+                require(not args.cache_dir.exists() and not args.cache_dir.is_symlink(),
+                        "explicit fallback unexpectedly used a cache directory")
+        require(digest(policy) == report["compiler_cache_policy_sha256"], "compiler policy changed")
     report.update(passed=result.wasSuccessful(), tests_run=result.testsRun,
                   complete_wall_seconds=time.perf_counter() - start,
                   cumulative_child_largest_process_maxrss_bytes=(
