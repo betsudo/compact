@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
+
 # This file is part of Compact.
-# Copyright (C) 2026 contributors to Minokawa Compact
+# Copyright (C) 2026 Midnight Foundation
 # SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Sequential real proof smoke controls for the matching ledger8.1.3 Forge profile.
 
@@ -44,11 +56,13 @@ def parse_args(argv=None):
     parser.add_argument("--params-dir", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, help="otherwise Forge uses its normal default/env")
     generation = parser.add_mutually_exclusive_group()
+    generation.add_argument("--compiler-uncached", action="store_true", help="large workload ordinary public compiler build; no policy and no skip-zk")
     generation.add_argument("--uncached-zkir", type=Path, help="qualify fresh legacy keys; bypass Forge")
     generation.add_argument("--compiler-cache-policy", type=Path,
                             help="qualify public compiler local-cache preparation with this independent policy")
     generation.add_argument("--compiler-fallback-policy", type=Path,
                             help="qualify explicit ordinary keygen with a deliberately absent Forge provider")
+    parser.add_argument("--workload-set", choices=("smoke", "ledger8-large"), default="smoke")
     parser.add_argument("--targets", choices=("rust", "both"), default="rust",
                         help="both emits TS and Rust; add --js-runtime-root to qualify actual JS execution too")
     parser.add_argument("--js-runtime-root", type=Path, help="actual JS counter execution/proof; requires both targets")
@@ -56,6 +70,13 @@ def parse_args(argv=None):
     args = parser.parse_args(argv)
     if args.js_runtime_root is not None and args.targets != "both":
         parser.error("--js-runtime-root requires --targets both")
+    if args.compiler_uncached and args.workload_set != "ledger8-large":
+        parser.error("--compiler-uncached is limited to explicit large workload")
+    if args.workload_set == "ledger8-large":
+        if args.js_runtime_root is not None:
+            parser.error("large workload does not qualify JS execution")
+        if args.compiler_cache_policy is None and args.compiler_fallback_policy is None and args.uncached_zkir is None and not args.compiler_uncached:
+            parser.error("large workload requires public compiler policy or explicit uncached ZKIR")
     return args
 
 
@@ -64,7 +85,7 @@ def compiler_policy(args):
 
 
 def compiler_command(args, qualification, output):
-    flags = ["--skip-zk"]
+    flags = [] if args.compiler_uncached else ["--skip-zk"]
     policy = compiler_policy(args)
     if policy is not None:
         flags = ["--zkir-cache", "local", "--zkir-cache-policy", policy]
@@ -164,6 +185,115 @@ def validate_js_producer_files(execution):
     return files
 
 
+LARGE_QUALIFICATIONS = Path(__file__).with_name("forge_large_qualification.json")
+
+
+def large_artifacts(output, expected_circuits):
+    require(len(expected_circuits) == len(set(expected_circuits)), "duplicate expected circuit")
+    actual = {path.stem for path in (output / "zkir").glob("*.zkir")}
+    require(actual == set(expected_circuits), "complete emitted circuit roster differs")
+    return {name: {kind: digest(path) for kind, path in {
+        "source": output / "zkir" / (name + ".zkir"),
+        "binary_ir": output / "zkir" / (name + ".bzkir"),
+        "prover": output / "keys" / (name + ".prover"),
+        "verifier": output / "keys" / (name + ".verifier")}.items()} for name in sorted(actual)}
+
+
+def large_publication_identity(output):
+    manifest = output / "compiler/contract-manifest.json"
+    contract = output / "contract"
+    require(manifest.is_file() and contract.is_dir(), "actual compiler publication required")
+    sources = {path.relative_to(output).as_posix(): digest(path)
+               for path in sorted(contract.rglob("*")) if path.is_file()}
+    require(sources, "generated contract inventory must not be empty")
+    return dict(manifest_sha256=digest(manifest), generated_contract_sha256=sources)
+
+
+def exact_markers(stdout, markers):
+    require(markers and all(stdout.splitlines().count(marker) == 1 for marker in markers),
+            "complete original proof/application markers required exactly once")
+
+
+def exercise_large(args, q, output, compiled, run, row):
+    policy = compiler_policy(args)
+    actual = {path.stem for path in (output / "zkir").glob("*.zkir")}
+    require(actual == set(q["circuits"]), "complete emitted circuit roster differs")
+    routes = {}
+    if policy is not None:
+        for name in sorted(actual):
+            routes[name] = acquisition_path(compiled.stderr, name)
+            if args.compiler_fallback_policy is not None:
+                require(routes[name] == "unavailable-keygen", "large fallback must be explicit unavailable keygen")
+    elif args.compiler_uncached:
+        routes = {name: "compiler-uncached" for name in sorted(actual)}
+    else:
+        (output / "keys").mkdir(exist_ok=True)
+        for name in sorted(actual):
+            run([args.uncached_zkir, "compile", output / "zkir" / (name + ".zkir"),
+                 output / "keys" / (name + ".prover"), output / "keys" / (name + ".verifier")], "uncached_keygen_" + name)
+            routes[name] = "uncached"
+    publication = large_publication_identity(output)
+    before = large_artifacts(output, q["circuits"])
+    row.update(publication_identity=publication, artifact_hashes_by_circuit=before, acquisition_paths=routes,
+               proof_scope=q["proof_scope"], expected_markers=q["success_markers"])
+    proof = run([args.proof_runner, q["selector"], output], "proof_and_assertions")
+    exact_markers(proof.stdout, q["success_markers"])
+    negative = output.parent / "negative"
+    shutil.copytree(output, negative, symlinks=False)
+    (negative / "keys" / (q["negative_circuit"] + ".verifier")).write_bytes(b"invalid verifier")
+    rejected = run([args.proof_runner, q["selector"], negative], "corrupt_verifier_control", expected_success=False)
+    check_js_negative(rejected)  # Same exact official verifier-v6 serialization refusal.
+    require(large_publication_identity(output) == publication, "compiler manifest or generated contract changed")
+    require(large_artifacts(output, q["circuits"]) == before, "large artifact mutated by proof consumer")
+    if policy is not None or args.compiler_uncached:
+        check_manifest(output)
+
+
+def large_parameter_premises(authority, directory):
+    """Freeze the reviewed authority and actual parameter bytes before any compiler call."""
+    raw = forge_native.read_bounded(authority)
+    pins = forge_native.decode(raw)["parameters"]
+    require(isinstance(pins, dict) and pins, "large parameter authority must be nonempty")
+    premises = {str(authority): digest(authority)}
+    for k, sha in pins.items():
+        require(isinstance(k, str) and re.fullmatch(r"0|[1-9][0-9]{0,2}", k)
+                and int(k) <= 255 and isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha),
+                "invalid large parameter authority entry")
+        path = directory / ("bls_midnight_2p" + k)
+        require(digest(path) == sha, "official large-workload parameter mismatch before compile")
+        premises[str(path)] = sha
+    require(forge_native.read_bounded(authority) == raw, "large parameter authority changed during preparation")
+    return premises
+
+
+def acquisition_counts(rows, large=False):
+    routes = []
+    for row in rows:
+        if large:
+            require(isinstance(row.get("acquisition_paths"), dict), "large per-circuit routes required")
+            routes.extend(row["acquisition_paths"].values())
+        elif row.get("acquisition_path") is not None:
+            routes.append(row["acquisition_path"])
+    names = ("forge-hit", "forge-miss", "auto-bypass", "unavailable-keygen")
+    if large:
+        names += ("compiler-uncached", "uncached")
+    require(all(route in names for route in routes), "unknown acquisition route")
+    return {name: routes.count(name) for name in names}
+
+
+def write_report(path, report, *, large=False, expected_acquisitions=None):
+    """Keep original failed phase receipts even when no acquisition was reached."""
+    if large:
+        available = [row for row in report["cases"] if isinstance(row.get("acquisition_paths"), dict)]
+        report["acquisition_path_counts"] = acquisition_counts(available, True)
+        observed = sum(report["acquisition_path_counts"].values())
+        complete = len(available) == len(report["cases"]) and observed == expected_acquisitions
+        report["acquisition_accounting_complete"] = complete
+        if report["passed"]:
+            require(complete, "successful large run requires complete circuit acquisition accounting")
+    path.write_text(json.dumps(report, indent=2) + "\n")
+
+
 def main():
     args = parse_args()
     for key in ("compiler_cache_policy", "compiler_fallback_policy"):
@@ -186,7 +316,7 @@ def main():
         if args.cache_dir is not None:
             require(not args.cache_dir.exists() and not args.cache_dir.is_symlink(),
                     "fallback qualification requires an absent private cache directory")
-    if not args.uncached_zkir and not fallback:
+    if not args.uncached_zkir and not args.compiler_uncached and not fallback:
         args.forge = args.forge.resolve(strict=True)
     if args.compiler_cache_policy is not None:
         validate_stats_provider(args.forge, args.compiler_cache_policy)
@@ -199,12 +329,19 @@ def main():
     if node is not None:
         js_inputs[str(node)] = digest(node)
     forge_circuits.validate_consumer()
-    qualifications = json.loads(QUALIFICATIONS.read_text())
+    qualifications_path = LARGE_QUALIFICATIONS if args.workload_set == "ledger8-large" else QUALIFICATIONS
+    qualifications = json.loads(qualifications_path.read_text())
+    large_premises = {str(path): digest(path) for path in [qualifications_path, *[ROOT / q["compact_source"] for q in qualifications.values()]]} if args.workload_set == "ledger8-large" else {}
+    if args.workload_set == "ledger8-large":
+        large_premises.update(large_parameter_premises(Path(__file__).with_name("forge_native_qualification.json"), args.params_dir))
     report = {"scope": "two proof smoke examples of the matching profile; not a circuit whitelist",
-              "mode": "compiler-explicit-unavailable-keygen" if fallback else ("compiler-local" if args.compiler_cache_policy else ("uncached" if args.uncached_zkir else "forge")), "targets": args.targets, "cases": [],
+              "mode": "compiler-explicit-unavailable-keygen" if fallback else ("compiler-local" if args.compiler_cache_policy else ("compiler-uncached" if args.compiler_uncached else ("uncached" if args.uncached_zkir else "forge"))), "targets": args.targets, "cases": [],
+              "workload_set": args.workload_set, "source_premises": large_premises,
               "consumer": CONSUMER, "forge_profile": PROFILE,
               "proof_runner_sha256": digest(args.proof_runner),
               "compiler_sha256": digest(args.compiler)}
+    if args.workload_set == "ledger8-large":
+        report["scope"] = "two complete larger Compact sources; bounded original selected Rust proof scenarios, not all-export proof coverage"
     if js_runtime:
         report["js_scope"] = "counter only: fresh generated JS execution, original Rust proofs plus independent JS-derived proof/application; let_return remains Rust-only"
         report["js_source_inputs"] = js_inputs
@@ -220,7 +357,7 @@ def main():
         return json.loads(subprocess.run(argv + ["stats"], check=True,
                                          capture_output=True, text=True).stdout)
 
-    if not args.uncached_zkir and not fallback:
+    if not args.uncached_zkir and not args.compiler_uncached and not fallback:
         report["stats_before"] = stats()
 
     class CircuitTests(unittest.TestCase):
@@ -248,8 +385,22 @@ def main():
                 if fallback:
                     validate_fallback_policy(policy)
                     self.assertEqual(digest(policy), report["compiler_cache_policy_sha256"])
+                for path, sha in large_premises.items():
+                    self.assertEqual(digest(Path(path)), sha, "large source premise changed before compile")
                 compiled = run(compiler_command(args, q, output), "compile")
                 check_manifest(output)
+                if args.workload_set == "ledger8-large":
+                    exercise_large(args, q, output, compiled, run, row)
+                    if policy is not None:
+                        self.assertEqual(digest(policy), report["compiler_cache_policy_sha256"])
+                        if fallback:
+                            validate_fallback_policy(policy)
+                    for path, sha in large_premises.items():
+                        self.assertEqual(digest(Path(path)), sha, "large source premise changed")
+                    self.assertEqual(digest(args.compiler), report["compiler_sha256"])
+                    self.assertEqual(digest(args.proof_runner), report["proof_runner_sha256"])
+                    row["complete_case_wall_seconds"] = time.perf_counter() - case_start
+                    return
                 circuit = q["circuit"]
                 source = output / "zkir" / f"{circuit}.zkir"
                 self.assertEqual(digest(args.params_dir / f"bls_midnight_2p{q['k']}"),
@@ -352,18 +503,18 @@ def main():
             row["complete_case_wall_seconds"] = time.perf_counter() - case_start
 
         def test_counter_two_branches(self):
-            self.exercise("counter")
+            self.exercise("schnorr" if args.workload_set == "ledger8-large" else "counter")
 
         def test_let_return(self):
-            self.exercise("let_return")
+            self.exercise("merkle" if args.workload_set == "ledger8-large" else "let_return")
 
     result = unittest.TextTestRunner(verbosity=2).run(
         unittest.defaultTestLoader.loadTestsFromTestCase(CircuitTests))
-    if not args.uncached_zkir and not fallback:
+    if not args.uncached_zkir and not args.compiler_uncached and not fallback:
         report["stats_after"] = stats()
     if policy is not None:
-        report["acquisition_path_counts"] = {path: sum(row.get("acquisition_path") == path for row in report["cases"])
-            for path in ("forge-hit", "forge-miss", "auto-bypass", "unavailable-keygen")}
+        if args.workload_set != "ledger8-large":
+            report["acquisition_path_counts"] = acquisition_counts(report["cases"])
         report["mode_scope"] = ("explicit unavailable-keygen; missing provider is not invoked or queried for stats; original Rust proofs always execute; optional JS scope reported separately" if fallback else "compiler-local selects public preparation; per-case acquisition_path states whether Forge was used")
         if fallback:
             validate_fallback_policy(policy)
@@ -377,7 +528,9 @@ def main():
                       resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
                       * (1 if sys.platform == "darwin" else 1024)),
                   memory_scope="cumulative child largest-process highwater, not concurrent total")
-    args.report.write_text(json.dumps(report, indent=2) + "\n")
+    write_report(args.report, report, large=args.workload_set == "ledger8-large",
+                 expected_acquisitions=sum(len(q["circuits"]) for q in qualifications.values())
+                 if args.workload_set == "ledger8-large" else None)
     return 0 if result.wasSuccessful() else 1
 
 

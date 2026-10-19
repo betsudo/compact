@@ -1,6 +1,17 @@
 # This file is part of Compact.
 # Copyright (C) 2026 Midnight Foundation
 # SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Scoped test-launcher, matching-profile and materialization boundaries."""
 import json
@@ -391,6 +402,117 @@ class JsCounterQualificationTests(unittest.TestCase):
         for result in (subprocess.CompletedProcess([], 2, "", message), subprocess.CompletedProcess([], 1, "", "unrelated crash"), subprocess.CompletedProcess([], 0, "", message)):
             with self.assertRaises(cache.CompatibilityError):
                 smoke.check_js_negative(result)
+
+
+class LargeWorkloadTests(unittest.TestCase):
+    def test_explicit_large_public_uncached_and_default_compatibility(self):
+        import check_forge_circuit_cache as smoke
+        base = ["--compiler", "/compiler", "--proof-runner", "/proof", "--params-dir", "/params", "--report", "/report"]
+        default = smoke.parse_args(base)
+        self.assertEqual(default.workload_set, "smoke")
+        self.assertIn("--skip-zk", smoke.compiler_command(default, {"compact_source": "source"}, Path("/out")))
+        args = smoke.parse_args([*base, "--workload-set", "ledger8-large", "--compiler-uncached"])
+        command = smoke.compiler_command(args, {"compact_source": "source"}, Path("/out"))
+        self.assertNotIn("--skip-zk", command)
+        self.assertNotIn("--zkir-cache", command)
+        for extra in (["--compiler-uncached"], ["--workload-set", "ledger8-large"],
+                      ["--workload-set", "ledger8-large", "--compiler-uncached", "--compiler-cache-policy", "/policy"]):
+            with self.assertRaises(SystemExit):
+                smoke.parse_args([*base, *extra])
+
+    def test_compile_failure_receipt_saved_before_acquisition(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "failed.json"
+            report = dict(passed=False, cases=[dict(circuit="schnorr", compile=dict(exit_code=7, stderr="original compile failure"))])
+            smoke.write_report(destination, report, large=True, expected_acquisitions=9)
+            saved = json.loads(destination.read_text())
+            self.assertEqual(saved["cases"][0]["compile"]["stderr"], "original compile failure")
+            self.assertFalse(saved["acquisition_accounting_complete"])
+            self.assertEqual(sum(saved["acquisition_path_counts"].values()), 0)
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.write_report(Path(temporary) / "false-pass.json", {**report, "passed": True}, large=True, expected_acquisitions=9)
+
+    def test_nine_actual_routes_flatten_without_smoke_regression(self):
+        import check_forge_circuit_cache as smoke
+        rows = [dict(acquisition_paths={"verify": "forge-hit", "accept": "forge-hit"}),
+                dict(acquisition_paths={str(i): "forge-hit" for i in range(7)})]
+        self.assertEqual(smoke.acquisition_counts(rows, True)["forge-hit"], 9)
+        self.assertEqual(smoke.acquisition_counts([dict(acquisition_path="forge-miss")])["forge-miss"], 1)
+        with self.assertRaises(cache.CompatibilityError):
+            smoke.acquisition_counts([dict(acquisition_paths={"one": "invented"})], True)
+
+    def test_parameter_authority_and_bytes_frozen_before_compile(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            parameter, authority = root / "bls_midnight_2p8", root / "pins.json"
+            parameter.write_bytes(b"official bytes")
+            expected = cache.digest(parameter)
+            authority.write_text(json.dumps(dict(parameters={"8": expected})))
+            premises = smoke.large_parameter_premises(authority, root)
+            self.assertEqual(premises[str(authority)], cache.digest(authority))
+            self.assertEqual(premises[str(parameter)], expected)
+            parameter.write_bytes(b"changed")
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.large_parameter_premises(authority, root)
+            parameter.write_bytes(b"official bytes")
+            authority.write_text(json.dumps(dict(parameters={"8": "a" * 64})))
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.large_parameter_premises(authority, root)
+            authority.write_text(json.dumps(dict(parameters={"../bad": expected})))
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.large_parameter_premises(authority, root)
+
+    def test_publication_manifest_and_contract_identity_retained(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "compiler").mkdir()
+            (root / "contract").mkdir()
+            manifest, source = root / "compiler/contract-manifest.json", root / "contract/lib.rs"
+            manifest.write_bytes(b"actual manifest bytes")
+            source.write_bytes(b"actual generated source")
+            before = smoke.large_publication_identity(root)
+            self.assertEqual(before["manifest_sha256"], cache.digest(manifest))
+            self.assertEqual(before["generated_contract_sha256"], {"contract/lib.rs": cache.digest(source)})
+            manifest.write_bytes(b"changed manifest")
+            self.assertNotEqual(smoke.large_publication_identity(root), before)
+            manifest.write_bytes(b"actual manifest bytes")
+            source.write_bytes(b"changed source")
+            self.assertNotEqual(smoke.large_publication_identity(root), before)
+
+    def test_complete_multicircuit_artifact_accounting(self):
+        import check_forge_circuit_cache as smoke
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "zkir").mkdir()
+            (root / "keys").mkdir()
+            for name in ("first", "second"):
+                for tree, suffix in (("zkir", ".zkir"), ("zkir", ".bzkir"), ("keys", ".prover"), ("keys", ".verifier")):
+                    (root / tree / (name + suffix)).write_bytes((name + suffix).encode())
+            hashes = smoke.large_artifacts(root, ["first", "second"])
+            self.assertEqual(set(hashes), {"first", "second"})
+            self.assertEqual(set(hashes["first"]), {"source", "binary_ir", "prover", "verifier"})
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.large_artifacts(root, ["first"])
+            (root / "keys/second.verifier").unlink()
+            with self.assertRaises(OSError):
+                smoke.large_artifacts(root, ["first", "second"])
+
+    def test_all_proof_markers_once_and_exact_negative(self):
+        import check_forge_circuit_cache as smoke
+        smoke.exact_markers("first\nsecond\n", ["first", "second"])
+        for output in ("first\n", "first\nsecond\nsecond\n"):
+            with self.assertRaises(cache.CompatibilityError):
+                smoke.exact_markers(output, ["first", "second"])
+        smoke.check_js_negative(subprocess.CompletedProcess([], 1, "", "expected header tag 'midnight:verifier-key[v6]:'"))
+        with self.assertRaises(cache.CompatibilityError):
+            smoke.check_js_negative(subprocess.CompletedProcess([], 1, "", "unrelated failure"))
 
 
 if __name__ == '__main__':

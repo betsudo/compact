@@ -133,3 +133,7 @@ Add `--verify-only` to check the same set without downloading or repairing it.
 Missing or corrupt material is an error. With no `--parameter-k` options, the
 existing default receipt and built-in preparation behavior are unchanged.
 Preparing material neither runs tests nor qualifies a cache or backend profile.
+
+For the explicit larger Schnorr/Merkle comparison, ordinary public-compiler
+baseline, retained proof controls and bounded results, see
+[local loop measurement](forge-local-loop-measurement.md).

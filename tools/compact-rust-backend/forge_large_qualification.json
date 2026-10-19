@@ -1,0 +1,34 @@
+{
+  "schnorr": {
+    "compact_source": "examples/rust_backend/schnorr_attest_oracle.compact",
+    "circuits": [
+      "verifyAttestation",
+      "acceptAttestation"
+    ],
+    "selector": "--schnorr-attestation-strict",
+    "negative_circuit": "verifyAttestation",
+    "success_markers": [
+      "verifyAttestation: source-bound proof verified, changed binding rejected and strict funded ledger8 apply; constructor supplied, not proved",
+      "acceptAttestation: source-bound proof verified, changed binding rejected and strict funded ledger8 apply; constructor supplied, not proved"
+    ],
+    "proof_scope": "both original Schnorr entry points; strict funded apply, changed binding refusal; constructor supplied not proved"
+  },
+  "merkle": {
+    "compact_source": "examples/rust_backend/effect_plan_merkle.compact",
+    "circuits": [
+      "observe",
+      "run",
+      "place",
+      "hashes",
+      "defaults",
+      "forget",
+      "reset"
+    ],
+    "selector": "--effect-plan-merkle",
+    "negative_circuit": "run",
+    "success_markers": [
+      "plain/historic Merkle selected/skipped insertion branches proved and applied through ledger8"
+    ],
+    "proof_scope": "run selected and skipped insertion branches; all seven exports compiled, not all proved"
+  }
+}
