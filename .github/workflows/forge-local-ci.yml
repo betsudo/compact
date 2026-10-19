@@ -13,6 +13,21 @@ on:
         options: [apple, linux-candidate, linux-native, linux-owner]
         default: apple
         required: true
+      native-snapshot-key:
+        description: Exact existing cache primary key (linux-owner only; no prefix fallback)
+        type: string
+        required: false
+        default: ''
+      native-snapshot-id:
+        description: Externally authenticated expected stopped snapshot SHA256
+        type: string
+        required: false
+        default: ''
+      native-snapshot-partition:
+        description: Externally authenticated expected compatibility partition SHA256
+        type: string
+        required: false
+        default: ''
   push:
     branches: [codex/rust-backend-ast]
     paths:
@@ -70,7 +85,42 @@ env:
   PYTHONDONTWRITEBYTECODE: 1
 
 jobs:
+  snapshot-inputs:
+    name: Validate optional native snapshot inputs
+    runs-on: ubuntu-24.04
+    permissions: {}
+    outputs:
+      restore-requested: ${{ steps.validate.outputs.restore-requested }}
+    steps:
+      - name: Validate complete external snapshot tuple before producers
+        id: validate
+        env:
+          QUALIFICATION: ${{ inputs.qualification }}
+          SNAPSHOT_KEY: ${{ inputs.native-snapshot-key }}
+          SNAPSHOT_ID: ${{ inputs.native-snapshot-id }}
+          SNAPSHOT_PARTITION: ${{ inputs.native-snapshot-partition }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY_SNAPSHOT'
+          import os, re
+          key, identity, partition = (os.environ[name] for name in ('SNAPSHOT_KEY', 'SNAPSHOT_ID', 'SNAPSHOT_PARTITION'))
+          supplied = [bool(value) for value in (key, identity, partition)]
+          if any(supplied):
+              if not all(supplied):
+                  raise SystemExit('snapshot key, ID and partition require all three')
+              if os.environ['EVENT_NAME'] != 'workflow_dispatch' or os.environ['QUALIFICATION'] != 'linux-owner':
+                  raise SystemExit('snapshot restore is limited to explicit linux-owner dispatch')
+              if not all(re.fullmatch('[0-9a-f]{64}', value) for value in (identity, partition)):
+                  raise SystemExit('snapshot ID and partition must be SHA256')
+              match = re.fullmatch(r'forge-v1-([0-9a-f]{64})-([0-9a-f]{64})-([A-Za-z0-9_-]{1,80})', key)
+              if match is None or match[1] != partition:
+                  raise SystemExit('exact primary key and expected partition disagree')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('restore-requested=' + ('true' if all(supplied) else 'false') + '\n')
+          PY_SNAPSHOT
+
   standalone-darwin-compiler:
+    needs: snapshot-inputs
     if: inputs.compiler-producer-result == '' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.qualification == 'apple'))
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
@@ -79,6 +129,7 @@ jobs:
       system: aarch64-darwin
 
   standalone-linux-compiler:
+    needs: snapshot-inputs
     if: github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
@@ -87,9 +138,9 @@ jobs:
       system: x86_64-linux
 
   proof:
-    needs: standalone-darwin-compiler
+    needs: [snapshot-inputs, standalone-darwin-compiler]
     name: Forge / Apple Silicon proof qualification
-    if: always() && (inputs.compiler-producer-result != '' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.qualification == 'apple'))
+    if: always() && needs.snapshot-inputs.result == 'success' && (inputs.compiler-producer-result != '' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.qualification == 'apple'))
     runs-on: macos-15
     timeout-minutes: 90
     permissions:
@@ -251,6 +302,7 @@ jobs:
           key: ${{ steps.save.outputs.key }}
 
   forge-linux-material:
+    needs: snapshot-inputs
     if: github.event_name == 'workflow_dispatch' && inputs.qualification == 'linux-owner'
     uses: betsudo/forge/.github/workflows/qualify-linux.yml@2614ffd36d7e84f043095b4176eda62f986f264b
     permissions:
@@ -260,9 +312,9 @@ jobs:
       producer-source: 2614ffd36d7e84f043095b4176eda62f986f264b
 
   linux-candidate:
-    needs: [standalone-linux-compiler, forge-linux-material]
+    needs: [snapshot-inputs, standalone-linux-compiler, forge-linux-material]
     name: Forge / Linux candidate qualification
-    if: always() && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
+    if: always() && needs.snapshot-inputs.result == 'success' && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ (inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner') && 240 || 180 }}
     permissions:
@@ -301,6 +353,26 @@ jobs:
             echo "LINUX_REPORT=$RUNNER_TEMP/forge-linux-qualification"
             echo "NATIVE_REPORT=$RUNNER_TEMP/forge-linux-native"
           } >> "$GITHUB_ENV"
+      - name: Require fresh private snapshot restore destination
+        if: needs.snapshot-inputs.outputs.restore-requested == 'true'
+        run: test ! -e "$RUNNER_TEMP/forge-linux-supplied-snapshot" && test ! -L "$RUNNER_TEMP/forge-linux-supplied-snapshot"
+      - name: Restore exact supplied stopped snapshot (read-only)
+        id: native-snapshot
+        if: needs.snapshot-inputs.outputs.restore-requested == 'true'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/forge-linux-supplied-snapshot
+          key: ${{ inputs.native-snapshot-key }}
+          fail-on-cache-miss: true
+      - name: Require exact supplied cache hit
+        if: needs.snapshot-inputs.outputs.restore-requested == 'true'
+        env:
+          CACHE_HIT: ${{ steps.native-snapshot.outputs.cache-hit }}
+          MATCHED_KEY: ${{ steps.native-snapshot.outputs.cache-matched-key }}
+          EXPECTED_KEY: ${{ inputs.native-snapshot-key }}
+        run: |
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = "$EXPECTED_KEY"
       - name: Setup public Nix without private cache credentials
         uses: ./.github/actions/setup-nix-cache
         with:
@@ -437,12 +509,20 @@ jobs:
             --output "$RUNNER_TEMP/forge-linux-value-loop"
       - name: Execute the single original native owner after current finite qualification
         if: inputs.qualification == 'linux-owner'
+        env:
+          RESTORE_REQUESTED: ${{ needs.snapshot-inputs.outputs.restore-requested }}
+          EXPECTED_SNAPSHOT_ID: ${{ inputs.native-snapshot-id }}
+          EXPECTED_SNAPSHOT_PARTITION: ${{ inputs.native-snapshot-partition }}
         run: |
+          snapshot_args=()
+          if [ "$RESTORE_REQUESTED" = true ]; then
+            snapshot_args=(--snapshot "$RUNNER_TEMP/forge-linux-supplied-snapshot" --snapshot-id "$EXPECTED_SNAPSHOT_ID" --snapshot-partition "$EXPECTED_SNAPSHOT_PARTITION")
+          fi
           python3 -B tools/compact-rust-backend/run_native_ci_forge.py \
             --compiler "$COMPACTC" --qualification-dir "$LINUX_REPORT" \
             --proof-runner "$LINUX_PROOF_RUNNER" --helper "$FORGE_HELPER" \
-            --output "$RUNNER_TEMP/forge-linux-single-owner"
-      # Deliberately no actions/cache restore/save or reusable key publication.
+            --output "$RUNNER_TEMP/forge-linux-single-owner" "${snapshot_args[@]}"
+      # Supplied native snapshot restore is read-only; no save or reusable key publication.
       - name: Retain original Linux qualification diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

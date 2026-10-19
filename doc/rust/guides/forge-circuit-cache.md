@@ -374,3 +374,24 @@ This opt-in consumer boundary adds no publisher, archive format, Actions-cache w
 quota enforcement, compiler-default change or normal CI activation. The256MiB cap
 remains; global10GB budget is a separate rollout decision. Actual Linux execution of
 this new restored-owner route remains pending review and later authorization.
+
+### Read-only manual GitHub transport
+
+The optional `linux-owner` dispatch accepts `native-snapshot-key`,
+`native-snapshot-id` and `native-snapshot-partition` together. Empty inputs preserve
+cold execution; partial, malformed or other-mode tuples fail before compiler/Forge
+producers. The key must be an exact official `forge-v1-PARTITION-WORKLOAD-GENERATION`
+primary key matching the externally expected partition. No prefix/latest search is
+used. Cache miss, prefix-only match or snapshot identity/integrity refusal is fatal.
+The original finite admission, proofs, uncached smokes and native owner still run.
+
+Transport uses the existing pinned cache restore action only, into
+`$RUNNER_TEMP/forge-linux-supplied-snapshot`. A future approved publisher must use
+that same designated path spelling and compatible archive/compression version:
+GitHub cache matching includes path/compression metadata as well as the primary key.
+An arbitrary existing cache key therefore does not imply compatible material can be
+restored. No compatible Linux seed is currently published by this source change.
+The externally expected ID/partition must come from authenticated provenance, never
+from a downloaded snapshot manifest. This adds no save action, seed upload, automatic
+activation or permission to exceed the global cache budget. The existing Apple lane
+is separate and unchanged.
