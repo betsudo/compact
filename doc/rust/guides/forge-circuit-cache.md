@@ -349,3 +349,28 @@ directory or keys a build cache on every workspace Rust file. This reduces cache
 churn and storage pressure; the actual hosted time trade-off must be measured.
 The default Darwin Chez fix is already present in the AST line (`159d4bc51a`);
 the pinned compiler uses `chez = pkgs.chez` rather than the obsolete LLVM18 override.
+
+### Optional stopped snapshot for the Linux native owner
+
+`run_native_ci_forge.py` remains explicitly cold unless all three restore inputs
+are supplied: `--snapshot /absolute/existing/directory --snapshot-id SHA256
+--snapshot-partition SHA256`. Obtain those expected identities through the
+operator's authenticated transport; never derive trusted values from an untrusted
+snapshot manifest. Missing, malformed or mismatched supplied material fails without
+silent cold fallback. Fresh finite qualification, the unchanged full native script,
+independent uncached proof smokes and live source/tool postguards still execute.
+The existing official helper verifies producer, parameter scope and payload bytes
+before publishing the private store.
+
+The expected partition is compared with the fresh official key. It includes actual
+Forge bytes/platform/profile, parameter identities and selector, excluding job-local
+workspace and parameter-directory paths. Source/policy paths may change the workload
+key without changing compatibility; exact source/recipe/parameter identities still
+govern each artifact. Restored execution requires admitted hits, zero misses/errors
+and zero generation; lower-k ordinary bypasses remain. Cold execution requires
+misses instead. Verifier identities are never replaced to obtain a hit.
+
+This opt-in consumer boundary adds no publisher, archive format, Actions-cache write,
+quota enforcement, compiler-default change or normal CI activation. The256MiB cap
+remains; global10GB budget is a separate rollout decision. Actual Linux execution of
+this new restored-owner route remains pending review and later authorization.

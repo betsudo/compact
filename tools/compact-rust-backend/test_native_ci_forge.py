@@ -40,6 +40,34 @@ class OwnerTests(unittest.TestCase):
         self.assertIn('--snapshot-out', commands[1])
         self.assertNotIn('qualify_linux_native.py', ' '.join(map(str, commands[0]+commands[1])))
 
+    def test_explicit_snapshot_tuple_keeps_original_one_owner_and_smokes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary).resolve()
+            selected = owner.supplied_snapshot(path, 'a' * 64, 'b' * 64)
+            prepared = {name: Path('/actual') / name for name in ('compiler','forge','proof','params','policy_path','native_helper','zkir')}
+            commands = owner.owner_commands(prepared, Path('/private/admitted'), Path('/helper'), selected)
+            self.assertEqual(len(commands), 2)
+            self.assertEqual(commands[1][commands[1].index('--snapshot') + 1], path)
+            self.assertEqual(commands[1][commands[1].index('--snapshot-id') + 1], 'a' * 64)
+            self.assertEqual(commands[1][commands[1].index('--snapshot-partition') + 1], 'b' * 64)
+            self.assertIn('--uncached-zkir', commands[1])
+            for values in ((None, '', None), (path, None, None), (path, 'a' * 64, None), (path / 'missing', 'a' * 64, 'b' * 64), (Path('relative'), 'a' * 64, 'b' * 64), (path, 'bad', 'b' * 64)):
+                with self.assertRaises(ValueError):
+                    owner.supplied_snapshot(*values)
+            alias = path / 'alias'
+            alias.symlink_to(path, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                owner.supplied_snapshot(alias, 'a' * 64, 'b' * 64)
+
+    def test_cold_and_restored_accounting_are_distinct_and_strict(self):
+        cold = dict(requests=1, misses=1, hits=0, errors=0, generation_ms=12)
+        warm = dict(requests=1, misses=0, hits=1, errors=0, generation_ms=0)
+        owner.owner_accounting(cold, 1, False)
+        owner.owner_accounting(warm, 1, True)
+        for delta in (cold, dict(warm, errors=1), dict(warm, requests=2), dict(warm, generation_ms=1)):
+            with self.assertRaises(ValueError):
+                owner.owner_accounting(delta, 1, True)
+
     def test_subprocess_failure_propagates_without_fallback(self):
         with patch.object(owner.subprocess, 'run', side_effect=subprocess.CalledProcessError(7, ['owner'])) as called:
             with self.assertRaises(subprocess.CalledProcessError):

@@ -412,6 +412,19 @@ def exercise_native(invocation, directory):
     check_tools(invocation)
 
 
+def snapshot_expectation(args, key):
+    expected_id = getattr(args, 'snapshot_id', None)
+    expected_partition = getattr(args, 'snapshot_partition', None)
+    require((expected_id is None) == (expected_partition is None), 'snapshot ID and partition require both trusted expectations')
+    if expected_id is None:
+        return []
+    require(all(isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value)
+                for value in (expected_id, expected_partition)), 'invalid expected snapshot identity')
+    require(args.snapshot.is_dir() and not args.snapshot.is_symlink(), 'supplied snapshot must exist; cold fallback is forbidden')
+    require(key['partition'] == expected_partition, 'supplied snapshot partition differs from current planned tools/parameters')
+    return ['--expected-id', expected_id]
+
+
 def run(args):
     directory = args.plan.resolve(strict=True)
     invocation = load(directory / 'invocation.json')
@@ -424,6 +437,7 @@ def run(args):
     if args.snapshot_out:
         require(not args.snapshot_out.resolve().is_relative_to((directory / 'cache').resolve()),
                 'snapshot output must be outside cache')
+    expected_snapshot = snapshot_expectation(args, load(directory / 'key.json'))
     # Exclusive marker refuses reruns and stale test verdict reuse, including failed attempts.
     write(directory / 'run-started.json', dict(started_ns=time.time_ns()))
     planned_tools = json.loads(load(directory / 'key.json')['workload'])['tools']
@@ -433,8 +447,10 @@ def run(args):
     check_tools(invocation)
     parameters(Path(invocation['params_dir']), q)
     common = ['--key', directory / 'key.json', '--cache-dir', directory / 'cache']
-    helper(invocation, directory, 'restore', 'restore', *common,
-           '--snapshot', args.snapshot, '--max-bytes', args.max_bytes)
+    restored = helper(invocation, directory, 'restore', 'restore', *common,
+           '--snapshot', args.snapshot, '--max-bytes', args.max_bytes, *expected_snapshot)
+    if expected_snapshot:
+        require(restored.get('restored') is True, 'supplied snapshot was not restored; cold fallback is forbidden')
     helper(invocation, directory, 'baseline', 'baseline', *common, '--output', directory / 'baseline.json')
     try:
         if invocation.get('native'):
@@ -496,6 +512,8 @@ def main(argv=None):
     p = subs.add_parser('run')
     p.add_argument('--plan', type=Path, required=True)
     p.add_argument('--snapshot', type=Path, required=True)
+    p.add_argument('--snapshot-id')
+    p.add_argument('--snapshot-partition')
     p.add_argument('--uncached-zkir', type=Path)
     p.add_argument('--snapshot-out', type=Path)
     p.add_argument('--max-bytes', type=int)

@@ -38,19 +38,40 @@ def execute(command, env, *, capture=False):
     return result.stdout.strip() if capture else None
 
 
-def owner_commands(prepared, output, helper):
+def owner_commands(prepared, output, helper, snapshot=None):
     plan = output / "native-plan"
     common = [sys.executable, "-B", ROOT / "tools/compact-rust-backend/forge_ci.py"]
+    expected = ["--snapshot-id", snapshot["id"], "--snapshot-partition", snapshot["partition"]] if snapshot else []
     return [
         [*common, "plan", "--compiler", prepared["compiler"], "--forge", prepared["forge"],
          "--helper", helper, "--proof-runner", prepared["proof"], "--params-dir", prepared["params"],
          "--output", plan, "--generation", "linux-native-owner-experiment",
          "--native-script", ROOT / "tools/compact-rust-backend/check_native_ci.sh",
          "--native-policy", prepared["policy_path"], "--native-helper", prepared["native_helper"]],
-        [*common, "run", "--plan", plan, "--snapshot", output / "absent-snapshot",
+        [*common, "run", "--plan", plan, "--snapshot", snapshot["path"] if snapshot else output / "absent-snapshot",
          "--uncached-zkir", prepared["zkir"], "--max-bytes", 268435456,
-         "--snapshot-out", output / "stopped-private-snapshot"],
+         "--snapshot-out", output / "stopped-private-snapshot", *expected],
     ]
+
+
+def supplied_snapshot(path, expected_id, partition):
+    values = (path, expected_id, partition)
+    native.require(all(value is None for value in values) or all(value is not None for value in values), 'snapshot path, expected ID and expected partition require all three')
+    if all(value is None for value in values):
+        return None
+    native.require(path.is_absolute() and path.is_dir() and not path.is_symlink(), 'explicit existing absolute snapshot directory required')
+    import re
+    native.require(all(isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value)
+                       for value in (expected_id, partition)), 'invalid externally expected snapshot identity')
+    return dict(path=path.resolve(strict=True), id=expected_id, partition=partition)
+
+
+def owner_accounting(delta, count, restored):
+    native.require(delta['requests'] == count and delta['errors'] == 0
+                   and delta['hits'] == (count if restored else 0)
+                   and delta['misses'] == (0 if restored else count), 'single-owner acquisition accounting changed')
+    if restored:
+        native.require(delta['generation_ms'] == 0, 'restored owner unexpectedly generated cache artifacts')
 
 
 def main(argv=None):
@@ -59,7 +80,11 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     for name in ("qualification-dir", "proof-runner", "helper"):
         parser.add_argument("--" + name, type=Path)
+    parser.add_argument("--snapshot", type=Path)
+    parser.add_argument("--snapshot-id")
+    parser.add_argument("--snapshot-partition")
     args = parser.parse_args(argv)
+    snapshot = supplied_snapshot(args.snapshot, args.snapshot_id, args.snapshot_partition)
     selected = (args.qualification_dir, args.proof_runner, args.helper)
     native.require(not any(selected) or all(selected), "qualified input requires directory, proof runner and helper together")
     native.require(platform.system() == "Linux" and platform.machine() == "x86_64", "actual x86_64 Linux required")
@@ -77,7 +102,7 @@ def main(argv=None):
         # Reuse the same admission/owner code, never repeat either expensive phase.
         return run_qualified(compiler, args.proof_runner.resolve(strict=True),
             args.qualification_dir.resolve(strict=True), args.helper.resolve(strict=True), output,
-            ROOT / "tools/compact-rust-backend/forge_native_qualification.json", env, wrapper_sha)
+            ROOT / "tools/compact-rust-backend/forge_native_qualification.json", env, wrapper_sha, snapshot)
     metadata = json.loads(execute(["nix", "flake", "metadata", PUBLIC, "--json"], env, capture=True))
     forge_source = Path(metadata["path"])
     rust_expr = ('let f = builtins.getFlake "' + PUBLIC + '"; '
@@ -118,17 +143,17 @@ def main(argv=None):
     admitted = output / "admitted"
     admitted.mkdir()
     helper = forge / "bin/midnight-zkir-forge-ci"
-    return run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha)
+    return run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha, snapshot)
 
 
-def run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha):
+def run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wrapper_sha, snapshot=None):
     """Admit fresh finite receipts and execute one unchanged native owner only."""
     config = native.configuration(native.read(config_path))
     prepared = native.prepare_native(SimpleNamespace(qualification_dir=qdir, config=config_path, helper=helper, output=admitted))
     native.require(prepared["compiler"] == compiler and prepared["proof"] == proof,
                    "finite qualification is not bound to current job tools")
     # Only one full owner; finite qualifier above remains its original five small laps.
-    for command in owner_commands(prepared, admitted, helper):
+    for command in owner_commands(prepared, admitted, helper, snapshot):
         prepared["live"]()
         execute(command, {**prepared["env"], **{k: env[k] for k in ("MIDNIGHT_LEDGER_TEST_STATIC_DIR",)}})
         prepared["live"]()
@@ -136,19 +161,18 @@ def run_qualified(compiler, proof, qdir, helper, admitted, config_path, env, wra
     native.require(native.read(plan / "run.json")["passed"] is True, "native owner incomplete")
     command = native.read(plan / "native-script.command.json")
     native.require(command["exit_code"] == 0, "original native owner failed")
-    native.acquisitions(native.printed_acquisitions(command), config, "forge-miss")
+    native.acquisitions(native.printed_acquisitions(command), config, "forge-hit" if snapshot else "forge-miss")
     native.rust_cohorts(command["stdout"] + "\n" + command["stderr"])
     native.finite.checked_lap(native.read(plan / "uncached-report.json"), None)
     delta = native.read(plan / "cache-report.json")["delta"]
     count = sum(config["expected_cached_k"].values())
-    native.require(delta["requests"] == count and delta["misses"] == count and delta["hits"] == 0
-                   and delta["errors"] == 0, "single-owner acquisition accounting changed")
-    snapshot = native.read(plan / "snapshot.command.json")
-    native.require(snapshot["exit_code"] == 0 and native.adapter.read_json(snapshot["stdout"])["bytes"] <= config["max_bytes"],
+    owner_accounting(delta, count, snapshot is not None)
+    stopped = native.read(plan / "snapshot.command.json")
+    native.require(stopped["exit_code"] == 0 and native.adapter.read_json(stopped["stdout"])["bytes"] <= config["max_bytes"],
                    "private snapshot exceeds capacity")
     prepared["live"]()
     native.require(native.adapter.digest(Path(__file__)) == wrapper_sha, "owner wrapper changed during execution")
-    print("Single original native owner completed; private stopped snapshot only, no reusable publication")
+    print("Single original native owner completed (" + ("verified restored" if snapshot else "explicit cold") + "); private stopped snapshot only, no reusable publication")
     return 0
 
 

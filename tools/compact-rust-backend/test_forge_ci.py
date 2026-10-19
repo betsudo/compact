@@ -218,6 +218,44 @@ class ForgeCiTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             ci.run(self.run_args(directory))
 
+    def test_expected_snapshot_identity_is_external_and_fail_closed(self):
+        from types import SimpleNamespace
+        snapshot = self.root / 'supplied-snapshot'
+        snapshot.mkdir()
+        args = SimpleNamespace(snapshot=snapshot, snapshot_id='a' * 64, snapshot_partition='b' * 64)
+        self.assertEqual(ci.snapshot_expectation(args, dict(partition='b' * 64)), ['--expected-id', 'a' * 64])
+        for field, value in (('snapshot_partition', 'c' * 64), ('snapshot_id', None), ('snapshot_id', 'invalid'), ('snapshot', self.root / 'missing')):
+            changed = SimpleNamespace(**vars(args))
+            setattr(changed, field, value)
+            with self.assertRaises(ValueError):
+                ci.snapshot_expectation(changed, dict(partition='b' * 64))
+        alias = self.root / 'snapshot-alias'
+        alias.symlink_to(snapshot, target_is_directory=True)
+        args.snapshot = alias
+        with self.assertRaises(ValueError):
+            ci.snapshot_expectation(args, dict(partition='b' * 64))
+
+    def test_expected_snapshot_id_is_forwarded_and_miss_cannot_become_cold(self):
+        directory = self.make_plan()
+        key = ci.load(directory / 'key.json')
+        key['partition'] = 'b' * 64
+        (directory / 'key.json').write_text(json.dumps(key))
+        snapshot = self.root / 'supplied-snapshot'
+        snapshot.mkdir()
+        args = self.run_args(directory, snapshot_id='a' * 64, snapshot_partition='b' * 64)
+        args.snapshot = snapshot
+        original = ci.helper
+        def refusing_miss(*arguments):
+            result = original(*arguments)
+            return dict(restored=False) if arguments[2] == 'restore' else result
+        with patch.object(ci, 'helper', side_effect=refusing_miss):
+            with self.assertRaisesRegex(ValueError, 'cold fallback is forbidden'):
+                ci.run(args)
+        command = self.commands['restore']
+        self.assertEqual(command[command.index('--expected-id') + 1], 'a' * 64)
+        self.assertNotIn('baseline', self.phases)
+        self.assertNotIn('proof', self.phases)
+
     def test_malformed_snapshot_stops_before_baseline_and_proof(self):
         directory = self.make_plan()
         self.refuse_restore = True
