@@ -22,7 +22,7 @@ import time
 import compiler_closure as closure
 
 SOURCE = 'd64f52db7239b0ca4891fb0316dca6adb54a5db5'
-PRODUCER = '6098556ce269695e6ce95e76f3b8e6bcdf16832d'
+PRODUCER = '2614ffd36d7e84f043095b4176eda62f986f264b'
 REF = 'github:betsudo/forge/' + SOURCE
 FILES = {'closure.nar', 'store-paths.json', 'forge-derivation.json', 'flake.json', 'rustc-verbose.txt'}
 LIMIT = 2147483648
