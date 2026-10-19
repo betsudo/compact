@@ -83,7 +83,7 @@ class OwnerTests(unittest.TestCase):
 
     def test_linux_owner_workflow_is_linux_only_and_preserves_two_lap_qualification(self):
         workflow = (owner.ROOT/'.github/workflows/forge-local-ci.yml').read_text()
-        apple = workflow.split('  proof:',1)[1].split('  linux-candidate:',1)[0]
+        apple = workflow.split('  proof:',1)[1].split('  forge-linux-material:',1)[0]
         self.assertNotIn("inputs.qualification == 'linux-owner'", apple)
         self.assertIn("if: inputs.qualification == 'linux-native'", workflow)
         self.assertIn("if: inputs.qualification == 'linux-owner'", workflow)

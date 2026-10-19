@@ -140,3 +140,27 @@ remove inherited full-tree header debt or replace ordinary required checks.
 Current-head hosted execution and value measurements remain pending. Push routing
 now includes producer/caller/handoff scripts so a change to those dependencies
 cannot silently miss trusted-branch Forge qualification.
+
+### Linux owner material trial
+
+The explicit `linux-owner` dispatch also consumes original Forge Nix material from
+an immutable pinned Forge reusable producer. It does not install the portable
+release payload or reinterpret it as the previously qualified Nix executable.
+The artifact contains the full original runtime, independent Rust compiler and
+source closure, not circuit keys, parameters, proofs or passing test outcomes.
+
+The consumer authenticates the same caller repository/run and original producer
+attempt, immutable artifact ID/name and GitHub service ZIP digest before reading
+its fixed six-file roster. It checks file sizes/hashes and independently evaluates
+public `d64f52db7239b0ca4891fb0316dca6adb54a5db5` package/Rust/source/derivation
+identities before importing. Complete NAR/requisite/binary identities and the
+existing source/derivation checks remain mandatory. A mismatch fails; the owner
+route does not rebuild Forge as a fallback. Other Linux qualification modes keep
+their original provisioning path.
+
+Fresh finite consumer qualification still runs after material import. The trial
+then measures the balanced complete larger-contract loop and runs the original
+native owner once with its independent uncached proof controls. Diagnostic JSON
+is retained; no reusable key snapshot is published. Material producer/import,
+contract-key reuse, and actual proof execution are separate measured phases.
+Source tests alone establish neither runtime handoff success nor useful speedup.

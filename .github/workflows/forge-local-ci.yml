@@ -250,8 +250,17 @@ jobs:
           path: ${{ env.SAVE_SNAPSHOT }}
           key: ${{ steps.save.outputs.key }}
 
+  forge-linux-material:
+    if: github.event_name == 'workflow_dispatch' && inputs.qualification == 'linux-owner'
+    uses: betsudo/forge/.github/workflows/qualify-linux.yml@7118b3e80ef4ac8abe7285fd948c59e706166a68
+    permissions:
+      contents: read
+    with:
+      material-only: true
+      producer-source: 7118b3e80ef4ac8abe7285fd948c59e706166a68
+
   linux-candidate:
-    needs: standalone-linux-compiler
+    needs: [standalone-linux-compiler, forge-linux-material]
     name: Forge / Linux candidate qualification
     if: always() && github.event_name == 'workflow_dispatch' && (inputs.qualification == 'linux-candidate' || inputs.qualification == 'linux-native' || inputs.qualification == 'linux-owner')
     runs-on: ubuntu-24.04
@@ -327,7 +336,36 @@ jobs:
             --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+      - name: Import authenticated same-run original Forge material
+        if: inputs.qualification == 'linux-owner'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MATERIAL_RESULT: ${{ needs.forge-linux-material.result }}
+          MATERIAL_ID: ${{ needs.forge-linux-material.outputs.artifact-id }}
+          MATERIAL_ATTEMPT: ${{ needs.forge-linux-material.outputs.producer-attempt }}
+        run: |
+          test "$MATERIAL_RESULT" = success
+          test -n "$MATERIAL_ID"
+          test -n "$MATERIAL_ATTEMPT"
+          gh api "repos/$REPOSITORY/actions/artifacts/$MATERIAL_ID/zip" > "$RUNNER_TEMP/forge-material.zip"
+          python3 -B .github/scripts/forge_material.py \
+            --repository "$REPOSITORY" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$MATERIAL_ATTEMPT" --artifact-id "$MATERIAL_ID" \
+            --artifact-zip "$RUNNER_TEMP/forge-material.zip" --directory "$RUNNER_TEMP/imported-forge-material" \
+            --github-env "$GITHUB_ENV" > "$LINUX_PROVISION/forge-material-import.json"
+          cp "$RUNNER_TEMP/imported-forge-material/forge-derivation.json" "$LINUX_PROVISION/forge-derivation.json"
+          cp "$RUNNER_TEMP/imported-forge-material/material.json" "$LINUX_PROVISION/forge-material-manifest.json"
+          cp "$RUNNER_TEMP/imported-forge-material/store-paths.json" "$LINUX_PROVISION/forge-material-store-paths.json"
+          cp "$RUNNER_TEMP/imported-forge-material/flake.json" "$LINUX_PROVISION/forge-flake.json"
+      - name: Resolve official ZKIR for the material consumer
+        if: inputs.qualification == 'linux-owner'
+        run: |
+          zkir=$(nix build --impure --expr '(builtins.getFlake (toString ./.)).inputs.zkir.packages.x86_64-linux.zkir' --no-link --print-out-paths --max-jobs 1 --cores 2)
+          echo "ZKIR=$zkir/bin/zkir" >> "$GITHUB_ENV"
+          echo "$zkir/bin" >> "$GITHUB_PATH"
       - name: Build pinned public Forge, independent Rust compiler and current Compact
+        if: inputs.qualification != 'linux-owner'
         run: |
           nix flake metadata "$FORGE_REF" --json > "$LINUX_PROVISION/forge-flake.json"
           forge_source=$(python3 -c 'import json,os; print(json.load(open(os.environ["LINUX_PROVISION"]+"/forge-flake.json"))["path"])')
@@ -390,6 +428,13 @@ jobs:
             --qualification-dir "$LINUX_REPORT" \
             --config tools/compact-rust-backend/forge_native_qualification.json \
             --helper "$FORGE_HELPER" --output "$NATIVE_REPORT"
+      - name: Measure balanced complete larger contract loops
+        if: inputs.qualification == 'linux-owner'
+        run: |
+          python3 -B tools/compact-rust-backend/compare_forge_contract_loop.py \
+            --compiler "$COMPACTC" --proof-runner "$LINUX_PROOF_RUNNER" --forge "$FORGE" \
+            --params-dir "$MIDNIGHT_PP" --qualification-dir "$LINUX_REPORT" --helper "$FORGE_HELPER" \
+            --output "$RUNNER_TEMP/forge-linux-value-loop"
       - name: Execute the single original native owner after current finite qualification
         if: inputs.qualification == 'linux-owner'
         run: |
@@ -407,6 +452,7 @@ jobs:
             ${{ runner.temp }}/forge-linux-provision/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.log
+            ${{ runner.temp }}/forge-linux-value-loop/*.json
             ${{ runner.temp }}/forge-linux-single-owner/*.json
             ${{ runner.temp }}/forge-linux-single-owner/native-plan/*.json
             ${{ runner.temp }}/forge-linux-native/*.json
