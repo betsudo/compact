@@ -119,6 +119,50 @@ freeze; a Forge hit never replaces that qualification.
 
 ## Fresh key-generation qualification
 
+### Shared compiler and generated JavaScript
+
+The existing small-fixture harness can emit both targets with `--targets both`.
+That flag alone still runs the original Rust proof consumers. To also execute
+the generated JavaScript Counter fixture, provide the absolute directory of the
+matching `@midnight-ntwrk/compact-runtime` package:
+
+```sh
+python3 -B tools/compact-rust-backend/check_forge_circuit_cache.py \
+  --compiler "$COMPACTC" --proof-runner "$PROOF_RUNNER" --forge "$FORGE" \
+  --params-dir "$MIDNIGHT_PP" --cache-dir "$PRIVATE_STORE" \
+  --compiler-cache-policy "$QUALIFIED_POLICY" --targets both \
+  --js-runtime-root "$JS_RUNTIME_PACKAGE" --report "$NEW_REPORT"
+```
+
+Each invocation creates fresh private fixtures. JavaScript executes both Counter
+branches, asserts the independently expected result/state and argument refusal,
+and emits official serialized preimages plus its actual VM transcript. The Rust
+consumer decodes those preimages and checks value equality against official
+replay/partitioning of the same JS transcript, then proves, verifies and
+ledger-applies that JS-derived call. It does not
+recompute the circuit with the generated Rust implementation. The unchanged
+Rust constructor is used only as an independent initial-state baseline.
+Node and selected
+runtime implementation hashes are frozen before execution and rechecked after
+proofs, a private swapped-preimage refusal and corrupt-verifier controls. Node
+loader overrides are refused, and the actual loaded runtime must match the
+selected package path. Original Rust proofs remain active.
+
+Use the same arguments with a fresh report for warm and verified-restored laps.
+For independent generation, replace `--compiler-cache-policy` with
+`--uncached-zkir "$ZKIR"`. The mutually exclusive
+`--compiler-fallback-policy "$EXPLICIT_FALLBACK_POLICY"` qualifies an actually
+missing provider with force selection and explicit `unavailable: keygen`; it
+requires the ordinary-generation route rather than accepting an automatic bypass.
+It does not query an unused provider for statistics.
+
+Local Ledger8.1.3 qualification covers this complete witness-free Counter source
+and its two branches in cold/warm/restored/uncached/missing-provider laps. The
+Let-return fixture remains Rust-only. The shared unbalanced transaction smoke
+policy is unchanged; this is not wallet authorization, general TS conformance,
+or hosted JavaScript qualification. Matching version names alone are insufficient:
+the actual npm runtime/preimage and pinned Rust consumer must pass together.
+
 Keep an explicit uncached lap:
 
 ```sh
