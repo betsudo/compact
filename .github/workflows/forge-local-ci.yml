@@ -249,7 +249,11 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
         with:
           toolchain: 1.99.0
-          components: rustfmt
+          components: rustfmt, clippy
+      - name: Verify consumer formatter and Clippy before provisioning
+        run: |
+          rustfmt --version
+          cargo clippy --version
       - name: Install Python for qualification
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
