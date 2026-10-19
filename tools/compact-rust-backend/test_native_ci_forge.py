@@ -106,7 +106,7 @@ class AdmissionTests(unittest.TestCase):
             path.mkdir()
         tools = {}
         for name in ('compiler', 'proof_runner', 'forge', 'zkir', 'helper', 'compact-zkir-cache', 'source'):
-            tools[name] = base/name
+            tools[name] = base/('midnight-zkir-forge-ci' if name == 'helper' else name)
             tools[name].write_text('actual current '+name)
         hashes = {name:native.adapter.digest(path) for name,path in tools.items()}
         config = json.loads((owner.ROOT/'tools/compact-rust-backend/forge_native_qualification.json').read_text())
@@ -136,7 +136,7 @@ class AdmissionTests(unittest.TestCase):
         return SimpleNamespace(qualification_dir=qdir, config=config_path, helper=tools['helper'], output=output), tools
 
     def test_current_finite_admission_and_live_mutation_controls(self):
-        for changed in (None, 'stale', 'tool', 'source', 'policy', 'finite-artifact'):
+        for changed in (None, 'stale', 'tool', 'source', 'policy', 'finite-artifact', 'wrong-helper'):
             with self.subTest(changed=changed), tempfile.TemporaryDirectory() as temporary:
                 args, tools = self.fixture(Path(temporary).resolve())
                 if changed == 'stale':
@@ -144,6 +144,9 @@ class AdmissionTests(unittest.TestCase):
                     value = json.loads(path.read_text()); value['passed'] = False; path.write_text(json.dumps(value))
                 elif changed in ('tool','source'):
                     tools['compiler' if changed == 'tool' else 'source'].write_text('live mutation')
+                elif changed == 'wrong-helper':
+                    args.helper = Path(temporary)/'unqualified-helper'
+                    args.helper.write_text('different current helper bytes')
                 elif changed == 'policy':
                     path = args.qualification_dir/'force-policy.json'
                     value = json.loads(path.read_text()); value['profile'] = 'unqualified'; path.write_text(json.dumps(value))

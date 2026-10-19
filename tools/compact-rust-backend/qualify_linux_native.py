@@ -126,6 +126,8 @@ def prepare_native(args):
         return Path(command["argv"][command["argv"].index(name) + 1]).resolve(strict=True)
     compiler, proof = option("--compiler"), option("--proof-runner")
     forge, zkir = Path(force["forge"]["path"]), Path(force["zkir"]["path"])
+    require(args.helper.resolve(strict=True) == forge.with_name("midnight-zkir-forge-ci").resolve(strict=True),
+            "snapshot helper must belong to the finite-qualified Forge output")
     params = Path(force["parameter_directory"])
     native_helper = compiler.with_name("compact-zkir-cache")
     for protected in (ROOT, params.resolve(strict=True), qdir):
