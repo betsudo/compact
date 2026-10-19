@@ -102,6 +102,61 @@ def rust_cohorts(text):
             "scope": "printed Rust cohorts and names only; not inferred proof coverage"}
 
 
+def prepare_native(args):
+    """Shared current finite/tool/source admission; never executes a full native lap."""
+    qdir = args.qualification_dir.resolve(strict=True)
+    config = configuration(read(args.config))
+    qualified, force = read(qdir / "qualification.json"), read(qdir / "force-policy.json")
+    require(qualified["passed"] is True and qualified["public_source"] == finite.PUBLIC
+            and qualified["expected_build_fingerprint"] == FINGERPRINT == force["build_fingerprint"], "current finite Linux identity qualification required")
+    require(force["selection"] == "force" and force["profile"] == adapter.PROFILE
+            and force["ledger_revision"] == adapter.REVISION and force["serialization"] == adapter.SERIALIZATION
+            and force["keygen_recipe"] == "library-keygen/default-options/no-rng" and force["unavailable"] == "refuse", "finite policy identity mismatch")
+    require(qualified["source_manifest_sha256"] == adapter.digest(Path(__file__).with_name("forge_linux_source.json")), "independent source manifest changed since finite qualification")
+    finite_maps = []
+    for label, route in (("cold", "forge-miss"), ("warm", "forge-hit"), ("restored", "forge-hit"), ("auto", "auto-bypass"), ("uncached", None)):
+        lap = read(qdir / (label + ".json"))
+        require(lap["compiler_sha256"] == qualified["tools"]["compiler"] and lap["proof_runner_sha256"] == qualified["tools"]["proof_runner"], "finite lap tool mismatch")
+        finite_maps.append(finite.checked_lap(lap, route))
+    require(all(row == finite_maps[0] for row in finite_maps), "finite qualification artifact identities differ")
+    command = read(qdir / "cold.command.json")
+    require(command["exit_code"] == 0, "finite cold command failed")
+    def option(name):
+        require(command["argv"].count(name) == 1, "ambiguous finite tool option")
+        return Path(command["argv"][command["argv"].index(name) + 1]).resolve(strict=True)
+    compiler, proof = option("--compiler"), option("--proof-runner")
+    forge, zkir = Path(force["forge"]["path"]), Path(force["zkir"]["path"])
+    params = Path(force["parameter_directory"])
+    native_helper = compiler.with_name("compact-zkir-cache")
+    for protected in (ROOT, params.resolve(strict=True), qdir):
+        require(not args.output.resolve().is_relative_to(protected.resolve()), "output must not overlap source, finite qualification or parameters")
+    for name, path in (("compiler", compiler), ("proof_runner", proof), ("forge", forge), ("zkir", zkir)):
+        require(adapter.digest(path) == qualified["tools"][name], "current tool differs from finite qualification: " + name)
+    require(force["forge"]["sha256"] == qualified["tools"]["forge"] and force["zkir"]["sha256"] == qualified["tools"]["zkir"], "finite policy tool mismatch")
+    for k, sha in force["parameters"].items():
+        require(config["parameters"].get(k) == sha, "finite parameter differs from full cohort")
+    for k, sha in config["parameters"].items():
+        require(adapter.digest(params / ("bls_midnight_2p" + k)) == sha, "full parameter bytes mismatch")
+    policy = {**force, "selection": "auto", "tiny_max_k": config["tiny_max_k"], "parameters": config["parameters"]}
+    policy_path = args.output / "auto-policy.json"
+    policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n")
+    premises = {str(Path(path).resolve(strict=True)): sha for path, sha in qualified["consumer_inputs"].items()}
+    for label in ("cold", "warm", "restored", "auto", "uncached"):
+        path = qdir / (label + ".json")
+        premises[str(path.resolve(strict=True))] = adapter.digest(path)
+    for path in [args.config, args.helper, native_helper, policy_path, qdir / "qualification.json", qdir / "force-policy.json", Path(__file__), *[compiler, proof, forge, zkir], *[params / ("bls_midnight_2p" + k) for k in config["parameters"]]]:
+        premises[str(path.resolve(strict=True))] = adapter.digest(path)
+    def live():
+        for path, sha in premises.items():
+            require(adapter.digest(Path(path)) == sha, "live qualification premise changed: " + path)
+    live()
+    env = dict(os.environ, MIDNIGHT_PP=str(params))
+    env.pop("COMPACTC_SCHEME", None)
+    env.pop("COMPACT_ZKIR_SHIM", None)
+    env["PATH"] = str(zkir.parent) + os.pathsep + env.get("PATH", "")
+    return dict(config=config, compiler=compiler, proof=proof, forge=forge, zkir=zkir, params=params, native_helper=native_helper, policy=policy, policy_path=policy_path, premises=premises, live=live, env=env)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("qualification-dir", "config", "helper", "output"):
@@ -133,56 +188,9 @@ def main(argv=None):
                     print(stream.read().decode("utf-8", errors="replace"), file=sys.stderr)
         require(result.returncode == 0, "command failed: " + label)
     try:
-        qdir = args.qualification_dir.resolve(strict=True)
-        config = configuration(read(args.config))
-        qualified, force = read(qdir / "qualification.json"), read(qdir / "force-policy.json")
-        require(qualified["passed"] is True and qualified["public_source"] == finite.PUBLIC
-                and qualified["expected_build_fingerprint"] == FINGERPRINT == force["build_fingerprint"], "current finite Linux identity qualification required")
-        require(force["selection"] == "force" and force["profile"] == adapter.PROFILE
-                and force["ledger_revision"] == adapter.REVISION and force["serialization"] == adapter.SERIALIZATION
-                and force["keygen_recipe"] == "library-keygen/default-options/no-rng" and force["unavailable"] == "refuse", "finite policy identity mismatch")
-        require(qualified["source_manifest_sha256"] == adapter.digest(Path(__file__).with_name("forge_linux_source.json")), "independent source manifest changed since finite qualification")
-        finite_maps = []
-        for label, route in (("cold", "forge-miss"), ("warm", "forge-hit"), ("restored", "forge-hit"), ("auto", "auto-bypass"), ("uncached", None)):
-            lap = read(qdir / (label + ".json"))
-            require(lap["compiler_sha256"] == qualified["tools"]["compiler"] and lap["proof_runner_sha256"] == qualified["tools"]["proof_runner"], "finite lap tool mismatch")
-            finite_maps.append(finite.checked_lap(lap, route))
-        require(all(row == finite_maps[0] for row in finite_maps), "finite qualification artifact identities differ")
-        command = read(qdir / "cold.command.json")
-        require(command["exit_code"] == 0, "finite cold command failed")
-        def option(name):
-            require(command["argv"].count(name) == 1, "ambiguous finite tool option")
-            return Path(command["argv"][command["argv"].index(name) + 1]).resolve(strict=True)
-        compiler, proof = option("--compiler"), option("--proof-runner")
-        forge, zkir = Path(force["forge"]["path"]), Path(force["zkir"]["path"])
-        params = Path(force["parameter_directory"])
-        native_helper = compiler.with_name("compact-zkir-cache")
-        for protected in (ROOT, params.resolve(strict=True), qdir):
-            require(not args.output.resolve().is_relative_to(protected.resolve()), "output must not overlap source, finite qualification or parameters")
-        for name, path in (("compiler", compiler), ("proof_runner", proof), ("forge", forge), ("zkir", zkir)):
-            require(adapter.digest(path) == qualified["tools"][name], "current tool differs from finite qualification: " + name)
-        require(force["forge"]["sha256"] == qualified["tools"]["forge"] and force["zkir"]["sha256"] == qualified["tools"]["zkir"], "finite policy tool mismatch")
-        for k, sha in force["parameters"].items():
-            require(config["parameters"].get(k) == sha, "finite parameter differs from full cohort")
-        for k, sha in config["parameters"].items():
-            require(adapter.digest(params / ("bls_midnight_2p" + k)) == sha, "full parameter bytes mismatch")
-        policy = {**force, "selection": "auto", "tiny_max_k": config["tiny_max_k"], "parameters": config["parameters"]}
-        policy_path = args.output / "auto-policy.json"
-        policy_path.write_text(json.dumps(policy, sort_keys=True) + "\n")
-        premises = {str(Path(path).resolve(strict=True)): sha for path, sha in qualified["consumer_inputs"].items()}
-        for label in ("cold", "warm", "restored", "auto", "uncached"):
-            path = qdir / (label + ".json")
-            premises[str(path.resolve(strict=True))] = adapter.digest(path)
-        for path in [args.config, args.helper, native_helper, policy_path, qdir / "qualification.json", qdir / "force-policy.json", Path(__file__), *[compiler, proof, forge, zkir], *[params / ("bls_midnight_2p" + k) for k in config["parameters"]]]:
-            premises[str(path.resolve(strict=True))] = adapter.digest(path)
-        def live():
-            for path, sha in premises.items():
-                require(adapter.digest(Path(path)) == sha, "live qualification premise changed: " + path)
-        live()
-        env = dict(os.environ, MIDNIGHT_PP=str(params))
-        env.pop("COMPACTC_SCHEME", None)
-        env.pop("COMPACT_ZKIR_SHIM", None)
-        env["PATH"] = str(zkir.parent) + os.pathsep + env.get("PATH", "")
+        prepared = prepare_native(args)
+        config, compiler, proof, forge, zkir, params, native_helper, policy, policy_path, premises, live, env = (
+            prepared[name] for name in ("config", "compiler", "proof", "forge", "zkir", "params", "native_helper", "policy", "policy_path", "premises", "live", "env"))
         snapshot = args.output / "snapshot"
         identities, cohorts = {}, {}
         for label in ("cold", "restored"):

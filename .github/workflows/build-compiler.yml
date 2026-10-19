@@ -3,6 +3,12 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
+    inputs:
+      native-forge-experiment:
+        description: Local-review-only experimental Linux owner route; no reusable cache publication
+        type: boolean
+        default: false
+        required: false
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -505,7 +511,32 @@ jobs:
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Check and test native Rust backend
+        if: github.event_name != 'workflow_dispatch' || !inputs.native-forge-experiment
         run: bash tools/compact-rust-backend/check_native_ci.sh
+
+      - name: Explicit experimental Forge route around the single original native owner
+        if: github.event_name == 'workflow_dispatch' && inputs.native-forge-experiment
+        run: |
+          python3 -B tools/compact-rust-backend/run_native_ci_forge.py \
+            --compiler "$COMPACTC" --output "$RUNNER_TEMP/native-forge-owner-experiment"
+
+      - name: Retain experimental native-owner diagnostics
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.native-forge-experiment
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-forge-owner-diagnostics-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/native-forge-owner-experiment/forge-derivation.json
+            ${{ runner.temp }}/native-forge-owner-experiment/cargo-metadata.json
+            ${{ runner.temp }}/native-forge-owner-experiment/ledger-provenance.json
+            ${{ runner.temp }}/native-forge-owner-experiment/*-material.json
+            ${{ runner.temp }}/native-forge-owner-experiment/finite-current/*.json
+            ${{ runner.temp }}/native-forge-owner-experiment/admitted/auto-policy.json
+            ${{ runner.temp }}/native-forge-owner-experiment/admitted/native-plan/*.json
+          if-no-files-found: warn
+          retention-days: 7
+          # No recursive directory upload: excludes parameters, cache objects,
+          # exports, stopped snapshots and the private proof executable.
 
       - name: Rehearse Rust runtime packages
         run: |

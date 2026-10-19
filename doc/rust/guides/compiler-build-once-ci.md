@@ -92,3 +92,32 @@ and transfer costs need measurement before adoption.
 Release workflows retain their separate portable profiles and publication rules.
 Paused optional debugging/fuzzing workflows remain independent and are not enabled
 or migrated by this candidate.
+
+## Explicit Linux native-owner experiment
+
+A separate manual input, `native-forge-experiment`, defaults to false. The normal
+`Check and test native Rust backend` step retains its direct
+`bash tools/compact-rust-backend/check_native_ci.sh` command. Selecting the input
+runs that same owner once through the existing `forge_ci.py` plan/run lifecycle;
+it does not run the two-full-lap qualification driver or duplicate the direct
+step. Apple gains no full native suite.
+
+The experimental wrapper provisions the existing public d64 Forge source and
+independently pinned Rust derivation, preserves a private stable proof runner,
+authenticates official ledger fixtures and prepares/verifies all 13 declared SRS
+sizes plus built-in material. It runs the original five small finite qualification
+laps against the current actual compiler/tools/source/parameters before deriving
+any native policy. The extracted admission checks are shared with the unchanged
+two-full-lap qualification owner rather than weakening that qualification.
+
+Its capacity experiment explicitly selects cutoff **16**, not compiler default
+**8**. The stopped private snapshot is capped at 256 MiB; no Actions cache restore,
+save or reusable snapshot publication is added. Full native gates, current
+source/tool postchecks and independent uncached two-fixture proof/corruption
+qualification remain mandatory. Failures are fatal without a direct fallback.
+
+This integration is local source work only. Current-head Linux hosted
+qualification, same-head compiler handoff and wrapped full-owner acceptance remain
+pending. Earlier accepted Linux receipts retain their own source identity and
+cannot qualify this candidate. Aggregate cache budget/rollout remains on hold;
+the per-snapshot cap is not a repository-wide storage limit.
