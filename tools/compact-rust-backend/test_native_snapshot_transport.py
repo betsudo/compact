@@ -36,12 +36,13 @@ class SnapshotTransportTests(unittest.TestCase):
         self.identity = 'b' * 64
         self.key = 'forge-v1-' + self.partition + '-' + 'c' * 64 + '-generation-1'
 
-    def validate(self, values, mode='linux-owner', event='workflow_dispatch'):
+    def validate(self, values, mode='linux-owner', event='workflow_dispatch', publish=False, approval='', ref='refs/heads/codex/issue-679-trusted-native-seed'):
         block = self.text.split("python3 - <<'PY_SNAPSHOT'\n", 1)[1].split('          PY_SNAPSHOT', 1)[0]
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / 'output'
             env = dict(os.environ, QUALIFICATION=mode, EVENT_NAME=event, GITHUB_OUTPUT=str(output),
-                       SNAPSHOT_KEY=values[0], SNAPSHOT_ID=values[1], SNAPSHOT_PARTITION=values[2])
+                       SNAPSHOT_KEY=values[0], SNAPSHOT_ID=values[1], SNAPSHOT_PARTITION=values[2],
+                       SEED_PUBLISH=str(publish).lower(),SEED_WINDOW=approval,ACTUAL_REF=ref)
             result = subprocess.run([sys.executable, '-c', textwrap.dedent(block)], env=env, capture_output=True, text=True)
             return result.returncode, output.read_text() if output.exists() else ''
 
@@ -67,6 +68,17 @@ class SnapshotTransportTests(unittest.TestCase):
                        ('forge-v1-' + self.partition, self.identity, self.partition)):
             self.assertNotEqual(self.validate(values)[0], 0)
 
+    def test_explicit_publisher_requires_fixed_ref_window_and_no_restore(self):
+        self.assertEqual(self.validate(('', '', ''),publish=True,approval='approved maintenance window')[0],0)
+        for options in (dict(event='pull_request'),dict(event='push'),dict(mode='apple'),
+                        dict(ref='refs/heads/codex/rust-backend-ast'),dict(approval=''),
+                        dict(approval='bad\nlabel')):
+            supplied=dict(publish=True,approval='approved window');supplied.update(options)
+            self.assertNotEqual(self.validate(('', '', ''),**supplied)[0],0)
+        self.assertNotEqual(self.validate((self.key,self.identity,self.partition),publish=True,approval='approved')[0],0)
+        self.assertNotEqual(self.validate(('', '', ''),approval='not enabled')[0],0)
+        self.assertIn('default: false',self.text.split('      native-seed-publish:',1)[1].split('      native-seed-window:',1)[0])
+
     def test_exact_readonly_restore_and_producer_dependencies(self):
         restore = self.text.split('      - name: Restore exact supplied stopped snapshot (read-only)', 1)[1].split('      - name:', 1)[0]
         self.assertIn('actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae', restore)
@@ -83,9 +95,24 @@ class SnapshotTransportTests(unittest.TestCase):
             self.assertTrue(block.startswith('\n    needs: snapshot-inputs'))
         self.assertIn("needs.snapshot-inputs.result == 'success'", linux)
 
+    def test_publisher_is_pinned_after_gates_without_permission_increase(self):
+        linux=self.text.split('  linux-candidate:',1)[1]
+        self.assertIn('ref: 8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f',linux)
+        self.assertLess(linux.index('Install locked publisher dependencies'),linux.index('Qualify cold, warm'))
+        self.assertLess(linux.index('Execute the single original native owner'),linux.index('Prepare official seed'))
+        self.assertLess(linux.index('Prepare official seed'),linux.index('Admit and publish one measured'))
+        self.assertIn("steps.native-owner.outcome == 'success'",linux)
+        self.assertIn("steps.seed-prepare.outcome == 'success'",linux)
+        self.assertIn('actions: read',linux)
+        self.assertNotIn('actions: write',linux)
+        for field in ('binary','cache-dir','baseline','compact-guard','compact-plan'):
+            self.assertIn('          '+field+':',linux)
+        self.assertIn('${{ runner.temp }}/native-seed-*.json',linux)
+        self.assertNotIn('actions/cache/save',linux)
+
     def test_owner_shell_array_preserves_literal_arguments_and_cold(self):
         block = self.text.split('      - name: Execute the single original native owner after current finite qualification', 1)[1]
-        script = textwrap.dedent(block.split('        run: |\n', 1)[1].split('      #', 1)[0])
+        script = textwrap.dedent(block.split('        run: |\n', 1)[1].split('      - name:', 1)[0])
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             executable = root / 'python3'

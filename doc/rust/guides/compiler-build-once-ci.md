@@ -164,3 +164,49 @@ native owner once with its independent uncached proof controls. Diagnostic JSON
 is retained; no reusable key snapshot is published. Material producer/import,
 contract-key reuse, and actual proof execution are separate measured phases.
 Source tests alone establish neither runtime handoff success nor useful speedup.
+
+## Explicit one-seed pilot (source candidate)
+
+The manual `native-seed-publish` input defaults to false. Publication is limited
+to `linux-owner` on the fixed feature ref
+`refs/heads/codex/issue-679-trusted-native-seed`, with an explicit owner-approved
+single-writer-window label. PR/wrong-ref/wrong-mode publication and combining
+publication with supplied restore identities refuse before expensive producers.
+The label records a human operational assumption, not a cryptographic mutex or
+a repository-wide quota guarantee. Actual publisher execution requires a concrete
+window approval after review; source preparation alone is not that approval.
+
+After the unchanged single native owner, independent uncached proofs/refusals and
+live postguards succeed, `prepare_native_seed.py` reuses the existing official
+`prepare-save` owner. It binds the exact official primary key, snapshot ID and
+partition at `$RUNNER_TEMP/forge-linux-supplied-snapshot`, the same path used by the
+pinned cache restore action. No-growth and already-existing identities must not
+refresh a seed. Integrity errors remain failures; archive/budget admission denial
+records no upload while retaining genuine proof receipts.
+
+The publisher action is source-pinned to Forge
+`8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f`; this auxiliary checkout does not
+change the qualified d64 Rust payload or the 2614 material producer. Its locked
+Node24 dependencies are installed before native source planning. At actual archive
+admission and immediately before upload, the action invokes the keyed, fixed-path
+Compact `--guard-plan` callback and official Forge report. These read-only checks
+revalidate the compiler, Scheme frontend, proof runner, helper, sources and live
+parameters without rerunning proofs or recreating the snapshot. The job retains
+`actions: read`; the proper Node Action uses the SDK's injected runtime token.
+
+The coordinated Forge Node24 Action uses the pinned official cache SDK to create
+and measure the **actual** upload archive before reservation. It audits complete
+cache inventory and active/pending writers under the declared window, includes
+the exact archive bytes in the 10,000,000,000-byte check and refuses unknown or
+uncoordinated state. The existing snapshot payload cap stays 256MiB; payload size
+is not substituted for upload archive size. No duplicate `actions/cache/save`,
+custom tar transport, cache deletion, automatic generation refresh or new runtime
+cryptographic profile is introduced. Only one explicit seed per pilot
+ref/partition is permitted; a future refresh needs another owner decision.
+
+This is feature-branch-only transport. A cache scoped to this pilot ref is not
+automatically available to ordinary PRs targeting another base. Production PR
+restore-only wiring, approved trusted-base publication, current changed-head
+publisher/restore qualification and aggregate retention policy remain separate
+open work. GitHub controls cache eviction/expiration; there is no invented
+per-cache TTL. Compiler artifact one-day retention is unrelated.

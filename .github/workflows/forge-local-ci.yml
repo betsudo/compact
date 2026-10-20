@@ -28,6 +28,16 @@ on:
         type: string
         required: false
         default: ''
+      native-seed-publish:
+        description: Explicit one-seed feature-branch pilot; requires an approved single-writer window
+        type: boolean
+        required: false
+        default: false
+      native-seed-window:
+        description: Owner-approved operational window label; not global quota enforcement
+        type: string
+        required: false
+        default: ''
   push:
     branches: [codex/rust-backend-ast]
     paths:
@@ -100,11 +110,25 @@ jobs:
           SNAPSHOT_ID: ${{ inputs.native-snapshot-id }}
           SNAPSHOT_PARTITION: ${{ inputs.native-snapshot-partition }}
           EVENT_NAME: ${{ github.event_name }}
+          ACTUAL_REF: ${{ github.ref }}
+          SEED_PUBLISH: ${{ inputs.native-seed-publish }}
+          SEED_WINDOW: ${{ inputs.native-seed-window }}
         run: |
           python3 - <<'PY_SNAPSHOT'
           import os, re
           key, identity, partition = (os.environ[name] for name in ('SNAPSHOT_KEY', 'SNAPSHOT_ID', 'SNAPSHOT_PARTITION'))
           supplied = [bool(value) for value in (key, identity, partition)]
+          publish = os.environ.get('SEED_PUBLISH', '') == 'true'
+          approval = os.environ.get('SEED_WINDOW', '')
+          if publish:
+              if os.environ['EVENT_NAME'] != 'workflow_dispatch' or os.environ['QUALIFICATION'] != 'linux-owner' or os.environ.get('ACTUAL_REF') != 'refs/heads/codex/issue-679-trusted-native-seed':
+                  raise SystemExit('publication requires the fixed explicit pilot ref/mode')
+              if any(supplied):
+                  raise SystemExit('publication cannot accompany supplied restore tuple')
+              if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9 .:_-]{0,159}', approval):
+                  raise SystemExit('explicit owner single-writer window label required')
+          elif approval:
+              raise SystemExit('window label requires explicit publication')
           if any(supplied):
               if not all(supplied):
                   raise SystemExit('snapshot key, ID and partition require all three')
@@ -341,6 +365,22 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Checkout reviewed seed publisher (source only)
+        if: inputs.native-seed-publish
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: betsudo/forge
+          ref: 8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f
+          path: artifacts/forge-seed-publisher
+          persist-credentials: false
+      - name: Prepare Node for reviewed seed publisher
+        if: inputs.native-seed-publish
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+      - name: Install locked publisher dependencies before source planning
+        if: inputs.native-seed-publish
+        run: env -u NODE_OPTIONS -u NPM_CONFIG_NODE_OPTIONS npm ci --ignore-scripts --prefix artifacts/forge-seed-publisher/.github/actions/native-seed-publish
       - name: Allocate private qualification paths
         run: |
           test "$(uname -m)" = x86_64
@@ -508,6 +548,7 @@ jobs:
             --params-dir "$MIDNIGHT_PP" --qualification-dir "$LINUX_REPORT" --helper "$FORGE_HELPER" \
             --output "$RUNNER_TEMP/forge-linux-value-loop"
       - name: Execute the single original native owner after current finite qualification
+        id: native-owner
         if: inputs.qualification == 'linux-owner'
         env:
           RESTORE_REQUESTED: ${{ needs.snapshot-inputs.outputs.restore-requested }}
@@ -522,13 +563,40 @@ jobs:
             --compiler "$COMPACTC" --qualification-dir "$LINUX_REPORT" \
             --proof-runner "$LINUX_PROOF_RUNNER" --helper "$FORGE_HELPER" \
             --output "$RUNNER_TEMP/forge-linux-single-owner" "${snapshot_args[@]}"
-      # Supplied native snapshot restore is read-only; no save or reusable key publication.
+      - name: Prepare official seed only after genuine native gates
+        id: seed-prepare
+        if: inputs.native-seed-publish && steps.native-owner.outcome == 'success'
+        env:
+          SEED_WINDOW: ${{ inputs.native-seed-window }}
+        run: |
+          python3 -B tools/compact-rust-backend/prepare_native_seed.py \
+            --plan "$RUNNER_TEMP/forge-linux-single-owner/native-plan" \
+            --snapshot "$RUNNER_TEMP/forge-linux-supplied-snapshot" \
+            --approval "$SEED_WINDOW" --prepared "$RUNNER_TEMP/native-seed-prepared.json" \
+            --window "$RUNNER_TEMP/native-seed-window.json"
+      - name: Admit and publish one measured official seed archive
+        if: inputs.native-seed-publish && steps.seed-prepare.outcome == 'success'
+        uses: ./artifacts/forge-seed-publisher/.github/actions/native-seed-publish
+        with:
+          enabled: 'true'
+          prepared: ${{ runner.temp }}/native-seed-prepared.json
+          key: ${{ runner.temp }}/forge-linux-single-owner/native-plan/key.json
+          window: ${{ runner.temp }}/native-seed-window.json
+          output: ${{ runner.temp }}/native-seed-publication.json
+          github-token: ${{ github.token }}
+          binary: ${{ env.FORGE }}
+          cache-dir: ${{ runner.temp }}/forge-linux-single-owner/native-plan/cache
+          baseline: ${{ runner.temp }}/forge-linux-single-owner/native-plan/baseline.json
+          compact-guard: ${{ github.workspace }}/tools/compact-rust-backend/prepare_native_seed.py
+          compact-plan: ${{ runner.temp }}/forge-linux-single-owner/native-plan
+      # Supplied restore remains read-only; publication is an explicit fixed-ref pilot.
       - name: Retain original Linux qualification diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: forge-linux-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            ${{ runner.temp }}/native-seed-*.json
             ${{ runner.temp }}/forge-linux-provision/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.json
             ${{ runner.temp }}/forge-linux-qualification/*.log
