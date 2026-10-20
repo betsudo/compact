@@ -370,7 +370,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: betsudo/forge
-          ref: 8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f
+          ref: 508d471f1f6203f248751e92d89f41f0b4792c70
           path: artifacts/forge-seed-publisher
           persist-credentials: false
       - name: Prepare Node for reviewed seed publisher

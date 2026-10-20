@@ -97,7 +97,7 @@ class SnapshotTransportTests(unittest.TestCase):
 
     def test_publisher_is_pinned_after_gates_without_permission_increase(self):
         linux=self.text.split('  linux-candidate:',1)[1]
-        self.assertIn('ref: 8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f',linux)
+        self.assertIn('ref: 508d471f1f6203f248751e92d89f41f0b4792c70',linux)
         self.assertLess(linux.index('Install locked publisher dependencies'),linux.index('Qualify cold, warm'))
         self.assertLess(linux.index('Execute the single original native owner'),linux.index('Prepare official seed'))
         self.assertLess(linux.index('Prepare official seed'),linux.index('Admit and publish one measured'))

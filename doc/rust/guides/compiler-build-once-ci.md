@@ -185,7 +185,7 @@ refresh a seed. Integrity errors remain failures; archive/budget admission denia
 records no upload while retaining genuine proof receipts.
 
 The publisher action is source-pinned to Forge
-`8e4efdeb2ac905fa73dac7ebd35d82a2119fb24f`; this auxiliary checkout does not
+`508d471f1f6203f248751e92d89f41f0b4792c70`; this auxiliary checkout does not
 change the qualified d64 Rust payload or the 2614 material producer. Its locked
 Node24 dependencies are installed before native source planning. At actual archive
 admission and immediately before upload, the action invokes the keyed, fixed-path
