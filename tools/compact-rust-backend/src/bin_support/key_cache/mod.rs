@@ -14,6 +14,8 @@
 // limitations under the License.
 
 //! Shared frontend key preparation: fresh inputs/models; no cached proof verdicts.
+#[cfg(test)]
+mod digest_tests;
 mod error;
 mod identity;
 mod json;

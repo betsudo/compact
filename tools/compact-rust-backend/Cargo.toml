@@ -44,3 +44,8 @@ midnight-transient-crypto = { version = "=2.1.1", git = "https://github.com/midn
 
 # Use the exact identifier tables already present in the locked syntax stack.
 unicode-ident = "=1.0.24"
+
+# sha2 0.10 selects its aarch64 SHA-256 CPU dispatcher only with this feature.
+# Keep upstream runtime detection/software fallback and every cache byte check.
+[target.'cfg(all(target_arch = "aarch64", any(target_os = "linux", target_os = "macos")))'.dependencies]
+sha2 = { version = "0.10", features = ["asm"] }
