@@ -418,3 +418,15 @@ pub(super) fn vector_map_strict(
         Err(_) => Err("vector map strict proof thread panicked".into()),
     }
 }
+
+/// The ordinary direct proof path for the genuine #674 functional source.
+pub(super) fn constant_vector_projection(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --constant-vector-projection <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::constant_vector_projection::run(Path::new(&root))
+}

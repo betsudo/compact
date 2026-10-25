@@ -5,6 +5,7 @@
 import CompactStandardLibrary;
 
 export ledger stored: Field;
+export struct OwnedSelection { first: Opaque<"string">; repeated: Opaque<"string">; original: Vector<2, Opaque<"string">>; }
 witness values(): Vector<2, Field>;
 
 export pure circuit first(items: Vector<2, Field>): Field { return items[0]; }
@@ -26,11 +27,11 @@ export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field {
   stored = disclose(selected);
   return stored;
 }
-export circuit owned(items: Vector<2, Opaque<"string">>): [Opaque<"string">, Opaque<"string">, Vector<2, Opaque<"string">>] {
+export circuit owned(items: Vector<2, Opaque<"string">>): OwnedSelection {
   const a = items[0];
   const b = items[0];
   stored = 1;
-  return [a, b, items];
+  return OwnedSelection { first: a, repeated: b, original: items };
 }
 export circuit witnessed(select_first: Boolean): Field {
   const items = values();

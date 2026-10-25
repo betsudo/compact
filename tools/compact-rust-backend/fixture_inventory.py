@@ -213,7 +213,7 @@ def source_registry(root: Path = ROOT, *, registry_path: Path | None = None
             raise ValueError("current registry contains only reviewed accepted source roles")
         _fingerprint(source, row["source_sha256"])
         flags = row.get("frontend_flags", [])
-        if flags not in ([], ["--feature-zkir-v3"]):
+        if flags not in ([], ["--feature-zkir-v3"], ["--rust-functional-ledger8"]):
             raise ValueError(f"unreviewed frontend flags: {source}")
         qualification = row.get("qualification")
         if not isinstance(qualification, str) or not qualification.strip():

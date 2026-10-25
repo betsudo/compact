@@ -20,10 +20,28 @@ def fingerprint(path):
 
 
 class CurrentSourceRegistryTests(unittest.TestCase):
+    def test_vector_extension_preserves_every_accepted_ledger813_registration(self):
+        directory = inventory.ROOT / 'tools/compact-rust-backend'
+        baseline = json.loads((directory / 'fixture_registry.ledger-8.1.3.json').read_text())
+        current = json.loads((directory / 'fixture_registry.json').read_text())
+        extension = [row for row in current['sources']
+                     if row['source'] == 'examples/rust_backend/constant_vector_projection.compact']
+        self.assertEqual(len(extension), 1)
+        current['sources'] = [row for row in current['sources'] if row not in extension]
+        self.assertEqual(current, baseline)
+
+    def test_vector_projection_registers_complete_functional_flat_output(self):
+        row = next(row for row in inventory.source_registry()
+                   if row.source.name == 'constant_vector_projection.compact')
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
+        self.assertEqual(row.library, row.generated_library)
+        self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 5)
+
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 169,
+            inventory.SourceRole.FLAT_LIBRARY: 170,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })
@@ -99,7 +117,7 @@ class Ledger813RegistryTransitionTests(unittest.TestCase):
     def setUp(self):
         directory = inventory.ROOT / 'tools/compact-rust-backend'
         previous = directory / 'fixture_registry.ledger-8.0.3.json'
-        current = directory / 'fixture_registry.json'
+        current = directory / 'fixture_registry.ledger-8.1.3.json'
         transition = directory / 'fixture_registry.ledger-8.1.3-transition.json'
         self.assertEqual(fingerprint(previous),
                          '690e370bc4729f5d39918a1086e956e3fd5663a76f443f7fc7282d8385409c08')

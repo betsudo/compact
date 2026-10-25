@@ -99,3 +99,63 @@ was initiated. Executed pinned TS oracle parity, genuine source-bound proof and
 verification/changed-binding negatives and the remaining complete integration
 qualification are still open. Do not describe this checkpoint as #674 acceptance
 or complete language parity.
+
+
+## Local TS and proof qualification — 2026-10-26
+
+The current named `OwnedSelection` fixture preserves repeated non-Copy selection
+and returning the original vector. It gives the generated result named fields.
+Full workspace Clippy exposed redundant `Ok(...?)` functional closures; the
+structured emitter now evaluates the native expression into one local before
+returning it, preserving its original error conversion and single evaluation.
+Strict all-target/all-feature workspace Clippy passes without new lint allowances.
+
+Actual local qualification now includes:
+
+- Required Rust workspace command (`--workspace --exclude compact`): 3,326 tests passed across 959 result groups;
+  7 existing ignores retained. Backend 1,805 unit and 154 render tests pass.
+- The maintained full generated functional-consumer gate also passes after the
+  shared closure correction, retaining its complete existing scenario set.
+- Maintained Python suite: 329 tests, 20 expected skips. Fresh golden output and
+  all five complete checked programs match; historical ledger-8.1.3 registry
+  bytes remain frozen separately and the current extension preserves every
+  predecessor row.
+- Pinned TS runtime 0.16.102 executes five pure and seven stateful cases plus
+  three refusal controls. Canonical result/Cell/private-output encodings,
+  private transitions and measured query-summed cost agree with the Rust
+  consumer and its four execution routes. The TS wrapper's last-query cost is
+  retained separately; no costs are subtracted or estimated. A changed TS
+  result fails the actual Rust consumer. Node/runtime production bytes are
+  pinned; macOS system-cache library names are retained without byte claims.
+- The direct native proof runner checks exact source/full IR and complete
+  generated functional output, verifies locked official built-ins and selected
+  SRS, and generates a fresh `witnessed` key pair: k=6, 54 rows. Both selections
+  yield an actual 2,912-byte proof and independent verification. Changed public
+  binding and changed-result commitment fail verification; changed-result
+  preimage checking also refuses. Mutated full IR refuses before absent keys
+  or state.
+- Each branch then proves a fresh funded transaction, applies with default
+  strictness and rejects replay with `IntentAlreadyExists` without mutation.
+  Constructor state is supplied; constructor execution is not proved. This is
+  local ledger-fixture evidence, with no live-chain or other-circuit proof claim.
+
+The matching gates are `check_constant_vector_projection.py` and
+`check_constant_vector_projection_proof.py`. Full integration keeps its existing
+compiler/native proof/wallet/rejection/archive/package gates and adds the
+bounded vector qualifications. No hosted trial was run. Complete integration
+and remaining review remain OPEN; neither #674 integration nor the broad
+backend goal is declared complete. The ordinary Nix compiler package must still
+be checked at the final new head, separately from the development CLI cohort.
+
+Every failed and earlier passing iteration stays retained under
+`/Users/ysh/.codex/local-evidence/rust-ast-vector-projection-20261025/`. In particular,
+the earlier tuple-output proof cohort is distinct from this named-result cohort.
+The initially selected global parameter directory lacked built-ins. The current
+run uses isolated copies of retained official material, independently reverified
+against the locked provider hashes; prior stores/evidence were not repaired.
+
+Forge remains deferred at `experiment/zkir-forge`; its scheduler remains deleted.
+Per the owner, clean up task-owned worktrees and reproducible build targets after
+completion and verified GitHub merge, preserving unpublished changes, needed
+inputs/binaries and evidence. No worktree/target cleanup is due yet, and this
+condition grants no push or merge authority.

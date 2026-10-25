@@ -924,6 +924,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-constant-vector-projection-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+ "serde_json",
+]
+
+[[package]]
 name = "compact-rust-constructor-assert-sequence-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2742,6 +2750,7 @@ dependencies = [
  "compact-rust-chunked-map-fixture",
  "compact-rust-chunked-set-observed-fixture",
  "compact-rust-composite-zswap-transfer-oracle-fixture",
+ "compact-rust-constant-vector-projection-source-fixture",
  "compact-rust-constructor-list-actions-fixture",
  "compact-rust-constructor-map-actions-fixture",
  "compact-rust-counter-fixture",

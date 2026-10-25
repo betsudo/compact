@@ -39,6 +39,9 @@ pub(super) fn try_run(
     let selector = first?.to_str()?;
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
+        ("--constant-vector-projection", _) => {
+            Some(collections::constant_vector_projection(arguments))
+        }
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
             let root = arguments
@@ -311,6 +314,11 @@ mod tests {
                 "--public-products",
                 1,
                 "usage: compact-rust-proof-smoke --public-products <proof-output>",
+            ),
+            (
+                "--constant-vector-projection",
+                1,
+                "usage: compact-rust-proof-smoke --constant-vector-projection <proof-output>",
             ),
             (
                 "--wide-add",

@@ -179,3 +179,18 @@ checked projection, structured native/functional emission, owned reuse and
 focused generated compile-fail controls are implemented locally. Real proof,
 verification and full integration acceptance remain open; this amendment does
 not reopen or complete the deferred Forge experiment.
+
+
+## Qualification checkpoint — 2026-10-26
+
+The bounded #674 implementation now has executed pinned TS comparisons and
+genuine direct native proofs for both private Field selections, including
+independent verification, changed-binding/result refusals, default-strict funded
+application and replay rejection. Full Rust workspace tests and strict Clippy
+pass. See the narrow decision for exact scope and retained failures. Complete
+integration and remaining review stay open; Forge remains deferred.
+
+After completion and verified GitHub merge, clean up task-owned worktrees and
+reproducible targets while preserving unpublished work and required evidence or
+inputs. Do not remove shared stores/caches, containers or qualification artifacts.
+This future cleanup condition does not authorize publishing or merging now.

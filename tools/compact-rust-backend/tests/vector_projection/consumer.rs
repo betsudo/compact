@@ -7,7 +7,7 @@ use r::recording::RecordedCircuitResult;
 use r::{CompactError, Field, FixedVector, OpaqueString};
 use std::{cell::RefCell, fmt::Debug};
 use vector_fixture::{
-    ledger_contract as c, ledger_slots as slots, pure_circuits as pure, runtime as r,
+    ledger_contract as c, ledger_slots as slots, pure_circuits as pure, runtime as r, types,
 };
 
 fn context() -> CircuitContext<u64> {
@@ -24,7 +24,8 @@ fn texts() -> FixedVector<OpaqueString, 2> {
         OpaqueString::from("β\0last"),
     ])
 }
-fn compare<T: Debug + PartialEq>(
+fn compare<T: Debug + PartialEq + Clone + Into<r::fab::AlignedValue>>(
+    id: &str,
     native: Result<CircuitResult<u64, T>, CompactError>,
     recorded: Result<RecordedCircuitResult<u64, T>, CompactError>,
     functional_native: Result<CircuitResult<u64, T>, CompactError>,
@@ -71,7 +72,88 @@ fn compare<T: Debug + PartialEq>(
     assert_eq!(functional.context.state, ordinary.context.state);
     assert_eq!(functional.context.effects, ordinary.context.effects);
     assert_eq!(functional.gas_cost, ordinary.gas_cost);
+    if let Some(row) = ts_row("cases", id) {
+        assert_eq!(encoded(native.result.clone()), row["output"]);
+        assert_eq!(
+            encoded(
+                slots::stored
+                    .inspect(native.context.query.state.get_ref())
+                    .unwrap()
+            ),
+            row["storedFab"]
+        );
+        assert_eq!(
+            serde_json::json!(native.context.private_state),
+            row["privateState"]
+        );
+        assert_eq!(
+            serde_json::json!(
+                native
+                    .private_transcript_outputs
+                    .iter()
+                    .cloned()
+                    .map(encoded)
+                    .collect::<Vec<_>>()
+            ),
+            row["privateOutputs"]
+        );
+        for (actual, key) in [
+            (
+                serde_json::to_value(native.gas_cost.read_time).unwrap(),
+                "readTime",
+            ),
+            (
+                serde_json::to_value(native.gas_cost.compute_time).unwrap(),
+                "computeTime",
+            ),
+        ] {
+            assert_eq!(
+                actual,
+                serde_json::json!(
+                    row["gasCost"][key]
+                        .as_str()
+                        .unwrap()
+                        .parse::<u64>()
+                        .unwrap()
+                )
+            );
+        }
+        assert_eq!(
+            native.gas_cost.bytes_written.to_string(),
+            row["gasCost"]["bytesWritten"]
+        );
+        assert_eq!(
+            native.gas_cost.bytes_deleted.to_string(),
+            row["gasCost"]["bytesDeleted"]
+        );
+    }
     native
+}
+// This environment variable is set only by the maintained live TS gate. A bad or
+// incomplete reference fails; the standalone Rust consumer makes no TS claim.
+fn ts_row(group: &str, id: &str) -> Option<serde_json::Value> {
+    let path = std::env::var_os("COMPACT_VECTOR_TS_REFERENCE")?;
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    assert_eq!(value["format"], "compact-vector-projection-ts/v1");
+    Some(
+        value[group]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["id"] == id)
+            .unwrap()
+            .clone(),
+    )
+}
+fn encoded(value: impl Into<r::fab::AlignedValue>) -> serde_json::Value {
+    let value = value.into();
+    serde_json::json!({"valueAtoms": value.value.0.iter().map(|atom| &atom.0).collect::<Vec<_>>(),
+        "alignment": value.alignment})
+}
+fn pure_parity(id: &str, value: impl Into<r::fab::AlignedValue>) {
+    if let Some(row) = ts_row("pure", id) {
+        assert_eq!(encoded(value), row["output"]);
+    }
 }
 #[derive(Default)]
 struct Witness {
@@ -96,6 +178,14 @@ impl c::TryWitnesses<u64> for Witness {
 }
 #[test]
 fn pure_first_last_singleton_and_owned_temporary_match_independent_values() {
+    pure_parity("first", pure::first(fields()).unwrap());
+    pure_parity("last", pure::last(fields()).unwrap());
+    pure_parity(
+        "singleton",
+        pure::singleton(FixedVector([Field::from(99_u64)])).unwrap(),
+    );
+    pure_parity("first_text", pure::first_text(texts()).unwrap());
+    pure_parity("temporary_text", pure::temporary_text(texts()).unwrap());
     assert_eq!(pure::first(fields()).unwrap(), Field::from(17_u64));
     assert_eq!(pure::last(fields()).unwrap(), Field::from(41_u64));
     assert_eq!(
@@ -116,6 +206,11 @@ fn source_selection_updates_the_cell_and_replays_across_four_routes() {
     for select_first in [false, true] {
         let expected = Field::from(if select_first { 17_u64 } else { 41_u64 });
         let result = compare(
+            if select_first {
+                "choose-first"
+            } else {
+                "choose-last"
+            },
             c::choose(context(), fields(), select_first),
             c::recorded::choose(context(), fields(), select_first),
             c::functional::choose::Program::new(fields(), select_first).execute_native(context()),
@@ -134,12 +229,13 @@ fn source_selection_updates_the_cell_and_replays_across_four_routes() {
 }
 #[test]
 fn owned_projection_repeats_without_consuming_the_original_vector() {
-    let expected = (
-        OpaqueString::from("α\0first"),
-        OpaqueString::from("α\0first"),
-        texts(),
-    );
+    let expected = types::OwnedSelection {
+        first: OpaqueString::from("α\0first"),
+        repeated: OpaqueString::from("α\0first"),
+        original: texts(),
+    };
     let result = compare(
+        "owned",
         c::owned(context(), texts()),
         c::recorded::owned(context(), texts()),
         c::functional::owned::Program::new(texts()).execute_native(context()),
@@ -159,6 +255,11 @@ fn witnessed_selection_evaluates_once_before_the_cell_write() {
         let witnesses: [Witness; 4] = std::array::from_fn(|_| Witness::default());
         let expected = Field::from(if select_first { 17_u64 } else { 41_u64 });
         let result = compare(
+            if select_first {
+                "witnessed-first"
+            } else {
+                "witnessed-last"
+            },
             c::witnessed(context(), &witnesses[0], select_first),
             c::recorded::witnessed(context(), &witnesses[1], select_first),
             c::functional::witnessed::Program::new(select_first)
@@ -181,6 +282,7 @@ fn witnessed_selection_evaluates_once_before_the_cell_write() {
 fn temporary_witness_vector_is_selected_once_on_every_route() {
     let witnesses: [Witness; 4] = std::array::from_fn(|_| Witness::default());
     let result = compare(
+        "temporary",
         c::temporary(context(), &witnesses[0]),
         c::recorded::temporary(context(), &witnesses[1]),
         c::functional::temporary::Program::new().execute_native(context(), &witnesses[2]),
@@ -199,6 +301,7 @@ fn inactive_branch_skips_even_a_failing_witness() {
         ..Default::default()
     });
     let result = compare(
+        "conditional-inactive",
         c::conditional(context(), &witnesses[0], false),
         c::recorded::conditional(context(), &witnesses[1], false),
         c::functional::conditional::Program::new(false).execute_native(context(), &witnesses[2]),
@@ -213,6 +316,10 @@ fn inactive_branch_skips_even_a_failing_witness() {
 }
 #[test]
 fn active_branch_propagates_the_original_first_witness_error() {
+    if let Some(row) = ts_row("refusals", "conditional-failure") {
+        assert_eq!(row["error"], "vector witness refused");
+        assert_eq!(row["events"], serde_json::json!([[7, "0"]]));
+    }
     let witnesses: [Witness; 4] = std::array::from_fn(|_| Witness {
         fail: true,
         ..Default::default()

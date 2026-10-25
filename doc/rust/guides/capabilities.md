@@ -144,3 +144,35 @@ Historically, the checker passed the digest row and refused the relation row at 
 These are separate project version domains, not a single Compact language version or a public standard called “schema-20”. The backend library initially creates an unclassified schema-2 capability draft; the CLI joins frontend proof metadata and emits finalized schema3. Application checks should consume the finalized report.
 
 Published guides and ADRs live under `doc/rust/`. Planning notes and detailed local acceptance follow the [evidence availability policy](../recording-effect-algebra/evidence-availability.md). Historical measurements and capability examples retain their exact source checkpoint.
+
+
+## Constant fixed-vector projection (local #674)
+
+A statically valid `items[0]` or `items[N - 1]` from `Vector<N,T>` keeps the
+existing Rust carrier and element type. For example:
+
+```compact
+export pure circuit last(items: Vector<2, Field>): Field { return items[1]; }
+```
+
+The generated call accepts `FixedVector<Field, 2>` and returns
+`Result<Field, CompactError>`. A different vector length or element type is a
+Rust type error. Source index `N` and indexing `Vector<0,T>` are rejected by the
+Compact frontend. This feature covers constant projection; dynamic indexing,
+slicing and vector updates keep their existing capability boundaries.
+
+Supported non-Copy elements retain the selected value. Repeated selection,
+returning the original vector and selecting from a temporary preserve ordinary
+ownership and evaluation order. A named Compact result struct is useful when
+returning the selected values alongside the original vector.
+
+Stateful recording and the experimental functional programs share the checked
+projection operation. Functional execution consumes its `Program`; executing
+that instance twice is a Rust compile error. Choose its existing compiler flag
+and interpreter surfaces explicitly, as described by the generated API.
+
+The [bounded #674 decision](../plans/674-constant-vector-projection-decision.md)
+tracks local source, consumer and proof evidence and outstanding integration
+gates. Each contract's actual report still determines recorded/observed-call
+availability and proof applicability. Backend development proceeds independently
+of the deferred Forge experiment.

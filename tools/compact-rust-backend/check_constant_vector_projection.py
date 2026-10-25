@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--ts-runtime", type=Path, help="Execute pinned TS parity using this existing package")
     args = parser.parse_args()
     output, report_path = args.output.absolute(), args.report.absolute()
     for path in [output, report_path]:
@@ -65,6 +66,8 @@ def main():
                       ROOT / "tools/compact-rust-backend/src", FIXTURES]:
         premises.extend(sorted(directory.rglob("*.rs")))
     premises.extend(sorted(FIXTURES.glob("*.compact")))
+    premises.extend(sorted(FIXTURES.glob("*.mjs")))
+    premises.append(ROOT / "runtime/package.json")
     pins = {str(path.relative_to(ROOT)): digest(path) for path in premises}
     tool_pins = {str(path): digest(path) for path in [compiler, scheme]}
     output.mkdir(parents=True)
@@ -88,8 +91,28 @@ def main():
     try:
         generated = output / "generated"
         run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
-                         "--rust-runtime-root", ROOT, "--skip-zk", SOURCE, generated])
+                         "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
+        if args.ts_runtime:
+            runtime = args.ts_runtime.resolve(strict=True)
+            modules = output / "node_modules/@midnight-ntwrk"
+            modules.mkdir(parents=True)
+            (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
+            (output / "package.json").write_text('{"type":"module"}\n')
+            capture = output / "ts-reference.json"
+            version = json.loads((ROOT / "runtime/package.json").read_text())["version"]
+            run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
+                               "--runtime", runtime, "--version", version, "--output", capture])
+            environment["COMPACT_VECTOR_TS_REFERENCE"] = str(capture)
+            observations = json.loads(capture.read_text())
+            report["typescript"] = {"capture": str(capture), "sha256": digest(capture),
+                                    "pure_cases": len(observations["pure"]),
+                                    "stateful_cases": len(observations["cases"]),
+                                    "refusals": len(observations["refusals"]),
+                                    "cost_scope": "Sum of actual TS query calls, including witness-view reads; raw last-query cost retained"}
+        else:
+            environment.pop("COMPACT_VECTOR_TS_REFERENCE", None)
+            report["typescript"] = "NOT RUN; no --ts-runtime selected"
         report["source_refusals"] = {}
         for name, message in {
             "out_of_bounds": "index 2 is out-of-bounds for a vector of length 2",
@@ -145,6 +168,20 @@ def main():
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("7", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
         report["rust_consumer_tests"] = 7
+        if args.ts_runtime:
+            changed = json.loads(capture.read_text())
+            next(row for row in changed["cases"] if row["id"] == "choose-first")["output"]["valueAtoms"] = [[42]]
+            wrong = output / "ts-wrong-result.json"
+            wrong.write_text(json.dumps(changed, indent=2) + "\n")
+            environment["COMPACT_VECTOR_TS_REFERENCE"] = str(wrong)
+            rejected = run("changed-ts-result", ["cargo", "test", "--locked", "--offline",
+                           "--manifest-path", manifest, "--test", "vector",
+                           "source_selection_updates_the_cell_and_replays_across_four_routes", "--", "--exact"],
+                           success=False)
+            environment["COMPACT_VECTOR_TS_REFERENCE"] = str(capture)
+            if not rejected.returncode or not re.search(r"test result: FAILED\. 0 passed; 1 failed; 0 ignored", rejected.stdout):
+                raise ValueError("changed TS result did not fail the actual Rust consumer")
+            report["typescript"]["changed_result_rejected"] = True
         report["compile_fail"] = {}
         for name, expected in NEGATIVES.items():
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
@@ -170,6 +207,16 @@ def main():
                 raise ValueError(f"compiler premise changed: {tool}")
         if digest(child_lock) != report["consumer_lock_sha256"]:
             raise ValueError("consumer lock changed after resolution")
+        if args.ts_runtime and digest(capture) != report["typescript"]["sha256"]:
+            raise ValueError("TS reference changed during Rust comparison")
+        if args.ts_runtime:
+            for path, expected in observations["runtime"]["files"].items():
+                if digest(path) != expected:
+                    raise ValueError(f"TS runtime changed during Rust comparison: {path}")
+            node = observations["node"]
+            for path, expected in {node["path"]: node["sha256"], **node["sharedLibraries"]}.items():
+                if digest(path) != expected:
+                    raise ValueError(f"Node tool/library changed: {path}")
         report["status"] = "passed"
     except Exception as error:
         report["error"] = str(error)
