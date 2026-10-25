@@ -10,8 +10,9 @@ technically impossible. `experiment/zkir-forge` is the Compact continuation
 point if the owner explicitly revisits it. Separate Forge repository branches,
 signed results, benchmarks, stores, snapshots, stopped containers and failure
 evidence remain retained. Backend development does not depend on completing
-the experiment. The Forge-specific continuation is paused and its saved prompt
-forbids restarting deferred work from historical authorization.
+the experiment. The Forge-specific scheduler was removed at the owner's
+request after being paused. Its preserved historical prompt grants no authority
+to restart deferred work.
 
 Selected contract-level reuse benefits are valid; whole-CI value remains
 unproven. The earlier “1% key generation” interpretation was incomplete:
@@ -28,8 +29,9 @@ and latest integrated Compact head `278f7c3dd`. The stale local ref `6e37443b4`
 has exactly the same Git tree as the accepted #637 squash `14b585c27`; its
 original history is preserved on
 `backup/rust-ast-before-forge-deferral-20261025`. It is not a replacement
-baseline. Reconcile the primary ref with the later accepted history after
-the separation passes focused local checks.
+baseline. The primary ref was reconciled locally with the later accepted
+history after the separation passed focused local checks. The forward separation
+is signed commit `cfb28592d3e213d3dda58a3dc02f6aa66b61e777`.
 
 The experiment retains `278f7c3dd`, alternate refs and unpublished diagnostic
 patches. The primary branch removes compiler cache options, the helper and its
@@ -49,9 +51,19 @@ Retain legitimate functionality and independent improvements:
 - The complete ordinary compiler/native proof/wallet/archive/E2E and strict
   Clippy gates. Direct native ZKIR generation replaces adapter routing.
 
-Focused local baseline checks must pass before feature development. Full CI,
-compiler regeneration and real proof gates remain required for integration;
-local source checks are not fresh proof or hosted acceptance.
+Focused local baseline checks passed before feature development: 1,797 backend
+unit and 154 renderer tests, 27 CLI tests, the maintained 327-case Python suite
+(20 expected fixture skips), strict backend Clippy, proof-runner compilation,
+formatting and workflow/handoff checks. The ordinary offline Nix compiler build
+at `cfb28592d` also passed; its help and binary roster have no Forge helper or
+cache options, and an actual removed-option invocation fails before creating an
+output directory. A genuine Counter source generated Rust with the existing
+ordinary, recorded and functional APIs; its fresh generated crate passed
+`cargo check --offline`. Evidence is retained in
+`/Users/ysh/.codex/local-evidence/rust-ast-forge-deferral-20261025/`.
+
+The complete required CI and real proof gates remain required for integration;
+these focused local checks are not fresh proof or hosted acceptance.
 
 ## Selected gap: #674, constant fixed-vector projection
 
