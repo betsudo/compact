@@ -310,9 +310,14 @@ refusals, and restores the private mutation fixture. This tests local source
 runtime packaging; it does not establish registry distribution or a packaged
 tarball build. Keep the regular behavior and proof helpers as separate gates.
 
-Proof qualification additionally requires matching parameters, an explicitly
-qualified Forge executable, and the uncached `zkir` binary. Inspect the helper's
-arguments before supplying these local installations:
+The following three-lap comparison helpers and their reproduction commands are
+**historical experiment instructions**, retained on `experiment/zkir-forge`.
+Forge adoption is deliberately deferred; these helpers are absent from the
+primary backend branch. They are not prerequisites for backend development.
+The primary full native proof gate remains `check_native_ci.sh`, with direct
+native ZKIR generation, actual proofs, verification, application and refusals.
+The historical comparisons used matching parameters, a qualified Forge and the
+direct `zkir` binary:
 
 ```sh
 python3 tools/compact-rust-backend/check_functional_proof.py --help
@@ -352,9 +357,10 @@ need their own evidence.
 Tracking: [issue #663](https://github.com/betsudo/compact/issues/663).
 Architecture history: ADR-0542 in the `midnight` Obsidian vault.
 
-## Typed Field-witness proof qualification
+## Historical experiment: typed Field-witness proof qualification
 
-The additional local helper checks one complete stateful Field-witness fixture:
+The parked comparison helper checked one complete stateful Field-witness fixture;
+the following command applies only on `experiment/zkir-forge`:
 
 ```sh
 python3 tools/compact-rust-backend/check_functional_witness_proof.py --help
@@ -390,9 +396,10 @@ The current finite consumer includes 23 whole sources, 56 Rust tests and 160 beh
 
 The exhaustive current checked-operation match admits 71 of 72 top-level variants, with Keccak refused. Nested List operations (6), Merkle variants (7, covering 9 forms) and kernel claim kinds (3) are separate dimensions. This is bounded checked-node accounting; it does not close frontend gaps #516, #610, #661 or #674, nor imply complete language or proof coverage. Actual functional proof, verification and ledger application remain separately qualified.
 
-### Actual proof qualification
+### Historical experiment: actual proof qualification
 
-Two explicit runners share one lifecycle implementation:
+Two parked experiment runners shared one lifecycle implementation; these commands
+apply only on `experiment/zkir-forge`:
 
 - `check_functional_proof.py --core-five`: two Merkle branches, hashing, Jubjub and exact witness transport.
 - `check_functional_domain_proof.py`: original kernel, composite Zswap, qualified Cell and qualified Set selectors over five complete contracts.

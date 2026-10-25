@@ -103,7 +103,7 @@ def validate_receipt(value, expected, archive):
 
 
 def smoke(output):
-    for name in ('compactc', 'compactc-scheme', 'compact-zkir-cache'):
+    for name in ('compactc', 'compactc-scheme'):
         require(os.access(Path(output)/'bin'/name, os.X_OK), 'missing compiler sibling ' + name)
     for name in ('runtime-rs', 'runtime-rs-macros'):
         require((Path(output)/'share/compactc'/name/'Cargo.toml').is_file(), 'missing packaged runtime ' + name)

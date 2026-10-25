@@ -630,12 +630,13 @@ the target directory size.
 The main consumer/proof gate uses the `proof-checks` Cargo profile for its proof
 runner. It inherits dev settings, explicitly retains debug assertions and overflow
 checks, and optimizes external dependencies at level 3. Workspace code, ordinary
-workspace tests/Clippy and separate Forge qualification retain their existing
+workspace tests/Clippy retain their existing
 profiles. This changes compilation, not the selected proofs or their assertions.
 Set `COMPACT_RUST_PROOF_PROFILE=dev` when running `check_compactc_target.py` for
 the original dev-profile qualification. Direct `cargo run` remains dev by default.
-Unknown profile overrides fail; no proof or test result is cached. Key-generation
-mode remains independent (`COMPACT_ZKIR_MODE=uncached` retains fresh keygen).
+Unknown profile overrides fail; no proof or test result is cached. The ordinary
+gate invokes native ZKIR directly for fresh key generation. Forge comparison
+helpers are parked on `experiment/zkir-forge`.
 
 ```sh
 cargo fmt --all -- --check

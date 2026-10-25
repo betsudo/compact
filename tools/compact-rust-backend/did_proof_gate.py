@@ -24,7 +24,6 @@ import re
 import shutil
 import sys
 
-import forge_circuits
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
 
@@ -96,7 +95,7 @@ def prerequisites(env):
         require(bool(env.get(name)) and path.is_absolute() and path.is_dir()
                 and os.access(path, os.R_OK), f"{name} must name an absolute readable directory")
         result[name] = str(path.resolve())
-    zkir = forge_circuits.zkir_executable(env)
+    zkir = shutil.which('zkir', path=env.get('PATH'))
     require(zkir is not None, "DID proof gate requires zkir on PATH")
     result["zkir"] = str(Path(zkir).resolve())
     return result
@@ -135,7 +134,7 @@ def source_inventory():
     for folder in ("runtime-rs", "runtime-rs-macros", "tools/compact-rust-backend/src",
                    "tools/compact-rust-proof-smoke", "tests-rust-backend/did-adoption"):
         paths.extend(p for p in (ROOT / folder).rglob("*") if p.suffix in (".rs", ".json", ".toml"))
-    paths.extend([ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "tools/compact-rust-backend/Cargo.toml", Path(common.__file__), Path(forge_circuits.__file__), Path(ledger_static.__file__), Path(__file__)])
+    paths.extend([ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "tools/compact-rust-backend/Cargo.toml", Path(common.__file__), Path(ledger_static.__file__), Path(__file__)])
     return hashes(paths)
 
 
@@ -197,11 +196,9 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                     "COMPACT_RUST_RUNTIME_DIR": str(ROOT), "CARGO_TARGET_DIR": str(target.resolve()),
                     "CARGO_INCREMENTAL": "0", "RUSTUP_TOOLCHAIN": "1.99.0",
                     "PYTHONDONTWRITEBYTECODE": "1"})
-        env = forge_circuits.configure_environment(env, directory / "forge",
-                                                   real_zkir=components["zkir"]["snapshot"])
-        receipt["key_generation"] = forge_circuits.provenance(env)
+        receipt["key_generation"] = {"mode": "direct-native", "actual_zkir": components["zkir"]["snapshot"], "scope": "Fresh native key generation; proofs and assertions always execute."}
         def execute(argv, label, stdout_path=None):
-            command(forge_circuits.command([str(v) for v in argv], env), label, directory, receipt, env=env, stdout_path=stdout_path)
+            command([str(v) for v in argv], label, directory, receipt, env=env, stdout_path=stdout_path)
         output = directory / "did"
         execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",

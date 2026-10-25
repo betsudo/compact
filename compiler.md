@@ -50,25 +50,6 @@ omitted or present only in the compile-time environment.
 
 ## Compiler structure
 
-### Optional artifact preparation
-
-After the shared ZKIR passes and before output integrity manifests are built,
-`passes.ss` normally invokes the official key generator. The experimental
-`--zkir-cache local` option instead dispatches to the packaged
-`compact-zkir-cache` helper under an independently pinned operator policy.
-This single boundary serves both TypeScript and Rust; generated runtime APIs
-and proof execution are unchanged. Default mode remains off.
-
-The Scheme launch uses a fixed shell program; dynamic paths travel as scoped
-JSON/environment data. The Rust helper starts tools with argument arrays,
-checks fresh models and artifact identities, and prepares private outputs.
-The native coordinator owns final directory publication. Direct internal Scheme
-invocation retains its existing directory-publication scope. See
-[local ZKIR reuse](doc/rust/guides/local-zkir-cache.md) for selection, qualification
-and failure behavior.
-
-### Pass pipeline
-
 The Compact compiler is structured as a series of passes, each of
 which has one essential (possibly simple, possibly complex) task
 to perform in translating high-level Compact code incrementally into

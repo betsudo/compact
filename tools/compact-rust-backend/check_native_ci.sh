@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Original native CI command list, also usable through the pinned artifact adapter.
+# Complete ordinary native CI command list.
 # Proofs, wallet application, fixtures, rejections, workspace tests and Clippy run.
 set -e -o pipefail
 

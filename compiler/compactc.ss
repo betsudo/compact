@@ -56,9 +56,6 @@ The following flags, if present, affect the compiler's behavior as follows:
   --vscode causes error messages to be printed on a single line so they are
     rendered properly within the VS Code extension for Compact.
 
-  --zkir-cache off|local selects optional qualified local artifact reuse (default off).
-  --zkir-cache-policy FILE independently qualifies the local tools and parameters.
-  --zkir-cache-dir DIRECTORY overrides the local Forge store.
   --skip-zk causes the compiler to skip the generation of proving keys.
     Generating proving keys can be time-consuming, so this option is useful when
     debugging only the Typescript output.  The compiler also skips, after
@@ -101,9 +98,6 @@ The following flags, if present, affect the compiler's behavior as follows:
              [(--runtime-version) $ (begin (print-runtime-version) (exit))]
              [(--vscode)]
              [(--skip-zk)]
-             [(--zkir-cache) (string cache-mode)]
-             [(--zkir-cache-policy) (string cache-policy)]
-             [(--zkir-cache-dir) (string cache-directory)]
              [(--emit-rust-ir)]
              [(--skip-ts)]
              [(--no-communications-commitment)]
@@ -114,15 +108,10 @@ The following flags, if present, affect the compiler's behavior as follows:
              [(--feature-zkir-v3)])
       (string source-pathname)
       (string target-directory-pathname))
-     (when (and cache-mode (not (member cache-mode '("off" "local"))))
-       (external-errorf "--zkir-cache must be off or local"))
      (check-pathname source-pathname)
      (check-pathname target-directory-pathname)
      (parameterize ([trace-passes ?--trace-passes]
                     [skip-zk ?--skip-zk]
-                    [zkir-cache-mode (or cache-mode "off")]
-                    [zkir-cache-policy cache-policy]
-                    [zkir-cache-directory cache-directory]
                     [emit-rust-ir ?--emit-rust-ir]
                     [skip-ts ?--skip-ts]
                     [no-communications-commitment ?--no-communications-commitment]

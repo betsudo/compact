@@ -24,7 +24,7 @@ import re
 import subprocess
 
 # Keep source qualification, required gates and security automation available.
-PROTECTED = frozenset({'rust-backend-checks.yml', 'forge-local-ci.yml',
+PROTECTED = frozenset({'rust-backend-checks.yml',
                        'build-compiler.yml', 'codeql.yml', 'scan.yml'})
 PAUSED = {
     'build-debug-test.yml': 'TypeScript debugger; enable for debugger changes',

@@ -27,9 +27,6 @@
   (export-parameter no-communications-commitment #f)
 
   (export-parameter skip-zk #t)
-  (export-parameter zkir-cache-mode "off")
-  (export-parameter zkir-cache-policy #f)
-  (export-parameter zkir-cache-directory #f)
 
   ; Emit a versioned, typed Compact-to-Rust interchange file. The Rust
   ; renderer is a separate executable so Scheme never constructs Rust text.

@@ -112,7 +112,7 @@ class ReceiptTests(unittest.TestCase):
     def test_smoke_checks_actual_layout_and_keeps_stdout_for_machine_output(self):
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
-            for name in ('compactc', 'compactc-scheme', 'compact-zkir-cache'):
+            for name in ('compactc', 'compactc-scheme'):
                 path = package/'bin'/name
                 path.parent.mkdir(exist_ok=True)
                 path.write_text('executable')
@@ -206,34 +206,16 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertNotIn('secrets:', producer)
 
 
-class ForgeReuseTests(unittest.TestCase):
-    def test_existing_path_scope_and_platform_reuse(self):
-        path_spec = importlib.util.spec_from_file_location('forge_paths', Path(__file__).with_name('forge_paths.py'))
-        paths = importlib.util.module_from_spec(path_spec)
-        path_spec.loader.exec_module(paths)
-        self.assertFalse(paths.selected(['doc/rust/guide.md', 'README.md']))
-        self.assertTrue(paths.selected(['compiler/changed.ss']))
-        self.assertTrue(paths.selected(['tools/compact-rust-proof-smoke/src/case.rs']))
-        self.assertTrue(paths.selected(['Cargo.lock']))
-        forge = (owner.ROOT/'.github/workflows/forge-local-ci.yml').read_text()
-        push = forge.split('  push:', 1)[1].split('  workflow_call:', 1)[0]
-        import re
-        self.assertEqual(tuple(re.findall(r"      - '([^']+)'", push)), paths.PATTERNS)
-        for path in ('.github/scripts/compiler_closure.py', '.github/workflows/compiler-producer.yml', '.github/workflows/build-compiler.yml'):
-            self.assertTrue(paths.selected([path]))
-        self.assertNotIn('  pull_request:', forge)
-        self.assertNotIn('compiler=$(nix build .#compactc', forge)
-        self.assertIn("inputs.compiler-producer-result == ''", forge)
-        self.assertEqual(forge.count('test "$PRODUCER_RESULT" = success'), 2)
-        self.assertEqual(forge.count('--artifact-id "$COMPILER_ARTIFACT_ID"'), 2)
-        for retained in ('forge_ci.py run', '--uncached-zkir', 'linux-native', 'steps.tests.outcome'):
-            self.assertIn(retained, forge)
+class CompilerFanoutTests(unittest.TestCase):
+    def test_consumers_keep_exact_platform_producers_and_complete_gates(self):
         caller = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
-        call = caller.split('  forge-apple:', 1)[1].split('  build-macos:', 1)[0]
-        self.assertIn('needs: [compiler-darwin, forge-paths]', call)
-        self.assertIn("needs.forge-paths.outputs.forge == 'true'", call)
-        self.assertIn('needs.compiler-darwin.outputs.artifact-id', call)
-        self.assertNotIn('secrets:', call)
+        self.assertEqual(caller.count('uses: ./.github/workflows/compiler-producer.yml'), 2)
+        self.assertIn('    needs: compiler-darwin', caller)
+        self.assertIn('    needs: [license-check, compiler-linux]', caller)
+        for required in ('check_native_ci.sh', 'check_archive_consumer.py', 'check_rejections.py',
+                         'cargo clippy --workspace', 'yarn test'):
+            self.assertIn(required, caller)
+        self.assertNotIn('continue-on-error', caller)
         self.assertNotIn('  push:', caller.split('permissions:', 1)[0])
 
 

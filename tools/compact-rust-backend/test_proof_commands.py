@@ -69,7 +69,7 @@ class ProofCommands(unittest.TestCase):
                    "tools/compact-rust-backend/check_rejections.py")
         self.assertEqual(workflow.count(command), 1)
         first = workflow.index(command)
-        self.assertLess(workflow.index("- name: Build compiler"), first)
+        self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), first)
         self.assertLess(first, workflow.index("- name: Run compiler tests"))
         self.assertLess(first, workflow.index("--prepare-proof-material"))
         live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
@@ -174,7 +174,7 @@ class ProofCommands(unittest.TestCase):
 
     def test_runner_retains_cwd_environment_and_original_subprocess_failure(self):
         original = ("cargo", "run", "-p", "compact-rust-proof-smoke", "--", "--coracle-start", "output")
-        environment = {"COMPACT_RUST_PROOF_PROFILE": "dev", "COMPACT_ZKIR_MODE": "uncached"}
+        environment = {"COMPACT_RUST_PROOF_PROFILE": "dev", "UNRELATED_VARIABLE": "retained"}
         failure = subprocess.CalledProcessError(23, original)
         with patch.object(cli.subprocess, "run", side_effect=failure) as run:
             with self.assertRaises(subprocess.CalledProcessError) as raised:

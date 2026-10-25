@@ -3,12 +3,6 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
-    inputs:
-      native-forge-experiment:
-        description: Local-review-only experimental Linux owner route; no reusable cache publication
-        type: boolean
-        default: false
-        required: false
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -38,37 +32,6 @@ jobs:
       contents: read
     with:
       system: aarch64-darwin
-
-  forge-paths:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      forge: ${{ steps.paths.outputs.forge }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - id: paths
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          MERGE_SHA: ${{ github.sha }}
-        run: python3 .github/scripts/forge_paths.py --base "$BASE_SHA" --merge "$MERGE_SHA" --github-output "$GITHUB_OUTPUT"
-
-  forge-apple:
-    needs: [compiler-darwin, forge-paths]
-    if: always() && github.event_name == 'pull_request' && needs.forge-paths.outputs.forge == 'true'
-    uses: ./.github/workflows/forge-local-ci.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      compiler-artifact-id: ${{ needs.compiler-darwin.outputs.artifact-id }}
-      compiler-producer-result: ${{ needs.compiler-darwin.result }}
-      compiler-producer-attempt: ${{ needs.compiler-darwin.outputs.producer-attempt }}
 
   build-macos:
     needs: compiler-darwin
@@ -483,7 +446,7 @@ jobs:
           import importlib, shutil, subprocess, sys
           print("Nix Python:", sys.executable, sys.version)
           sys.path.insert(0, "tools/compact-rust-backend")
-          for module in ("hashlib", "tomllib", "unittest.mock", "forge_circuits", "target_checks"):
+          for module in ("hashlib", "tomllib", "unittest.mock", "target_checks"):
               importlib.import_module(module)
               print("Imported:", module)
           print(shutil.which("cargo"))
@@ -511,32 +474,7 @@ jobs:
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Check and test native Rust backend
-        if: github.event_name != 'workflow_dispatch' || !inputs.native-forge-experiment
         run: bash tools/compact-rust-backend/check_native_ci.sh
-
-      - name: Explicit experimental Forge route around the single original native owner
-        if: github.event_name == 'workflow_dispatch' && inputs.native-forge-experiment
-        run: |
-          python3 -B tools/compact-rust-backend/run_native_ci_forge.py \
-            --compiler "$COMPACTC" --output "$RUNNER_TEMP/native-forge-owner-experiment"
-
-      - name: Retain experimental native-owner diagnostics
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.native-forge-experiment
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-forge-owner-diagnostics-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/native-forge-owner-experiment/forge-derivation.json
-            ${{ runner.temp }}/native-forge-owner-experiment/cargo-metadata.json
-            ${{ runner.temp }}/native-forge-owner-experiment/ledger-provenance.json
-            ${{ runner.temp }}/native-forge-owner-experiment/*-material.json
-            ${{ runner.temp }}/native-forge-owner-experiment/finite-current/*.json
-            ${{ runner.temp }}/native-forge-owner-experiment/admitted/auto-policy.json
-            ${{ runner.temp }}/native-forge-owner-experiment/admitted/native-plan/*.json
-          if-no-files-found: warn
-          retention-days: 7
-          # No recursive directory upload: excludes parameters, cache objects,
-          # exports, stopped snapshots and the private proof executable.
 
       - name: Rehearse Rust runtime packages
         run: |

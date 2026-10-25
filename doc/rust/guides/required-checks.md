@@ -52,8 +52,8 @@ when the workflow is merged. Issue #654 records that remaining operational step.
 
 ## Forge separation
 
-This required gate has no Forge dependency and uses ordinary tests. The separate
-Forge acceleration delivery must qualify compatible keys and preserve actual
+This required gate has no Forge dependency and uses ordinary tests. Forge
+adoption is deferred on `experiment/zkir-forge`; any later adoption must preserve actual
 proofs, verification, assertions and an uncached key-generation lane. Build caches
 are not cached test results. Do not add a key-cache setup cost to lanes that
 perform no key generation.
@@ -89,7 +89,7 @@ command is a dry run. Apply writes its snapshot before the first remote mutation
 if a later API call fails, the same snapshot can reconcile partial changes.
 Restoration checks repository, workflow identity and current state. Unknown
 workflows are left unchanged; an explicitly requested unregistered workflow is an
-error. The script protects Rust-AST, Forge, compiler-build and security workflows
+error. The script protects Rust-AST, compiler-build and security workflows
 from disabling. It refuses unexpected states such as inactivity suspension.
 
 The `focus` profile pauses editor, TypeScript debugger/runtime, Agda, unrelated
