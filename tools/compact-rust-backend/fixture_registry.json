@@ -445,7 +445,7 @@
     },
     {
       "source": "examples/rust_backend/constant_vector_projection.compact",
-      "source_sha256": "7d6933784f959b2920a993f149dcbf8972293c29396542831340494b03b9c4ae",
+      "source_sha256": "bc6dd0694faeb5f88ed6baa2f170f77cdb147093ad061ccb6a22b06f76f3b082",
       "frontend_outcome": "accepted",
       "frontend_flags": [
         "--rust-functional-ledger8"
