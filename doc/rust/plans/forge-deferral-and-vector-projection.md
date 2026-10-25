@@ -169,3 +169,13 @@ and a genuine-source regression for the existing failure, extend the shared
 checked operation, implement ordinary and functional rendering, and run the
 finite acceptance above. This plan does not implement #674 or claim full
 language parity, fresh proof qualification or release readiness.
+
+## Autonomous implementation checkpoint — 2026-10-25
+
+After the owner activated the primary Rust AST goal, #674 implementation began.
+See [the narrow decision and current evidence](674-constant-vector-projection-decision.md)
+and the maintained `check_constant_vector_projection.py` gate. Source transport,
+checked projection, structured native/functional emission, owned reuse and
+focused generated compile-fail controls are implemented locally. Real proof,
+verification and full integration acceptance remain open; this amendment does
+not reopen or complete the deferred Forge experiment.

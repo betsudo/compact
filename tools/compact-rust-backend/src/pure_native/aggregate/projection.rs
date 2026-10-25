@@ -15,3 +15,10 @@ pub(super) fn tuple(value: syn::Expr, index: usize) -> syn::Expr {
     let index = syn::Index::from(index);
     syn::parse_quote!((#value).#index)
 }
+
+/// The semantic owner has checked this literal against the fixed vector length.
+/// Preserve the original aggregate and retain only an owned selected element.
+pub(crate) fn vector(value: syn::Expr, index: usize, ownership: Ownership) -> syn::Expr {
+    let index = syn::Index::from(index);
+    retained_value_with_ownership(syn::parse_quote!((#value).0[#index]), ownership)
+}

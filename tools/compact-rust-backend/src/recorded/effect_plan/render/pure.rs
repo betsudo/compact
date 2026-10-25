@@ -57,6 +57,14 @@ pub(in super::super) fn expression(
             let member = syn::Index::from(*index);
             crate::retained_value(syn::parse_quote!(#source.#member), &binding.value.ty)
         }
+        Operation::VectorProject {
+            value: input,
+            index,
+        } => {
+            let source = place(input);
+            let index = syn::Index::from(*index);
+            crate::retained_value(syn::parse_quote!((#source).0[#index]), &binding.value.ty)
+        }
         Operation::Vector { elements } => {
             let Type::Vector { element, .. } = &binding.value.ty else {
                 unreachable!("checked vector output");

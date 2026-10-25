@@ -52,18 +52,48 @@ pub(super) fn tuple<S: AggregateSink>(
     sink: &mut S,
 ) -> Result<Typed<Output<S>>, RenderError> {
     let value = children.visit(source, sink)?;
-    let Type::Tuple { elements } = value.ty else {
-        return Err(RenderError::ExpectedTuple(value.ty));
-    };
-    let ty = elements
-        .get(index)
-        .ok_or(RenderError::InvalidTupleIndex(index))?
-        .clone();
-    Ok(Typed {
-        output: CheckedAggregate::TupleIndex {
+    let (facts, ty) = check_index(value.ty, index)?;
+    let output = match facts {
+        IndexFacts::Tuple => CheckedAggregate::TupleIndex {
             value: value.output,
             index,
         },
-        ty,
-    })
+        IndexFacts::Vector(ownership) => CheckedAggregate::VectorIndex {
+            value: value.output,
+            index,
+            ownership,
+        },
+    };
+    Ok(Typed { output, ty })
+}
+
+/// The frontend's private `tuple_index` transport is type-directed. Tuple
+/// arity and vector bounds are checked before any syntax or selected value.
+pub(crate) enum IndexFacts {
+    Tuple,
+    Vector(Ownership),
+}
+
+pub(crate) fn check_index(ty: Type, index: usize) -> Result<(IndexFacts, Type), RenderError> {
+    match ty {
+        Type::Tuple { elements } => {
+            let ty = elements
+                .get(index)
+                .ok_or(RenderError::InvalidTupleIndex(index))?
+                .clone();
+            Ok((IndexFacts::Tuple, ty))
+        }
+        Type::Vector { element, length } => {
+            if index >= length {
+                return Err(RenderError::InvalidVectorIndex { index, length });
+            }
+            let ownership = if copy_type(&element) {
+                Ownership::Copy
+            } else {
+                Ownership::Owned
+            };
+            Ok((IndexFacts::Vector(ownership), *element))
+        }
+        ty => Err(RenderError::ExpectedTuple(ty)),
+    }
 }

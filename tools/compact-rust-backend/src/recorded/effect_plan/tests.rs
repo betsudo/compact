@@ -556,3 +556,6 @@ mod unit_value_operations;
 
 #[path = "tests/storage_codecs.rs"]
 mod storage_codecs;
+
+#[path = "tests/vector_projection.rs"]
+mod vector_projection;

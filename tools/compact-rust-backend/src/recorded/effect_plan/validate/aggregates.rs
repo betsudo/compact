@@ -53,6 +53,15 @@ pub(super) fn validate(
             };
             elements.get(*index).is_some_and(|element| element == ty)
         }
+        Operation::VectorProject { value, index } => {
+            use_value(value)?;
+            let Type::Vector { element, length } = &value.ty else {
+                return Ok(false);
+            };
+            *index < *length
+                && element.as_ref() == ty
+                && declarations.vector_projection_matches(binding.value.id, value.id, *index)
+        }
         Operation::Vector { elements: values } => {
             let Type::Vector { element, length } = ty else {
                 return Ok(false);

@@ -116,6 +116,10 @@ pub(super) enum Operation {
         value: Value,
         index: usize,
     },
+    VectorProject {
+        value: Value,
+        index: usize,
+    },
     Tuple {
         elements: Vec<Value>,
     },

@@ -1,0 +1,49 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+witness values(): Vector<2, Field>;
+
+export pure circuit first(items: Vector<2, Field>): Field { return items[0]; }
+export pure circuit last(items: Vector<2, Field>): Field { return items[1]; }
+export pure circuit singleton(items: Vector<1, Field>): Field { return items[0]; }
+
+export pure circuit first_text(items: Vector<2, Opaque<"string">>): Opaque<"string"> {
+  return items[0];
+}
+pure circuit texts(items: Vector<2, Opaque<"string">>): Vector<2, Opaque<"string">> {
+  return items;
+}
+export pure circuit temporary_text(items: Vector<2, Opaque<"string">>): Opaque<"string"> {
+  return texts(items)[1];
+}
+
+export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field {
+  const selected = select_first ? items[0] : items[1];
+  stored = disclose(selected);
+  return stored;
+}
+export circuit owned(items: Vector<2, Opaque<"string">>): [Opaque<"string">, Opaque<"string">, Vector<2, Opaque<"string">>] {
+  const a = items[0];
+  const b = items[0];
+  stored = 1;
+  return [a, b, items];
+}
+export circuit witnessed(select_first: Boolean): Field {
+  const items = values();
+  const selected = select_first ? items[0] : items[1];
+  stored = disclose(selected);
+  return stored;
+}
+export circuit temporary(): Field {
+  stored = disclose(values()[1]);
+  return stored;
+}
+export circuit conditional(active: Boolean): Field {
+  if (disclose(active)) { stored = disclose(values()[0]); }
+  else { stored = 0; }
+  return stored;
+}

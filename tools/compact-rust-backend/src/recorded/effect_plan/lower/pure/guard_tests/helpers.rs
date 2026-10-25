@@ -130,6 +130,7 @@ pub(super) fn run(
         max_call_depth,
         max_expanded_steps,
         next: 11,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,
@@ -216,7 +217,7 @@ pub(super) fn checked(
     let declarations = Declarations::with_calls(&ledger, &witnesses, &pure, &stateful)
         .with_type_environment(types)
         .with_root(root);
-    let (plan, certificates) = super::super::super::lower_with_pure_calls_observed(
+    let lowered = super::super::super::lower_with_pure_calls_observed(
         root,
         &declarations,
         &pure,
@@ -224,9 +225,11 @@ pub(super) fn checked(
         observer,
     )
     .map_err(LoweringRejection::into_checked_gap)?;
-    let count = certificates.iter().count();
-    let declarations = declarations.with_certificates(certificates, &pure)?;
-    let checked = super::super::super::super::validate::check(plan, declarations)?;
+    let count = lowered.certificates.iter().count();
+    let declarations = declarations
+        .with_certificates(lowered.certificates, &pure)?
+        .with_vector_projections(lowered.vector_projections);
+    let checked = super::super::super::super::validate::check(lowered.plan, declarations)?;
     let output = super::super::super::super::render(&checked)?;
     let steps = output.steps;
     let result = output.result;

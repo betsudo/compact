@@ -150,14 +150,6 @@ fn tuple_projection_source_refuses_wrong_kind_and_out_of_range_index() {
             0,
             "tuple projection index is outside its arity",
         ),
-        (
-            Type::Vector {
-                element: Box::new(Type::Field),
-                length: 2,
-            },
-            0,
-            "tuple projection requires a tuple value",
-        ),
         (Type::Field, 0, "tuple projection requires a tuple value"),
     ] {
         let mut source = root(projection(reference("input"), index));

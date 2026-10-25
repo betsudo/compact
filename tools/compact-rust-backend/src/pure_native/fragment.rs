@@ -7,6 +7,12 @@
 
 pub(crate) enum NativeFragment {
     Value(syn::Expr),
+    /// Ordinary reads retain the owned binding; a projection borrows its place.
+    /// This is native output information, never source/type admission authority.
+    Place {
+        expression: syn::Expr,
+        place: syn::Ident,
+    },
     Unit {
         expression: syn::Expr,
         statements: Vec<syn::Stmt>,
@@ -23,13 +29,22 @@ impl NativeFragment {
 
     pub(crate) fn into_expression(self) -> syn::Expr {
         match self {
-            Self::Value(expression) | Self::Unit { expression, .. } => expression,
+            Self::Value(expression)
+            | Self::Place { expression, .. }
+            | Self::Unit { expression, .. } => expression,
+        }
+    }
+
+    pub(crate) fn into_projection_place(self) -> syn::Expr {
+        match self {
+            Self::Place { place, .. } => syn::parse_quote!(#place),
+            value => value.into_expression(),
         }
     }
 
     pub(crate) fn into_views(self) -> (syn::Expr, Vec<syn::Stmt>) {
         match self {
-            Self::Value(expression) => (expression, Vec::new()),
+            Self::Value(expression) | Self::Place { expression, .. } => (expression, Vec::new()),
             Self::Unit {
                 expression,
                 statements,
@@ -40,9 +55,10 @@ impl NativeFragment {
 
 pub(crate) fn sequence(steps: Vec<syn::Stmt>, tail: NativeFragment) -> NativeFragment {
     match tail {
-        NativeFragment::Value(value) => {
-            NativeFragment::Value(syn::parse_quote!({ #(#steps)* #value }))
-        }
+        NativeFragment::Value(value)
+        | NativeFragment::Place {
+            expression: value, ..
+        } => NativeFragment::Value(syn::parse_quote!({ #(#steps)* #value })),
         NativeFragment::Unit {
             expression: value,
             statements: tail,
@@ -57,9 +73,10 @@ pub(crate) fn sequence(steps: Vec<syn::Stmt>, tail: NativeFragment) -> NativeFra
 
 pub(crate) fn lexical(bindings: Vec<syn::Stmt>, body: NativeFragment) -> NativeFragment {
     match body {
-        NativeFragment::Value(body) => {
-            NativeFragment::Value(syn::parse_quote!({ #(#bindings)* #body }))
-        }
+        NativeFragment::Value(body)
+        | NativeFragment::Place {
+            expression: body, ..
+        } => NativeFragment::Value(syn::parse_quote!({ #(#bindings)* #body })),
         NativeFragment::Unit {
             expression: body,
             statements: body_statements,

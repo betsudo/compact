@@ -67,6 +67,15 @@ pub(crate) fn aggregate(
             value: value.into_expression(),
             index,
         },
+        A::VectorIndex {
+            value,
+            index,
+            ownership,
+        } => A::VectorIndex {
+            value: value.into_projection_place(),
+            index,
+            ownership,
+        },
         A::StructLiteral { name, fields } => A::StructLiteral {
             name,
             fields: fields

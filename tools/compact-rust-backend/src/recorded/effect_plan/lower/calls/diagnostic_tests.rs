@@ -95,7 +95,7 @@ fn run(
     let pure = HashMap::new();
     let declarations = Declarations::with_calls(&HashMap::new(), &HashMap::new(), &pure, &calls)
         .with_root(&sources[root]);
-    let (plan, certificates) = super::super::lower_with_pure_calls_observed(
+    let lowered = super::super::lower_with_pure_calls_observed(
         &sources[root],
         &declarations,
         &pure,
@@ -103,8 +103,10 @@ fn run(
         observer,
     )
     .map_err(LoweringRejection::into_checked_gap)?;
-    let declarations = declarations.with_certificates(certificates, &pure)?;
-    let checked = super::super::super::validate::check(plan, declarations)?;
+    let declarations = declarations
+        .with_certificates(lowered.certificates, &pure)?
+        .with_vector_projections(lowered.vector_projections);
+    let checked = super::super::super::validate::check(lowered.plan, declarations)?;
     let rendered = super::super::super::render(&checked)?;
     let steps = rendered.steps;
     let result = rendered.result;

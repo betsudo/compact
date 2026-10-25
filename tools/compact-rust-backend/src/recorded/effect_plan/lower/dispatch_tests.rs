@@ -31,6 +31,7 @@ fn lowerer<'a>(
         max_call_depth: 32,
         max_expanded_steps: 128,
         next: 11,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,

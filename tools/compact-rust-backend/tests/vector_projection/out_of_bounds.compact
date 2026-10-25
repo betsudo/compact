@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export pure circuit invalid(items: Vector<2, Field>): Field { return items[2]; }

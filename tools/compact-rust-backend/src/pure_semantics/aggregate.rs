@@ -21,7 +21,7 @@ use crate::{
 mod call;
 pub(crate) use call::{CallRefusal, CallRefusalCallback};
 mod literal;
-mod projection;
+pub(crate) mod projection;
 mod vector;
 
 pub(crate) enum AggregateSource<'a> {
@@ -75,6 +75,11 @@ pub(crate) enum CheckedAggregate<V, B, C> {
     TupleIndex {
         value: V,
         index: usize,
+    },
+    VectorIndex {
+        value: V,
+        index: usize,
+        ownership: Ownership,
     },
     StructLiteral {
         name: CheckedName,

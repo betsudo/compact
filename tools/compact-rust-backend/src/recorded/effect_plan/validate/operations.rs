@@ -34,6 +34,7 @@ pub(super) fn validate(
         | Operation::StructConstruct { .. }
         | Operation::StructProject { .. }
         | Operation::TupleProject { .. }
+        | Operation::VectorProject { .. }
         | Operation::Tuple { .. }
         | Operation::Vector { .. } => aggregates::validate(binding, declarations, scope)?,
         Operation::CreateZswapInput { coin } => {

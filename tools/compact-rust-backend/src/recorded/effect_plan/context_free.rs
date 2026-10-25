@@ -25,6 +25,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::StructConstruct { .. }
                 | Operation::StructProject { .. }
                 | Operation::TupleProject { .. }
+                | Operation::VectorProject { .. }
                 | Operation::Tuple { .. }
                 | Operation::Vector { .. }
                 | Operation::PersistentCommit { .. }

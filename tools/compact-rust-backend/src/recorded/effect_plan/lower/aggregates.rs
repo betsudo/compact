@@ -75,20 +75,40 @@ impl Lowerer<'_> {
             }
             Expr::TupleIndex { value, index } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
-                let Type::Tuple { elements } = &value.ty else {
-                    return Err(invalid(path, "tuple projection requires a tuple value"));
-                };
-                let ty = elements
-                    .get(*index)
-                    .ok_or_else(|| invalid(path, "tuple projection index is outside its arity"))?
-                    .clone();
-                Ok((
-                    Operation::TupleProject {
-                        value,
-                        index: *index,
-                    },
-                    ty,
-                ))
+                match &value.ty {
+                    Type::Tuple { elements } => {
+                        let ty = elements
+                            .get(*index)
+                            .ok_or_else(|| {
+                                invalid(path, "tuple projection index is outside its arity")
+                            })?
+                            .clone();
+                        Ok((
+                            Operation::TupleProject {
+                                value,
+                                index: *index,
+                            },
+                            ty,
+                        ))
+                    }
+                    Type::Vector { element, length } => {
+                        if *index >= *length {
+                            return Err(invalid(
+                                path,
+                                "vector projection index is outside its length",
+                            ));
+                        }
+                        let ty = (**element).clone();
+                        Ok((
+                            Operation::VectorProject {
+                                value,
+                                index: *index,
+                            },
+                            ty,
+                        ))
+                    }
+                    _ => Err(invalid(path, "tuple projection requires a tuple value")),
+                }
             }
             Expr::Vector { element, elements } => {
                 let ty = Type::Vector {

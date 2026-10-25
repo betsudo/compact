@@ -17,6 +17,7 @@ pub(super) struct Declarations {
     root: Option<RootDeclaration>,
     pure: Certificates,
     types: super::type_environment::TypeEnvironment,
+    vector_projections: VectorProjectionBindings,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -50,7 +51,33 @@ impl CallSignature {
             && self.result == source.result
     }
 }
+/// Source-lowered projection occurrences, retained outside the mutable candidate
+/// plan. Type/scope validation alone cannot detect a same-type SSA substitution.
+/// This binds only this operation family; it is not whole-plan equivalence or
+/// a serialized source attestation. Existing lowering work limits bound entries.
+#[derive(Debug, Default)]
+pub(super) struct VectorProjectionBindings(HashMap<usize, (usize, usize)>);
+impl VectorProjectionBindings {
+    pub(super) fn record(&mut self, result: usize, operand: usize, index: usize) {
+        let previous = self.0.insert(result, (operand, index));
+        assert!(previous.is_none(), "fresh lowered vector projection result");
+    }
+}
+
 impl Declarations {
+    pub(super) fn with_vector_projections(mut self, bindings: VectorProjectionBindings) -> Self {
+        self.vector_projections = bindings;
+        self
+    }
+    pub(super) fn vector_projection_matches(
+        &self,
+        result: usize,
+        operand: usize,
+        index: usize,
+    ) -> bool {
+        self.vector_projections.0.get(&result) == Some(&(operand, index))
+    }
+
     pub(super) fn new(
         ledger: &HashMap<&str, &LedgerField>,
         witnesses: &HashMap<&str, &WitnessDeclaration>,
@@ -66,6 +93,7 @@ impl Declarations {
             root: None,
             pure: Certificates::default(),
             types: Default::default(),
+            vector_projections: VectorProjectionBindings::default(),
         }
     }
     pub(super) fn with_type_environment(

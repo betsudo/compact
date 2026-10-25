@@ -5,7 +5,7 @@
 //! Source-order lowering into typed blocks; unsupported children retain their paths.
 use super::{
     RecordingGap,
-    declarations::Declarations,
+    declarations::{Declarations, VectorProjectionBindings},
     invalid,
     model::*,
     validate::{cell_type, execution_result_type, root_interface_type, uint},
@@ -39,6 +39,13 @@ use super::rejection::{ConcreteNode, LoweringRejection};
 use super::rejection::{FailurePhase, Precision};
 
 type Scope = HashMap<String, Value>;
+
+pub(super) struct Lowered {
+    pub plan: Plan,
+    pub certificates: Certificates,
+    pub vector_projections: VectorProjectionBindings,
+}
+
 struct Lowerer<'a> {
     observer: Option<&'a dyn RefusalObserver>,
     declarations: &'a Declarations,
@@ -49,6 +56,7 @@ struct Lowerer<'a> {
     max_call_depth: usize,
     max_expanded_steps: usize,
     next: usize,
+    vector_projections: VectorProjectionBindings,
     #[cfg(test)]
     root_action: Option<usize>,
     #[cfg(test)]
@@ -63,7 +71,7 @@ pub(super) fn lower_with_calls<'a>(
     circuits: &'a HashMap<&'a str, &'a StatefulCircuit>,
 ) -> Result<Plan, RecordingGap> {
     lower_with_pure_calls(circuit, declarations, &HashMap::new(), circuits)
-        .map(|(plan, _)| plan)
+        .map(|lowered| lowered.plan)
         .map_err(|rejection| rejection.into_parts().0)
 }
 
@@ -72,7 +80,7 @@ pub(super) fn lower_with_pure_calls<'a>(
     declarations: &'a Declarations,
     pure: &'a HashMap<&'a str, &'a PureCircuit>,
     circuits: &'a HashMap<&'a str, &'a StatefulCircuit>,
-) -> Result<(Plan, Certificates), LoweringRejection> {
+) -> Result<Lowered, LoweringRejection> {
     lower_with_pure_calls_observed(circuit, declarations, pure, circuits, None)
 }
 pub(super) fn lower_with_pure_calls_observed<'a>(
@@ -81,7 +89,7 @@ pub(super) fn lower_with_pure_calls_observed<'a>(
     pure: &'a HashMap<&'a str, &'a PureCircuit>,
     circuits: &'a HashMap<&'a str, &'a StatefulCircuit>,
     observer: Option<&'a dyn RefusalObserver>,
-) -> Result<(Plan, Certificates), LoweringRejection> {
+) -> Result<Lowered, LoweringRejection> {
     declarations
         .types()
         .validate_at_observed(&circuit.result, "return_value", observer)?;
@@ -100,6 +108,7 @@ pub(super) fn lower_with_pure_calls_observed<'a>(
         max_call_depth,
         max_expanded_steps,
         next: 0,
+        vector_projections: VectorProjectionBindings::default(),
         #[cfg(test)]
         root_action: None,
         #[cfg(test)]
@@ -142,7 +151,11 @@ pub(super) fn lower_with_pure_calls_observed<'a>(
         body: Block { bindings, result },
         result_type: circuit.result.clone(),
     };
-    Ok((plan, lower.pure.into_certificates()))
+    Ok(Lowered {
+        plan,
+        certificates: lower.pure.into_certificates(),
+        vector_projections: lower.vector_projections,
+    })
 }
 
 impl Lowerer<'_> {
@@ -249,6 +262,13 @@ impl Lowerer<'_> {
         path: &str,
     ) -> Value {
         let value = self.fresh(ty);
+        if let Operation::VectorProject {
+            value: operand,
+            index,
+        } = &operation
+        {
+            self.vector_projections.record(value.id, operand.id, *index);
+        }
         bindings.push(Binding {
             value: value.clone(),
             operation,

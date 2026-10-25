@@ -32,7 +32,8 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                 | Operation::PureCall { .. } | Operation::Assert { .. }
                 | Operation::Literal(_) | Operation::EnumVariant { .. } | Operation::Default
                 | Operation::StructConstruct { .. } | Operation::StructProject { .. }
-                | Operation::TupleProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
+                | Operation::TupleProject { .. }
+                | Operation::VectorProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
                 | Operation::PersistentCommit { .. } | Operation::FieldToBytes32(_)
                 | Operation::PersistentHash(_) | Operation::Keccak256(_) | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_) | Operation::UpgradeFromTransient(_) | Operation::TransientHash(_)

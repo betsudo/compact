@@ -49,6 +49,7 @@ pub(super) fn render(
         Operation::StructConstruct { .. }
         | Operation::StructProject { .. }
         | Operation::TupleProject { .. }
+        | Operation::VectorProject { .. }
         | Operation::Vector { .. }
         | Operation::Tuple { .. }
         | Operation::Add(..)

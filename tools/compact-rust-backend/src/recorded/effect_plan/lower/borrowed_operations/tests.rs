@@ -76,6 +76,7 @@ fn run(
         max_call_depth,
         max_expanded_steps,
         next: 17,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,

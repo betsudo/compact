@@ -10,7 +10,7 @@ use crate::{
     pure_semantics::{aggregate::CheckedAggregate, identifier::CheckedName, sink::AggregateSink},
 };
 mod literal;
-mod projection;
+pub(crate) mod projection;
 mod vector;
 
 impl AggregateSink for NativeLeafSink {
@@ -28,6 +28,11 @@ impl AggregateSink for NativeLeafSink {
                 ownership,
             } => projection::field(value, field, ownership),
             CheckedAggregate::TupleIndex { value, index } => projection::tuple(value, index),
+            CheckedAggregate::VectorIndex {
+                value,
+                index,
+                ownership,
+            } => projection::vector(value, index, ownership),
             CheckedAggregate::StructLiteral { name, fields } => literal::structure(name, fields),
             CheckedAggregate::Tuple(values) => literal::tuple(values),
             CheckedAggregate::Vector(values) => {

@@ -74,6 +74,7 @@ fn lower<'a>(
         max_call_depth,
         max_expanded_steps,
         next: 11,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,

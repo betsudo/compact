@@ -54,7 +54,15 @@ impl LeafSink for NativeSink<'_> {
         self.syntax.carriers()
     }
     fn leaf(&mut self, facts: CheckedLeaf<'_, syn::Type, syn::Ident>) -> Self::Value {
-        NativeFragment::Value(self.syntax.leaf(facts))
+        let place = match &facts {
+            CheckedLeaf::Parameter { binding, .. } => Some((*binding).clone()),
+            _ => None,
+        };
+        let expression = self.syntax.leaf(facts);
+        match place {
+            Some(place) => NativeFragment::Place { expression, place },
+            None => NativeFragment::Value(expression),
+        }
     }
 }
 impl ConversionSink for NativeSink<'_> {

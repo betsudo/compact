@@ -466,6 +466,10 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
+      - name: Check generated constant vector projection APIs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection" --report "$RUNNER_TEMP/compact-vector-projection.json"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -495,6 +499,7 @@ jobs:
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
             ${{ runner.temp }}/compact-functional-consumer.json
+            ${{ runner.temp }}/compact-vector-projection.json
             target/package/midnight-compact-runtime-macros-*.crate
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error
