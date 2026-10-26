@@ -38,6 +38,13 @@ pub(super) fn render(
         super::super::vector_fold_syntax::iteration(sources, items, value, &binding.path)?;
     let body_steps = block(body, declarations)?;
     let result = value(&body.result);
+    // Validation has checked the whole body even when no runtime step remains.
+    // Unit carries no payload; an effect-free body need not move the frame out
+    // and immediately back into itself. Keep operand/iteration evaluation.
+    if binding.value.ty == crate::ir::Type::Unit && body_steps.is_empty() {
+        return Ok(syn::parse_quote!(for #pattern in #iterator {}));
+    }
+
     if binding.value.ty == crate::ir::Type::Unit {
         Ok(syn::parse_quote! {
             let frame = {

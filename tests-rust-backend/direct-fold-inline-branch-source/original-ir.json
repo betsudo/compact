@@ -1,0 +1,302 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "inline-branch.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "factor",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "choice",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "vector_fold",
+          "accumulator": {
+            "name": "acc",
+            "ty": {
+              "kind": "field"
+            }
+          },
+          "items": [
+            {
+              "name": "item",
+              "ty": {
+                "kind": "field"
+              }
+            }
+          ],
+          "initial": {
+            "kind": "parameter",
+            "name": "seed"
+          },
+          "sources": [
+            {
+              "kind": "parameter",
+              "name": "values"
+            }
+          ],
+          "body": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "next",
+                "ty": {
+                  "kind": "field"
+                },
+                "value": {
+                  "kind": "add",
+                  "left": {
+                    "kind": "multiply",
+                    "left": {
+                      "kind": "parameter",
+                      "name": "acc"
+                    },
+                    "right": {
+                      "kind": "parameter",
+                      "name": "factor"
+                    }
+                  },
+                  "right": {
+                    "kind": "parameter",
+                    "name": "item"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "conditional",
+              "condition": {
+                "kind": "parameter",
+                "name": "choice"
+              },
+              "then": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "cell_write",
+                    "field": "stored",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "next"
+                    }
+                  },
+                  {
+                    "kind": "assert",
+                    "condition": {
+                      "kind": "not_equal",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "item"
+                      },
+                      "right": {
+                        "kind": "field_literal",
+                        "value": "9"
+                      }
+                    },
+                    "message": "inline item denied"
+                  }
+                ],
+                "result": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "cell_read",
+                    "field": "stored",
+                    "index": 0
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "not_equal",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "item"
+                      },
+                      "right": {
+                        "kind": "field_literal",
+                        "value": "7"
+                      }
+                    },
+                    "then": {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "tmp_28",
+                          "ty": {
+                            "kind": "field"
+                          },
+                          "value": {
+                            "kind": "add",
+                            "left": {
+                              "kind": "parameter",
+                              "name": "next"
+                            },
+                            "right": {
+                              "kind": "field_literal",
+                              "value": "1"
+                            }
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "cell_write",
+                        "field": "stored",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "tmp_28"
+                        }
+                      }
+                    },
+                    "otherwise": {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "tmp_29",
+                          "ty": {
+                            "kind": "field"
+                          },
+                          "value": {
+                            "kind": "add",
+                            "left": {
+                              "kind": "parameter",
+                              "name": "next"
+                            },
+                            "right": {
+                              "kind": "field_literal",
+                              "value": "2"
+                            }
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "cell_write",
+                        "field": "stored",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "tmp_29"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "cell_read",
+                    "field": "stored",
+                    "index": 0
+                  }
+                }
+              }
+            }
+          },
+          "length": 2
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "inline-branch.compact",
+        "line": 19,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_27",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_27"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "inline-branch.compact",
+      "line": 18,
+      "column": 1
+    }
+  }
+}

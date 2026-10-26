@@ -137,7 +137,7 @@ pub(crate) fn reduction(
     for (source, item) in pairs {
         let mut zipped: syn::ExprMethodCall = syn::parse_quote!(__iterator.zip(__source));
         zipped.receiver = Box::new(iterator);
-        *zipped.args.first_mut().expect("zip argument") = owned_iterator(source);
+        *zipped.args.first_mut().expect("zip argument") = owned_array(source);
         iterator = syn::Expr::MethodCall(zipped);
         pattern = syn::parse_quote!((#pattern, #item));
     }
@@ -169,11 +169,14 @@ pub(crate) fn reduction(
     *assign.right = body;
     syn::Expr::Block(result)
 }
-pub(crate) fn owned_iterator(source: syn::Expr) -> syn::Expr {
+pub(crate) fn owned_array(source: syn::Expr) -> syn::Expr {
     let mut array: syn::ExprMethodCall = syn::parse_quote!(__source.into_array());
     array.receiver = Box::new(source);
+    syn::Expr::MethodCall(array)
+}
+pub(crate) fn owned_iterator(source: syn::Expr) -> syn::Expr {
     let mut iterator: syn::ExprMethodCall = syn::parse_quote!(__array.into_iter());
-    iterator.receiver = Box::new(syn::Expr::MethodCall(array));
+    iterator.receiver = Box::new(owned_array(source));
     syn::Expr::MethodCall(iterator)
 }
 

@@ -23,7 +23,7 @@ use crate::{
 mod literal;
 pub(crate) mod projection;
 mod vector;
-pub(crate) use vector::owned_iterator as fold_iterator;
+pub(crate) use vector::{owned_array as fold_iterable, owned_iterator as fold_iterator};
 
 impl AggregateSink for NativeLeafSink {
     fn binding(&mut self, name: &CheckedName) -> syn::Ident {

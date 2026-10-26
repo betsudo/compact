@@ -98,7 +98,7 @@ pub(super) fn render(
         let mut zip: syn::ExprMethodCall = syn::parse_quote!(__iter.zip(__source));
         zip.receiver = Box::new(iterator);
         *zip.args.first_mut().expect("Fold zip source") =
-            crate::pure_native::aggregate::fold_iterator(source);
+            crate::pure_native::aggregate::fold_iterable(source);
         iterator = syn::Expr::MethodCall(zip);
         pattern = syn::parse_quote!((#pattern, #item));
     }

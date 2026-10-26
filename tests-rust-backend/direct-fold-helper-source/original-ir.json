@@ -1,0 +1,255 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "helper.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "add",
+        "left": {
+          "kind": "multiply",
+          "left": {
+            "kind": "parameter",
+            "name": "acc"
+          },
+          "right": {
+            "kind": "field_literal",
+            "value": "10"
+          }
+        },
+        "right": {
+          "kind": "parameter",
+          "name": "item"
+        }
+      },
+      "source": {
+        "file": "helper.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "total",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "vector_fold_call",
+        "name": "step",
+        "initial": {
+          "kind": "parameter",
+          "name": "seed"
+        },
+        "source": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "values"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        },
+        "accumulator": {
+          "kind": "field"
+        },
+        "element": {
+          "kind": "field"
+        },
+        "length": 2
+      },
+      "source": {
+        "file": "helper.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_7",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "call",
+                "name": "total",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "seed"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "values"
+                    },
+                    "ty": {
+                      "kind": "vector",
+                      "length": 2,
+                      "element": {
+                        "kind": "field"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "action": {
+            "kind": "cell_write",
+            "field": "stored",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_7"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "helper.compact",
+        "line": 21,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_6",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_6"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "helper.compact",
+      "line": 18,
+      "column": 1
+    }
+  }
+}

@@ -2686,5 +2686,349 @@
     "name": "wide",
     "signature": "witness wide(): Uint<160>",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/ordered.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/inline-branch.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, factor: Field, choice: Boolean, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/captured.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, factor: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/inline-effectful.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, factor: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multiple-inputs.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, left: Vector<2, Field>, right: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<0, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/direct.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/effectful-reducer.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/guarded.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/helper.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/witness-reducer.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/owned.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Opaque<\"string\">, values: Vector<2, Field>): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/unit.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/effectful-reducer.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/direct.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/guarded.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/helper.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/ordered.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, item: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, left: Field, right: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multiple-inputs.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "step",
+    "signature": "pure circuit step(acc: Field, left: Field, right: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/helper.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "total",
+    "signature": "pure circuit total(seed: Field, values: Vector<2, Field>): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/captured.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/direct.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/effectful-reducer.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/guarded.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/helper.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/inline-branch.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/inline-effectful.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multiple-inputs.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/ordered.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/owned.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/unit.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/witness-reducer.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "items",
+    "signature": "witness items(): Vector<2, Field>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "left",
+    "signature": "witness left(): Vector<2, Field>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "right",
+    "signature": "witness right(): Vector<2, Field>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/multi-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "seed",
+    "signature": "witness seed(): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "seed",
+    "signature": "witness seed(): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/witness-reducer.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "step",
+    "signature": "witness step(acc: Field, item: Field): Field",
+    "visibility": "internal"
   }
 ]

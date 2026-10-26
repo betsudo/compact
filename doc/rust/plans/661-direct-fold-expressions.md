@@ -309,3 +309,60 @@ qualification remain separate. No hosted run, push, merge, release or shared
 installation is authorized. This checkpoint advances the full selected family
 and does not complete #661 or the broad Rust AST goal. Forge stays deferred;
 cleanup is still not due before completion and verified GitHub merge.
+
+
+## Maintained source-family gate checkpoint — 2026-10-26
+
+`tools/compact-rust-backend/check_direct_fold.py` now owns reproducible fresh
+Rust/TS generation and separate external consumers for all fourteen actual
+source cases. The sources in `examples/rust_backend/direct_fold/` retain their
+original complete bytes. Golden crates retain full IR, origins, capabilities
+and every checked program; only their Rust golden is rustfmt formatted.
+The maintained consumer shares its route/replay checks within this one test
+family; generated contracts are never patched to make a consumer pass.
+
+The selected TS runtime is required, version checked and resolved identically
+from every generated wrapper. The gate hashes its complete production package
+closure, Node executable and external host libraries. Known OS/kernel paths
+are reported explicitly with their narrower scope. Injected kernel names are
+portability controls, not Linux execution; an unknown missing library must fail
+before publishing a capture. A changed live TS aligned result must fail the
+actual Rust consumer.
+
+Local `maintained-gate-v3-result.json` passes 31 cases (20 success, 11 first
+failure) across four Rust routes, successful recorded VM replay, private/witness/
+state/cost comparisons, seven intended Rust compile failures and four source
+refusals on both targets. The complete external consumer also passes strict
+Clippy. This does not return failed partial state/cost or promise callback
+rollback. The finite static/ordinary-worker laws remain required and passing.
+
+Publishing the whole new corpus exposed two actual generated-Clippy failures:
+a redundant iterator conversion in multi-input zip and an immediate frame move
+back to itself for an effect-free Unit body. Their emitters are corrected; the
+Unit body remains statically validated and operand/iteration evaluation is
+retained. Fresh generation changes only three Rust golden libraries. All full
+IR/program/origin/capability bytes stay exact. Failed initial lock resolution,
+original Clippy outputs and the consumer-macro witness-argument mistake are
+retained separately; none is hidden by patching generated code or suppressing
+lints. The fourteen fixtures add only local workspace packages; registry
+versions/checksums do not change. The 43 new source declarations extend only
+the additive parity baseline, preserving every historical declaration.
+
+The existing native CI workflow invokes this source-family gate and retains
+its full generated outputs/reference/consumer lock. These are local workflow
+edits; no hosted run, publication or activation was performed. Evidence remains
+under `/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+`maintained-package-v1/build-result.json` records the paired development package
+and exact dirty-source pins. Later consumer/fixture/inventory/docs publication
+is not a new exact signed-head compiler qualification.
+
+The maintained functional publication subgate is now qualified locally. Still
+OPEN before full #661 acceptance: freeze and qualify the exact signed compiler/
+source/runtime/SDK/parameter/verifier cohort; fresh selected captured/multiple-
+input and witnessed/mutating/inline Field proofs, independent verification and
+binding/result negatives; funded default-strict apply/replay; the complete
+required original compiler/native/proof/wallet/workspace/package gates;
+independent review and intended native Linux qualification. Do not substitute
+old Map/vector/Forge proof receipts. Do not select another feature before
+completing this plan. Forge stays deferred; cleanup remains conditional on
+completion and verified GitHub merge, with no push/merge authority inferred.
