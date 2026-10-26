@@ -232,7 +232,8 @@ class CompilerFanoutTests(unittest.TestCase):
                          'cargo clippy --workspace', 'yarn test'):
             self.assertIn(required, caller)
         self.assertNotIn('continue-on-error', caller)
-        self.assertNotIn('  push:', caller.split('permissions:', 1)[0])
+        self.assertIn('  push:\n    branches: [codex/rust-backend-ast]\n',
+                      caller.split('permissions:', 1)[0])
 
 
 if __name__ == '__main__':
