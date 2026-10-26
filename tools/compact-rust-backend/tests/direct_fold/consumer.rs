@@ -82,6 +82,37 @@ impl witness_reducer::ledger_contract::TryWitnesses<u64> for Callbacks {
         Ok((*ctx.private_state + 1, acc * Field::from(10u64) + item))
     }
 }
+impl empty_ordered::ledger_contract::TryWitnesses<u64> for Callbacks {
+    fn seed(
+        &self,
+        ctx: WitnessContext<'_, u64, empty_ordered::ledger_contract::LedgerView<'_>>,
+    ) -> Result<(u64, Field), r::CompactError> {
+        self.operand("seed", *ctx.private_state, Field::from(9_u64))
+    }
+    fn items(
+        &self,
+        ctx: WitnessContext<'_, u64, empty_ordered::ledger_contract::LedgerView<'_>>,
+    ) -> Result<(u64, FixedVector<Field, 0>), r::CompactError> {
+        self.operand("items", *ctx.private_state, FixedVector::new([]))
+    }
+    fn step(
+        &self,
+        ctx: WitnessContext<'_, u64, empty_ordered::ledger_contract::LedgerView<'_>>,
+        acc: Field,
+        item: Field,
+    ) -> Result<(u64, Field), r::CompactError> {
+        self.events.borrow_mut().push(Event {
+            name: "step",
+            private: *ctx.private_state,
+            acc: Some(acc),
+            item: Some(item),
+        });
+        if self.fail == Some("step") {
+            return Err(r::CompactError::AssertionFailed("step refused".into()));
+        }
+        Ok((*ctx.private_state + 1, acc * Field::from(10_u64) + item))
+    }
+}
 fn encode(x: r::fab::AlignedValue) -> Value {
     json!({"valueAtoms":x.value.0.iter().map(|x|&x.0).collect::<Vec<_>>(),"alignment":x.alignment})
 }
@@ -541,4 +572,74 @@ scenario!(
     None,
     callbacks,
     []
+);
+
+scenario!(
+    single_zero_four_routes_match_live_ts,
+    "single_zero",
+    single,
+    [Field::from(0_u64), Field::from(10_u64), vector([2])],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    single_one_four_routes_match_live_ts,
+    "single_one",
+    single,
+    [Field::from(1_u64), Field::from(10_u64), vector([2])],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    single_capture_zero_four_routes_match_live_ts,
+    "single_capture_zero",
+    single,
+    [Field::from(3_u64), Field::from(0_u64), vector([2])],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    empty_ordered_four_routes_match_live_ts,
+    "empty_ordered",
+    empty_ordered,
+    [],
+    None,
+    callbacks,
+    [&callbacks]
+);
+
+scenario!(
+    empty_step_unreached_four_routes_match_live_ts,
+    "empty_step_unreached",
+    empty_ordered,
+    [],
+    Some("step"),
+    callbacks,
+    [&callbacks]
+);
+
+scenario!(
+    empty_seed_failure_four_routes_match_live_ts,
+    "empty_seed_failure",
+    empty_ordered,
+    [],
+    Some("seed"),
+    callbacks,
+    [&callbacks]
+);
+
+scenario!(
+    empty_items_failure_four_routes_match_live_ts,
+    "empty_items_failure",
+    empty_ordered,
+    [],
+    Some("items"),
+    callbacks,
+    [&callbacks]
 );

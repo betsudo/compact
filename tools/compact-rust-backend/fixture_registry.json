@@ -3935,6 +3935,32 @@
       "library": "tests-rust-backend/did-alias-set-reducer/lib.rs",
       "generated_library": "tests-rust-backend/did-alias-set-reducer/lib.rs",
       "qualification": "Checked-in complete generated artifact is a golden output, separate from the declared Cargo library entry. Final frontend/output/actual-consumer gate owns acceptance and behavior, not registration."
+    },
+    {
+      "source": "examples/rust_backend/direct_fold/single.compact",
+      "source_sha256": "9762ad50a102b3033fd08ef57e1519613916b250148c0ce0675a7ce373414032",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/direct-fold-single-source/Cargo.toml",
+      "library": "tests-rust-backend/direct-fold-single-source/lib.rs",
+      "generated_library": "tests-rust-backend/direct-fold-single-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only; original full IR, origins, capabilities and every checked program retained. Maintained fresh-source gate owns four-route live TS parity/refusals. Registration is not proof, full integration or Linux acceptance."
+    },
+    {
+      "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+      "source_sha256": "290e7618df9768e95a23bd03b9d85d7ac82548aabf17091f48fb4151c826475d",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/direct-fold-empty-ordered-source/Cargo.toml",
+      "library": "tests-rust-backend/direct-fold-empty-ordered-source/lib.rs",
+      "generated_library": "tests-rust-backend/direct-fold-empty-ordered-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only; original full IR, origins, capabilities and every checked program retained. Maintained fresh-source gate owns four-route live TS parity/refusals. Registration is not proof, full integration or Linux acceptance."
     }
   ]
 }

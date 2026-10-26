@@ -3030,5 +3030,61 @@
     "name": "step",
     "signature": "witness step(acc: Field, item: Field): Field",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/single.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, factor: Field, values: Vector<1, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/single.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "items",
+    "signature": "witness items(): Vector<0, Field>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "seed",
+    "signature": "witness seed(): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/empty-ordered.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "step",
+    "signature": "witness step(acc: Field, item: Field): Field",
+    "visibility": "internal"
   }
 ]

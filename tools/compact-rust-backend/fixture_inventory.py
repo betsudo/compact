@@ -32,6 +32,10 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SPECIAL_FIXTURES = {
+    'examples/rust_backend/direct_fold/single.compact':
+        'tests-rust-backend/direct-fold-single-source/lib.rs',
+    'examples/rust_backend/direct_fold/empty-ordered.compact':
+        'tests-rust-backend/direct-fold-empty-ordered-source/lib.rs',
     'examples/rust_backend/direct_fold/direct.compact':
         'tests-rust-backend/direct-fold-direct-source/lib.rs',
     'examples/rust_backend/direct_fold/empty.compact':

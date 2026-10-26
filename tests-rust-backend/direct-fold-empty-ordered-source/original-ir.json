@@ -1,0 +1,215 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "empty-ordered.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "seed",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "source": {
+        "file": "empty-ordered.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "items",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 0,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "empty-ordered.compact",
+        "line": 20,
+        "column": 1
+      }
+    },
+    {
+      "name": "step",
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "source": {
+        "file": "empty-ordered.compact",
+        "line": 21,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "result",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "vector_fold",
+                "accumulator": {
+                  "name": "__compact_fold_accumulator",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                "items": [
+                  {
+                    "name": "__compact_fold_item_0",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ],
+                "initial": {
+                  "kind": "witness_call",
+                  "name": "seed",
+                  "arguments": [
+                  ]
+                },
+                "sources": [
+                  {
+                    "kind": "witness_call",
+                    "name": "items",
+                    "arguments": [
+                    ]
+                  }
+                ],
+                "body": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "witness_call",
+                    "name": "step",
+                    "arguments": [
+                      {
+                        "kind": "parameter",
+                        "name": "__compact_fold_accumulator"
+                      },
+                      {
+                        "kind": "parameter",
+                        "name": "__compact_fold_item_0"
+                      }
+                    ]
+                  }
+                },
+                "length": 0
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "cell_write",
+                "field": "stored",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "result"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "empty-ordered.compact",
+        "line": 22,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_0",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_0"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "empty-ordered.compact",
+      "line": 18,
+      "column": 1
+    }
+  }
+}

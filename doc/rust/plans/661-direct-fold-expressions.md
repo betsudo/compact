@@ -452,3 +452,31 @@ this test migration. The full workspace must now be rerun to completion;
 full native/proof/wallet and package/archive gates, independent review and
 intended Linux qualification remain open. #661 and the broader goal are not
 complete. The existing Forge deferral and conditional post-merge cleanup remain.
+
+## Finite acceptance-edge completion (2026-10-26)
+
+The maintained source family now also includes the one-item captured reducer
+and zero-length witness-valued seed/iterable case. This completes explicit plan
+edges that the original fourteen sources did not independently exercise. The
+expanded functional gate contains sixteen complete sources and 38 cases (25
+success, 13 first failure), each through four public Rust routes against live
+TS. The empty case checks seed then iterable exactly once, preserved zero-width
+private output, and no reducer invocation; separate seed/iterable failures and
+an armed reducer refusal remain controls. Eight ordinary compile-fail cases
+include Unit refused in place of `FixedVector<Field, 0>` in a witness signature.
+
+The selected proof gate adds one-item and empty-witness calls while retaining
+all seven prior selected calls. Fresh proof/application acceptance must be
+recorded separately for this expanded nine-call/eight-source cohort; earlier
+seven-call receipts cannot establish it. Constructor and other unselected
+sources remain outside the selected proof claim. No compiler/runtime/IR change
+was required for these edges.
+
+Local `--full` now schedules the same Vector/Map/Fold proof gates already in
+required CI, in addition to every prior specialized proof gate. Each child must
+return its successful typed receipt, retained and rehashed after all children;
+command/missing/malformed/wrong-format/failed-status controls apply to all eight.
+The frozen Scheme frontend reaches expression gates through their supported
+environment interface. Existing five gate command arguments are preserved.
+Independent review, intended native Linux and complete integration remain open;
+this addition does not waive any required gate or complete the broad goal.

@@ -466,5 +466,93 @@
     "error": "inline item denied",
     "fail": null,
     "private": 7
+  },
+  {
+    "id": "single_zero",
+    "source": "single",
+    "args": [
+      0,
+      10,
+      [
+        2
+      ]
+    ],
+    "expected": 2,
+    "stored": 2,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "single_one",
+    "source": "single",
+    "args": [
+      1,
+      10,
+      [
+        2
+      ]
+    ],
+    "expected": 12,
+    "stored": 12,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "single_capture_zero",
+    "source": "single",
+    "args": [
+      3,
+      0,
+      [
+        2
+      ]
+    ],
+    "expected": 2,
+    "stored": 2,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "empty_ordered",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": 9,
+    "stored": 9,
+    "private": 9,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "empty_step_unreached",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": 9,
+    "stored": 9,
+    "private": 9,
+    "error": null,
+    "fail": "step"
+  },
+  {
+    "id": "empty_seed_failure",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "private": 7,
+    "error": "seed refused",
+    "fail": "seed"
+  },
+  {
+    "id": "empty_items_failure",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "private": 7,
+    "error": "items refused",
+    "fail": "items"
   }
 ]

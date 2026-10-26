@@ -40,7 +40,7 @@ SOURCES = ROOT / "examples/rust_backend/direct_fold"
 DEFINITIONS = json.loads((FIXTURES / "sources.json").read_text())
 NEGATIVES = {"wrong_capture": "E0308", "wrong_second_length": "E0308",
              "wrong_unit_item": "E0308", "bare_string": "E0308",
-             "owned_reuse": "E0382", "program_reuse": "E0382", "wrong_callback": "E0053"}
+             "owned_reuse": "E0382", "program_reuse": "E0382", "wrong_callback": "E0053", "wrong_empty_witness": "E0053"}
 
 
 def digest(path):
@@ -212,13 +212,13 @@ def main():
         report["consumer_lock_sha256"] = digest(child_lock)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "direct_fold"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("31", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("38", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
-        report["rust_consumer_tests"] = 31
+        report["rust_consumer_tests"] = 38
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
                                "--test", "direct_fold", "--", "-D", "warnings"])
         if (report["typescript"]["stateful_cases"], report["typescript"]["successes"],
-                report["typescript"]["refusals"]) != (31, 20, 11):
+                report["typescript"]["refusals"]) != (38, 25, 13):
             raise ValueError("unexpected live TS source-family accounting")
 
         changed = json.loads(capture.read_text())

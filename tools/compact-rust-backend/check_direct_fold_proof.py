@@ -36,7 +36,7 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
-CASES = ("captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
+CASES = ("single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
 
 
 def require(value, message):
@@ -49,7 +49,7 @@ def run(args):
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
     receipt = {"format": "compact-direct-fold-proof-gate/v1", "status": "incomplete", "commands": [],
-               "scope": "seven selected source-bound functional-derived Field call proofs and default-strict funded local transactions",
+               "scope": "nine selected source-bound functional-derived Field call proofs and default-strict funded local transactions",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
@@ -172,12 +172,12 @@ def run(args):
             require(summary["format"] == "compact-direct-fold-proof/v1" and summary["status"] == "passed"
                     and summary["case"] == name and summary["constructor_execution_proved"] is False
                     and summary["unselected_sources_proved"] is False, f"{name} invalid proof summary")
-            expected = [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [123]
+            expected = [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
             require([row["expected"] for row in summary["calls"]] == expected, f"{name} selected calls differ")
             for row in summary["calls"]:
                 require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and
-                        row["private_state"] == (9 if name == "witness-reducer" else 7) and
-                        row["witness_calls"] == (2 if name == "witness-reducer" else 0) and
+                        row["private_state"] == (9 if name in {"witness-reducer", "empty-ordered"} else 7) and
+                        row["witness_calls"] == (2 if name in {"witness-reducer", "empty-ordered"} else 0) and
                         row["changed_result_same_geometry"] is True and row["changed_binding_rejected"] is True and
                         row["changed_result_rejected"] is True and row["strict_application"] == "default" and
                         row["replay_refusal"] == "IntentAlreadyExists" and row["replay_unchanged"] is True,

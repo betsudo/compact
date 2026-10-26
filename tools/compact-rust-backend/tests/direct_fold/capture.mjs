@@ -75,7 +75,7 @@ try {for(const spec of specs){
  const source=spec.source,path=pathToFileURL(wrappers[source].path);
  if(!modules.has(source))modules.set(source,await import(path));const {Contract,ledger}=modules.get(source),events=[];
  const operand=(name,value)=>ctx=>{events.push({name,privateState:ctx.privateState});if(spec.fail===name)throw Error(name+' refused');return[ctx.privateState+1,value];};
- const witnesses={seed:operand('seed',1n),items:operand('items',[2n,3n]),left:operand('left',[2n,3n]),right:operand('right',[4n,5n]),step:(ctx,acc,item)=>{events.push({name:'step',privateState:ctx.privateState,acc:String(acc),item:String(item)});if(spec.fail==='step'&&item===7n)throw Error('step refused');return[ctx.privateState+1,acc*10n+item];}};
+ const witnesses={seed:operand('seed',source==='empty-ordered'?9n:1n),items:operand('items',source==='empty-ordered'?[]:[2n,3n]),left:operand('left',[2n,3n]),right:operand('right',[4n,5n]),step:(ctx,acc,item)=>{events.push({name:'step',privateState:ctx.privateState,acc:String(acc),item:String(item)});if(spec.fail==='step'&&(source==='empty-ordered'||item===7n))throw Error('step refused');return[ctx.privateState+1,acc*10n+item];}};
  const c=new Contract(witnesses),init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)});
  const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
  active=[];let out,error;try{out=c.circuits.run(ctx,...spec.args.map(args));}catch(e){error=e.message;}const costs=active;active=undefined;

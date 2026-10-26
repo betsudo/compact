@@ -18,10 +18,17 @@ use super::*;
 use midnight_compact_runtime::{self as r, Field, FixedVector};
 use midnight_transient_crypto::proofs::{ProverKey, Zkir};
 mod cases;
+mod empty_ordered;
 const NAME: &str = "run";
 
 pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
     let ir = match case {
+        "single" => {
+            include_str!("../../../tests-rust-backend/direct-fold-single-source/original-ir.json")
+        }
+        "empty-ordered" => include_str!(
+            "../../../tests-rust-backend/direct-fold-empty-ordered-source/original-ir.json"
+        ),
         "captured" => {
             include_str!("../../../tests-rust-backend/direct-fold-captured-source/original-ir.json")
         }
@@ -51,6 +58,8 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("Fold proof result already exists".into());
     }
     let calls = match case {
+        "single" => vec![cases::single(root, 0)?],
+        "empty-ordered" => vec![empty_ordered::run(root, 0)?],
         "captured" => vec![cases::captured(root, 0)?],
         "multiple-inputs" => vec![cases::multiple(root, 0)?],
         "effectful-reducer" => vec![cases::stateful(root, 0)?],

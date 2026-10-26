@@ -42,7 +42,7 @@ impl compact_rust_direct_fold_witness_reducer_source_fixture::ledger_contract::T
 fn field(value: u64) -> Field {
     Field::from(value)
 }
-fn vector(values: [u64; 2]) -> FixedVector<Field, 2> {
+fn vector<const N: usize>(values: [u64; N]) -> FixedVector<Field, N> {
     FixedVector::new(values.map(Field::from))
 }
 macro_rules! witness {
@@ -155,3 +155,13 @@ scenario!(
     7
 );
 scenario!(branch, compact_rust_direct_fold_inline_branch_source_fixture, [choice:bool], [field(1),field(10),choice,vector([2,3])], [], if choice {123} else {134}, 7);
+
+scenario!(
+    single,
+    compact_rust_direct_fold_single_source_fixture,
+    [],
+    [field(1), field(10), vector([2])],
+    [],
+    12,
+    7
+);
