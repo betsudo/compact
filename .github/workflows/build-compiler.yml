@@ -35,7 +35,7 @@ jobs:
 
   build-macos:
     needs: compiler-darwin
-    if: always()
+    if: ${{ !cancelled() }}
     name: Build Rust target on Apple Silicon
     runs-on: macos-latest
     permissions:
@@ -151,7 +151,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, compiler-linux]
-    if: always()
+    if: ${{ !cancelled() }}
     # It takes 90+ minutes to build without Nix caching
     timeout-minutes: 180
     steps:
@@ -464,7 +464,7 @@ jobs:
 
       - name: Check generated functional Ledger8 consumers
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
       - name: Check generated constant vector projection APIs
         run: |
@@ -486,6 +486,7 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection-proof"
 
       - name: Rehearse Rust runtime packages
+        id: runtime-packages
         run: |
           python3 tools/compact-rust-backend/check_release_packages.py --manifest target/rust-runtime-release.json
           python3 tools/compact-rust-backend/check_release_packages.py --verify-manifest target/rust-runtime-release.json
@@ -495,7 +496,7 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_archive_consumer.py --manifest target/rust-runtime-release.json
 
       - name: Retain Rust runtime packages and manifest
-        if: always()
+        if: always() && steps.runtime-packages.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rust-runtime-packages-${{ github.sha }}
