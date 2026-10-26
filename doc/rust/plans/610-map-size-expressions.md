@@ -133,3 +133,50 @@ decoding. Reject before a later witness; an inactive query still performs no
 validation or VM operation. This deliberately strengthens the host boundary for
 malformed state relative to the permissive TS VM. It does not alter the runtime
 ABI or extend this slice to other collection queries.
+
+## Local integration checkpoint — 2026-10-26
+
+The signed implementation is `06d5af5a`; the complete generated consumer,
+Map-kind boundary guard and separate proof gates are signed at
+`e14103c5d3ba6d6af2cff1c9e3526cfe1263b743`. At that unchanged candidate:
+
+- The ordinary Nix compiler package builds. The original `compiler/go` and
+  `srcMaps/test.sh` pass in a separate test-enabled derivation (132 source-map
+  assertions). Rust CLI bytes match; Scheme tool bytes differ, so those binary
+  cohorts remain distinct.
+- Eight external consumer tests pass across ordinary and functional native and
+  recorded routes. The live TS comparison covers 19 successes, four refusals
+  and two inactive malformed-state cases; the changed-TS-result control fails
+  as required. Wrong argument types and double Program consumption fail with
+  E0308/E0382. Source purity and return-type refusals remain intact.
+- Fresh direct `put` keys use `k=7`, 73 rows. Replacement and new insertion each
+  produce a fresh 2,912-byte proof, independently verified. Changed public
+  binding and changed same-geometry result are rejected. Both funded local
+  transactions pass default-strict application; replay returns
+  IntentAlreadyExists without mutation. Constructor execution and nested-ADT
+  proofs are not claimed.
+- The complete maintained native generated-consumer/proof gate and its wallet
+  JS handoff pass. Wider cases retain their individual application policies;
+  the two new Map cases do not relabel that whole suite default-strict.
+- All 257 fresh generated fixtures, 37 pinned oracle sources and the maintained
+  source-refusal suite pass. Workspace tests pass 3,340 cases with seven
+  inherited ignores; strict workspace Clippy (all targets/features), formatting
+  and workflow lint pass. The header gate reports zero new violations and
+  1,308 inherited unchanged files; it is not whole-tree license compliance.
+- Runtime archive rehearsal, manifest re-verification and fresh generated
+  consumers of those archives pass in an isolated target. Earlier archives,
+  manifests, failures and source/proof epochs remain preserved.
+
+Exact commands, source/material/artifact identities and retained failures are
+under `/Users/ysh/.codex/local-evidence/rust-ast-map-size-expression-20261026/`.
+See `selected-v1/proof/receipt.json`, `native-v1/complete.json`,
+`source-gates-v1/complete.json`, `packages-v1/complete.json` and
+`workspace-v1-accounting.json`. The original failed Array probe is distinct
+from the successful boundary fix; its first zero-test probe is not evidence.
+
+These are maintained **local** execution results. Independent external review,
+intended Linux/hosted integration, publication and merge remain open. Forge is
+still deliberately deferred. This closes the selected local implementation
+and execution slice, not the broader Rust AST goal or former Forge acceptance.
+Cleanup remains conditional on completion and verified GitHub merge, preserving
+unpublished work and all needed inputs, binaries, archives and evidence.
