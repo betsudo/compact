@@ -445,8 +445,10 @@ def check_proof_capabilities(compactc: str, directory: Path) -> list[str]:
         except (AssertionError, FileNotFoundError, KeyError, ValueError) as error:
             failures.append(f"supported Vector3 hash report or manifest is wrong ({strict=}): {error}")
 
-    # Direct stateful Fold remains native-valid but is honestly refused by the
-    # checked recorder. A pure helper containing Fold has separate admission.
+    # #661 deliberately admits this exact former source-qualified refusal.
+    # Keep its bytes/labels and test both ordinary and required recording,
+    # including replacement and fresh publication, rather than inventing a
+    # missing-callee negative. Other genuine refusal/recovery controls remain.
     source = directory / "fold.compact"
     source.write_text(
         "import CompactStandardLibrary;\n"
@@ -454,45 +456,44 @@ def check_proof_capabilities(compactc: str, directory: Path) -> list[str]:
         "pure circuit add(acc: Field, x: Field): Field { return acc+x; }\n"
         "export circuit write(input: Vector<3, Field>): [] { value = disclose(fold(add, 0, input)); }\n"
     )
+    source_bytes = source.read_bytes()
     output = directory / "fold-output"
-
-    default = compile_source(source, output, False)
-    if default.returncode:
-        return [*failures, f"native-only direct Fold did not compile normally:\n{default.stderr}"]
-    report_path = output / "contract/rust-capabilities.json"
-    manifest_path = output / "compiler/contract-manifest.json"
-    try:
-        report_bytes = report_path.read_bytes()
-        report = json.loads(report_bytes)
-        manifest = json.loads(manifest_path.read_bytes())
-        assert report["schema_version"] == 3
-        assert len(report["circuits"]) == 1
-        capability = report["circuits"][0]
-        assert {key: capability[key] for key in ("name", "source", "recorded", "observed_call")} == {
-            "name": "write",
-            "source": {"file": "fold.compact", "line": 4, "column": 1},
-            "recorded": False,
-            "observed_call": False,
-        }
-        assert capability["recording_unavailable"]["code"] == "unsupported_expression"
-        assert capability["recording_unavailable"]["ir_node"] == "Expr::VectorFoldCall"
-        assert capability["recording_unavailable"]["path"] == "actions[0].bindings[0].value"
-        assert capability["observed_call_unavailable"]["code"] == "recording_unavailable"
-        assert manifest["contract"]["rust-capabilities.json"]["hash"] == hashlib.sha256(report_bytes).hexdigest()
-    except (AssertionError, FileNotFoundError, KeyError, ValueError) as error:
-        failures.append(f"native-only Fold report or manifest is wrong: {error}")
-    before = snapshot(output)
-    rejected = compile_source(source, output, True)
-    if (rejected.returncode == 0
-            or "fold.compact line 4 char 1" not in rejected.stderr
-            or "unsupported_expression at actions[0].bindings[0].value" not in rejected.stderr):
-        failures.append(f"strict rebuild did not reject at source:\n{rejected.stderr}")
-    if snapshot(output) != before:
-        failures.append("strict rebuild changed the prior native-only output")
-    fresh = directory / "fold-strict-output"
-    rejected = compile_source(source, fresh, True)
-    if rejected.returncode == 0 or fresh.exists() or any(directory.glob(f".{fresh.name}.compactc-stage-*")):
-        failures.append("strict fresh rejection published output or left staging debris")
+    before = None
+    for label, destination, strict in (
+        ("ordinary", output, False), ("required-rebuild", output, True),
+        ("required-fresh", directory / "fold-strict-output", True),
+    ):
+        accepted = compile_source(source, destination, strict)
+        if accepted.returncode:
+            failures.append(f"supported direct Fold failed ({label}):\n{accepted.stderr}")
+            continue
+        try:
+            report_bytes = (destination / "contract/rust-capabilities.json").read_bytes()
+            report = json.loads(report_bytes)
+            manifest = json.loads((destination / "compiler/contract-manifest.json").read_bytes())
+            assert report["schema_version"] == 3
+            assert len(report["circuits"]) == 1
+            capability = report["circuits"][0]
+            assert {key: capability[key] for key in ("name", "source", "recorded", "observed_call")} == {
+                "name": "write", "source": {"file": "fold.compact", "line": 4, "column": 1},
+                "recorded": True, "observed_call": True,
+            }
+            assert capability["proof_required"] is True
+            assert capability["recording_status"] == "available"
+            assert "recording_unavailable" not in capability
+            assert "observed_call_unavailable" not in capability
+            assert manifest["contract"]["rust-capabilities.json"]["hash"] == hashlib.sha256(report_bytes).hexdigest()
+            assert "pub mod recorded" in (destination / "contract/lib.rs").read_text()
+            assert "write_call" in (destination / "contract/lib.rs").read_text()
+            current = snapshot(destination)
+            if before is None:
+                before = current
+            else:
+                assert current == before
+            assert source.read_bytes() == source_bytes
+            assert not any(directory.glob(f".{destination.name}.compactc-stage-*"))
+        except (AssertionError, FileNotFoundError, KeyError, ValueError) as error:
+            failures.append(f"supported direct Fold report/publication is wrong ({label}): {error}")
 
     for name in ("counter", "cell_boolean"):
         path = ROOT / f"examples/rust_backend/{name}.compact"

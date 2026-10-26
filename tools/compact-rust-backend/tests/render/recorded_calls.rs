@@ -354,24 +354,18 @@ fn nested_call_exposes_a_trace_only_when_every_step_is_supported() {
     let defaulted = render_with_capabilities(&contract).unwrap();
     assert!(defaulted.capabilities.circuits[0].recorded);
     assert!(defaulted.capabilities.circuits[0].observed_call);
-    // A native-valid unsupported VectorFoldCall child refuses a later nested step.
+    // A valid Fold composes at the later step; malformed annotations still refuse.
     contract.stateful_circuits[0]
         .actions
         .push(StateAction::Expression {
             value: Expr::PersistentCommit {
-                value: Box::new(super::support::unsupported_commit_input()),
+                value: Box::new(super::support::fold_control_input()),
                 opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
             },
         });
-    super::support::register_unsupported_fold(&mut contract);
-    let rendered = render_with_capabilities(&contract).unwrap();
-    assert!(!rendered.capabilities.circuits[0].recorded);
-    assert!(!rendered.capabilities.circuits[0].observed_call);
-    assert!(
-        rendered.capabilities.circuits[0]
-            .recording_unavailable
-            .is_some()
-    );
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]
@@ -514,30 +508,14 @@ fn pure_field_calls_preserve_unit_and_record_ordinary_hashed_returns() {
     contract.stateful_circuits[0].return_value = StateReturn::Expression {
         value: Expr::TransientHash {
             value: Box::new(Expr::PersistentCommit {
-                value: Box::new(super::support::unsupported_commit_input()),
+                value: Box::new(super::support::fold_control_input()),
                 opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
             }),
         },
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let rejected = render_with_capabilities(&contract).unwrap();
-    assert!(!rejected.capabilities.circuits[0].recorded);
-    assert_eq!(
-        rejected.capabilities.circuits[0]
-            .recording_unavailable
-            .as_ref()
-            .unwrap()
-            .ir_node,
-        "Expr::VectorFoldCall"
-    );
-    assert_eq!(
-        rejected.capabilities.circuits[0]
-            .recording_unavailable
-            .as_ref()
-            .unwrap()
-            .path,
-        "return_value.value.value.value"
-    );
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]

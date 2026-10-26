@@ -407,3 +407,48 @@ execution receipt must establish actual proof acceptance. The proof runner and
 its source commit are a distinct epoch from the reused frozen compiler. Full
 required compiler/native/proof/wallet/workspace/package integration, independent
 review and intended native Linux qualification remain required afterward.
+
+
+## Selected proof execution and integration-control successors — 2026-10-26
+
+At signed proof-source `1b37bbb173`, `proof-gate-v1/receipt.json` passes all six
+linked source families and seven selected calls, including both inline branches.
+Every standalone proof is fresh, 2,912 bytes, independently verified, and rejects
+changed public binding/result plus the changed preimage. Each call is freshly
+proved again in a funded default-strict transaction, applied to the expected
+state, and rejected on replay without ledger mutation. Six changed-full-IR
+controls reject before absent keys/state. Witness reducers preserve two callback
+calls and private state 9. Constructor execution and unselected type/source
+families remain outside this finite proof claim.
+
+Actual models: captured 75 rows/k7; multiple inputs 96/k7; named stateful 75/k7;
+named witness 72/k7; inline effectful 76/k7; inline branch 344/k9. The branch
+source is intact; it is not trimmed to a smaller circuit or represented as a
+Forge tiny-contract lane. No compiler or global resource limit was raised.
+The original ordinary compiler is the independently recorded clean `3f09c0b8f`
+cohort; compiler/backend/runtime production bytes and all linked goldens are
+unchanged by the separate proof runner epoch. Only local proof dependency
+metadata changes. Verified upstream parameters, fresh keys and immutable tool/
+verifier/artifact identities are retained in the proof receipt.
+
+The original compiler `doCheck` build, including `compiler/go` and
+`srcMaps/test.sh`, passes at `1b37bbb173`; all 46 reported compiler stages pass.
+The broad workspace/source audit exposed eleven external integration tests and
+one source-capability family that still used valid Fold as a refusal sentinel.
+Their original files, actual failing broad/focused runs and complete old-source
+outputs are retained. These successors deliberately admit the unchanged Fold
+and its real pure callee at every original position. A copy with only length
+1 changed to 2 for one item is refused, including inactive helper branches.
+This is explicitly a native-invalid annotation check, not a native-valid
+unsupported operation or a fabricated missing-callee negative. Existing type,
+slot, arity, cycle, failed-publication/recovery and other controls stay intact.
+
+`integration-control-successors-v2.json` records all 166 focused integration
+tests passing (5 point, 154 render, 7 Unit) and the source refusal/publication
+suite passing. A draft edit that dropped nine callee registrations failed and
+was corrected before accepted validation; its source/output remain retained.
+No producer/runtime/generated artifact or historical manifest was changed by
+this test migration. The full workspace must now be rerun to completion;
+full native/proof/wallet and package/archive gates, independent review and
+intended Linux qualification remain open. #661 and the broader goal are not
+complete. The existing Forge deferral and conditional post-merge cleanup remain.

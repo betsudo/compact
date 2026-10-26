@@ -193,7 +193,7 @@ fn opaque_set_check_in_composes_typed_effects_and_preserves_witness_order() {
     let defaulted = render_with_capabilities(&contract).unwrap();
     assert!(defaulted.capabilities.circuits[0].recorded);
     assert!(defaulted.capabilities.circuits[0].observed_call);
-    // Keep the now-supported default callback value. A commitment with an unsupported VectorFoldCall child
+    // Keep the now-supported default callback value. A commitment with the now-admitted Fold child
     // in its local prefix still refuses recording at that exact argument path.
     let StateAction::Expression {
         value: Expr::WitnessCall { arguments, .. },
@@ -206,26 +206,15 @@ fn opaque_set_check_in_composes_typed_effects_and_preserves_witness_order() {
             name: "unsupported_commit".into(),
             ty: Type::Bytes { length: 32 },
             value: Expr::PersistentCommit {
-                value: Box::new(super::support::unsupported_commit_input()),
+                value: Box::new(super::support::fold_control_input()),
                 opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
             },
         }],
         body: Box::new(Expr::Default { ty: opaque.clone() }),
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let rejected = render_with_capabilities(&contract).unwrap();
-    assert!(!rejected.capabilities.circuits[0].recorded);
-    // Checked publication identifies the actual unsupported Fold in the witness
-    // argument; the historical enclosing Let diagnostic is retired.
-    let gap = rejected.capabilities.circuits[0]
-        .recording_unavailable
-        .as_ref()
-        .unwrap();
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(
-        gap.path,
-        "actions[2].value.arguments[0].bindings[0].value.value"
-    );
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 
     contract.stateful_circuits[0].actions[2] = StateAction::SetRemove {
         field: "checked".into(),
@@ -625,22 +614,14 @@ fn enum_set_locals_record_typed_keys_in_source_order() {
             name: "unsupported_commit".into(),
             ty: Type::Bytes { length: 32 },
             value: Expr::PersistentCommit {
-                value: Box::new(super::support::unsupported_commit_input()),
+                value: Box::new(super::support::fold_control_input()),
                 opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
             },
         },
     );
-    super::support::register_unsupported_fold(&mut contract);
-    let defaulted = render_with_capabilities(&contract).unwrap();
-    assert!(!defaulted.capabilities.circuits[0].recorded);
-    // The retained commitment-binding fallback refuses the VectorFoldCall operand
-    // before opening evaluation or the later enum binding.
-    let gap = defaulted.capabilities.circuits[0]
-        .recording_unavailable
-        .as_ref()
-        .unwrap();
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "actions[0].bindings[0].value.value");
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]

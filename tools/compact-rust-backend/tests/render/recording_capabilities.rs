@@ -213,16 +213,13 @@ fn recording_gaps_follow_the_first_definite_ir_failure() {
     };
     actions[1] = StateAction::Expression {
         value: Expr::PersistentCommit {
-            value: Box::new(super::support::unsupported_commit_input()),
+            value: Box::new(super::support::fold_control_input()),
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         },
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let report = render_with_capabilities(&contract).unwrap().capabilities;
-    let gap = report.circuits[0].recording_unavailable.as_ref().unwrap();
-    assert_eq!(gap.code.as_str(), "unsupported_expression");
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "actions[0].actions[1].value.value");
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 
     contract.stateful_circuits[0].actions.clear();
     let report = render_with_capabilities(&contract).unwrap().capabilities;
@@ -281,19 +278,13 @@ fn conditional_recording_rejects_an_unsupported_unselected_branch() {
     };
     **otherwise = StateAction::Expression {
         value: Expr::PersistentCommit {
-            value: Box::new(super::support::unsupported_commit_input()),
+            value: Box::new(super::support::fold_control_input()),
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         },
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let report = render_with_capabilities(&contract).unwrap().capabilities;
-    let capability = &report.circuits[0];
-    assert!(!capability.recorded);
-    assert!(!capability.observed_call);
-    let gap = capability.recording_unavailable.as_ref().unwrap();
-    assert_eq!(gap.code.as_str(), "unsupported_expression");
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "actions[0].otherwise.value.value");
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]
@@ -389,7 +380,7 @@ fn recording_gaps_include_unsupported_type_and_called_callee_path() {
     assert!(report.circuits[0].recorded && report.circuits[0].observed_call);
 
     // Preserve the newly supported nested scalar default, then exercise the
-    // same callee diagnostic with a native-valid unsupported VectorFoldCall child.
+    // same callee composition with a valid Fold and an explicitly malformed clone.
     contract.stateful_circuits[0].actions = vec![StateAction::Expression {
         value: Expr::Default { ty: Type::Boolean },
     }];
@@ -397,16 +388,15 @@ fn recording_gaps_include_unsupported_type_and_called_callee_path() {
     assert!(report.circuits[0].recorded && report.circuits[0].observed_call);
     contract.stateful_circuits[0].actions = vec![StateAction::Expression {
         value: Expr::PersistentCommit {
-            value: Box::new(super::support::unsupported_commit_input()),
+            value: Box::new(super::support::fold_control_input()),
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         },
     }];
-    super::support::register_unsupported_fold(&mut contract);
-    let report = render_with_capabilities(&contract).unwrap().capabilities;
-    let gap = report.circuits[0].recording_unavailable.as_ref().unwrap();
-    assert_eq!(gap.code.as_str(), "unsupported_expression");
-    assert_eq!(gap.path, "actions[0].callee[inner].actions[0].value.value");
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    let report =
+        super::support::assert_admitted_and_malformed_refused(&contract, None).capabilities;
+
     for circuit in report.circuits {
         assert_eq!(circuit.recorded, circuit.recording_unavailable.is_none());
         assert_eq!(

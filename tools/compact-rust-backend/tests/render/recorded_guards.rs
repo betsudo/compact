@@ -612,8 +612,8 @@ fn conditional_assertion_keeps_typed_equality_and_branch_local_observations() {
     };
     let report = render_with_capabilities(&contract).unwrap().capabilities;
     assert!(report.circuits[0].recorded && report.circuits[0].observed_call);
-    // Keep an independently unsupported commitment operand under the same
-    // assertion, preserving the diagnostic and selected-arm boundary.
+    // Keep the original valid Fold under the same assertion; validate a
+    // malformed-length clone even in the unselected arm.
     let StateAction::Assert {
         condition: Expr::If { then, .. },
         ..
@@ -626,16 +626,13 @@ fn conditional_assertion_keeps_typed_equality_and_branch_local_observations() {
     };
     **left = Expr::TransientHash {
         value: Box::new(Expr::PersistentCommit {
-            value: Box::new(super::support::unsupported_commit_input()),
+            value: Box::new(super::support::fold_control_input()),
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         }),
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let report = render_with_capabilities(&contract).unwrap().capabilities;
-    assert!(!report.circuits[0].recorded);
-    let gap = report.circuits[0].recording_unavailable.as_ref().unwrap();
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "actions[0].condition.then.left.value.value");
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]
