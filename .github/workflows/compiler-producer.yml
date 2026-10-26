@@ -36,6 +36,8 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Check compiler handoff controls
+        run: python3 -B .github/scripts/test_compiler_closure.py
       - uses: ./.github/actions/setup-nix-cache
         with:
           skip_cache: 'true'
