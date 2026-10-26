@@ -2368,6 +2368,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-map-size-expression-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+ "serde_json",
+]
+
+[[package]]
 name = "compact-rust-merkle-digest-witness-views-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2814,6 +2822,7 @@ dependencies = [
  "compact-rust-map-boolean-field-fixture",
  "compact-rust-map-fn-oracle-fixture",
  "compact-rust-map-lambda-oracle-fixture",
+ "compact-rust-map-size-expression-source-fixture",
  "compact-rust-merkle-path-verify-fixture",
  "compact-rust-merkle-tree-oracle-fixture",
  "compact-rust-mixed-width-operand-oracle-fixture",

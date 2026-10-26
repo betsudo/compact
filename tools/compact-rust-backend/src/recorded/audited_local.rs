@@ -118,6 +118,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::KernelSelf { .. }
         | Expr::SetSize { .. }
         | Expr::SetIsEmpty { .. }
+        | Expr::MapSize { .. }
         | Expr::MapIsEmpty { .. }
         | Expr::PersistentCommit { .. } => false,
     }

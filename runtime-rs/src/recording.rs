@@ -487,8 +487,24 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         Ok((self, value))
     }
 
-    pub fn size_map(self, path: impl Into<LedgerPath>) -> Result<(Self, u64), CompactError> {
-        self.size_set(path)
+    pub fn size_map(mut self, path: impl Into<LedgerPath>) -> Result<(Self, u64), CompactError> {
+        let path = path.into();
+        let (result, size) = ledger::size_map(
+            &self.state.context.query,
+            path.as_slice(),
+            self.state.context.gas_limit,
+            &self.state.context.cost_model,
+        )?;
+        let Some(GatherEvent::Read(observed)) = result.events.last() else {
+            return Err(CompactError::InvalidLedgerCell(
+                "missing Map size event".into(),
+            ));
+        };
+        let program = ledger::set_size_program(path.as_slice(), observed.clone())?;
+        self.state.context.query = result.context;
+        self.state.observed_gas += result.gas_cost;
+        self.state.verify_ops.extend(program);
+        Ok((self, size))
     }
 
     pub fn is_empty_map(self, path: impl Into<LedgerPath>) -> Result<(Self, bool), CompactError> {

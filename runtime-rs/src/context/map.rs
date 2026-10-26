@@ -87,10 +87,17 @@ impl<Private, D: DB> CircuitContext<Private, D> {
     }
 
     pub fn size_map(
-        self,
+        mut self,
         path: impl Into<ledger::LedgerPath>,
     ) -> Result<CircuitResult<Private, u64, D>, CompactError> {
-        self.size_set(path)
+        let (result, size) = ledger::size_map(&self.query, path, self.gas_limit, &self.cost_model)?;
+        self.query = result.context;
+        Ok(CircuitResult {
+            context: self,
+            result: size,
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: Vec::new(),
+        })
     }
 
     pub fn is_empty_map(

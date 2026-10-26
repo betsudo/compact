@@ -457,6 +457,19 @@
       "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
     },
     {
+      "source": "examples/rust_backend/map_size_expression.compact",
+      "source_sha256": "4d37416240bda28b644bbed7471281e64dbf8e547bc4bb2736a2f1b7c82d796c",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/map-size-expression-source/Cargo.toml",
+      "library": "tests-rust-backend/map-size-expression-source/lib.rs",
+      "generated_library": "tests-rust-backend/map-size-expression-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
+    },
+    {
       "source": "examples/rust_backend/constructor_assert_sequence.compact",
       "source_sha256": "4f2f49d1a75142615e202c84beca71603d3689f7d357121286edba7df126bb5b",
       "frontend_outcome": "accepted",

@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Corpus identity and filesystem boundaries are separate from compiler outcomes.
 
 use serde::Deserialize;
@@ -164,6 +176,19 @@ fn audited_local_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+// A new closed Expr variant needs one explicit refusal in the old oracle.
+// Authenticate and remove exactly that arm before the unchanged #614 stage.
+const MAP_SIZE_ENUM_SHA256: &str =
+    "940108ed736f9e14e505cd4a60bd1ce2956ca0d93f768c86bda17d330c3be775";
+const MAP_SIZE_ENUM: &[u8] = include_bytes!("map-size-expression-enum-610.json");
+
+fn map_size_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != MAP_SIZE_ENUM_SHA256 {
+        return Err("unreviewed Map size enum compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
 // #617 extracts the two live shared definitions from the frozen Plan oracle.
 // Authenticate their new owner and restore the exact signed predecessor first.
 const START_FUNDING_SHA256: &str =
@@ -211,7 +236,9 @@ fn projected_legacy_source(
     let audited_local = audited_local_manifest(AUDITED_LOCAL)?;
     let start_funding = start_funding_manifest(START_FUNDING)?;
     let generic = generic_retirement_manifest(GENERIC_RETIREMENT)?;
-    let before_generic = legacy_source(path, current, &generic)?;
+    let map_size_enum = map_size_enum_manifest(MAP_SIZE_ENUM)?;
+    let before_map_size = legacy_source(path, current, &map_size_enum)?;
+    let before_generic = legacy_source(path, &before_map_size, &generic)?;
     let before_start_funding = legacy_source(path, &before_generic, &start_funding)?;
     let before_audited_local = legacy_source(path, &before_start_funding, &audited_local)?;
     let before_commit = legacy_source(path, &before_audited_local, &commit_inputs)?;
@@ -275,8 +302,39 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     authority["start_funding_projection"] = start_funding_manifest(START_FUNDING).unwrap();
     authority
+}
+
+#[test]
+fn map_size_enum_projection_preserves_exact_old_oracle_and_rejects_drift() {
+    let projection = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
+    assert!(map_size_enum_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        AUDITED_LOCAL_SHA256
+    );
+    let old = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    let path = "tools/compact-rust-backend/src/recorded/audited_local.rs";
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let current = std::fs::read_to_string(root.join(path)).unwrap();
+    let previous = legacy_source(path, &current, &projection).unwrap();
+    assert_eq!(
+        digest(previous.as_bytes()),
+        old["owners"][path]["current_sha256"]
+    );
+    assert_eq!(
+        current.replacen("        | Expr::MapSize { .. }\n", "", 1),
+        previous,
+        "only the new enum refusal is adapted; old bodies remain exact"
+    );
+    assert!(legacy_source(path, &(current.clone() + "\n// drift\n"), &projection).is_err());
+    assert!(legacy_source(path, &previous, &projection).is_err());
+    let mut forged = projection;
+    forged["owners"][path]["predecessor_reconstruction"][0]["previous"] =
+        Value::String("unreviewed acceptance".into());
+    assert!(map_size_enum_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
 }
 
 #[test]
@@ -328,12 +386,14 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
         }
     }
     let audited_local = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    let map_size_enum = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     assert!(audited_local_manifest(br#"{"owners":{}}"#).is_err());
     for (path, row) in audited_local["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let before_map_size = legacy_source(path, &current, &map_size_enum).unwrap();
         assert_eq!(
             digest(
-                legacy_source(path, &current, &audited_local)
+                legacy_source(path, &before_map_size, &audited_local)
                     .unwrap()
                     .as_bytes()
             ),
@@ -406,7 +466,8 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
         );
         let edit = &row["predecessor_reconstruction"][0];
         let generic = generic_retirement_manifest(GENERIC_RETIREMENT).unwrap();
-        let before_generic = legacy_source(path, &current, &generic).unwrap();
+        let before_map_size = legacy_source(path, &current, &map_size_enum).unwrap();
+        let before_generic = legacy_source(path, &before_map_size, &generic).unwrap();
         let before_start = legacy_source(path, &before_generic, &start_funding).unwrap();
         let before_audited = legacy_source(path, &before_start, &audited_local).unwrap();
         let before_commit = legacy_source(path, &before_audited, &commit_inputs).unwrap();

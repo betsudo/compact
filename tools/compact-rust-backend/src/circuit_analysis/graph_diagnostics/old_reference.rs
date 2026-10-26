@@ -434,6 +434,7 @@ pub(crate) fn expression_contains<'source>(
         | Expr::KernelSelf { .. }
         | Expr::SetSize { .. }
         | Expr::SetIsEmpty { .. }
+        | Expr::MapSize { .. }
         | Expr::MapIsEmpty { .. }
         | Expr::ListLength { .. }
         | Expr::ListIsEmpty { .. }

@@ -1009,6 +1009,10 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
                 let _ = index;
             }
+            Expr::MapSize { field, index } => {
+                scan.push(Node::Text(field), visit_depth + 1, owner)?;
+                let _ = index;
+            }
             Expr::Tuple { elements } => {
                 scan.reserve(elements.len())?;
                 for child in elements {

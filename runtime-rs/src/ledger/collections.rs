@@ -723,6 +723,16 @@ pub fn size_map<D: DB>(
     gas_limit: Option<RunningCost>,
     cost_model: &CostModel,
 ) -> Result<(QueryResults<ResultModeGather, D>, u64), CompactError> {
+    // The VM Size opcode also accepts arrays and trees. A declared Map query
+    // must reject those host-supplied shapes before observing their metadata.
+    let path = path.into();
+    let value = field_at_path(context.state.get_ref(), path.as_slice())
+        .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
+    if !matches!(value, StateValue::Map(_)) {
+        return Err(CompactError::LedgerQueryRejected(
+            "expected Map at metadata query path".into(),
+        ));
+    }
     size_set(context, path, gas_limit, cost_model)
 }
 
