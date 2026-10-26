@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -61,8 +72,8 @@ fn whole_final_gates_native_errors_and_resource_exclusions_are_not_prefix_admiss
     duplicate.stateful_circuits[0].parameters =
         vec![parameter("x", Type::Field), parameter("x", Type::Field)];
     assert!(crate::render_with_capabilities(&duplicate).is_err());
-    // Existing source-qualified unsupported Fold remains an old refusal, not a
-    // prerequisite manufactured from an arbitrary syntax node.
+    // The original Fold remains a frozen old refusal and is newly admitted by
+    // the current checked loop owner. No replacement refusal is manufactured.
     let mut unsupported = cell_contract();
     test_support::register_unsupported_fold(&mut unsupported);
     let folded = test_support::unsupported_fixed_input();
@@ -75,12 +86,9 @@ fn whole_final_gates_native_errors_and_resource_exclusions_are_not_prefix_admiss
         Context::new(&unsupported).old(&unsupported, "root"),
         Ok(RecordingOutcome::Unsupported(_))
     ));
-    assert!(matches!(
-        Context::new(&unsupported).checked("root"),
-        Err(effect_plan::PlanError::Unsupported(_))
-    ));
+    Context::new(&unsupported).checked("root").unwrap();
     let rendered = crate::render_with_capabilities(&unsupported).unwrap();
-    assert!(!rendered.capabilities.circuits[0].recorded);
+    assert!(rendered.capabilities.circuits[0].recorded);
     // Policy exclusion: an unused huge canonical public parameter can pass the
     // old syntax emitter. It is explicitly outside the checked layout budget.
     // Native rendering is not a claim that this fixture was frontend generated.

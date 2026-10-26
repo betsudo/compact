@@ -52,6 +52,7 @@ pub(crate) enum Capability {
     Select,
     Call,
     VectorMap,
+    VectorFold,
     MapRead,
     MapLookup,
     MapRemove,
@@ -104,6 +105,7 @@ impl Ledger8Target {
             Capability::Select,
             Capability::Call,
             Capability::VectorMap,
+            Capability::VectorFold,
             Capability::MapRead,
             Capability::MapLookup,
             Capability::MapRemove,
@@ -527,6 +529,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::If { .. } => Capability::Select,
                 Operation::Call { .. } => Capability::Call,
                 Operation::VectorMap { .. } => Capability::VectorMap,
+                Operation::VectorFold { .. } => Capability::VectorFold,
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
@@ -571,7 +574,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 }
                 // Calls have their own validated formal scope but inherit the
                 // caller's effective execution guard. Inspect every nested node.
-                Operation::Call { body, .. } | Operation::VectorMap { body, .. } => {
+                Operation::Call { body, .. }
+                | Operation::VectorMap { body, .. }
+                | Operation::VectorFold { body, .. } => {
                     // Static occurrence evidence is checked even for empty maps;
                     // this does not claim each element executes its body.
                     self.block(body, guard, authority)?;

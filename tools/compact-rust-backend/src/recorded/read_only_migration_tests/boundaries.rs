@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -100,7 +111,7 @@ fn transitive_private_helper_branches_and_known_source_exclusion_remain_distinct
 }
 
 #[test]
-fn old_nonapplicability_checked_expansion_and_true_refusal_preserve_native_priority() {
+fn old_nonapplicability_and_fold_expansion_preserve_native_invalid_priority() {
     let mut effectful = reduced();
     circuit(&mut effectful,"verifyLocal")["actions"].as_array_mut().unwrap().push(json!({"kind":"assert","condition":{"kind":"cell_read","field":"active","index":0},"message":"extra helper read"}));
     let c = parse(effectful);
@@ -121,7 +132,7 @@ fn old_nonapplicability_checked_expansion_and_true_refusal_preserve_native_prior
     assert!(old(&c, "verify").unwrap().is_none());
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
-        !output
+        output
             .capabilities
             .circuits
             .iter()
@@ -129,15 +140,8 @@ fn old_nonapplicability_checked_expansion_and_true_refusal_preserve_native_prior
             .unwrap()
             .recorded
     );
-    let Err(effect_plan::PlanError::Unsupported(gap)) = checked(&c, "verify") else {
-        panic!("direct fold stays unsupported");
-    };
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert!(
-        gap.path.ends_with("actions[0].bindings[0].value"),
-        "{}",
-        gap.path
-    );
+    checked(&c, "verify").unwrap();
+    current(&c, "verify");
     let mut recursive = reduced();
     circuit(&mut recursive, "verifyLocal")["actions"] = json!([{"kind":"circuit_call","name":"verifyLocal","arguments":[{"kind":"parameter","name":"expected"},{"kind":"parameter","name":"actual"}]}]);
     let c = parse(recursive);

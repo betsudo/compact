@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
 use super::*;
@@ -44,7 +55,7 @@ fn malformed_declarations_and_operands_fail_native_validation_before_selection()
     }
 }
 #[test]
-fn neighboring_interfaces_and_unsupported_compositions_keep_distinct_boundaries() {
+fn neighboring_interfaces_keep_boundaries_while_fold_compositions_are_admitted() {
     for (parameters, result) in [
         (vec![Type::OpaqueBytes], Type::Boolean),
         (vec![Type::OpaqueString, Type::OpaqueString], Type::Boolean),
@@ -81,14 +92,14 @@ fn neighboring_interfaces_and_unsupported_compositions_keep_distinct_boundaries(
         },
     }];
     let cx = Context::new(&c);
-    assert!(cx.domain(cx.circuits["hasName"]).unwrap().is_none());
+    assert!(cx.domain(cx.circuits["hasName"]).unwrap().is_some());
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
         output
             .capabilities
             .circuits
             .iter()
-            .any(|r| r.name == "hasName" && !r.recorded && !r.observed_call)
+            .any(|r| r.name == "hasName" && r.recorded && r.observed_call)
     );
 }
 #[test]

@@ -28,6 +28,7 @@ pub(super) mod pure;
 mod qualified_coins;
 #[cfg(test)]
 mod tests;
+mod vector_fold;
 mod vector_map;
 mod zswap;
 
@@ -99,6 +100,9 @@ fn block(body: &Block, declarations: &Declarations) -> Result<Vec<syn::Stmt>, Re
             proc_macro2::TokenStream::new()
         };
         match &binding.operation {
+            Operation::VectorFold { .. } => {
+                steps.push(vector_fold::render(binding, declarations)?);
+            }
             Operation::VectorMap { .. } => {
                 steps.push(vector_map::render(binding, declarations)?);
             }

@@ -1,8 +1,19 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
-// The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
-// commitments themselves are supported. Do not replace this with malformed types.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// The original direct VectorFoldCall control is newly checked and admitted.
+// Preserve its actual valid input rather than manufacturing a new refusal.
 // Direct legacy_selected traces below preserve the staged predecessor priority laws.
 // Current public/helper emission assertions, where present, use algebra.ordinary.
 use super::*;
@@ -56,7 +67,7 @@ fn earlier_point_route_keeps_priority() {
     assert!(!attempts(&row).contains(&"algebra.context-query"));
 }
 #[test]
-fn unsupported_continues_independent_suffix_but_invariant_is_fatal() {
+fn fold_successor_stops_the_current_route_and_invariant_is_fatal() {
     let mut contract = subject(Expr::FieldToBytes32 {
         value: Box::new(Expr::JubjubPointX {
             value: Box::new(Expr::HashToCurve {
@@ -74,13 +85,13 @@ fn unsupported_continues_independent_suffix_but_invariant_is_fatal() {
         Context::new(&contract)
             .domain(&contract.stateful_circuits[0])
             .unwrap()
-            .is_none()
+            .is_some()
     );
     let row = trace(&contract);
     let attempted = attempts(&row);
-    let position = |name| attempted.iter().position(|r| *r == name).unwrap();
-    assert!(position("algebra.context-query") < position("algebra.composite-values"));
+    assert_eq!(attempted.last().copied(), row["body_owner"].as_str());
     assert!(!attempted.contains(&"selector.context-query"));
+    assert!(!attempted.contains(&"algebra.composite-values"));
     let gap = crate::recorded::RecordingGap {
         resource: None,
         code: crate::recorded::RecordingGapCode::UnsupportedExpression,

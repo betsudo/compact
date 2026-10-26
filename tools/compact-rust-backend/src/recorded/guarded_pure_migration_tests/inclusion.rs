@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -134,16 +145,16 @@ fn whole_helpers_and_empty_private_execution_are_qualified_beyond_prefix() {
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     assert!(old_prefix(&c, "recordFreshEnough").unwrap().is_some());
     assert!(
-        !old_complete(&c, "recordFreshEnough").unwrap(),
-        "unsupported continuation is not an old positive"
+        old_complete(&c, "recordFreshEnough").unwrap(),
+        "the legacy wrapper uses current helper discovery"
     );
-    assert!(checked(&c, "recordFreshEnough").is_err());
+    checked(&c, "recordFreshEnough").unwrap();
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
         output
             .capabilities
             .circuits
             .iter()
-            .any(|r| r.name == "recordFreshEnough" && !r.recorded && !r.observed_call)
+            .any(|r| r.name == "recordFreshEnough" && r.recorded && r.observed_call)
     );
 }

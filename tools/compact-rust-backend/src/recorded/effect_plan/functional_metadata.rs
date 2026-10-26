@@ -65,7 +65,7 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
             })
         })
         .collect::<Vec<_>>();
-    json!({
+    let mut data = json!({
         "schema": 1,
         "purpose": "review_only_not_execution_authority",
         "ledger_version": program.target().ledger_version(),
@@ -77,7 +77,13 @@ pub(super) fn metadata(program: &FunctionalProgram<'_, '_>) -> String {
         "guards": guards,
         "inputs": inputs,
         "effects": effects,
-    }).to_string()
+    });
+    if program.requirements().contains(&Capability::VectorFold) {
+        data["fold_body_semantics"] = json!(
+            "static lexical occurrences; accumulator and owned state flow per item; body executes zero times for empty inputs; not a linear execution schedule"
+        );
+    }
+    data.to_string()
 }
 
 fn capability(value: Capability) -> &'static str {
@@ -108,6 +114,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::Select => "select",
         Capability::Call => "call",
         Capability::VectorMap => "vector_map",
+        Capability::VectorFold => "vector_fold",
         Capability::MapRead => "map_read",
         Capability::MapLookup => "map_lookup",
         Capability::MapRemove => "map_remove",

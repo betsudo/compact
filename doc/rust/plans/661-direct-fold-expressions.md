@@ -2,8 +2,9 @@
 
 Decision: 2026-10-26. The preceding #610 slice passes its maintained local gates
 at signed `e14103c5d`; independent review/Linux integration remain separate.
-This is the next implementation plan. No Fold implementation is claimed here.
-Forge remains deferred and is not a prerequisite.
+This is the active implementation plan. The partial checked-core checkpoint
+below does not complete this full source family. Forge remains deferred and
+is not a prerequisite.
 
 ## Genuine gap and accepted control
 
@@ -160,3 +161,48 @@ GPG signed, DCO and Assisted-by. The broader Rust AST goal stays active until
 its actual requirements are met. Cleanup is only for task-owned inactive,
 unneeded worktrees/targets after completion and verified GitHub merge, with
 unpublished work and needed inputs, binaries, archives and evidence preserved.
+
+
+## Partial checked-core checkpoint — 2026-10-26
+
+The internal checked model now represents one accumulator-carrying loop with
+multiple fixed-vector operands and a result-typed body. Independent validation
+checks source lengths/item types, accumulator/result identity, fresh lexical
+formals, capture visibility and body obligations even for empty loops. Ordinary
+and functional rendering use structured loops and the existing owned Circuit
+continuations. Unit remains distinct from an empty tuple. No runtime API or
+private Expr JSON schema has changed at this checkpoint.
+
+The existing named pure `VectorFoldCall` is the first connected ingress. The
+unchanged Scheme frontend plus development Rust backend generated the genuine
+`direct.compact` source with ordinary, recorded/observed and functional APIs.
+An external consumer of the complete unedited output compared three live TS
+input cases across four Rust routes, including state/effects, cost and replay.
+An external positive API consumer compiled; wrong vector length, seed/item type
+and reuse of a consumed Program failed at their intended call sites.
+
+The full backend library test run passed 1,815 tests with 7 inherited ignores.
+All 39 original valid-Fold refusal controls have explicit current successors;
+complete predecessor sources and both failed intermediate runs are retained.
+Frozen selector/helper collectors that call current semantic/rendering owners
+now observe new admission; this does not recertify their historical receipts.
+Native-invalid, recursive, signature, layout and rendering-invariant controls
+remain. Once an earlier Fold is accepted, the actual later layout refusal is
+the correct resource diagnostic; no payload is attached to the earlier child.
+
+Evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+Key receipts are `core-laws-v2-result.json`, `core-consumer-v2-result.json`,
+`core-public-api-v1.json`, `backend-widening-audit-v3-result.json` and
+`control-successors-v1.json`. The general model's multiple-input/effectful-body
+laws are synthetic checked-plan qualification, not frontend/runtime proof of
+those broader source forms.
+
+Still OPEN: the paired typed source/native ingress for inline captures,
+effectful operands, stateful/witness reducers and multiple iterables; full
+owned-value/empty/guard/first-failure execution coverage; maintained source
+qualification and genuine proofs with binding negatives; complete integration,
+independent review and intended Linux gates. Do not silently narrow the signed
+plan or mark #661/the broader Rust AST goal complete at this intermediate core.
+Cleanup remains conditional on completion and verified GitHub merge; nothing
+was merged or deleted by this local checkpoint.

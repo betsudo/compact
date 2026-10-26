@@ -307,6 +307,28 @@ impl Renderer<'_> {
                 let expression = super::functional_paths::expression(expression);
                 returning(&current, expression)
             }
+            Operation::VectorFold {
+                initial,
+                sources,
+                accumulator,
+                items,
+                body,
+            } => {
+                let initial = value(initial);
+                let formal = super::vector_fold_syntax::formal(accumulator);
+                let ty = rust_type(&accumulator.ty)
+                    .map_err(|e| invalid(&binding.path, e.to_string()))?;
+                let (pattern, iterator) =
+                    super::vector_fold_syntax::iteration(sources, items, value, &binding.path)?;
+                let body = self.block(body, syn::parse_quote!(__compact_execution))?;
+                syn::parse_quote!({
+                    let mut __compact_fold_execution = #current.returning(#initial);
+                    for #pattern in #iterator {
+                        __compact_fold_execution = __compact_fold_execution.bind(|#formal: #ty, __compact_execution| #body);
+                    }
+                    __compact_fold_execution
+                })
+            }
             Operation::VectorMap { .. } => {
                 let expression =
                     super::functional_pure_blocks::vector_map(binding, self.declarations)?;

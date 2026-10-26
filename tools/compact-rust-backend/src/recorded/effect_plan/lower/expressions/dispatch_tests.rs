@@ -234,10 +234,14 @@ fn fuel_failure_precedes_domain_dispatch_and_unsupported_stays_refused() {
         element: Type::Field,
         length: 1,
     };
-    let result = same(&source, &Scope::new());
-    assert!(result.outcome.is_err());
-    assert_eq!(result.spent, 1);
-    assert_eq!(result.next, 0);
+    // Direct Fold has a new owner. This malformed missing-callee control remains
+    // refused, but now reports the actual reducer failure after the same spend.
+    let result = run(&source, &Scope::new(), 4096, false);
+    let prior = run(&source, &Scope::new(), 4096, true);
+    assert_eq!(result.outcome.unwrap_err().detail, "unknown Fold reducer");
+    assert_eq!(prior.outcome.unwrap_err().ir_node, "Expr::VectorFoldCall");
+    assert_eq!((result.spent, result.next), (1, 0));
+    assert_eq!((prior.spent, prior.next), (1, 0));
 }
 
 #[test]

@@ -1,12 +1,24 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Merge is subsumed by earlier composition; ordinary fallback diagnostics stay intact.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
 use super::*;
 use crate::ir::{Contract, Expr, LocalBinding, StateAction, StateReturn, Type};
-use crate::recorded::{RecordingGapCode, admission_probe::trace};
+use crate::recorded::admission_probe::trace;
 fn source() -> Contract {
     serde_json::from_str(include_str!(
         "../../../tests/shielded-merge-schema20-ir.json"
@@ -177,7 +189,7 @@ fn unsupported_hash() -> Expr {
 }
 
 #[test]
-fn rejected_merge_keeps_action_precedence_and_generic_return_diagnostic() {
+fn fold_successor_merge_retains_old_rejection_and_admits_actual_child() {
     for actionful in [false, true] {
         let mut c = source();
         crate::recorded::test_support::register_unsupported_fold(&mut c);
@@ -228,9 +240,9 @@ fn rejected_merge_keeps_action_precedence_and_generic_return_diagnostic() {
         let maps = Context::new(&c);
         let root = maps.circuits["merge_qualified"];
         assert!(maps.old(root).is_none());
-        assert!(matches!(maps.attempt(root), ProfileAttempt::Rejected(_)));
+        assert!(matches!(maps.attempt(root), ProfileAttempt::Admitted(_)));
         let selected = maps.selected(root);
-        assert!(selected.typed_result.is_none());
+        assert!(selected.typed_result.is_some());
         assert!(
             selected.shielded_send_rejection.is_none(),
             "a coin result must not acquire send-result diagnostics"
@@ -248,10 +260,9 @@ fn rejected_merge_keeps_action_precedence_and_generic_return_diagnostic() {
             .iter()
             .find(|c| c.name == "merge_qualified")
             .unwrap();
-        assert!(!capability.recorded && !capability.observed_call);
-        let gap = capability.recording_unavailable.as_ref().unwrap();
-        assert_eq!(gap.code, RecordingGapCode::UnsupportedExpression);
-        crate::recorded::test_support::assert_checked_fold_refusal(
+        assert!(capability.recorded && capability.observed_call);
+        assert!(capability.recording_unavailable.is_none());
+        crate::recorded::test_support::assert_checked_fold_successor(
             &c,
             root,
             expected,
