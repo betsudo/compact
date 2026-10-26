@@ -170,6 +170,10 @@ pub enum RenderError {
     DuplicateStructField(String),
     InvalidStructField(String),
     InvalidTupleIndex(usize),
+    InvalidVectorIndex {
+        index: usize,
+        length: usize,
+    },
     ExpectedTuple(Type),
     ConflictingEnum(String),
     EmptyEnum(String),
@@ -299,6 +303,9 @@ impl fmt::Display for RenderError {
             Self::DuplicateStructField(name) => write!(f, "duplicate struct field {name:?}"),
             Self::InvalidStructField(name) => write!(f, "invalid struct field {name:?}"),
             Self::InvalidTupleIndex(index) => write!(f, "invalid tuple index {index}"),
+            Self::InvalidVectorIndex { index, length } => {
+                write!(f, "vector index {index} is outside its length {length}")
+            }
             Self::ExpectedTuple(ty) => write!(f, "expected tuple value, got {ty:?}"),
             Self::ConflictingEnum(name) => write!(f, "conflicting definitions for enum {name:?}"),
             Self::EmptyEnum(name) => write!(f, "enum {name:?} has no variants"),

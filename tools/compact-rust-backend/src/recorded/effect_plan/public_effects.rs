@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Static public-program evidence from validated effects, independent of IR shapes.
 use super::model::{CheckedPlan, Operation};
 
@@ -32,7 +44,8 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                 | Operation::PureCall { .. } | Operation::Assert { .. }
                 | Operation::Literal(_) | Operation::EnumVariant { .. } | Operation::Default
                 | Operation::StructConstruct { .. } | Operation::StructProject { .. }
-                | Operation::TupleProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
+                | Operation::TupleProject { .. }
+                | Operation::VectorProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
                 | Operation::PersistentCommit { .. } | Operation::FieldToBytes32(_)
                 | Operation::PersistentHash(_) | Operation::Keccak256(_) | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_) | Operation::UpgradeFromTransient(_) | Operation::TransientHash(_)

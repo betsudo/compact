@@ -111,16 +111,17 @@ pub(super) fn check_with_calls_observed(
     let declarations = declarations::Declarations::with_calls(ledger, witnesses, pure, circuits)
         .with_type_environment(types)
         .with_root(circuit);
-    let (plan, certificates) = if observer.is_some() {
+    let lowered = if observer.is_some() {
         lower::lower_with_pure_calls_observed(circuit, &declarations, pure, circuits, observer)
     } else {
         lower::lower_with_pure_calls(circuit, &declarations, pure, circuits)
     }
     .map_err(DiagnosticPlanError::Unsupported)?;
     let declarations = declarations
-        .with_certificates(certificates, pure)
-        .map_err(DiagnosticPlanError::Invalid)?;
-    validate::check(plan, declarations).map_err(DiagnosticPlanError::Invalid)
+        .with_certificates(lowered.certificates, pure)
+        .map_err(DiagnosticPlanError::Invalid)?
+        .with_vector_projections(lowered.vector_projections);
+    validate::check(lowered.plan, declarations).map_err(DiagnosticPlanError::Invalid)
 }
 
 #[cfg(test)]

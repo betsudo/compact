@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Shallow prior-dispatch comparisons plus explicit fuel/path/SSA invariants.
 //! Child family helpers are unchanged/current; immutable-binary full continuity
 //! and unchanged root near44/over45/malformed worker are parent gates.
@@ -25,6 +40,7 @@ fn run(source: &Expr, scope: &Scope, budget: usize, prior: bool) -> Snapshot {
         max_call_depth: usize::MAX,
         max_expanded_steps: budget,
         next: 0,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,
@@ -240,6 +256,7 @@ fn checked_plan_render_keeps_original_ssa_rust_steps_and_result() {
             max_call_depth: usize::MAX,
             max_expanded_steps: 4096,
             next: 0,
+            vector_projections: Default::default(),
             root_action: None,
             failure_precision: Precision::Unclassified,
             concrete_node: None,

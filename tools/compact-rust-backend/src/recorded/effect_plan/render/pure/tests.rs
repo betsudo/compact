@@ -127,6 +127,19 @@ fn projection_retains_only_the_selected_noncopy_result_and_uses_raw_place() {
     };
     for (op, expected) in [
         (
+            Operation::VectorProject {
+                value: input(
+                    1,
+                    Type::Vector {
+                        element: Box::new(Type::OpaqueString),
+                        length: 2,
+                    },
+                ),
+                index: 1,
+            },
+            syn::parse_quote!(((raw_source).0[1]).clone()),
+        ),
+        (
             Operation::StructProject {
                 value: input(1, record),
                 field: "text".into(),

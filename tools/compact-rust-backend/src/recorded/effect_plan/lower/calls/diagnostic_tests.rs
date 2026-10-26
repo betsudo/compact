@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Only actual stateful callee-body failures add incoming call occurrences.
 use super::*;
@@ -95,7 +106,7 @@ fn run(
     let pure = HashMap::new();
     let declarations = Declarations::with_calls(&HashMap::new(), &HashMap::new(), &pure, &calls)
         .with_root(&sources[root]);
-    let (plan, certificates) = super::super::lower_with_pure_calls_observed(
+    let lowered = super::super::lower_with_pure_calls_observed(
         &sources[root],
         &declarations,
         &pure,
@@ -103,8 +114,10 @@ fn run(
         observer,
     )
     .map_err(LoweringRejection::into_checked_gap)?;
-    let declarations = declarations.with_certificates(certificates, &pure)?;
-    let checked = super::super::super::validate::check(plan, declarations)?;
+    let declarations = declarations
+        .with_certificates(lowered.certificates, &pure)?
+        .with_vector_projections(lowered.vector_projections);
+    let checked = super::super::super::validate::check(lowered.plan, declarations)?;
     let rendered = super::super::super::render(&checked)?;
     let steps = rendered.steps;
     let result = rendered.result;
