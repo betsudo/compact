@@ -20,7 +20,7 @@ There is no honest overall completion percentage. A checked-operation variant, a
 | Readability | Measured, focused generated-code simplification; smaller named component owners and ordinary Rust constructs. | This is not a promise that every generated body reads like handwritten application code. |
 | Immutable functional surface | A compiler-issued `Program`, one generic `run` body, native/recorded convenience methods and consuming execution. | Opt-in experimental API; ordinary generated APIs remain available. |
 | Witnesses | General typed signatures; Unit, Field, Bytes and products; explicit exact opaque transport; metered witness views and typed unknown-identity errors. | Handwritten callbacks are ordinary Rust, not compiler-certified privacy/effect implementations. |
-| Pure values and composition | Shared arithmetic, comparisons, checked conversions, aggregates/projections, local calls, context-free VectorMap and certified pure helper Fold. | Type combinations and resource bounds remain checked. Direct stateful Fold now has selected local #661 qualification; review/Linux integration remain open. |
+| Pure values and composition | Shared arithmetic, comparisons, checked conversions, aggregates/projections, local calls, context-free VectorMap and certified pure helper Fold. | Type combinations and resource bounds remain checked. Direct stateful Fold has selected local #661 qualification and resolved independent review findings; intended Linux/current-head integration remains open. |
 | Collections | Cell, Counter, scalar Map/Set, List and structural nested-Map inspection/removal, through existing slots/frames. | Nested Map inspection does not imply scalar value codecs, arbitrary nested insertion or every frontend expression form. |
 | Merkle | Plain/historic typed operations, retaining depth/history, slot identity, paths and existing validation authority. | Representative proof cases do not prove all tree operations or all depths. |
 | Crypto | Sixteen admitted Ledger8 hashing, Field encoding and Jubjub operations use shared syntax and official primitives. | Keccak is refused for this pinned ZKIRv2 functional target. Curve arithmetic is not a blanket signature-security claim. |
@@ -195,17 +195,19 @@ This is publication/acceptance work, not a need to rebuild the compiler architec
 | Issue | Current gap | Required evidence for a fix |
 | --- | --- | --- |
 | [#674](https://github.com/betsudo/compact/issues/674) | Constant fixed-vector projection is locally delivered; independent review/Linux integration remain open. | [Recorded local scope and source cohorts](plans/674-constant-vector-projection-decision.md); distinct typed indexing, bounds/ownership controls and fresh selected proofs. |
-| [#661](https://github.com/betsudo/compact/issues/661) | Direct named/captured/effectful/witness/multi-iterable Fold is locally qualified at `fb229b9cd`; independent review/Linux integration remain open. Certified pure-helper Fold remains accepted. | [Exact local scope and epochs](plans/661-direct-fold-expressions.md#expanded-local-integration-checkpoint--2026-10-26): sixteen full sources, 38 four-route/live-TS cases, typed API/refusal controls, nine fresh selected proofs/default-strict applications; no constructor/unselected/full-language claim. |
+| [#661](https://github.com/betsudo/compact/issues/661) | Direct named/captured/effectful/witness/multi-iterable Fold has reviewed local corrections at `ae1c8b258`; intended native Linux/current-head integration remains open. Certified pure-helper Fold remains accepted within its scope. | [Current local evidence and remaining gates](plans/661-direct-fold-expressions.md#reviewed-local-checkpoint--2026-10-26): nineteen full sources, 46 four-route/live-TS cases, separate sixteen-scenario legacy compatibility controls and typed API/refusal checks. Earlier nine selected proofs/default-strict applications retain their `fb229b9cd` epoch; no constructor/unselected/full-language claim. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Stateful `Map.size()` expressions now pass maintained local integration at `e14103c5d`; review/Linux integration remain open. | [Exact local results and limits](plans/610-map-size-expressions.md#local-integration-checkpoint--2026-10-26); genuine TS/four-route consumers, whole-Map metadata, malformed-state controls and two fresh proofs/default-strict applications. |
 | [#516](https://github.com/betsudo/compact/issues/516) | Value wrappers and lexical handling can hide an effectful return. | Preserve conversion timing, branch effects, lexical scope and original first failures across native/recorded paths. |
 
 The [direct fixed-vector Fold plan](plans/661-direct-fold-expressions.md) now
 records typed ingress/checked composition and selected local qualification.
-The original nine source probes remain historical characterization; subsequent
-sixteen-source/four-route parity, empty and one-item controls, and nine selected
-fresh proofs have separate exact source/tool receipts. Finish independent review
-and intended Linux/current-head integration before accepting #661 or selecting
-another feature. Preserve the accepted crosswalk and historical authorities.
+The original nine source probes and earlier sixteen-source consumer remain
+historical characterization/execution. Current nineteen-source/four-route
+parity, empty and one-item controls, reviewed legacy corrections and earlier
+nine selected fresh proofs have separate exact source/tool receipts. Independent
+review findings are resolved at `ae1c8b258`; intended Linux/current-head required
+integration must still finish before accepting #661 or selecting another
+feature. Preserve the accepted crosswalk and historical authorities.
 
 These are not retroactive failures of the bounded delivery. They **are blockers for contracts using them, and for an unqualified full-language claim**. For a deliberately supported-profile release, publish explicit exclusions instead of calling them solved.
 

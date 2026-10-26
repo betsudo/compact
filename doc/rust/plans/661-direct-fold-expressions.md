@@ -584,3 +584,51 @@ limitation; these raw-IR regression controls do not claim legacy TS parity or
 additional proofs. Existing exact-epoch proof receipts remain unchanged. The
 repaired-head review, original ordinary recipe qualification and required
 integration/platform gates must be recorded separately before acceptance.
+
+## Reviewed local checkpoint — 2026-10-26
+
+The following maintainer-reported results belong to clean signed implementation
+`ae1c8b258714fa16bf001cd48197c1ed26db53d2`. This documentation successor neither
+changes that implementation nor renews earlier whole-source execution epochs.
+
+| Obligation | Authoritative local result | Remaining limit |
+| --- | --- | --- |
+| Complete source semantics and public APIs | Nineteen full sources, 46 live-TS cases: 33 successes and thirteen first failures, each through four public Rust routes; 184 executions and 66 successful recorded VM replays. Owned items/captures, lexical shadowing, empty/one/multiple iterations and witness/effect ordering remain included. | Finite selected cases, not universal language equivalence or failure rollback. |
+| Ordinary misuse and untrusted boundaries | Eight intended Rust compile-fails and eight source refusals; checked length/type/capture/formal/ID and inactive/empty-body controls. Fourteen focused Fold unit tests pass. | Existing byte/type/expansion limits do not establish aggregate heap/CPU containment. |
+| Legacy admission correction | Complete derived predecessor IR, sixteen scenarios and 32 native/recorded executions, with three successful VM replays. Both empty and nonempty controls failed before the order fix and pass afterward. | Source-first legacy native compatibility is not TS pure-helper parity. New lexical Fold remains seed-first. |
+| Independent implementation review | Complete implementation review at `b9223a33c` found operand-order and stale-count issues; independent follow-up at `ae1c8b258` resolves both with no additional actionable finding in its scope. | Coding-agent review is not a human security audit or absence-of-all-defects proof. |
+| Current backend and generated fixtures | Complete all-feature backend library: 1,844 passes, zero failures and the same seven inherited ignores. All 276 registered golden outputs are fresh with the new original-recipe compiler. Strict backend/consumer Clippy, public Python entrypoint, formatting and header regression checks pass. | Earlier full-workspace/native/wallet/package executions retain their original epochs; this is not a fresh monolithic release run. |
+| Original ordinary compiler recipe | Unchanged `nix build .#compactc --no-link --print-out-paths --option max-jobs 1 --option cores 4` exits zero with all 5,980 tracked source pins unchanged. | The fixup classifier caveat and independent supplemental coverage below remain part of the result. Compiler `doCheck` and source-map suite retain their earlier execution epoch. |
+| Selected cryptographic and application coverage | Earlier `fb229b9cd` cohort: nine fresh selected proofs across eight complete sources, immutable verification, binding/same-geometry negatives, funded default-strict applications and unchanged replay refusal. | No new proof run at `ae1c8b258`, no proofs claimed for the three ownership/shadowing additions, constructors or unselected exports/type families. |
+| Intended native Linux/current-head integration | Source prerequisites and complete required gates remain recorded; current execution host is Darwin arm64. | No native Linux x86_64 execution target has been supplied. No hosted run, push or other platform authority is inferred. |
+
+The Rust CLI derivation's actual fixup log contains a classifier subprocess
+segmentation fault; the original build nevertheless exits zero and the wrapper
+fixup completes. Its cause remains unknown. Independent receipt review confirms
+bounded supplemental coverage of the interrupted hook's intended checks: the
+affected Rust CLI output has 533 regular files and no ELF files or scripts, so
+there are no candidates for its ELF-RPATH or wrapped-script checks. Across the
+two output roots, 1,069 regular-file classifications match; two Mach-O files
+have no `LC_RPATH`, and the three wrapper scripts contain neither actual build
+TMPDIR prefix. This does not claim the crashed classifier succeeded or establish
+global store trust. No recipe or output was repaired, excluded or rebuilt.
+
+Complete generated Rust/IR/origins/capability/checked-program/TS/ZKIR assets for
+all nineteen sources match the preceding gate byte for byte except actual TS
+source-map invocation `sourceRoot` metadata and its associated manifest hashes.
+Both outputs remain intact, without normalization or old proof-verdict transfer.
+
+The evidence root above contains `review-fixes-v1-closeout.json` (SHA-256
+`4e82964799c24282a2e7ae2057415752554b79d098dfd0254c6bb4a2052d1d52`),
+`review-fixes-v1/independent-followup.md` and the separate
+`review-fixes-v1/original-recipe/independent-receipt-review.md`. These are local
+maintainer evidence locators, not a claim of public reproducibility.
+
+All validation processes are terminal. The existing native Linux target
+information question remains pending; repeating it or restarting unchanged
+checks does not advance acceptance. Once a target is supplied, authenticate its
+actual platform and current compiler/source/tool/runtime/parameter identities,
+then retain the full required compiler/native/proof/wallet/source/workspace/
+Clippy/package gates. This source note starts no execution. #661 and the broad
+Rust AST goal remain incomplete; Forge stays deferred, and cleanup remains
+conditional on completion and verified GitHub merge.

@@ -129,8 +129,10 @@ pure calls reuse the existing pure Rust functions, including supported pure Fold
 Both nested branches remain statically checked; only selected calls execute.
 This describes the earlier certified-helper checkpoint. Subsequent direct
 stateful Fold ingress, checked lowering and selected local qualification are
-recorded separately in the [#661 plan](plans/661-direct-fold-expressions.md);
-independent review and Linux integration remain open.
+recorded separately in the [#661 plan](plans/661-direct-fold-expressions.md#reviewed-local-checkpoint--2026-10-26).
+Independent review findings are resolved at `ae1c8b258`; intended native Linux
+and current-head required integration remain open. The current nineteen-source
+consumer and earlier selected proof cohort keep their separate source epochs.
 
 Scalar Map membership, lookup, insertion, removal, default insertion, reset,
 size and emptiness use the existing typed slots on both interpreters. Logical
