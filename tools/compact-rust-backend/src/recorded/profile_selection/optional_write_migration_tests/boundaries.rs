@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -136,7 +147,7 @@ fn public_signature_checks_and_hidden_children_remain_explicit() {
             .push(action);
         let c = crate::recorded::test_support::with_unsupported_fold(contract(value));
         assert!(old(&c).unwrap().is_none());
-        assert!(checked(&c).is_err());
+        assert!(checked(&c).is_ok());
         let rendered = crate::render_with_capabilities(&c).unwrap();
         let root = rendered
             .capabilities
@@ -145,7 +156,7 @@ fn public_signature_checks_and_hidden_children_remain_explicit() {
             .find(|c| c.name == "set_topic")
             .unwrap();
         assert!(
-            !root.recorded && !root.observed_call,
+            root.recorded && root.observed_call,
             "unselected={unselected}"
         );
     }

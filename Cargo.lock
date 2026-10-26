@@ -1313,6 +1313,139 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-direct-fold-captured-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-direct-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-effectful-reducer-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-empty-ordered-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-empty-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-guarded-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-helper-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-inline-branch-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-inline-effectful-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-multi-ordered-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-multiple-inputs-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-ordered-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-owned-capture-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-owned-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-shadow-effectful-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-shadow-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-single-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-unit-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-witness-reducer-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-effect-plan-aligned-hashes-source-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2779,6 +2912,14 @@ dependencies = [
  "compact-rust-did-relation-nested-reducer-fixture",
  "compact-rust-did-relation-two-reducer-fixture",
  "compact-rust-did-service-map-reducer-fixture",
+ "compact-rust-direct-fold-captured-source-fixture",
+ "compact-rust-direct-fold-effectful-reducer-source-fixture",
+ "compact-rust-direct-fold-empty-ordered-source-fixture",
+ "compact-rust-direct-fold-inline-branch-source-fixture",
+ "compact-rust-direct-fold-inline-effectful-source-fixture",
+ "compact-rust-direct-fold-multiple-inputs-source-fixture",
+ "compact-rust-direct-fold-single-source-fixture",
+ "compact-rust-direct-fold-witness-reducer-source-fixture",
  "compact-rust-effect-plan-aligned-hashes-source-fixture",
  "compact-rust-effect-plan-aligned-witness-results-source-fixture",
  "compact-rust-effect-plan-counter-only-source-fixture",

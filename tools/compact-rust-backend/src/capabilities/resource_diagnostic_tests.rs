@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //! Public capability serialization and priority for a bounded recording refusal.
 use super::*;
 use crate::{RenderError, render_with_capabilities};
@@ -143,7 +154,7 @@ fn fixed_layout_resource_reaches_public_and_observed_capabilities() {
 }
 
 #[test]
-fn earlier_root_and_let_failures_do_not_inherit_later_resource_payload() {
+fn earlier_accepted_folds_reach_the_later_resource_payload() {
     for earlier_binding in [false, true] {
         let mut input = oversized();
         if earlier_binding {
@@ -155,7 +166,7 @@ fn earlier_root_and_let_failures_do_not_inherit_later_resource_payload() {
                 .unwrap()
                 .insert(0, json!({"kind":"expression","value":persistent_commit()}));
         }
-        // The unsupported direct fold has a real pure declaration. Native
+        // The newly accepted direct fold has a real pure declaration. Native
         // UnknownCircuit is not evidence about recording resource precedence.
         let mut contract: ir::Contract = serde_json::from_value(input).unwrap();
         crate::recorded::test_support::register_unsupported_fold(&mut contract);
@@ -168,10 +179,10 @@ fn earlier_root_and_let_failures_do_not_inherit_later_resource_payload() {
         ] {
             let gap = serde_json::to_value(gap).unwrap();
             assert!(
-                gap.get("resource").is_none(),
+                gap.get("resource").is_some(),
                 "earlier_binding={earlier_binding}: {gap}"
             );
-            assert!(!gap["detail"].as_str().unwrap().contains("32768"));
+            assert!(gap["detail"].as_str().unwrap().contains("32768"));
         }
     }
 }

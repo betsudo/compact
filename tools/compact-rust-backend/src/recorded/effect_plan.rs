@@ -33,6 +33,7 @@ mod functional_render;
 mod functional_sets;
 mod functional_witnesses;
 mod lower;
+mod vector_fold_syntax;
 use crate::source_diagnostics::RefusalObserver;
 mod model;
 #[cfg(all(test, feature = "experimental-recording-plan"))]
@@ -48,6 +49,38 @@ mod resource_tests;
 mod tests;
 mod type_environment;
 mod validate;
+#[cfg(test)]
+mod vector_fold_ingress_tests;
+#[cfg(test)]
+mod vector_fold_tests;
+
+/// Current typed graph paths for explicit historical-to-Fold admission tests.
+#[cfg(test)]
+pub(super) fn fold_paths(checked: &CheckedPlan) -> Vec<String> {
+    let mut paths = Vec::new();
+    let mut blocks = vec![&checked.plan().body];
+    while let Some(block) = blocks.pop() {
+        for binding in &block.bindings {
+            match &binding.operation {
+                model::Operation::VectorFold { body, .. } => {
+                    paths.push(binding.path.clone());
+                    blocks.push(body);
+                }
+                model::Operation::VectorMap { body, .. } | model::Operation::Call { body, .. } => {
+                    blocks.push(body)
+                }
+                model::Operation::If {
+                    then, otherwise, ..
+                } => {
+                    blocks.push(then);
+                    blocks.push(otherwise);
+                }
+                _ => {}
+            }
+        }
+    }
+    paths
+}
 
 use super::{RecordingGap, RecordingGapCode, recording_plan::TypedPlan};
 use crate::ir::{LedgerField, PureCircuit, StatefulCircuit, WitnessDeclaration};

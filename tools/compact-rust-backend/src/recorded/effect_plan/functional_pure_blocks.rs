@@ -77,6 +77,34 @@ fn block_value(block: &Block, declarations: &Declarations) -> Result<syn::Expr, 
 fn expression(binding: &Binding, declarations: &Declarations) -> Result<syn::Expr, RecordingGap> {
     match &binding.operation {
         Operation::VectorMap { .. } => vector_map(binding, declarations),
+        Operation::VectorFold {
+            initial,
+            sources,
+            accumulator,
+            items,
+            body,
+        } => {
+            let initial = value(initial);
+            let formal = super::vector_fold_syntax::formal(accumulator);
+            let ty =
+                rust_type(&accumulator.ty).map_err(|e| invalid(&binding.path, e.to_string()))?;
+            let (pattern, iterator) =
+                super::vector_fold_syntax::iteration(sources, items, value, &binding.path)?;
+            let body = block_value(body, declarations)?;
+            if accumulator.ty == Type::Unit {
+                return Ok(syn::parse_quote!({
+                    for #pattern in #iterator { #body; }
+                }));
+            }
+            Ok(syn::parse_quote!({
+                let mut __compact_fold_accumulator: #ty = #initial;
+                for #pattern in #iterator {
+                    let #formal: #ty = __compact_fold_accumulator;
+                    __compact_fold_accumulator = #body;
+                }
+                __compact_fold_accumulator
+            }))
+        }
         Operation::If {
             condition,
             then,

@@ -3,6 +3,8 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/rust-backend-ast]
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -117,20 +119,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      - name: Reject new header violations on pull requests
-        if: github.event_name == 'pull_request'
+      - name: Reject new header violations on pull requests and branch pushes
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         env:
-          HEADER_BASE: ${{ github.event.pull_request.base.sha }}
+          HEADER_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           python scripts/check_header_regressions.py --base "$HEADER_BASE" \
             --report "$RUNNER_TEMP/header-regressions.json"
 
       - name: Validate full-tree headers on manual and scheduled qualification
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
         run: python add_headers.py --validate
 
-      - name: Upload explicit PR header-debt accounting
-        if: always() && github.event_name == 'pull_request'
+      - name: Upload explicit header-debt accounting
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: header-regressions-${{ github.sha }}
@@ -476,6 +478,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression" --report "$RUNNER_TEMP/compact-map-size-expression.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check generated direct Fold source-family APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold" --report "$RUNNER_TEMP/compact-direct-fold.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -493,6 +500,10 @@ jobs:
       - name: Qualify Map size expression proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression-proof"
+
+      - name: Qualify selected direct Fold proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold-proof"
 
       - name: Rehearse Rust runtime packages
         run: |
@@ -516,7 +527,13 @@ jobs:
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
             ${{ runner.temp }}/compact-map-size-expression.json
+            ${{ runner.temp }}/compact-direct-fold.json
+            ${{ runner.temp }}/compact-direct-fold/generated/
+            ${{ runner.temp }}/compact-direct-fold/ts-reference.json
+            ${{ runner.temp }}/compact-direct-fold/consumer/Cargo.lock
             ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
+            ${{ runner.temp }}/compact-direct-fold-proof/receipt.json
+            ${{ runner.temp }}/compact-direct-fold-proof/generated/
             target/package/midnight-compact-runtime-macros-*.crate
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error

@@ -211,6 +211,7 @@ pub enum RenderError {
     ExpectedUnsigned(Type),
     EffectfulExpression,
     MalformedReturnPlan,
+    MalformedVectorFold(&'static str),
 }
 
 impl fmt::Display for RenderError {
@@ -235,6 +236,7 @@ impl fmt::Display for RenderError {
             Self::SchemaVersion(version) => {
                 write!(f, "unsupported Rust backend IR schema {version}")
             }
+            Self::MalformedVectorFold(detail) => write!(f, "malformed Vector Fold: {detail}"),
             Self::MalformedReturnPlan => write!(
                 f,
                 "effectful return plan must own the entire ordered circuit body"
@@ -711,6 +713,24 @@ fn collect_expression_types<'ir>(
             collect_named_types_observed(result, structs, enums, observer, Some(origins))?;
             collect_expression_types(source, structs, enums, origins, observer)?;
             collect_expression_types(body, structs, enums, origins, observer)?;
+        }
+        Expr::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            ..
+        } => {
+            collect_named_types_observed(&accumulator.ty, structs, enums, observer, Some(origins))?;
+            for item in items {
+                collect_named_types_observed(&item.ty, structs, enums, observer, Some(origins))?;
+            }
+            collect_expression_types(initial, structs, enums, origins, observer)?;
+            for source in sources {
+                collect_expression_types(source, structs, enums, origins, observer)?;
+            }
+            collect_return_plan_types(body, structs, enums, origins, observer)?;
         }
         Expr::VectorFoldCall {
             initial,
@@ -1256,6 +1276,26 @@ fn pure_aggregate_expression(
             result,
             length: *length,
         },
+        Expr::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            length,
+        } => {
+            let ir::ReturnPlan::Value { value: body } = body.as_ref() else {
+                return Err(RenderError::EffectfulExpression);
+            };
+            AggregateSource::VectorFold {
+                accumulator,
+                items,
+                initial,
+                sources,
+                body,
+                length: *length,
+            }
+        }
         Expr::VectorFoldCall {
             name,
             initial,

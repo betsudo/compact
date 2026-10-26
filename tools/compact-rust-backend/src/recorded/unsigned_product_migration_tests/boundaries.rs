@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -89,7 +100,7 @@ fn old_prefix_admission_never_substitutes_for_native_slot_or_identifier_validati
 }
 
 #[test]
-fn hidden_stateful_unsupported_children_still_refuse_recording() {
+fn hidden_stateful_fold_successors_are_checked_and_admitted() {
     let mut v = fixture();
     root(&mut v)["actions"].as_array_mut().unwrap().push(json!({
         "kind":"if", "condition":{"kind":"boolean","value":true},
@@ -101,7 +112,7 @@ fn hidden_stateful_unsupported_children_still_refuse_recording() {
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     assert!(old(&c).unwrap().is_none());
     assert!(
-        checked(&c).is_err(),
+        checked(&c).is_ok(),
         "unselected stateful children are checked"
     );
     let output = crate::render_with_capabilities(&c).unwrap();
@@ -111,9 +122,9 @@ fn hidden_stateful_unsupported_children_still_refuse_recording() {
         .iter()
         .find(|c| c.name == "recordPinned")
         .unwrap();
-    assert!(!root.recorded && !root.observed_call);
+    assert!(root.recorded && root.observed_call);
     assert!(
         output.source.contains("persistent_commit"),
-        "native source retains the unsupported recording child"
+        "native source retains the actual Fold commitment child"
     );
 }

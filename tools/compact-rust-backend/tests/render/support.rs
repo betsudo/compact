@@ -42,4 +42,6 @@ pub(super) fn identity(result: Type, body: Expr) -> Contract {
 // Real pure declaration is required in each complete refusal fixture.
 #[path = "../support/recording_refusal.rs"]
 mod recording_refusal;
-pub(super) use recording_refusal::{register_unsupported_fold, unsupported_commit_input};
+pub(super) use recording_refusal::{
+    assert_admitted_and_malformed_refused, fold_control_input, register_fold_control,
+};

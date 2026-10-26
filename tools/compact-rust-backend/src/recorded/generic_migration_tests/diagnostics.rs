@@ -1,11 +1,23 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! CoPS030: old refusals are retained evidence, current failures are checked.
 use super::*;
 
 #[test]
-fn action_and_return_refusals_publish_actual_fold_children_without_fallback() {
+fn fold_successor_action_and_return_paths_retain_old_refusals_without_fallback() {
     for actionful in [false, true] {
         for result in [Type::Field, Type::Bytes { length: 32 }] {
             let mut c = root(
@@ -29,7 +41,7 @@ fn action_and_return_refusals_publish_actual_fold_children_without_fallback() {
             );
             crate::recorded::test_support::register_unsupported_fold(&mut c);
             let r = &c.stateful_circuits[0];
-            crate::recorded::test_support::assert_checked_fold_refusal(
+            crate::recorded::test_support::assert_checked_fold_successor(
                 &c,
                 r,
                 if actionful {
@@ -48,7 +60,7 @@ fn action_and_return_refusals_publish_actual_fold_children_without_fallback() {
             let (_, rows) = trace::capture_json(|| crate::render_with_capabilities(&c));
             let rows = rows.as_array().unwrap();
             assert!(rows.iter().all(|r| r["return_dispatch"].is_null()));
-            assert!(rows.iter().all(|r| r["body_owner"].is_null()));
+            assert!(rows.iter().all(|r| r["body_owner"] == "algebra.ordinary"));
         }
     }
 }

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //! The carrier domain is an interface boundary, not a whole-body recognizer.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
@@ -204,7 +215,7 @@ fn earlier_winners_never_attempt_the_final_zswap_domain() {
 }
 
 #[test]
-fn unsupported_body_refuses_at_last_priority_without_old_fallback() {
+fn fold_successor_is_owned_before_zswap_without_old_fallback() {
     let mut c = source();
     crate::recorded::test_support::register_unsupported_fold(&mut c);
     let r = c
@@ -213,7 +224,7 @@ fn unsupported_body_refuses_at_last_priority_without_old_fallback() {
         .find(|r| r.name == "flow")
         .unwrap();
     r.actions = vec![StateAction::Expression {
-        // The direct fold is unsupported; Field commitments remain supported.
+        // The direct Fold now composes with the already supported commitment.
         value: Expr::Equal {
             left: Box::new(Expr::HashToCurve {
                 value: Box::new(Expr::PersistentCommit {
@@ -239,18 +250,11 @@ fn unsupported_body_refuses_at_last_priority_without_old_fallback() {
         .is_none(),
         "whole frozen Zswap oracle also refuses this expression"
     );
-    assert!(maps.domain(root(&c, "flow")).unwrap().is_none());
+    assert!(maps.domain(root(&c, "flow")).unwrap().is_some());
     let (selected, row) = maps.legacy_selected(root(&c, "flow"));
-    assert!(selected.typed_result.is_none());
+    assert!(selected.typed_result.is_some());
     let attempted = attempts(&row);
-    assert_eq!(
-        &attempted[attempted.len() - 3..],
-        &[
-            "algebra.unit-composition",
-            "algebra.zswap",
-            "algebra.ordinary"
-        ]
-    );
+    assert_eq!(attempted.last().copied(), row["body_owner"].as_str());
     assert!(!attempted.contains(&"selector.zswap"));
     crate::render_with_capabilities(&c).unwrap();
 }

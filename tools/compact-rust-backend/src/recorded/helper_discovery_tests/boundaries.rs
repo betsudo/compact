@@ -1,10 +1,21 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
-fn actual_unsupported_body_is_not_admitted_and_cannot_seed_final_helpers() {
+fn direct_fold_successor_seeds_helpers_under_current_rendering_dependencies() {
     let mut c = fixture(
         Type::Field,
         StateReturn::Expression {
@@ -15,7 +26,7 @@ fn actual_unsupported_body_is_not_admitted_and_cannot_seed_final_helpers() {
     crate::recorded::test_support::register_unsupported_fold(&mut c);
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
-        !output
+        output
             .capabilities
             .circuits
             .iter()
@@ -24,7 +35,25 @@ fn actual_unsupported_body_is_not_admitted_and_cannot_seed_final_helpers() {
             .recorded
     );
     let (names, items) = Context::new(&c).plan(&c, false).unwrap();
-    assert!(names.is_empty() && items.is_empty());
+    assert!(names.contains("callee") && !items.is_empty());
+    let (old_names, old_items) = Context::new(&c).plan(&c, true).unwrap();
+    // The frozen collector/planner delegates rendering to the current owner.
+    // It therefore sees the same new semantic admission, not a frozen refusal.
+    assert_eq!(old_names, names);
+    assert_eq!(old_items.len(), items.len());
+    let cx = Context::new(&c);
+    assert!(matches!(
+        crate::recorded::generic_reference::render_recorded_helper(
+            cx.circuits["callee"],
+            &cx.ledger,
+            &cx.witnesses,
+            &cx.pure,
+            &cx.circuits,
+            &HashSet::new()
+        )
+        .unwrap(),
+        RecordingOutcome::Unsupported(_)
+    ));
 }
 
 #[test]

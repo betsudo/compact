@@ -37,6 +37,8 @@ use crate::{
 use proc_macro2::Span;
 use std::collections::{HashMap, HashSet};
 
+mod fold;
+mod fold_body;
 mod observer;
 use observer::StateExpressionContext;
 pub(crate) use observer::StateExpressionContext as NativeExpressionContext;
@@ -87,6 +89,14 @@ pub(crate) fn render_state_expression_observed(
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
         Expr::Let { .. } | Expr::Sequence { .. } | Expr::If { .. } => render_control_expression(
+            value,
+            parameters,
+            statements,
+            next_temp,
+            query_effect,
+            environment,
+        ),
+        Expr::VectorFold { .. } => fold::render(
             value,
             parameters,
             statements,

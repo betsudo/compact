@@ -1,0 +1,78 @@
+[
+  {
+    "source": "direct",
+    "alias": "direct"
+  },
+  {
+    "source": "empty",
+    "alias": "empty"
+  },
+  {
+    "source": "helper",
+    "alias": "helper"
+  },
+  {
+    "source": "captured",
+    "alias": "captured"
+  },
+  {
+    "source": "guarded",
+    "alias": "guarded"
+  },
+  {
+    "source": "ordered",
+    "alias": "ordered"
+  },
+  {
+    "source": "effectful-reducer",
+    "alias": "effectful_reducer"
+  },
+  {
+    "source": "witness-reducer",
+    "alias": "witness_reducer"
+  },
+  {
+    "source": "multiple-inputs",
+    "alias": "multiple_inputs"
+  },
+  {
+    "source": "inline-effectful",
+    "alias": "inline_effectful"
+  },
+  {
+    "source": "owned",
+    "alias": "owned"
+  },
+  {
+    "source": "unit",
+    "alias": "unit"
+  },
+  {
+    "source": "multi-ordered",
+    "alias": "multi_ordered"
+  },
+  {
+    "source": "inline-branch",
+    "alias": "inline_branch"
+  },
+  {
+    "source": "single",
+    "alias": "single"
+  },
+  {
+    "source": "empty-ordered",
+    "alias": "empty_ordered"
+  },
+  {
+    "source": "owned-capture",
+    "alias": "owned_capture"
+  },
+  {
+    "source": "shadow",
+    "alias": "shadow"
+  },
+  {
+    "source": "shadow-effectful",
+    "alias": "shadow_effectful"
+  }
+]

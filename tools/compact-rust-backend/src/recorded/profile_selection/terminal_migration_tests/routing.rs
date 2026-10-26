@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
 // Direct legacy_selected traces below preserve the staged predecessor priority laws.
@@ -69,7 +80,7 @@ fn earlier_point_owner_prevents_terminal_attempt() {
 }
 
 #[test]
-fn unsupported_in_domain_body_keeps_independent_later_attempts() {
+fn fold_successor_in_domain_body_stops_later_attempts() {
     let mut contract = subject();
     contract.stateful_circuits[0].actions.clear();
     contract.stateful_circuits[0].return_value = StateReturn::Expression {
@@ -94,23 +105,17 @@ fn unsupported_in_domain_body_keeps_independent_later_attempts() {
         },
     };
     let context = Context::new(&contract);
-    assert!(matches!(
-        context.algebra(&contract.stateful_circuits[0]),
-        Err(effect_plan::PlanError::Unsupported(_))
-    ));
+    context.algebra(&contract.stateful_circuits[0]).unwrap();
     assert!(
         context
             .terminal(&contract.stateful_circuits[0])
             .unwrap()
-            .is_none()
+            .is_some()
     );
     let (_, row) = legacy_selected_trace(&contract);
     let attempted = attempts(&row);
-    let position = |name| attempted.iter().position(|id| *id == name).unwrap();
-    assert!(position("algebra.terminal-returns") < position("algebra.unit-actions"));
-    assert!(!attempted.contains(&"selector.phase-reset"));
-    assert!(position("algebra.unit-actions") < position("algebra.unit-composition"));
-    assert!(position("algebra.unit-composition") < position("algebra.zswap"));
+    assert_eq!(attempted.last().copied(), row["body_owner"].as_str());
+    assert!(!attempted.contains(&"algebra.unit-actions"));
     assert!(!attempted.contains(&"selector.terminal-returns"));
 }
 

@@ -2,8 +2,9 @@
 
 Decision: 2026-10-26. The preceding #610 slice passes its maintained local gates
 at signed `e14103c5d`; independent review/Linux integration remain separate.
-This is the next implementation plan. No Fold implementation is claimed here.
-Forge remains deferred and is not a prerequisite.
+This is the active implementation plan. The partial checked-core checkpoint
+below does not complete this full source family. Forge remains deferred and
+is not a prerequisite.
 
 ## Genuine gap and accepted control
 
@@ -160,3 +161,476 @@ GPG signed, DCO and Assisted-by. The broader Rust AST goal stays active until
 its actual requirements are met. Cleanup is only for task-owned inactive,
 unneeded worktrees/targets after completion and verified GitHub merge, with
 unpublished work and needed inputs, binaries, archives and evidence preserved.
+
+
+## Partial checked-core checkpoint — 2026-10-26
+
+The internal checked model now represents one accumulator-carrying loop with
+multiple fixed-vector operands and a result-typed body. Independent validation
+checks source lengths/item types, accumulator/result identity, fresh lexical
+formals, capture visibility and body obligations even for empty loops. Ordinary
+and functional rendering use structured loops and the existing owned Circuit
+continuations. Unit remains distinct from an empty tuple. No runtime API or
+private Expr JSON schema has changed at this checkpoint.
+
+The existing named pure `VectorFoldCall` is the first connected ingress. The
+unchanged Scheme frontend plus development Rust backend generated the genuine
+`direct.compact` source with ordinary, recorded/observed and functional APIs.
+An external consumer of the complete unedited output compared three live TS
+input cases across four Rust routes, including state/effects, cost and replay.
+An external positive API consumer compiled; wrong vector length, seed/item type
+and reuse of a consumed Program failed at their intended call sites.
+
+The full backend library test run passed 1,815 tests with 7 inherited ignores.
+All 39 original valid-Fold refusal controls have explicit current successors;
+complete predecessor sources and both failed intermediate runs are retained.
+Frozen selector/helper collectors that call current semantic/rendering owners
+now observe new admission; this does not recertify their historical receipts.
+Native-invalid, recursive, signature, layout and rendering-invariant controls
+remain. Once an earlier Fold is accepted, the actual later layout refusal is
+the correct resource diagnostic; no payload is attached to the earlier child.
+
+Evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+Key receipts are `core-laws-v2-result.json`, `core-consumer-v2-result.json`,
+`core-public-api-v1.json`, `backend-widening-audit-v3-result.json` and
+`control-successors-v1.json`. The general model's multiple-input/effectful-body
+laws are synthetic checked-plan qualification, not frontend/runtime proof of
+those broader source forms.
+
+Still OPEN: the paired typed source/native ingress for inline captures,
+effectful operands, stateful/witness reducers and multiple iterables; full
+owned-value/empty/guard/first-failure execution coverage; maintained source
+qualification and genuine proofs with binding negatives; complete integration,
+independent review and intended Linux gates. Do not silently narrow the signed
+plan or mark #661/the broader Rust AST goal complete at this intermediate core.
+Cleanup remains conditional on completion and verified GitHub merge; nothing
+was merged or deleted by this local checkpoint.
+
+
+## Paired source-ingress representation decision — 2026-10-26
+
+Retain private schema20 and add a strict `vector_fold` expression tag carrying
+`accumulator: Parameter`, `items: Vec<Parameter>`, `initial: Expr`,
+`sources: Vec<Expr>`, `body: Expr` and `length`. Both producers and consumers are
+updated together. Existing `vector_fold_call` decoding and the accepted pure
+named one-source producer remain valid. An old decoder rejects the new tag;
+this is not a forward-decoding guarantee or a new public interchange format.
+No runtime ABI/API addition is required.
+
+Named reducers become declaration-directed body calls, including existing
+stateful and witness calls. Inline bodies retain their own typed formals and
+lexical captures. The seed and each iterable are evaluated once, before any
+reducer iteration, in the actual observed order. Independent checks validate
+all annotations, including empty/inactive bodies. Any further actual source
+dependency (including inline action-body normalization beyond existing Expr
+forms) must be recorded and resolved or left explicitly open before claiming
+full acceptance. The nine-source plan is unchanged.
+
+The before-edit decision is retained in `ingress-schema-decision-v1.json` under
+the existing evidence root. Its existence is not implementation qualification.
+
+
+### Source-driven body correction
+
+`source-characterization-v3.json` adds an actual inline reducer that captures a
+factor and writes/reads a Cell. TS accepts it; the first development ingress
+refused its nested Cell.write. Therefore the v1 expression-only body decision
+is superseded before acceptance: `vector_fold.body` is `Box<ReturnPlan>`.
+`ReturnPlan::Value` owns expression-only bodies; its existing typed actions,
+lexical bindings and conditional branches own inline effects. This keeps one
+result/body owner and requires the native loop to carry the successful owned
+context through every branch and iteration. The checked owner reuses its
+existing return-plan lowering. No general Expr-action framework or runtime ABI
+is added. Original v1 development artifacts/failed proposal remain retained;
+there is no compatibility promise for that uncommitted tag shape. Legacy
+vector_fold_call and original records remain valid. The full plan stays open.
+
+
+## Source-family implementation checkpoint — 2026-10-26
+
+The paired producer and consumer now support the corrected lexical Fold tag.
+Named pure/stateful/witness calls and inline captures reach one checked loop;
+inline mutation/Let/conditional/action bodies use the existing ReturnPlan.
+Native emission carries `(context, accumulator)` through each successful body
+and branch, retaining local witness outputs and query-summed cost. Captured
+owned values retain the existing clone rules; no Copy or new runtime API is
+required. Pure Value bodies use the shared typed aggregate owner. The original
+pure named-helper producer and legacy VectorFoldCall decoding remain intact.
+
+The current whole-expression/call-site walkers, named-type collection,
+source-origin schema and resource traversal visit all operands and the complete
+body. Unknown or forged formals/types/captures, missing fields and cycles remain
+refusals even for empty loops. The retired typed_plan owner is byte-identical
+to the preceding baseline; new admission belongs to effect_plan. Four retired
+exhaustive matchers receive only an explicit denial of the new enum tag. The
+new narrow compatibility manifest reconstructs their exact predecessors before
+all unchanged historical authorities. No historical manifest was repinned.
+
+Local evidence under the existing direct-Fold evidence root:
+
+- `ingress-package-v4-result.json`: successful paired development compiler
+  build with exact dirty-source pins. This precedes the source-family commit;
+  do not relabel it as a new exact signed-head compiler qualification.
+- `ingress-generation-v2.json`, `source-characterization-v5.json` and
+  `ingress-source-programs-v1.json`: fourteen actual complete source outputs,
+  IR, capability reports and checked programs, including inline mutations,
+  owned and Unit accumulators, multiple witness operands and nested branches.
+  The earlier v4 branch probe correctly failed missing source disclosures; its
+  source and diagnostics remain. Explicitly disclosed v5 passed both targets.
+- `ingress-behavior-v2-result.json`: **31 external consumer tests**, each using
+  four Rust routes against live TS: **20 success cases and 11 first-failure
+  cases**. All 14 complete generated crates are unedited. Results, the source's
+  stored field, private state/outputs, witness events and real summed gas match
+  TS; whole Rust query state/effects agree across routes. Both recorded routes
+  replay their actual public operations. Held prior-state snapshots stay
+  unchanged. Error cases do not claim that callback effects roll back or that
+  a failed call exposes a returned partial ledger/cost result.
+- `ingress-public-api-v1.json`: seven isolated ordinary API controls reject
+  wrong captures/items/vector lengths, a bare String, incompatible witness
+  arguments, reused owned inputs and a consumed Program at intended sites.
+- `ingress-laws-v5-result.json`: six focused tests, including twelve finite
+  shape/depth worker cases. Five preflight-admitted cases render on ordinary
+  two-MiB workers; seven larger cases return explicit resource refusals. This
+  does not establish aggregate heap/CPU containment or a universal stack proof.
+- `ingress-backend-v2-result.json`: **1,822 passed, 7 inherited ignores**.
+  Strict backend all-target/all-feature Clippy and header/format gates pass.
+- `ingress-consumer-lock-v1.json`: all336 nonlocal consumer package identities
+  and checksums match the repository lock. This is not full Node closure or
+  Linux qualification. The TS capture remains a local host development cohort.
+
+Still OPEN before #661 acceptance: publish the full source/consumer cases in a
+maintained gate, add its source/refusal and changed-reference controls, freeze
+and qualify the exact compiler/runtime/source cohort, execute fresh applicable
+proofs with immutable verifier and binding/result negatives plus default-strict
+funded application/replay, and retain all required compiler/native/wallet/
+workspace/package integration gates. Independent review and intended Linux
+qualification remain separate. No hosted run, push, merge, release or shared
+installation is authorized. This checkpoint advances the full selected family
+and does not complete #661 or the broad Rust AST goal. Forge stays deferred;
+cleanup is still not due before completion and verified GitHub merge.
+
+
+## Maintained source-family gate checkpoint — 2026-10-26
+
+`tools/compact-rust-backend/check_direct_fold.py` now owns reproducible fresh
+Rust/TS generation and separate external consumers for all fourteen actual
+source cases. The sources in `examples/rust_backend/direct_fold/` retain their
+original complete bytes. Golden crates retain full IR, origins, capabilities
+and every checked program; only their Rust golden is rustfmt formatted.
+The maintained consumer shares its route/replay checks within this one test
+family; generated contracts are never patched to make a consumer pass.
+
+The selected TS runtime is required, version checked and resolved identically
+from every generated wrapper. The gate hashes its complete production package
+closure, Node executable and external host libraries. Known OS/kernel paths
+are reported explicitly with their narrower scope. Injected kernel names are
+portability controls, not Linux execution; an unknown missing library must fail
+before publishing a capture. A changed live TS aligned result must fail the
+actual Rust consumer.
+
+Local `maintained-gate-v3-result.json` passes 31 cases (20 success, 11 first
+failure) across four Rust routes, successful recorded VM replay, private/witness/
+state/cost comparisons, seven intended Rust compile failures and four source
+refusals on both targets. The complete external consumer also passes strict
+Clippy. This does not return failed partial state/cost or promise callback
+rollback. The finite static/ordinary-worker laws remain required and passing.
+
+Publishing the whole new corpus exposed two actual generated-Clippy failures:
+a redundant iterator conversion in multi-input zip and an immediate frame move
+back to itself for an effect-free Unit body. Their emitters are corrected; the
+Unit body remains statically validated and operand/iteration evaluation is
+retained. Fresh generation changes only three Rust golden libraries. All full
+IR/program/origin/capability bytes stay exact. Failed initial lock resolution,
+original Clippy outputs and the consumer-macro witness-argument mistake are
+retained separately; none is hidden by patching generated code or suppressing
+lints. The fourteen fixtures add only local workspace packages; registry
+versions/checksums do not change. The 43 new source declarations extend only
+the additive parity baseline, preserving every historical declaration.
+
+The existing native CI workflow invokes this source-family gate and retains
+its full generated outputs/reference/consumer lock. These are local workflow
+edits; no hosted run, publication or activation was performed. Evidence remains
+under `/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+`maintained-package-v1/build-result.json` records the paired development package
+and exact dirty-source pins. Later consumer/fixture/inventory/docs publication
+is not a new exact signed-head compiler qualification.
+
+The maintained functional publication subgate is now qualified locally. Still
+OPEN before full #661 acceptance: freeze and qualify the exact signed compiler/
+source/runtime/SDK/parameter/verifier cohort; fresh selected captured/multiple-
+input and witnessed/mutating/inline Field proofs, independent verification and
+binding/result negatives; funded default-strict apply/replay; the complete
+required original compiler/native/proof/wallet/workspace/package gates;
+independent review and intended native Linux qualification. Do not substitute
+old Map/vector/Forge proof receipts. Do not select another feature before
+completing this plan. Forge stays deferred; cleanup remains conditional on
+completion and verified GitHub merge, with no push/merge authority inferred.
+
+
+## Selected genuine-proof cohort design — 2026-10-26
+
+The original ordinary `.#compactc` recipe now resolves successfully at clean
+signed `3f09c0b8f`, with exact tree/signature and 3,750 pinned source/recipe files
+unchanged during the invocation. `frozen-compiler-v1/build-result.json` records
+the same `himx58...` package with current clean-source evidence; prior dirty
+build receipts retain their original scope. Compiler reuse is explicit, not a
+renamed historical proof or a new binary build claim.
+
+`check_direct_fold_proof.py` and the proof-smoke `--direct-fold CASE ROOT`
+consumer define the next finite genuine-proof gate. It links complete maintained
+generated crates for captured, multiple-input, named stateful, named witness,
+inline effectful and inline branch sources. Seven fresh call proofs cover these
+six sources, with both inline branches selected. Every source's full IR,
+origins, capability report, Rust output and checked program must match the
+linked fixture. Changed full IR refuses before absent keys/state. Generation
+uses original relative source labels; there is no metadata normalization.
+
+Each case checks four Rust routes and the separate ordinary observed-call
+preparation, including result/stored state, private outputs, witness journal,
+effects, gas and recorded program equality. Actual direct ZKIR key generation
+records each model. The locked SDK verifies built-ins/SRS; only explicit SDK
+preparation may fetch missing verified material. All tool, source, generated,
+material, key, verifier and proof/result identities are retained and rechecked.
+
+The selected prover must independently verify each new standalone proof, reject
+changed public binding and a genuinely changed Field result through the exact
+upstream communication commitment, and refuse the changed preimage. Aligned
+shape, atom count and each atom's encoded length must remain equal for the
+result negative. Each selected call is freshly proved again in a funded default-
+strict local transaction, applied to its expected state, then rejected on replay
+without ledger mutation. Constructor execution, other source/type families and
+network submission are not claimed. No proofs or verdicts are reused.
+
+This design is locally compiled and strict-Clippy/dispatch/format checked; its
+execution receipt must establish actual proof acceptance. The proof runner and
+its source commit are a distinct epoch from the reused frozen compiler. Full
+required compiler/native/proof/wallet/workspace/package integration, independent
+review and intended native Linux qualification remain required afterward.
+
+
+## Selected proof execution and integration-control successors — 2026-10-26
+
+At signed proof-source `1b37bbb173`, `proof-gate-v1/receipt.json` passes all six
+linked source families and seven selected calls, including both inline branches.
+Every standalone proof is fresh, 2,912 bytes, independently verified, and rejects
+changed public binding/result plus the changed preimage. Each call is freshly
+proved again in a funded default-strict transaction, applied to the expected
+state, and rejected on replay without ledger mutation. Six changed-full-IR
+controls reject before absent keys/state. Witness reducers preserve two callback
+calls and private state 9. Constructor execution and unselected type/source
+families remain outside this finite proof claim.
+
+Actual models: captured 75 rows/k7; multiple inputs 96/k7; named stateful 75/k7;
+named witness 72/k7; inline effectful 76/k7; inline branch 344/k9. The branch
+source is intact; it is not trimmed to a smaller circuit or represented as a
+Forge tiny-contract lane. No compiler or global resource limit was raised.
+The original ordinary compiler is the independently recorded clean `3f09c0b8f`
+cohort; compiler/backend/runtime production bytes and all linked goldens are
+unchanged by the separate proof runner epoch. Only local proof dependency
+metadata changes. Verified upstream parameters, fresh keys and immutable tool/
+verifier/artifact identities are retained in the proof receipt.
+
+The original compiler `doCheck` build, including `compiler/go` and
+`srcMaps/test.sh`, passes at `1b37bbb173`; all 46 reported compiler stages pass.
+The broad workspace/source audit exposed eleven external integration tests and
+one source-capability family that still used valid Fold as a refusal sentinel.
+Their original files, actual failing broad/focused runs and complete old-source
+outputs are retained. These successors deliberately admit the unchanged Fold
+and its real pure callee at every original position. A copy with only length
+1 changed to 2 for one item is refused, including inactive helper branches.
+This is explicitly a native-invalid annotation check, not a native-valid
+unsupported operation or a fabricated missing-callee negative. Existing type,
+slot, arity, cycle, failed-publication/recovery and other controls stay intact.
+
+`integration-control-successors-v2.json` records all 166 focused integration
+tests passing (5 point, 154 render, 7 Unit) and the source refusal/publication
+suite passing. A draft edit that dropped nine callee registrations failed and
+was corrected before accepted validation; its source/output remain retained.
+No producer/runtime/generated artifact or historical manifest was changed by
+this test migration. The full workspace must now be rerun to completion;
+full native/proof/wallet and package/archive gates, independent review and
+intended Linux qualification remain open. #661 and the broader goal are not
+complete. The existing Forge deferral and conditional post-merge cleanup remain.
+
+## Finite acceptance-edge completion (2026-10-26)
+
+The maintained source family now also includes the one-item captured reducer
+and zero-length witness-valued seed/iterable case. This completes explicit plan
+edges that the original fourteen sources did not independently exercise. The
+expanded functional gate contains sixteen complete sources and 38 cases (25
+success, 13 first failure), each through four public Rust routes against live
+TS. The empty case checks seed then iterable exactly once, preserved zero-width
+private output, and no reducer invocation; separate seed/iterable failures and
+an armed reducer refusal remain controls. Eight ordinary compile-fail cases
+include Unit refused in place of `FixedVector<Field, 0>` in a witness signature.
+
+The selected proof gate adds one-item and empty-witness calls while retaining
+all seven prior selected calls. Fresh proof/application acceptance must be
+recorded separately for this expanded nine-call/eight-source cohort; earlier
+seven-call receipts cannot establish it. Constructor and other unselected
+sources remain outside the selected proof claim. No compiler/runtime/IR change
+was required for these edges.
+
+Local `--full` now schedules the same Vector/Map/Fold proof gates already in
+required CI, in addition to every prior specialized proof gate. Each child must
+return its successful typed receipt, retained and rehashed after all children;
+command/missing/malformed/wrong-format/failed-status controls apply to all eight.
+The frozen Scheme frontend reaches expression gates through their supported
+environment interface. Existing five gate command arguments are preserved.
+Independent review, intended native Linux and complete integration remain open;
+this addition does not waive any required gate or complete the broad goal.
+
+## Expanded local integration checkpoint — 2026-10-26
+
+Execution source: clean signed `fb229b9cde34b9ba34f7774f82cff04072113889`.
+All sixteen full sources and 38 live-TS cases pass four public Rust routes:
+152 executions and 50 successful recorded VM replays, with eight ordinary Rust
+compile-fail controls and eight source refusals. The one-item capture and empty
+witness-valued operands are included without dropping the earlier family.
+
+The expanded selected gate generates nine fresh 2,912-byte Field-call proofs
+across eight complete sources, independently verifies them with immutable
+verifiers, rejects changed binding and same-geometry result/preimage, and runs
+nine freshly proved funded default-strict applications with unchanged replay
+refusal. Eight changed complete IRs refuse before key or state actions. The
+empty source has 27 rows/k6, the one-item source 72 rows/k7, and intact branch
+source 344 rows/k9; actual models remain in the receipt. Zero-width private
+output and seed/items callback order remain present in empty-source execution,
+preparation and proof. Constructor/unselected/type-family proofs are not claimed.
+
+The frozen current workspace passes 3,486 tests in 713 harnesses, with the same
+seven inherited ignored identities; all-targets/all-features strict Clippy also
+passes. All 273 full registered golden fixtures pass freshness with zero stale
+or failed outputs. Earlier eight doctests, original compiler checks, full native
+consumer/proof and wallet handoff, and runtime package/manifest/archive consumer
+receipts retain their separate source epochs. Compiler/backend/runtime source
+bytes are unchanged from `3f09c0b8f`; no old whole-source receipt is relabeled.
+
+Maintainer evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+Read `proof-gate-v2/receipt.json`, `edges-integration-v1/receipt.json` and
+`acceptance-edges-maintained-v2/gate-result.json` for their exact bindings.
+`independent-review-packet-v1/` prepares the complete implementation diff and
+pinned source/receipt inputs; it contains no independent reviewer verdict.
+
+This is selected local qualification. Independent external review, intended
+native Linux and current-head hosted integration remain open without authority;
+#661 and the broad Rust AST goal are not declared complete. No new feature is
+selected ahead of those acceptance boundaries. Forge stays deferred and all
+work/evidence remains local. Cleanup is not due until completion AND verified
+GitHub merge, with unpublished work and qualification artifacts preserved.
+
+## Ownership and lexical source audit — 2026-10-26
+
+A source review of the plan's named obligations identified two combinations not
+independently represented by the maintained sixteen-source corpus: owned vector
+items plus an owned capture reused across iterations, and reducer-local shadowing
+of outer formals/captures in both pure-valued and mutating bodies. Three complete
+source probes and eight live-TS/four-route Rust cases passed without a compiler,
+backend or runtime implementation change. Their complete source/outputs and
+standalone consumer remain in `source-scope-audit-v1/` under the evidence root.
+
+These are now maintained regressions in the same Fold gate: nineteen full
+sources, 46 cases (33 success, 13 first failure), 184 Rust route executions and
+66 successful public VM replays. All earlier sources/cases/refusal controls are
+retained. Eight Rust API compile-fail controls and eight source refusals remain
+required. The new generated crates stay complete, with full IR/origins/capability
+reports and checked programs; source arguments use actual relative repository
+labels. No generated output is patched or normalized. Only six additive source
+declarations and three local workspace fixture packages are added; historical
+rows and all nonlocal dependency versions/checksums are unchanged.
+
+The expanded functional gate, its strict external-consumer Clippy, all three
+fresh golden checks, strict new-fixture all-targets/all-features Clippy, public
+CI Python controls and workspace formatting pass locally. These runs are not a
+fresh execution of the whole previous workspace/compiler/native/package suite.
+The selected nine-call proof receipt keeps its exact earlier source/runner
+identity and scope. None of the three new sources is claimed proved, and no
+unchanged cryptographic proof/timing run is repeated by this source audit.
+Independent review and intended native Linux/current-head CI remain open.
+
+## Independent review corrections — 2026-10-26
+
+An explicitly authorized independent Codex reviewer examined the complete plan
+base through signed `b9223a33c`, checked all 267 source pins and 21 receipt pins,
+and reproduced one runtime mismatch. New checked admission of legacy
+`VectorFoldCall` evaluated a fallible seed before the iterable; unchanged legacy
+native emission evaluates the iterable first. Both-failing pure assertions
+therefore reported different first failures across APIs. The independent report
+and complete successful reproduction, including its retained initial consumer
+setup failure, are in `independent-review-packet-v3/` under the evidence root.
+
+The legacy lowerer now keeps seed-first static traversal/diagnostics and partial
+refusal bindings, then rotates successfully lowered operand bindings into
+legacy source-first runtime order. The new lexical `VectorFold` is unchanged
+and retains measured seed-first semantics. The reviewer also identified the
+stale terminal test count; the CLI summary now reads the actual detailed report.
+
+A maintained separate raw-IR consumer covers sixteen scenarios across native
+and recorded APIs (32 executions, three successful VM replays), including both
+operands failing, each failing alone, first reducer failure, success and empty
+iteration. Both empty and two-item controls failed before the implementation
+fix and pass afterward. Fourteen focused Fold unit tests pass, including exact
+located static seed-first refusal. An initial new unit expectation omitted the
+existing location wrapper; that test setup failure is retained and corrected
+without changing diagnostics. The complete nineteen-source/46-case live-TS
+gate, eight API compile-fails, eight source refusals and strict separate-consumer
+Clippy pass with the freshly built local CLI.
+
+Fresh TS pure-helper evidence from review confirms seed-first failure order.
+Historical legacy native source-first behavior is a separate compatibility
+limitation; these raw-IR regression controls do not claim legacy TS parity or
+additional proofs. Existing exact-epoch proof receipts remain unchanged. The
+repaired-head review, original ordinary recipe qualification and required
+integration/platform gates must be recorded separately before acceptance.
+
+## Reviewed local checkpoint — 2026-10-26
+
+The following maintainer-reported results belong to clean signed implementation
+`ae1c8b258714fa16bf001cd48197c1ed26db53d2`. This documentation successor neither
+changes that implementation nor renews earlier whole-source execution epochs.
+
+| Obligation | Authoritative local result | Remaining limit |
+| --- | --- | --- |
+| Complete source semantics and public APIs | Nineteen full sources, 46 live-TS cases: 33 successes and thirteen first failures, each through four public Rust routes; 184 executions and 66 successful recorded VM replays. Owned items/captures, lexical shadowing, empty/one/multiple iterations and witness/effect ordering remain included. | Finite selected cases, not universal language equivalence or failure rollback. |
+| Ordinary misuse and untrusted boundaries | Eight intended Rust compile-fails and eight source refusals; checked length/type/capture/formal/ID and inactive/empty-body controls. Fourteen focused Fold unit tests pass. | Existing byte/type/expansion limits do not establish aggregate heap/CPU containment. |
+| Legacy admission correction | Complete derived predecessor IR, sixteen scenarios and 32 native/recorded executions, with three successful VM replays. Both empty and nonempty controls failed before the order fix and pass afterward. | Source-first legacy native compatibility is not TS pure-helper parity. New lexical Fold remains seed-first. |
+| Independent implementation review | Complete implementation review at `b9223a33c` found operand-order and stale-count issues; independent follow-up at `ae1c8b258` resolves both with no additional actionable finding in its scope. | Coding-agent review is not a human security audit or absence-of-all-defects proof. |
+| Current backend and generated fixtures | Complete all-feature backend library: 1,844 passes, zero failures and the same seven inherited ignores. All 276 registered golden outputs are fresh with the new original-recipe compiler. Strict backend/consumer Clippy, public Python entrypoint, formatting and header regression checks pass. | Earlier full-workspace/native/wallet/package executions retain their original epochs; this is not a fresh monolithic release run. |
+| Original ordinary compiler recipe | Unchanged `nix build .#compactc --no-link --print-out-paths --option max-jobs 1 --option cores 4` exits zero with all 5,980 tracked source pins unchanged. | The fixup classifier caveat and independent supplemental coverage below remain part of the result. Compiler `doCheck` and source-map suite retain their earlier execution epoch. |
+| Selected cryptographic and application coverage | Earlier `fb229b9cd` cohort: nine fresh selected proofs across eight complete sources, immutable verification, binding/same-geometry negatives, funded default-strict applications and unchanged replay refusal. | No new proof run at `ae1c8b258`, no proofs claimed for the three ownership/shadowing additions, constructors or unselected exports/type families. |
+| Linux/current-head integration | Local development is validated on Darwin arm64; Linux x86_64 qualification belongs to GitHub Actions under the owner's 2026-10-27 direction. | A successful Linux CI result is still needed for integration; a local Linux runner is not a development prerequisite. |
+
+The Rust CLI derivation's actual fixup log contains a classifier subprocess
+segmentation fault; the original build nevertheless exits zero and the wrapper
+fixup completes. Its cause remains unknown. Independent receipt review confirms
+bounded supplemental coverage of the interrupted hook's intended checks: the
+affected Rust CLI output has 533 regular files and no ELF files or scripts, so
+there are no candidates for its ELF-RPATH or wrapped-script checks. Across the
+two output roots, 1,069 regular-file classifications match; two Mach-O files
+have no `LC_RPATH`, and the three wrapper scripts contain neither actual build
+TMPDIR prefix. This does not claim the crashed classifier succeeded or establish
+global store trust. No recipe or output was repaired, excluded or rebuilt.
+
+Complete generated Rust/IR/origins/capability/checked-program/TS/ZKIR assets for
+all nineteen sources match the preceding gate byte for byte except actual TS
+source-map invocation `sourceRoot` metadata and its associated manifest hashes.
+Both outputs remain intact, without normalization or old proof-verdict transfer.
+
+The evidence root above contains `review-fixes-v1-closeout.json` (SHA-256
+`4e82964799c24282a2e7ae2057415752554b79d098dfd0254c6bb4a2052d1d52`),
+`review-fixes-v1/independent-followup.md` and the separate
+`review-fixes-v1/original-recipe/independent-receipt-review.md`. These are local
+maintainer evidence locators, not a claim of public reproducibility.
+
+The earlier validation processes are terminal. On 2026-10-27 the owner selected
+local arm64 testing and Linux qualification in GitHub Actions, resolving the
+local Linux target question. Local development can continue after its arm64
+checks; the complete compiler/native/proof/wallet/source/workspace/Clippy/package
+gates remain required in CI for integration. Compiler Build already has an
+Ubuntu x86_64 producer and consumer; its backend-branch push trigger now joins
+the existing PR/manual/scheduled triggers. No local Docker builder is needed.
+Configuration is not a successful hosted execution. The broader Rust AST goal
+remains incomplete; Forge stays deferred, and cleanup remains conditional on
+completion and verified GitHub merge.

@@ -452,14 +452,25 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
          "did_relation_gate", "compact-did-relation-gate/v1", "--run-dir", "--cargo-target-dir"),
         ("acc-jubjub-proofs", "acc_jubjub_gate.py", "acc-jubjub-proofs",
          "acc_jubjub_gate", "compact-acc-jubjub-gate/v1", "--output", "--target"),
+        ("vector-projection-proofs", "check_constant_vector_projection_proof.py", "vector-projection-proofs",
+         "vector_projection_proof_gate", "compact-vector-projection-proof-gate/v1", "--output", "--target-dir"),
+        ("map-size-expression-proofs", "check_map_size_expression_proof.py", "map-size-expression-proofs",
+         "map_size_expression_proof_gate", "compact-map-size-expression-proof-gate/v1", "--output", "--target-dir"),
+        ("direct-fold-proofs", "check_direct_fold_proof.py", "direct-fold-proofs",
+         "direct_fold_proof_gate", "compact-direct-fold-proof-gate/v1", "--output", "--target-dir"),
     )
     children = []
     for label, script, subdirectory, key, expected_format, output_flag, target_flag in gates:
         child = directory / subdirectory
-        command([sys.executable, str(ROOT / "tools/compact-rust-backend" / script),
-                 "--compiler", str(snapshot), "--scheme", str(directory / "bin/compactc-scheme"),
-                 target_flag, environment["CARGO_TARGET_DIR"], output_flag, str(child)],
-                label, directory, receipt, env=environment)
+        # Expression proof gates use COMPACTC_SCHEME; preserve older gate argv.
+        scheme = str(directory / "bin/compactc-scheme")
+        arguments = [sys.executable, str(ROOT / "tools/compact-rust-backend" / script),
+                     "--compiler", str(snapshot)]
+        if target_flag != "--target-dir":
+            arguments += ["--scheme", scheme]
+        arguments += [target_flag, environment["CARGO_TARGET_DIR"], output_flag, str(child)]
+        command(arguments, label, directory, receipt,
+                env=dict(environment, COMPACTC_SCHEME=scheme))
         path = child / "receipt.json"
         value = json.loads(path.read_text())
         if not isinstance(value, dict) or value.get("format") != expected_format or value.get("status") != "passed":

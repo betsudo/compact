@@ -1617,6 +1617,69 @@
                    (cons "value"
                          (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))]))
 
+      ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
+      ;; The paired schema20 consumer checks every annotation independently.
+      (define (stateful-fold-ir src len fun expr0 type0 map-args witness-ids)
+        (define (formal name type)
+          (object (cons "name" name) (cons "ty" (type-ir type src))))
+        (define (emit formals body-ir)
+          (unless (= (length formals) (+ 1 (length map-args)))
+            (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
+          (let* ([initial-ir (stateful-typed-expression-ir expr0 type0 src witness-ids)]
+                 [sources-ir
+                   (map (lambda (arg)
+                          (nanopass-case (Lnodisclose Map-Argument) arg
+                            [(,expr ,type1 ,type2)
+                             (stateful-typed-expression-ir expr type1 src witness-ids)])) map-args)]
+                 [reducer-ir (body-ir)])
+            (object (cons "kind" "vector_fold")
+                    (cons "accumulator" (car formals))
+                    (cons "items" (list->vector (cdr formals)))
+                    (cons "initial" initial-ir)
+                    (cons "sources" (list->vector sources-ir))
+                    (cons "body" reducer-ir)
+                    (cons "length" len))))
+        (nanopass-case (Lnodisclose Function) fun
+          [(fref ,src^ ,function-name)
+           (let* ([types (eq-hashtable-ref call-argument-types function-name #f)]
+                  [names (cons "__compact_fold_accumulator"
+                               (map (lambda (i) (format "__compact_fold_item_~a" i))
+                                    (enumerate map-args)))])
+             (unless (and types (= (length types) (length names)))
+               (source-errorf src "Rust Fold reducer signature differs from iterable arity"))
+             (emit (map formal names types)
+               (lambda ()
+                 (object (cons "kind" "value")
+                         (cons "value"
+                         (object (cons "kind" (if (eq-hashtable-ref witness-ids function-name #f)
+                                          "witness_call" "call"))
+                         (cons "name" (rust-function-name function-name))
+                         (cons "arguments"
+                               (list->vector
+                                 (map (lambda (name)
+                                        (object (cons "kind" "parameter") (cons "name" name))) names)))))))))]
+          [(circuit ,src^ (,arg* ...) ,type ,expr)
+           (let ([variable-types (if (current-variable-types)
+                                     (hashtable-copy (current-variable-types) #t)
+                                     (make-eq-hashtable))])
+             (for-each (lambda (arg)
+                         (nanopass-case (Lnodisclose Argument) arg
+                           [(,var-name ,type^)
+                            (eq-hashtable-set! variable-types var-name type^)])) arg*)
+             (parameterize ([current-variable-types variable-types])
+               (emit (map (lambda (arg) (argument-ir arg src)) arg*)
+                 (lambda ()
+                   (if (stateful-body-has-storage-mutation? expr)
+                       (stateful-return-plan-ir expr type src
+                         (map (lambda (arg)
+                                (nanopass-case (Lnodisclose Argument) arg
+                                  [(,var-name ,type^)
+                                   (cons var-name (object (cons "kind" "parameter")
+                                                          (cons "name" (rust-var-name var-name))))])) arg*) witness-ids)
+                       (object (cons "kind" "value")
+                               (cons "value" (stateful-typed-expression-ir expr type src witness-ids))))))))]
+          [else (source-errorf src "Rust backend does not support this Fold reducer form")]))
+
       ;; Stateful expressions keep witness calls explicit so Rust can evaluate
       ;; them in order and append each private transcript value exactly once.
       (define (stateful-typed-expression-ir value-expr expected-type owner-src witness-ids)
@@ -1703,6 +1766,8 @@
 
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -2016,6 +2081,9 @@
 
       (define (stateful-return-ir-value return-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(return ,src ,expr) (stateful-return-ir expr src witness-ids)]
           [(seq ,src ,expr* ... ,expr) (stateful-return-ir expr src witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)

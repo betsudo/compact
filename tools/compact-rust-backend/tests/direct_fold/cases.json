@@ -1,0 +1,698 @@
+[
+  {
+    "id": "direct_0",
+    "source": "direct",
+    "args": [
+      0,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 23,
+    "stored": 23,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "direct_1",
+    "source": "direct",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "direct_3",
+    "source": "direct",
+    "args": [
+      3,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 323,
+    "stored": 323,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "empty",
+    "source": "empty",
+    "args": [
+      9,
+      []
+    ],
+    "expected": 9,
+    "stored": 9,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "helper",
+    "source": "helper",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "captured_10",
+    "source": "captured",
+    "args": [
+      1,
+      10,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "captured_2",
+    "source": "captured",
+    "args": [
+      1,
+      2,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11,
+    "stored": 11,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "captured_0",
+    "source": "captured",
+    "args": [
+      1,
+      0,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 3,
+    "stored": 3,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "guarded",
+    "source": "guarded",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "guarded_first",
+    "source": "guarded",
+    "args": [
+      1,
+      [
+        7,
+        3
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "fold item denied",
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "guarded_later",
+    "source": "guarded",
+    "args": [
+      1,
+      [
+        2,
+        7
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "fold item denied",
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "ordered",
+    "source": "ordered",
+    "args": [],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 9
+  },
+  {
+    "id": "ordered_seed",
+    "source": "ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "error": "seed refused",
+    "fail": "seed",
+    "private": 7
+  },
+  {
+    "id": "ordered_items",
+    "source": "ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "error": "items refused",
+    "fail": "items",
+    "private": 7
+  },
+  {
+    "id": "stateful",
+    "source": "effectful-reducer",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "witness",
+    "source": "witness-reducer",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 9
+  },
+  {
+    "id": "witness_first",
+    "source": "witness-reducer",
+    "args": [
+      1,
+      [
+        7,
+        3
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "step refused",
+    "fail": "step",
+    "private": 7
+  },
+  {
+    "id": "witness_later",
+    "source": "witness-reducer",
+    "args": [
+      1,
+      [
+        2,
+        7
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "step refused",
+    "fail": "step",
+    "private": 7
+  },
+  {
+    "id": "multiple",
+    "source": "multiple-inputs",
+    "args": [
+      1,
+      [
+        2,
+        3
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "expected": 24,
+    "stored": 24,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "inline",
+    "source": "inline-effectful",
+    "args": [
+      1,
+      10,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned",
+    "source": "owned",
+    "args": [
+      "held owned value",
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": true,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "unit",
+    "source": "unit",
+    "args": [
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 5,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "multi_ordered",
+    "source": "multi-ordered",
+    "args": [],
+    "expected": 195,
+    "stored": 195,
+    "error": null,
+    "fail": null,
+    "private": 10
+  },
+  {
+    "id": "multi_ordered_seed",
+    "source": "multi-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "error": "seed refused",
+    "fail": "seed",
+    "private": 7
+  },
+  {
+    "id": "multi_ordered_left",
+    "source": "multi-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "error": "left refused",
+    "fail": "left",
+    "private": 7
+  },
+  {
+    "id": "multi_ordered_right",
+    "source": "multi-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "error": "right refused",
+    "fail": "right",
+    "private": 7
+  },
+  {
+    "id": "branch_true",
+    "source": "inline-branch",
+    "args": [
+      1,
+      10,
+      true,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 123,
+    "stored": 123,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "branch_false",
+    "source": "inline-branch",
+    "args": [
+      1,
+      10,
+      false,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 134,
+    "stored": 134,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "branch_nested",
+    "source": "inline-branch",
+    "args": [
+      1,
+      10,
+      false,
+      [
+        7,
+        3
+      ]
+    ],
+    "expected": 194,
+    "stored": 194,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "branch_first",
+    "source": "inline-branch",
+    "args": [
+      1,
+      10,
+      true,
+      [
+        9,
+        3
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "inline item denied",
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "branch_later",
+    "source": "inline-branch",
+    "args": [
+      1,
+      10,
+      true,
+      [
+        2,
+        9
+      ]
+    ],
+    "expected": null,
+    "stored": null,
+    "error": "inline item denied",
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "single_zero",
+    "source": "single",
+    "args": [
+      0,
+      10,
+      [
+        2
+      ]
+    ],
+    "expected": 2,
+    "stored": 2,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "single_one",
+    "source": "single",
+    "args": [
+      1,
+      10,
+      [
+        2
+      ]
+    ],
+    "expected": 12,
+    "stored": 12,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "single_capture_zero",
+    "source": "single",
+    "args": [
+      3,
+      0,
+      [
+        2
+      ]
+    ],
+    "expected": 2,
+    "stored": 2,
+    "private": 7,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "empty_ordered",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": 9,
+    "stored": 9,
+    "private": 9,
+    "error": null,
+    "fail": null
+  },
+  {
+    "id": "empty_step_unreached",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": 9,
+    "stored": 9,
+    "private": 9,
+    "error": null,
+    "fail": "step"
+  },
+  {
+    "id": "empty_seed_failure",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "private": 7,
+    "error": "seed refused",
+    "fail": "seed"
+  },
+  {
+    "id": "empty_items_failure",
+    "source": "empty-ordered",
+    "args": [],
+    "expected": null,
+    "stored": null,
+    "private": 7,
+    "error": "items refused",
+    "fail": "items"
+  },
+  {
+    "id": "owned_capture_0",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "tag",
+        "tag"
+      ]
+    ],
+    "expected": true,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_1",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "other",
+        "tag"
+      ]
+    ],
+    "expected": false,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_2",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "other",
+        "seed"
+      ]
+    ],
+    "expected": true,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_3",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "seed",
+      [
+        "other",
+        "seed"
+      ]
+    ],
+    "expected": false,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_0",
+    "source": "shadow",
+    "args": [
+      1,
+      20,
+      100,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 144,
+    "stored": 144,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_1",
+    "source": "shadow",
+    "args": [
+      2,
+      8,
+      7,
+      [
+        4,
+        5
+      ]
+    ],
+    "expected": 106,
+    "stored": 106,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_effectful_0",
+    "source": "shadow-effectful",
+    "args": [
+      1,
+      20,
+      100,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 144,
+    "stored": 144,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_effectful_1",
+    "source": "shadow-effectful",
+    "args": [
+      2,
+      8,
+      7,
+      [
+        4,
+        5
+      ]
+    ],
+    "expected": 106,
+    "stored": 106,
+    "error": null,
+    "fail": null,
+    "private": 7
+  }
+]

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 #[test]
 fn map_write_declaration_argument_and_class_authority_remain_independent() {
@@ -60,15 +71,16 @@ fn map_write_declaration_argument_and_class_authority_remain_independent() {
     }
 }
 #[test]
-fn unsupported_or_recursive_helpers_never_count_as_complete_old_admission() {
+fn direct_fold_successor_expands_current_helper_discovery_while_recursion_still_refuses() {
     let mut v = fixture();
     named(&mut v, "recordWrite")["actions"] = json!([{"kind":"expression","value":{"kind":"persistent_commit","value":(serde_json::to_value(crate::recorded::test_support::unsupported_fixed_input()).unwrap()),"opening":{"kind":"bytes_literal","bytes":vec![0u8;32]}}}]);
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     for name in ROOTS {
         let cx = Context::new(&c, name);
-        assert!(!cx.discovered().unwrap().contains("recordWrite"));
-        assert!(cx.old().unwrap().is_none());
-        assert!(cx.checked().is_err());
+        assert!(cx.discovered().unwrap().contains("recordWrite"));
+        // This old shape selector receives current helper discovery.
+        assert!(cx.old().unwrap().is_some());
+        cx.checked().unwrap();
     }
     let native = crate::render_with_capabilities(&c).unwrap();
     for name in ROOTS {
@@ -78,7 +90,7 @@ fn unsupported_or_recursive_helpers_never_count_as_complete_old_admission() {
             .iter()
             .find(|r| r.name == name)
             .unwrap();
-        assert!(!row.recorded && !row.observed_call);
+        assert!(row.recorded && row.observed_call);
     }
     let mut v = fixture();
     named(&mut v, "recordWrite")["actions"] =

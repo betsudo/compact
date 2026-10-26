@@ -61,7 +61,7 @@ fn lexical_keys_and_canonical_chunked_slot_permutations_preserve_old_admission()
     }
 }
 #[test]
-fn complete_helper_discovery_distinguishes_supported_and_unsupported_bodies() {
+fn complete_helper_discovery_includes_the_new_direct_fold_successor() {
     for mode in ["transitive", "pure_writable", "pure_write"] {
         let mut v = fixture();
         if mode == "transitive" {
@@ -85,15 +85,16 @@ fn complete_helper_discovery_distinguishes_supported_and_unsupported_bodies() {
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     let cx = Context::new(&c);
     assert!(cx.prefix(), "the permit alone ignores helper bodies");
-    assert!(!cx.old_complete().unwrap());
-    assert!(cx.checked().is_err());
+    // This wrapper uses current helper discovery, whose domain now includes Fold.
+    assert!(cx.old_complete().unwrap());
+    cx.checked().unwrap();
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
         output
             .capabilities
             .circuits
             .iter()
-            .any(|r| r.name == ROOT && !r.recorded && !r.observed_call)
+            .any(|r| r.name == ROOT && r.recorded && r.observed_call)
     );
 }
 #[test]

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //! Laws for complete checked outcomes and unchanged compatibility projection.
 use super::*;
 
@@ -24,32 +35,29 @@ fn general(
 }
 
 #[test]
-fn nonunit_refusal_is_retained_before_unchanged_compatibility_projection() {
+fn nonunit_fold_successor_is_admitted_before_compatibility_projection() {
     let mut c = identity(Type::Field);
     c.stateful_circuits[0].return_value = StateReturn::Expression {
         value: test_support::unsupported_fixed_input(),
     };
     test_support::register_unsupported_fold(&mut c);
     let ctx = Context::new(&c);
-    let expected = match ctx.checked(&c.stateful_circuits[0]) {
-        Err(effect_plan::DiagnosticPlanError::Unsupported(r)) => format!("{r:?}"),
-        _ => panic!("expected checked refusal"),
-    };
+    ctx.checked(&c.stateful_circuits[0]).unwrap();
     let (actual, trace) = general(&c, None);
-    let Ok(CheckedSelection::Refused(rejection)) = actual else {
-        panic!("general carrier must retain the complete non-Unit refusal");
+    let Ok(CheckedSelection::Admitted(plan)) = actual else {
+        panic!("the original Fold now has a checked loop plan");
     };
-    assert_eq!(format!("{rejection:?}"), expected);
     let (wrapped, wrapper_trace) = ctx.selected(&c.stateful_circuits[0], false, None);
     let wrapped = wrapped.unwrap();
-    assert_eq!(syntax(&wrapped), (None, None));
+    assert_eq!(syntax(&admitted(plan)), syntax(&wrapped));
+    assert!(wrapped.typed_result.is_some());
     assert!(wrapped.unit_composition_rejection.is_none());
     assert!(wrapped.shielded_send_rejection.is_none());
     assert_eq!(trace[0]["attempts"], wrapper_trace[0]["attempts"]);
     assert_eq!(
         trace[0]["attempts"],
         serde_json::json!([
-            {"route":"algebra.ordinary", "produced_candidate":false}
+            {"route":"algebra.ordinary", "produced_candidate":true}
         ])
     );
 }

@@ -114,6 +114,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Vector { .. }
                 | E::VectorMap { .. }
                 | E::VectorFoldCall { .. }
+                | E::VectorFold { .. }
                 | E::Call { .. } => 32,
                 E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
@@ -226,6 +227,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Vector { .. }
                 | E::VectorMap { .. }
                 | E::VectorFoldCall { .. }
+                | E::VectorFold { .. }
                 | E::If { .. }
                 | E::Let { .. }
                 | E::Sequence { .. }
@@ -293,6 +295,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Vector { .. }
                 | E::VectorMap { .. }
                 | E::VectorFoldCall { .. }
+                | E::VectorFold { .. }
                 | E::TransientHash { .. }
                 | E::TransientCommit { .. }
                 | E::PersistentHash { .. }
@@ -378,6 +381,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Vector { .. }
                 | E::VectorMap { .. }
                 | E::VectorFoldCall { .. }
+                | E::VectorFold { .. }
                 | E::Compare { .. }
                 | E::Keccak256 { .. }
                 | E::HashToCurve { .. }

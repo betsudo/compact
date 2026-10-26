@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
 // Direct legacy_selected traces below preserve the staged predecessor priority laws.
@@ -58,7 +69,7 @@ fn earlier_membership_composite_and_receive_owners_prevent_voting_attempts() {
 }
 
 #[test]
-fn unsupported_body_preserves_later_independent_attempt_order() {
+fn fold_successor_body_stops_later_voting_attempts() {
     let mut c = source();
     crate::recorded::test_support::register_unsupported_fold(&mut c);
     let r = root_mut(&mut c);
@@ -72,22 +83,11 @@ fn unsupported_body_preserves_later_independent_attempt_order() {
             }),
         },
     }];
-    assert!(Context::new(&c).domain(root(&c)).unwrap().is_none());
+    assert!(Context::new(&c).domain(root(&c)).unwrap().is_some());
     let row = legacy_selected_trace(&c, root(&c));
     let a = attempts(&row);
-    let voting = a
-        .iter()
-        .position(|&s| s == "algebra.voting-commit")
-        .unwrap();
-    assert_eq!(
-        &a[voting..voting + 4],
-        [
-            "algebra.voting-commit",
-            "algebra.guarded-deposit",
-            "algebra.terminal-returns",
-            "algebra.unit-actions"
-        ]
-    );
+    assert_eq!(a.last().copied(), row["body_owner"].as_str());
+    assert!(!a.contains(&"algebra.guarded-deposit"));
     assert!(!a.contains(&"selector.voting-commit"));
 }
 

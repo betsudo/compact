@@ -97,6 +97,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         // Pure calls and folds need their own transitive proof. Reject them,
         // including unknown names, until that audit exists.
         Expr::Call { .. }
+        | Expr::VectorFold { .. }
         | Expr::VectorFoldCall { .. }
         | Expr::VectorMap { .. }
         | Expr::KernelClaim { .. }

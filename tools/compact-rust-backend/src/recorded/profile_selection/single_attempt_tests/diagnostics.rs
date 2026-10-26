@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 fn refusal(c: &Contract, name: &str) -> (ProfileSelection, ProfileSelection) {
@@ -22,22 +33,16 @@ fn refusal(c: &Contract, name: &str) -> (ProfileSelection, ProfileSelection) {
 }
 
 #[test]
-fn actual_unsupported_preserves_fallback_and_render_invariant_remains_fatal() {
+fn fold_successor_is_admitted_and_render_invariant_remains_fatal() {
     let mut c = identity(Type::Field);
     c.stateful_circuits[0].return_value = StateReturn::Expression {
         value: test_support::unsupported_fixed_input(),
     };
     test_support::register_unsupported_fold(&mut c);
     let context = Context::new(&c);
-    assert!(matches!(
-        context.checked(&c.stateful_circuits[0]),
-        Err(effect_plan::DiagnosticPlanError::Unsupported(_))
-    ));
-    let (old, current) = refusal(&c, "root");
-    assert!(old.unit_composition_rejection.is_none());
-    assert!(current.unit_composition_rejection.is_none());
-    let output = crate::render_with_capabilities(&c).unwrap();
-    assert!(!output.capabilities.circuits[0].recorded);
+    context.checked(&c.stateful_circuits[0]).unwrap();
+    equivalent(&c, "root");
+    public(&c, "root");
 
     // Invalid Rust slot spelling is intentionally tested below native authority.
     // Independent semantic validation succeeds; emission then produces Invalid,
@@ -109,7 +114,7 @@ fn unit_refinements(
 }
 
 #[test]
-fn unit_resource_provenance_preserves_phase_ordinal_boundary_and_first_refusal() {
+fn unit_resource_provenance_preserves_boundary_after_accepted_fold() {
     let mut c = unit(vec![]);
     c.stateful_circuits[0].actions = vec![empty(), layout_action()];
     let (old, current) = unit_refinements(&c);
@@ -159,8 +164,8 @@ fn unit_resource_provenance_preserves_phase_ordinal_boundary_and_first_refusal()
             coarse
         );
     }
-    // A genuinely unsupported earlier binding must remain first, even when a
-    // later binding in that same Let exceeds layout limits.
+    // A newly accepted earlier Fold must reach the actual later layout refusal;
+    // it must not manufacture resource provenance on the earlier binding.
     let StateAction::Let { bindings, .. } = &mut c.stateful_circuits[0].actions[1] else {
         unreachable!()
     };
@@ -174,14 +179,19 @@ fn unit_resource_provenance_preserves_phase_ordinal_boundary_and_first_refusal()
     );
     test_support::register_unsupported_fold(&mut c);
     let (old, current) = unit_refinements(&c);
-    let earlier = current.refine_action(1, LegacyActionPrecision::Coarse, coarse.clone());
-    assert!(earlier.resource.is_none());
-    assert_eq!(earlier.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(earlier.path, "actions[1].bindings[0].value");
+    let later = current.refine_action(1, LegacyActionPrecision::BindingValue(1), coarse.clone());
+    assert!(later.resource.is_some());
+    assert_eq!(later.path, "actions[1].bindings[1].value");
     assert_eq!(
-        old.refine_action(1, LegacyActionPrecision::Coarse, coarse),
-        earlier
+        old.refine_action(1, LegacyActionPrecision::BindingValue(1), coarse.clone()),
+        later
     );
+    for rejection in [old, current] {
+        assert_eq!(
+            rejection.refine_action(1, LegacyActionPrecision::BindingValue(0), coarse.clone()),
+            coarse
+        );
+    }
 
     // Bind the same rich payload to an actual complete-source public refusal.
     let whole: Contract =
@@ -206,7 +216,7 @@ fn unit_resource_provenance_preserves_phase_ordinal_boundary_and_first_refusal()
 }
 
 #[test]
-fn shielded_gap_projection_matches_the_staged_oracle_without_global_refinement() {
+fn shielded_fold_successor_matches_current_staged_selection() {
     let mut c: Contract = serde_json::from_str(include_str!(
         "../../../../tests/shielded-send-schema20-ir.json"
     ))
@@ -226,21 +236,8 @@ fn shielded_gap_projection_matches_the_staged_oracle_without_global_refinement()
         }],
         body: Box::new(value.clone()),
     };
-    let (_, current) = refusal(&c, &name);
-    let gap = current.shielded_send_rejection.unwrap();
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "return_value.value.bindings[0].value");
-    assert!(current.unit_composition_rejection.is_none());
-    let output = crate::render_with_capabilities(&c).unwrap();
-    assert!(
-        !output
-            .capabilities
-            .circuits
-            .iter()
-            .find(|v| v.name == name)
-            .unwrap()
-            .recorded
-    );
+    equivalent(&c, &name);
+    public(&c, &name);
     let root = &mut c.stateful_circuits[1];
     root.result = Type::Struct {
         name: "OtherResult".into(),
@@ -255,6 +252,6 @@ fn shielded_gap_projection_matches_the_staged_oracle_without_global_refinement()
     **body = Expr::Default {
         ty: root.result.clone(),
     };
-    let (_, current) = refusal(&c, &name);
+    let (current, _) = equivalent(&c, &name);
     assert!(current.shielded_send_rejection.is_none());
 }

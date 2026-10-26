@@ -442,3 +442,16 @@ pub(super) fn map_size_expression(
     }
     crate::map_size_expression::run(Path::new(&root))
 }
+
+/// Direct proof path for the genuine #661 Fold sources.
+pub(super) fn direct_fold(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --direct-fold <case> <proof-output>";
+    let case = arguments.next().ok_or(usage)?;
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::direct_fold::run(case.to_str().ok_or(usage)?, Path::new(&root))
+}

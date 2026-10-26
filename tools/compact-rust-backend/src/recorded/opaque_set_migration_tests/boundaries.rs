@@ -116,7 +116,7 @@ fn native_errors_precede_recorded_routing_in_former_fallible_guard_sites() {
     assert_current(&c);
 }
 #[test]
-fn complete_helper_qualification_excludes_unsupported_children_and_recursion() {
+fn complete_helper_qualification_includes_fold_successors_and_excludes_recursion() {
     let mut v = fixture();
     named(&mut v,"assertWritable")["actions"].as_array_mut().unwrap().push(json!({
         "kind":"if","condition":{"kind":"boolean","value":true},
@@ -126,15 +126,11 @@ fn complete_helper_qualification_excludes_unsupported_children_and_recursion() {
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     let cx = Context::new(&c);
     let names = cx.discovered().unwrap();
-    assert!(!names.contains("assertWritable"));
-    assert!(
-        cx.old().unwrap().is_none(),
-        "unsupported helper is not a whole-old positive"
-    );
-    assert!(
-        cx.checked().is_err(),
-        "unselected helper effect must be checked"
-    );
+    assert!(names.contains("assertWritable"));
+    // Even the inactive arm is checked; Fold is now in the current helper domain.
+    // This old shape selector receives those current discovered helpers.
+    assert!(cx.old().unwrap().is_some());
+    cx.checked().unwrap();
     let output = crate::render_with_capabilities(&c).unwrap();
     let root = output
         .capabilities
@@ -142,7 +138,7 @@ fn complete_helper_qualification_excludes_unsupported_children_and_recursion() {
         .iter()
         .find(|c| c.name == "setWatch")
         .unwrap();
-    assert!(!root.recorded && !root.observed_call);
+    assert!(root.recorded && root.observed_call);
 
     let mut v = fixture();
     named(&mut v, "assertWritable")["actions"] =

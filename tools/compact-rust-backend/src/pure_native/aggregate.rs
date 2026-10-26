@@ -23,6 +23,7 @@ use crate::{
 mod literal;
 pub(crate) mod projection;
 mod vector;
+pub(crate) use vector::{owned_array as fold_iterable, owned_iterator as fold_iterator};
 
 impl AggregateSink for NativeLeafSink {
     fn binding(&mut self, name: &CheckedName) -> syn::Ident {
@@ -59,6 +60,14 @@ impl AggregateSink for NativeLeafSink {
                 body,
                 length,
             } => vector::map(source, &source_plan, binding, body, length),
+            CheckedAggregate::Reduction {
+                initial,
+                initial_plan,
+                sources,
+                accumulator,
+                items,
+                body,
+            } => vector::reduction(initial, &initial_plan, sources, accumulator, items, body),
             CheckedAggregate::Fold {
                 function,
                 initial,

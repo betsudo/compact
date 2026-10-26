@@ -127,7 +127,13 @@ that opaque values can pass later proof serialization checks.
 Checked local calls inline their retained bodies on the same carrier. Certified
 pure calls reuse the existing pure Rust functions, including supported pure Fold.
 Both nested branches remain statically checked; only selected calls execute.
-This does not implement the separate direct stateful Fold gap (#661).
+This describes the earlier certified-helper checkpoint. Subsequent direct
+stateful Fold ingress, checked lowering and selected local qualification are
+recorded separately in the [#661 plan](plans/661-direct-fold-expressions.md#reviewed-local-checkpoint--2026-10-26).
+Independent review findings are resolved at `ae1c8b258`. Local validation uses
+arm64; Linux/current-head required integration runs in GitHub Actions. The
+current nineteen-source consumer and earlier selected proof cohort keep their
+separate source epochs. CI configuration alone is not a passed Linux run.
 
 Scalar Map membership, lookup, insertion, removal, default insertion, reset,
 size and emptiness use the existing typed slots on both interpreters. Logical

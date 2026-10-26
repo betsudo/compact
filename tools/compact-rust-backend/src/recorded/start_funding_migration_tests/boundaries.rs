@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 fn public_refusal_matches_checked(c: &Contract, gap: &RecordingGap) {
@@ -20,7 +31,7 @@ fn public_refusal_matches_checked(c: &Contract, gap: &RecordingGap) {
 }
 
 #[test]
-fn genuine_unsupported_child_and_native_invalid_authority_keep_distinct_failures() {
+fn fold_successor_admission_preserves_native_invalid_authority() {
     let mut value = source();
     prefix_binding(
         &mut value,
@@ -34,11 +45,7 @@ fn genuine_unsupported_child_and_native_invalid_authority_keep_distinct_failures
         old(&c, "start").is_none(),
         "direct Fold is not a complete old positive"
     );
-    let Err(effect_plan::PlanError::Unsupported(gap)) = checked(&c, "start") else {
-        panic!("expected direct Fold refusal");
-    };
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "return_value.body.bindings[0].value");
+    checked(&c, "start").unwrap();
     let output = crate::render_with_capabilities(&c).unwrap();
     let cap = output
         .capabilities
@@ -46,8 +53,8 @@ fn genuine_unsupported_child_and_native_invalid_authority_keep_distinct_failures
         .iter()
         .find(|c| c.name == "start")
         .unwrap();
-    assert!(!cap.recorded && !cap.observed_call);
-    assert_eq!(cap.recording_unavailable.as_ref().unwrap(), &gap);
+    assert!(cap.recorded && cap.observed_call);
+    assert!(cap.recording_unavailable.is_none());
 
     let mut wrong_slot = source();
     let mut changed = false;

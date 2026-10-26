@@ -1,10 +1,21 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! Explicit refusal controls for compiler tests. Their domains are intentionally
-//! different: direct VectorFoldCall is source-valid but not yet recorded directly;
-//! opaque persistent commitments are native-IR-only source-policy controls.
+//! Historical Fold inputs and explicit successor admission checks.
+//! The legacy helper names/reducer identity retain original test inputs. Direct
+//! named Fold is now admitted; opaque commitments remain IR-only policy controls.
 use crate::ir::{Contract, Expr, Parameter, PureCircuit, Type};
 
 pub(crate) fn fixed_map_input() -> Expr {
@@ -86,7 +97,7 @@ pub(crate) fn opaque_commit_policy() -> Expr {
 }
 
 #[test]
-fn unsupported_control_is_native_valid_and_checked_refused_at_the_actual_child() {
+fn direct_fold_control_is_native_valid_and_newly_admitted_at_the_actual_child() {
     let mut contract: crate::ir::Contract = serde_json::from_str(include_str!(
         "../../tests/opaque-string-map-schema20-ir.json"
     ))
@@ -102,24 +113,21 @@ fn unsupported_control_is_native_valid_and_checked_refused_at_the_actual_child()
     root.return_value = crate::ir::StateReturn::Expression {
         value: unsupported_commit(),
     };
-    // A whole native render is required: a standalone checker refusal alone
-    // cannot establish a legitimate diagnostic fallback control.
+    // A whole native render and actual typed loop qualify the changed boundary.
     let output = crate::render_with_capabilities(&contract).unwrap();
-    assert!(
-        !output
-            .capabilities
-            .circuits
-            .iter()
-            .find(|c| c.name == "ensure")
-            .unwrap()
-            .recorded
-    );
+    let capability = output
+        .capabilities
+        .circuits
+        .iter()
+        .find(|c| c.name == "ensure")
+        .unwrap();
+    assert!(capability.recorded && capability.observed_call);
     let root = contract
         .stateful_circuits
         .iter()
         .find(|c| c.name == "ensure")
         .unwrap();
-    let Err(super::effect_plan::PlanError::Unsupported(gap)) = super::effect_plan::check_with_calls(
+    let checked = super::effect_plan::check_with_calls(
         root,
         &std::collections::HashMap::new(),
         &std::collections::HashMap::new(),
@@ -129,22 +137,23 @@ fn unsupported_control_is_native_valid_and_checked_refused_at_the_actual_child()
             .map(|c| (c.name.as_str(), c))
             .collect(),
         &std::collections::HashMap::new(),
-    ) else {
-        panic!("direct VectorFoldCall must remain explicitly unsupported")
-    };
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(gap.path, "return_value.value.value");
+    )
+    .unwrap();
+    assert_eq!(
+        super::effect_plan::fold_paths(&checked),
+        ["return_value.value.value"]
+    );
 }
 
-/// Deliberate CoPS030 diagnostic migration: preserve a complete historical
-/// refusal and check the actual public failure's code, node, path and dependency.
-pub(crate) fn assert_checked_fold_refusal(
+/// Keep the complete old refusal, then qualify intentional current admission at
+/// the same original Fold path. No malformed replacement control is substituted.
+pub(crate) fn assert_checked_fold_successor(
     contract: &Contract,
     root: &crate::ir::StatefulCircuit,
     historical: crate::recorded::RecordingGap,
     expected_path: &str,
 ) {
-    use crate::recorded::{RecordingGap, RecordingOutcome, effect_plan, generic_reference};
+    use crate::recorded::{RecordingOutcome, effect_plan, generic_reference};
     use std::collections::{HashMap, HashSet};
     let ledger = contract
         .ledger_fields
@@ -176,18 +185,15 @@ pub(crate) fn assert_checked_fold_refusal(
     )
     .unwrap();
     assert!(matches!(old, RecordingOutcome::Unsupported(gap) if gap == historical));
-    let Err(effect_plan::DiagnosticPlanError::Unsupported(rejection)) =
-        effect_plan::lower_with_calls_diagnostic(root, &ledger, &witnesses, &pure, &calls)
-    else {
-        panic!("expected checked Fold refusal")
-    };
-    let expected = rejection.into_checked_gap();
-    assert_eq!(
-        expected.code,
-        crate::recorded::RecordingGapCode::UnsupportedExpression
+    let checked =
+        effect_plan::check_with_calls_observed(root, &ledger, &witnesses, &pure, &calls, None)
+            .unwrap();
+    assert!(
+        effect_plan::fold_paths(&checked)
+            .iter()
+            .any(|path| path == expected_path),
+        "expected original Fold path {expected_path}"
     );
-    assert_eq!(expected.ir_node, "Expr::VectorFoldCall");
-    assert_eq!(expected.path, expected_path);
     let output = crate::render_with_capabilities(contract).unwrap();
     let cap = output
         .capabilities
@@ -195,10 +201,6 @@ pub(crate) fn assert_checked_fold_refusal(
         .iter()
         .find(|v| v.name == root.name)
         .unwrap();
-    assert!(!cap.recorded && !cap.observed_call);
-    assert_eq!(cap.recording_unavailable.as_ref(), Some(&expected));
-    let dependency: &RecordingGap = cap.observed_call_unavailable.as_ref().unwrap();
-    assert_eq!(dependency.path, expected.path);
-    assert_eq!(dependency.ir_node, expected.ir_node);
-    assert_eq!(dependency.resource, expected.resource);
+    assert!(cap.recorded && cap.observed_call);
+    assert!(cap.recording_unavailable.is_none() && cap.observed_call_unavailable.is_none());
 }

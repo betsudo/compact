@@ -468,18 +468,13 @@ fn certified_pure_hash_bridge_records_body_variants_but_direct_hashes_remain_bou
     };
     bindings[0].value = Expr::TransientHash {
         value: Box::new(Expr::PersistentCommit {
-            value: Box::new(super::support::unsupported_commit_input()),
+            value: Box::new(super::support::fold_control_input()),
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         }),
     };
-    super::support::register_unsupported_fold(&mut contract);
-    let rejected = render_with_capabilities(&contract).unwrap();
-    assert!(!rejected.capabilities.circuits[0].recorded);
-    assert!(
-        rejected.capabilities.circuits[0]
-            .recording_unavailable
-            .is_some()
-    );
+    super::support::register_fold_control(&mut contract);
+    // #661 admits the unchanged Fold; malformed annotations still refuse.
+    super::support::assert_admitted_and_malformed_refused(&contract, None);
 }
 
 #[test]

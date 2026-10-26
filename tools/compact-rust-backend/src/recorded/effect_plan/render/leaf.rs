@@ -270,7 +270,10 @@ pub(super) fn render(
             syn::parse_quote!(())
         }
         Operation::PureCall { .. } => pure::certified_call(binding, declarations, value)?,
-        Operation::Call { .. } | Operation::If { .. } | Operation::VectorMap { .. } => {
+        Operation::Call { .. }
+        | Operation::If { .. }
+        | Operation::VectorMap { .. }
+        | Operation::VectorFold { .. } => {
             unreachable!("control operations are rendered by block traversal")
         }
     };

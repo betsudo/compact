@@ -143,6 +143,15 @@ pub(super) enum Operation {
         parameter: Value,
         body: Block,
     },
+    /// Ordered fixed-vector reduction with lexical formals and owned accumulator.
+    /// Operand producers precede this binding; the checked body can have effects.
+    VectorFold {
+        initial: Value,
+        sources: Vec<Value>,
+        accumulator: Value,
+        items: Vec<Value>,
+        body: Block,
+    },
     /// Private intent operations delegate allocation and transcript policy to the frame.
     CreateZswapInput {
         coin: Value,

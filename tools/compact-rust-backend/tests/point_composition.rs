@@ -182,18 +182,21 @@ fn helper_scope_type_slot_cycle_and_unselected_effects_stay_checked() {
                 "result":{"kind":"field"},"length":1});
             assert!(recorded(v.clone(), "check"));
             let mut complete: Contract = serde_json::from_value(v).unwrap();
-            recording_refusal::register_unsupported_fold(&mut complete);
+            recording_refusal::register_fold_control(&mut complete);
             v = serde_json::to_value(complete).unwrap();
             let actions = circuit(&mut v, "changes")["actions"]
                 .as_array_mut()
                 .unwrap();
             actions.last_mut().unwrap()["otherwise"]["value"]["value"] =
-                serde_json::to_value(recording_refusal::unsupported_commit_input()).unwrap();
-            // This negative is native-valid, not a swallowed render error.
-            render_with_capabilities(&serde_json::from_value::<Contract>(v.clone()).unwrap())
-                .unwrap();
+                serde_json::to_value(recording_refusal::fold_control_input()).unwrap();
+            // The retained Fold is admitted; only its malformed-length clone refuses.
+            recording_refusal::assert_admitted_and_malformed_refused(
+                &serde_json::from_value::<Contract>(v.clone()).unwrap(),
+                Some("check"),
+            );
+        } else {
+            assert!(!recorded(v, "check"), "{mutation}");
         }
-        assert!(!recorded(v, "check"), "{mutation}");
     }
 }
 

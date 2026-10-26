@@ -30,6 +30,7 @@ pub(super) use merkle::root_type;
 mod pure;
 pub(super) mod sets;
 mod storage;
+mod vector_fold;
 mod vector_map;
 pub(super) use storage::{list_element_type, map_key_type, merkle_leaf_type, set_element_type};
 
@@ -290,6 +291,10 @@ fn block(
             return Err(invalid(path, "unsupported plan value type"));
         }
         let valid = match &binding.operation {
+            Operation::VectorFold { .. } => {
+                vector_fold::validate(binding, declarations, &scope, state)?;
+                true
+            }
             Operation::VectorMap { .. } => {
                 vector_map::validate(binding, declarations, &scope, state)?;
                 true
