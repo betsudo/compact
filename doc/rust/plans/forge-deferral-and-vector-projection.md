@@ -193,4 +193,15 @@ integration and remaining review stay open; Forge remains deferred.
 After completion and verified GitHub merge, clean up task-owned worktrees and
 reproducible targets while preserving unpublished work and required evidence or
 inputs. Do not remove shared stores/caches, containers or qualification artifacts.
+
+## Local integration checkpoint — 2026-10-26
+
+The #674 implementation now passes the remaining maintained local compiler,
+native consumer/proof, wallet handoff, complete golden/source-refusal and pinned
+oracle gates, alongside runtime archives and their generated consumers. The
+[narrow decision](674-constant-vector-projection-decision.md#local-integration-checkpoint--2026-10-26)
+retains exact source cohorts, the capture portability correction and proof
+scope. Independent external review and intended Linux/hosted integration remain
+open; no publication or merge occurred. The broad Rust AST goal remains active.
+Do not reopen already accepted backend capabilities or the deferred Forge work.
 This future cleanup condition does not authorize publishing or merging now.

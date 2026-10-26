@@ -183,3 +183,50 @@ comments now describe the independent official ledger dependency cohort; actual
 dependencies and compatibility identities are unchanged. Final compiler and
 source-bound qualification receipts must be renewed for this header revision.
 Forge stays deferred; complete integration/review and the broad goal stay open.
+
+## Local integration checkpoint — 2026-10-26
+
+The ordinary packaged compiler at `0fed4fe90` passes the complete maintained
+`check_compactc_target.py --consumer --proof` command (1,469.829 seconds),
+followed by the existing JavaScript ledger-v8 wallet handoff. All 256 generated
+fixtures are current, all 37 pinned oracle sources pass, and the complete source
+rejection gate passes. The original compiler/source-map test phase also passes
+in an isolated test-enabled Nix build with the normal test dependencies and a
+writable copied test cache. Production and test-enabled binary receipts remain
+separate; identical whole compiler bundles are not claimed.
+
+Together with the actual packaged-compiler vector TS/API/proof checks, runtime
+archive rehearsal/verification and archive-only consumer checks, these close
+the outstanding local execution gates. Earlier full Rust workspace, strict
+Clippy and functional-consumer results retain their original source cohort;
+the intervening header correction preserved implementation bodies and renewed
+source-position metadata. The wider native suite retains each case's existing
+application policy, including explicitly unbalanced smoke cases. It does not
+turn every historical case into a funded default-strict application claim.
+
+Final source self-review found a portability defect in the new TS capture.
+[Node's loaded-library report](https://github.com/nodejs/node/blob/v24.14.0/src/debug_utils.cc#L370-L382)
+can retain the [kernel's virtual-library SONAMEs](https://github.com/torvalds/linux/blob/v6.12/arch/x86/entry/vdso/Makefile#L32).
+The old capture tried to open those names as disk files. An injected-name run
+of the actual capture reproduced ENOENT before publication. Signed `548ab5801`
+retains `linux-vdso.so.1` and `linux-gate.so.1` explicitly without disk-byte
+claims; all other non-system report entries still require readable hashed
+bytes. Fresh live TS/Rust checks pass with both known-name and unknown-missing
+library controls. The injected controls are host tests, not Linux execution.
+Compiler, native runtime and proof source are unchanged by this four-file
+test-gate correction; their original successful receipts are not relabeled.
+
+Current evidence is indexed under
+`/Users/ysh/.codex/local-evidence/rust-ast-vector-projection-20261025/`, with
+`full-native-v1/run-result.json`, `wallet-handoff-v1/run-result.json`,
+`full-source-gates-v1/`, `ordinary-compiler-tests-v3/build-result.json`,
+`packaged-vector-consumers-v2-report.json` and `source-self-review-v2.json`.
+The self-review is by the implementing root agent, not an independent external
+review. Independent review and intended Linux/hosted integration remain open;
+no push, merge or publication occurred. The broader backend goal remains active
+and incomplete. This slice establishes no blanket language-parity claim.
+
+Forge remains deferred at `experiment/zkir-forge`, with its scheduler deleted
+and its work/evidence preserved. Cleanup is due only after completion and
+verified GitHub merge, for task-owned inactive unneeded worktrees and targets,
+preserving unpublished work, needed inputs/binaries and qualification evidence.
