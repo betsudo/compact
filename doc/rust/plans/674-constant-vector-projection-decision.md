@@ -230,3 +230,13 @@ Forge remains deferred at `experiment/zkir-forge`, with its scheduler deleted
 and its work/evidence preserved. Cleanup is due only after completion and
 verified GitHub merge, for task-owned inactive unneeded worktrees and targets,
 preserving unpublished work, needed inputs/binaries and qualification evidence.
+
+## Publication review: fixture refresh
+
+The complete functional JSON asset comparison remains strict in check mode.
+`check_fixture_outputs.py --update` now refreshes the complete checked-program
+roster as well as `lib.rs`, including first registration and removed JSON assets.
+Unrelated retained files are untouched. Empty fresh program output refuses
+before changing retained files. Entrypoint regression tests exercise stale
+refusal, exact refresh, first registration and empty-output refusal without
+running a compiler or claiming fresh proof qualification.
