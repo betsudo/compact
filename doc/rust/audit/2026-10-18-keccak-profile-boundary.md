@@ -1,7 +1,7 @@
 # Keccak and the pinned Ledger8 proof profile
 
-**Recorded:** 18 October 2026, Asia/Kuala_Lumpur  
-**Implementation inspected:** `3739976cacdfd0f439fc54af63463750cbf9c31d`  
+**Recorded:** 18 October 2026, Asia/Kuala_Lumpur
+**Implementation inspected:** `3739976cacdfd0f439fc54af63463750cbf9c31d`
 **Related:** [#581](https://github.com/betsudo/compact/issues/581), [#666](https://github.com/betsudo/compact/issues/666)
 
 This is an engineering capability/qualification record. It is not a security audit, a new proof result or authorization to upgrade the target.
