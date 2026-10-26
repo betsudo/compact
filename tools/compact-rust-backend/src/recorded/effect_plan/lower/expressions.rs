@@ -74,6 +74,7 @@ impl Lowerer<'_> {
             | Expr::Vector { .. } => Self::aggregate,
             Expr::VectorMap { .. } => Self::vector_map,
             Expr::VectorFoldCall { .. } => Self::vector_fold_call,
+            Expr::VectorFold { .. } => Self::vector_fold,
             Expr::CreateZswapInput { .. } | Expr::CreateZswapOutput { .. } => Self::zswap,
             Expr::KernelClaim { .. } | Expr::KernelMintShielded { .. } => Self::kernel,
             Expr::NativeWitnessCall {

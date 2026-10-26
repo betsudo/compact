@@ -355,6 +355,7 @@ pub(crate) fn expression_contains<'source>(
             fields: elements, ..
         } => elements.iter().any(visit),
         Expr::VectorMap { source, body, .. } => visit(source) || visit(body),
+        Expr::VectorFold { .. } => false,
         Expr::VectorFoldCall {
             initial, source, ..
         } => visit(initial) || visit(source),

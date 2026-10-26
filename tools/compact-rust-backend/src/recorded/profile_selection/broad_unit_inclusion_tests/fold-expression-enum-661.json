@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "issue": 661,
+  "baseline_commit": "8a77571d4d386e28db86e55094287610895e6364",
+  "scope": "Explicit additive-tag refusals in four historical matchers for enum exhaustiveness only. Each complete predecessor is reconstructed exactly; old manifests/49 authorities unchanged. No new-tag old-oracle admission or renewed historic runtime claim.",
+  "predecessor_manifest": {
+    "path": "map-size-expression-enum-610.json",
+    "sha256": "940108ed736f9e14e505cd4a60bd1ce2956ca0d93f768c86bda17d330c3be775"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "previous_sha256": "165955f6b08bdab59c08fd037f6677dcf46db2a168d36730fcfd2ca40db86ca1",
+      "current_sha256": "b5948c1c427a8f9b3c0d35e1c814aa2532ff1328ca943f0d66c67ee99028a4e9",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::VectorFold { .. } => false,\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "previous_sha256": "b1525138bea625c6a79cedfffb08a2e800d5541ed0c8923d69d62e8798f6b777",
+      "current_sha256": "179c579f9854eb1f657ccf0e16a054a2a59d1bfa1f6b8e62876f6ee56671e11a",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::VectorFold { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "previous_sha256": "70960ab45eff2298d916d8349787e108b3d42fec2c3e54af5c55a1d170177087",
+      "current_sha256": "127e8328040e711a4ddda81565ff73b321224dec26e0b3ef5916405db384b613",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::VectorFold { .. } => return Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "previous_sha256": "53af90cd58b51d65fb52a765cb711408be5575ea221ce41956d117d5781d2248",
+      "current_sha256": "933f8774dd847c56335dc250be141d6bba57fc837529c1febdb78d3de01c6b0f",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::VectorFold { .. }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

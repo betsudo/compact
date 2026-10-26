@@ -36,6 +36,7 @@ fn expression_with_calls(
         Expr::Tuple { .. } => pure_aggregate_expression(expr, parameters, circuits),
         Expr::Vector { .. } => pure_aggregate_expression(expr, parameters, circuits),
         Expr::VectorMap { .. } => pure_aggregate_expression(expr, parameters, circuits),
+        Expr::VectorFold { .. } => Err(RenderError::EffectfulExpression),
         Expr::VectorFoldCall { .. } => pure_aggregate_expression(expr, parameters, circuits),
         Expr::If { .. } => pure_control_expression(expr, parameters, circuits),
         Expr::Let { .. } => pure_control_expression(expr, parameters, circuits),

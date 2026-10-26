@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Map lexical overlays and Fold signature/coercion sequencing.
 //! Static Fold checks initial before source; its output keeps source-first runtime
@@ -121,5 +132,94 @@ pub(super) fn fold<S: AggregateSink>(
             source_plan,
         },
         ty: accumulator.clone(),
+    })
+}
+
+/// All formals are distinct under the actual Rust spelling, before body scope overlay.
+pub(crate) fn fold_formals(
+    accumulator: &Parameter,
+    items: &[Parameter],
+    sources: usize,
+) -> Result<Vec<crate::pure_semantics::identifier::CheckedName>, RenderError> {
+    if sources == 0 || sources != items.len() {
+        return Err(RenderError::MalformedVectorFold(
+            "one item formal is required per iterable",
+        ));
+    }
+    let mut names = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for formal in std::iter::once(accumulator).chain(items) {
+        let name = check_name(&formal.name)?;
+        if !seen.insert(name.text().to_owned()) {
+            return Err(RenderError::MalformedVectorFold(
+                "duplicate accumulator/item formal",
+            ));
+        }
+        names.push(name);
+    }
+    Ok(names)
+}
+pub(super) struct ReductionInput<'a> {
+    pub(super) accumulator: &'a Parameter,
+    pub(super) items: &'a [Parameter],
+    pub(super) initial: &'a Expr,
+    pub(super) sources: &'a [Expr],
+    pub(super) body: &'a Expr,
+    pub(super) length: usize,
+}
+pub(super) fn reduction<S: AggregateSink>(
+    input: ReductionInput<'_>,
+    children: &mut impl ScopedChildren<S>,
+    sink: &mut S,
+) -> Result<Typed<Output<S>>, RenderError> {
+    let ReductionInput {
+        accumulator,
+        items,
+        initial,
+        sources,
+        body,
+        length,
+    } = input;
+    let names = fold_formals(accumulator, items, sources.len())?;
+    let initial = children.visit(initial, sink)?;
+    let initial_plan = plan_coercion(&initial.ty, &accumulator.ty)?;
+    let mut checked_sources = Vec::new();
+    for (source, item) in sources.iter().zip(items) {
+        let source = children.visit(source, sink)?;
+        let plan = plan_coercion(
+            &source.ty,
+            &Type::Vector {
+                element: Box::new(item.ty.clone()),
+                length,
+            },
+        )?;
+        checked_sources.push((source.output, plan));
+    }
+    let mut bindings = names
+        .iter()
+        .map(|name| sink.binding(name))
+        .collect::<Vec<_>>();
+    let bound = std::iter::once(accumulator)
+        .chain(items)
+        .zip(&bindings)
+        .map(|(formal, binding)| (formal.name.as_str(), &formal.ty, binding))
+        .collect::<Vec<_>>();
+    let body = children.visit_bound_many(body, &bound, sink)?;
+    if body.ty != accumulator.ty {
+        return Err(RenderError::TypeMismatch {
+            expected: accumulator.ty.clone(),
+            actual: body.ty,
+        });
+    }
+    Ok(Typed {
+        output: CheckedAggregate::Reduction {
+            initial: initial.output,
+            initial_plan,
+            sources: checked_sources,
+            accumulator: bindings.remove(0),
+            items: bindings,
+            body: body.output,
+        },
+        ty: accumulator.ty.clone(),
     })
 }

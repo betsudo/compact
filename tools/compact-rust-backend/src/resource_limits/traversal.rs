@@ -1039,6 +1039,27 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Type(result), visit_depth + 1, owner)?;
                 let _ = length;
             }
+            Expr::VectorFold {
+                accumulator,
+                items,
+                initial,
+                sources,
+                body,
+                length,
+            } => {
+                scan.push(Node::Parameter(accumulator), visit_depth + 1, owner)?;
+                scan.reserve(items.len())?;
+                for item in items {
+                    scan.push(Node::Parameter(item), visit_depth + 1, owner)?;
+                }
+                scan.push(Node::Expr(initial), visit_depth + 1, owner)?;
+                scan.reserve(sources.len())?;
+                for source in sources {
+                    scan.push(Node::Expr(source), visit_depth + 1, owner)?;
+                }
+                scan.push(Node::ReturnPlan(body), visit_depth + 1, owner)?;
+                let _ = length;
+            }
             Expr::VectorFoldCall {
                 name,
                 initial,

@@ -773,6 +773,15 @@ pub enum Expr {
         result: Type,
         length: usize,
     },
+    /// Lexical reduction with ordered operands and declaration-directed body effects.
+    VectorFold {
+        accumulator: Parameter,
+        items: Vec<Parameter>,
+        initial: Box<Expr>,
+        sources: Vec<Expr>,
+        body: Box<ReturnPlan>,
+        length: usize,
+    },
     VectorFoldCall {
         name: String,
         initial: Box<Expr>,

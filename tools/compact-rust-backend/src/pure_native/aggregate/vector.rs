@@ -92,6 +92,91 @@ fn map_result(body: syn::Expr) -> syn::Expr {
     }
 }
 
+pub(crate) fn reduction(
+    initial: syn::Expr,
+    initial_plan: &CoercionPlan,
+    sources: Vec<(syn::Expr, CoercionPlan)>,
+    accumulator: syn::Ident,
+    items: Vec<syn::Ident>,
+    body: syn::Expr,
+) -> syn::Expr {
+    use quote::ToTokens;
+    let initial = coercion::render(initial_plan, initial, 0);
+    let sources = sources
+        .into_iter()
+        .map(|(value, plan)| coercion::render(&plan, value, 0))
+        .collect::<Vec<_>>();
+    // Source-level inline binders can use any accepted spelling. Pick this
+    // formatter-only temporary outside every emitted child identifier, so it
+    // cannot shadow a capture. No semantic or ownership decision is made here.
+    let mut pending = vec![initial.to_token_stream(), body.to_token_stream()];
+    pending.extend(sources.iter().map(ToTokens::to_token_stream));
+    let mut used = std::collections::HashSet::new();
+    while let Some(tokens) = pending.pop() {
+        for token in tokens {
+            match token {
+                proc_macro2::TokenTree::Ident(name) => {
+                    used.insert(name.to_string());
+                }
+                proc_macro2::TokenTree::Group(group) => pending.push(group.stream()),
+                _ => {}
+            }
+        }
+    }
+    used.insert(accumulator.to_string());
+    used.extend(items.iter().map(ToString::to_string));
+    let iterator_name = (0..)
+        .map(|i| format!("__compact_fold_iterator_{i}"))
+        .find(|name| !used.contains(name))
+        .expect("finite source identifiers");
+    let iterator_name = syn::Ident::new(&iterator_name, Span::call_site());
+    let mut pairs = sources.into_iter().zip(items);
+    let (first, first_item) = pairs.next().expect("checked nonempty Fold iterables");
+    let mut iterator = owned_iterator(first);
+    let mut pattern: syn::Pat = syn::parse_quote!(#first_item);
+    for (source, item) in pairs {
+        let mut zipped: syn::ExprMethodCall = syn::parse_quote!(__iterator.zip(__source));
+        zipped.receiver = Box::new(iterator);
+        *zipped.args.first_mut().expect("zip argument") = owned_iterator(source);
+        iterator = syn::Expr::MethodCall(zipped);
+        pattern = syn::parse_quote!((#pattern, #item));
+    }
+    let mut result: syn::ExprBlock = syn::parse_quote!({
+        let (mut #accumulator, #iterator_name) = (__initial, __iterable);
+        for #pattern in #iterator_name { #accumulator = __body; }
+        #accumulator
+    });
+    let syn::Stmt::Local(local) = &mut result.block.stmts[0] else {
+        unreachable!("Fold operand tuple");
+    };
+    let syn::Expr::Tuple(tuple) = local
+        .init
+        .as_mut()
+        .expect("Fold operand initializer")
+        .expr
+        .as_mut()
+    else {
+        unreachable!("Fold operand tuple");
+    };
+    tuple.elems[0] = initial;
+    tuple.elems[1] = iterator;
+    let syn::Stmt::Expr(syn::Expr::ForLoop(loop_), _) = &mut result.block.stmts[1] else {
+        unreachable!("Fold loop");
+    };
+    let syn::Stmt::Expr(syn::Expr::Assign(assign), _) = &mut loop_.body.stmts[0] else {
+        unreachable!("Fold accumulator assignment");
+    };
+    *assign.right = body;
+    syn::Expr::Block(result)
+}
+pub(crate) fn owned_iterator(source: syn::Expr) -> syn::Expr {
+    let mut array: syn::ExprMethodCall = syn::parse_quote!(__source.into_array());
+    array.receiver = Box::new(source);
+    let mut iterator: syn::ExprMethodCall = syn::parse_quote!(__array.into_iter());
+    iterator.receiver = Box::new(syn::Expr::MethodCall(array));
+    syn::Expr::MethodCall(iterator)
+}
+
 #[cfg(test)]
 mod tests {
     use super::map_result;

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Transitional native traversal environment, outside shared semantic core.
 //! It borrows scopes/declarations without rebuilding them per child. The complete
@@ -54,6 +65,19 @@ impl crate::pure_semantics::children::ScopedChildren<NativeLeafSink> for NativeC
         // symbols are cloned, matching the old map overlay; no Type is cloned.
         let mut scope: HashMap<&str, (&Type, syn::Ident)> = self.bindings.clone();
         scope.insert(source_key, (ty, binding.clone()));
+        let (output, ty) = crate::expression_with_calls(source, &scope, self.declarations)?;
+        Ok(Typed { output, ty })
+    }
+    fn visit_bound_many(
+        &mut self,
+        source: &Expr,
+        bindings: &[(&str, &Type, &syn::Ident)],
+        _: &mut NativeLeafSink,
+    ) -> Result<Typed<syn::Expr>, RenderError> {
+        let mut scope: HashMap<&str, (&Type, syn::Ident)> = self.bindings.clone();
+        for (key, ty, binding) in bindings {
+            scope.insert(key, (ty, (*binding).clone()));
+        }
         let (output, ty) = crate::expression_with_calls(source, &scope, self.declarations)?;
         Ok(Typed { output, ty })
     }

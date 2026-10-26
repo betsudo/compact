@@ -202,6 +202,26 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
             result,
             length: *length,
         }),
+        Expr::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            length,
+        } => match body.as_ref() {
+            crate::ir::ReturnPlan::Value { value: body } => {
+                Source::Aggregate(AggregateSource::VectorFold {
+                    accumulator,
+                    items,
+                    initial,
+                    sources,
+                    body,
+                    length: *length,
+                })
+            }
+            _ => Source::Leaf(LeafSource::Effectful),
+        },
         Expr::VectorFoldCall {
             name,
             initial,

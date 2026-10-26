@@ -122,14 +122,25 @@ fn expression_call_site<'source>(
     // Reuse the original exhaustive pre-order walker once. The local cell keeps
     // only the occurrence it already discovers; it is not a second source scan.
     let selected = std::cell::Cell::new(None);
-    expression_contains(expression, &|value| {
-        if matches!(value, Expr::Call { name: callee, .. } if callee == name) {
-            selected.set(Some(RefusalSite::field(Owner::Expr(value), "name")));
-            true
-        } else {
-            false
-        }
-    });
+    expression_contains_with_actions(
+        expression,
+        &|value| {
+            if matches!(value, Expr::Call { name: callee, .. } if callee == name) {
+                selected.set(Some(RefusalSite::field(Owner::Expr(value), "name")));
+                true
+            } else {
+                false
+            }
+        },
+        &|action| {
+            if matches!(action, StateAction::CircuitCall { name: callee, .. } if callee == name) {
+                selected.set(Some(RefusalSite::field(Owner::Action(action), "name")));
+                true
+            } else {
+                false
+            }
+        },
+    );
     selected.get()
 }
 
@@ -290,14 +301,18 @@ fn action_emits_native_private_output(action: &StateAction) -> bool {
 }
 
 fn expression_contains_native_witness(expression: &Expr) -> bool {
-    expression_contains(expression, &|value| {
-        matches!(
-            value,
-            Expr::NativeWitnessCall { .. }
-                | Expr::CreateZswapInput { .. }
-                | Expr::CreateZswapOutput { .. }
-        )
-    })
+    expression_contains_with_actions(
+        expression,
+        &|value| {
+            matches!(
+                value,
+                Expr::NativeWitnessCall { .. }
+                    | Expr::CreateZswapInput { .. }
+                    | Expr::CreateZswapOutput { .. }
+            )
+        },
+        &|action| matches!(action, StateAction::NativeWitnessCall { .. }),
+    )
 }
 
 fn return_contains_native_witness(value: &StateReturn) -> bool {
@@ -393,10 +408,19 @@ pub(crate) fn expression_contains<'source>(
     expression: &'source Expr,
     predicate: &impl Fn(&'source Expr) -> bool,
 ) -> bool {
+    expression_contains_with_actions(expression, predicate, &|_| false)
+}
+
+fn expression_contains_with_actions<'source>(
+    expression: &'source Expr,
+    predicate: &impl Fn(&'source Expr) -> bool,
+    action_predicate: &impl Fn(&'source StateAction) -> bool,
+) -> bool {
     if predicate(expression) {
         return true;
     }
-    let visit = |child: &'source Expr| expression_contains(child, predicate);
+    let visit =
+        |child: &'source Expr| expression_contains_with_actions(child, predicate, action_predicate);
     match expression {
         Expr::WitnessCall { arguments, .. } | Expr::Call { arguments, .. } => {
             arguments.iter().any(visit)
@@ -407,6 +431,16 @@ pub(crate) fn expression_contains<'source>(
             fields: elements, ..
         } => elements.iter().any(visit),
         Expr::VectorMap { source, body, .. } => visit(source) || visit(body),
+        Expr::VectorFold {
+            initial,
+            sources,
+            body,
+            ..
+        } => {
+            visit(initial)
+                || sources.iter().any(visit)
+                || plan_contains_expressions(body, predicate, action_predicate)
+        }
         Expr::VectorFoldCall {
             initial, source, ..
         } => visit(initial) || visit(source),
@@ -547,9 +581,10 @@ pub(crate) fn expression_contains_stateful_call(
     expression: &Expr,
     stateful_circuits: &HashMap<&str, &StatefulCircuit>,
 ) -> bool {
-    expression_contains(
+    expression_contains_with_actions(
         expression,
         &|value| matches!(value, Expr::Call { name, .. } if stateful_circuits.contains_key(name.as_str())),
+        &|action| matches!(action, StateAction::CircuitCall { name, .. } if stateful_circuits.contains_key(name.as_str())),
     )
 }
 
@@ -617,6 +652,114 @@ fn action_contains_witness(action: &StateAction) -> bool {
             position,
             ..
         } => expression_contains_witness(value) || expression_contains_witness(position),
+        StateAction::CounterIncrement { .. }
+        | StateAction::NativeWitnessCall { .. }
+        | StateAction::CounterDecrement { .. }
+        | StateAction::CounterReset { .. }
+        | StateAction::SetReset { .. }
+        | StateAction::ListPopFront { .. }
+        | StateAction::ListReset { .. }
+        | StateAction::MapReset { .. }
+        | StateAction::HistoricMerkleResetHistory { .. }
+        | StateAction::HistoricMerkleResetToDefault { .. }
+        | StateAction::MerkleResetToDefault { .. } => false,
+    }
+}
+
+// Shared borrowed traversal of the new Fold body. Older expression order is unchanged.
+fn plan_contains_expressions<'source>(
+    plan: &'source ReturnPlan,
+    predicate: &impl Fn(&'source Expr) -> bool,
+    action_predicate: &impl Fn(&'source StateAction) -> bool,
+) -> bool {
+    let visit = |value| expression_contains_with_actions(value, predicate, action_predicate);
+    match plan {
+        ReturnPlan::Value { value } => visit(value),
+        ReturnPlan::Sequence { actions, result } => {
+            actions
+                .iter()
+                .any(|action| action_contains_expressions(action, predicate, action_predicate))
+                || plan_contains_expressions(result, predicate, action_predicate)
+        }
+        ReturnPlan::Let { bindings, result } => {
+            bindings.iter().any(|binding| visit(&binding.value))
+                || plan_contains_expressions(result, predicate, action_predicate)
+        }
+        ReturnPlan::Conditional {
+            condition,
+            then,
+            otherwise,
+        } => {
+            visit(condition)
+                || plan_contains_expressions(then, predicate, action_predicate)
+                || plan_contains_expressions(otherwise, predicate, action_predicate)
+        }
+    }
+}
+fn action_contains_expressions<'source>(
+    action: &'source StateAction,
+    predicate: &impl Fn(&'source Expr) -> bool,
+    action_predicate: &impl Fn(&'source StateAction) -> bool,
+) -> bool {
+    if action_predicate(action) {
+        return true;
+    }
+    let visit = |value| expression_contains_with_actions(value, predicate, action_predicate);
+    let action_visit = |action| action_contains_expressions(action, predicate, action_predicate);
+    match action {
+        StateAction::Sequence { actions } => actions.iter().any(action_visit),
+        StateAction::If {
+            condition,
+            then,
+            otherwise,
+        } => visit(condition) || action_visit(then) || action_visit(otherwise),
+        StateAction::Expression { value }
+        | StateAction::CellWrite { value, .. }
+        | StateAction::SetInsert { value, .. }
+        | StateAction::SetRemove { value, .. }
+        | StateAction::ListPushFront { value, .. }
+        | StateAction::MerkleInsert { value, .. }
+        | StateAction::MerkleInsertHash { hash: value, .. }
+        | StateAction::MerkleInsertIndexDefault {
+            position: value, ..
+        }
+        | StateAction::HistoricMerkleInsert { value, .. }
+        | StateAction::HistoricMerkleInsertHash { hash: value, .. }
+        | StateAction::HistoricMerkleInsertIndexDefault {
+            position: value, ..
+        }
+        | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapRemove { key: value, .. } => visit(value),
+        StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
+            arguments.iter().any(visit)
+        }
+        StateAction::Assert { condition, .. } => visit(condition),
+        StateAction::Let { bindings, action } => {
+            bindings.iter().any(|binding| visit(&binding.value)) || action_visit(action)
+        }
+        StateAction::MapInsert { key, value, .. } => visit(key) || visit(value),
+        StateAction::SetInsertCoin {
+            coin, recipient, ..
+        }
+        | StateAction::CellWriteCoin {
+            coin, recipient, ..
+        } => visit(coin) || visit(recipient),
+        StateAction::MerkleInsertIndex {
+            value, position, ..
+        }
+        | StateAction::MerkleInsertHashIndex {
+            hash: value,
+            position,
+            ..
+        }
+        | StateAction::HistoricMerkleInsertIndex {
+            value, position, ..
+        }
+        | StateAction::HistoricMerkleInsertHashIndex {
+            hash: value,
+            position,
+            ..
+        } => visit(value) || visit(position),
         StateAction::CounterIncrement { .. }
         | StateAction::NativeWitnessCall { .. }
         | StateAction::CounterDecrement { .. }

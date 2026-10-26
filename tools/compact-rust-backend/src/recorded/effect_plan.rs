@@ -50,6 +50,8 @@ mod tests;
 mod type_environment;
 mod validate;
 #[cfg(test)]
+mod vector_fold_ingress_tests;
+#[cfg(test)]
 mod vector_fold_tests;
 
 /// Current typed graph paths for explicit historical-to-Fold admission tests.

@@ -107,3 +107,79 @@ impl Lowerer<'_> {
         ))
     }
 }
+
+impl Lowerer<'_> {
+    pub(super) fn vector_fold(
+        &mut self,
+        expression: &Expr,
+        scope: &Scope,
+        bindings: &mut Vec<Binding>,
+        path: &str,
+    ) -> Result<(Operation, Type), RecordingGap> {
+        let Expr::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            length,
+        } = expression
+        else {
+            return Err(self.unsupported_expression(expression, path));
+        };
+        if sources.is_empty() || sources.len() != items.len() {
+            return Err(invalid(path, "Fold requires one item formal per iterable"));
+        }
+        crate::pure_semantics::aggregate::fold_formals(accumulator, items, sources.len())
+            .map_err(|error| invalid(path, error.to_string()))?;
+        for formal in std::iter::once(accumulator).chain(items) {
+            self.declarations.types().validate_at(&formal.ty, path)?;
+        }
+        let initial_path = format!("{path}.initial");
+        let initial = self.expression(initial, scope, bindings, &initial_path)?;
+        let initial = self.coerce(initial, &accumulator.ty, bindings, &initial_path)?;
+        let mut lowered_sources = Vec::new();
+        for (index, (source, item)) in sources.iter().zip(items).enumerate() {
+            let child = format!("{path}.sources[{index}]");
+            let source = self.expression(source, scope, bindings, &child)?;
+            lowered_sources.push(self.coerce(
+                source,
+                &Type::Vector {
+                    element: Box::new(item.ty.clone()),
+                    length: *length,
+                },
+                bindings,
+                &child,
+            )?);
+        }
+        let mut local = scope.clone();
+        let mut formals = Vec::new();
+        for formal in std::iter::once(accumulator).chain(items) {
+            self.spend(path)?;
+            let value = self.fresh(formal.ty.clone());
+            local.insert(formal.name.clone(), value.clone());
+            formals.push(value);
+        }
+        let mut body_bindings = Vec::new();
+        let result = self.returned(body, &local, &mut body_bindings, &format!("{path}.body"))?;
+        if result.ty != accumulator.ty {
+            return Err(invalid(
+                path,
+                "Fold body result differs from accumulator type",
+            ));
+        }
+        Ok((
+            Operation::VectorFold {
+                initial,
+                sources: lowered_sources,
+                accumulator: formals.remove(0),
+                items: formals,
+                body: Block {
+                    bindings: body_bindings,
+                    result,
+                },
+            },
+            accumulator.ty.clone(),
+        ))
+    }
+}

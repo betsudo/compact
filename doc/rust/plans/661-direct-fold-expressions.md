@@ -206,3 +206,106 @@ independent review and intended Linux gates. Do not silently narrow the signed
 plan or mark #661/the broader Rust AST goal complete at this intermediate core.
 Cleanup remains conditional on completion and verified GitHub merge; nothing
 was merged or deleted by this local checkpoint.
+
+
+## Paired source-ingress representation decision — 2026-10-26
+
+Retain private schema20 and add a strict `vector_fold` expression tag carrying
+`accumulator: Parameter`, `items: Vec<Parameter>`, `initial: Expr`,
+`sources: Vec<Expr>`, `body: Expr` and `length`. Both producers and consumers are
+updated together. Existing `vector_fold_call` decoding and the accepted pure
+named one-source producer remain valid. An old decoder rejects the new tag;
+this is not a forward-decoding guarantee or a new public interchange format.
+No runtime ABI/API addition is required.
+
+Named reducers become declaration-directed body calls, including existing
+stateful and witness calls. Inline bodies retain their own typed formals and
+lexical captures. The seed and each iterable are evaluated once, before any
+reducer iteration, in the actual observed order. Independent checks validate
+all annotations, including empty/inactive bodies. Any further actual source
+dependency (including inline action-body normalization beyond existing Expr
+forms) must be recorded and resolved or left explicitly open before claiming
+full acceptance. The nine-source plan is unchanged.
+
+The before-edit decision is retained in `ingress-schema-decision-v1.json` under
+the existing evidence root. Its existence is not implementation qualification.
+
+
+### Source-driven body correction
+
+`source-characterization-v3.json` adds an actual inline reducer that captures a
+factor and writes/reads a Cell. TS accepts it; the first development ingress
+refused its nested Cell.write. Therefore the v1 expression-only body decision
+is superseded before acceptance: `vector_fold.body` is `Box<ReturnPlan>`.
+`ReturnPlan::Value` owns expression-only bodies; its existing typed actions,
+lexical bindings and conditional branches own inline effects. This keeps one
+result/body owner and requires the native loop to carry the successful owned
+context through every branch and iteration. The checked owner reuses its
+existing return-plan lowering. No general Expr-action framework or runtime ABI
+is added. Original v1 development artifacts/failed proposal remain retained;
+there is no compatibility promise for that uncommitted tag shape. Legacy
+vector_fold_call and original records remain valid. The full plan stays open.
+
+
+## Source-family implementation checkpoint — 2026-10-26
+
+The paired producer and consumer now support the corrected lexical Fold tag.
+Named pure/stateful/witness calls and inline captures reach one checked loop;
+inline mutation/Let/conditional/action bodies use the existing ReturnPlan.
+Native emission carries `(context, accumulator)` through each successful body
+and branch, retaining local witness outputs and query-summed cost. Captured
+owned values retain the existing clone rules; no Copy or new runtime API is
+required. Pure Value bodies use the shared typed aggregate owner. The original
+pure named-helper producer and legacy VectorFoldCall decoding remain intact.
+
+The current whole-expression/call-site walkers, named-type collection,
+source-origin schema and resource traversal visit all operands and the complete
+body. Unknown or forged formals/types/captures, missing fields and cycles remain
+refusals even for empty loops. The retired typed_plan owner is byte-identical
+to the preceding baseline; new admission belongs to effect_plan. Four retired
+exhaustive matchers receive only an explicit denial of the new enum tag. The
+new narrow compatibility manifest reconstructs their exact predecessors before
+all unchanged historical authorities. No historical manifest was repinned.
+
+Local evidence under the existing direct-Fold evidence root:
+
+- `ingress-package-v4-result.json`: successful paired development compiler
+  build with exact dirty-source pins. This precedes the source-family commit;
+  do not relabel it as a new exact signed-head compiler qualification.
+- `ingress-generation-v2.json`, `source-characterization-v5.json` and
+  `ingress-source-programs-v1.json`: fourteen actual complete source outputs,
+  IR, capability reports and checked programs, including inline mutations,
+  owned and Unit accumulators, multiple witness operands and nested branches.
+  The earlier v4 branch probe correctly failed missing source disclosures; its
+  source and diagnostics remain. Explicitly disclosed v5 passed both targets.
+- `ingress-behavior-v2-result.json`: **31 external consumer tests**, each using
+  four Rust routes against live TS: **20 success cases and 11 first-failure
+  cases**. All 14 complete generated crates are unedited. Results, the source's
+  stored field, private state/outputs, witness events and real summed gas match
+  TS; whole Rust query state/effects agree across routes. Both recorded routes
+  replay their actual public operations. Held prior-state snapshots stay
+  unchanged. Error cases do not claim that callback effects roll back or that
+  a failed call exposes a returned partial ledger/cost result.
+- `ingress-public-api-v1.json`: seven isolated ordinary API controls reject
+  wrong captures/items/vector lengths, a bare String, incompatible witness
+  arguments, reused owned inputs and a consumed Program at intended sites.
+- `ingress-laws-v5-result.json`: six focused tests, including twelve finite
+  shape/depth worker cases. Five preflight-admitted cases render on ordinary
+  two-MiB workers; seven larger cases return explicit resource refusals. This
+  does not establish aggregate heap/CPU containment or a universal stack proof.
+- `ingress-backend-v2-result.json`: **1,822 passed, 7 inherited ignores**.
+  Strict backend all-target/all-feature Clippy and header/format gates pass.
+- `ingress-consumer-lock-v1.json`: all336 nonlocal consumer package identities
+  and checksums match the repository lock. This is not full Node closure or
+  Linux qualification. The TS capture remains a local host development cohort.
+
+Still OPEN before #661 acceptance: publish the full source/consumer cases in a
+maintained gate, add its source/refusal and changed-reference controls, freeze
+and qualify the exact compiler/runtime/source cohort, execute fresh applicable
+proofs with immutable verifier and binding/result negatives plus default-strict
+funded application/replay, and retain all required compiler/native/wallet/
+workspace/package integration gates. Independent review and intended Linux
+qualification remain separate. No hosted run, push, merge, release or shared
+installation is authorized. This checkpoint advances the full selected family
+and does not complete #661 or the broad Rust AST goal. Forge stays deferred;
+cleanup is still not due before completion and verified GitHub merge.

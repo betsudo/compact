@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Borrowed full-fold traversal. Scoped visits clone binding metadata only.
 //! No native dispatcher, declaration-body traversal or syntax fallback is reachable.
@@ -59,6 +70,18 @@ where
     ) -> Result<Typed<S::Value>, RenderError> {
         let mut scope = LocalScope::new(self.bindings);
         scope.insert(source_key, ty, binding.clone());
+        fold_expression_in_session(source, scope.bindings(), self.declarations, sink)
+    }
+    fn visit_bound_many(
+        &mut self,
+        source: &Expr,
+        bindings: &[(&str, &Type, &S::Binding)],
+        sink: &mut S,
+    ) -> Result<Typed<S::Value>, RenderError> {
+        let mut scope = LocalScope::new(self.bindings);
+        for (key, ty, binding) in bindings {
+            scope.insert(key, ty, (*binding).clone());
+        }
         fold_expression_in_session(source, scope.bindings(), self.declarations, sink)
     }
 }
