@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Declaration, operand and effect contracts for native ledger queries.
 use super::*;
 use syn::visit_mut::{self, VisitMut};
@@ -193,7 +205,7 @@ fn witness_result_is_bound_once_before_the_matching_query() {
 type PlainQuery = fn(String, u8) -> Expr;
 #[test]
 fn collection_metadata_checks_kind_and_index_before_emitting_queries() {
-    let cases: [(PlainQuery, LedgerFieldKind, Type); 6] = [
+    let cases: [(PlainQuery, LedgerFieldKind, Type); 8] = [
         (
             |field, index| Expr::CounterRead { field, index },
             LedgerFieldKind::Counter,
@@ -216,6 +228,25 @@ fn collection_metadata_checks_kind_and_index_before_emitting_queries() {
                 value: Type::JubjubPoint,
             },
             Type::Boolean,
+        ),
+        (
+            |field, index| Expr::MapSize { field, index },
+            LedgerFieldKind::Map {
+                key: Type::Field,
+                value: Type::JubjubPoint,
+            },
+            uint(&u64::MAX.to_string()),
+        ),
+        (
+            |field, index| Expr::MapSize { field, index },
+            LedgerFieldKind::Map {
+                key: Type::Field,
+                value: Type::LedgerMap {
+                    key: Box::new(Type::Boolean),
+                    value: Box::new(Type::Field),
+                },
+            },
+            uint(&u64::MAX.to_string()),
         ),
         (
             |field, index| Expr::ListLength { field, index },

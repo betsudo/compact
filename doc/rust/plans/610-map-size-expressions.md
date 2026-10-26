@@ -98,3 +98,20 @@ results and remaining independent review/Linux integration without claiming
 the broader backend goal complete. Keep commits local, signed Conventional,
 DCO and Assisted-by. Cleanup remains conditional on completion and verified
 GitHub merge, preserving unpublished work, needed inputs and evidence.
+
+## Discovered source dependency — 2026-10-26
+
+After expression ingress was implemented, the complete genuine fixture exposed
+`Map.insert` being sent through query-only expression lowering. A lexical count
+read followed by insertion and a composite return was outside the old
+action/return split's selected scope. Preserve this required read/mutate/return
+behavior through the existing typed return-plan `Let` and `Sequence` owners.
+Select that route from the current metadata-based storage-mutation classifier
+when the legacy lexical split was not selected; no ADT allowlist or source-name
+recognizer is added. Keep original successful split forms and terminal
+conditional routing intact. The failed source receipt remains retained.
+
+This adds the one lexical dependency needed for the planned acceptance; general
+value-wrapper normalization and the rest of #516 remain outside this slice.
+Genuine generated execution, first-failure/scope controls, source-origin
+checks and applicable proofs must still validate the dependent source.

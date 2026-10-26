@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Shared Map operations preserve declaration authority and key-before-value order.
 use super::*;
 
@@ -50,6 +62,7 @@ impl Lowerer<'_> {
             Expr::MapMember { field, index, key } => MapQuery::Member(field, *index, key),
             Expr::MapLookup { field, index, key } => MapQuery::Lookup(field, *index, key),
             Expr::MapIsEmpty { field, index } => MapQuery::IsEmpty(field, *index),
+            Expr::MapSize { field, index } => MapQuery::Size(field, *index),
             _ => {
                 return Err(invalid(
                     path,

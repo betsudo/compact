@@ -755,6 +755,10 @@ pub enum Expr {
         field: String,
         index: u8,
     },
+    MapSize {
+        field: String,
+        index: u8,
+    },
     Tuple {
         elements: Vec<Expr>,
     },

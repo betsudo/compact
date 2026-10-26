@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "issue": 610,
+  "baseline_commit": "c1f571a643f7ecfabe4d6958e53485e99acb1db7",
+  "scope": "One explicit new Expr::MapSize refusal in the retired oracle for enum exhaustiveness only. Reconstruct exact #614 owner bytes before its unchanged projection; original49 authorities and predecessor manifest unchanged.",
+  "predecessor_manifest": {
+    "path": "legacy-audited-local-614.json",
+    "sha256": "3e433671c8b8c9086350ccbbe2f9898385a258a6482b5c97ac378f28014c9bcf"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "previous_sha256": "cae1e76dcaf3270d780c54be32cf7ef7c18aae68457eb57eb0155f6686335803",
+      "current_sha256": "53af90cd58b51d65fb52a765cb711408be5575ea221ce41956d117d5781d2248",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::MapSize { .. }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

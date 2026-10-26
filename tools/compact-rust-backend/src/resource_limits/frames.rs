@@ -166,6 +166,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelSelf { .. }
                 | E::SetSize { .. }
                 | E::SetIsEmpty { .. }
+                | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
@@ -183,6 +184,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetIsEmpty { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::MerkleCheckRoot { .. }
                 | E::HistoricMerkleCheckRoot { .. }
@@ -285,6 +287,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelSelf { .. }
                 | E::SetSize { .. }
                 | E::SetIsEmpty { .. }
+                | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::Tuple { .. }
                 | E::Vector { .. }
@@ -370,6 +373,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelSelf { .. }
                 | E::SetSize { .. }
                 | E::SetIsEmpty { .. }
+                | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::Vector { .. }
                 | E::VectorMap { .. }

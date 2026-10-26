@@ -1538,6 +1538,19 @@
                (stateful-body-has-storage-mutation? expr2))]
           [else #f]))
 
+      ;; A lexical value used inside a composite return can outlive storage
+      ;; actions in the same scope. Preserve that scope in the existing typed
+      ;; return plan when the legacy action/return split did not select it.
+      (define (lexical-storage-mutation-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (lexical-storage-mutation-return? expr)]
+          [(seq ,src ,expr* ... ,expr) (lexical-storage-mutation-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (or (and (not (let-scope-needs-action? local* expr))
+                    (stateful-body-has-storage-mutation? expr))
+               (lexical-storage-mutation-return? expr))]
+          [else #f]))
+
       (define (unit-return-type? ty)
         (nanopass-case (Lnodisclose Type) ty
           [(ttuple ,src ,type* ...) (null? type*)]
@@ -1871,6 +1884,10 @@
                  (object (cons "kind" "map_is_empty")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*)))]
+                [(and (eq? adt-name 'Map) (eq? ledger-op 'size) (null? expr*))
+                 (object (cons "kind" "map_size")
+                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
            (nanopass-case (Lnodisclose Type) type
@@ -2191,7 +2208,8 @@
                (let* ([names (exported-names function-name export-alist)]
                       [internal-name (rust-function-name function-name)]
                       [effectful-return? (and (not (unit-return-type? type))
-                                              (terminal-storage-mutation-conditional? expr))]
+                                              (or (terminal-storage-mutation-conditional? expr)
+                                                  (lexical-storage-mutation-return? expr)))]
                       [all-names (if (member internal-name names)
                                      names
                                      (append names (list internal-name)))])
