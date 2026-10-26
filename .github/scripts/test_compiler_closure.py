@@ -30,6 +30,22 @@ spec.loader.exec_module(owner)
 
 
 class ReceiptTests(unittest.TestCase):
+    def test_build_failure_streams_diagnostics_and_preserves_machine_stdout(self):
+        # Exercise a real failed child without reading or modifying a Nix store.
+        script = (
+            "import importlib.util, sys; "
+            f"s=importlib.util.spec_from_file_location('handoff', {str(Path('.github/scripts/compiler_closure.py').resolve())!r}); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+            "m.text([sys.executable, '-c', "
+            "\"import sys; print('/nix/store/machine-output'); "
+            "print('compiler-build-diagnostic', file=sys.stderr); sys.exit(7)\"] )"
+        )
+        result = owner.subprocess.run([owner.sys.executable, '-c', script],
+                                      capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('compiler-build-diagnostic', result.stderr.splitlines())
+        self.assertEqual(result.stdout, '')
+
     def test_receipt_accepts_only_exact_identity_archive_and_roster(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory)/'closure'
