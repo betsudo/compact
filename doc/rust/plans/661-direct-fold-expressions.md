@@ -600,7 +600,7 @@ changes that implementation nor renews earlier whole-source execution epochs.
 | Current backend and generated fixtures | Complete all-feature backend library: 1,844 passes, zero failures and the same seven inherited ignores. All 276 registered golden outputs are fresh with the new original-recipe compiler. Strict backend/consumer Clippy, public Python entrypoint, formatting and header regression checks pass. | Earlier full-workspace/native/wallet/package executions retain their original epochs; this is not a fresh monolithic release run. |
 | Original ordinary compiler recipe | Unchanged `nix build .#compactc --no-link --print-out-paths --option max-jobs 1 --option cores 4` exits zero with all 5,980 tracked source pins unchanged. | The fixup classifier caveat and independent supplemental coverage below remain part of the result. Compiler `doCheck` and source-map suite retain their earlier execution epoch. |
 | Selected cryptographic and application coverage | Earlier `fb229b9cd` cohort: nine fresh selected proofs across eight complete sources, immutable verification, binding/same-geometry negatives, funded default-strict applications and unchanged replay refusal. | No new proof run at `ae1c8b258`, no proofs claimed for the three ownership/shadowing additions, constructors or unselected exports/type families. |
-| Intended native Linux/current-head integration | Source prerequisites and complete required gates remain recorded; current execution host is Darwin arm64. | No native Linux x86_64 execution target has been supplied. No hosted run, push or other platform authority is inferred. |
+| Linux/current-head integration | Local development is validated on Darwin arm64; Linux x86_64 qualification belongs to GitHub Actions under the owner's 2026-10-27 direction. | A successful Linux CI result is still needed for integration; a local Linux runner is not a development prerequisite. |
 
 The Rust CLI derivation's actual fixup log contains a classifier subprocess
 segmentation fault; the original build nevertheless exits zero and the wrapper
@@ -624,11 +624,13 @@ The evidence root above contains `review-fixes-v1-closeout.json` (SHA-256
 `review-fixes-v1/original-recipe/independent-receipt-review.md`. These are local
 maintainer evidence locators, not a claim of public reproducibility.
 
-All validation processes are terminal. The existing native Linux target
-information question remains pending; repeating it or restarting unchanged
-checks does not advance acceptance. Once a target is supplied, authenticate its
-actual platform and current compiler/source/tool/runtime/parameter identities,
-then retain the full required compiler/native/proof/wallet/source/workspace/
-Clippy/package gates. This source note starts no execution. #661 and the broad
-Rust AST goal remain incomplete; Forge stays deferred, and cleanup remains
-conditional on completion and verified GitHub merge.
+The earlier validation processes are terminal. On 2026-10-27 the owner selected
+local arm64 testing and Linux qualification in GitHub Actions, resolving the
+local Linux target question. Local development can continue after its arm64
+checks; the complete compiler/native/proof/wallet/source/workspace/Clippy/package
+gates remain required in CI for integration. Compiler Build already has an
+Ubuntu x86_64 producer and consumer; its backend-branch push trigger now joins
+the existing PR/manual/scheduled triggers. No local Docker builder is needed.
+Configuration is not a successful hosted execution. The broader Rust AST goal
+remains incomplete; Forge stays deferred, and cleanup remains conditional on
+completion and verified GitHub merge.

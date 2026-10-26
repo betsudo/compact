@@ -205,9 +205,11 @@ The original nine source probes and earlier sixteen-source consumer remain
 historical characterization/execution. Current nineteen-source/four-route
 parity, empty and one-item controls, reviewed legacy corrections and earlier
 nine selected fresh proofs have separate exact source/tool receipts. Independent
-review findings are resolved at `ae1c8b258`; intended Linux/current-head required
-integration must still finish before accepting #661 or selecting another
-feature. Preserve the accepted crosswalk and historical authorities.
+review findings are resolved at `ae1c8b258`. Under the owner's 2026-10-27
+direction, arm64 checks are the local development gate and Linux/current-head
+required integration runs in GitHub Actions. A local Linux runner is not a
+prerequisite for continuing bounded backend work. Preserve the accepted
+crosswalk and historical authorities; CI acceptance remains separate.
 
 These are not retroactive failures of the bounded delivery. They **are blockers for contracts using them, and for an unqualified full-language claim**. For a deliberately supported-profile release, publish explicit exclusions instead of calling them solved.
 

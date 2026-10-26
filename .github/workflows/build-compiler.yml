@@ -3,6 +3,8 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/rust-backend-ast]
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -117,20 +119,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      - name: Reject new header violations on pull requests
-        if: github.event_name == 'pull_request'
+      - name: Reject new header violations on pull requests and branch pushes
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         env:
-          HEADER_BASE: ${{ github.event.pull_request.base.sha }}
+          HEADER_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           python scripts/check_header_regressions.py --base "$HEADER_BASE" \
             --report "$RUNNER_TEMP/header-regressions.json"
 
       - name: Validate full-tree headers on manual and scheduled qualification
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
         run: python add_headers.py --validate
 
-      - name: Upload explicit PR header-debt accounting
-        if: always() && github.event_name == 'pull_request'
+      - name: Upload explicit header-debt accounting
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: header-regressions-${{ github.sha }}
