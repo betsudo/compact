@@ -115,3 +115,21 @@ This adds the one lexical dependency needed for the planned acceptance; general
 value-wrapper normalization and the rest of #516 remain outside this slice.
 Genuine generated execution, first-failure/scope controls, source-origin
 checks and applicable proofs must still validate the dependent source.
+
+## Discovered untrusted state dependency — 2026-10-26
+
+An actual generated-consumer counterexample placed an Array in the declared Map
+slot. Both the existing Rust metadata path and the TS VM returned its length,
+because the VM Size opcode also accepts arrays and trees. This is invalid
+declared state, not valid-source semantic parity. Keep the failed Rust test and
+actual TS probe in the #610 evidence directory. The first Rust probe selected
+zero tests due to an exact-name filter; only the second probe is a counterexample.
+
+Require a Map at the original size-query position in the shared `ledger::size_map`
+owner. Native context and recording must both call that owner; functional routes
+reuse them. Use the existing `LedgerQueryRejected` boundary category, preserve
+valid query program/cost and allow whole nested-Map metadata without scalar value
+decoding. Reject before a later witness; an inactive query still performs no
+validation or VM operation. This deliberately strengthens the host boundary for
+malformed state relative to the permissive TS VM. It does not alter the runtime
+ABI or extend this slice to other collection queries.
