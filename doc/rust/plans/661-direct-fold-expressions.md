@@ -366,3 +366,44 @@ independent review and intended native Linux qualification. Do not substitute
 old Map/vector/Forge proof receipts. Do not select another feature before
 completing this plan. Forge stays deferred; cleanup remains conditional on
 completion and verified GitHub merge, with no push/merge authority inferred.
+
+
+## Selected genuine-proof cohort design — 2026-10-26
+
+The original ordinary `.#compactc` recipe now resolves successfully at clean
+signed `3f09c0b8f`, with exact tree/signature and 3,750 pinned source/recipe files
+unchanged during the invocation. `frozen-compiler-v1/build-result.json` records
+the same `himx58...` package with current clean-source evidence; prior dirty
+build receipts retain their original scope. Compiler reuse is explicit, not a
+renamed historical proof or a new binary build claim.
+
+`check_direct_fold_proof.py` and the proof-smoke `--direct-fold CASE ROOT`
+consumer define the next finite genuine-proof gate. It links complete maintained
+generated crates for captured, multiple-input, named stateful, named witness,
+inline effectful and inline branch sources. Seven fresh call proofs cover these
+six sources, with both inline branches selected. Every source's full IR,
+origins, capability report, Rust output and checked program must match the
+linked fixture. Changed full IR refuses before absent keys/state. Generation
+uses original relative source labels; there is no metadata normalization.
+
+Each case checks four Rust routes and the separate ordinary observed-call
+preparation, including result/stored state, private outputs, witness journal,
+effects, gas and recorded program equality. Actual direct ZKIR key generation
+records each model. The locked SDK verifies built-ins/SRS; only explicit SDK
+preparation may fetch missing verified material. All tool, source, generated,
+material, key, verifier and proof/result identities are retained and rechecked.
+
+The selected prover must independently verify each new standalone proof, reject
+changed public binding and a genuinely changed Field result through the exact
+upstream communication commitment, and refuse the changed preimage. Aligned
+shape, atom count and each atom's encoded length must remain equal for the
+result negative. Each selected call is freshly proved again in a funded default-
+strict local transaction, applied to its expected state, then rejected on replay
+without ledger mutation. Constructor execution, other source/type families and
+network submission are not claimed. No proofs or verdicts are reused.
+
+This design is locally compiled and strict-Clippy/dispatch/format checked; its
+execution receipt must establish actual proof acceptance. The proof runner and
+its source commit are a distinct epoch from the reused frozen compiler. Full
+required compiler/native/proof/wallet/workspace/package integration, independent
+review and intended native Linux qualification remain required afterward.

@@ -499,6 +499,10 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression-proof"
 
+      - name: Qualify selected direct Fold proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold-proof"
+
       - name: Rehearse Rust runtime packages
         run: |
           python3 tools/compact-rust-backend/check_release_packages.py --manifest target/rust-runtime-release.json
@@ -526,6 +530,8 @@ jobs:
             ${{ runner.temp }}/compact-direct-fold/ts-reference.json
             ${{ runner.temp }}/compact-direct-fold/consumer/Cargo.lock
             ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
+            ${{ runner.temp }}/compact-direct-fold-proof/receipt.json
+            ${{ runner.temp }}/compact-direct-fold-proof/generated/
             target/package/midnight-compact-runtime-macros-*.crate
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error

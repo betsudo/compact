@@ -112,6 +112,7 @@ mod did_point_lifecycle;
 mod did_primitive_reducers;
 mod did_public_interchange;
 mod direct_dispatch;
+mod direct_fold;
 mod micro_dao_buy_in;
 mod micro_dao_cash_out;
 #[path = "../../../tests-rust-backend/test-center-micro-dao/support/cash_out.rs"]
