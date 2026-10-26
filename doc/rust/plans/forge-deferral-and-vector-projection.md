@@ -65,6 +65,26 @@ ordinary, recorded and functional APIs; its fresh generated crate passed
 The complete required CI and real proof gates remain required for integration;
 these focused local checks are not fresh proof or hosted acceptance.
 
+## Publication review repairs — 2026-10-27
+
+The clean Ledger8 baseline is published through existing PR #664 before the
+vector, Map-size and Fold source slices. Its new-head CI and independent review
+remain required; previous component reviews retain their exact scope.
+
+The compiler handoff streams Nix diagnostics without contaminating its
+machine-readable stdout. A real failed-child regression establishes the
+previously hidden stderr failure and its repair. Handoff identity and consumer
+ownership controls run before producing platform material. Functional consumer
+qualification uses the authenticated `COMPACTC` from the same-run import.
+Consumer jobs retain producer-failure refusal while `!cancelled()` avoids
+starting runners after cancellation. Runtime package uploads require successful
+package rehearsal and retain strict missing-file checks at that stage.
+
+Omitting a structural Map's scalar-only witness view now still validates its
+key carrier. A genuine red regression accepted an invalid Map key before the
+repair; both scalar/structural-key refusals and the valid nested Map witness
+view control pass afterward. This changes no valid generated API or snapshot.
+
 ## Selected gap: #674, constant fixed-vector projection
 
 Compact's frontend accepts a statically in-range constant projection from

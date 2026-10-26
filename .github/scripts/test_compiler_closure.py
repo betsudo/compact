@@ -192,7 +192,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
             section = workflow.split('  '+job+':\n', 1)[1]
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
-            self.assertIn('if: always()', section)
+            self.assertIn('if: ${{ !cancelled() }}', section)
             first_step = section.split('    steps:\n', 1)[1].split('      - name: Checkout', 1)[0]
             self.assertIn('needs.'+producer+'.result', first_step)
             self.assertIn('test "$PRODUCER_RESULT" = success', first_step)
@@ -212,6 +212,9 @@ class WorkflowOwnershipTests(unittest.TestCase):
             self.assertIn(retained, linux)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
+        self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)
+        self.assertIn('id: runtime-packages', linux)
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", linux)
 
     def test_reusable_output_is_upload_service_id_not_a_manifest_claim(self):
         producer = (owner.ROOT/'.github/workflows/compiler-producer.yml').read_text()

@@ -122,13 +122,14 @@ pub(crate) fn build<'a>(
                     });
                     }
                     LedgerFieldKind::Map { key, value } => {
+                        // Keys remain checked even when the scalar view is omitted.
+                        let key = native_header::carrier(key, observer)?;
                         // Structural Map values have no CellValue codec. As with
                         // PublicState, omit their scalar-only witness view;
                         // key-only circuit operations still use the typed slot.
                         if matches!(value, crate::ir::Type::LedgerMap { .. }) {
                             return Ok(());
                         }
-                        let key = native_header::carrier(key, observer)?;
                         let value = native_header::carrier(value, observer)?;
                         ledger_view_methods.push(syn::parse_quote! {
                         pub fn #name(&self) -> Result<runtime::ledger::MeteredMapView<'a, #key, #value, runtime::ledger::DefaultDB>, runtime::CompactError> {
@@ -230,20 +231,10 @@ mod tests {
     }
 
     #[test]
-    fn scalar_map_witness_view_still_refuses_non_value_key() {
+    fn scalar_and_structural_map_views_refuse_non_value_key() {
         let invalid_key = Type::LedgerMap {
             key: Box::new(Type::Field),
             value: Box::new(Type::Field),
-        };
-        let field = LedgerField {
-            id: "invalid".into(),
-            index: 0,
-            path: vec![],
-            source: None,
-            declaration: LedgerFieldKind::Map {
-                key: invalid_key.clone(),
-                value: Type::Field,
-            },
         };
         let witnesses = [WitnessDeclaration {
             source: None,
@@ -251,10 +242,24 @@ mod tests {
             parameters: vec![],
             result: Type::Field,
         }];
-        let error = match build(&witnesses, &[&field], None) {
-            Ok(_) => panic!("invalid scalar Map key was accepted"),
-            Err(error) => error,
-        };
-        assert!(matches!(error, RenderError::UnsupportedLedgerValueType(ty) if ty == invalid_key));
+        for value in [Type::Field, invalid_key.clone()] {
+            let field = LedgerField {
+                id: "invalid".into(),
+                index: 0,
+                path: vec![],
+                source: None,
+                declaration: LedgerFieldKind::Map {
+                    key: invalid_key.clone(),
+                    value,
+                },
+            };
+            let error = match build(&witnesses, &[&field], None) {
+                Ok(_) => panic!("invalid Map key was accepted"),
+                Err(error) => error,
+            };
+            assert!(
+                matches!(error, RenderError::UnsupportedLedgerValueType(ty) if ty == invalid_key)
+            );
+        }
     }
 }
