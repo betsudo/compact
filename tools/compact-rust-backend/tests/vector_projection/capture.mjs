@@ -137,13 +137,18 @@ assert.equal(realpathSync(process.execPath),nodeIdentity.path,'Node executable p
 assert.equal(hash(process.execPath),nodeIdentity.sha256,'Node executable bytes changed');
 const sharedObjects=process.report.getReport().sharedObjects;
 const system=sharedObjects.filter(path=>path.startsWith('/System/Library/')||path.startsWith('/usr/lib/'));
-const external=sharedObjects.filter(path=>!system.includes(path));
+// Linux reports these kernel mappings by SONAME, with no backing disk file.
+// Keep their names explicit; every other non-system entry must still hash.
+const kernelNames=new Set(['linux-vdso.so.1','linux-gate.so.1']);
+const kernelVirtualLibraries=[...new Set(sharedObjects.filter(path=>kernelNames.has(path)))];
+const external=sharedObjects.filter(path=>!system.includes(path)&&!kernelNames.has(path));
 assert.ok(external.length,'no loaded Node libraries recorded');
 writeFileSync(options.output,JSON.stringify({format:'compact-vector-projection-ts/v1',
   runtime:{path:runtime,version:options.version,files:before},
   node:{...nodeIdentity,
     sharedLibraries:Object.fromEntries(external.map(path=>[path,hash(path)])),
-    systemLibraries:system,systemScope:'host OS names retained; system-cache bytes not qualified'},
+    systemLibraries:system,kernelVirtualLibraries,
+    systemScope:'host OS paths and kernel virtual-library names retained; their bytes not qualified'},
   wrapper:{path:wrapper,sha256:wrapperHash},capture:{path:realpathSync(process.argv[1]),sha256:selfHash},
   pure,cases,refusals},null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({pure:pure.length,cases:cases.length,refusals:refusals.length,output:options.output}));

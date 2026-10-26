@@ -76,10 +76,11 @@ def main():
               "premises": pins, "tools": tool_pins, "commands": []}
     started = time.monotonic()
 
-    def run(label, command, *, success=True):
+    def run(label, command, *, success=True, env=None):
         command = list(map(str, command))
         began = time.monotonic()
-        process = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=300)
+        process = subprocess.run(command, cwd=ROOT, env=environment if env is None else env,
+                                 capture_output=True, text=True, timeout=300)
         (output / f"{label}.stdout").write_text(process.stdout)
         (output / f"{label}.stderr").write_text(process.stderr)
         report["commands"].append({"label": label, "command": command, "exit_code": process.returncode,
@@ -110,6 +111,29 @@ def main():
                                     "stateful_cases": len(observations["cases"]),
                                     "refusals": len(observations["refusals"]),
                                     "cost_scope": "Sum of actual TS query calls, including witness-view reads; raw last-query cost retained"}
+            # Exercise the actual capture, including its imports and hashing.
+            # Injected report names test portability; they are not a Linux run.
+            injected = output / "ts-kernel-library-control.json"
+            names = ["linux-vdso.so.1", "linux-gate.so.1"]
+            capture_command = ["node", "--import", FIXTURES / "report_libraries.mjs",
+                               FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
+                               "--runtime", runtime, "--version", version]
+            run("kernel-library-names", [*capture_command, "--output", injected],
+                env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps(names)))
+            if sorted(json.loads(injected.read_text())["node"]["kernelVirtualLibraries"]) != sorted(names):
+                raise ValueError("known kernel mapping names were not retained explicitly")
+            missing = output / "missing-reported-library.so"
+            refused_capture = output / "must-not-capture-missing-library.json"
+            if missing.exists():
+                raise ValueError("missing-library control premise is not absent")
+            refused = run("unknown-library-refusal", [*capture_command, "--output", refused_capture],
+                          success=False,
+                          env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps([str(missing)])))
+            if not refused.returncode or "ENOENT" not in refused.stderr or str(missing) not in refused.stderr or refused_capture.exists():
+                raise ValueError("unknown missing shared library did not fail before capture publication")
+            report["typescript"]["library_report_controls"] = {
+                "scope": "actual host capture with injected report names; not Linux qualification",
+                "known_kernel_names_retained": names, "unknown_missing_library_refused": True}
         else:
             environment.pop("COMPACT_VECTOR_TS_REFERENCE", None)
             report["typescript"] = "NOT RUN; no --ts-runtime selected"

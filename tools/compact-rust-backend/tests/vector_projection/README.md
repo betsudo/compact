@@ -40,6 +40,12 @@ A changed TS result must fail the actual Rust consumer. The complete compiler
 workflow requests this live comparison using its Nix runtime package. Without
 `--ts-runtime`, the report explicitly makes no executed TS claim.
 
+Kernel virtual-library report names (`linux-vdso.so.1`, `linux-gate.so.1`) are
+retained explicitly without disk-byte claims. The gate injects those names into
+the actual capture to check this boundary and requires an unknown missing
+library to fail before capture publication. These injected controls are host
+tests, not execution or qualification on Linux.
+
 This gate does not generate keys, prove, verify, prepare/apply a funded transaction, establish
 performance, or replace the complete required CI/proof gates. Those acceptance
 items remain separately tracked in the bounded #674 plan. The full compiler
