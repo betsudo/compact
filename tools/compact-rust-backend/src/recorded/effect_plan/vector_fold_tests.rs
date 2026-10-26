@@ -162,6 +162,46 @@ fn vector_fold_original_named_source_is_deliberately_new_recording_admission() {
 }
 
 #[test]
+fn vector_fold_legacy_static_seed_refusal_still_precedes_source() {
+    for length in [0, 2] {
+        let mut encoded: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/direct_fold/named-predecessor-ir.json"
+        ))
+        .unwrap();
+        let root = &mut encoded["stateful_circuits"][0];
+        root["parameters"][1]["ty"]["length"] = length.into();
+        let fold = &mut root["actions"][0]["bindings"][0]["value"];
+        fold["length"] = length.into();
+        fold["initial"] = serde_json::json!({"kind":"parameter", "name":"missing_seed"});
+        fold["source"] = serde_json::json!({"kind":"parameter", "name":"missing_source"});
+        let c: Contract = serde_json::from_value(encoded).unwrap();
+        assert_eq!(
+            crate::render_with_capabilities(&c).err().unwrap(),
+            crate::RenderError::Located {
+                location: c.stateful_circuits[0].source.clone().unwrap(),
+                error: Box::new(crate::RenderError::UnknownParameter("missing_seed".into())),
+            }
+        );
+        let error = super::check_with_calls(
+            &c.stateful_circuits[0],
+            &c.ledger_fields.iter().map(|v| (v.id.as_str(), v)).collect(),
+            &HashMap::new(),
+            &c.circuits.iter().map(|v| (v.name.as_str(), v)).collect(),
+            &c.stateful_circuits
+                .iter()
+                .map(|v| (v.name.as_str(), v))
+                .collect(),
+        )
+        .err()
+        .unwrap();
+        let super::PlanError::Unsupported(gap) = error else {
+            panic!("expected the missing seed refusal");
+        };
+        assert!(gap.path.ends_with(".initial"), "{}", gap.path);
+    }
+}
+
+#[test]
 fn vector_fold_multi_input_effectful_body_has_one_owned_loop_and_static_inventory() {
     for length in [0, 1, 3] {
         let (plan, field) = plan(length);

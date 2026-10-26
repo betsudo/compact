@@ -49,10 +49,15 @@ impl Lowerer<'_> {
                 "Fold reducer signature differs from declared accumulator/items",
             ));
         }
-        // Static traversal and runtime producer bindings retain seed-before-source.
+        // Keep seed-first static diagnostics, including partial bindings on a
+        // refusal. The legacy native renderer evaluates the source first at
+        // runtime; reorder successful operand producers to match that policy.
+        // The new lexical VectorFold below has its own seed-first semantics.
+        let operand_start = bindings.len();
         let initial_path = format!("{path}.initial");
         let initial = self.expression(initial, scope, bindings, &initial_path)?;
         let initial = self.coerce(initial, accumulator, bindings, &initial_path)?;
+        let source_start = bindings.len();
         let source_path = format!("{path}.source");
         let source = self.expression(source, scope, bindings, &source_path)?;
         let source = self.coerce(
@@ -64,6 +69,7 @@ impl Lowerer<'_> {
             bindings,
             &source_path,
         )?;
+        bindings[operand_start..].rotate_left(source_start - operand_start);
         self.spend(path)?;
         let accumulator_value = self.fresh(accumulator.clone());
         self.spend(path)?;

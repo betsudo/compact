@@ -47,3 +47,20 @@ reducer locals shadow outer captures in both pure-valued and mutating bodies.
 The outer values remain available after Fold. Eight distinct live-TS cases
 exercise those obligations through every public Rust route. These are maintained
 runtime regressions, not additional selected proof or independent-review claims.
+
+## Legacy operand-order compatibility
+
+The same gate derives two complete raw-IR controls from the intact named
+predecessor, renders each as its own unedited library and executes a separate
+`legacy_consumer.rs`. Sixteen scenarios exercise source/seed/reducer failures,
+success and empty iteration through ordinary native and recorded APIs: 32 route
+executions and three successful recorded VM replays. Static seed-before-source
+diagnostics remain independently checked in the backend unit tests.
+
+Legacy `VectorFoldCall` retains its documented source-first native runtime
+ordering. New lexical `VectorFold` retains measured seed-first source semantics.
+The legacy controls are compatibility regressions, not extra live-TS cases or
+proofs: genuine TS pure-helper operands evaluate seed first, so historical
+legacy native failure ordering is not claimed as TS parity. The complete
+derived IR inputs, rendered libraries and dependency identities stay in the
+gate receipt separately from the nineteen complete source compilations.

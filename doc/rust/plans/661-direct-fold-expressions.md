@@ -549,3 +549,38 @@ The selected nine-call proof receipt keeps its exact earlier source/runner
 identity and scope. None of the three new sources is claimed proved, and no
 unchanged cryptographic proof/timing run is repeated by this source audit.
 Independent review and intended native Linux/current-head CI remain open.
+
+## Independent review corrections — 2026-10-26
+
+An explicitly authorized independent Codex reviewer examined the complete plan
+base through signed `b9223a33c`, checked all 267 source pins and 21 receipt pins,
+and reproduced one runtime mismatch. New checked admission of legacy
+`VectorFoldCall` evaluated a fallible seed before the iterable; unchanged legacy
+native emission evaluates the iterable first. Both-failing pure assertions
+therefore reported different first failures across APIs. The independent report
+and complete successful reproduction, including its retained initial consumer
+setup failure, are in `independent-review-packet-v3/` under the evidence root.
+
+The legacy lowerer now keeps seed-first static traversal/diagnostics and partial
+refusal bindings, then rotates successfully lowered operand bindings into
+legacy source-first runtime order. The new lexical `VectorFold` is unchanged
+and retains measured seed-first semantics. The reviewer also identified the
+stale terminal test count; the CLI summary now reads the actual detailed report.
+
+A maintained separate raw-IR consumer covers sixteen scenarios across native
+and recorded APIs (32 executions, three successful VM replays), including both
+operands failing, each failing alone, first reducer failure, success and empty
+iteration. Both empty and two-item controls failed before the implementation
+fix and pass afterward. Fourteen focused Fold unit tests pass, including exact
+located static seed-first refusal. An initial new unit expectation omitted the
+existing location wrapper; that test setup failure is retained and corrected
+without changing diagnostics. The complete nineteen-source/46-case live-TS
+gate, eight API compile-fails, eight source refusals and strict separate-consumer
+Clippy pass with the freshly built local CLI.
+
+Fresh TS pure-helper evidence from review confirms seed-first failure order.
+Historical legacy native source-first behavior is a separate compatibility
+limitation; these raw-IR regression controls do not claim legacy TS parity or
+additional proofs. Existing exact-epoch proof receipts remain unchanged. The
+repaired-head review, original ordinary recipe qualification and required
+integration/platform gates must be recorded separately before acceptance.

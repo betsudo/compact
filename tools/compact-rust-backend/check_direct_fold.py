@@ -47,6 +47,32 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def legacy_contract(length):
+    """Complete retained predecessor with explicit fallible operand controls.
+
+    This is raw legacy IR, not new source output or TS-parity evidence. Keep
+    the original fixture intact and retain each derived complete input.
+    """
+    contract = json.loads((FIXTURES / "named-predecessor-ir.json").read_text())
+    root = contract["stateful_circuits"][0]
+    root["parameters"][1]["ty"]["length"] = length
+    root["parameters"].extend({"name": name, "ty": {"kind": "boolean"}}
+                              for name in ("seed_ok", "source_ok"))
+    fold = root["actions"][0]["bindings"][0]["value"]
+    fold["length"] = length
+    for operand, name in (("initial", "seed"), ("source", "source")):
+        fold[operand] = {"kind": "sequence", "steps": [
+            {"kind": "assert", "condition": {"kind": "parameter", "name": f"{name}_ok"},
+             "message": f"{name} failed"}], "value": fold[operand]}
+    reducer = contract["circuits"][0]
+    reducer["body"] = {"kind": "sequence", "steps": [{
+        "kind": "assert", "condition": {"kind": "not_equal",
+            "left": {"kind": "parameter", "name": "item"},
+            "right": {"kind": "field_literal", "value": "7"}},
+        "message": "step failed"}], "value": reducer["body"]}
+    return contract
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
@@ -84,11 +110,11 @@ def main():
               "premises": pins, "tools": tool_pins, "commands": []}
     started = time.monotonic()
 
-    def run(label, command, *, success=True, env=None):
+    def run(label, command, *, success=True, env=None, stdin=None):
         command = list(map(str, command))
         began = time.monotonic()
         process = subprocess.run(command, cwd=ROOT, env=environment if env is None else env,
-                                 capture_output=True, text=True, timeout=300)
+                                 capture_output=True, text=True, timeout=300, input=stdin)
         (output / f"{label}.stdout").write_text(process.stdout)
         (output / f"{label}.stderr").write_text(process.stderr)
         report["commands"].append({"label": label, "command": command, "exit_code": process.returncode,
@@ -174,6 +200,7 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         (consumer / "src/lib.rs").write_text("")
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/direct_fold.rs")
+        shutil.copyfile(FIXTURES / "legacy_consumer.rs", consumer / "tests/legacy_fold.rs")
         lines = ['[workspace]', '[package]', 'name="direct-fold-consumer"', 'version="0.0.0"',
                  'edition="2024"', '[dependencies]',
                  f'serde_json="={serde}"']
@@ -181,6 +208,25 @@ def main():
             path = generated / definition["source"] / "contract"
             package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
             lines.append(f'{definition["alias"]}={{package={json.dumps(package)},path={json.dumps(str(path))}}}')
+        legacy_inputs = {}
+        for length, alias in ((0, "legacy_empty"), (2, "legacy_two")):
+            path = output / alias
+            path.mkdir()
+            ir_path = path / "input.json"
+            ir_path.write_text(json.dumps(legacy_contract(length), indent=2) + "\n")
+            rendered = run(f"render-{alias}", ["cargo", "run", "--locked", "--offline", "--quiet",
+                           "-p", "compact-rust-backend", "--bin", "compact-rust-backend"],
+                           stdin=ir_path.read_text())
+            (path / "lib.rs").write_text(rendered.stdout)
+            (path / "Cargo.toml").write_text(
+                f'[package]\nname="{alias}"\nversion="0.0.0"\nedition="2024"\n'
+                '[lib]\npath="lib.rs"\n[features]\n'
+                'ledger-transaction=["midnight-compact-runtime/ledger-transaction"]\n'
+                f'[dependencies]\nmidnight-compact-runtime={{path={json.dumps(str(ROOT / "runtime-rs"))}}}\n')
+            lines.append(f'{alias}={{path={json.dumps(str(path))}}}')
+            legacy_inputs.update({str(p): digest(p) for p in path.iterdir()})
+        report["legacy"] = {"scope": "Derived complete legacy IR route regression; not TS parity or proofs",
+                            "pins": legacy_inputs}
         lines.append('[features]')
         lines.extend(f'{name}=[]' for name in NEGATIVES)
         for name in NEGATIVES:
@@ -195,6 +241,7 @@ def main():
         allowed_local = {manifest.resolve(), (ROOT / "runtime-rs/Cargo.toml").resolve(),
                          (ROOT / "runtime-rs-macros/Cargo.toml").resolve()}
         allowed_local.update((generated / row["source"] / "contract/Cargo.toml").resolve() for row in DEFINITIONS)
+        allowed_local.update((output / alias / "Cargo.toml").resolve() for alias in ("legacy_empty", "legacy_two"))
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
         for item in metadata["packages"]:
             identity = (item["name"], item["version"], item.get("source"))
@@ -215,8 +262,13 @@ def main():
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("46", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
         report["rust_consumer_tests"] = 46
+        result = run("legacy-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
+                                         "--test", "legacy_fold"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("2", "0", "0")]:
+            raise ValueError("unexpected legacy-consumer accounting")
+        report["legacy"].update(tests=2, cases=16, rust_route_executions=32, successful_recorded_replays=3)
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
-                               "--test", "direct_fold", "--", "-D", "warnings"])
+                               "--test", "direct_fold", "--test", "legacy_fold", "--", "-D", "warnings"])
         if (report["typescript"]["stateful_cases"], report["typescript"]["successes"],
                 report["typescript"]["refusals"]) != (46, 33, 13):
             raise ValueError("unexpected live TS source-family accounting")
@@ -256,6 +308,9 @@ def main():
             name = definition["source"]
             if generated_manifest_snapshot(generated / name) != report["generated"][name]:
                 raise ValueError(f"generated assets changed during consumer execution: {name}")
+        for path, expected in legacy_inputs.items():
+            if digest(path) != expected:
+                raise ValueError(f"legacy input/output changed during consumer execution: {path}")
         for relative, expected in pins.items():
             if digest(ROOT / relative) != expected:
                 raise ValueError(f"source/runtime premise changed: {relative}")
@@ -282,7 +337,8 @@ def main():
         with report_path.open("x") as stream:
             json.dump(report, stream, indent=2)
             stream.write("\n")
-    print(json.dumps({"status": report["status"], "rust_consumer_tests": 31,
+    print(json.dumps({"status": report["status"], "rust_consumer_tests": report["rust_consumer_tests"],
+                      "legacy": {key: report["legacy"][key] for key in ("tests", "cases", "rust_route_executions")},
                       "compile_fail": report["compile_fail"], "report": str(report_path)}))
 
 
