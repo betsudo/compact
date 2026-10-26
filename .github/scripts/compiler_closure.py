@@ -43,7 +43,9 @@ def run(argv, **kwargs):
 
 
 def text(argv):
-    return run(argv, capture_output=True, text=True).stdout.strip()
+    # Keep machine-readable stdout separate while streaming build diagnostics.
+    # Capturing stderr here hid the actual Nix error behind CalledProcessError.
+    return run(argv, stdout=subprocess.PIPE, text=True).stdout.strip()
 
 
 def sha(path):
