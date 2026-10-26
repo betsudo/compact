@@ -643,3 +643,125 @@ scenario!(
     callbacks,
     [&callbacks]
 );
+
+scenario!(
+    owned_capture_0_four_routes_match_live_ts,
+    "owned_capture_0",
+    owned_capture,
+    [
+        r::OpaqueString::from("seed"),
+        r::OpaqueString::from("tag"),
+        FixedVector::new([r::OpaqueString::from("tag"), r::OpaqueString::from("tag")])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    owned_capture_1_four_routes_match_live_ts,
+    "owned_capture_1",
+    owned_capture,
+    [
+        r::OpaqueString::from("seed"),
+        r::OpaqueString::from("tag"),
+        FixedVector::new([r::OpaqueString::from("other"), r::OpaqueString::from("tag")])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    owned_capture_2_four_routes_match_live_ts,
+    "owned_capture_2",
+    owned_capture,
+    [
+        r::OpaqueString::from("seed"),
+        r::OpaqueString::from("tag"),
+        FixedVector::new([
+            r::OpaqueString::from("other"),
+            r::OpaqueString::from("seed")
+        ])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    owned_capture_3_four_routes_match_live_ts,
+    "owned_capture_3",
+    owned_capture,
+    [
+        r::OpaqueString::from("seed"),
+        r::OpaqueString::from("seed"),
+        FixedVector::new([
+            r::OpaqueString::from("other"),
+            r::OpaqueString::from("seed")
+        ])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    shadow_0_four_routes_match_live_ts,
+    "shadow_0",
+    shadow,
+    [
+        Field::from(1_u64),
+        Field::from(20_u64),
+        Field::from(100_u64),
+        vector([2, 3])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    shadow_1_four_routes_match_live_ts,
+    "shadow_1",
+    shadow,
+    [
+        Field::from(2_u64),
+        Field::from(8_u64),
+        Field::from(7_u64),
+        vector([4, 5])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    shadow_effectful_0_four_routes_match_live_ts,
+    "shadow_effectful_0",
+    shadow_effectful,
+    [
+        Field::from(1_u64),
+        Field::from(20_u64),
+        Field::from(100_u64),
+        vector([2, 3])
+    ],
+    None,
+    callbacks,
+    []
+);
+
+scenario!(
+    shadow_effectful_1_four_routes_match_live_ts,
+    "shadow_effectful_1",
+    shadow_effectful,
+    [
+        Field::from(2_u64),
+        Field::from(8_u64),
+        Field::from(7_u64),
+        vector([4, 5])
+    ],
+    None,
+    callbacks,
+    []
+);

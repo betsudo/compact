@@ -520,3 +520,32 @@ native Linux and current-head hosted integration remain open without authority;
 selected ahead of those acceptance boundaries. Forge stays deferred and all
 work/evidence remains local. Cleanup is not due until completion AND verified
 GitHub merge, with unpublished work and qualification artifacts preserved.
+
+## Ownership and lexical source audit — 2026-10-26
+
+A source review of the plan's named obligations identified two combinations not
+independently represented by the maintained sixteen-source corpus: owned vector
+items plus an owned capture reused across iterations, and reducer-local shadowing
+of outer formals/captures in both pure-valued and mutating bodies. Three complete
+source probes and eight live-TS/four-route Rust cases passed without a compiler,
+backend or runtime implementation change. Their complete source/outputs and
+standalone consumer remain in `source-scope-audit-v1/` under the evidence root.
+
+These are now maintained regressions in the same Fold gate: nineteen full
+sources, 46 cases (33 success, 13 first failure), 184 Rust route executions and
+66 successful public VM replays. All earlier sources/cases/refusal controls are
+retained. Eight Rust API compile-fail controls and eight source refusals remain
+required. The new generated crates stay complete, with full IR/origins/capability
+reports and checked programs; source arguments use actual relative repository
+labels. No generated output is patched or normalized. Only six additive source
+declarations and three local workspace fixture packages are added; historical
+rows and all nonlocal dependency versions/checksums are unchanged.
+
+The expanded functional gate, its strict external-consumer Clippy, all three
+fresh golden checks, strict new-fixture all-targets/all-features Clippy, public
+CI Python controls and workspace formatting pass locally. These runs are not a
+fresh execution of the whole previous workspace/compiler/native/package suite.
+The selected nine-call proof receipt keeps its exact earlier source/runner
+identity and scope. None of the three new sources is claimed proved, and no
+unchanged cryptographic proof/timing run is repeated by this source audit.
+Independent review and intended native Linux/current-head CI remain open.

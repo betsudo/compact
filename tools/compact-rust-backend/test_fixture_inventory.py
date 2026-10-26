@@ -42,7 +42,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                      for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 18)
+        self.assertEqual(len(extension), 21)
         current['sources'] = [row for row in current['sources'] if row not in extension]
         self.assertEqual(current, baseline)
 
@@ -66,7 +66,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
         rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']
         self.assertEqual({row.source.stem for row in rows}, {row['source'] for row in definitions})
-        self.assertEqual(len(rows), 16)
+        self.assertEqual(len(rows), 19)
         for row in rows:
             with self.subTest(source=row.source.stem):
                 self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
@@ -78,7 +78,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 187,
+            inventory.SourceRole.FLAT_LIBRARY: 190,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })

@@ -1,0 +1,276 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "shadow-effectful.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "factor",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "result",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "vector_fold",
+                "accumulator": {
+                  "name": "acc_Compact1",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                "items": [
+                  {
+                    "name": "item_Compact1",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ],
+                "initial": {
+                  "kind": "parameter",
+                  "name": "acc"
+                },
+                "sources": [
+                  {
+                    "kind": "parameter",
+                    "name": "values"
+                  }
+                ],
+                "body": {
+                  "kind": "let",
+                  "bindings": [
+                    {
+                      "name": "factor_Compact1",
+                      "ty": {
+                        "kind": "field"
+                      },
+                      "value": {
+                        "kind": "add",
+                        "left": {
+                          "kind": "parameter",
+                          "name": "item_Compact1"
+                        },
+                        "right": {
+                          "kind": "field_literal",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "result": {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "next",
+                        "ty": {
+                          "kind": "field"
+                        },
+                        "value": {
+                          "kind": "add",
+                          "left": {
+                            "kind": "multiply",
+                            "left": {
+                              "kind": "parameter",
+                              "name": "acc_Compact1"
+                            },
+                            "right": {
+                              "kind": "parameter",
+                              "name": "factor_Compact1"
+                            }
+                          },
+                          "right": {
+                            "kind": "parameter",
+                            "name": "item_Compact1"
+                          }
+                        }
+                      }
+                    ],
+                    "result": {
+                      "kind": "sequence",
+                      "actions": [
+                        {
+                          "kind": "cell_write",
+                          "field": "stored",
+                          "index": 0,
+                          "value": {
+                            "kind": "parameter",
+                            "name": "next"
+                          }
+                        }
+                      ],
+                      "result": {
+                        "kind": "value",
+                        "value": {
+                          "kind": "cell_read",
+                          "field": "stored",
+                          "index": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "length": 2
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_14",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "add",
+                      "left": {
+                        "kind": "add",
+                        "left": {
+                          "kind": "add",
+                          "left": {
+                            "kind": "parameter",
+                            "name": "result"
+                          },
+                          "right": {
+                            "kind": "parameter",
+                            "name": "acc"
+                          }
+                        },
+                        "right": {
+                          "kind": "parameter",
+                          "name": "item"
+                        }
+                      },
+                      "right": {
+                        "kind": "parameter",
+                        "name": "factor"
+                      }
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "stored",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_14"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "shadow-effectful.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_13",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_13"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "shadow-effectful.compact",
+      "line": 19,
+      "column": 1
+    }
+  }
+}

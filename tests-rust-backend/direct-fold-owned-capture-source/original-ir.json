@@ -1,0 +1,210 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "owned-capture.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "opaque_string"
+          }
+        },
+        {
+          "name": "tag",
+          "ty": {
+            "kind": "opaque_string"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "opaque_string"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "equal",
+          "left": {
+            "kind": "parameter",
+            "name": "result"
+          },
+          "right": {
+            "kind": "parameter",
+            "name": "seed"
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "result",
+              "ty": {
+                "kind": "opaque_string"
+              },
+              "value": {
+                "kind": "vector_fold",
+                "accumulator": {
+                  "name": "acc",
+                  "ty": {
+                    "kind": "opaque_string"
+                  }
+                },
+                "items": [
+                  {
+                    "name": "item",
+                    "ty": {
+                      "kind": "opaque_string"
+                    }
+                  }
+                ],
+                "initial": {
+                  "kind": "parameter",
+                  "name": "seed"
+                },
+                "sources": [
+                  {
+                    "kind": "parameter",
+                    "name": "values"
+                  }
+                ],
+                "body": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "equal",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "item"
+                      },
+                      "right": {
+                        "kind": "parameter",
+                        "name": "tag"
+                      }
+                    },
+                    "then": {
+                      "kind": "parameter",
+                      "name": "acc"
+                    },
+                    "otherwise": {
+                      "kind": "parameter",
+                      "name": "item"
+                    }
+                  }
+                },
+                "length": 2
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_9",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "5"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "stored",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_9"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "owned-capture.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_8",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_8"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "owned-capture.compact",
+      "line": 19,
+      "column": 1
+    }
+  }
+}

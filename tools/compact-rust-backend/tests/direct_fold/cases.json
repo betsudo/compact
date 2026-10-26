@@ -554,5 +554,145 @@
     "private": 7,
     "error": "items refused",
     "fail": "items"
+  },
+  {
+    "id": "owned_capture_0",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "tag",
+        "tag"
+      ]
+    ],
+    "expected": true,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_1",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "other",
+        "tag"
+      ]
+    ],
+    "expected": false,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_2",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "tag",
+      [
+        "other",
+        "seed"
+      ]
+    ],
+    "expected": true,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "owned_capture_3",
+    "source": "owned-capture",
+    "args": [
+      "seed",
+      "seed",
+      [
+        "other",
+        "seed"
+      ]
+    ],
+    "expected": false,
+    "stored": 5,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_0",
+    "source": "shadow",
+    "args": [
+      1,
+      20,
+      100,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 144,
+    "stored": 144,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_1",
+    "source": "shadow",
+    "args": [
+      2,
+      8,
+      7,
+      [
+        4,
+        5
+      ]
+    ],
+    "expected": 106,
+    "stored": 106,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_effectful_0",
+    "source": "shadow-effectful",
+    "args": [
+      1,
+      20,
+      100,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 144,
+    "stored": 144,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "shadow_effectful_1",
+    "source": "shadow-effectful",
+    "args": [
+      2,
+      8,
+      7,
+      [
+        4,
+        5
+      ]
+    ],
+    "expected": 106,
+    "stored": 106,
+    "error": null,
+    "fail": null,
+    "private": 7
   }
 ]

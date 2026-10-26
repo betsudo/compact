@@ -1397,7 +1397,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-direct-fold-owned-capture-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-direct-fold-owned-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-shadow-effectful-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-direct-fold-shadow-source-fixture"
 version = "0.1.0"
 dependencies = [
  "midnight-compact-runtime",

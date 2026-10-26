@@ -3086,5 +3086,53 @@
     "name": "step",
     "signature": "witness step(acc: Field, item: Field): Field",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/shadow-effectful.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(acc: Field, item: Field, factor: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/shadow.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(acc: Field, item: Field, factor: Field, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/owned-capture.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Opaque<\"string\">, tag: Opaque<\"string\">, values: Vector<2, Opaque<\"string\">>): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/owned-capture.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/shadow-effectful.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/shadow.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
   }
 ]

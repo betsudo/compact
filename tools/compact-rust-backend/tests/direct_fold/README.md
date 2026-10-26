@@ -12,14 +12,14 @@ coverage remain required by the complete signed #661 plan.
 
 ## Maintained source-family gate
 
-`check_direct_fold.py` compiles the sixteen unchanged source cases under
+`check_direct_fold.py` compiles the nineteen unchanged source cases under
 `examples/rust_backend/direct_fold/` and consumes their complete generated crates
 from a separate external package. It requires an explicitly selected TS runtime
 of the repository version and checks its production dependency closure, actual
 Node executable and external host libraries. Host OS/kernel paths are reported
 with their narrower scope; injected names are controls, not Linux qualification.
 
-The gate covers 38 cases (25 success, 13 first failure) through ordinary native,
+The gate covers 46 cases (33 success, 13 first failure) through ordinary native,
 ordinary recorded, functional native and functional recorded APIs. It checks
 aligned outputs, declared ledger/private state, private outputs, witness events,
 query-summed cost, persistent held-state isolation and successful public replay.
@@ -40,3 +40,10 @@ empty witness-valued source evaluates seed then iterable exactly once, preserves
 the zero-width private output, and never invokes its reducer. Independent seed
 and iterable failures retain first-failure ordering. Unit cannot substitute for
 the typed zero-length vector in the generated witness API.
+
+Owned vector items and a captured opaque string are retained across multiple
+iterations and reused in a conditional. Reducer formals shadow outer parameters;
+reducer locals shadow outer captures in both pure-valued and mutating bodies.
+The outer values remain available after Fold. Eight distinct live-TS cases
+exercise those obligations through every public Rust route. These are maintained
+runtime regressions, not additional selected proof or independent-review claims.

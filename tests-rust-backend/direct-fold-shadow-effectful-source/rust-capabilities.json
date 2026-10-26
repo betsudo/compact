@@ -1,0 +1,17 @@
+{
+  "schema_version": 3,
+  "circuits": [
+    {
+      "name": "run",
+      "source": {
+        "file": "shadow-effectful.compact",
+        "line": 20,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    }
+  ]
+}

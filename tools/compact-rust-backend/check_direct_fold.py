@@ -212,13 +212,13 @@ def main():
         report["consumer_lock_sha256"] = digest(child_lock)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "direct_fold"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("38", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("46", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
-        report["rust_consumer_tests"] = 38
+        report["rust_consumer_tests"] = 46
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
                                "--test", "direct_fold", "--", "-D", "warnings"])
         if (report["typescript"]["stateful_cases"], report["typescript"]["successes"],
-                report["typescript"]["refusals"]) != (38, 25, 13):
+                report["typescript"]["refusals"]) != (46, 33, 13):
             raise ValueError("unexpected live TS source-family accounting")
 
         changed = json.loads(capture.read_text())

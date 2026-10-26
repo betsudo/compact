@@ -32,6 +32,12 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SPECIAL_FIXTURES = {
+    'examples/rust_backend/direct_fold/owned-capture.compact':
+        'tests-rust-backend/direct-fold-owned-capture-source/lib.rs',
+    'examples/rust_backend/direct_fold/shadow.compact':
+        'tests-rust-backend/direct-fold-shadow-source/lib.rs',
+    'examples/rust_backend/direct_fold/shadow-effectful.compact':
+        'tests-rust-backend/direct-fold-shadow-effectful-source/lib.rs',
     'examples/rust_backend/direct_fold/single.compact':
         'tests-rust-backend/direct-fold-single-source/lib.rs',
     'examples/rust_backend/direct_fold/empty-ordered.compact':
