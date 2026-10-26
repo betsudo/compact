@@ -480,3 +480,43 @@ The frozen Scheme frontend reaches expression gates through their supported
 environment interface. Existing five gate command arguments are preserved.
 Independent review, intended native Linux and complete integration remain open;
 this addition does not waive any required gate or complete the broad goal.
+
+## Expanded local integration checkpoint — 2026-10-26
+
+Execution source: clean signed `fb229b9cde34b9ba34f7774f82cff04072113889`.
+All sixteen full sources and 38 live-TS cases pass four public Rust routes:
+152 executions and 50 successful recorded VM replays, with eight ordinary Rust
+compile-fail controls and eight source refusals. The one-item capture and empty
+witness-valued operands are included without dropping the earlier family.
+
+The expanded selected gate generates nine fresh 2,912-byte Field-call proofs
+across eight complete sources, independently verifies them with immutable
+verifiers, rejects changed binding and same-geometry result/preimage, and runs
+nine freshly proved funded default-strict applications with unchanged replay
+refusal. Eight changed complete IRs refuse before key or state actions. The
+empty source has 27 rows/k6, the one-item source 72 rows/k7, and intact branch
+source 344 rows/k9; actual models remain in the receipt. Zero-width private
+output and seed/items callback order remain present in empty-source execution,
+preparation and proof. Constructor/unselected/type-family proofs are not claimed.
+
+The frozen current workspace passes 3,486 tests in 713 harnesses, with the same
+seven inherited ignored identities; all-targets/all-features strict Clippy also
+passes. All 273 full registered golden fixtures pass freshness with zero stale
+or failed outputs. Earlier eight doctests, original compiler checks, full native
+consumer/proof and wallet handoff, and runtime package/manifest/archive consumer
+receipts retain their separate source epochs. Compiler/backend/runtime source
+bytes are unchanged from `3f09c0b8f`; no old whole-source receipt is relabeled.
+
+Maintainer evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-fold-20261026/`.
+Read `proof-gate-v2/receipt.json`, `edges-integration-v1/receipt.json` and
+`acceptance-edges-maintained-v2/gate-result.json` for their exact bindings.
+`independent-review-packet-v1/` prepares the complete implementation diff and
+pinned source/receipt inputs; it contains no independent reviewer verdict.
+
+This is selected local qualification. Independent external review, intended
+native Linux and current-head hosted integration remain open without authority;
+#661 and the broad Rust AST goal are not declared complete. No new feature is
+selected ahead of those acceptance boundaries. Forge stays deferred and all
+work/evidence remains local. Cleanup is not due until completion AND verified
+GitHub merge, with unpublished work and qualification artifacts preserved.
