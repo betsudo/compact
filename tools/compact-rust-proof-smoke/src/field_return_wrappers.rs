@@ -128,7 +128,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             "changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-field-wrappers-expression-proof/v1","status":"passed",
+    let result = serde_json::json!({"format":"compact-field-return-wrappers-proof/v1","status":"passed",
         "scope":"two fresh selected Field-wrapped Set insert functional-derived call proofs and funded default-strict local transactions",
         "constructor_execution_proved":false,"unselected_branch_proved":false,"calls":rows});
     write_new(

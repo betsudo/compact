@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.136, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve selected ledger mutations, lexical scope and witness/checked-arithmetic
+  order when inferred Uint-to-Field conversions or monotone Uint branch joins
+  wrap a terminal Rust circuit return. Reuse the checked return plans and
+  structured Rust emission; other effect-bearing initializer and narrowing
+  combinations remain explicitly outside this bounded fix.
+
 ## [Toolchain 0.31.135, language 0.23.105, runtime 0.16.102]
 
 ### Added
