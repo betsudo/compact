@@ -70,13 +70,15 @@ ordinary DID receipts. The maintained API gate checks all twelve live TS rows,
 five selected Rust test methods, ten invalid inputs on four routes, exact
 witness/first-error behavior, Clippy and three type/ownership refusals. The
 selected proof gate retains complete IR/all twelve program bytes and proves one
-functional-recorded deactivation call, with changed binding/version rejection,
-separately funded default-strict application and unchanged ledger on replay
-refusal. Unit has no result atoms, and constructor execution is not proved.
+functional-recorded standalone deactivation call with changed binding/version
+rejection. An independently proved transaction passes separately funded
+default-strict application and unchanged ledger on replay refusal. Unit has no result atoms, and constructor execution is not proved.
 
 The development compiler137 prototype retains its own source/tool epoch.
-Fresh clean-source qualification now passes with original compiler0.31.138 at
-signed implementation `926e8de8c`, based on accepted canonical `acf529eff`.
+Clean original compiler0.31.138 and fresh current-profile API/proof gates pass
+at the exact revisions named in the qualification table, based on accepted
+canonical `acf529eff`. Earlier implementation receipts retain their historical
+identities; they do not establish later review corrections.
 The [qualification table](../plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
 records exact counts, source identities and controls. Independent exact-PR
 review and the complete required integration CI remain open for this slice.

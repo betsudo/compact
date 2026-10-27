@@ -77,9 +77,9 @@ constructor execution and all twelve exports are not proved. Forge is deferred.
 ## Review follow-up and retained artifact scope
 
 Both maintained gates require a clean checkout before and after execution. They
-share the immutable original-source closure check and require all twelve DID
-oracle rows to equal the shared runtime capture; live TypeScript qualification
-then compares the full DID oracle. A dirty checkout or changed oracle is a
+share the immutable original-source closure check and consume the same source-fixture DID oracle in live TypeScript, Rust behavior
+and functional proof preparation. The historical ordinary selector retains its
+separate capture without coupling its refresh to this fixture. A dirty checkout or changed oracle is a
 refusal, and a failed proof gate writes `status: failed` with a nonzero exit.
 
 The standalone `deactivate-input-control.proof` exercises positive verification
@@ -88,6 +88,8 @@ transaction is proved independently, verified under default strictness, applied,
 and replayed. Its exact serialized bytes are retained separately as
 `did-functional-applied-transaction.bin`. These are different proof artifacts;
 the standalone mutation controls do not claim to mutate the transaction proof.
+The named applied-transaction file is written only after strict verification,
+application, replay refusal and post-application checks succeed.
 The post-application flags and stale-version first-error check use the functional
 fixture and the actual applied contract state, with no witness callbacks.
 

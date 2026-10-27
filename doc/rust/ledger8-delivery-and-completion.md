@@ -307,7 +307,8 @@ compile-fail controls, a fresh k11 / 1,804-row / 3,296-byte standalone deactivat
 proof with immutable binding/version controls, and an independently proved
 7,413-byte transaction with funded default-strict application/replay refusal.
 The actual applied-state stale check uses the functional fixture. Both gates
-require a clean checkout and exact complete proof/live-TS oracle equality.
+require a clean checkout and pin the same complete source-fixture oracle used
+by live TS and proof preparation; the historical ordinary oracle stays separate.
 The clean backend library passes 1,846 tests with seven existing explicit-run
 helpers ignored; Python passes 335 with 20 existing skips. Workspace formatting
 and proof-runner strict Clippy pass. Earlier 281-fixture/version/header receipts

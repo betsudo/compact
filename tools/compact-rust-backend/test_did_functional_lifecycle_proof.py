@@ -64,36 +64,21 @@ class ProofReceiptTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(gate.common.GateError):
                 gate.validate_proof_summary(data)
 
-    def test_dirty_source_is_refused_before_generation(self):
-        with patch("check_did_functional_lifecycle.subprocess.check_output",
-                   side_effect=["head\n", " M runtime-rs/src/lib.rs\n"]):
-            receipt = {}
-            with self.assertRaisesRegex(gate.common.GateError, "clean source checkout required"):
-                gate.require_clean_source(receipt)
-            self.assertTrue(receipt["source_dirty"])
-
-    def test_proof_capture_must_equal_complete_ts_capture(self):
+    def test_both_gate_entries_refuse_dirty_source_before_generation(self):
         import check_did_functional_lifecycle as api
-        original = api.json.loads
-        def changed(text):
-            data = original(text)
-            if "cases" in data and any(row.get("source") != "did" for row in data["cases"]):
-                next(row for row in data["cases"] if row["id"] == "did/valid")["privateAfter"] = 999
-            return data
-        with patch.object(api.json, "loads", side_effect=changed):
-            with self.assertRaisesRegex(gate.common.GateError, "captures differ"):
-                gate.checked_oracle_captures()
-
-    def test_failed_gate_writes_failed_receipt_and_returns_nonzero(self):
-        with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / "gate"
-            args = SimpleNamespace(output=output, target_dir=Path(directory))
-            with patch.dict(gate.os.environ, {"MIDNIGHT_PP": directory}), patch.object(
-                    gate, "require_clean_source", side_effect=gate.common.GateError("dirty control")):
-                self.assertEqual(gate.run(args), 1)
-            receipt = gate.json.loads((output / "receipt.json").read_text())
-            self.assertEqual(receipt["status"], "failed")
-            self.assertEqual(receipt["error"], "dirty control")
+        for module in [api, gate]:
+            with self.subTest(gate=module.__name__), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "gate"
+                args = SimpleNamespace(output=output, target_dir=Path(directory))
+                with patch.object(api.subprocess, "check_output",
+                                  side_effect=["head\n", " M runtime-rs/src/lib.rs\n"]), patch.object(
+                        module.common, "run") as execute:
+                    self.assertEqual(module.run(args), 1)
+                    execute.assert_not_called()
+                receipt = module.json.loads((output / "receipt.json").read_text())
+                self.assertEqual(receipt["status"], "failed")
+                self.assertTrue(receipt["source_dirty"])
+                self.assertEqual(receipt["error"], "clean source checkout required")
 
 
 if __name__ == "__main__":

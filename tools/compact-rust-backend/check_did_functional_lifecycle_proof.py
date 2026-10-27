@@ -32,7 +32,7 @@ import tomllib
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
 from check_did_functional_lifecycle import (SOURCE, FIXTURE, original_source_closure,
-                                            checked_oracle_captures, require_clean_source)
+                                            require_clean_source)
 from check_functional_effects import digest
 from check_functional_effects import generated_manifest_snapshot, scheme_compiler
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged, require
@@ -72,11 +72,11 @@ def run(args):
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
+        require_clean_source(receipt)
         target = args.target_dir.absolute()
         env["CARGO_TARGET_DIR"] = str(target)
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "MIDNIGHT_PP required")
-        require_clean_source(receipt)
-        closure = original_source_closure() + checked_oracle_captures()
+        closure = original_source_closure()
         paths = closure + [SOURCE, ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
                  ROOT / "tools/compact-rust-backend/check_did_functional_lifecycle.py",
                  ROOT / "tools/compact-rust-backend/check_functional_effects.py",

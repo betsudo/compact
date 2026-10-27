@@ -23,8 +23,9 @@ are explicit test inputs; failed consumed contexts are not claimed to roll back.
 
 This candidate starts from verified canonical merge `acf529eff` of reviewed,
 full-CI PR #692. Clean original compiler0.31.138 and fresh API/proof gates pass
-at signed implementation `926e8de8c`. Full integration CI and exact-PR independent
-review for this slice remain open. The [qualification table](../../doc/rust/plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
+at the signed revisions named in the qualification table; earlier receipts remain
+historical. Full integration CI and exact-PR independent review for this slice
+remain open. The [qualification table](../../doc/rust/plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
 records exact source epochs, results and limits. No constructor
 execution proof or whole-application completion is claimed. See the bounded
 `doc/rust/plans/did-functional-lifecycle-current-profile.md` plan.

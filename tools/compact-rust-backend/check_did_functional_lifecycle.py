@@ -74,17 +74,6 @@ def original_source_closure():
     return paths
 
 
-def checked_oracle_captures():
-    """Bind the proof's seeded row to the complete live-TS-qualified DID oracle."""
-    fixture = FIXTURE / "data/unit-composition.json"
-    shared = ROOT / "runtime-rs/tests/fixtures/unit-composition.json"
-    expected, capture = json.loads(fixture.read_text()), json.loads(shared.read_text())
-    require(expected["runtime_version"] == json.loads((ROOT / "runtime/package.json").read_text())["version"]
-            and expected["cases"] == [row for row in capture["cases"] if row["source"] == "did"],
-            "proof and live-TS DID captures differ")
-    return [fixture, shared]
-
-
 def require_clean_source(receipt):
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -107,13 +96,13 @@ def run(args):
                "proof_and_application": "NOT RUN", "constructor_execution_proved": False}
     start = time.monotonic()
     try:
+        require_clean_source(receipt)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
         env["COMPACTC_SCHEME"] = str(scheme)
         runtime = args.ts_runtime.resolve(strict=True)
         version = json.loads((ROOT / "runtime/package.json").read_text())["version"]
-        require_clean_source(receipt)
-        closure = original_source_closure() + checked_oracle_captures()
+        closure = original_source_closure()
         paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
                  ROOT / "runtime/package.json", ROOT / "runtime-rs/compatibility.json",
                  ROOT / "examples/rust_backend/unit_composition_crypto.compact",

@@ -428,8 +428,8 @@ jobs:
         run: |
           nix develop .#compiler --command compactc --version
           nix develop .#compiler --command compactc --help
-          nix develop .#compiler --command compactc ./test-center/compact/test.compact ./compact-output/
-          nix develop .#compiler --command compactc ./examples/tiny.compact ./tiny-output/
+          nix develop .#compiler --command compactc ./test-center/compact/test.compact "$RUNNER_TEMP/compact-output/"
+          nix develop .#compiler --command compactc ./examples/tiny.compact "$RUNNER_TEMP/tiny-output/"
 
       - name: Resolve locked ledger proof fixtures
         run: |

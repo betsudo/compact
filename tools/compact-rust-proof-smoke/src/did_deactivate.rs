@@ -107,15 +107,9 @@ pub(super) fn run_with(
     let transaction_bytes = if retain_transaction {
         let mut bytes = Vec::new();
         tagged_serialize(&sealed, &mut bytes)?;
-        use std::io::Write;
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(root.join("did-functional-applied-transaction.bin"))?
-            .write_all(&bytes)?;
-        bytes.len()
+        Some(bytes)
     } else {
-        0
+        None
     };
     let verified =
         sealed.well_formed(&state.ledger, WellFormedStrictness::default(), state.time)?;
@@ -160,6 +154,16 @@ pub(super) fn run_with(
         );
     }
     let stale_error = check_final(address, actual, row)?;
+    // Retain the named applied artifact only after strict verification, actual
+    // application, exact replay refusal and source-specific state checks pass.
+    if let Some(bytes) = &transaction_bytes {
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join("did-functional-applied-transaction.bin"))?
+            .write_all(bytes)?;
+    }
     println!(
         "original DID deactivate: proof verified, changed binding rejected, default-strict separate Dust ledger apply; exact final state and stale repeat rejection; constructor-derived seeded prior state, not a full DID lifecycle"
     );
@@ -173,7 +177,7 @@ pub(super) fn run_with(
         "stale_version_error":stale_error,
         "standalone_call_proof_file": if retain_transaction { Some("deactivate-input-control.proof") } else { None },
         "applied_transaction_file": if retain_transaction { Some("did-functional-applied-transaction.bin") } else { None },
-        "applied_transaction_bytes":transaction_bytes,
+        "applied_transaction_bytes":transaction_bytes.as_ref().map_or(0, Vec::len),
         "proof_relationship":"standalone mutation-control proof; transaction independently proved and default-strictly verified",
         "final_state_hex":hex::encode(final_state)
     }))

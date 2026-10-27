@@ -219,7 +219,7 @@ Fresh qualification with the clean original compiler passes:
 | Gate | Result |
 | --- | --- |
 | Original DID generation | Full IR/origins/capabilities and all twelve programs match |
-| Live TypeScript | 24 observations, including all twelve exact DID rows; complete equality with the proof/shared DID oracle |
+| Live TypeScript | 24 observations, including all twelve exact DID rows; proof preparation consumes the same fixture oracle |
 | Selected Rust behavior | Five test methods; ten invalid inputs on four routes (40 refusal executions) |
 | Ordinary and consuming APIs | E0308 wrong version/signature, E0382 Program reuse; strict consumer Clippy |
 | Selected standalone proof | Fresh direct key k11 / 1,804 rows; 3,296-byte proof; immutable verification |
@@ -251,8 +251,9 @@ retaining its checked tuple identity and typed binding semantics.
 The funded strict transaction seam now accepts source-specific final checks.
 The functional route checks flags and stale refusal on the actual applied state
 using its own generated Program, and reads its own live-TS-qualified capture.
-Both gates enforce complete DID oracle equality with the historical shared
-capture, share the immutable source check and require a clean checkout. The
+Both gates share the immutable source check and require a clean checkout.
+Functional proof preparation consumes its own live-TS-qualified fixture oracle;
+the historical ordinary selector retains its independently maintained capture. The
 historical ordinary selector no longer acquires the new mutation control/file.
 Proof exceptions write a failed receipt and nonzero exit; the delivery table
 link and count spacing are corrected.
@@ -265,3 +266,26 @@ substitutes. Earlier clean `926e8de8c` results above remain historical evidence.
 Fresh compiler/API/proof qualification now passes at clean signed `3ac403d8a`,
 as recorded above. Repeat exact-head review and full CI remain required before
 integration; no previous receipt is relabeled.
+
+## Final CI setup and artifact retention corrections
+
+The repeat Claude review of `cab5b3e01` confirmed the earlier fixes and the
+workflow cleanliness conflict also found during author triage. Preserve both
+existing binary smoke tests but write their output under `RUNNER_TEMP`; do not
+exclude dirty source from qualification. Both actual smoke sources/options pass
+locally with external outputs and leave checkout status unchanged.
+
+Save the named applied-transaction bytes only after strict verification,
+application, exact replay refusal and functional applied-state checks succeed.
+The in-memory serialization still identifies the exact transaction used.
+Both Python gate entry points now have a dirty-source refusal control that
+checks failed receipts/nonzero exit and that no generation command executes.
+Remove unnecessary equality with the historical runtime oracle now that the
+functional proof consumes its own live-TS-qualified fixture capture directly.
+
+Receipt flags are conclusions of the fallible shared proof helper, not future
+configuration promises. The private ordinary selector discards the shared
+internal summary, emits no new receipt/artifact, and is not claimed to acquire
+new mutation controls. Defensive empty-tuple IR coverage is not a claim that
+Compact source `[]` currently emits that IR shape. No public runtime/API or
+broader source-language support is introduced by these corrections.
