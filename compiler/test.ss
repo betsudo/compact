@@ -67859,6 +67859,68 @@ groups than for single tests.
 
 (with-parameter-values ([feature-zkir-v3 #f #t])
 (run-tests save-manifest
+  (test
+    '(
+      "export ledger value: Field;"
+      "export circuit write(x: Field): [] { value = disclose(x); }"
+      )
+    (custom-check
+      (lambda (pass-name x)
+        (let ()
+          (import (pass-helpers) (manifest-passes))
+          (define abc-hash "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+          (define empty-hash "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+          (define (file-entry name size hash)
+            `(,name ("type" . "file") ("size" . ,size) ("hash" . ,hash)))
+          (define (write-file pathname text)
+            (call-with-output-file pathname (lambda (op) (display text op))))
+          (define (check-json-string pathname text)
+            (let ([expected (list (cons text text))])
+              (call-with-output-file pathname (lambda (op) (print-json op expected)))
+              (equal? (read-json-file pathname) expected)))
+          (let* ([generated (read-json-file (format "~a/compiler/contract-manifest.json" testdir))]
+                 [root (format "~a/manifest ' $ ; `literal` \\\noutput" testdir)]
+                 [nested "nested ' \" $ ; \\\nbranch\x1;"]
+                 [manifest (format "~a/compiler/contract-manifest.json" root)])
+            ;; These actual output directories are not caller-cwd lookups.
+            (and (assoc "compiler" generated)
+                 (assoc "contract" generated)
+                 (assoc "zkir" generated)
+                 (check-json-string (format "~a/json-escaping.json" testdir) nested)
+                 (begin
+                   (for-each (lambda (directory) (mkdir-p (format "~a/~a" root directory)))
+                     '("compiler" "contract" "zkir" "keys"))
+                   (mkdir-p (format "~a/contract/~a" root nested))
+                   (write-file (format "~a/compiler/info.json" root) "abc")
+                   ;; The caller cwd has a compiler directory; here it is a file.
+                   (write-file (format "~a/contract/compiler" root) "abc")
+                   (write-file (format "~a/contract/~a/empty.txt" root nested) "")
+                   (write-file (format "~a/zkir/test.zkir" root) "abc")
+                   (write-file (format "~a/keys/test.verifier" root) "abc")
+                   (call-with-output-file manifest
+                     (lambda (op)
+                       (parameterize ([target-ports (list (cons 'contract-manifest.json op))])
+                         ((passrec-pass (car manifest-passes)) x root
+                           '("compiler" "contract" "zkir" "keys" "absent")))))
+                   (equal? (read-json-file manifest)
+                     `(("manifest-version" . "1")
+                       ("compiler-version" . ,compiler-version-string)
+                       ("language-version" . ,language-version-string)
+                       ("runtime-version" . ,runtime-version-string)
+                       ("compiler" ("type" . "directory")
+                         ,(file-entry "info.json" 3 abc-hash))
+                       ("contract" ("type" . "directory")
+                         ,(file-entry "compiler" 3 abc-hash)
+                         (,nested ("type" . "directory")
+                           ;; Existing JSON reader represents JSON 0 as 0.0;
+                           ;; the expected byte size is still independently zero.
+                           ,(file-entry "empty.txt" 0.0 empty-hash)))
+                       ("zkir" ("type" . "directory")
+                         ,(file-entry "test.zkir" 3 abc-hash))
+                       ("keys" ("type" . "directory")
+                         ,(file-entry "test.verifier" 3 abc-hash))))))))))
+    )
+
   (test-group
     ((create-file "C1.compact"
        '(

@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Only this live configured-process boundary constructs an invocation receipt.
 //! The selected executable is trusted by configuration, not attested by a hash.
 use super::{
@@ -43,19 +58,38 @@ pub struct FrontendRequest {
 
 pub struct ConfiguredFrontend {
     executable: OsString,
+    environment: Vec<(OsString, OsString)>,
 }
 impl ConfiguredFrontend {
     pub fn new(executable: impl Into<OsString>) -> Self {
         Self {
             executable: executable.into(),
+            environment: Vec::new(),
         }
+    }
+
+    /// Configure this child only. Values are never included in receipts/logs.
+    pub fn with_environment(
+        mut self,
+        key: impl Into<OsString>,
+        value: impl Into<OsString>,
+    ) -> Self {
+        self.environment.push((key.into(), value.into()));
+        self
+    }
+
+    fn command(&self) -> Command {
+        let mut command = Command::new(&self.executable);
+        command.envs(self.environment.iter().map(|(key, value)| (key, value)));
+        command
     }
 
     pub fn invoke(&self, request: FrontendRequest) -> Result<FrontendArtifacts, FrontendError> {
         let cwd = std::env::current_dir().map_err(io_error)?;
         let stage = FreshStage::new(&request.stage_parent)?;
         let executable_fingerprint = executable_hash(&self.executable);
-        let status = Command::new(&self.executable)
+        let status = self
+            .command()
             .args(&request.arguments)
             .arg("--emit-rust-ir")
             .arg(&request.source)
@@ -176,6 +210,17 @@ impl FrontendArtifacts {
         render::render(self, options)
     }
 
+    /// Opt-in ledger8 functional prototype. Source evidence comes exclusively
+    /// from this retained frontend invocation; originless IR cannot enable it.
+    /// Publish the returned functional_assets() alongside the generated lib.rs;
+    /// its review constants include these files relative to that library.
+    pub fn render_functional_ledger8(
+        &self,
+        options: render::RenderOptions,
+    ) -> Result<render::FrontendRender, render::FunctionalCompileFailure> {
+        render::render_functional(self, options)
+    }
+
     /// Move completed entries into an existing empty locked staging parent.
     /// Reject preexisting destination entries; this is not final publication.
     /// Pending metadata status and retained IR/origin/proof-info bytes are
@@ -289,4 +334,25 @@ fn executable_hash(executable: &OsString) -> Option<[u8; 32]> {
         remaining -= read as u64;
     }
     Some(hash.finalize().into())
+}
+
+#[cfg(all(test, unix))]
+mod child_environment_tests {
+    use super::*;
+    #[test]
+    fn environment_override_is_private_to_child() {
+        let before = std::env::var_os("COMPACT_FRONTEND_ENV_UNIT");
+        let frontend = ConfiguredFrontend::new("/bin/sh")
+            .with_environment("COMPACT_FRONTEND_ENV_UNIT", "private-test-value");
+        let output = frontend
+            .command()
+            .arg("-c")
+            .arg("printf '%s' \"$COMPACT_FRONTEND_ENV_UNIT\"")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"private-test-value");
+        assert_eq!(std::env::var_os("COMPACT_FRONTEND_ENV_UNIT"), before);
+        assert!(ConfiguredFrontend::new("/bin/sh").environment.is_empty());
+    }
 }

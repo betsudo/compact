@@ -1,0 +1,66 @@
+# Same-run compiler material only; consumers retain their independent test gates.
+name: Reusable compiler producer
+on:
+  workflow_call:
+    inputs:
+      system:
+        description: Exact platform; callers create independent same-platform dependencies
+        required: true
+        type: string
+    outputs:
+      artifact-id:
+        description: Immutable same-run platform compiler artifact ID
+        value: ${{ jobs.compiler.outputs.artifact-id }}
+      producer-attempt:
+        description: Actual successful producer step attempt, retained on partial reruns
+        value: ${{ jobs.compiler.outputs.producer-attempt }}
+permissions: {}
+jobs:
+  compiler:
+    name: Compiler material (${{ inputs.system }})
+    # No arbitrary runner/build command/ref inputs.
+    runs-on: ${{ inputs.system == 'aarch64-darwin' && 'macos-latest' || 'ubuntu-latest' }}
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      producer-attempt: ${{ steps.identity.outputs.producer-attempt }}
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - name: Validate fixed platform input
+        env:
+          NIX_SYSTEM: ${{ inputs.system }}
+        run: |
+          case "$NIX_SYSTEM" in x86_64-linux|aarch64-darwin) ;; *) exit 2 ;; esac
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check compiler handoff controls
+        run: python3 -B .github/scripts/test_compiler_closure.py
+      - uses: ./.github/actions/setup-nix-cache
+        with:
+          skip_cache: 'true'
+      - name: Capture actual producer attempt
+        id: identity
+        run: echo "producer-attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - name: Build exact compiler and export runtime closure
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          NIX_SYSTEM: ${{ inputs.system }}
+        run: |
+          python3 .github/scripts/compiler_closure.py export \
+            --source-sha "$SOURCE_SHA" --system "$NIX_SYSTEM" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --directory "$RUNNER_TEMP/compiler-material"
+      - name: Upload same-run platform material
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.system }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/compiler-material/manifest.json
+            ${{ runner.temp }}/compiler-material/closure.nar-export
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0

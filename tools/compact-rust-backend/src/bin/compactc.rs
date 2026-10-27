@@ -26,6 +26,7 @@ mod source_diagnostic;
 #[path = "../bin_support/source_maps.rs"]
 mod source_maps;
 
+use std::collections::BTreeMap;
 use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
@@ -51,6 +52,7 @@ struct Targets {
     runtime_root: Option<PathBuf>,
     runtime_registry: bool,
     require_recording: bool,
+    functional_ledger8: bool,
 }
 
 fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), String> {
@@ -60,6 +62,19 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     let mut forwarded = Vec::with_capacity(args.len());
     let mut arguments = args.into_iter();
     while let Some(argument) = arguments.next() {
+        if argument == "--rust-functional-ledger8" {
+            if targets.functional_ledger8 {
+                return Err("--rust-functional-ledger8 may be given only once".into());
+            }
+            targets.functional_ledger8 = true;
+            continue;
+        }
+        if argument
+            .to_str()
+            .is_some_and(|arg| arg.starts_with("--rust-functional-ledger8="))
+        {
+            return Err("--rust-functional-ledger8 takes no value".into());
+        }
         if argument == "--rust" {
             legacy_rust = true;
             continue;
@@ -164,6 +179,15 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     }
     if targets.require_recording && !targets.rust {
         return Err("--rust-require-recording requires --target rust".into());
+    }
+    if targets.functional_ledger8 && !targets.rust {
+        return Err("--rust-functional-ledger8 requires --target rust".into());
+    }
+    if targets.functional_ledger8 && targets.runtime_registry {
+        return Err(
+            "--rust-functional-ledger8 requires a source runtime with the experimental feature"
+                .into(),
+        );
     }
     if targets.runtime_registry && targets.runtime_root.is_some() {
         return Err("--rust-runtime-registry cannot be combined with --rust-runtime-root".into());
@@ -446,6 +470,19 @@ fn refresh_manifest(output: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn write_functional_assets(
+    contract_dir: &Path,
+    assets: &BTreeMap<String, String>,
+) -> Result<(), Box<dyn Error>> {
+    for (relative, contents) in assets {
+        // Compiler-assigned locators, written in the existing publication stage.
+        let path = contract_dir.join(relative);
+        fs::create_dir_all(path.parent().ok_or("functional asset has no parent")?)?;
+        fs::write(path, contents)?;
+    }
+    Ok(())
+}
+
 fn run() -> Result<i32, Box<dyn Error>> {
     let (targets, mut args) = select_targets(env::args_os().skip(1).collect())?;
     let compiler = scheme_compiler()?;
@@ -466,6 +503,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
         io::Write::write_all(&mut io::stderr(), &output.stderr)?;
         if output.status.success() {
             print!("{TARGET_HELP}");
+            println!(
+                "  --rust-functional-ledger8 adds experimental immutable checked programs.\n    Requires --target rust and a source runtime; unsupported effects are refused."
+            );
         }
         return Ok(output.status.code().unwrap_or(1));
     }
@@ -518,13 +558,20 @@ fn run() -> Result<i32, Box<dyn Error>> {
         artifacts.output_dir().join("compiler/contract-info.json"),
     )?)?)?;
     drop(contract_info);
-    let issued = artifacts
-        .render(RenderOptions {
-            apply_frontend_proof_metadata: true,
-            // Keep the existing public recording predicate and error formatting below.
-            require_recording: false,
-        })
-        .map_err(|error| error as Box<dyn Error>)?;
+    let options = RenderOptions {
+        apply_frontend_proof_metadata: true,
+        // Keep the existing public recording predicate and error formatting below.
+        require_recording: false,
+    };
+    let issued = if targets.functional_ledger8 {
+        artifacts
+            .render_functional_ledger8(options)
+            .map_err(|error| Box::new(error) as Box<dyn Error>)
+    } else {
+        artifacts
+            .render(options)
+            .map_err(|error| error as Box<dyn Error>)
+    }?;
     let rendered = issued.rendered();
     if targets.require_recording {
         let unavailable = rendered
@@ -577,6 +624,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
     source_maps::rebase(staging.path(), &original_frontend, &output)?;
     let contract_dir = staging.path().join("contract");
     fs::write(contract_dir.join("lib.rs"), &rendered.source)?;
+    write_functional_assets(&contract_dir, issued.functional_assets())?;
     fs::write(
         contract_dir.join("rust-capabilities.json"),
         serde_json::to_vec_pretty(&rendered.capabilities)?,
@@ -630,10 +678,15 @@ fn run() -> Result<i32, Box<dyn Error>> {
         staging.path().join("compiler/rust-compatibility.json"),
         serde_json::to_vec_pretty(&metadata)?,
     )?;
-    fs::write(
-        contract_dir.join("Cargo.toml"),
-        crate_manifest(&source, runtime)?,
-    )?;
+    let mut manifest = crate_manifest(&source, runtime)?;
+    if targets.functional_ledger8 {
+        let mut document = manifest.parse::<DocumentMut>()?;
+        let mut features = Array::new();
+        features.push("experimental-functional");
+        document["dependencies"]["midnight-compact-runtime"]["features"] = value(features);
+        manifest = document.to_string();
+    }
+    fs::write(contract_dir.join("Cargo.toml"), manifest)?;
     refresh_manifest(staging.path())?;
     staging.publish(&output)?;
     Ok(0)
@@ -682,6 +735,39 @@ mod tests {
     impl Drop for TempRoot {
         fn drop(&mut self) {
             fs::remove_dir_all(&self.0).unwrap();
+        }
+    }
+
+    #[test]
+    fn functional_asset_write_failure_preserves_output_and_removes_stage() {
+        for existing in [false, true] {
+            let root = TempRoot::new();
+            let output = root.0.join("result");
+            if existing {
+                fs::create_dir(&output).unwrap();
+                fs::write(output.join("previous.txt"), "complete previous output").unwrap();
+            }
+            let stage = StagedOutput::new(&output).unwrap();
+            let stage_path = stage.path().to_path_buf();
+            let contract = stage_path.join("contract");
+            fs::create_dir(&contract).unwrap();
+            fs::write(contract.join("checked-programs"), "blocks asset directory").unwrap();
+            let assets = std::collections::BTreeMap::from([(
+                "checked-programs/program-0.json".into(),
+                "review bytes".into(),
+            )]);
+            assert!(super::write_functional_assets(&contract, &assets).is_err());
+            drop(stage);
+            assert!(!stage_path.exists());
+            if existing {
+                assert_eq!(fs::read_dir(&output).unwrap().count(), 1);
+                assert_eq!(
+                    fs::read_to_string(output.join("previous.txt")).unwrap(),
+                    "complete previous output"
+                );
+            } else {
+                assert!(!output.exists());
+            }
         }
     }
 
@@ -1093,5 +1179,49 @@ mod tests {
             package_name(Path::new("Passport_2.compact")),
             "compact-contract-passport-2"
         );
+    }
+
+    #[test]
+    fn functional_ledger8_is_explicit_and_requires_source_runtime() {
+        let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
+        let (targets, forwarded) = parse(&[
+            "--target=rust",
+            "--rust-functional-ledger8",
+            "in.compact",
+            "out",
+        ])
+        .unwrap();
+        assert!(targets.functional_ledger8);
+        assert!(
+            !forwarded
+                .iter()
+                .any(|arg| arg == "--rust-functional-ledger8")
+        );
+        for (args, expected) in [
+            (vec!["--rust-functional-ledger8"], "requires --target rust"),
+            (
+                vec!["--target=rust", "--rust-functional-ledger8=true"],
+                "takes no value",
+            ),
+            (
+                vec![
+                    "--target=rust",
+                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger8",
+                ],
+                "only once",
+            ),
+            (
+                vec![
+                    "--target=rust",
+                    "--rust-functional-ledger8",
+                    "--rust-runtime-registry",
+                ],
+                "source runtime",
+            ),
+        ] {
+            assert!(matches!(parse(&args), Err(message) if message.contains(expected)));
+        }
+        assert!(!parse(&["--target=rust"]).unwrap().0.functional_ledger8);
     }
 }

@@ -22,6 +22,8 @@
 #![forbid(unsafe_code)]
 
 pub mod context;
+#[cfg(feature = "experimental-functional")]
+pub mod functional;
 mod hash_input;
 pub mod ledger;
 mod natives;
@@ -78,6 +80,11 @@ pub use midnight_transient_crypto::repr::{FieldRepr, FromFieldRepr};
 pub enum CompactError {
     AssertionFailed(String),
     InvalidLedgerCell(String),
+    /// An experimental generated adapter has no callback for this checked identity.
+    #[cfg(feature = "experimental-functional")]
+    UnknownWitnessIdentity {
+        id: u32,
+    },
     LedgerQueryRejected(String),
     InvalidUnsignedValue,
     InvalidJubjubScalar,
@@ -87,7 +94,10 @@ pub enum CompactError {
     ZswapOfferOutputMismatch,
     ZswapCursorAlreadyUsed,
     ZswapCursorOverflow,
-    UnsignedOutOfRange { value: u128, max: u128 },
+    UnsignedOutOfRange {
+        value: u128,
+        max: u128,
+    },
     UnsignedOverflow,
     UnsignedUnderflow,
 }
@@ -97,6 +107,10 @@ impl std::fmt::Display for CompactError {
         match self {
             Self::AssertionFailed(message) => write!(f, "failed assert: {message}"),
             Self::InvalidLedgerCell(message) => write!(f, "invalid Compact ledger cell: {message}"),
+            #[cfg(feature = "experimental-functional")]
+            Self::UnknownWitnessIdentity { id } => {
+                write!(f, "unknown checked witness identity {id}")
+            }
             Self::LedgerQueryRejected(message) => write!(f, "ledger query rejected: {message}"),
             Self::InvalidUnsignedValue => write!(f, "invalid Compact unsigned value"),
             Self::InvalidJubjubScalar => write!(f, "invalid Jubjub scalar"),

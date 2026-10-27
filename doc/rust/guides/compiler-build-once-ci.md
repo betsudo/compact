@@ -1,0 +1,100 @@
+# Build the compiler once per CI platform
+
+## Status and scope
+
+This is a **local workflow candidate**, not hosted acceptance. Source controls and
+mock boundary tests cover orchestration and refusals. Actual closure transfer,
+standalone fresh-store import, GitHub partial-rerun output retention and hosted
+execution remain unqualified. No build-time saving is claimed: exporting,
+uploading, downloading and importing the runtime closure may cost more than the
+compiler realization it avoids.
+
+Local feasibility checks on 2026-10-19 used the existing immutable Darwin compiler
+package selected by this candidate's Nix evaluation. Its eight-path runtime
+closure exported as 87,377,808 bytes in 0.567 seconds. Official import into an
+initially empty private local-store root took 0.637 seconds; requisite membership,
+all NAR hashes and the declared deriver matched. The current helper's version,
+help and fixture smoke also passed against the existing host package. These are
+separate checks: executing from the host store does not prove standalone execution
+from that private store, and no GitHub upload/download was measured.
+
+## Candidate graph
+
+`Compiler Build` retains its existing PR, manual and scheduled triggers. It calls
+one reusable producer for Linux and another for Apple Silicon at the exact
+checkout SHA. Linux consumers depend on the Linux producer; Apple consumers
+share the Darwin producer. Apple does not run the full Linux native suite.
+No push trigger is added to `Compiler Build`.
+
+Existing compiler source tests, `compiler/go`, documentation and source-map checks,
+default packaging, generated consumers, runtime/workspace tests, Clippy, package
+rehearsal, archive consumers, E2E tests and reporting remain. A producer result is compiler material,
+not a reusable proof or test verdict. Repeated `nix develop` calls in one job
+normally reuse an already realized compiler; they are not counted as repeated
+compiler builds.
+
+## Material identity and provenance
+
+The producer realizes **`.#compactc`**, not the distinct portable release package.
+It runs version/help and a same-source fixture compilation, then uses official
+Nix export for the complete runtime closure. The handoff retains sibling Scheme
+frontend, packaged Rust runtime/macros and referenced store
+paths rather than copying a lone executable.
+
+The manifest binds exact source SHA, platform, `flake.nix` and `flake.lock` hashes,
+run ID, actual producer attempt, evaluated derivation/output paths, runtime-closure
+membership, canonical NAR hashes and export-stream SHA-256. A self-reported
+manifest hash is **not producer provenance**.
+
+Consumers receive the upload service's immutable artifact ID. They fetch that
+exact artifact, independently read GitHub artifact-service metadata, require the
+same run and expected source/platform/producer-attempt artifact name, and verify
+the service ZIP digest before unpacking the two fixed material files. They check
+manifest identities against their own checkout and Nix evaluation before import.
+After official import, exact requisite membership and NAR identities are checked;
+a warm store cannot hide an omitted dependency. Runtime-closure export does not
+claim to transfer the derivation's build-time dependency closure.
+
+Named consumers use an explicit initial success/nonempty-output gate even after
+a failed or skipped producer. Missing, corrupt or mismatched material fails;
+there is no latest-artifact search, implicit rebuild or stale fallback. Consumers
+have only read access to repository contents and Actions artifacts; no release
+credentials or inherited secrets are added.
+
+## Partial reruns
+
+The producer captures its attempt number in the actual producer step and returns
+it alongside the immutable artifact ID. A consumer rerun may reuse an earlier
+successful producer from the **same run, source and platform**, provided its
+positive attempt is no greater than the current consumer attempt. The artifact
+name and manifest remain bound to that original producer attempt; they are not
+relabeled with the new consumer attempt. Tests and proofs execute again.
+
+Whether GitHub retains the required job/reusable outputs on every partial-rerun
+path has not been qualified. If those outputs are unavailable, the explicit gates
+fail closed. They do not guess an artifact or retry a producer.
+
+## Retention and independent workflows
+
+Compiler material artifacts have **one-day retention**. Actions artifact storage
+is separate from the repository's stated 10 GB Actions cache budget; this does not
+establish a global retention cap or immediately reclaim old caches. Closure size
+and transfer costs need measurement before adoption.
+
+Release workflows retain their separate portable profiles and publication rules.
+Paused optional debugging/fuzzing workflows remain independent and are not enabled
+or migrated by this candidate.
+
+## Deferred experiment
+
+Forge CI adoption is deliberately deferred on `experiment/zkir-forge`. The
+primary compiler and backend have no Forge options, helper, dependency or
+workflow route. Compiler build-once sharing, bounded Rust checks, Cargo reuse
+and early lint controls are retained independently. Parking the experiment
+completes none of its former compiler/proof/Linux/performance acceptance.
+
+Selected contract-level reuse benefits are valid; whole-CI value is unproven.
+The earlier “1% key generation” interpretation was incomplete: 46 seconds
+measured only Forge-managed generation. Direct bypass generation was not
+separately timed; the total ZKIR/prover-key/verifier-key share remains unknown.
+Backend development does not depend on completing this experiment.

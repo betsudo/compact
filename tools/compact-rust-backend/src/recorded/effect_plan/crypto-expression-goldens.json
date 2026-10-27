@@ -1,0 +1,19 @@
+{
+  "persistent_hash": "runtime::persistent_hash(\n                __compact_effect_1,\n            )",
+  "persistent_commit": "runtime::persistent_commit(\n                __compact_effect_1,\n                __compact_effect_1,\n            )",
+  "transient_hash": "runtime::transient_hash(\n                runtime::exact_hash_input((__compact_effect_3).clone()),\n            )",
+  "transient_commit": "runtime::transient_commit(\n                runtime::exact_hash_input((__compact_effect_3).clone()),\n                __compact_effect_0,\n            )",
+  "hash_to_curve": "runtime::hash_to_curve(\n                runtime::exact_hash_input((__compact_effect_3).clone()),\n            )",
+  "field_to_bytes": "runtime::FixedBytes::<\n                32,\n            >::new(\n                (__compact_effect_0)\n                    .as_le_bytes()\n                    .try_into()\n                    .expect(\"canonical Field is 32 bytes\"),\n            )",
+  "degrade": "runtime::degrade_to_transient(\n                __compact_effect_1,\n            )",
+  "upgrade": "runtime::upgrade_from_transient(\n                __compact_effect_0,\n            )",
+  "point_x": "runtime::jubjub_point_x(\n                __compact_effect_2,\n            )",
+  "point_y": "runtime::jubjub_point_y(\n                __compact_effect_2,\n            )",
+  "scalar": "runtime::jubjub_scalar_from_native(\n                __compact_effect_0,\n            )",
+  "generator": "runtime::ec_mul_generator(\n                __compact_effect_0,\n            )?",
+  "neg": "runtime::ec_neg(\n                __compact_effect_2,\n            )",
+  "construct": "runtime::construct_jubjub_point(\n                __compact_effect_0,\n                __compact_effect_0,\n            )?",
+  "mul": "runtime::ec_mul(\n                __compact_effect_2,\n                __compact_effect_0,\n            )?",
+  "add": "runtime::ec_add(\n                __compact_effect_2,\n                __compact_effect_2,\n            )",
+  "keccak": "runtime::keccak256(\n                __compact_effect_1,\n            )"
+}

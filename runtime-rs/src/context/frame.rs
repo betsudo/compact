@@ -42,6 +42,33 @@ impl<Private, D: DB> CircuitFrame<Private, D> {
         }
     }
 
+    /// Read execution identity and append exactly its existing private FAB value.
+    pub fn own_coin_public_key(mut self) -> Result<(Self, [u8; 32]), CompactError> {
+        let key = self.context.own_coin_public_key()?;
+        self.private_outputs.push(AlignedValue::from(key));
+        Ok((self, key))
+    }
+    /// Input intents are not wallet spends and add one successful private Unit.
+    pub fn create_zswap_input(mut self, coin: crate::ledger::QualifiedCoinInfo) -> Self {
+        self.context.create_zswap_input(coin);
+        self.private_outputs.push(().into());
+        self
+    }
+    /// Preserve existing allocation/offer checks before recording success.
+    pub fn create_zswap_output(
+        mut self,
+        coin: crate::ledger::CoinInfo,
+        recipient: crate::ledger::CoinRecipient,
+    ) -> Result<Self, CompactError> {
+        self.context.create_zswap_output(coin, recipient)?;
+        self.private_outputs.push(().into());
+        Ok(self)
+    }
+    /// Delegate the private context dispatcher; no Kernel VM policy is copied.
+    pub fn kernel_claim(self, claim: crate::ledger::KernelClaim) -> Result<Self, CompactError> {
+        let (frame, ()) = self.apply(|context| context.kernel_claim(claim))?;
+        Ok(frame)
+    }
     pub fn context(&self) -> &CircuitContext<Private, D> {
         &self.context
     }

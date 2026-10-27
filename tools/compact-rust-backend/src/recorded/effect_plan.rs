@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Syntax-independent recording plans with staged admission (ADR-0355).
 //! Checking promises this bounded fragment can render, not transaction readiness
@@ -8,6 +19,19 @@
 
 mod context_free;
 mod declarations;
+pub(crate) mod functional;
+pub(super) mod functional_items;
+mod functional_kernel;
+mod functional_lists;
+mod functional_maps;
+mod functional_merkle;
+mod functional_metadata;
+mod functional_paths;
+mod functional_pure_blocks;
+mod functional_qualified_storage;
+mod functional_render;
+mod functional_sets;
+mod functional_witnesses;
 mod lower;
 use crate::source_diagnostics::RefusalObserver;
 mod model;

@@ -27,7 +27,6 @@ import sys
 import tempfile
 import tomllib
 
-import forge_circuits
 import proof_commands
 
 from target_checks import (
@@ -109,7 +108,7 @@ FIELD_TO_BYTES32_SOURCE = ROOT / "examples/rust_backend/field_to_bytes32_oracle.
 def run(*arguments: str, cwd: Path = ROOT, env: dict[str, str] | None = None) -> None:
     environment = os.environ if env is None else env
     command = proof_commands.command(arguments, environment)
-    subprocess.run(forge_circuits.command(command, environment),
+    subprocess.run(command,
                    cwd=cwd, env=env, check=True)
 
 
@@ -901,8 +900,7 @@ def main() -> None:
     # this check runs directly rather than through local_parity_gate.py.
     os.environ.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
     compiler = os.environ.get("COMPACTC", "compactc")
-    with tempfile.TemporaryDirectory(prefix="compactc-target-") as temporary, \
-            forge_circuits.test_environment(Path(temporary) / "forge"):
+    with tempfile.TemporaryDirectory(prefix="compactc-target-") as temporary:
         base = Path(temporary)
         if args.witness_composition:
             check_witness_composition(compiler, base)

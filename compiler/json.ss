@@ -416,7 +416,7 @@
               [else
                 (if (char<=? #\x20 c #\x10ffff)
                     (put-char op c)
-                    (fprintf op "u~4,'0x" c))]))))
+                    (fprintf op "\\u~4,'0x" (char->integer c)))]))))
       (put-char op #\"))
     (define (f json depth)
       (cond
@@ -447,7 +447,10 @@
                    (fprintf op " ")
                    (indent depth))
                (let ([a (car json+)])
-                 (fprintf op "\"~a\": " (car a))
+                 ;; Object keys use the same JSON escaping as string values.
+                 ;; Keep the historical ~a conversion for non-string keys.
+                 (print-string (format "~a" (car a)))
+                 (put-string op ": ")
                  (f (cdr a) depth))
                (let ([json* (cdr json+)])
                  (unless (null? json*)

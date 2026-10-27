@@ -40,6 +40,32 @@ pub(super) fn try_run(
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
+        ("--js-counter-trace", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("usage: compact-rust-proof-smoke --js-counter-trace ROOT INPUTDIR")?;
+            let inputs = arguments
+                .next()
+                .ok_or("usage: compact-rust-proof-smoke --js-counter-trace ROOT INPUTDIR")?;
+            if arguments.next().is_some() {
+                return Err(
+                    "usage: compact-rust-proof-smoke --js-counter-trace ROOT INPUTDIR".into(),
+                );
+            }
+            crate::js_counter_trace::run_counter(
+                std::path::Path::new(&root),
+                std::path::Path::new(&inputs),
+            )
+        })()),
+        ("--js-proof-preimage", _) => Some((|| {
+            let path = arguments
+                .next()
+                .ok_or("usage: compact-rust-proof-smoke --js-proof-preimage FILE")?;
+            if arguments.next().is_some() {
+                return Err("usage: compact-rust-proof-smoke --js-proof-preimage FILE".into());
+            }
+            crate::js_counter_trace::run(std::path::Path::new(&path))
+        })()),
         ("--mixed-width-recording", _) => Some(expressions::mixed_width_recording(arguments)),
         ("--mixed-width-record-pinned", _) => {
             Some(expressions::mixed_width_record_pinned(arguments))
@@ -397,7 +423,7 @@ mod tests {
 
     #[test]
     fn material_option_errors_stop_before_material_preparation() {
-        let usage = "usage: compact-rust-proof-smoke --prepare-proof-material [--verify-only]";
+        let usage = "usage: compact-rust-proof-smoke --prepare-proof-material [--verify-only] [--parameter-k K ...]";
         for supplied in [
             vec!["--invalid", "unconsumed"],
             vec!["--verify-only", "extra", "unconsumed"],

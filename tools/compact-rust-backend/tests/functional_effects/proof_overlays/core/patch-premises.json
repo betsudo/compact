@@ -1,0 +1,12 @@
+{
+  "src/effect_plan_merkle.rs": {
+    "canonical_sha256": "433eb66768589708772b7451e49925b7bcd37769d616dd0751da7b0bca94b30d",
+    "overlay_sha256": "0a9dee403a737ab18587c88aa608197c54e195203e4034f62982596e512e2bdf",
+    "replacements": 2
+  },
+  "src/exact_hash_input.rs": {
+    "canonical_sha256": "9ded78e8c0fe85d51b9a851a72dccc31e9acbab628703a778ed6bb652f85aa6b",
+    "overlay_sha256": "931e593eadc01da419d39bd8fa5b5e3736d1e0e1956f87be34e5355925876072",
+    "replacements": 3
+  }
+}
