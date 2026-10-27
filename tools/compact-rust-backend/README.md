@@ -56,6 +56,17 @@ checked subtraction/witness failure order and ordinary compile-fail controls.
 through fresh direct native key generation, immutable proof verification and
 funded default-strict application. It does not prove constructors or all branches.
 
+The isolated [typed-pair plan](../../doc/rust/plans/516-tuple-return-wrappers.md)
+uses the existing checked aggregate coercion owner for inferred scalar pairs,
+including mixed Uint/Field results and inline Fold composition.
+`check_tuple_return_wrappers.py` exercises both components and witness/failure
+order through live TS and four Rust APIs; `check_tuple_return_wrappers_proof.py`
+requires fresh selected inferred/mixed/Fold proofs and each output-component
+negative. See the [complete fixture](../../tests-rust-backend/tuple-return-wrappers-source/README.md).
+This prototype is not merged or integration-qualified; other aggregate and
+initializer debt remains separate.
+
+
 `effectful_return_oracle.compact` retains independent TS/native/recorded controls.
 The two compositional source examples and the standalone wide-source fixture
 have separate local proof routes using the existing unbalanced smoke policy.

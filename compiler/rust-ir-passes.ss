@@ -1524,14 +1524,30 @@
           [else #f]))
 
       ;; Inferred branch joins can add monotone Uint widenings inside the
-      ;; final Uint-to-Field conversion. Neither conversion can fail on its
-      ;; checked input domain. Narrowing keeps its existing source boundary.
-      (define (return-value-widening? target source)
+      ;; final Uint-to-Field conversion, including each component of a scalar
+      ;; pair. These conversions cannot fail on their checked input domains.
+      ;; Narrowing and other aggregate shapes keep their source boundaries.
+      (define (return-component-widening? target source)
         (nanopass-case (Lnodisclose Type) source
           [(tunsigned ,src ,nat1)
            (nanopass-case (Lnodisclose Type) target
              [(tfield ,src^) #t]
              [(tunsigned ,src^ ,nat2) (<= nat1 nat2)]
+             [else #f])]
+          [(tfield ,src)
+           (nanopass-case (Lnodisclose Type) target
+             [(tfield ,src^) #t]
+             [else #f])]
+          [else #f]))
+
+      (define (return-value-widening? target source)
+        (nanopass-case (Lnodisclose Type) source
+          [(tunsigned ,src ,nat) (return-component-widening? target source)]
+          [(ttuple ,src ,type* ...)
+           (nanopass-case (Lnodisclose Type) target
+             [(ttuple ,src^ ,type^* ...)
+              (and (= (length type*) 2) (= (length type^*) 2)
+                   (for-all return-component-widening? type^* type*))]
              [else #f])]
           [else #f]))
 
@@ -1541,7 +1557,12 @@
            (object (cons "kind" "field_cast") (cons "value" value))]
           [(tunsigned ,src ,nat)
            (object (cons "kind" "unsigned_cast")
-                   (cons "max" (number->string nat)) (cons "value" value))]))
+                   (cons "max" (number->string nat)) (cons "value" value))]
+          [(ttuple ,src ,type* ...)
+           ;; The checked aggregate coercion owner binds the reached tuple
+           ;; once and converts its components in order.
+           (object (cons "kind" "coerce") (cons "value" value)
+                   (cons "ty" (type-ir target src)))]))
 
       ;; Preserve a terminal conditional and its selected storage mutations in
       ;; one ordered return body. Re-evaluating its condition after a mutation

@@ -1,0 +1,1515 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "values",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "set",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 17,
+        "column": 1
+      }
+    },
+    {
+      "id": "count",
+      "index": 1,
+      "path": [
+        1
+      ],
+      "declaration": {
+        "kind": "counter"
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 18,
+        "column": 1
+      }
+    },
+    {
+      "id": "stored",
+      "index": 2,
+      "path": [
+        2
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 19,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "choose",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 20,
+        "column": 1
+      }
+    },
+    {
+      "name": "first",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "65535"
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 21,
+        "column": 1
+      }
+    },
+    {
+      "name": "second",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "65535"
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 22,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "expression_only",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "body": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field_cast",
+            "value": {
+              "kind": "parameter",
+              "name": "value"
+            }
+          },
+          {
+            "kind": "field_cast",
+            "value": {
+              "kind": "unsigned_add",
+              "max": "65536",
+              "left": {
+                "kind": "unsigned_cast",
+                "max": "65536",
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "right": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "65536"
+              }
+            }
+          }
+        ]
+      },
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 57,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "inferred",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "1",
+                      "max": "1"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "2",
+                      "max": "2"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "1"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "2"
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 25,
+        "column": 1
+      }
+    },
+    {
+      "name": "explicit",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field_literal",
+                    "value": "1"
+                  },
+                  {
+                    "kind": "field_literal",
+                    "value": "2"
+                  }
+                ]
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "field_literal",
+                  "value": "0"
+                },
+                {
+                  "kind": "field_literal",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 29,
+        "column": 1
+      }
+    },
+    {
+      "name": "nested",
+      "parameters": [
+        {
+          "name": "outer",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "inner",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "outer"
+          },
+          "then": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "local",
+                "ty": {
+                  "kind": "field"
+                },
+                "value": {
+                  "kind": "add",
+                  "left": {
+                    "kind": "parameter",
+                    "name": "value"
+                  },
+                  "right": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "conditional",
+              "condition": {
+                "kind": "parameter",
+                "name": "inner"
+              },
+              "then": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "set_insert",
+                    "field": "values",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "local"
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "parameter",
+                              "name": "local"
+                            },
+                            {
+                              "kind": "unsigned_literal",
+                              "value": "3",
+                              "max": "3"
+                            }
+                          ]
+                        },
+                        "ty": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "field"
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "4"
+                            }
+                          ]
+                        }
+                      },
+                      "ty": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "field"
+                          },
+                          {
+                            "kind": "unsigned",
+                            "max": "5"
+                          }
+                        ]
+                      }
+                    },
+                    "ty": {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "field"
+                        },
+                        {
+                          "kind": "field"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "tmp_34",
+                        "ty": {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        },
+                        "value": {
+                          "kind": "unsigned_literal",
+                          "value": "1",
+                          "max": "65535"
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "counter_increment",
+                      "field": "count",
+                      "index": 1,
+                      "amount": {
+                        "kind": "parameter",
+                        "name": "tmp_34"
+                      }
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "field_literal",
+                            "value": "2"
+                          },
+                          {
+                            "kind": "unsigned_literal",
+                            "value": "4",
+                            "max": "4"
+                          }
+                        ]
+                      },
+                      "ty": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "field"
+                          },
+                          {
+                            "kind": "unsigned",
+                            "max": "5"
+                          }
+                        ]
+                      }
+                    },
+                    "ty": {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "field"
+                        },
+                        {
+                          "kind": "field"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field_literal",
+                    "value": "0"
+                  },
+                  {
+                    "kind": "unsigned_literal",
+                    "value": "5",
+                    "max": "5"
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 34,
+        "column": 1
+      }
+    },
+    {
+      "name": "ordered",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "witness_call",
+            "name": "choose",
+            "arguments": [
+            ]
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "witness_call",
+                      "name": "first",
+                      "arguments": [
+                      ]
+                    },
+                    {
+                      "kind": "witness_call",
+                      "name": "second",
+                      "arguments": [
+                      ]
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 41,
+        "column": 1
+      }
+    },
+    {
+      "name": "checked_first",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_33",
+                    "ty": {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    "value": {
+                      "kind": "unsigned_literal",
+                      "value": "1",
+                      "max": "65535"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "counter_increment",
+                  "field": "count",
+                  "index": 1,
+                  "amount": {
+                    "kind": "parameter",
+                    "name": "tmp_33"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_subtract",
+                      "max": "65535",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "value"
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "1",
+                        "max": "65535"
+                      }
+                    },
+                    {
+                      "kind": "witness_call",
+                      "name": "second",
+                      "arguments": [
+                      ]
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "parameter",
+                      "name": "value"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 47,
+        "column": 1
+      }
+    },
+    {
+      "name": "checked_second",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_32",
+                    "ty": {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    "value": {
+                      "kind": "unsigned_literal",
+                      "value": "1",
+                      "max": "65535"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "counter_increment",
+                  "field": "count",
+                  "index": 1,
+                  "amount": {
+                    "kind": "parameter",
+                    "name": "tmp_32"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "witness_call",
+                      "name": "first",
+                      "arguments": [
+                      ]
+                    },
+                    {
+                      "kind": "unsigned_subtract",
+                      "max": "65535",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "value"
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "1",
+                        "max": "65535"
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    },
+                    {
+                      "kind": "parameter",
+                      "name": "value"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "field"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 52,
+        "column": 1
+      }
+    },
+    {
+      "name": "mixed",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "unsigned",
+            "max": "255"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "1",
+                      "max": "1"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "2",
+                      "max": "2"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    },
+                    {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "1"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "2"
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  {
+                    "kind": "field"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 61,
+        "column": 1
+      }
+    },
+    {
+      "name": "folded",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "field"
+          },
+          {
+            "kind": "field"
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "vector_fold",
+          "accumulator": {
+            "name": "acc",
+            "ty": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "field"
+                },
+                {
+                  "kind": "field"
+                }
+              ]
+            }
+          },
+          "items": [
+            {
+              "name": "item",
+              "ty": {
+                "kind": "field"
+              }
+            }
+          ],
+          "initial": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "field_literal",
+                "value": "0"
+              },
+              {
+                "kind": "field_literal",
+                "value": "0"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "kind": "parameter",
+              "name": "items"
+            }
+          ],
+          "body": {
+            "kind": "conditional",
+            "condition": {
+              "kind": "equal",
+              "left": {
+                "kind": "parameter",
+                "name": "item"
+              },
+              "right": {
+                "kind": "field_literal",
+                "value": "0"
+              }
+            },
+            "then": {
+              "kind": "sequence",
+              "actions": [
+                {
+                  "kind": "set_insert",
+                  "field": "values",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "item"
+                  }
+                }
+              ],
+              "result": {
+                "kind": "value",
+                "value": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "unsigned_literal",
+                        "value": "1",
+                        "max": "1"
+                      },
+                      {
+                        "kind": "unsigned_literal",
+                        "value": "2",
+                        "max": "2"
+                      }
+                    ]
+                  },
+                  "ty": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "field"
+                      },
+                      {
+                        "kind": "field"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "otherwise": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "unsigned_literal",
+                        "value": "0",
+                        "max": "0"
+                      },
+                      {
+                        "kind": "unsigned_literal",
+                        "value": "0",
+                        "max": "0"
+                      }
+                    ]
+                  },
+                  "ty": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "unsigned",
+                        "max": "1"
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "2"
+                      }
+                    ]
+                  }
+                },
+                "ty": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "length": 2
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 65,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_30",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 2,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_30"
+          }
+        }
+      },
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_31",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "5"
+            }
+          }
+        ],
+        "step": {
+          "kind": "set_insert",
+          "field": "values",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_31"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "tuple_return_wrappers.compact",
+      "line": 23,
+      "column": 1
+    }
+  }
+}

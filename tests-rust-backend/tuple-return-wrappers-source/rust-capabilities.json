@@ -1,0 +1,101 @@
+{
+  "schema_version": 3,
+  "circuits": [
+    {
+      "name": "inferred",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 25,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "explicit",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 29,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "nested",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 34,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "ordered",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 41,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "checked_first",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 47,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "checked_second",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 52,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "mixed",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 61,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "folded",
+      "source": {
+        "file": "tuple_return_wrappers.compact",
+        "line": 65,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    }
+  ]
+}

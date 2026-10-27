@@ -154,7 +154,7 @@ def main():
         setattr(args, name, getattr(args, name).resolve())
     args.output.mkdir(parents=True, exist_ok=True)
     regressions = [f"{FIXTURES}/{name}.compact" for name in
-                   ("storage_mutations", "value_effects", "checked_subtraction", "cast_wrapped_mutation")]
+                   ("storage_mutations", "value_effects", "checked_subtraction", "cast_wrapped_mutation", "tuple_cast_wrapped_mutation")]
     regressions.append("examples/rust_backend/effect_plan_counter_only.compact")
     census = []
     if args.source_manifest:

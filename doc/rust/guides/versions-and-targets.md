@@ -2,7 +2,7 @@
 
 The table below retains the milestone 0.3.0 version checkpoint and target receipts. On the current recording-effect branch, runtime ABI is **53**, private IR is **20**, finalized capability reports are **3** and private origin transport is **3**. Native ledger is **8.1.3** at official revision `b5d3e965a18e4cac17fac4f38446fc55c524439a`, with compatibility schema **2** and declared Rust **1.89** minimum. The current local execution used Rust 1.99; the older 1.88 receipts below do not qualify this new dependency graph. See [local qualification](ledger-8.1.3-local-qualification.md) for the exact source cohort and retained proof scope. No package publication or new platform qualification follows from these numbers. Installation snippets describe prerequisites; linked receipts identify actual execution.
 
-The current review-fix source selects compiler **0.31.136** and TypeScript runtime
+The current typed-pair candidate selects compiler **0.31.137** and TypeScript runtime
 **0.16.102**, including the exact onchain-runtime3.1.2 dependency. These source
 versions are separate from the retained checkpoint below and do not relabel its
 execution receipts. The independent toolchain-manager CLI keeps its inherited

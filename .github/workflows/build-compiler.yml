@@ -486,6 +486,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers" --report "$RUNNER_TEMP/compact-field-wrappers.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check generated tuple return-wrapper APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers" --report "$RUNNER_TEMP/compact-tuple-wrappers.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -511,6 +516,10 @@ jobs:
       - name: Qualify selected Field return-wrapper proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
+
+      - name: Qualify selected tuple return-wrapper proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
 
       - name: Rehearse Rust runtime packages
         id: runtime-packages
@@ -541,6 +550,12 @@ jobs:
             ${{ runner.temp }}/compact-field-wrappers/consumer/Cargo.lock
             ${{ runner.temp }}/compact-field-wrappers-proof/receipt.json
             ${{ runner.temp }}/compact-field-wrappers-proof/generated/
+            ${{ runner.temp }}/compact-tuple-wrappers.json
+            ${{ runner.temp }}/compact-tuple-wrappers/generated/
+            ${{ runner.temp }}/compact-tuple-wrappers/ts-reference.json
+            ${{ runner.temp }}/compact-tuple-wrappers/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-tuple-wrappers-proof/receipt.json
+            ${{ runner.temp }}/compact-tuple-wrappers-proof/generated/
             ${{ runner.temp }}/compact-direct-fold.json
             ${{ runner.temp }}/compact-direct-fold/generated/
             ${{ runner.temp }}/compact-direct-fold/ts-reference.json

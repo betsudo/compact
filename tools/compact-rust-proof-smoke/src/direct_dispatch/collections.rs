@@ -455,6 +455,18 @@ pub(super) fn field_return_wrappers(
     crate::field_return_wrappers::run(Path::new(&root))
 }
 
+/// Direct proof path for the genuine #516 tuple wrapper source.
+pub(super) fn tuple_return_wrappers(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --tuple-return-wrappers <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::tuple_return_wrappers::run(Path::new(&root))
+}
+
 /// Direct proof path for the genuine #661 Fold sources.
 pub(super) fn direct_fold(
     arguments: &mut impl Iterator<Item = OsString>,
