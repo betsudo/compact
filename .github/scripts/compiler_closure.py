@@ -225,7 +225,7 @@ def main():
 
 
 def text_import(stream):
-    return run(['nix-store', '--import'], stdin=stream, capture_output=True, text=True).stdout.splitlines()
+    return run(['nix-store', '--import'], stdin=stream, stdout=subprocess.PIPE, text=True).stdout.splitlines()
 
 
 if __name__ == '__main__':

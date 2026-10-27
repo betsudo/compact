@@ -46,6 +46,22 @@ class ReceiptTests(unittest.TestCase):
         self.assertIn('compiler-build-diagnostic', result.stderr.splitlines())
         self.assertEqual(result.stdout, '')
 
+    def test_import_failure_streams_diagnostics_without_touching_a_store(self):
+        script = (
+            "import importlib.util, sys; "
+            f"s=importlib.util.spec_from_file_location('handoff', {str(Path('.github/scripts/compiler_closure.py').resolve())!r}); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); original=m.run; "
+            "m.run=lambda argv, **kwargs: original([sys.executable, '-c', "
+            "\"import sys; print('/nix/store/machine-output'); "
+            "print('import-failure-diagnostic', file=sys.stderr); sys.exit(7)\"], **kwargs); "
+            "m.text_import(sys.stdin)"
+        )
+        result = owner.subprocess.run([owner.sys.executable, '-c', script],
+                                      capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('import-failure-diagnostic', result.stderr.splitlines())
+        self.assertEqual(result.stdout, '')
+
     def test_receipt_accepts_only_exact_identity_archive_and_roster(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory)/'closure'
@@ -192,7 +208,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
             section = workflow.split('  '+job+':\n', 1)[1]
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
-            self.assertIn('if: always()', section)
+            self.assertIn('if: ${{ !cancelled() }}', section)
             first_step = section.split('    steps:\n', 1)[1].split('      - name: Checkout', 1)[0]
             self.assertIn('needs.'+producer+'.result', first_step)
             self.assertIn('test "$PRODUCER_RESULT" = success', first_step)
@@ -212,6 +228,9 @@ class WorkflowOwnershipTests(unittest.TestCase):
             self.assertIn(retained, linux)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
+        self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)
+        self.assertIn('id: runtime-packages', linux)
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", linux)
 
     def test_reusable_output_is_upload_service_id_not_a_manifest_claim(self):
         producer = (owner.ROOT/'.github/workflows/compiler-producer.yml').read_text()

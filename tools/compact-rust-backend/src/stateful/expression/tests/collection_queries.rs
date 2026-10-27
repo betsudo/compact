@@ -402,3 +402,37 @@ fn counter_comparison_requires_uint64_and_checks_ledger_before_threshold() {
         .lower(query(2, parameter("absent")))
         .refused_before_effects(RenderError::UnknownLedgerField("slot".into()));
 }
+
+#[test]
+fn map_metadata_size_uses_physical_path_when_no_typed_slot_exists() {
+    for kind in [
+        LedgerFieldKind::Map {
+            key: Type::LedgerMap {
+                key: Box::new(Type::Field),
+                value: Box::new(Type::Field),
+            },
+            value: Type::Field,
+        },
+        LedgerFieldKind::Map {
+            key: Type::Field,
+            value: Type::Vector {
+                length: 1,
+                element: Box::new(Type::LedgerMap {
+                    key: Box::new(Type::Field),
+                    value: Box::new(Type::Field),
+                }),
+            },
+        },
+    ] {
+        let declarations = slot(kind);
+        let observed = declarations.lower(Expr::MapSize {
+            field: "slot".into(),
+            index: 2,
+        });
+        let statements = &observed.statements;
+        let syntax = quote::quote!(#(#statements)*).to_string();
+        assert!(syntax.contains("context . size_map"), "{syntax}");
+        assert!(!syntax.contains("ledger_slots"), "{syntax}");
+        observed.accepted(uint(&u64::MAX.to_string()), false, true);
+    }
+}

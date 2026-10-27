@@ -891,11 +891,13 @@ fn render_observation_operation(
             let declaration = ledger_fields
                 .get(field.as_str())
                 .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
-            let valid_kind = matches!(
-                (value, &declaration.declaration),
-                (Expr::SetSize { .. }, LedgerFieldKind::Set { .. })
-                    | (Expr::MapSize { .. }, LedgerFieldKind::Map { .. })
-            );
+            let (valid_kind, use_slot) = match (value, &declaration.declaration) {
+                (Expr::SetSize { .. }, LedgerFieldKind::Set { .. }) => (true, true),
+                (Expr::MapSize { .. }, LedgerFieldKind::Map { key, value }) => {
+                    (true, map_slot_types(key, value)?.is_some())
+                }
+                _ => (false, false),
+            };
             if !valid_kind || declaration.index != *index {
                 return Err(RenderError::UnknownLedgerField(field.clone()));
             }
@@ -904,10 +906,17 @@ fn render_observation_operation(
                 Span::call_site(),
             );
             *next_temp += 1;
-            let slot = ident(&declaration.id)?;
-            statements.push(syn::parse_quote!(
-                let #step = crate::ledger_slots::#slot.size(context)?;
-            ));
+            if use_slot {
+                let slot = ident(&declaration.id)?;
+                statements.push(syn::parse_quote!(
+                    let #step = crate::ledger_slots::#slot.size(context)?;
+                ));
+            } else {
+                let path = ledger_path_expr(declaration);
+                statements.push(syn::parse_quote!(
+                    let #step = context.size_map(#path)?;
+                ));
+            }
             statements.push(syn::parse_quote!(context = #step.context;));
             statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
             *query_effect = true;
