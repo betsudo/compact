@@ -201,3 +201,16 @@ Both generate the insertion; no broader lexical normalizer change is made.
 Focused red/green logs are retained in the 2026-10-27 publication evidence.
 Earlier source/proof/compiler receipts keep their original epochs; current
 complete CI and proof gates remain required before integration.
+
+## Current PR delivery authority — 2026-10-27
+
+The owner explicitly superseded the earlier local-only publication restriction.
+Each meaningful Rust AST slice receives focused local validation, a documented
+PR, complete required hosted CI/proof gates, independent CLI review and then
+merge into `codex/rust-backend-ast`. No repeated push/merge approval is needed.
+Local development uses arm64; Linux qualification remains in the full PR
+Compiler Build lane. PR triggers provide that coverage without repeating the
+same expensive full job for the working-branch merge push. Manual and scheduled
+qualification remain available. No required test/proof gate is removed.
+Forge is still deliberately deferred; no release or shared installation is
+authorized. Cleanup remains after completion and verified GitHub merge.

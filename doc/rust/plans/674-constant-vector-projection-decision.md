@@ -240,3 +240,16 @@ Unrelated retained files are untouched. Empty fresh program output refuses
 before changing retained files. Entrypoint regression tests exercise stale
 refusal, exact refresh, first registration and empty-output refusal without
 running a compiler or claiming fresh proof qualification.
+
+## Current PR delivery authority — 2026-10-27
+
+The owner explicitly superseded the earlier local-only publication restriction.
+Each meaningful Rust AST slice receives focused local validation, a documented
+PR, complete required hosted CI/proof gates, independent CLI review and then
+merge into `codex/rust-backend-ast`. No repeated push/merge approval is needed.
+Local development uses arm64; Linux qualification remains in the full PR
+Compiler Build lane. PR triggers provide that coverage without repeating the
+same expensive full job for the working-branch merge push. Manual and scheduled
+qualification remain available. No required test/proof gate is removed.
+Forge is still deliberately deferred; no release or shared installation is
+authorized. Cleanup remains after completion and verified GitHub merge.
