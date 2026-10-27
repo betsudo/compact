@@ -149,6 +149,10 @@ fn success<T: Clone + Into<r::fab::AlignedValue>>(
         .inspect(actual.context.query.state.get_ref())
         .unwrap();
     assert_eq!(stored, field(&expected["stored"]));
+    if let Some(counter) = expected.get("counter") {
+        assert_eq!(r::slots::CounterSlot::new(&[1]).inspect(actual.context.query.state.get_ref()).unwrap(),
+                   counter.as_str().unwrap().parse::<u64>().unwrap());
+    }
     assert_eq!(
         actual.context.private_state,
         expected["privateState"].as_u64().unwrap()
@@ -765,3 +769,8 @@ scenario!(
     callbacks,
     []
 );
+
+scenario!(counter_capture_zero_four_routes_match_live_ts, "counter_capture_zero", counter_capture,
+    [Field::from(1_u64), r::BoundedUint::<65535>::new(0).unwrap(), vector([2,3])], None, callbacks, []);
+scenario!(counter_capture_three_four_routes_match_live_ts, "counter_capture_three", counter_capture,
+    [Field::from(1_u64), r::BoundedUint::<65535>::new(3).unwrap(), vector([2,3])], None, callbacks, []);

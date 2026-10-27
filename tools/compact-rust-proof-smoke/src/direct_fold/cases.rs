@@ -52,7 +52,7 @@ macro_rules! witness {
 }
 macro_rules! scenario {
     ($function:ident, $fixture:ident, [$($parameter:ident:$type:ty),*], [$($arg:expr),*],
-        [$($marker:ident)?], $expected:expr, $private:expr) => {
+        [$($marker:ident)?], $expected:expr, $private:expr $(, counter = $counter:expr)?) => {
         pub(super) fn $function(root: &Path, index: usize, $($parameter:$type,)*) -> Result<serde_json::Value, Box<dyn Error>> {
             use $fixture::{ledger_contract as c, ledger_slots as slots};
             let mut rng = StdRng::seed_from_u64(0x0661_0000 + index as u64);
@@ -84,6 +84,9 @@ macro_rules! scenario {
                 || slots::stored.inspect(native.context.query.state.get_ref())? != expected {
                 return Err("Fold recording or stored Cell differs".into());
             }
+            $(if slots::count.inspect(native.context.query.state.get_ref())? != $counter {
+                return Err("captured Counter amount produced the wrong public state".into());
+            })?
             let expected_state = native.context.query.state.get_ref().clone();
             let input = AlignedValue::concat(&[$(AlignedValue::from($arg)),*]);
             let prepared = check_generated_trace(root, NAME, functional, input)?;
@@ -164,4 +167,19 @@ scenario!(
     [],
     12,
     7
+);
+
+scenario!(
+    counter_capture,
+    compact_rust_direct_fold_counter_capture_source_fixture,
+    [],
+    [
+        field(1),
+        r::BoundedUint::<65535>::new(3_u128)?,
+        vector([2, 3])
+    ],
+    [],
+    6,
+    7,
+    counter = 6
 );

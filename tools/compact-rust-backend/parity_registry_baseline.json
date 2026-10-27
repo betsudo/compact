@@ -2720,6 +2720,14 @@
     "visibility": "export"
   },
   {
+    "source": "examples/rust_backend/direct_fold/counter-capture.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "run",
+    "signature": "export circuit run(seed: Field, amount: Uint<16>, values: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/direct_fold/inline-effectful.compact",
     "module_path": [],
     "kind": "circuit",
@@ -2873,6 +2881,14 @@
   },
   {
     "source": "examples/rust_backend/direct_fold/captured.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/direct_fold/counter-capture.compact",
     "module_path": [],
     "kind": "constructor",
     "name": "constructor",

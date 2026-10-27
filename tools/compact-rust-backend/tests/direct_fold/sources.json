@@ -74,5 +74,9 @@
   {
     "source": "shadow-effectful",
     "alias": "shadow_effectful"
+  },
+  {
+    "source": "counter-capture",
+    "alias": "counter_capture"
   }
 ]

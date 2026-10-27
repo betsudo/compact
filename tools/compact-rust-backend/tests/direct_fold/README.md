@@ -12,19 +12,19 @@ coverage remain required by the complete signed #661 plan.
 
 ## Maintained source-family gate
 
-`check_direct_fold.py` compiles the nineteen unchanged source cases under
+`check_direct_fold.py` compiles the twenty complete source cases under
 `examples/rust_backend/direct_fold/` and consumes their complete generated crates
 from a separate external package. It requires an explicitly selected TS runtime
 of the repository version and checks its production dependency closure, actual
 Node executable and external host libraries. Host OS/kernel paths are reported
 with their narrower scope; injected names are controls, not Linux qualification.
 
-The gate covers 46 cases (33 success, 13 first failure) through ordinary native,
+The gate covers 48 cases (35 success, 13 first failure) through ordinary native,
 ordinary recorded, functional native and functional recorded APIs. It checks
 aligned outputs, declared ledger/private state, private outputs, witness events,
 query-summed cost, persistent held-state isolation and successful public replay.
 Callback effects do not roll back; no failed partial state/cost is returned.
-Eight ordinary API misuses must fail at their intended compiler error/span.
+Nine ordinary API misuses must fail at their intended compiler error/span.
 Four genuine source refusals run on both targets. Changed live TS results and
 unknown missing reported host libraries must refuse before false acceptance.
 
@@ -63,4 +63,17 @@ The legacy controls are compatibility regressions, not extra live-TS cases or
 proofs: genuine TS pure-helper operands evaluate seed first, so historical
 legacy native failure ordering is not claimed as TS parity. The complete
 derived IR inputs, rendered libraries and dependency identities stay in the
-gate receipt separately from the nineteen complete source compilations.
+gate receipt separately from the twenty complete source compilations.
+
+## Current captured-Counter regression cohort
+
+Publication review adds `counter-capture.compact` to the original nineteen
+complete sources: twenty sources, 48 live TS cases and 192 Rust routes. The two
+new successes check Counter amounts 0 and 3 (final counters 0 and 6), full stored
+Field state, private state, effects, cost and recorded VM replay. A separate
+wrong-capture consumer must fail Rust compilation. The original cohort and
+proof receipts retain their historical scope. Current selected proof coverage
+adds one captured-Counter call to the prior nine calls, requiring fresh proof,
+immutable verification, binding/result negatives and funded strict application.
+Legacy cases/routes/replays are measured by the executed Rust tests and parsed
+from their output, with strict named-cohort checks.

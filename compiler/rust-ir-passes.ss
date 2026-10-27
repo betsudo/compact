@@ -173,6 +173,8 @@
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
       (define current-variable-types (make-parameter #f))
+      ;; Counter amounts use the existing checked lexical action bindings.
+      (define current-counter-environment (make-parameter '()))
       (define struct-shape-names '())
       (define used-struct-names '())
 
@@ -1162,7 +1164,9 @@
       (define (state-action-ir expr owner-src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
           (expression-origin-preserve? expr)
-          (lambda () (state-action-ir-value expr owner-src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (state-action-ir-value expr owner-src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (state-action-ir-value expr owner-src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
@@ -1459,7 +1463,9 @@
 
       (define (stateful-body-ir expr src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr) #t
-          (lambda () (stateful-body-ir-value expr src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (stateful-body-ir-value expr src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (stateful-body-ir-value expr src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
@@ -1561,7 +1567,9 @@
       (define (stateful-return-plan-ir expr expected-type owner-src environment witness-ids)
         (call-with-rust-origin "return_plan" (expression-origin expr)
           (expression-origin-preserve? expr)
-          (lambda () (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
@@ -1671,11 +1679,13 @@
                  (lambda ()
                    (if (stateful-body-has-storage-mutation? expr)
                        (stateful-return-plan-ir expr type src
-                         (map (lambda (arg)
-                                (nanopass-case (Lnodisclose Argument) arg
-                                  [(,var-name ,type^)
-                                   (cons var-name (object (cons "kind" "parameter")
-                                                          (cons "name" (rust-var-name var-name))))])) arg*) witness-ids)
+                         (append
+                           (map (lambda (arg)
+                                  (nanopass-case (Lnodisclose Argument) arg
+                                    [(,var-name ,type^)
+                                     (cons var-name (object (cons "kind" "parameter")
+                                                            (cons "name" (rust-var-name var-name))))])) arg*)
+                           (current-counter-environment)) witness-ids)
                        (object (cons "kind" "value")
                                (cons "value" (stateful-typed-expression-ir expr type src witness-ids))))))))]
           [else (source-errorf src "Rust backend does not support this Fold reducer form")]))
@@ -2275,6 +2285,12 @@
                circuits
                (let* ([names (exported-names function-name export-alist)]
                       [internal-name (rust-function-name function-name)]
+                      [environment
+                        (map (lambda (arg)
+                               (nanopass-case (Lnodisclose Argument) arg
+                                 [(,var-name ,type)
+                                  (cons var-name (object (cons "kind" "parameter")
+                                                        (cons "name" (rust-var-name var-name))))])) arg*)]
                       [effectful-return? (and (not (unit-return-type? type))
                                               (or (terminal-storage-mutation-conditional? expr)
                                                   (lexical-storage-mutation-return? expr)))]
@@ -2284,6 +2300,7 @@
                  (append
                    (map (lambda (name)
                           (with-source src
+                            (parameterize ([current-counter-environment environment])
                             (append
                               (object (cons "name" name)
                                     (cons "parameters" (list->vector (map (lambda (arg) (argument-ir arg src)) arg*)))
@@ -2312,7 +2329,7 @@
                                                                 (object (cons "kind" "parameter")
                                                                         (cons "name" (rust-var-name var-name))))]))
                                                      arg*) witness-ids))))
-                              (if (member name names) '() (list (cons "internal" #t))))))
+                              (if (member name names) '() (list (cons "internal" #t)))))))
                         all-names)
                    circuits)))]
           [else circuits]))

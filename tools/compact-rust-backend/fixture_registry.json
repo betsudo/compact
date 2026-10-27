@@ -4000,6 +4000,19 @@
       "library": "tests-rust-backend/direct-fold-shadow-effectful-source/lib.rs",
       "generated_library": "tests-rust-backend/direct-fold-shadow-effectful-source/lib.rs",
       "qualification": "Complete source-bound functional generated output, formatted only; original full IR, origins, capabilities and every checked program retained. Maintained fresh-source gate owns four-route live TS parity/refusals. Registration is not proof, full integration or Linux acceptance."
+    },
+    {
+      "source": "examples/rust_backend/direct_fold/counter-capture.compact",
+      "source_sha256": "2b19fe2985d47826a1c37129278118f3468d064b51700b4be5b675f7b7add7c9",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/direct-fold-counter-capture-source/Cargo.toml",
+      "library": "tests-rust-backend/direct-fold-counter-capture-source/lib.rs",
+      "generated_library": "tests-rust-backend/direct-fold-counter-capture-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only; original full IR, origins, capabilities and every checked program retained. Maintained fresh-source gate owns four-route live TS parity/refusals. Registration is not proof, full integration or Linux acceptance."
     }
   ]
 }

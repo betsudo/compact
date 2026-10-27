@@ -36,7 +36,7 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
-CASES = ("single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
+CASES = ("counter-capture", "single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
 
 
 def require(value, message):
@@ -45,11 +45,13 @@ def require(value, message):
 
 
 def run(args):
+    selected_cases = tuple(name for name in CASES if not args.only or name in args.only)
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
     receipt = {"format": "compact-direct-fold-proof-gate/v1", "status": "incomplete", "commands": [],
-               "scope": "nine selected source-bound functional-derived Field call proofs and default-strict funded local transactions",
+               "scope": f"{sum(2 if name == 'inline-branch' else 1 for name in selected_cases)} selected source-bound functional-derived Field call proofs and default-strict funded local transactions",
+               "selected_cases": list(selected_cases), "complete_selected_family": args.only is None,
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
@@ -97,7 +99,7 @@ def run(args):
         receipt["generated"] = {}
         receipt["generated_hashes"] = {}
         receipt["changed_ir_refusals"] = {}
-        for name in CASES:
+        for name in selected_cases:
             source = SOURCES / f"{name}.compact"
             destination = generated / name
             fixture = ROOT / f"tests-rust-backend/direct-fold-{name}-source"
@@ -142,7 +144,7 @@ def run(args):
         receipt["proof_results"] = {}
         receipt["result_hashes"] = {}
         selected_material = {}
-        for name in CASES:
+        for name in selected_cases:
             destination = generated / name
             (destination / "keys").mkdir()
             execute([components["zkir"]["snapshot"], "compile", destination / "zkir/run.zkir",
@@ -172,7 +174,7 @@ def run(args):
             require(summary["format"] == "compact-direct-fold-proof/v1" and summary["status"] == "passed"
                     and summary["case"] == name and summary["constructor_execution_proved"] is False
                     and summary["unselected_sources_proved"] is False, f"{name} invalid proof summary")
-            expected = [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
+            expected = [6] if name == "counter-capture" else [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
             require([row["expected"] for row in summary["calls"]] == expected, f"{name} selected calls differ")
             for row in summary["calls"]:
                 require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and
@@ -205,6 +207,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--zkir", type=Path)
+    parser.add_argument("--only", action="append", choices=CASES,
+                        help="qualify selected source(s) locally; default CI still runs the complete family")
     parser.add_argument("--target-dir", type=Path, default=Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")))
     parser.add_argument("--output", type=Path, required=True)
     run(parser.parse_args())

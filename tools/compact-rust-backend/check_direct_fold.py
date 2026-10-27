@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "direct_fold"
 SOURCES = ROOT / "examples/rust_backend/direct_fold"
 DEFINITIONS = json.loads((FIXTURES / "sources.json").read_text())
-NEGATIVES = {"wrong_capture": "E0308", "wrong_second_length": "E0308",
+NEGATIVES = {"wrong_counter_capture": "E0308", "wrong_capture": "E0308", "wrong_second_length": "E0308",
              "wrong_unit_item": "E0308", "bare_string": "E0308",
              "owned_reuse": "E0382", "program_reuse": "E0382", "wrong_callback": "E0053", "wrong_empty_witness": "E0053"}
 
@@ -259,18 +259,30 @@ def main():
         report["consumer_lock_sha256"] = digest(child_lock)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "direct_fold"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("46", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("48", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
-        report["rust_consumer_tests"] = 46
+        report["rust_consumer_tests"] = 48
         result = run("legacy-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
-                                         "--test", "legacy_fold"]).stdout
+                                         "--test", "legacy_fold", "--", "--show-output"]).stdout
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("2", "0", "0")]:
             raise ValueError("unexpected legacy-consumer accounting")
-        report["legacy"].update(tests=2, cases=16, rust_route_executions=32, successful_recorded_replays=3)
+        legacy = re.findall(r"^COMPACT_LEGACY_FOLD ([a-z_]+) (\d+) (\d+) (\d+)$", result, re.MULTILINE)
+        if len(legacy) != 2 or {row[0] for row in legacy} != {
+                "legacy_empty_operand_failures", "legacy_two_operand_failures"}:
+            raise ValueError("missing or duplicate legacy execution accounting")
+        cohorts = [{"name": name, "cases": int(cases), "routes": int(routes), "replays": int(replays)}
+                   for name, cases, routes, replays in legacy]
+        expected = {"legacy_empty_operand_failures": (8, 16, 2),
+                    "legacy_two_operand_failures": (8, 16, 1)}
+        if any((row["cases"], row["routes"], row["replays"]) != expected[row["name"]] for row in cohorts):
+            raise ValueError("unexpected legacy execution cohort")
+        report["legacy"].update(tests=2, cases=sum(row["cases"] for row in cohorts),
+            rust_route_executions=sum(row["routes"] for row in cohorts),
+            successful_recorded_replays=sum(row["replays"] for row in cohorts), measured_cohorts=cohorts)
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
                                "--test", "direct_fold", "--test", "legacy_fold", "--", "-D", "warnings"])
         if (report["typescript"]["stateful_cases"], report["typescript"]["successes"],
-                report["typescript"]["refusals"]) != (46, 33, 13):
+                report["typescript"]["refusals"]) != (48, 35, 13):
             raise ValueError("unexpected live TS source-family accounting")
 
         changed = json.loads(capture.read_text())

@@ -694,5 +694,41 @@
     "error": null,
     "fail": null,
     "private": 7
+  },
+  {
+    "id": "counter_capture_zero",
+    "source": "counter-capture",
+    "args": [
+      1,
+      0,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 6,
+    "stored": 6,
+    "counter": 0,
+    "error": null,
+    "fail": null,
+    "private": 7
+  },
+  {
+    "id": "counter_capture_three",
+    "source": "counter-capture",
+    "args": [
+      1,
+      3,
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 6,
+    "stored": 6,
+    "counter": 6,
+    "error": null,
+    "fail": null,
+    "private": 7
   }
 ]

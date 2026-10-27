@@ -21,9 +21,11 @@ macro_rules! legacy_order {
         #[test]
         fn $test() {
             use $module::ledger_contract as c;
+            let (mut cases, mut executions, mut replays) = (0, 0, 0);
             for seed_ok in [false, true] {
                 for source_ok in [false, true] {
                     for reducer_ok in [false, true] {
+                        cases += 1;
                         let expected_error = if !source_ok {
                             Some("source failed")
                         } else if !seed_ok {
@@ -34,6 +36,7 @@ macro_rules! legacy_order {
                             None
                         };
                         for recorded in [false, true] {
+                            executions += 1;
                             let context = c::initial_state(
                                 r::context::ConstructorContext::new(7_u64),
                             )
@@ -52,6 +55,7 @@ macro_rules! legacy_order {
                                         ).unwrap();
                                         assert_eq!(replay.context.state, out.execution.context.query.state);
                                         assert_eq!(replay.context.effects, out.execution.context.query.effects);
+                                        replays += 1;
                                         out.execution
                                     })
                             } else {
@@ -75,6 +79,7 @@ macro_rules! legacy_order {
                     }
                 }
             }
+            println!("COMPACT_LEGACY_FOLD {} {} {} {}", stringify!($test), cases, executions, replays);
         }
     };
 }

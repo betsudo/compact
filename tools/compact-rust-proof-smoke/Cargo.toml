@@ -27,6 +27,7 @@ experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype
 
 [dependencies]
 compact-rust-direct-fold-captured-source-fixture = { path = "../../tests-rust-backend/direct-fold-captured-source", features = ["ledger-transaction"] }
+compact-rust-direct-fold-counter-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-capture-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-multiple-inputs-source-fixture = { path = "../../tests-rust-backend/direct-fold-multiple-inputs-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-effectful-reducer-source-fixture = { path = "../../tests-rust-backend/direct-fold-effectful-reducer-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-witness-reducer-source-fixture = { path = "../../tests-rust-backend/direct-fold-witness-reducer-source", features = ["ledger-transaction"] }

@@ -81,7 +81,9 @@ try {for(const spec of specs){
  active=[];let out,error;try{out=c.circuits.run(ctx,...spec.args.map(args));}catch(e){error=e.message;}const costs=active;active=undefined;
  if(spec.error){assert.ok(error?.includes(spec.error),spec.id+': '+error);assert.equal(out,undefined);rows.push({...spec,events,observedError:error});continue;}
  assert.equal(error,undefined,spec.id);const expected=typeof spec.expected==='boolean'?spec.expected:BigInt(spec.expected);assert.equal(out.result,expected,spec.id);assert.equal(ledger(out.context.currentQueryContext.state).stored,BigInt(spec.stored),spec.id);assert.equal(out.context.currentPrivateState,spec.private,spec.id);
- rows.push({...spec,events,result:encode(out.proofData.output),stored:String(ledger(out.context.currentQueryContext.state).stored),privateState:out.context.currentPrivateState,privateOutputs:out.proofData.privateTranscriptOutputs.map(encode),effects:json(out.context.currentQueryContext.effects),gas:Object.fromEntries(['readTime','computeTime','bytesWritten','bytesDeleted'].map(k=>[k,costs.reduce((n,c)=>n+BigInt(c[k]),0n).toString()]))});
+ const counter=spec.counter===undefined?{}:{counter:String(ledger(out.context.currentQueryContext.state).count)};
+ if(spec.counter!==undefined)assert.equal(counter.counter,String(spec.counter),spec.id+': Counter state');
+ rows.push({...spec,...counter,events,result:encode(out.proofData.output),stored:String(ledger(out.context.currentQueryContext.state).stored),privateState:out.context.currentPrivateState,privateOutputs:out.proofData.privateTranscriptOutputs.map(encode),effects:json(out.context.currentQueryContext.effects),gas:Object.fromEntries(['readTime','computeTime','bytesWritten','bytesDeleted'].map(k=>[k,costs.reduce((n,c)=>n+BigInt(c[k]),0n).toString()]))});
 }}finally{r.QueryContext.prototype.query=query;}
 assert.deepEqual(inventory(runtime),before,'runtime production closure changed');
 for(const {path,sha256} of Object.values(wrappers)) assert.equal(hash(path),sha256);

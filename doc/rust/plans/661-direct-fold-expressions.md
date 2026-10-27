@@ -155,9 +155,10 @@ more features. The first implementation step must inventory the existing Fold
 checker/rendering/refusal consumers; a signature-only happy path is inadequate.
 
 No Forge work, broad refactor, standalone CI optimization, new ledger/ZKIR/SDK
-platform, decoder-limit campaign, proof/verdict caching, hosted trial, push,
-merge, release or shared installation. Keep source commits local, Conventional,
-GPG signed, DCO and Assisted-by. The broader Rust AST goal stays active until
+platform, decoder-limit campaign, proof/verdict caching, release or shared
+installation. Deliver source slices through tested and independently reviewed
+PRs under the owner's standing authority, with Conventional, GPG-signed,
+DCO and Assisted-by commits. The broader Rust AST goal remains incomplete until
 its actual requirements are met. Cleanup is only for task-owned inactive,
 unneeded worktrees/targets after completion and verified GitHub merge, with
 unpublished work and needed inputs, binaries, archives and evidence preserved.
@@ -629,8 +630,44 @@ local arm64 testing and Linux qualification in GitHub Actions, resolving the
 local Linux target question. Local development can continue after its arm64
 checks; the complete compiler/native/proof/wallet/source/workspace/Clippy/package
 gates remain required in CI for integration. Compiler Build already has an
-Ubuntu x86_64 producer and consumer; its backend-branch push trigger now joins
-the existing PR/manual/scheduled triggers. No local Docker builder is needed.
+Ubuntu x86_64 producer and consumer. Each logical slice is qualified through
+its PR; manual and scheduled qualification remain available. No local Docker builder is needed.
 Configuration is not a successful hosted execution. The broader Rust AST goal
 remains incomplete; Forge stays deferred, and cleanup remains conditional on
 completion and verified GitHub merge.
+
+## Current PR delivery authority — 2026-10-27
+
+The owner explicitly superseded the earlier local-only publication restriction.
+Each meaningful Rust AST slice receives focused local validation, a documented
+PR, complete required hosted CI/proof gates, independent CLI review and then
+merge into `codex/rust-backend-ast`. No repeated push/merge approval is needed.
+Local development uses arm64; Linux qualification remains in the full PR
+Compiler Build lane. PR triggers provide that coverage without repeating the
+same expensive full job for the working-branch merge push. Manual and scheduled
+qualification remain available. No required test/proof gate is removed.
+Forge is still deliberately deferred; no release or shared installation is
+authorized. Cleanup remains after completion and verified GitHub merge.
+
+## Publication review: captured Counter amount
+
+A genuine returned inline Fold capturing a circuit `Uint<16>` as a Counter
+increment amount failed with `cannot resolve Counter increment amount`. The
+old body environment held only reducer formals. Preserve the existing checked
+lexical action environment through expression lowering and combine it with
+shadowing reducer formals; keep the existing Counter amount restrictions.
+
+The new `counter-capture.compact` source uses amounts zero and three, checks
+complete native/recorded/functional state and live TS parity, and rejects a
+wrong ordinary capture type at compilation. The maintained source cohort now
+has twenty sources and forty-eight cases (35 successes, 13 first failures), 192
+routes and 70 successful recorded replays; nine compile-fail controls remain
+separate from eight source refusals. The earlier nineteen/forty-six cohort
+retains its exact historical receipts. The selected proof gate adds this
+complete source with an explicit Counter-state expectation: ten fresh calls
+across nine sources are configured, but new proof success must be recorded
+only after actual execution. Constructor and unselected-source limits remain.
+
+Legacy raw-IR compatibility accounting now comes from counters printed by
+the actual successful Rust test executions, with exact named-cohort validation.
+No cached verdict or unchanged test-count assumption supplies those totals.
