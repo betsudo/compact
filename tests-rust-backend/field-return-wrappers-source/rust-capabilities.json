@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "circuits": [
+    {
+      "name": "inferred",
+      "source": {
+        "file": "field_return_wrappers.compact",
+        "line": 24,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "explicit",
+      "source": {
+        "file": "field_return_wrappers.compact",
+        "line": 28,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "nested",
+      "source": {
+        "file": "field_return_wrappers.compact",
+        "line": 32,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "ordered",
+      "source": {
+        "file": "field_return_wrappers.compact",
+        "line": 39,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "checked",
+      "source": {
+        "file": "field_return_wrappers.compact",
+        "line": 46,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    }
+  ]
+}

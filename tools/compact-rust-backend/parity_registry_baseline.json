@@ -3166,5 +3166,77 @@
     "name": "constructor",
     "signature": "constructor()",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "checked",
+    "signature": "export circuit checked(selected: Boolean, value: Uint<16>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "explicit",
+    "signature": "export circuit explicit(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "expression_only",
+    "signature": "export circuit expression_only(value: Uint<16>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "inferred",
+    "signature": "export circuit inferred(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "nested",
+    "signature": "export circuit nested(outer: Boolean, inner: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "ordered",
+    "signature": "export circuit ordered(value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "choose",
+    "signature": "witness choose(): Boolean",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/field_return_wrappers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "observe",
+    "signature": "witness observe(): Field",
+    "visibility": "internal"
   }
 ]

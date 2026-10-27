@@ -1,0 +1,580 @@
+[
+  {
+    "id": "inferred-0",
+    "name": "inferred",
+    "args": [
+      false,
+      5
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "inferred-1",
+    "name": "inferred",
+    "args": [
+      false,
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "inferred-2",
+    "name": "inferred",
+    "args": [
+      true,
+      5
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "inferred-3",
+    "name": "inferred",
+    "args": [
+      true,
+      6
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "explicit-4",
+    "name": "explicit",
+    "args": [
+      false,
+      5
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "explicit-5",
+    "name": "explicit",
+    "args": [
+      false,
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "explicit-6",
+    "name": "explicit",
+    "args": [
+      true,
+      5
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "explicit-7",
+    "name": "explicit",
+    "args": [
+      true,
+      6
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-8",
+    "name": "nested",
+    "args": [
+      false,
+      false,
+      4
+    ],
+    "result": 4,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-9",
+    "name": "nested",
+    "args": [
+      false,
+      false,
+      6
+    ],
+    "result": 4,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-10",
+    "name": "nested",
+    "args": [
+      false,
+      true,
+      4
+    ],
+    "result": 4,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-11",
+    "name": "nested",
+    "args": [
+      false,
+      true,
+      6
+    ],
+    "result": 4,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-12",
+    "name": "nested",
+    "args": [
+      true,
+      false,
+      4
+    ],
+    "result": 3,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-13",
+    "name": "nested",
+    "args": [
+      true,
+      false,
+      6
+    ],
+    "result": 3,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-14",
+    "name": "nested",
+    "args": [
+      true,
+      true,
+      4
+    ],
+    "result": 2,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "nested-15",
+    "name": "nested",
+    "args": [
+      true,
+      true,
+      6
+    ],
+    "result": 2,
+    "count": 0,
+    "keys": [
+      5,
+      7
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-16",
+    "name": "checked",
+    "args": [
+      false,
+      0
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-17",
+    "name": "checked",
+    "args": [
+      false,
+      1
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-18",
+    "name": "checked",
+    "args": [
+      false,
+      2
+    ],
+    "result": 2,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-19",
+    "name": "checked",
+    "args": [
+      false,
+      65535
+    ],
+    "result": 65535,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-20",
+    "name": "checked",
+    "args": [
+      true,
+      0
+    ],
+    "result": 0,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": "subtract"
+  },
+  {
+    "id": "checked-21",
+    "name": "checked",
+    "args": [
+      true,
+      1
+    ],
+    "result": 0,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-22",
+    "name": "checked",
+    "args": [
+      true,
+      2
+    ],
+    "result": 1,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-23",
+    "name": "checked",
+    "args": [
+      true,
+      65535
+    ],
+    "result": 65534,
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "checked-24",
+    "name": "checked",
+    "args": [
+      true,
+      2
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": "observe",
+    "error": "observe refused"
+  },
+  {
+    "id": "checked-25",
+    "name": "checked",
+    "args": [
+      true,
+      0
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": "observe",
+    "error": "observe refused"
+  },
+  {
+    "id": "ordered-26",
+    "name": "ordered",
+    "args": [
+      5
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": false,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "ordered-27",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": false,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "ordered-28",
+    "name": "ordered",
+    "args": [
+      5
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "ordered-29",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "ordered-30",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": false,
+    "fail": "observe",
+    "error": null
+  },
+  {
+    "id": "ordered-31",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": "choose",
+    "error": "choose refused"
+  },
+  {
+    "id": "ordered-32",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": "observe",
+    "error": "observe refused"
+  },
+  {
+    "id": "expression_only-33",
+    "name": "expression_only",
+    "args": [
+      0
+    ],
+    "result": 0,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "expression_only-34",
+    "name": "expression_only",
+    "args": [
+      1
+    ],
+    "result": 1,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  },
+  {
+    "id": "expression_only-35",
+    "name": "expression_only",
+    "args": [
+      65535
+    ],
+    "result": 65535,
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null
+  }
+]

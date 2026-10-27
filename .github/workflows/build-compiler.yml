@@ -481,6 +481,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold" --report "$RUNNER_TEMP/compact-direct-fold.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check generated Field return-wrapper APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers" --report "$RUNNER_TEMP/compact-field-wrappers.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -502,6 +507,10 @@ jobs:
       - name: Qualify selected direct Fold proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold-proof"
+
+      - name: Qualify selected Field return-wrapper proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
 
       - name: Rehearse Rust runtime packages
         id: runtime-packages
@@ -526,6 +535,12 @@ jobs:
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
             ${{ runner.temp }}/compact-map-size-expression.json
+            ${{ runner.temp }}/compact-field-wrappers.json
+            ${{ runner.temp }}/compact-field-wrappers/generated/
+            ${{ runner.temp }}/compact-field-wrappers/ts-reference.json
+            ${{ runner.temp }}/compact-field-wrappers/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-field-wrappers-proof/receipt.json
+            ${{ runner.temp }}/compact-field-wrappers-proof/generated/
             ${{ runner.temp }}/compact-direct-fold.json
             ${{ runner.temp }}/compact-direct-fold/generated/
             ${{ runner.temp }}/compact-direct-fold/ts-reference.json

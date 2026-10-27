@@ -20,13 +20,13 @@ There is no honest overall completion percentage. A checked-operation variant, a
 | Readability | Measured, focused generated-code simplification; smaller named component owners and ordinary Rust constructs. | This is not a promise that every generated body reads like handwritten application code. |
 | Immutable functional surface | A compiler-issued `Program`, one generic `run` body, native/recorded convenience methods and consuming execution. | Opt-in experimental API; ordinary generated APIs remain available. |
 | Witnesses | General typed signatures; Unit, Field, Bytes and products; explicit exact opaque transport; metered witness views and typed unknown-identity errors. | Handwritten callbacks are ordinary Rust, not compiler-certified privacy/effect implementations. |
-| Pure values and composition | Shared arithmetic, comparisons, checked conversions, aggregates/projections, local calls, context-free VectorMap and certified pure helper Fold. | Type combinations and resource bounds remain checked. Direct stateful Fold has selected local #661 qualification and resolved independent review findings; intended Linux/current-head integration remains open. |
+| Pure values and composition | Shared arithmetic, comparisons, checked conversions, aggregates/projections, local calls, context-free VectorMap and certified pure helper Fold. | Type combinations and resource bounds remain checked. Direct stateful Fold is integrated through reviewed PR #690 with its selected source/proof scope; arbitrary Fold/source combinations remain checked. |
 | Collections | Cell, Counter, scalar Map/Set, List and structural nested-Map inspection/removal, through existing slots/frames. | Nested Map inspection does not imply scalar value codecs, arbitrary nested insertion or every frontend expression form. |
 | Merkle | Plain/historic typed operations, retaining depth/history, slot identity, paths and existing validation authority. | Representative proof cases do not prove all tree operations or all depths. |
 | Crypto | Sixteen admitted Ledger8 hashing, Field encoding and Jubjub operations use shared syntax and official primitives. | Keccak is refused for this pinned ZKIRv2 functional target. Curve arithmetic is not a blanket signature-security claim. |
 | Ledger8 effects | Execution identity, kernel claims/minting, Zswap intents and qualified Cell/Set storage via explicit official-domain adapters. | Constructors keep their original owner. Held allocation indices do not prove offer provenance; `ownPublicKey` observation is not an ownership proof. |
 | Diagnostics | Typed witness identity failures and checked type/target/path refusals, preserving original causes. | Nested source ranges and consumed-source/privacy guarantees are not complete. Unknown remains Unknown. |
-| Test infrastructure | Generated consumers, ContractLab, official proof/provider integration, optional Forge artifact reuse and a separate uncached key-generation path. | Proofs and assertions execute every lap. No proof, pass/fail decision or test result is cached. |
+| Test infrastructure | Generated consumers, ContractLab and official proof/provider integration using direct uncached key generation. Forge comparison is deferred on `experiment/zkir-forge`. | Proofs and assertions execute every lap. No proof, pass/fail decision or test result is cached. |
 
 The exhaustive functional match currently admits **71 of 72 top-level checked Operation variants**, conditionally under existing guards. Keccak is the excluded variant. List suboperations, Merkle forms, claim kinds, type combinations and source syntax are additional dimensions. **71/72 is not 98.6% language coverage.**
 
@@ -153,34 +153,36 @@ Core qualification contains five case executions per lap: two Merkle branches, h
 
 The initial consumer/core/domain pipeline took 792.95 seconds locally. This is an observation of that machine/run, not a performance guarantee or a general Forge speedup claim.
 
-### Current publication candidate
+### Historical publication candidate (superseded by the 2026-10-27 integration below)
 
 The published final head is `3739976ca`. It differs from `2477c3e25` only in three license-header blank lines and module declaration ordering. It is not byte-identical, so its current-byte qualification is tracked separately.
 
 The current-byte compiler rebuild, strict Clippy, fresh generated consumer and both core/domain proof suites have now passed. An independent audit accepted all seven three-lap receipts: inputs and guards stayed unchanged, cleanup succeeded, and complete ZKIR/prover/verifier artifact hashes matched across cold, warm and direct uncached lanes. These are fresh successor results, not relabeled predecessor receipts. Hosted CI and PR review remain pending, so release acceptance is not yet complete.
 
-## Where the delivery is published
+## Current integration — 2026-10-27
 
-Review/merge order is bottom-up:
+Canonical `codex/rust-backend-ast` reached `feefa65770e39580b5044b6a4a0307783c8bfe93` through signed merges. The following PRs are verified merged after their actual final-head required CI, full compiler/native/package/proof gates and independent review:
 
-| Order | PR | Contribution |
-| --- | --- | --- |
-| Foundation | [#664](https://github.com/betsudo/compact/pull/664) | Initial immutable Ledger8 functional prototype |
-| 1 | [#676](https://github.com/betsudo/compact/pull/676) | Metadata, typed witnesses, pure/local calls, Map/Set; about 7.8k added lines |
-| 2 | [#677](https://github.com/betsudo/compact/pull/677) | List, Counter, VectorMap, Merkle and witness diagnostics; about 6.1k added lines |
-| 3 | [#678](https://github.com/betsudo/compact/pull/678) | Crypto, Ledger8 domains and proof qualification; about 6.8k added lines |
+| PR | Contribution | Qualified source head | Signed merge |
+| --- | --- | --- | --- |
+| [#664](https://github.com/betsudo/compact/pull/664) | Ledger8 baseline and Forge isolation, retaining the earlier contribution stack | `de0c9ae5f` | `c353907d8` |
+| [#688](https://github.com/betsudo/compact/pull/688) | Constant fixed-vector projection | `a98543313` | `d300a02ec` |
+| [#689](https://github.com/betsudo/compact/pull/689) | Map size expressions and whole-Map metadata | `0fccce1be` | `38deaf9d3` |
+| [#690](https://github.com/betsudo/compact/pull/690) | Direct Fold, including captured/local Counter amounts and source refusal controls | `fa8c8cc11` | `feefa6577` |
 
-Each PR targets the preceding branch; #664 targets `codex/rust-backend-ast`. The first two slices passed their own pre-format all-feature backend/runtime tests: 2,356 and 2,405 tests respectively, with seven existing manual ignores. Their successors contain only the reviewed header-spacing changes. GitHub verified all published commit signatures. None of this means the full stack has been merged.
+Each merge tree matched its qualified source tree exactly. Native Linux x86_64 was qualified in GitHub Actions; local development uses Darwin arm64. The final Fold gate covers 21 full sources, 50 live-TS cases, 200 Rust route executions, 74 successful recorded replays, nine compile-fail controls and eight source refusals. Selected proof gates remain finite; they do not prove constructors or every accepted input. Earlier local/source receipts above remain historical epochs.
 
-Issue state is also not a completion counter: many issues contain locally delivered work that remains open for publication/reconciliation. The large older recording-algebra PR #634 is a separate open history/publication item; do not merge overlapping history blindly.
+Forge CI adoption is deliberately deferred and incomplete. Selected contract-level reuse benefits are valid; whole-CI value remains unproven. The earlier “1% key generation” interpretation was incomplete: 46 seconds measured only Forge-managed generation; direct bypass generation was not separately timed, so the total ZKIR/prover-key/verifier-key share remains unknown. Backend progress does not depend on Forge. Its continuation is `experiment/zkir-forge`; separate repositories, signed results, stores, snapshots and failure evidence are retained.
+
+Issue state is not a completion counter. The older recording-algebra PR #634 remains a separate history/publication item; do not blindly merge overlapping history.
 
 ## What is left, in priority order
 
-### 1. Finish candidate acceptance and land the reviewed stack
+### 1. Close the bounded Field return-wrapper source gap
 
-**Finish when:** the current-byte local pipeline is terminal and independently reconciled; required current-head CI and review are resolved; the intended changes are present on `codex/rust-backend-ast` with the contribution history preserved. Reconcile issue/ADR status against that accepted revision. Empty checks and superseded green heads do not count.
+The next slice is [#516 Field return wrappers](plans/516-field-return-wrappers.md), based on the clean accepted canonical head above. The genuine retained source compiled for TS but failed Rust at a nested `Set.insert` hidden by an inferred Uint-to-Field cast. Preserve conversion timing and selected effects through existing checked return/lowering/AST owners. Full #516 lexical/initializer debt remains outside this slice.
 
-This is publication/acceptance work, not a need to rebuild the compiler architecture.
+Focused source/consumer results are recorded in the plan. Full new-head compiler, proof, CI and independent review are required before integration; the four merged predecessors do not qualify later bytes.
 
 ### 2. Requalify the real applications on the current profile
 
@@ -194,22 +196,12 @@ This is publication/acceptance work, not a need to rebuild the compiler architec
 
 | Issue | Current gap | Required evidence for a fix |
 | --- | --- | --- |
-| [#674](https://github.com/betsudo/compact/issues/674) | Constant fixed-vector projection is locally delivered; independent review/Linux integration remain open. | [Recorded local scope and source cohorts](plans/674-constant-vector-projection-decision.md); distinct typed indexing, bounds/ownership controls and fresh selected proofs. |
-| [#661](https://github.com/betsudo/compact/issues/661) | Direct named/captured/effectful/witness/multi-iterable Fold has reviewed local corrections at `ae1c8b258`; intended native Linux/current-head integration remains open. Certified pure-helper Fold remains accepted within its scope. | [Current local evidence and remaining gates](plans/661-direct-fold-expressions.md#reviewed-local-checkpoint--2026-10-26): nineteen full sources, 46 four-route/live-TS cases, separate sixteen-scenario legacy compatibility controls and typed API/refusal checks. Earlier nine selected proofs/default-strict applications retain their `fb229b9cd` epoch; no constructor/unselected/full-language claim. |
-| [#610](https://github.com/betsudo/compact/issues/610) | Stateful `Map.size()` expressions now pass maintained local integration at `e14103c5d`; review/Linux integration remain open. | [Exact local results and limits](plans/610-map-size-expressions.md#local-integration-checkpoint--2026-10-26); genuine TS/four-route consumers, whole-Map metadata, malformed-state controls and two fresh proofs/default-strict applications. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Value wrappers and lexical handling can hide an effectful return. | Preserve conversion timing, branch effects, lexical scope and original first failures across native/recorded paths. |
+| [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
+| [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
+| [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Current bounded slice: Field/monotone Uint wrappers around terminal effects. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
 
-The [direct fixed-vector Fold plan](plans/661-direct-fold-expressions.md) now
-records typed ingress/checked composition and selected local qualification.
-The original nine source probes and earlier sixteen-source consumer remain
-historical characterization/execution. Current nineteen-source/four-route
-parity, empty and one-item controls, reviewed legacy corrections and earlier
-nine selected fresh proofs have separate exact source/tool receipts. Independent
-review findings are resolved at `ae1c8b258`. Under the owner's 2026-10-27
-direction, arm64 checks are the local development gate and Linux/current-head
-required integration runs in GitHub Actions. A local Linux runner is not a
-prerequisite for continuing bounded backend work. Preserve the accepted
-crosswalk and historical authorities; CI acceptance remains separate.
+Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
 These are not retroactive failures of the bounded delivery. They **are blockers for contracts using them, and for an unqualified full-language claim**. For a deliberately supported-profile release, publish explicit exclusions instead of calling them solved.
 
@@ -233,7 +225,7 @@ Refresh ADR/CoPS publication and release metadata. The current `skip-changelog` 
 
 | Work | Current disposition |
 | --- | --- |
-| [#655](https://github.com/betsudo/compact/issues/655), Forge hardening | Useful follow-up: automate cross-lap identity/counter assertions and record actually used built-in proof material. Current successful guarded execution is accepted within its scope; no full offline reproducibility claim. |
+| [#655](https://github.com/betsudo/compact/issues/655), Forge hardening | Deferred to `experiment/zkir-forge`, outside the backend dependency chain. Historical follow-up: automate cross-lap identity/counter assertions and record actually used built-in proof material. Current successful guarded execution is accepted within its scope; no full offline reproducibility claim. |
 | [#653](https://github.com/betsudo/compact/issues/653), historical public evidence | Required before claiming the entire historical acceptance is publicly reproducible. A clearly labeled maintainer-only historical report can retain that limitation. |
 | [#633](https://github.com/betsudo/compact/issues/633), nested source ranges | Developer experience follow-up unless a selected acceptance case needs it. Current structural-path fallback is not exact source-range coverage. |
 | Wasm | Earlier bounded Node/browser prototypes exist. The current functional surface needs its own feasibility slice before claiming support. Not a prerequisite for a native-only supported profile. |

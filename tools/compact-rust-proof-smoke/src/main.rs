@@ -76,6 +76,7 @@ mod election_topic;
 mod exact_hash_input;
 mod field_observation;
 mod field_pair_hash;
+mod field_return_wrappers;
 mod field_to_bytes32;
 mod guarded_point_read;
 mod guarded_recording;

@@ -42,6 +42,7 @@ pub(super) fn try_run(
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }
+        ("--field-return-wrappers", _) => Some(collections::field_return_wrappers(arguments)),
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
@@ -326,6 +327,11 @@ mod tests {
                 "--direct-fold",
                 2,
                 "usage: compact-rust-proof-smoke --direct-fold <case> <proof-output>",
+            ),
+            (
+                "--field-return-wrappers",
+                1,
+                "usage: compact-rust-proof-smoke --field-return-wrappers <proof-output>",
             ),
             (
                 "--map-size-expression",
