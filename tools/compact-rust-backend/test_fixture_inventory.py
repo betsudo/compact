@@ -39,12 +39,13 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         names = {'examples/rust_backend/constant_vector_projection.compact',
                  'examples/rust_backend/map_size_expression.compact',
                  'examples/rust_backend/field_return_wrappers.compact',
-                 'examples/rust_backend/tuple_return_wrappers.compact'}
+                 'examples/rust_backend/tuple_return_wrappers.compact',
+                 'examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact'}
         names.update(f'examples/rust_backend/direct_fold/{row["source"]}.compact'
                      for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 25)
+        self.assertEqual(len(extension), 26)
         current['sources'] = [row for row in current['sources'] if row not in extension]
         self.assertEqual(current, baseline)
 
@@ -79,6 +80,38 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(circuits['mixed']['result'], {'kind': 'tuple', 'elements': [
             {'kind': 'unsigned', 'max': '255'}, {'kind': 'field'}]})
 
+    def test_did_functional_lifecycle_retains_original_sources_and_all_programs(self):
+        root = inventory.ROOT
+        source = root / 'examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact'
+        row = next(row for row in inventory.source_registry() if row.source == source)
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
+        self.assertEqual(row.library, row.generated_library)
+        fixture = row.library.parent
+        self.assertEqual(len(list((fixture / 'checked-programs').glob('*.json'))), 12)
+        original = root / 'examples/rust_backend/did_adoption'
+        copied = root / 'examples/rust_backend/third_party/did_functional_lifecycle'
+        self.assertEqual(fingerprint(copied / 'source-manifest.json'),
+                         'a5386c2d3cc8d2f3aa090599a6038efc638f36f20ede19a7067a1ba416610106')
+        manifest = json.loads((original / 'source-manifest.json').read_text())
+        self.assertEqual((copied / 'source-manifest.json').read_bytes(),
+                         (original / 'source-manifest.json').read_bytes())
+        for item in manifest['files']:
+            self.assertEqual((copied / item['path']).read_bytes(),
+                             (original / item['path']).read_bytes())
+            self.assertEqual(fingerprint(copied / item['path']), item['sha256'])
+        ir = json.loads((fixture / 'original-ir.json').read_text())
+        self.assertEqual(ir['schema_version'], 20)
+        reports = json.loads((fixture / 'rust-capabilities.json').read_text())['circuits']
+        self.assertEqual(len(reports), 12)
+        self.assertTrue(all(c['recorded'] and c['observed_call'] and c['proof_required']
+                            for c in reports))
+        oracle = json.loads((fixture / 'data/unit-composition.json').read_text())
+        self.assertEqual(oracle['runtime_version'], '0.16.102')
+        self.assertEqual(len(oracle['cases']), 12)
+        self.assertTrue(all(c['source'] == 'did' for c in oracle['cases']))
+        self.assertEqual(len({c['id'] for c in oracle['cases']}), 12)
+
     def test_direct_fold_registers_every_complete_source_family(self):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
         rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']
@@ -95,7 +128,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 194,
+            inventory.SourceRole.FLAT_LIBRARY: 195,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })

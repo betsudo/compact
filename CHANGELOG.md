@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.138, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Emit checked fallible Unit-valued pure calls as statements in functional Rust
+  programs, preserving one evaluation and error propagation without Unit locals
+  rejected by strict Clippy. Other result types, source admission and runtime ABI
+  are unchanged.
+
+### Added
+
+- A complete unchanged original-DID functional fixture on Ledger8.1.3, selected
+  constructor-derived deactivation behavior against live TypeScript, four-route
+  authorization/failure controls, typed API refusals and a fresh selected proof
+  with immutable verification, funded default-strict application and replay
+  rejection. Keep all twelve generated programs; do not imply twelve proofs.
+
 ## [Toolchain 0.31.137, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

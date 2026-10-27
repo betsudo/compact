@@ -23,6 +23,21 @@ Pure expressions use one shared semantic fold. `NativeSink` produces Rust syntax
 
 Read the [current extension and diagnostics guide](../../doc/rust/guides/checked-recording.md) and [capability and retirement book](../../doc/rust/recording-effect-algebra/capability-and-retirement-book.md). The following development checkpoints preserve their original support and ABI claims; their earlier fallback/profile descriptions are historical. Detailed historical acceptance follows the [evidence availability policy](../../doc/rust/recording-effect-algebra/evidence-availability.md).
 
+## Current original-DID application check
+
+The [functional lifecycle guide](../../doc/rust/guides/did-functional-lifecycle.md)
+uses the complete unchanged original DID source on Ledger8.1.3. A separate source
+fixture retains all twelve programs and the original ordinary fixture. The
+maintained `check_did_functional_lifecycle.py` gate checks fresh Rust/TS output,
+live observations, the constructor-derived selected lifecycle, ten invalid
+inputs across four routes, typed refusals and strict generated Clippy.
+`check_did_functional_lifecycle_proof.py` uses the existing DID transaction owner
+for one fresh functional-recorded deactivation proof, immutable verification,
+changed binding/version controls, funded default-strict application and replay
+refusal. Neither metadata nor this one selected proof proves all twelve exports.
+See the [bounded plan](../../doc/rust/plans/did-functional-lifecycle-current-profile.md)
+for the development versus integration acceptance boundary.
+
 ## Historical Effectful return checkpoint
 
 `StateReturn::Effectful` roots now lower directly through the checked recording
@@ -63,8 +78,8 @@ including mixed Uint/Field results and inline Fold composition.
 order through live TS and four Rust APIs; `check_tuple_return_wrappers_proof.py`
 requires fresh selected inferred/mixed/Fold proofs and each output-component
 negative. See the [complete fixture](../../tests-rust-backend/tuple-return-wrappers-source/README.md).
-This prototype is not merged or integration-qualified; other aggregate and
-initializer debt remains separate.
+This bounded pair slice is integrated through reviewed PR #692 with full CI;
+other aggregate and initializer debt remains separate.
 
 
 `effectful_return_oracle.compact` retains independent TS/native/recorded controls.

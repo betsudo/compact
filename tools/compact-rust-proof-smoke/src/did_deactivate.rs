@@ -20,6 +20,22 @@ use midnight_compact_runtime as runtime;
 use serde_json::Value;
 use std::cell::RefCell;
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    run_with(root, prepare_ordinary).map(|_| ())
+}
+
+// Share the existing funded, default-strict DID transaction path. The selected
+// caller supplies a real generated recording, never a fabricated proof verdict.
+pub(super) fn run_with(
+    root: &Path,
+    prepare: impl FnOnce(
+        &Path,
+        &ObservedContractState,
+        &Value,
+    ) -> Result<
+        (ContractCallPrototype<DefaultDB>, StateValue<DefaultDB>),
+        Box<dyn Error>,
+    >,
+) -> Result<Value, Box<dyn Error>> {
     let capture: Value = serde_json::from_str(include_str!(
         "../../../runtime-rs/tests/fixtures/unit-composition.json"
     ))?;
@@ -31,15 +47,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         .unwrap();
     let prior: ContractState<DefaultDB> =
         tagged_deserialize(&mut hex::decode(row["before"].as_str().unwrap())?.as_slice())?;
-    let signature = types::SchnorrSignature {
-        announcement: runtime::ec_mul_generator(Field::from(2u64))?,
-        response: Field::from_le_bytes(&hex::decode(row["responseHex"].as_str().unwrap())?)
-            .ok_or("invalid fixture response")?,
-    };
-    let witness = || Witness {
-        options: row["options"].clone(),
-        calls: RefCell::default(),
-    };
     let mut rng = StdRng::seed_from_u64(0x0251);
     let deploy = make_deploy(root, "deactivate", prior.data.get_ref().clone(), &mut rng)?;
     let address = deploy.address();
@@ -57,46 +64,24 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             block_height: 0,
         },
     );
-    let native = c::deactivate(
-        observed.circuit_context(7u64),
-        &witness(),
-        signature.clone(),
-        runtime::BoundedUint::new(0)?,
-    )?;
-    let recorded = c::recorded::deactivate(
-        observed.circuit_context(7u64),
-        &witness(),
-        signature.clone(),
-        runtime::BoundedUint::new(0)?,
-    )?;
-    if native.context.query.state != recorded.execution.context.query.state
-        || native.gas_cost != recorded.execution.gas_cost
-        || native.private_transcript_outputs != recorded.execution.private_transcript_outputs
-    {
-        return Err("DID native/recorded mismatch".into());
-    }
-    let expected = native.context.query.state.get_ref().clone();
-    let input = AlignedValue::from((
-        signature.clone(),
-        runtime::BoundedUint::<18446744073709551615>::new(0)?,
-    ));
-    let manual = check_generated_trace(root, "deactivate", recorded, input)?;
+    let (prepared, expected) = prepare(root, &observed, row)?;
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/deactivate.verifier"),
     )?))?;
-    let generated = c::Contract::from(witness());
-    let prepared = generated
-        .recording()
-        .deactivate_call(&observed, 7u64, signature, runtime::BoundedUint::new(0)?)?
-        .prepare(verifier.clone(), Fr::from(0u64))?;
-    if format!("{manual:?}") != format!("{prepared:?}") {
-        return Err("DID typed/manual preparation mismatch".into());
-    }
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let changed_input = AlignedValue::from((
+        types::SchnorrSignature {
+            announcement: runtime::ec_mul_generator(Field::from(2_u64))?,
+            response: Field::from_le_bytes(&hex::decode(row["responseHex"].as_str().unwrap())?)
+                .ok_or("invalid fixture response")?,
+        },
+        runtime::BoundedUint::<18446744073709551615>::new(1)?,
+    ));
+    let proof_bytes = super::kernel_shielded_effects::prove_and_verify_call_with_input_control(
         root,
         "deactivate",
         &prepared,
         &verifier,
+        Some(changed_input),
     )?;
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
         Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
@@ -139,9 +124,35 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     {
         return Err("DID final state differs".into());
     }
+    let replay_context = TransactionContext {
+        ref_state: updated.clone(),
+        block_context: BlockContext {
+            tblock: state.time,
+            last_block_time: state.time,
+            ..BlockContext::default()
+        },
+        whitelist: None,
+    };
+    let (replayed, replay_result) = updated.apply(&verified, &replay_context);
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != updated
+    {
+        return Err(
+            format!("DID replay refused incorrectly or mutated state: {replay_result:?}").into(),
+        );
+    }
     let second = c::recorded::deactivate(
         runtime::context::CircuitContext::from_contract_state(9u64, address, actual),
-        &witness(),
+        &Witness {
+            options: row["options"].clone(),
+            calls: RefCell::default(),
+        },
         types::SchnorrSignature {
             announcement: runtime::ec_mul_generator(Field::from(2u64))?,
             response: Field::from_le_bytes(&hex::decode(row["responseHex"].as_str().unwrap())?)
@@ -156,5 +167,65 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     println!(
         "original DID deactivate: proof verified, changed binding rejected, default-strict separate Dust ledger apply; exact final state and stale repeat rejection; constructor-derived seeded prior state, not a full DID lifecycle"
     );
-    Ok(())
+    let mut final_state = Vec::new();
+    tagged_serialize(actual, &mut final_state)?;
+    Ok(serde_json::json!({
+        "proof_bytes":proof_bytes,"changed_binding_rejected":true,
+        "changed_version_input_rejected":true,"changed_input_same_geometry":true,
+        "strict_application":"default","replay_refusal":"IntentAlreadyExists",
+        "replay_unchanged":true,"stale_version_rejected":true,
+        "final_state_hex":hex::encode(final_state)
+    }))
+}
+
+fn prepare_ordinary(
+    root: &Path,
+    observed: &ObservedContractState,
+    row: &Value,
+) -> Result<(ContractCallPrototype<DefaultDB>, StateValue<DefaultDB>), Box<dyn Error>> {
+    let signature = types::SchnorrSignature {
+        announcement: runtime::ec_mul_generator(Field::from(2u64))?,
+        response: Field::from_le_bytes(&hex::decode(row["responseHex"].as_str().unwrap())?)
+            .ok_or("invalid fixture response")?,
+    };
+    let witness = || Witness {
+        options: row["options"].clone(),
+        calls: RefCell::default(),
+    };
+    let native = c::deactivate(
+        observed.circuit_context(7u64),
+        &witness(),
+        signature.clone(),
+        runtime::BoundedUint::new(0)?,
+    )?;
+    let recorded = c::recorded::deactivate(
+        observed.circuit_context(7u64),
+        &witness(),
+        signature.clone(),
+        runtime::BoundedUint::new(0)?,
+    )?;
+    if native.context.query.state != recorded.execution.context.query.state
+        || native.gas_cost != recorded.execution.gas_cost
+        || native.private_transcript_outputs != recorded.execution.private_transcript_outputs
+    {
+        return Err("DID native/recorded mismatch".into());
+    }
+    let expected = native.context.query.state.get_ref().clone();
+    let input = AlignedValue::from((
+        signature.clone(),
+        runtime::BoundedUint::<18446744073709551615>::new(0)?,
+    ));
+    let manual = check_generated_trace(root, "deactivate", recorded, input)?;
+    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
+        root.join("keys/deactivate.verifier"),
+    )?))?;
+    let generated = c::Contract::from(witness());
+    let prepared = generated
+        .recording()
+        .deactivate_call(observed, 7u64, signature, runtime::BoundedUint::new(0)?)?
+        .prepare(verifier.clone(), Fr::from(0u64))?;
+    if format!("{manual:?}") != format!("{prepared:?}") {
+        return Err("DID typed/manual preparation mismatch".into());
+    }
+    Ok((prepared, expected))
 }

@@ -39,3 +39,10 @@ historical baseline and explicitly selected manual graph controls.
   historical constituents.
 - [Issue closeout map](../recording-effect-algebra/issue-closeout.md): delivered
   work, separate follow-ups and conditions that remain open.
+
+## Current application checks
+
+- [Original DID functional lifecycle](did-functional-lifecycle.md): the consuming
+  generated API, genuine witnesses, four-route failure controls and separate
+  selected proof/default-strict application gates on Ledger8.1.3. Development
+  receipts and final integration acceptance retain separate source epochs.

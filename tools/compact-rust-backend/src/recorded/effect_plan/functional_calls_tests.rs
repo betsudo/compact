@@ -281,6 +281,40 @@ fn checked_pure_calls_reuse_the_same_certified_syntax_as_ordinary_recording() {
     );
 }
 #[test]
+fn certified_unit_calls_keep_one_fallible_statement_without_a_unit_local() {
+    let pure = PureCircuit {
+        source: None,
+        name: "validate".into(),
+        internal: true,
+        parameters: vec![parameter("accepted", Type::Boolean)],
+        result: Type::Unit,
+        body: Expr::Assert {
+            condition: Box::new(input("accepted")),
+            message: "unit guard".into(),
+        },
+    };
+    let root = circuit(
+        "root",
+        vec![parameter("accepted", Type::Boolean)],
+        Type::Unit,
+        call("validate", vec![input("accepted")]),
+    );
+    let checked = checked(&[root], &[pure]);
+    let authority = Authority::new();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let rendered = super::super::functional_render::render(&program)
+        .unwrap()
+        .body
+        .to_token_stream()
+        .to_string();
+    assert_eq!(rendered.matches("pure_circuits :: validate").count(), 1);
+    assert!(rendered.contains("pure_circuits :: validate (__compact_effect_0) ? ; Ok (())"));
+    assert!(
+        !rendered.contains("let __compact_functional_result = crate :: pure_circuits :: validate")
+    );
+}
+
+#[test]
 fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
     let helper = circuit(
         "helper",

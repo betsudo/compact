@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Five logical deliveries through #691 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Six logical deliveries through #692 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -279,3 +279,21 @@ The next useful engineering work is **real-application functional qualification,
 - This page is a dated explanation. It does not close issues, merge PRs or create new release requirements by itself.
 
 Related audit record: [Keccak and the pinned Ledger8 proof profile](audit/2026-10-18-keccak-profile-boundary.md). Recorded implementation and qualification revisions remain authoritative.
+
+## Current original-DID functional application slice
+
+The canonical backend is clean at verified signed merge `acf529eff` of PR #692.
+Its complete Linux/Darwin/compiler/native/proof/package/archive/wallet/E2E gates
+and exact-head Claude review pass. The next bounded slice qualifies the original
+DID deactivation lifecycle on the current Ledger8.1.3 profile and fixes six
+strict-Clippy Unit locals at the existing checked PureCall AST owner. It adds no
+source-shape admission rule, new IR/ABI or public builder framework.
+
+The development source/API/proof gates pass: complete unchanged two-file original
+source, all twelve generated programs, live TS, five selected Rust test methods,
+ten invalid inputs across four routes, typed refusals and one fresh functional
+proof/default-strict application. Constructor execution and all twelve exports
+are not proved. The [DID plan](plans/did-functional-lifecycle-current-profile.md)
+and [developer guide](guides/did-functional-lifecycle.md) separate these receipts
+from final clean compiler138, full integration CI and review acceptance. The
+broader Rust AST goal remains incomplete; Forge remains deferred.

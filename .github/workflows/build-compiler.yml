@@ -491,6 +491,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers" --report "$RUNNER_TEMP/compact-tuple-wrappers.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check original DID functional lifecycle APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-did-functional" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -521,6 +526,10 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
 
+      - name: Qualify selected original DID functional proof
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-did-functional-proof"
+
       - name: Rehearse Rust runtime packages
         id: runtime-packages
         run: |
@@ -541,6 +550,12 @@ jobs:
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
             ${{ runner.temp }}/compact-functional-consumer.json
+            ${{ runner.temp }}/compact-did-functional/receipt.json
+            ${{ runner.temp }}/compact-did-functional/generated/
+            ${{ runner.temp }}/compact-did-functional/live-typescript.json
+            ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
+            ${{ runner.temp }}/compact-did-functional-proof/receipt.json
+            ${{ runner.temp }}/compact-did-functional-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
             ${{ runner.temp }}/compact-map-size-expression.json

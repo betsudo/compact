@@ -110,6 +110,7 @@ mod did_deactivate;
 #[path = "../../../tests-rust-backend/did-adoption/support/witness.rs"]
 mod did_deactivate_support;
 mod did_digest_reducer;
+mod did_functional_lifecycle;
 mod did_point_lifecycle;
 mod did_primitive_reducers;
 mod did_public_interchange;

@@ -201,6 +201,18 @@ pub(super) fn prove_and_verify_call_measured(
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
 ) -> Result<usize, Box<dyn Error>> {
+    prove_and_verify_call_with_input_control(root, name, call, verifier, None)
+}
+
+// A selected same-geometry public-input control uses the original immutable
+// verifier and exact communication commitment, without regenerating a proof.
+pub(super) fn prove_and_verify_call_with_input_control(
+    root: &Path,
+    name: &'static str,
+    call: &ContractCallPrototype<DefaultDB>,
+    verifier: &VerifierKey,
+    changed_input: Option<AlignedValue>,
+) -> Result<usize, Box<dyn Error>> {
     let mut fields = Vec::new();
     call.input.value_only_field_repr(&mut fields);
     call.output.value_only_field_repr(&mut fields);
@@ -229,6 +241,50 @@ pub(super) fn prove_and_verify_call_measured(
         return Err("Kernel proof/preimage skips differ".into());
     }
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
+    if let Some(changed_input) = changed_input {
+        if changed_input.alignment != call.input.alignment
+            || changed_input.value.0.len() != call.input.value.0.len()
+            || changed_input == call.input
+        {
+            return Err(
+                "changed public input is not a different value with identical geometry".into(),
+            );
+        }
+        let mut changed_call = call.clone();
+        changed_call.input = changed_input;
+        let mut fields = Vec::new();
+        changed_call.input.value_only_field_repr(&mut fields);
+        changed_call.output.value_only_field_repr(&mut fields);
+        let changed_commitment =
+            transient_commit(&fields[..], changed_call.communication_commitment_rand);
+        if changed_commitment == commitment || inputs.get(1) != Some(&commitment) {
+            return Err("changed public-input commitment geometry differs".into());
+        }
+        let mut changed_inputs = inputs.clone();
+        changed_inputs[1] = changed_commitment;
+        if verifier
+            .verify(&PARAMS_VERIFIER, &proof, changed_inputs.into_iter())
+            .is_ok()
+        {
+            return Err("proof accepted changed public input".into());
+        }
+        let changed_preimage = match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(
+            &changed_call,
+            changed_commitment,
+        ) {
+            ProofPreimageVersioned::V2(value) => value,
+            _ => return Err("unsupported changed-input proof version".into()),
+        };
+        if changed_preimage.check(&ir).is_ok() {
+            return Err("IR accepted changed public input".into());
+        }
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join(format!("{name}-input-control.proof")))?
+            .write_all(&proof.0)?;
+    }
     inputs[0] = if inputs[0] == Fr::from(0_u64) {
         Fr::from(1_u64)
     } else {
