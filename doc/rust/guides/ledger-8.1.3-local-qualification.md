@@ -74,42 +74,10 @@ functional-recorded deactivation call, with changed binding/version rejection,
 separately funded default-strict application and unchanged ledger on replay
 refusal. Unit has no result atoms, and constructor execution is not proved.
 
-The development prototype uses the Unit-fixed Rust emitter and immutable
-compiler137 Scheme frontend; its fresh k11/1804-row, 3296-byte proof passes.
-Clean original compiler138, the actual accepted canonical baseline, complete
-required CI and independent exact-PR review remain integration gates for this
-slice. No Forge dependency, network submission or twelve-export proof claim is
-introduced. The [plan](../plans/did-functional-lifecycle-current-profile.md)
-records the current source and acceptance stage.
-
-
-## Clean local qualification — compiler 0.31.138
-
-Signed implementation `926e8de8c83667e6fd45f87a0fc0fe71147e1ccd` is based on
-accepted canonical `acf529eff`. The original Nix compiler package builds from
-that clean source. Its build has `doCheck = false`; the separate maintained
-compiler suite passes both ZKIR lanes with 636/636 manifest and 1/1 JavaScript
-checks each at its recorded earlier preparation epoch.
-
-Fresh qualification with the clean original 0.31.138 compiler and its own
-Scheme frontend passes:
-
-| Gate | Result |
-| --- | --- |
-| Complete generated fixtures | 281 checked, zero stale or failed |
-| Original DID generation | Full IR/origins/capabilities and all twelve programs match |
-| Live TypeScript | 24 observations, including all twelve exact DID rows |
-| Selected Rust behavior | Five test methods; all ten invalid inputs on four routes (40 refusal executions) |
-| Ordinary and consuming APIs | E0308 wrong version/signature, E0382 Program reuse; strict consumer Clippy |
-| Selected functional proof | Fresh direct key k11 / 1,804 rows; 3,296-byte proof; immutable verification |
-| Proof controls | Changed binding and same-geometry version input refused; changed IR/program refused before keys/state |
-| Local application | Separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
-| Source hygiene | Complete workspace format, zero new header violations and all three exact version checks |
-| Public Python | 352 discovered: 332 passed and 20 existing explicit skips |
-
-The Unit-fixed backend library also passed 1,846 methods with seven existing
-explicit-run helpers ignored in its earlier development epoch. That result is
-not relabeled as a new clean-source execution. Final PR review and complete
-integration CI remain required. This proves one selected call; constructor
-execution, timestamp-zero Rust success and all twelve exports are not proved.
-Earlier development compiler/proof receipts retain their own literal identities.
+The development compiler137 prototype retains its own source/tool epoch.
+Fresh clean-source qualification now passes with original compiler0.31.138 at
+signed implementation `926e8de8c`, based on accepted canonical `acf529eff`.
+The [qualification table](../plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
+records exact counts, source identities and controls. Independent exact-PR
+review and the complete required integration CI remain open for this slice.
+No network or twelve-export proof claim follows from this selected local check.
