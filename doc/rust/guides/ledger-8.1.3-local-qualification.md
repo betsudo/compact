@@ -3,11 +3,13 @@
 ## Current source profile
 
 The native runtime uses official ledger8.1.3 revision
-`b5d3e965a18e4cac17fac4f38446fc55c524439a`, runtime ABI52 and private Rust IR20.
+`b5d3e965a18e4cac17fac4f38446fc55c524439a`, runtime ABI53 and private Rust IR20.
 Capability reports use schema3 and source-origin transport uses schema3.
 The supported v2 cohort is ZKIR/transient-crypto2.1.1, base-crypto1.0.2,
 serialization1.1.1, proofs0.7.1, circuits6.1.0, stdlib1.1.0 and curves0.2.0.
 The runtime compatibility manifest and locked dependencies are authoritative.
+ABI52 receipts retain their historical profile; this source-profile correction
+does not renew them or establish fresh real-application acceptance.
 Generated consumers declare Rust1.89 or newer. Earlier0.3.0 Rust1.88 receipts
 retain their original graph; they do not establish this graph's minimum version.
 

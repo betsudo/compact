@@ -1,6 +1,6 @@
 # Ledger8 Rust: delivered work and the finish line
 
-Engineering snapshot · 18 October 2026, 14:59 UTC · Ledger **8.1.3**, ZKIR **v2**
+Historical implementation snapshot · 18 October 2026, 14:59 UTC · Ledger **8.1.3**, ZKIR **v2**
 
 ## In plain words
 
@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded implementation goal is complete locally. A general claim that “Ledger8 is complete” is still premature.** Publication/review is in progress; real-application requalification, distributable artifacts and known source-language gaps remain separate work.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Five logical deliveries through #691 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -161,7 +161,7 @@ The current-byte compiler rebuild, strict Clippy, fresh generated consumer and b
 
 ## Current integration — 2026-10-27
 
-Canonical `codex/rust-backend-ast` reached `feefa65770e39580b5044b6a4a0307783c8bfe93` through signed merges. The following PRs are verified merged after their actual final-head required CI, full compiler/native/package/proof gates and independent review:
+Canonical `codex/rust-backend-ast` reached `c3a529cb5f4dae3a74f1e4ac0baf94878f245d91` through signed merges. The following PRs are verified merged after their actual final-head required CI, full compiler/native/package/proof gates and independent review:
 
 | PR | Contribution | Qualified source head | Signed merge |
 | --- | --- | --- | --- |
@@ -169,6 +169,7 @@ Canonical `codex/rust-backend-ast` reached `feefa65770e39580b5044b6a4a0307783c8b
 | [#688](https://github.com/betsudo/compact/pull/688) | Constant fixed-vector projection | `a98543313` | `d300a02ec` |
 | [#689](https://github.com/betsudo/compact/pull/689) | Map size expressions and whole-Map metadata | `0fccce1be` | `38deaf9d3` |
 | [#690](https://github.com/betsudo/compact/pull/690) | Direct Fold, including captured/local Counter amounts and source refusal controls | `fa8c8cc11` | `feefa6577` |
+| [#691](https://github.com/betsudo/compact/pull/691) | Scalar terminal return widenings, preserving selected effects and failure order | `e568b6064` (CI tree equals synthetic merge `a84d08158`) | `c3a529cb5` |
 
 Each merge tree matched its qualified source tree exactly. Native Linux x86_64 was qualified in GitHub Actions; local development uses Darwin arm64. The final Fold gate covers 21 full sources, 50 live-TS cases, 200 Rust route executions, 74 successful recorded replays, nine compile-fail controls and eight source refusals. Selected proof gates remain finite; they do not prove constructors or every accepted input. Earlier local/source receipts above remain historical epochs.
 
@@ -178,11 +179,29 @@ Issue state is not a completion counter. The older recording-algebra PR #634 rem
 
 ## What is left, in priority order
 
-### 1. Close the bounded Field return-wrapper source gap
+### 1. Complete the typed-pair return extension
 
-The next slice is [#516 Field return wrappers](plans/516-field-return-wrappers.md), based on the clean accepted canonical head above. The genuine retained source compiled for TS but failed Rust at a nested `Set.insert` hidden by an inferred Uint-to-Field cast. Preserve conversion timing and selected effects through existing checked return/lowering/AST owners. Full #516 lexical/initializer debt remains outside this slice.
+The [scalar #516 slice](plans/516-field-return-wrappers.md) is integrated by
+[#691](https://github.com/betsudo/compact/pull/691) after full current Linux and
+Apple Silicon CI. Its packaged arm64 epoch retains 36 cases /135 executions /
+56 replays, 321 passed /20 skipped Python controls and two selected fresh
+2,912-byte proofs. Canonical merge `c3a529cb5`, reviewed head `e568b6064` and CI
+synthetic merge `a84d08158` have the same complete tracked source tree.
+Constructor/unselected proof and whole-#516 closure are not claimed.
 
-The [packaged arm64 checkpoint](plans/516-field-return-wrappers.md#packaged-arm64-qualification--2026-10-27) at `5c90b80f3` passes the original compiler package, 36-case/135-execution generated consumer, 56 recorded replays, 341 Python tests (20 explicit skips), and two fresh 2,912-byte selected proofs with immutable verification, binding/result negatives, default-strict application and unchanged replay refusal. Independent CLI review has no remaining actionable findings after the receipt-format correction. PR [#691](https://github.com/betsudo/compact/pull/691) is published; full latest-head required CI and merge remain open. The four merged predecessors do not qualify later bytes.
+The [typed-pair follow-up](plans/516-tuple-return-wrappers.md) is now based on the
+actual accepted canonical baseline. Its local prototype passes 42 cases /159
+Rust executions /68 recorded replays, typed mixed Uint/Field results, inline
+Fold and exact each-component tampering controls. Four fresh selected
+proof/application cases pass; 328 Python cases pass with20 existing skips.
+Those earlier receipts describe an uncommitted development epoch. Fresh clean
+original compiler 0.31.137 qualification now also passes the 42/159/68 API gate,
+all four selected proof/application cases, all 280 generated fixtures and
+328 Python tests with 20 existing skips. The maintained ordinary compiler suite
+passes both ZKIR lanes. Full published-head CI, independent Claude PR review
+and verified merge remain required. Other aggregate/initializer debt,
+real applications and the broader Rust AST goal remain open. Backend work does
+not depend on the deferred Forge experiment.
 
 ### 2. Requalify the real applications on the current profile
 
@@ -199,7 +218,7 @@ The [packaged arm64 checkpoint](plans/516-field-return-wrappers.md#packaged-arm6
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Current bounded slice: Field/monotone Uint wrappers around terminal effects. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension in progress. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 

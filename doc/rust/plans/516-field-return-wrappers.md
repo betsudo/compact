@@ -60,3 +60,31 @@ findings. PR [#691](https://github.com/betsudo/compact/pull/691) targets
 `codex/rust-backend-ast`. Full latest-head required Linux/compiler/native/proof/
 wallet/package CI and merge are still **OPEN**. This finite local acceptance
 does not close all of #516 or qualify later source bytes automatically.
+
+## Integrated scalar baseline — 2026-10-27
+
+PR [#691](https://github.com/betsudo/compact/pull/691) merged into
+`codex/rust-backend-ast` at signed `c3a529cb5f4dae3a74f1e4ac0baf94878f245d91`.
+All required Linux compiler/native/proof/package/wallet/E2E checks and the
+Apple Silicon original consumer gate passed. The first Darwin jobs received no
+runner; only that platform was retried, retaining successful Linux work.
+
+Reviewed source is `e568b6064`; CI checks synthetic merge `a84d08158` with parents
+`[feefa6577,e568b6064]`. Its complete tracked tree `b20a3b0e5ac7971e5cd5809eb44dd93f2b90370d`
+equals the reviewed source and signed canonical merge tree. Actual CI compiler
+and artifact identities remain `a84d`; they are not relabelled. GitHub confirms
+merged state and a valid GPG signature. The five source commits and merge retain
+DCO/Assisted-by trailers. Independent final-head CLI review has no actionable
+findings after the receipt-format correction; actual Claude quota failure and
+all failed CI/development attempts are retained.
+
+The 341 discovered Python cases in that epoch mean **321 passed /20 skipped**,
+not 341 passes. The earlier receipts above retain their own source and tool
+bindings. The completed own review checkout was removed only after verifying
+preserved review bytes, committed ancestry and no source/process/open-file/lock
+use; shared targets and qualification evidence remain needed and retained.
+
+This integrates only the bounded scalar gap. The
+[typed-pair follow-up](516-tuple-return-wrappers.md), other #516 initializer/
+lexical debt, real-application requalification and the broader backend goal
+remain separate and incomplete. Forge remains deliberately deferred.

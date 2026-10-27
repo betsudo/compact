@@ -3238,5 +3238,109 @@
     "name": "observe",
     "signature": "witness observe(): Field",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "checked_first",
+    "signature": "export circuit checked_first(selected: Boolean, value: Uint<16>): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "checked_second",
+    "signature": "export circuit checked_second(selected: Boolean, value: Uint<16>): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "explicit",
+    "signature": "export circuit explicit(selected: Boolean, value: Field): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "expression_only",
+    "signature": "export circuit expression_only(value: Uint<16>): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "folded",
+    "signature": "export circuit folded(items: Vector<2, Field>): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "inferred",
+    "signature": "export circuit inferred(selected: Boolean, value: Field): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "mixed",
+    "signature": "export circuit mixed(selected: Boolean, value: Field): [Uint<8>, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "nested",
+    "signature": "export circuit nested(outer: Boolean, inner: Boolean, value: Field): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "ordered",
+    "signature": "export circuit ordered(value: Field): [Field, Field]",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "choose",
+    "signature": "witness choose(): Boolean",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "first",
+    "signature": "witness first(): Uint<16>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/tuple_return_wrappers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "second",
+    "signature": "witness second(): Uint<16>",
+    "visibility": "internal"
   }
 ]

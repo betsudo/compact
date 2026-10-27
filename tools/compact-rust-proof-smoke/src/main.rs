@@ -100,6 +100,7 @@ mod opaque_cell_input;
 mod opaque_public;
 mod owned_witness_inputs;
 mod public_products;
+mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_value_operations;
 mod wide_add;

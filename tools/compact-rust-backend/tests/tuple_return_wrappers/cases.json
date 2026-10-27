@@ -1,0 +1,953 @@
+[
+  {
+    "id": "inferred-0",
+    "name": "inferred",
+    "args": [
+      false,
+      5
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "inferred-1",
+    "name": "inferred",
+    "args": [
+      false,
+      6
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "inferred-2",
+    "name": "inferred",
+    "args": [
+      true,
+      5
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "inferred-3",
+    "name": "inferred",
+    "args": [
+      true,
+      6
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "explicit-0",
+    "name": "explicit",
+    "args": [
+      false,
+      5
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "explicit-1",
+    "name": "explicit",
+    "args": [
+      false,
+      6
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "explicit-2",
+    "name": "explicit",
+    "args": [
+      true,
+      5
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "explicit-3",
+    "name": "explicit",
+    "args": [
+      true,
+      6
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "nested-0",
+    "name": "nested",
+    "args": [
+      false,
+      false,
+      5
+    ],
+    "result": [
+      0,
+      5
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "nested-1",
+    "name": "nested",
+    "args": [
+      false,
+      true,
+      5
+    ],
+    "result": [
+      0,
+      5
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "nested-2",
+    "name": "nested",
+    "args": [
+      true,
+      false,
+      5
+    ],
+    "result": [
+      2,
+      4
+    ],
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "nested-3",
+    "name": "nested",
+    "args": [
+      true,
+      true,
+      5
+    ],
+    "result": [
+      6,
+      3
+    ],
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "ordered-0",
+    "name": "ordered",
+    "args": [
+      5
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": false,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-1",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": false,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-2",
+    "name": "ordered",
+    "args": [
+      5
+    ],
+    "result": [
+      9,
+      11
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ],
+      [
+        "first",
+        8,
+        "0",
+        "1"
+      ],
+      [
+        "second",
+        9,
+        "0",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-3",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": [
+      9,
+      11
+    ],
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ],
+      [
+        "first",
+        8,
+        "0",
+        "2"
+      ],
+      [
+        "second",
+        9,
+        "0",
+        "2"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-4",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": null,
+    "count": null,
+    "keys": null,
+    "choice": true,
+    "fail": "choose",
+    "error": "choose refused",
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-5",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": null,
+    "count": null,
+    "keys": null,
+    "choice": true,
+    "fail": "first",
+    "error": "first refused",
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ],
+      [
+        "first",
+        8,
+        "0",
+        "2"
+      ]
+    ]
+  },
+  {
+    "id": "ordered-6",
+    "name": "ordered",
+    "args": [
+      6
+    ],
+    "result": null,
+    "count": null,
+    "keys": null,
+    "choice": true,
+    "fail": "second",
+    "error": "second refused",
+    "events": [
+      [
+        "choose",
+        7,
+        "0",
+        "1"
+      ],
+      [
+        "first",
+        8,
+        "0",
+        "2"
+      ],
+      [
+        "second",
+        9,
+        "0",
+        "2"
+      ]
+    ]
+  },
+  {
+    "id": "checked_first-0",
+    "name": "checked_first",
+    "args": [
+      false,
+      0
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_first-1",
+    "name": "checked_first",
+    "args": [
+      false,
+      1
+    ],
+    "result": [
+      1,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_first-2",
+    "name": "checked_first",
+    "args": [
+      false,
+      65535
+    ],
+    "result": [
+      65535,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_first-3",
+    "name": "checked_first",
+    "args": [
+      true,
+      0
+    ],
+    "result": null,
+    "count": null,
+    "keys": null,
+    "choice": true,
+    "fail": null,
+    "error": "subtract",
+    "events": []
+  },
+  {
+    "id": "checked_first-4",
+    "name": "checked_first",
+    "args": [
+      true,
+      1
+    ],
+    "result": [
+      0,
+      11
+    ],
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "second",
+        7,
+        "1",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "checked_first-5",
+    "name": "checked_first",
+    "args": [
+      true,
+      65535
+    ],
+    "result": [
+      65534,
+      11
+    ],
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "second",
+        7,
+        "1",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "checked_second-0",
+    "name": "checked_second",
+    "args": [
+      false,
+      0
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_second-1",
+    "name": "checked_second",
+    "args": [
+      false,
+      1
+    ],
+    "result": [
+      0,
+      1
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_second-2",
+    "name": "checked_second",
+    "args": [
+      false,
+      65535
+    ],
+    "result": [
+      0,
+      65535
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "checked_second-3",
+    "name": "checked_second",
+    "args": [
+      true,
+      0
+    ],
+    "result": null,
+    "count": null,
+    "keys": null,
+    "choice": true,
+    "fail": null,
+    "error": "subtract",
+    "events": [
+      [
+        "first",
+        7,
+        "1",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "checked_second-4",
+    "name": "checked_second",
+    "args": [
+      true,
+      1
+    ],
+    "result": [
+      9,
+      0
+    ],
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "first",
+        7,
+        "1",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "checked_second-5",
+    "name": "checked_second",
+    "args": [
+      true,
+      65535
+    ],
+    "result": [
+      9,
+      65534
+    ],
+    "count": 1,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": [
+      [
+        "first",
+        7,
+        "1",
+        "1"
+      ]
+    ]
+  },
+  {
+    "id": "expression_only-0",
+    "name": "expression_only",
+    "args": [
+      0
+    ],
+    "result": [
+      0,
+      1
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "expression_only-1",
+    "name": "expression_only",
+    "args": [
+      1
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "expression_only-2",
+    "name": "expression_only",
+    "args": [
+      65535
+    ],
+    "result": [
+      65535,
+      65536
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "mixed-0",
+    "name": "mixed",
+    "args": [
+      false,
+      5
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "mixed-1",
+    "name": "mixed",
+    "args": [
+      false,
+      6
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "mixed-2",
+    "name": "mixed",
+    "args": [
+      true,
+      5
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "mixed-3",
+    "name": "mixed",
+    "args": [
+      true,
+      6
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      5,
+      6
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "folded-0",
+    "name": "folded",
+    "args": [
+      [
+        0,
+        1
+      ]
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      0,
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "folded-1",
+    "name": "folded",
+    "args": [
+      [
+        1,
+        0
+      ]
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      0,
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "folded-2",
+    "name": "folded",
+    "args": [
+      [
+        1,
+        2
+      ]
+    ],
+    "result": [
+      0,
+      0
+    ],
+    "count": 0,
+    "keys": [
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  },
+  {
+    "id": "folded-3",
+    "name": "folded",
+    "args": [
+      [
+        0,
+        0
+      ]
+    ],
+    "result": [
+      1,
+      2
+    ],
+    "count": 0,
+    "keys": [
+      0,
+      5
+    ],
+    "choice": true,
+    "fail": null,
+    "error": null,
+    "events": []
+  }
+]

@@ -39,6 +39,7 @@ compact-rust-direct-fold-empty-ordered-source-fixture = { path = "../../tests-ru
 compact-rust-constant-vector-projection-source-fixture = { path = "../../tests-rust-backend/constant-vector-projection-source", features = ["ledger-transaction"] }
 compact-rust-map-size-expression-source-fixture = { path = "../../tests-rust-backend/map-size-expression-source", features = ["ledger-transaction"] }
 compact-rust-field-return-wrappers-source-fixture = { path = "../../tests-rust-backend/field-return-wrappers-source", features = ["ledger-transaction"] }
+compact-rust-tuple-return-wrappers-source-fixture = { path = "../../tests-rust-backend/tuple-return-wrappers-source", features = ["ledger-transaction"] }
 compact-rust-effect-plan-map-value-products-source-fixture = { path = "../../tests-rust-backend/effect-plan-map-value-products-source", features = ["ledger-transaction"] }
 compact-rust-opaque-cell-inputs-source-fixture = { path = "../../tests-rust-backend/opaque-cell-inputs-source", features = ["ledger-transaction"] }
 compact-rust-effect-plan-jubjub-negation-source-fixture = { path = "../../tests-rust-backend/effect-plan-jubjub-negation-source", features = ["ledger-transaction"] }
