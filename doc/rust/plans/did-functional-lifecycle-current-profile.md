@@ -203,3 +203,35 @@ Linux full native/proof/package/archive/wallet/E2E gates. The retained CI archiv
 keeps its literal `57aa037bc` identity; it is not relabeled as this new slice.
 The current slice still needs its own clean compiler138, final source/proof
 qualification, exact-PR review and complete integration CI.
+
+
+## Clean local qualification — compiler 0.31.138
+
+Signed implementation `926e8de8c83667e6fd45f87a0fc0fe71147e1ccd` is based on
+accepted canonical `acf529eff`. The original Nix compiler package builds from
+that clean source. Its build has `doCheck = false`; the separate maintained
+compiler suite passes both ZKIR lanes with 636/636 manifest and 1/1 JavaScript
+checks each at its recorded earlier preparation epoch.
+
+Fresh qualification with the clean original 0.31.138 compiler and its own
+Scheme frontend passes:
+
+| Gate | Result |
+| --- | --- |
+| Complete generated fixtures | 281 checked, zero stale or failed |
+| Original DID generation | Full IR/origins/capabilities and all twelve programs match |
+| Live TypeScript | 24 observations, including all twelve exact DID rows |
+| Selected Rust behavior | Five test methods; all ten invalid inputs on four routes (40 refusal executions) |
+| Ordinary and consuming APIs | E0308 wrong version/signature, E0382 Program reuse; strict consumer Clippy |
+| Selected functional proof | Fresh direct key k11 / 1,804 rows; 3,296-byte proof; immutable verification |
+| Proof controls | Changed binding and same-geometry version input refused; changed IR/program refused before keys/state |
+| Local application | Separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
+| Source hygiene | Complete workspace format, zero new header violations and all three exact version checks |
+| Public Python | 352 discovered: 332 passed and 20 existing explicit skips |
+
+The Unit-fixed backend library also passed 1,846 methods with seven existing
+explicit-run helpers ignored in its earlier development epoch. That result is
+not relabeled as a new clean-source execution. Final PR review and complete
+integration CI remain required. This proves one selected call; constructor
+execution, timestamp-zero Rust success and all twelve exports are not proved.
+Earlier development compiler/proof receipts retain their own literal identities.
