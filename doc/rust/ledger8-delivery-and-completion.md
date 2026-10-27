@@ -300,7 +300,8 @@ broader Rust AST goal remains incomplete; Forge remains deferred.
 
 ### Current DID clean-source qualification
 
-Original compiler 0.31.138 builds from clean signed review correction `3ac403d8a`.
+Original compiler 0.31.138 realizes at clean signed review correction `bf221d060`
+as the same immutable package built at `3ac403d8a` (compiler inputs unchanged).
 Fresh source/API and separate real proof gates pass: twelve exact live TS DID
 rows, five selected Rust methods and 40 invalid-route executions, three typed
 compile-fail controls, a fresh k11 / 1,804-row / 3,296-byte standalone deactivation
@@ -309,9 +310,10 @@ proof with immutable binding/version controls, and an independently proved
 The actual applied-state stale check uses the functional fixture. Both gates
 require a clean checkout and pin the same complete source-fixture oracle used
 by live TS and proof preparation; the historical ordinary oracle stays separate.
-The clean backend library passes 1,846 tests with seven existing explicit-run
-helpers ignored; Python passes 335 with 20 existing skips. Workspace formatting
-and proof-runner strict Clippy pass. Earlier 281-fixture/version/header receipts
+The clean backend library passed 1,846 tests with seven existing explicit-run
+helpers ignored at `3ac403d8a`; that unchanged owner-code result is not relabelled
+as a new run. Python passes 333 with 20 existing skips. Changed proof Rust
+formatting and strict Clippy pass; prior complete workspace formatting is retained. Earlier 281-fixture/version/header receipts
 retain their original source identities; full updated CI is still required.
 See the [qualification table](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
 for stage identities and limits. Repeat exact-head review and full integration CI

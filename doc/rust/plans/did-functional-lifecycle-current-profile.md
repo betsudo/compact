@@ -207,9 +207,11 @@ qualification, exact-PR review and complete integration CI.
 
 ## Clean local qualification — compiler 0.31.138
 
-Signed reviewed implementation `3ac403d8a0d321508d7d693dbf870964b501b130` is
-based on accepted canonical `acf529eff`. The original Nix compiler package
-builds from that clean source and uses its own Scheme frontend. Its build has
+Signed reviewed implementation `bf221d0604490cfc3267820a90aeebbb5c10ee07` is
+based on accepted canonical `acf529eff`. Its original Nix compiler realization
+selects the same immutable 0.31.138 package built from clean `3ac403d8a`, with
+its own Scheme frontend: all declared compiler/CLI inputs are unchanged. The
+proof runner is rebuilt and API/proof checks rerun at `bf221d060`. Its build has
 `doCheck = false`; the separate maintained compiler suite passes both ZKIR lanes
 with 636/636 manifest and 1/1 JavaScript checks each at its recorded earlier
 preparation epoch. These compiler tests remain part of complete integration CI.
@@ -226,9 +228,9 @@ Fresh qualification with the clean original compiler passes:
 | Proof controls | Changed binding and same-geometry version input refused; changed IR/program refused before keys/state |
 | Independently proved local transaction | 7,413 retained bytes; separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
 | Applied-state refusal | Functional generated Program rejects the stale version first on actual applied state, without witness callbacks |
-| Source hygiene | Clean checkout required before/after both gates; complete workspace format and proof-runner all-target strict Clippy pass |
-| Backend library | 1,846 passed, seven existing explicit-run helpers ignored at clean reviewed source |
-| Public Python | 355 discovered: 335 passed and 20 existing explicit skips |
+| Source hygiene | Clean checkout required before/after both gates; changed proof Rust formatting and proof-runner all-target strict Clippy pass; complete workspace format passed at prior source epoch |
+| Backend library | 1,846 passed, seven existing explicit-run helpers ignored at clean `3ac403d8a`; owner code/lock unchanged, not a relabelled new run |
+| Public Python | 353 discovered: 333 passed and 20 existing explicit skips |
 | Empty-result regression | Genuine checked empty-tuple red then seven focused tests green; actual Compact `[]` canonicalizes to Unit and its complete generated consumer passes strict Clippy |
 
 The prior clean `926e8de8c` compiler/API/proof receipts and 281-fixture census
@@ -289,3 +291,12 @@ internal summary, emits no new receipt/artifact, and is not claimed to acquire
 new mutation controls. Defensive empty-tuple IR coverage is not a claim that
 Compact source `[]` currently emits that IR shape. No public runtime/API or
 broader source-language support is introduced by these corrections.
+
+Fresh clean-source API and separate proof/application gates pass at signed
+`bf221d060`. The new applied artifact is written after every verification,
+application, replay and post-state check; the fresh standalone proof remains
+3,296 bytes and the independently proved applied transaction remains 7,413
+bytes. Both smoke commands pass with external outputs and unchanged checkout
+status. Python now has 353 methods (333 passed, 20 existing skips) after replacing
+weaker duplicate controls with the two real gate-entry refusal controls.
+Repeat exact-head review and complete updated CI remain required.
