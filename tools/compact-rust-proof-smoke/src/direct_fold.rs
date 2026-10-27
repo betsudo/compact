@@ -35,6 +35,9 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
         "counter-capture" => include_str!(
             "../../../tests-rust-backend/direct-fold-counter-capture-source/original-ir.json"
         ),
+        "counter-local-capture" => include_str!(
+            "../../../tests-rust-backend/direct-fold-counter-local-capture-source/original-ir.json"
+        ),
         "multiple-inputs" => include_str!(
             "../../../tests-rust-backend/direct-fold-multiple-inputs-source/original-ir.json"
         ),
@@ -65,6 +68,7 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
         "empty-ordered" => vec![empty_ordered::run(root, 0)?],
         "captured" => vec![cases::captured(root, 0)?],
         "counter-capture" => vec![cases::counter_capture(root, 0)?],
+        "counter-local-capture" => vec![cases::counter_local_capture(root, 0)?],
         "multiple-inputs" => vec![cases::multiple(root, 0)?],
         "effectful-reducer" => vec![cases::stateful(root, 0)?],
         "witness-reducer" => vec![cases::witnessed(root, 0)?],

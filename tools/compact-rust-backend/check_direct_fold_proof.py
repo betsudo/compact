@@ -36,7 +36,7 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
-CASES = ("counter-capture", "single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
+CASES = ("counter-local-capture", "counter-capture", "single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
 
 
 def require(value, message):
@@ -174,7 +174,7 @@ def run(args):
             require(summary["format"] == "compact-direct-fold-proof/v1" and summary["status"] == "passed"
                     and summary["case"] == name and summary["constructor_execution_proved"] is False
                     and summary["unselected_sources_proved"] is False, f"{name} invalid proof summary")
-            expected = [6] if name == "counter-capture" else [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
+            expected = [11] if name == "counter-local-capture" else [6] if name == "counter-capture" else [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
             require([row["expected"] for row in summary["calls"]] == expected, f"{name} selected calls differ")
             for row in summary["calls"]:
                 require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and

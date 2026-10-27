@@ -183,3 +183,18 @@ scenario!(
     7,
     counter = 6
 );
+
+scenario!(
+    counter_local_capture,
+    compact_rust_direct_fold_counter_local_capture_source_fixture,
+    [],
+    [
+        field(1),
+        r::BoundedUint::<65535>::new(3_u128)?,
+        vector([2, 3])
+    ],
+    [],
+    11,
+    7,
+    counter = 12
+);

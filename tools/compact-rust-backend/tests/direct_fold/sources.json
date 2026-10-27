@@ -78,5 +78,9 @@
   {
     "source": "counter-capture",
     "alias": "counter_capture"
+  },
+  {
+    "source": "counter-local-capture",
+    "alias": "counter_local_capture"
   }
 ]

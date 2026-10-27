@@ -671,3 +671,22 @@ only after actual execution. Constructor and unselected-source limits remain.
 Legacy raw-IR compatibility accounting now comes from counters printed by
 the actual successful Rust test executions, with exact named-cohort validation.
 No cached verdict or unchanged test-count assumption supplies those totals.
+
+## Publication follow-up: sequential local Counter capture
+
+Independent Codex fallback review identified a second genuine refusal when the
+Counter amount is first bound locally. The packaged `9cca9ba69` compiler reproduces
+`cannot resolve Counter increment amount`; the earlier parameter-capture
+source and proof remain intact. Preserve checked Let scope consistently in
+existing stateful action, body, return-plan and expression lowering: each
+initializer sees preceding bindings, then the body sees the extended scope.
+No Let admission predicate, legacy wrapper normalization or schema is changed.
+
+The additional complete source uses the local amount in both a Fold initializer
+and the returned Fold. Zero/nonzero live TS cases require final Field 11 and
+Counter 0/12, with the same state/private/effect/cost/replay controls. Current
+qualification is configured for 21 sources, 50 cases (37 successes/13 first failures),
+200 routes, 74 successful recorded replays, nine ordinary compile-fails and
+eight source refusals. The complete default proof selection is eleven calls
+across ten sources; new local-capture proof execution remains a separate gate.
+All previous receipts retain their exact source epochs.

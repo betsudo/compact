@@ -1161,6 +1161,30 @@
                  (source-errorf src "Rust backend cannot resolve Counter increment amount")))]
           [else (source-errorf owner-src "Rust backend supports literal or parameter Counter increments only")]))
 
+      ;; Let initializers see preceding checked bindings, and the body sees all
+      ;; bindings. Keep Counter lookup in that same lexical scope when a Fold
+      ;; appears inside an initializer or an ordinary value expression.
+      (define (stateful-bindings-ir local* value* src environment witness-ids emit)
+        (let loop ([locals local*] [values value*]
+                   [environment environment] [bindings '()])
+          (if (null? locals)
+              (parameterize ([current-counter-environment environment])
+                (emit (list->vector (reverse bindings)) environment))
+              (nanopass-case (Lnodisclose Argument) (car locals)
+                [(,var-name ,type)
+                 (let ([binding
+                         (parameterize ([current-counter-environment environment])
+                           (object (cons "name" (sourced-rust-var-name var-name))
+                                   (cons "ty" (type-ir type src))
+                                   (cons "value"
+                                         (stateful-typed-expression-ir (car values) type src witness-ids))))])
+                   (loop (cdr locals) (cdr values)
+                         (cons (cons var-name
+                                     (object (cons "kind" "parameter")
+                                             (cons "name" (rust-var-name var-name))))
+                               environment)
+                         (cons binding bindings)))]))))
+
       (define (state-action-ir expr owner-src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
           (expression-origin-preserve? expr)
@@ -1208,27 +1232,11 @@
                    (cons "then" (state-action-ir expr1 src environment witness-ids))
                    (cons "otherwise" (state-action-ir expr2 src environment witness-ids)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let ([environment^
-                   (fold-left
-                     (lambda (environment local value)
-                       (nanopass-case (Lnodisclose Argument) local
-                         [(,var-name ,type)
-                          (cons (cons var-name
-                                      (object (cons "kind" "parameter")
-                                              (cons "name" (rust-var-name var-name))))
-                                environment)]))
-                     environment local* expr*)])
-             (object (cons "kind" "let")
-                     (cons "bindings"
-                           (list->vector
-                             (map (lambda (local value)
-                                    (nanopass-case (Lnodisclose Argument) local
-                                      [(,var-name ,type)
-                                       (object (cons "name" (sourced-rust-var-name var-name))
-                                               (cons "ty" (type-ir type src))
-                                               (cons "value" (stateful-typed-expression-ir value type src witness-ids)))]))
-                                  local* expr*)))
-                     (cons "action" (state-action-ir expr owner-src environment^ witness-ids))))]
+           (stateful-bindings-ir local* expr* src environment witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "action" (state-action-ir expr owner-src environment^ witness-ids)))))]
           [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
            (nanopass-case (Lnodisclose ADT-Op) adt-op
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
@@ -1472,31 +1480,15 @@
           [(let* ,src1 ([,local* ,expr*] ...) ,expr)
            (if (and (let-scope-needs-action? local* expr)
                     (stateful-body-has-actions? expr))
-               (let ([environment^
-                       (fold-left
-                         (lambda (environment local value)
-                           (nanopass-case (Lnodisclose Argument) local
-                             [(,var-name ,type)
-                              (cons (cons var-name
-                                          (object (cons "kind" "parameter")
-                                                  (cons "name" (rust-var-name var-name))))
-                                    environment)]))
-                         environment local* expr*)])
-                 (vector
-                   (object (cons "kind" "let")
-                           (cons "bindings"
-                                 (list->vector
-                                   (map (lambda (local value)
-                                          (nanopass-case (Lnodisclose Argument) local
-                                            [(,var-name ,type)
-                                             (object (cons "name" (sourced-rust-var-name var-name))
-                                                     (cons "ty" (type-ir type src1))
-                                                     (cons "value" (stateful-typed-expression-ir value type src1 witness-ids)))]))
-                                        local* expr*)))
-                           (cons "action"
-                                 (object (cons "kind" "sequence")
-                                         (cons "actions"
-                                               (stateful-body-ir expr src1 environment^ witness-ids)))))))
+               (stateful-bindings-ir local* expr* src1 environment witness-ids
+                 (lambda (bindings environment^)
+                   (vector
+                     (object (cons "kind" "let")
+                             (cons "bindings" bindings)
+                             (cons "action"
+                                   (object (cons "kind" "sequence")
+                                           (cons "actions"
+                                                 (stateful-body-ir expr src1 environment^ witness-ids))))))))
                (vector))]
           [(seq ,src1 ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
@@ -1576,29 +1568,12 @@
           [(return ,src ,expr)
            (stateful-return-plan-ir expr expected-type src environment witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let ([environment^
-                   (fold-left
-                     (lambda (current local value)
-                       (nanopass-case (Lnodisclose Argument) local
-                         [(,var-name ,type)
-                          (cons (cons var-name
-                                      (object (cons "kind" "parameter")
-                                              (cons "name" (rust-var-name var-name))))
-                                current)]))
-                     environment local* expr*)])
-             (object (cons "kind" "let")
-                     (cons "bindings"
-                           (list->vector
-                             (map (lambda (local value)
-                                    (nanopass-case (Lnodisclose Argument) local
-                                      [(,var-name ,type)
-                                       (object (cons "name" (sourced-rust-var-name var-name))
-                                               (cons "ty" (type-ir type src))
-                                               (cons "value"
-                                                     (stateful-typed-expression-ir value type src witness-ids)))]))
-                                  local* expr*)))
-                     (cons "result"
-                           (stateful-return-plan-ir expr expected-type src environment^ witness-ids))))]
+           (stateful-bindings-ir local* expr* src environment witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "result"
+                             (stateful-return-plan-ir expr expected-type src environment^ witness-ids)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                ;; Keep the compiler-inserted guard folded into the same checked
@@ -2025,17 +2000,11 @@
                    (cons "left" (stateful-typed-expression-ir expr1 type src witness-ids))
                    (cons "right" (stateful-typed-expression-ir expr2 type src witness-ids)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (object (cons "kind" "let")
-                   (cons "bindings"
-                         (list->vector
-                           (map (lambda (local value)
-                                  (nanopass-case (Lnodisclose Argument) local
-                                    [(,var-name ,type)
-                                     (object (cons "name" (sourced-rust-var-name var-name))
-                                             (cons "ty" (type-ir type src))
-                                             (cons "value" (stateful-typed-expression-ir value type src witness-ids)))]))
-                                local* expr*)))
-                   (cons "body" (stateful-expression-ir expr src witness-ids)))]
+           (stateful-bindings-ir local* expr* src (current-counter-environment) witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "body" (stateful-expression-ir expr src witness-ids)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                (stateful-expression-ir expr src witness-ids)

@@ -774,3 +774,8 @@ scenario!(counter_capture_zero_four_routes_match_live_ts, "counter_capture_zero"
     [Field::from(1_u64), r::BoundedUint::<65535>::new(0).unwrap(), vector([2,3])], None, callbacks, []);
 scenario!(counter_capture_three_four_routes_match_live_ts, "counter_capture_three", counter_capture,
     [Field::from(1_u64), r::BoundedUint::<65535>::new(3).unwrap(), vector([2,3])], None, callbacks, []);
+
+scenario!(counter_local_capture_zero_four_routes_match_live_ts, "counter_local_capture_zero", counter_local_capture,
+    [Field::from(1_u64), r::BoundedUint::<65535>::new(0).unwrap(), vector([2,3])], None, callbacks, []);
+scenario!(counter_local_capture_three_four_routes_match_live_ts, "counter_local_capture_three", counter_local_capture,
+    [Field::from(1_u64), r::BoundedUint::<65535>::new(3).unwrap(), vector([2,3])], None, callbacks, []);

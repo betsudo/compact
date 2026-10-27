@@ -12,14 +12,14 @@ coverage remain required by the complete signed #661 plan.
 
 ## Maintained source-family gate
 
-`check_direct_fold.py` compiles the twenty complete source cases under
+`check_direct_fold.py` compiles the twenty-one complete source cases under
 `examples/rust_backend/direct_fold/` and consumes their complete generated crates
 from a separate external package. It requires an explicitly selected TS runtime
 of the repository version and checks its production dependency closure, actual
 Node executable and external host libraries. Host OS/kernel paths are reported
 with their narrower scope; injected names are controls, not Linux qualification.
 
-The gate covers 48 cases (35 success, 13 first failure) through ordinary native,
+The gate covers 50 cases (37 success, 13 first failure) through ordinary native,
 ordinary recorded, functional native and functional recorded APIs. It checks
 aligned outputs, declared ledger/private state, private outputs, witness events,
 query-summed cost, persistent held-state isolation and successful public replay.
@@ -63,7 +63,7 @@ The legacy controls are compatibility regressions, not extra live-TS cases or
 proofs: genuine TS pure-helper operands evaluate seed first, so historical
 legacy native failure ordering is not claimed as TS parity. The complete
 derived IR inputs, rendered libraries and dependency identities stay in the
-gate receipt separately from the twenty complete source compilations.
+gate receipt separately from the twenty-one complete source compilations.
 
 ## Current captured-Counter regression cohort
 
@@ -77,3 +77,16 @@ adds one captured-Counter call to the prior nine calls, requiring fresh proof,
 immutable verification, binding/result negatives and funded strict application.
 Legacy cases/routes/replays are measured by the executed Rust tests and parsed
 from their output, with strict named-cohort checks.
+
+## Sequential local Counter capture
+
+The independent publication review also found a local-binding capture gap. The
+`counter-local-capture.compact` source binds the amount, uses it in a Fold
+initializer, then reuses it in the returned Fold. Two live TS cases check zero
+and three: final Field 11 and Counter 0/12, through every Rust route. Existing
+parameter capture remains a separate complete source and regression cohort.
+The current gate contains 21 sources, 50 cases, 200 routes and 74 successful
+recorded replays. Let initializers see preceding bindings; their body sees all
+bindings. The existing admission predicates and IR schema remain unchanged.
+The full default proof gate adds this source as an eleventh selected call
+across ten sources. New local-capture proof success requires its own receipt.

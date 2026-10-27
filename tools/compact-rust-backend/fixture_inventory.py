@@ -34,6 +34,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SPECIAL_FIXTURES = {
     'examples/rust_backend/direct_fold/counter-capture.compact':
         'tests-rust-backend/direct-fold-counter-capture-source/lib.rs',
+    'examples/rust_backend/direct_fold/counter-local-capture.compact':
+        'tests-rust-backend/direct-fold-counter-local-capture-source/lib.rs',
     'examples/rust_backend/direct_fold/owned-capture.compact':
         'tests-rust-backend/direct-fold-owned-capture-source/lib.rs',
     'examples/rust_backend/direct_fold/shadow.compact':
