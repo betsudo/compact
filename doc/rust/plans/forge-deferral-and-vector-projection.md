@@ -254,3 +254,24 @@ observations; it preserves the already accepted certified pure-helper route.
 The broad backend goal remains active. Forge stays deferred at
 `experiment/zkir-forge`; no publication/merge or cleanup is authorized by this
 local checkpoint.
+
+
+## Current accepted direction — 2026-10-27
+
+The owner subsequently authorized each logical slice to be pushed, pass full
+required CI and independent review, and merge into `codex/rust-backend-ast`.
+The older local-only publication statements above retain their historical
+epoch and do not revoke that later authority. The Ledger8 baseline (#664),
+vector projection (#688), Map size (#689), direct Fold (#690), and scalar
+terminal return wrappers (#691) are verified merged through canonical
+`c3a529cb5`. Their exact source, CI and review epochs are summarized in the
+[delivery report](../ledger8-delivery-and-completion.md#current-integration--2026-10-27).
+
+The active bounded slice is [typed scalar-pair return wrappers](516-tuple-return-wrappers.md).
+Clean compiler 0.31.137 generation, live TS/four-route behavior, compile-fail
+controls, all generated fixtures and four selected fresh proof/application
+cases pass locally. Full current CI and published-head Claude review remain
+required before merge. Then requalify the actual DID and pure passport sources
+on the current profile to select the next concrete adoption gap. Do not reopen
+accepted architecture work or start another CI optimization project. Forge
+remains deliberately deferred and preserved; the broad Rust AST goal is open.

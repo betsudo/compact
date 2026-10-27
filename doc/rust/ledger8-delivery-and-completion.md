@@ -1,6 +1,6 @@
 # Ledger8 Rust: delivered work and the finish line
 
-Engineering snapshot · 18 October 2026, 14:59 UTC · Ledger **8.1.3**, ZKIR **v2**
+Historical implementation snapshot · 18 October 2026, 14:59 UTC · Ledger **8.1.3**, ZKIR **v2**
 
 ## In plain words
 
@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded implementation goal is complete locally. A general claim that “Ledger8 is complete” is still premature.** Publication/review is in progress; real-application requalification, distributable artifacts and known source-language gaps remain separate work.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Five logical deliveries through #691 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -194,9 +194,12 @@ actual accepted canonical baseline. Its local prototype passes 42 cases /159
 Rust executions /68 recorded replays, typed mixed Uint/Field results, inline
 Fold and exact each-component tampering controls. Four fresh selected
 proof/application cases pass; 328 Python cases pass with20 existing skips.
-Those receipts explicitly describe an uncommitted development epoch. Compiler
-0.31.137 source qualification, final fresh proofs, full CI, published-head
-independent review and merge remain required. Other aggregate/initializer debt,
+Those earlier receipts describe an uncommitted development epoch. Fresh clean
+original compiler 0.31.137 qualification now also passes the 42/159/68 API gate,
+all four selected proof/application cases, all 280 generated fixtures and
+328 Python tests with 20 existing skips. The maintained ordinary compiler suite
+passes both ZKIR lanes. Full published-head CI, independent Claude PR review
+and verified merge remain required. Other aggregate/initializer debt,
 real applications and the broader Rust AST goal remain open. Backend work does
 not depend on the deferred Forge experiment.
 

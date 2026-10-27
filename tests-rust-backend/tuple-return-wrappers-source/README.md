@@ -86,13 +86,13 @@ not final clean-compiler/current-CI receipts. The current Python run reports
 PR #691 is verified merged at canonical `c3a529cb5` after complete current CI,
 with a valid GitHub GPG signature and a tree identical to reviewed `e568b6064`
 and tested synthetic merge `a84d08158`. The preserved prototype was advanced
-onto that actual baseline with all49 source and16 private review files unchanged.
+onto that actual baseline with all 49 source files and 16 private review files unchanged.
 The private reviews were then preserved outside this checkout to keep clean
 qualification source separate from unpublished review data. Historical local
 receipts above retain their dirty-source epochs; they are not relabelled.
 
-This source selects compiler0.31.137, unchanged language/runtime versions and
-runtime ABI53. Maintained document regeneration/full compiler tests, a clean
+This source selects compiler 0.31.137, unchanged language/runtime versions and
+runtime ABI 53. Maintained document regeneration/full compiler tests, a clean
 original compiler build, fresh final-source API/proof gates, full required CI,
 actual PR review and merge remain required before delivery. Earlier local
 preflights do not replace the published-head review. This does not close all of
@@ -107,3 +107,30 @@ and **1/1** JavaScript execution tests in each ZKIR mode. This staged-source
 run is distinct from a clean original-package build and the final generated
 API/proof qualification. Those checks and the full published-head CI/review
 gates remain required before merge.
+
+## Clean original-compiler qualification — 2026-10-27
+
+Clean source `9fcb4d7f1` built original compiler **0.31.137** and passed the
+fresh API/live TS gate: **42 cases / 159 Rust executions / 68 successful
+recorded replays**, all compile-fail/source-refusal/altered-TS controls and
+strict consumer Clippy. The complete **280-fixture** generated-source comparison
+passed with zero stale outputs or failures. Public Python discovery passed
+**328** tests, with **20** existing explicit skips out of **348** discovered.
+The package build itself has `doCheck = false`; maintained compiler tests are
+the separate successful `./compiler/go` run above.
+
+Fresh selected native keys and four **2,912-byte** proofs passed protocol v2:
+inferred/mixed at **k7 / 100 rows**, Fold at **k8 / 130 rows**. Each call
+verified with immutable verifier identity, rejected changed binding and both
+same-geometry output components, applied funded default-strict transactions
+and rejected replay without mutation. Full linked IR and all eight programs
+matched fresh generation; altered IR refused before keys or state. Constructor,
+inferred/mixed false-branch and other-export proofs remain outside this scope.
+
+Implementation commit `ee08ef845` has the identical complete tree
+`eadde362316d9b7d121e9b3d2cce5024d9fbded0`; only the unpublished commit message
+was corrected to use proper Assisted-by/DCO trailers. The original qualified
+commit and all receipts are retained with their actual identities. Subsequent
+qualification-document updates do not relabel those compiler/proof artifacts.
+Full published-head CI, actual Claude CLI PR review and verified signed merge
+remain required; the two earlier local preflights do not substitute for review.
