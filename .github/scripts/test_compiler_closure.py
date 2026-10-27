@@ -46,6 +46,22 @@ class ReceiptTests(unittest.TestCase):
         self.assertIn('compiler-build-diagnostic', result.stderr.splitlines())
         self.assertEqual(result.stdout, '')
 
+    def test_import_failure_streams_diagnostics_without_touching_a_store(self):
+        script = (
+            "import importlib.util, sys; "
+            f"s=importlib.util.spec_from_file_location('handoff', {str(Path('.github/scripts/compiler_closure.py').resolve())!r}); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); original=m.run; "
+            "m.run=lambda argv, **kwargs: original([sys.executable, '-c', "
+            "\"import sys; print('/nix/store/machine-output'); "
+            "print('import-failure-diagnostic', file=sys.stderr); sys.exit(7)\"], **kwargs); "
+            "m.text_import(sys.stdin)"
+        )
+        result = owner.subprocess.run([owner.sys.executable, '-c', script],
+                                      capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('import-failure-diagnostic', result.stderr.splitlines())
+        self.assertEqual(result.stdout, '')
+
     def test_receipt_accepts_only_exact_identity_archive_and_roster(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory)/'closure'
