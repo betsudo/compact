@@ -1,0 +1,311 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "counter-local-capture.compact",
+        "line": 17,
+        "column": 1
+      }
+    },
+    {
+      "id": "count",
+      "index": 1,
+      "path": [
+        1
+      ],
+      "declaration": {
+        "kind": "counter"
+      },
+      "source": {
+        "file": "counter-local-capture.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "amount",
+          "ty": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        },
+        {
+          "name": "values",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "increment",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "parameter",
+                "name": "amount"
+              }
+            }
+          ],
+          "body": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "subtotal",
+                "ty": {
+                  "kind": "field"
+                },
+                "value": {
+                  "kind": "vector_fold",
+                  "accumulator": {
+                    "name": "acc",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  "items": [
+                    {
+                      "name": "item",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ],
+                  "initial": {
+                    "kind": "parameter",
+                    "name": "seed"
+                  },
+                  "sources": [
+                    {
+                      "kind": "parameter",
+                      "name": "values"
+                    }
+                  ],
+                  "body": {
+                    "kind": "sequence",
+                    "actions": [
+                      {
+                        "kind": "counter_increment",
+                        "field": "count",
+                        "index": 1,
+                        "amount": {
+                          "kind": "parameter",
+                          "name": "increment"
+                        }
+                      },
+                      {
+                        "kind": "let",
+                        "bindings": [
+                          {
+                            "name": "tmp_7",
+                            "ty": {
+                              "kind": "field"
+                            },
+                            "value": {
+                              "kind": "add",
+                              "left": {
+                                "kind": "parameter",
+                                "name": "acc"
+                              },
+                              "right": {
+                                "kind": "parameter",
+                                "name": "item"
+                              }
+                            }
+                          }
+                        ],
+                        "action": {
+                          "kind": "cell_write",
+                          "field": "stored",
+                          "index": 0,
+                          "value": {
+                            "kind": "parameter",
+                            "name": "tmp_7"
+                          }
+                        }
+                      }
+                    ],
+                    "result": {
+                      "kind": "value",
+                      "value": {
+                        "kind": "cell_read",
+                        "field": "stored",
+                        "index": 0
+                      }
+                    }
+                  },
+                  "length": 2
+                }
+              }
+            ],
+            "body": {
+              "kind": "vector_fold",
+              "accumulator": {
+                "name": "acc_Compact1",
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              "items": [
+                {
+                  "name": "item_Compact1",
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ],
+              "initial": {
+                "kind": "parameter",
+                "name": "subtotal"
+              },
+              "sources": [
+                {
+                  "kind": "parameter",
+                  "name": "values"
+                }
+              ],
+              "body": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "counter_increment",
+                    "field": "count",
+                    "index": 1,
+                    "amount": {
+                      "kind": "parameter",
+                      "name": "increment"
+                    }
+                  },
+                  {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "tmp_8",
+                        "ty": {
+                          "kind": "field"
+                        },
+                        "value": {
+                          "kind": "add",
+                          "left": {
+                            "kind": "parameter",
+                            "name": "acc_Compact1"
+                          },
+                          "right": {
+                            "kind": "parameter",
+                            "name": "item_Compact1"
+                          }
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "cell_write",
+                      "field": "stored",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "tmp_8"
+                      }
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "cell_read",
+                    "field": "stored",
+                    "index": 0
+                  }
+                }
+              },
+              "length": 2
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "counter-local-capture.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_6",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_6"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "counter-local-capture.compact",
+      "line": 19,
+      "column": 1
+    }
+  }
+}

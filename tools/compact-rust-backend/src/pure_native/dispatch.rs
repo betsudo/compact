@@ -72,6 +72,9 @@ macro_rules! dispatch {
             $crate::ir::Expr::VectorMap { .. } => {
                 $crate::pure_aggregate_expression($expr, $parameters, $circuits)
             }
+            $crate::ir::Expr::VectorFold { .. } => {
+                $crate::pure_aggregate_expression($expr, $parameters, $circuits)
+            }
             $crate::ir::Expr::VectorFoldCall { .. } => {
                 $crate::pure_aggregate_expression($expr, $parameters, $circuits)
             }

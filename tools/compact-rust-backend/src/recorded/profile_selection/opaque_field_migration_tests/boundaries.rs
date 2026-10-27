@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
 use super::*;
@@ -47,7 +58,7 @@ fn map_slots_operands_and_let_types_remain_native_authorities() {
     }
 }
 #[test]
-fn neighboring_interfaces_and_unsupported_values_keep_their_declared_boundary() {
+fn neighboring_interfaces_keep_boundaries_while_fold_values_are_admitted() {
     for types in [
         vec![Type::OpaqueBytes],
         vec![Type::OpaqueString, Type::OpaqueString],
@@ -91,18 +102,15 @@ fn neighboring_interfaces_and_unsupported_values_keep_their_declared_boundary() 
         },
     };
     let cx = Context::new(&c);
-    assert!(matches!(
-        cx.checked(cx.circuits["ensure"]),
-        Err(effect_plan::PlanError::Unsupported(_))
-    ));
-    assert!(cx.terminal(cx.circuits["ensure"]).unwrap().is_none());
+    cx.checked(cx.circuits["ensure"]).unwrap();
+    assert!(cx.terminal(cx.circuits["ensure"]).unwrap().is_some());
     let output = crate::render_with_capabilities(&c).unwrap();
     assert!(
         output
             .capabilities
             .circuits
             .iter()
-            .any(|r| r.name == "ensure" && !r.recorded && !r.observed_call)
+            .any(|r| r.name == "ensure" && r.recorded && r.observed_call)
     );
 }
 #[test]

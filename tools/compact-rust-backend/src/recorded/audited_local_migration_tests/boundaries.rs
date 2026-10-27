@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -109,7 +120,7 @@ fn local_values_and_root_products_preserve_canonical_domains_and_source_exclusio
 }
 
 #[test]
-fn old_audit_refusals_are_separate_from_checked_expansion_and_real_fold_gaps() {
+fn old_audit_refusals_are_separate_from_current_map_and_fold_expansion() {
     let mut mapped = fixture();
     local(
         &mut mapped,
@@ -147,15 +158,10 @@ fn old_audit_refusals_are_separate_from_checked_expansion_and_real_fold_gaps() {
         Some(RecordingOutcome::Unsupported(_))
     ));
     crate::render_with_capabilities(&fold).unwrap();
-    let Err(effect_plan::PlanError::Unsupported(gap)) = checked(&fold, VERIFY) else {
-        panic!("direct fold must remain unsupported");
-    };
-    assert_eq!(gap.ir_node, "Expr::VectorFoldCall");
-    assert!(
-        gap.path.ends_with("actions[0].bindings[0].value"),
-        "{}",
-        gap.path
-    );
+    let steps = checked(&fold, VERIFY).unwrap().steps;
+    let text = quote::quote!(#(#steps)*).to_string();
+    assert!(text.contains("for") && text.contains("into_iter"));
+    current(&fold, VERIFY, "algebra.ordinary");
     let mut recursive = fixture();
     let arguments = target(&recursive, LOCAL)
         .parameters

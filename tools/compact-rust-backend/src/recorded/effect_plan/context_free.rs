@@ -21,7 +21,9 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
     while let Some(bindings) = pending.pop() {
         for binding in bindings {
             match &binding.operation {
-                Operation::VectorMap { body, .. } => pending.push(&body.bindings),
+                Operation::VectorMap { body, .. } | Operation::VectorFold { body, .. } => {
+                    pending.push(&body.bindings)
+                }
                 Operation::If {
                     then, otherwise, ..
                 } => {

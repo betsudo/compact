@@ -173,6 +173,8 @@
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
       (define current-variable-types (make-parameter #f))
+      ;; Counter amounts use the existing checked lexical action bindings.
+      (define current-counter-environment (make-parameter '()))
       (define struct-shape-names '())
       (define used-struct-names '())
 
@@ -1159,10 +1161,36 @@
                  (source-errorf src "Rust backend cannot resolve Counter increment amount")))]
           [else (source-errorf owner-src "Rust backend supports literal or parameter Counter increments only")]))
 
+      ;; Let initializers see preceding checked bindings, and the body sees all
+      ;; bindings. Keep Counter lookup in that same lexical scope when a Fold
+      ;; appears inside an initializer or an ordinary value expression.
+      (define (stateful-bindings-ir local* value* src environment witness-ids emit)
+        (let loop ([locals local*] [values value*]
+                   [environment environment] [bindings '()])
+          (if (null? locals)
+              (parameterize ([current-counter-environment environment])
+                (emit (list->vector (reverse bindings)) environment))
+              (nanopass-case (Lnodisclose Argument) (car locals)
+                [(,var-name ,type)
+                 (let ([binding
+                         (parameterize ([current-counter-environment environment])
+                           (object (cons "name" (sourced-rust-var-name var-name))
+                                   (cons "ty" (type-ir type src))
+                                   (cons "value"
+                                         (stateful-typed-expression-ir (car values) type src witness-ids))))])
+                   (loop (cdr locals) (cdr values)
+                         (cons (cons var-name
+                                     (object (cons "kind" "parameter")
+                                             (cons "name" (rust-var-name var-name))))
+                               environment)
+                         (cons binding bindings)))]))))
+
       (define (state-action-ir expr owner-src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
           (expression-origin-preserve? expr)
-          (lambda () (state-action-ir-value expr owner-src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (state-action-ir-value expr owner-src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (state-action-ir-value expr owner-src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
@@ -1204,27 +1232,11 @@
                    (cons "then" (state-action-ir expr1 src environment witness-ids))
                    (cons "otherwise" (state-action-ir expr2 src environment witness-ids)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let ([environment^
-                   (fold-left
-                     (lambda (environment local value)
-                       (nanopass-case (Lnodisclose Argument) local
-                         [(,var-name ,type)
-                          (cons (cons var-name
-                                      (object (cons "kind" "parameter")
-                                              (cons "name" (rust-var-name var-name))))
-                                environment)]))
-                     environment local* expr*)])
-             (object (cons "kind" "let")
-                     (cons "bindings"
-                           (list->vector
-                             (map (lambda (local value)
-                                    (nanopass-case (Lnodisclose Argument) local
-                                      [(,var-name ,type)
-                                       (object (cons "name" (sourced-rust-var-name var-name))
-                                               (cons "ty" (type-ir type src))
-                                               (cons "value" (stateful-typed-expression-ir value type src witness-ids)))]))
-                                  local* expr*)))
-                     (cons "action" (state-action-ir expr owner-src environment^ witness-ids))))]
+           (stateful-bindings-ir local* expr* src environment witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "action" (state-action-ir expr owner-src environment^ witness-ids)))))]
           [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
            (nanopass-case (Lnodisclose ADT-Op) adt-op
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
@@ -1459,38 +1471,24 @@
 
       (define (stateful-body-ir expr src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr) #t
-          (lambda () (stateful-body-ir-value expr src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (stateful-body-ir-value expr src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (stateful-body-ir-value expr src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
           [(let* ,src1 ([,local* ,expr*] ...) ,expr)
            (if (and (let-scope-needs-action? local* expr)
                     (stateful-body-has-actions? expr))
-               (let ([environment^
-                       (fold-left
-                         (lambda (environment local value)
-                           (nanopass-case (Lnodisclose Argument) local
-                             [(,var-name ,type)
-                              (cons (cons var-name
-                                          (object (cons "kind" "parameter")
-                                                  (cons "name" (rust-var-name var-name))))
-                                    environment)]))
-                         environment local* expr*)])
-                 (vector
-                   (object (cons "kind" "let")
-                           (cons "bindings"
-                                 (list->vector
-                                   (map (lambda (local value)
-                                          (nanopass-case (Lnodisclose Argument) local
-                                            [(,var-name ,type)
-                                             (object (cons "name" (sourced-rust-var-name var-name))
-                                                     (cons "ty" (type-ir type src1))
-                                                     (cons "value" (stateful-typed-expression-ir value type src1 witness-ids)))]))
-                                        local* expr*)))
-                           (cons "action"
-                                 (object (cons "kind" "sequence")
-                                         (cons "actions"
-                                               (stateful-body-ir expr src1 environment^ witness-ids)))))))
+               (stateful-bindings-ir local* expr* src1 environment witness-ids
+                 (lambda (bindings environment^)
+                   (vector
+                     (object (cons "kind" "let")
+                             (cons "bindings" bindings)
+                             (cons "action"
+                                   (object (cons "kind" "sequence")
+                                           (cons "actions"
+                                                 (stateful-body-ir expr src1 environment^ witness-ids))))))))
                (vector))]
           [(seq ,src1 ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
@@ -1561,36 +1559,21 @@
       (define (stateful-return-plan-ir expr expected-type owner-src environment witness-ids)
         (call-with-rust-origin "return_plan" (expression-origin expr)
           (expression-origin-preserve? expr)
-          (lambda () (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids)) (expression-operation-origin expr)))
+          (lambda ()
+            (parameterize ([current-counter-environment environment])
+              (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids))) (expression-operation-origin expr)))
 
       (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr)
            (stateful-return-plan-ir expr expected-type src environment witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let ([environment^
-                   (fold-left
-                     (lambda (current local value)
-                       (nanopass-case (Lnodisclose Argument) local
-                         [(,var-name ,type)
-                          (cons (cons var-name
-                                      (object (cons "kind" "parameter")
-                                              (cons "name" (rust-var-name var-name))))
-                                current)]))
-                     environment local* expr*)])
-             (object (cons "kind" "let")
-                     (cons "bindings"
-                           (list->vector
-                             (map (lambda (local value)
-                                    (nanopass-case (Lnodisclose Argument) local
-                                      [(,var-name ,type)
-                                       (object (cons "name" (sourced-rust-var-name var-name))
-                                               (cons "ty" (type-ir type src))
-                                               (cons "value"
-                                                     (stateful-typed-expression-ir value type src witness-ids)))]))
-                                  local* expr*)))
-                     (cons "result"
-                           (stateful-return-plan-ir expr expected-type src environment^ witness-ids))))]
+           (stateful-bindings-ir local* expr* src environment witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "result"
+                             (stateful-return-plan-ir expr expected-type src environment^ witness-ids)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                ;; Keep the compiler-inserted guard folded into the same checked
@@ -1616,6 +1599,71 @@
            (object (cons "kind" "value")
                    (cons "value"
                          (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))]))
+
+      ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
+      ;; The paired schema20 consumer checks every annotation independently.
+      (define (stateful-fold-ir src len fun expr0 type0 map-args witness-ids)
+        (define (formal name type)
+          (object (cons "name" name) (cons "ty" (type-ir type src))))
+        (define (emit formals body-ir)
+          (unless (= (length formals) (+ 1 (length map-args)))
+            (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
+          (let* ([initial-ir (stateful-typed-expression-ir expr0 type0 src witness-ids)]
+                 [sources-ir
+                   (map (lambda (arg)
+                          (nanopass-case (Lnodisclose Map-Argument) arg
+                            [(,expr ,type1 ,type2)
+                             (stateful-typed-expression-ir expr type1 src witness-ids)])) map-args)]
+                 [reducer-ir (body-ir)])
+            (object (cons "kind" "vector_fold")
+                    (cons "accumulator" (car formals))
+                    (cons "items" (list->vector (cdr formals)))
+                    (cons "initial" initial-ir)
+                    (cons "sources" (list->vector sources-ir))
+                    (cons "body" reducer-ir)
+                    (cons "length" len))))
+        (nanopass-case (Lnodisclose Function) fun
+          [(fref ,src^ ,function-name)
+           (let* ([types (eq-hashtable-ref call-argument-types function-name #f)]
+                  [names (cons "__compact_fold_accumulator"
+                               (map (lambda (i) (format "__compact_fold_item_~a" i))
+                                    (enumerate map-args)))])
+             (unless (and types (= (length types) (length names)))
+               (source-errorf src "Rust Fold reducer signature differs from iterable arity"))
+             (emit (map formal names types)
+               (lambda ()
+                 (object (cons "kind" "value")
+                         (cons "value"
+                         (object (cons "kind" (if (eq-hashtable-ref witness-ids function-name #f)
+                                          "witness_call" "call"))
+                         (cons "name" (rust-function-name function-name))
+                         (cons "arguments"
+                               (list->vector
+                                 (map (lambda (name)
+                                        (object (cons "kind" "parameter") (cons "name" name))) names)))))))))]
+          [(circuit ,src^ (,arg* ...) ,type ,expr)
+           (let ([variable-types (if (current-variable-types)
+                                     (hashtable-copy (current-variable-types) #t)
+                                     (make-eq-hashtable))])
+             (for-each (lambda (arg)
+                         (nanopass-case (Lnodisclose Argument) arg
+                           [(,var-name ,type^)
+                            (eq-hashtable-set! variable-types var-name type^)])) arg*)
+             (parameterize ([current-variable-types variable-types])
+               (emit (map (lambda (arg) (argument-ir arg src)) arg*)
+                 (lambda ()
+                   (if (stateful-body-has-storage-mutation? expr)
+                       (stateful-return-plan-ir expr type src
+                         (append
+                           (map (lambda (arg)
+                                  (nanopass-case (Lnodisclose Argument) arg
+                                    [(,var-name ,type^)
+                                     (cons var-name (object (cons "kind" "parameter")
+                                                            (cons "name" (rust-var-name var-name))))])) arg*)
+                           (current-counter-environment)) witness-ids)
+                       (object (cons "kind" "value")
+                               (cons "value" (stateful-typed-expression-ir expr type src witness-ids))))))))]
+          [else (source-errorf src "Rust backend does not support this Fold reducer form")]))
 
       ;; Stateful expressions keep witness calls explicit so Rust can evaluate
       ;; them in order and append each private transcript value exactly once.
@@ -1703,6 +1751,8 @@
 
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -1950,17 +2000,11 @@
                    (cons "left" (stateful-typed-expression-ir expr1 type src witness-ids))
                    (cons "right" (stateful-typed-expression-ir expr2 type src witness-ids)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (object (cons "kind" "let")
-                   (cons "bindings"
-                         (list->vector
-                           (map (lambda (local value)
-                                  (nanopass-case (Lnodisclose Argument) local
-                                    [(,var-name ,type)
-                                     (object (cons "name" (sourced-rust-var-name var-name))
-                                             (cons "ty" (type-ir type src))
-                                             (cons "value" (stateful-typed-expression-ir value type src witness-ids)))]))
-                                local* expr*)))
-                   (cons "body" (stateful-expression-ir expr src witness-ids)))]
+           (stateful-bindings-ir local* expr* src (current-counter-environment) witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "body" (stateful-expression-ir expr src witness-ids)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                (stateful-expression-ir expr src witness-ids)
@@ -2016,6 +2060,9 @@
 
       (define (stateful-return-ir-value return-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(return ,src ,expr) (stateful-return-ir expr src witness-ids)]
           [(seq ,src ,expr* ... ,expr) (stateful-return-ir expr src witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
@@ -2207,6 +2254,12 @@
                circuits
                (let* ([names (exported-names function-name export-alist)]
                       [internal-name (rust-function-name function-name)]
+                      [environment
+                        (map (lambda (arg)
+                               (nanopass-case (Lnodisclose Argument) arg
+                                 [(,var-name ,type)
+                                  (cons var-name (object (cons "kind" "parameter")
+                                                        (cons "name" (rust-var-name var-name))))])) arg*)]
                       [effectful-return? (and (not (unit-return-type? type))
                                               (or (terminal-storage-mutation-conditional? expr)
                                                   (lexical-storage-mutation-return? expr)))]
@@ -2216,6 +2269,7 @@
                  (append
                    (map (lambda (name)
                           (with-source src
+                            (parameterize ([current-counter-environment environment])
                             (append
                               (object (cons "name" name)
                                     (cons "parameters" (list->vector (map (lambda (arg) (argument-ir arg src)) arg*)))
@@ -2244,7 +2298,7 @@
                                                                 (object (cons "kind" "parameter")
                                                                         (cons "name" (rust-var-name var-name))))]))
                                                      arg*) witness-ids))))
-                              (if (member name names) '() (list (cons "internal" #t))))))
+                              (if (member name names) '() (list (cons "internal" #t)))))))
                         all-names)
                    circuits)))]
           [else circuits]))

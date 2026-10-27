@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -110,7 +121,7 @@ fn interface_and_helper_boundaries_are_not_replaced_with_enum_tree_recognition()
     let mut v = fixture();
     let helper = named_mut(&mut v, "circuits", "successor");
     let body = helper["body"].take();
-    // A pure sequence step must be Unit. Compare the unsupported commitment
+    // A pure sequence step must be Unit. Compare the commitment
     // inside an assertion so this control remains native-valid.
     let rejected_branch = json!({"kind":"sequence","steps":[{"kind":"assert","condition":{"kind":"equal","left":{"kind":"persistent_commit","value":{"kind":"field_literal","value":"0"},"opening":{"kind":"bytes_literal","bytes":vec![0u8;32]}},"right":{"kind":"bytes_literal","bytes":vec![0u8;32]}},"message":"hidden commitment"}],"value":body});
     helper["body"] = json!({"kind":"if","condition":{"kind":"boolean","value":true},"then":body,"otherwise":rejected_branch});
@@ -126,7 +137,7 @@ fn interface_and_helper_boundaries_are_not_replaced_with_enum_tree_recognition()
     assert!(rendered.source.contains("hidden commitment"));
     assert!(rendered.source.contains("persistent_commit"));
 
-    // In contrast, a direct unsupported effect child cannot hide in an
+    // The newly supported direct Fold child is also checked in an
     // unselected action branch. This is independently native-valid.
     let mut v = fixture();
     actions(&mut v).as_array_mut().unwrap().push(json!({
@@ -139,8 +150,8 @@ fn interface_and_helper_boundaries_are_not_replaced_with_enum_tree_recognition()
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     assert!(old(&c).unwrap().is_none());
     assert!(
-        checked(&c).is_err(),
-        "unselected effect children are checked"
+        checked(&c).is_ok(),
+        "unselected Fold children are checked and admitted"
     );
     let rendered = crate::render_with_capabilities(&c).unwrap();
     let capability = rendered
@@ -149,5 +160,5 @@ fn interface_and_helper_boundaries_are_not_replaced_with_enum_tree_recognition()
         .iter()
         .find(|c| c.name == "advance")
         .unwrap();
-    assert!(!capability.recorded && !capability.observed_call);
+    assert!(capability.recorded && capability.observed_call);
 }

@@ -110,6 +110,24 @@ pub(crate) fn aggregate(
             body: body.into_expression(),
             length,
         },
+        A::Reduction {
+            initial,
+            initial_plan,
+            sources,
+            accumulator,
+            items,
+            body,
+        } => A::Reduction {
+            initial: initial.into_expression(),
+            initial_plan,
+            sources: sources
+                .into_iter()
+                .map(|(value, plan)| (value.into_expression(), plan))
+                .collect(),
+            accumulator,
+            items,
+            body: body.into_expression(),
+        },
         A::Fold {
             function,
             initial,

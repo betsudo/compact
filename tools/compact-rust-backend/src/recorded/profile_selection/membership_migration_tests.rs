@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //! Declared membership interfaces, actual ownership and ordered refusal behavior.
 //! Finite whole-old inclusion is covered separately by membership_inclusion tests.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
@@ -307,7 +318,7 @@ fn interface_decline_reaches_later_independent_unit_owner() {
     );
 }
 #[test]
-fn unsupported_body_declines_and_preserves_later_attempts() {
+fn fold_successor_is_owned_before_later_membership_attempts() {
     let mut c = subject(vec![], Type::Unit);
     c.stateful_circuits[0].actions = vec![StateAction::Expression {
         value: Expr::TransientHash {
@@ -333,15 +344,15 @@ fn unsupported_body_declines_and_preserves_later_attempts() {
         Context::new(&c)
             .domain(&c.stateful_circuits[0])
             .unwrap()
-            .is_none()
+            .is_some()
     );
     let row = legacy_selected(&c);
-    assert_ne!(row["body_owner"], "algebra.membership");
+    assert_eq!(row["body_owner"], "algebra.membership");
     let a = attempts(&row);
-    let at = a.iter().position(|&x| x == "algebra.membership").unwrap();
-    assert_eq!(a[at + 1], "algebra.jubjub-values");
-    assert!(a.contains(&"algebra.unit-actions"));
+    assert_eq!(a.last(), Some(&"algebra.membership"));
+    assert!(!a.contains(&"algebra.jubjub-values"));
 }
+
 #[test]
 fn duplicate_and_noncanonical_source_are_not_accepted_plans() {
     let mut c = subject(vec![Type::Boolean, Type::Boolean], Type::Unit);

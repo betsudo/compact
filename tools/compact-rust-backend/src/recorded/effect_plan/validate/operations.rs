@@ -301,7 +301,10 @@ pub(super) fn validate(
             use_value(condition)?;
             condition.ty == Type::Boolean && *ty == Type::Unit
         }
-        Operation::VectorMap { .. } | Operation::Call { .. } | Operation::If { .. } => {
+        Operation::VectorMap { .. }
+        | Operation::VectorFold { .. }
+        | Operation::Call { .. }
+        | Operation::If { .. } => {
             unreachable!("recursive operations are validated by block traversal")
         }
     })

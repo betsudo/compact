@@ -34,6 +34,7 @@ pub(crate) use call::{CallRefusal, CallRefusalCallback};
 mod literal;
 pub(crate) mod projection;
 mod vector;
+pub(crate) use vector::fold_formals;
 
 pub(crate) enum AggregateSource<'a> {
     StructField {
@@ -61,6 +62,14 @@ pub(crate) enum AggregateSource<'a> {
         source: &'a Expr,
         body: &'a Expr,
         result: &'a Type,
+        length: usize,
+    },
+    VectorFold {
+        accumulator: &'a Parameter,
+        items: &'a [Parameter],
+        initial: &'a Expr,
+        sources: &'a [Expr],
+        body: &'a Expr,
         length: usize,
     },
     VectorFoldCall {
@@ -105,6 +114,14 @@ pub(crate) enum CheckedAggregate<V, B, C> {
         binding: B,
         body: V,
         length: usize,
+    },
+    Reduction {
+        initial: V,
+        initial_plan: CoercionPlan,
+        sources: Vec<(V, CoercionPlan)>,
+        accumulator: B,
+        items: Vec<B>,
+        body: V,
     },
     Fold {
         function: CheckedName,
@@ -160,6 +177,25 @@ pub(crate) fn fold_aggregate<S: AggregateSink, C: ScopedChildren<S>>(
                 source,
                 body,
                 result,
+                length,
+            },
+            children,
+            sink,
+        ),
+        AggregateSource::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            length,
+        } => vector::reduction(
+            vector::ReductionInput {
+                accumulator,
+                items,
+                initial,
+                sources,
+                body,
                 length,
             },
             children,

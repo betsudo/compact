@@ -38,9 +38,11 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         current = json.loads((directory / 'fixture_registry.json').read_text())
         names = {'examples/rust_backend/constant_vector_projection.compact',
                  'examples/rust_backend/map_size_expression.compact'}
+        names.update(f'examples/rust_backend/direct_fold/{row["source"]}.compact'
+                     for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 2)
+        self.assertEqual(len(extension), 23)
         current['sources'] = [row for row in current['sources'] if row not in extension]
         self.assertEqual(current, baseline)
 
@@ -60,10 +62,23 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(row.library, row.generated_library)
         self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 8)
 
+    def test_direct_fold_registers_every_complete_source_family(self):
+        definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
+        rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']
+        self.assertEqual({row.source.stem for row in rows}, {row['source'] for row in definitions})
+        self.assertEqual(len(rows), 21)
+        for row in rows:
+            with self.subTest(source=row.source.stem):
+                self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+                self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
+                self.assertEqual(row.library, row.generated_library)
+                self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 1)
+                self.assertEqual(json.loads((row.library.parent / 'original-ir.json').read_text())['schema_version'], 20)
+
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 171,
+            inventory.SourceRole.FLAT_LIBRARY: 192,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })

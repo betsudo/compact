@@ -24,6 +24,13 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
         for binding in &block.bindings {
             match &binding.operation {
                 Operation::Call { body, .. } | Operation::VectorMap { body, .. } => blocks.push(body),
+                Operation::VectorFold { sources, body, .. } => {
+                    // Operand producers are in the enclosing block. A statically
+                    // empty reduction cannot execute its public body.
+                    if matches!(sources.first().map(|value| &value.ty), Some(crate::ir::Type::Vector { length, .. }) if *length > 0) {
+                        blocks.push(body);
+                    }
+                }
                 Operation::If { then, otherwise, .. } => {
                     blocks.push(otherwise);
                     blocks.push(then);

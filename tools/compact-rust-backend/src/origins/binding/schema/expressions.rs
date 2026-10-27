@@ -167,6 +167,22 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             s.node("result", Owner::Type(result));
             s.size("length", *length);
         }
+        Expr::VectorFold {
+            accumulator,
+            items,
+            initial,
+            sources,
+            body,
+            length,
+        } => {
+            s.tag("vector_fold");
+            s.node("accumulator", Owner::Parameter(accumulator));
+            s.array("items", Slice::Parameter(items));
+            s.node("initial", Owner::Expr(initial));
+            s.array("sources", Slice::Expr(sources));
+            s.node("body", Owner::ReturnPlan(body));
+            s.size("length", *length);
+        }
         Expr::VectorFoldCall {
             name,
             initial,

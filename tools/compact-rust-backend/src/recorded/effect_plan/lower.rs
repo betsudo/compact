@@ -42,6 +42,7 @@ mod pure;
 mod qualified_coins;
 mod sets;
 mod transient;
+mod vector_fold;
 mod vector_map;
 mod zswap;
 use super::pure_certification::{Certificates, Certifier};

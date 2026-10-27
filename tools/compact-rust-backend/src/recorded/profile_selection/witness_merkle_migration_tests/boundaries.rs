@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use super::*;
 
 #[test]
@@ -94,7 +105,7 @@ fn old_fallible_sites_keep_native_error_precedence() {
 }
 
 #[test]
-fn original_signature_and_hidden_direct_effect_refusals_remain_explicit() {
+fn original_signature_refuses_while_hidden_fold_children_are_admitted() {
     let mut v = fixture();
     named_mut(&mut v, "stateful_circuits", "add_voter")["result"] = json!({"kind":"boolean"});
     let c = contract(v);
@@ -111,7 +122,7 @@ fn original_signature_and_hidden_direct_effect_refusals_remain_explicit() {
     }));
     let c = crate::recorded::test_support::with_unsupported_fold(contract(v));
     assert!(old(&c).unwrap().is_none());
-    assert!(checked(&c).is_err());
+    checked(&c).unwrap();
     let result = crate::render_with_capabilities(&c).unwrap();
     let cap = result
         .capabilities
@@ -119,5 +130,5 @@ fn original_signature_and_hidden_direct_effect_refusals_remain_explicit() {
         .iter()
         .find(|c| c.name == "add_voter")
         .unwrap();
-    assert!(!cap.recorded && !cap.observed_call);
+    assert!(cap.recorded && cap.observed_call);
 }

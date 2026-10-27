@@ -32,6 +32,49 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SPECIAL_FIXTURES = {
+    'examples/rust_backend/direct_fold/counter-capture.compact':
+        'tests-rust-backend/direct-fold-counter-capture-source/lib.rs',
+    'examples/rust_backend/direct_fold/counter-local-capture.compact':
+        'tests-rust-backend/direct-fold-counter-local-capture-source/lib.rs',
+    'examples/rust_backend/direct_fold/owned-capture.compact':
+        'tests-rust-backend/direct-fold-owned-capture-source/lib.rs',
+    'examples/rust_backend/direct_fold/shadow.compact':
+        'tests-rust-backend/direct-fold-shadow-source/lib.rs',
+    'examples/rust_backend/direct_fold/shadow-effectful.compact':
+        'tests-rust-backend/direct-fold-shadow-effectful-source/lib.rs',
+    'examples/rust_backend/direct_fold/single.compact':
+        'tests-rust-backend/direct-fold-single-source/lib.rs',
+    'examples/rust_backend/direct_fold/empty-ordered.compact':
+        'tests-rust-backend/direct-fold-empty-ordered-source/lib.rs',
+    'examples/rust_backend/direct_fold/direct.compact':
+        'tests-rust-backend/direct-fold-direct-source/lib.rs',
+    'examples/rust_backend/direct_fold/empty.compact':
+        'tests-rust-backend/direct-fold-empty-source/lib.rs',
+    'examples/rust_backend/direct_fold/helper.compact':
+        'tests-rust-backend/direct-fold-helper-source/lib.rs',
+    'examples/rust_backend/direct_fold/captured.compact':
+        'tests-rust-backend/direct-fold-captured-source/lib.rs',
+    'examples/rust_backend/direct_fold/guarded.compact':
+        'tests-rust-backend/direct-fold-guarded-source/lib.rs',
+    'examples/rust_backend/direct_fold/ordered.compact':
+        'tests-rust-backend/direct-fold-ordered-source/lib.rs',
+    'examples/rust_backend/direct_fold/effectful-reducer.compact':
+        'tests-rust-backend/direct-fold-effectful-reducer-source/lib.rs',
+    'examples/rust_backend/direct_fold/witness-reducer.compact':
+        'tests-rust-backend/direct-fold-witness-reducer-source/lib.rs',
+    'examples/rust_backend/direct_fold/multiple-inputs.compact':
+        'tests-rust-backend/direct-fold-multiple-inputs-source/lib.rs',
+    'examples/rust_backend/direct_fold/inline-effectful.compact':
+        'tests-rust-backend/direct-fold-inline-effectful-source/lib.rs',
+    'examples/rust_backend/direct_fold/owned.compact':
+        'tests-rust-backend/direct-fold-owned-source/lib.rs',
+    'examples/rust_backend/direct_fold/unit.compact':
+        'tests-rust-backend/direct-fold-unit-source/lib.rs',
+    'examples/rust_backend/direct_fold/multi-ordered.compact':
+        'tests-rust-backend/direct-fold-multi-ordered-source/lib.rs',
+    'examples/rust_backend/direct_fold/inline-branch.compact':
+        'tests-rust-backend/direct-fold-inline-branch-source/lib.rs',
+
     'tools/compact-rust-backend/tests/point-composition/point_digest.compact':
         'tests-rust-backend/did-point-digest-reducer/lib.rs',
     'tools/compact-rust-backend/tests/point-composition/point_guard.compact':

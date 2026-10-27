@@ -1,0 +1,280 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "seed",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 20,
+        "column": 1
+      }
+    },
+    {
+      "name": "left",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 21,
+        "column": 1
+      }
+    },
+    {
+      "name": "right",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 22,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "left",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "add",
+        "left": {
+          "kind": "multiply",
+          "left": {
+            "kind": "parameter",
+            "name": "acc"
+          },
+          "right": {
+            "kind": "field_literal",
+            "value": "10"
+          }
+        },
+        "right": {
+          "kind": "multiply",
+          "left": {
+            "kind": "parameter",
+            "name": "left"
+          },
+          "right": {
+            "kind": "parameter",
+            "name": "right"
+          }
+        }
+      },
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 19,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "result",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "vector_fold",
+                "accumulator": {
+                  "name": "__compact_fold_accumulator",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                "items": [
+                  {
+                    "name": "__compact_fold_item_0",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "__compact_fold_item_1",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ],
+                "initial": {
+                  "kind": "witness_call",
+                  "name": "seed",
+                  "arguments": [
+                  ]
+                },
+                "sources": [
+                  {
+                    "kind": "witness_call",
+                    "name": "left",
+                    "arguments": [
+                    ]
+                  },
+                  {
+                    "kind": "witness_call",
+                    "name": "right",
+                    "arguments": [
+                    ]
+                  }
+                ],
+                "body": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "call",
+                    "name": "step",
+                    "arguments": [
+                      {
+                        "kind": "parameter",
+                        "name": "__compact_fold_accumulator"
+                      },
+                      {
+                        "kind": "parameter",
+                        "name": "__compact_fold_item_0"
+                      },
+                      {
+                        "kind": "parameter",
+                        "name": "__compact_fold_item_1"
+                      }
+                    ]
+                  }
+                },
+                "length": 2
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "cell_write",
+                "field": "stored",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "result"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "multi-ordered.compact",
+        "line": 23,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_10",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "2"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_10"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "multi-ordered.compact",
+      "line": 18,
+      "column": 1
+    }
+  }
+}

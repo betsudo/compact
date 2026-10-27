@@ -189,6 +189,19 @@ fn map_size_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+// #661 adds only explicit new-tag denials to retired exhaustive matchers.
+// Reconstruct exact predecessor bytes before the unchanged older projections.
+const FOLD_ENUM: &[u8] = include_bytes!("fold-expression-enum-661.json");
+fn fold_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15" {
+        return Err("unreviewed Fold enum compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_fold_enum(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &fold_enum_manifest(FOLD_ENUM)?)
+}
+
 // #617 extracts the two live shared definitions from the frozen Plan oracle.
 // Authenticate their new owner and restore the exact signed predecessor first.
 const START_FUNDING_SHA256: &str =
@@ -237,7 +250,8 @@ fn projected_legacy_source(
     let start_funding = start_funding_manifest(START_FUNDING)?;
     let generic = generic_retirement_manifest(GENERIC_RETIREMENT)?;
     let map_size_enum = map_size_enum_manifest(MAP_SIZE_ENUM)?;
-    let before_map_size = legacy_source(path, current, &map_size_enum)?;
+    let before_fold = before_fold_enum(path, current)?;
+    let before_map_size = legacy_source(path, &before_fold, &map_size_enum)?;
     let before_generic = legacy_source(path, &before_map_size, &generic)?;
     let before_start_funding = legacy_source(path, &before_generic, &start_funding)?;
     let before_audited_local = legacy_source(path, &before_start_funding, &audited_local)?;
@@ -302,6 +316,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
     authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     authority["start_funding_projection"] = start_funding_manifest(START_FUNDING).unwrap();
     authority
@@ -319,6 +334,7 @@ fn map_size_enum_projection_preserves_exact_old_oracle_and_rejects_drift() {
     let path = "tools/compact-rust-backend/src/recorded/audited_local.rs";
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let current = std::fs::read_to_string(root.join(path)).unwrap();
+    let current = before_fold_enum(path, &current).unwrap();
     let previous = legacy_source(path, &current, &projection).unwrap();
     assert_eq!(
         digest(previous.as_bytes()),
@@ -390,7 +406,8 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
     assert!(audited_local_manifest(br#"{"owners":{}}"#).is_err());
     for (path, row) in audited_local["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
-        let before_map_size = legacy_source(path, &current, &map_size_enum).unwrap();
+        let before_fold = before_fold_enum(path, &current).unwrap();
+        let before_map_size = legacy_source(path, &before_fold, &map_size_enum).unwrap();
         assert_eq!(
             digest(
                 legacy_source(path, &before_map_size, &audited_local)
@@ -466,7 +483,8 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
         );
         let edit = &row["predecessor_reconstruction"][0];
         let generic = generic_retirement_manifest(GENERIC_RETIREMENT).unwrap();
-        let before_map_size = legacy_source(path, &current, &map_size_enum).unwrap();
+        let before_fold = before_fold_enum(path, &current).unwrap();
+        let before_map_size = legacy_source(path, &before_fold, &map_size_enum).unwrap();
         let before_generic = legacy_source(path, &before_map_size, &generic).unwrap();
         let before_start = legacy_source(path, &before_generic, &start_funding).unwrap();
         let before_audited = legacy_source(path, &before_start, &audited_local).unwrap();
@@ -522,4 +540,37 @@ fn corpus_identity_rejects_duplicate_and_escaped_inputs() {
     malformed.sha256 = "0".repeat(63);
     assert!(validate_cases(&[malformed]).is_err());
     assert!(authenticated_manifest(br#"{"scope":"forged","cases":[]}"#).is_err());
+}
+
+#[test]
+fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forged_drift() {
+    let projection = fold_enum_manifest(FOLD_ENUM).unwrap();
+    assert!(fold_enum_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(projection["owners"].as_object().unwrap().len(), 4);
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        MAP_SIZE_ENUM_SHA256
+    );
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, row) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = legacy_source(path, &current, &projection).unwrap();
+        assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
+        let edits = row["predecessor_reconstruction"].as_array().unwrap();
+        assert_eq!(edits.len(), 1);
+        assert!(
+            edits[0]["current"]
+                .as_str()
+                .unwrap()
+                .contains("Expr::VectorFold")
+        );
+        assert_eq!(edits[0]["previous"], "");
+        assert!(legacy_source(path, &(current.clone() + "\n// drift\n"), &projection).is_err());
+        assert!(legacy_source(path, &previous, &projection).is_err());
+    }
+    let mut forged = projection;
+    let path = "tools/compact-rust-backend/src/recorded/audited_local.rs";
+    forged["owners"][path]["predecessor_reconstruction"][0]["previous"] =
+        Value::String("unreviewed acceptance".into());
+    assert!(fold_enum_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
 }

@@ -251,6 +251,7 @@ class CompilerFanoutTests(unittest.TestCase):
                          'cargo clippy --workspace', 'yarn test'):
             self.assertIn(required, caller)
         self.assertNotIn('continue-on-error', caller)
+        self.assertIn('  pull_request:', caller.split('permissions:', 1)[0])
         self.assertNotIn('  push:', caller.split('permissions:', 1)[0])
 
 

@@ -58,6 +58,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
             collect_expression_types(source, structs, enums, origins)?;
             collect_expression_types(body, structs, enums, origins)?;
         }
+        Expr::VectorFold { .. } => return Err(RenderError::EffectfulExpression),
         Expr::VectorFoldCall {
             initial,
             source,

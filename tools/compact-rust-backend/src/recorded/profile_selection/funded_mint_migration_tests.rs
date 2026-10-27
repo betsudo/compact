@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Funded mint is subsumed by existing generic composition; no new route is added.
 // The direct VectorFoldCall child is a native-valid recording refusal; fixed Field
 // commitments themselves are supported. Do not replace this with malformed types.
@@ -147,7 +159,7 @@ fn generic_composition_does_not_require_old_funded_effect_counts() {
 }
 
 #[test]
-fn unsupported_action_keeps_fallback_order_and_first_action_diagnostic() {
+fn fold_successor_funded_mint_stops_staged_suffix() {
     let mut c = source();
     root_mut(&mut c).actions.insert(
         0,
@@ -169,21 +181,13 @@ fn unsupported_action_keeps_fallback_order_and_first_action_diagnostic() {
     };
     let maps = Context::new(&c);
     assert!(maps.old(root(&c)).is_none());
-    assert!(maps.domain(root(&c)).unwrap().is_none());
+    assert!(maps.domain(root(&c)).unwrap().is_some());
     let row = legacy_selected_trace(&c, root(&c));
     let a = attempts(&row);
-    let at = a
-        .iter()
-        .position(|&s| s == "algebra.guarded-deposit")
-        .unwrap();
-    assert_eq!(
-        &a[at..at + 3],
-        [
-            "algebra.guarded-deposit",
-            "algebra.terminal-returns",
-            "algebra.unit-actions"
-        ]
-    );
+    // The staged oracle uses current checked children. New admission stops at
+    // its successful algebra owner; the frozen old shape still declined above.
+    assert_eq!(a.last().copied(), row["body_owner"].as_str());
+    assert!(a.last().is_some_and(|route| route.starts_with("algebra.")));
     assert!(!a.contains(&"selector.funded-mint"));
     let output = crate::render_with_capabilities(&c).unwrap();
     let cap = output
@@ -192,8 +196,8 @@ fn unsupported_action_keeps_fallback_order_and_first_action_diagnostic() {
         .iter()
         .find(|r| r.name == "buy_in")
         .unwrap();
-    assert!(!cap.recorded && !cap.observed_call);
-    crate::recorded::test_support::assert_checked_fold_refusal(
+    assert!(cap.recorded && cap.observed_call);
+    crate::recorded::test_support::assert_checked_fold_successor(
         &c,
         root(&c),
         RecordingGap::action(&root(&c).actions[0], "actions[0]".into()),

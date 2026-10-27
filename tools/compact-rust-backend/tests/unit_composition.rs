@@ -50,7 +50,7 @@ fn flat_and_chunked_declared_helpers_compose_on_one_recording_frame() {
     }
 }
 #[test]
-fn checked_hidden_effects_compose_but_unselected_unsupported_effects_are_refused() {
+fn checked_hidden_effects_and_fold_compose_but_malformed_inactive_bodies_refuse() {
     for chunked in [false, true] {
         let mut v = fixture(chunked);
         let actions = circuit(&mut v, "guard")["actions"].as_array_mut().unwrap();
@@ -183,7 +183,7 @@ fn checked_hidden_effects_compose_but_unselected_unsupported_effects_are_refused
         });
         assert!(recorded(v.clone()));
         // The former VectorMap refusal is now a positive. Then retain a
-        // source-qualified direct fold negative with its real pure declaration.
+        // source-qualified direct Fold control with its real pure declaration.
         circuit(&mut v, "guard")["actions"][index]["otherwise"]["value"]["value"] = json!({"kind":"vector_map",
                 "parameter":{"name":"sentinel_item","ty":{"kind":"field"}},
                 "source":{"kind":"tuple","elements":[{"kind":"field_literal","value":"1"}]},
@@ -191,23 +191,12 @@ fn checked_hidden_effects_compose_but_unselected_unsupported_effects_are_refused
                 "result":{"kind":"field"},"length":1});
         assert!(recorded(v.clone()));
         let mut complete: Contract = serde_json::from_value(v).unwrap();
-        recording_refusal::register_unsupported_fold(&mut complete);
+        recording_refusal::register_fold_control(&mut complete);
         v = serde_json::to_value(complete).unwrap();
         circuit(&mut v, "guard")["actions"][index]["otherwise"]["value"]["value"] =
-            serde_json::to_value(recording_refusal::unsupported_commit_input()).unwrap();
+            serde_json::to_value(recording_refusal::fold_control_input()).unwrap();
         let contract: Contract = serde_json::from_value(v).unwrap();
-        let output = render_with_capabilities(&contract).unwrap();
-        let capability = output
-            .capabilities
-            .circuits
-            .iter()
-            .find(|c| c.name == "close")
-            .unwrap();
-        assert!(
-            !capability.recorded && !capability.observed_call,
-            "chunked={chunked}"
-        );
-        assert!(capability.recording_unavailable.is_some());
+        recording_refusal::assert_admitted_and_malformed_refused(&contract, Some("close"));
     }
 }
 
