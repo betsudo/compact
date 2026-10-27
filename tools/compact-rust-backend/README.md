@@ -44,8 +44,17 @@ The frontend identifies terminal contract-storage mutations from their ledger
 path and operation class. Counter-only branches can therefore reach this algebra
 without a Cell write. See the
 [Counter-only source fixture](../../tests-rust-backend/effect-plan-counter-only-source/README.md).
-Value wrappers around the entire conditional and some lexical normalization
-remain separate frontend work ([#516](https://github.com/MediaNoxLabs/compact/issues/516)).
+The current #516 slice recognizes Uint-to-Field and compiler-inferred monotone
+Uint widenings around terminal mutation conditionals. Existing checked return
+plans preserve conversion after selected effects without evaluating conditions
+again. Other lexical/initializer normalization remains separate frontend work.
+See the [bounded plan](../../doc/rust/plans/516-field-return-wrappers.md),
+[source fixture](../../tests-rust-backend/field-return-wrappers-source/README.md)
+and `check_field_return_wrappers.py` for genuine TS/four-route consumers,
+checked subtraction/witness failure order and ordinary compile-fail controls.
+`check_field_return_wrappers_proof.py` qualifies selected Set insertion calls
+through fresh direct native key generation, immutable proof verification and
+funded default-strict application. It does not prove constructors or all branches.
 
 `effectful_return_oracle.compact` retains independent TS/native/recorded controls.
 The two compositional source examples and the standalone wide-source fixture

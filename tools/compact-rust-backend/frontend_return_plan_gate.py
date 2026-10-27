@@ -2,6 +2,18 @@
 # This file is part of Compact.
 # Copyright (C) 2026 Midnight Foundation
 # SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Source-to-IR return-plan regressions and optional fresh-source compatibility census.
 
 Both frontends use the exact same supplied Rust CLI/backend. --source-manifest
@@ -142,7 +154,7 @@ def main():
         setattr(args, name, getattr(args, name).resolve())
     args.output.mkdir(parents=True, exist_ok=True)
     regressions = [f"{FIXTURES}/{name}.compact" for name in
-                   ("storage_mutations", "value_effects", "checked_subtraction")]
+                   ("storage_mutations", "value_effects", "checked_subtraction", "cast_wrapped_mutation")]
     regressions.append("examples/rust_backend/effect_plan_counter_only.compact")
     census = []
     if args.source_manifest:

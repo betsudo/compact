@@ -4026,6 +4026,19 @@
       "library": "tests-rust-backend/direct-fold-counter-local-capture-source/lib.rs",
       "generated_library": "tests-rust-backend/direct-fold-counter-local-capture-source/lib.rs",
       "qualification": "Complete source-bound functional generated output, formatted only; original full IR, origins, capabilities and every checked program retained. Maintained fresh-source gate owns four-route live TS parity/refusals. Registration is not proof, full integration or Linux acceptance."
+    },
+    {
+      "source": "examples/rust_backend/field_return_wrappers.compact",
+      "source_sha256": "73fcc511791bed375eea1d7354703bb47db9646ee08816e2f516d20ada64f1e1",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/field-return-wrappers-source/Cargo.toml",
+      "library": "tests-rust-backend/field-return-wrappers-source/lib.rs",
+      "generated_library": "tests-rust-backend/field-return-wrappers-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
     }
   ]
 }

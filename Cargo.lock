@@ -2148,6 +2148,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-field-return-wrappers-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+ "serde_json",
+]
+
+[[package]]
 name = "compact-rust-field-to-bytes32-oracle-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2963,6 +2971,7 @@ dependencies = [
  "compact-rust-election-oracle-fixture",
  "compact-rust-field-cast-uint128-fixture",
  "compact-rust-field-observation-oracle-fixture",
+ "compact-rust-field-return-wrappers-source-fixture",
  "compact-rust-field-to-bytes32-oracle-fixture",
  "compact-rust-guarded-assert-arith-oracle-fixture",
  "compact-rust-guarded-point-nested-source-fixture",

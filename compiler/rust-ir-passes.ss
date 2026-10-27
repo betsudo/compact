@@ -1505,6 +1505,9 @@
       ;; This classification follows ledger metadata, never an ADT allowlist.
       (define (stateful-body-has-storage-mutation? value-expr)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (and (return-value-widening? type type^)
+                (stateful-body-has-storage-mutation? expr))]
           [(return ,src ,expr) (stateful-body-has-storage-mutation? expr)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (stateful-body-has-storage-mutation? expr)]
@@ -1520,12 +1523,35 @@
               (and (pair? path-elt*) (not (eq? op-class 'read)))])]
           [else #f]))
 
+      ;; Inferred branch joins can add monotone Uint widenings inside the
+      ;; final Uint-to-Field conversion. Neither conversion can fail on its
+      ;; checked input domain. Narrowing keeps its existing source boundary.
+      (define (return-value-widening? target source)
+        (nanopass-case (Lnodisclose Type) source
+          [(tunsigned ,src ,nat1)
+           (nanopass-case (Lnodisclose Type) target
+             [(tfield ,src^) #t]
+             [(tunsigned ,src^ ,nat2) (<= nat1 nat2)]
+             [else #f])]
+          [else #f]))
+
+      (define (return-widening-ir target value)
+        (nanopass-case (Lnodisclose Type) target
+          [(tfield ,src)
+           (object (cons "kind" "field_cast") (cons "value" value))]
+          [(tunsigned ,src ,nat)
+           (object (cons "kind" "unsigned_cast")
+                   (cons "max" (number->string nat)) (cons "value" value))]))
+
       ;; Preserve a terminal conditional and its selected storage mutations in
       ;; one ordered return body. Re-evaluating its condition after a mutation
       ;; could select a different branch. Expression-only effects retain their
       ;; existing representation and recording capabilities.
       (define (terminal-storage-mutation-conditional? expr)
         (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (and (return-value-widening? type type^)
+                (terminal-storage-mutation-conditional? expr))]
           [(return ,src ,expr) (terminal-storage-mutation-conditional? expr)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (terminal-storage-mutation-conditional? expr)]
@@ -1556,49 +1582,60 @@
            (unit-return-type? type)]
           [else #f]))
 
-      (define (stateful-return-plan-ir expr expected-type owner-src environment witness-ids)
+      (define (stateful-return-plan-ir expr expected-type owner-src environment witness-ids . finish*)
         (call-with-rust-origin "return_plan" (expression-origin expr)
           (expression-origin-preserve? expr)
           (lambda ()
             (parameterize ([current-counter-environment environment])
-              (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids))) (expression-operation-origin expr)))
+              (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids
+                (if (null? finish*) (lambda (value) value) (car finish*))))) (expression-operation-origin expr)))
 
-      (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids)
+      (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids finish)
         (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src ,type ,type^ ,expr^)
+           (if (return-value-widening? type type^)
+               ;; Carry the conversion as a continuation, rather than moving
+               ;; it ahead of actions or evaluating the condition twice.
+               (stateful-return-plan-ir expr^ type^ src environment witness-ids
+                 (lambda (value)
+                   (finish (return-widening-ir type value))))
+               (object (cons "kind" "value")
+                       (cons "value"
+                             (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))))]
           [(return ,src ,expr)
-           (stateful-return-plan-ir expr expected-type src environment witness-ids)]
+           (stateful-return-plan-ir expr expected-type src environment witness-ids finish)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (stateful-bindings-ir local* expr* src environment witness-ids
              (lambda (bindings environment^)
                (object (cons "kind" "let")
                        (cons "bindings" bindings)
                        (cons "result"
-                             (stateful-return-plan-ir expr expected-type src environment^ witness-ids)))))]
+                             (stateful-return-plan-ir expr expected-type src environment^ witness-ids finish)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                ;; Keep the compiler-inserted guard folded into the same checked
                ;; arithmetic value, as on the ordinary expression path.
                (object (cons "kind" "value")
                        (cons "value"
-                             (stateful-typed-expression-ir expr expected-type src witness-ids)))
+                             (finish (stateful-typed-expression-ir expr expected-type src witness-ids))))
                (object (cons "kind" "sequence")
                        (cons "actions"
                              (list->vector
                                (map (lambda (action)
                                       (state-action-ir action src environment witness-ids)) expr*)))
                        (cons "result"
-                             (stateful-return-plan-ir expr expected-type src environment witness-ids))))]
+                             (stateful-return-plan-ir expr expected-type src environment witness-ids finish))))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "conditional")
                    (cons "condition" (stateful-expression-ir expr0 src witness-ids))
                    (cons "then"
-                         (stateful-return-plan-ir expr1 expected-type src environment witness-ids))
+                         (stateful-return-plan-ir expr1 expected-type src environment witness-ids finish))
                    (cons "otherwise"
-                         (stateful-return-plan-ir expr2 expected-type src environment witness-ids)))]
+                         (stateful-return-plan-ir expr2 expected-type src environment witness-ids finish)))]
           [else
            (object (cons "kind" "value")
                    (cons "value"
-                         (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))]))
+                         (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids))))]))
 
       ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
       ;; The paired schema20 consumer checks every annotation independently.
