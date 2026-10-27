@@ -36,6 +36,17 @@ pub(crate) fn wide_uint_type(high: u128, low: u128) -> syn::Type {
     syn::parse_quote!(runtime::WideUint<#high, #low>)
 }
 
+/// Unit comparisons still evaluate both checked operands once, left to right.
+/// Typed discard bindings avoid inferring Unit temporaries or emitting a Rust
+/// Unit comparison that strict Clippy rejects.
+pub(crate) fn unit_comparison_syntax(left: syn::Expr, right: syn::Expr, result: bool) -> syn::Expr {
+    syn::parse_quote!({
+        let _: () = #left;
+        let _: () = #right;
+        #result
+    })
+}
+
 pub(crate) fn field_to_bytes_32_syntax(value: syn::Expr) -> syn::Expr {
     // Compact's Field-to-Bytes cast is zero-padded little endian. The pinned
     // midnight-zk Field has a canonical 32-byte representation.

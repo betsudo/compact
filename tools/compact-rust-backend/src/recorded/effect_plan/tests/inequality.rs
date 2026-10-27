@@ -104,10 +104,18 @@ fn inequality_accepts_existing_same_type_wrappers_and_owned_products() {
         vector(Type::OpaqueString, 0),
         product(vector(Type::OpaqueBytes, 2)),
     ] {
+        let unit = ty == Type::Unit;
         let source = root(ty.clone(), ty);
         let plan = checked(&source);
         validate::check(plan.plan().clone(), authority(&source)).unwrap();
-        assert_eq!(syntax(&plan).matches("!=").count(), 1);
+        let rendered = syntax(&plan);
+        // The checked Unit signature is still admitted, with both operands
+        // retained, but its singleton domain makes inequality false. Emitting
+        // a Rust Unit comparison would fail strict generated-consumer Clippy.
+        assert_eq!(rendered.matches("!=").count(), usize::from(!unit));
+        if unit {
+            assert!(rendered.contains("false"));
+        }
     }
 }
 #[test]

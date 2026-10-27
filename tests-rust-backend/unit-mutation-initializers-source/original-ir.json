@@ -1,0 +1,1625 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "values",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "set",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "point",
+      "parameters": [
+        {
+          "name": "label",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "gate",
+      "parameters": [
+        {
+          "name": "label",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "accepted",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 20,
+        "column": 1
+      }
+    },
+    {
+      "name": "unitGuard",
+      "parameters": [
+        {
+          "name": "label",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "accepted",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 21,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "requireLeft",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "accepted",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "accepted"
+            },
+            "message": "left guard"
+          }
+        ],
+        "value": {
+          "kind": "unit"
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 73,
+        "column": 1
+      }
+    },
+    {
+      "name": "requireRight",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "accepted",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "accepted"
+            },
+            "message": "right guard"
+          }
+        ],
+        "value": {
+          "kind": "unit"
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 77,
+        "column": 1
+      }
+    },
+    {
+      "name": "unitEq",
+      "parameters": [
+        {
+          "name": "left",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "body": {
+        "kind": "equal",
+        "left": {
+          "kind": "call",
+          "name": "requireLeft",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "left"
+            }
+          ]
+        },
+        "right": {
+          "kind": "call",
+          "name": "requireRight",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "right"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 81,
+        "column": 1
+      }
+    },
+    {
+      "name": "unitNe",
+      "parameters": [
+        {
+          "name": "left",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "body": {
+        "kind": "not_equal",
+        "left": {
+          "kind": "call",
+          "name": "requireLeft",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "left"
+            }
+          ]
+        },
+        "right": {
+          "kind": "call",
+          "name": "requireRight",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "right"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 84,
+        "column": 1
+      }
+    },
+    {
+      "name": "unitCondition",
+      "parameters": [
+        {
+          "name": "left",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "field_cast",
+        "value": {
+          "kind": "if",
+          "condition": {
+            "kind": "not_equal",
+            "left": {
+              "kind": "call",
+              "name": "requireLeft",
+              "arguments": [
+                {
+                  "kind": "parameter",
+                  "name": "left"
+                }
+              ]
+            },
+            "right": {
+              "kind": "call",
+              "name": "requireRight",
+              "arguments": [
+                {
+                  "kind": "parameter",
+                  "name": "right"
+                }
+              ]
+            }
+          },
+          "then": {
+            "kind": "coerce",
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "1",
+              "max": "2"
+            },
+            "ty": {
+              "kind": "unsigned",
+              "max": "2"
+            }
+          },
+          "otherwise": {
+            "kind": "coerce",
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "2",
+              "max": "2"
+            },
+            "ty": {
+              "kind": "unsigned",
+              "max": "2"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 87,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "conditional",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "conditional",
+              "condition": {
+                "kind": "equal",
+                "left": {
+                  "kind": "parameter",
+                  "name": "inserted"
+                },
+                "right": {
+                  "kind": "unit"
+                }
+              },
+              "then": {
+                "kind": "value",
+                "value": {
+                  "kind": "field_cast",
+                  "value": {
+                    "kind": "unsigned_literal",
+                    "value": "1",
+                    "max": "1"
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "value",
+                "value": {
+                  "kind": "field_cast",
+                  "value": {
+                    "kind": "unsigned_cast",
+                    "max": "1",
+                    "value": {
+                      "kind": "unsigned_literal",
+                      "value": "0",
+                      "max": "0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 23,
+        "column": 1
+      }
+    },
+    {
+      "name": "observed",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "witness_call",
+                "name": "gate",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "1"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "selected"
+                    },
+                    "ty": {
+                      "kind": "boolean"
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_13",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "witness_call",
+                      "name": "point",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "2"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "value"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "set_insert",
+                  "field": "values",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_13"
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "conditional",
+              "condition": {
+                "kind": "equal",
+                "left": {
+                  "kind": "parameter",
+                  "name": "inserted"
+                },
+                "right": {
+                  "kind": "unit"
+                }
+              },
+              "then": {
+                "kind": "value",
+                "value": {
+                  "kind": "witness_call",
+                  "name": "point",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "field_literal",
+                        "value": "3"
+                      },
+                      "ty": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "field_literal",
+                        "value": "11"
+                      },
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ]
+                }
+              },
+              "otherwise": {
+                "kind": "value",
+                "value": {
+                  "kind": "field_cast",
+                  "value": {
+                    "kind": "unsigned_literal",
+                    "value": "0",
+                    "max": "0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 28,
+        "column": 1
+      }
+    },
+    {
+      "name": "sequential",
+      "parameters": [
+        {
+          "name": "first",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "second",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "witness_call",
+                "name": "gate",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "10"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "first"
+                    },
+                    "ty": {
+                      "kind": "boolean"
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_11",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "witness_call",
+                      "name": "point",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "11"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "value"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "set_insert",
+                  "field": "values",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_11"
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "sequence",
+              "actions": [
+                {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "equal",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "inserted"
+                      },
+                      "right": {
+                        "kind": "unit"
+                      }
+                    },
+                    "then": {
+                      "kind": "witness_call",
+                      "name": "gate",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "12"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "second"
+                          },
+                          "ty": {
+                            "kind": "boolean"
+                          }
+                        }
+                      ]
+                    },
+                    "otherwise": {
+                      "kind": "boolean",
+                      "value": false
+                    }
+                  },
+                  "then": {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "tmp_12",
+                        "ty": {
+                          "kind": "field"
+                        },
+                        "value": {
+                          "kind": "witness_call",
+                          "name": "point",
+                          "arguments": [
+                            {
+                              "kind": "coerce",
+                              "value": {
+                                "kind": "field_literal",
+                                "value": "13"
+                              },
+                              "ty": {
+                                "kind": "field"
+                              }
+                            },
+                            {
+                              "kind": "coerce",
+                              "value": {
+                                "kind": "add",
+                                "left": {
+                                  "kind": "parameter",
+                                  "name": "value"
+                                },
+                                "right": {
+                                  "kind": "field_literal",
+                                  "value": "1"
+                                }
+                              },
+                              "ty": {
+                                "kind": "field"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "set_insert",
+                      "field": "values",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "tmp_12"
+                      }
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "sequence",
+                    "actions": [
+                    ]
+                  }
+                }
+              ],
+              "result": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "next",
+                    "ty": {
+                      "kind": "unit"
+                    },
+                    "value": {
+                      "kind": "unit"
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "conditional",
+                  "condition": {
+                    "kind": "equal",
+                    "left": {
+                      "kind": "parameter",
+                      "name": "inserted"
+                    },
+                    "right": {
+                      "kind": "parameter",
+                      "name": "next"
+                    }
+                  },
+                  "then": {
+                    "kind": "value",
+                    "value": {
+                      "kind": "witness_call",
+                      "name": "point",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "14"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "2"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "value",
+                    "value": {
+                      "kind": "field_cast",
+                      "value": {
+                        "kind": "unsigned_literal",
+                        "value": "0",
+                        "max": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 33,
+        "column": 1
+      }
+    },
+    {
+      "name": "nested",
+      "parameters": [
+        {
+          "name": "outer",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "inner",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "outer"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "if",
+                "condition": {
+                  "kind": "parameter",
+                  "name": "inner"
+                },
+                "then": {
+                  "kind": "set_insert",
+                  "field": "values",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                "otherwise": {
+                  "kind": "sequence",
+                  "actions": [
+                  ]
+                }
+              }
+            ],
+            "result": {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "inserted",
+                  "ty": {
+                    "kind": "unit"
+                  },
+                  "value": {
+                    "kind": "unit"
+                  }
+                }
+              ],
+              "result": {
+                "kind": "conditional",
+                "condition": {
+                  "kind": "equal",
+                  "left": {
+                    "kind": "parameter",
+                    "name": "inserted"
+                  },
+                  "right": {
+                    "kind": "unit"
+                  }
+                },
+                "then": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "field_cast",
+                    "value": {
+                      "kind": "unsigned_cast",
+                      "max": "2",
+                      "value": {
+                        "kind": "unsigned_literal",
+                        "value": "1",
+                        "max": "1"
+                      }
+                    }
+                  }
+                },
+                "otherwise": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "field_cast",
+                    "value": {
+                      "kind": "unsigned_cast",
+                      "max": "2",
+                      "value": {
+                        "kind": "unsigned_cast",
+                        "max": "1",
+                        "value": {
+                          "kind": "unsigned_literal",
+                          "value": "0",
+                          "max": "0"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "value",
+            "value": {
+              "kind": "field_cast",
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "2",
+                "max": "2"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 40,
+        "column": 1
+      }
+    },
+    {
+      "name": "unit_result",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "inserted"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 47,
+        "column": 1
+      }
+    },
+    {
+      "name": "unused",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "witness_call",
+                "name": "point",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "31"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "4"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 52,
+        "column": 1
+      }
+    },
+    {
+      "name": "unit_witness_comparison",
+      "parameters": [
+        {
+          "name": "left",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "equal",
+          "left": {
+            "kind": "witness_call",
+            "name": "unitGuard",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "field_literal",
+                  "value": "21"
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "left"
+                },
+                "ty": {
+                  "kind": "boolean"
+                }
+              }
+            ]
+          },
+          "right": {
+            "kind": "witness_call",
+            "name": "unitGuard",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "field_literal",
+                  "value": "22"
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "right"
+                },
+                "ty": {
+                  "kind": "boolean"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 57,
+        "column": 1
+      }
+    },
+    {
+      "name": "unit_witness_inequality",
+      "parameters": [
+        {
+          "name": "left",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "not_equal",
+          "left": {
+            "kind": "witness_call",
+            "name": "unitGuard",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "field_literal",
+                  "value": "21"
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "left"
+                },
+                "ty": {
+                  "kind": "boolean"
+                }
+              }
+            ]
+          },
+          "right": {
+            "kind": "witness_call",
+            "name": "unitGuard",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "field_literal",
+                  "value": "22"
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "right"
+                },
+                "ty": {
+                  "kind": "boolean"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 61,
+        "column": 1
+      }
+    },
+    {
+      "name": "shadowed",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "inner",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "conditional",
+              "condition": {
+                "kind": "parameter",
+                "name": "inner"
+              },
+              "then": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "inserted_Compact1",
+                    "ty": {
+                      "kind": "unit"
+                    },
+                    "value": {
+                      "kind": "unit"
+                    }
+                  }
+                ],
+                "result": {
+                  "kind": "conditional",
+                  "condition": {
+                    "kind": "equal",
+                    "left": {
+                      "kind": "parameter",
+                      "name": "inserted_Compact1"
+                    },
+                    "right": {
+                      "kind": "unit"
+                    }
+                  },
+                  "then": {
+                    "kind": "value",
+                    "value": {
+                      "kind": "field_cast",
+                      "value": {
+                        "kind": "unsigned_cast",
+                        "max": "3",
+                        "value": {
+                          "kind": "unsigned_literal",
+                          "value": "2",
+                          "max": "2"
+                        }
+                      }
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "value",
+                    "value": {
+                      "kind": "field_cast",
+                      "value": {
+                        "kind": "unsigned_cast",
+                        "max": "3",
+                        "value": {
+                          "kind": "unsigned_cast",
+                          "max": "2",
+                          "value": {
+                            "kind": "unsigned_literal",
+                            "value": "0",
+                            "max": "0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "otherwise": {
+                "kind": "conditional",
+                "condition": {
+                  "kind": "equal",
+                  "left": {
+                    "kind": "parameter",
+                    "name": "inserted"
+                  },
+                  "right": {
+                    "kind": "unit"
+                  }
+                },
+                "then": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "field_cast",
+                    "value": {
+                      "kind": "unsigned_literal",
+                      "value": "3",
+                      "max": "3"
+                    }
+                  }
+                },
+                "otherwise": {
+                  "kind": "value",
+                  "value": {
+                    "kind": "field_cast",
+                    "value": {
+                      "kind": "unsigned_cast",
+                      "max": "3",
+                      "value": {
+                        "kind": "unsigned_literal",
+                        "value": "0",
+                        "max": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 65,
+        "column": 1
+      }
+    }
+  ]
+}

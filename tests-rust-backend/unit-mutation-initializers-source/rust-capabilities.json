@@ -1,0 +1,113 @@
+{
+  "schema_version": 3,
+  "circuits": [
+    {
+      "name": "conditional",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 23,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "observed",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 28,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "sequential",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 33,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "nested",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 40,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "unit_result",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 47,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "unused",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 52,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    },
+    {
+      "name": "unit_witness_comparison",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 57,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": false,
+      "recording_status": "not_applicable"
+    },
+    {
+      "name": "unit_witness_inequality",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 61,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": false,
+      "recording_status": "not_applicable"
+    },
+    {
+      "name": "shadowed",
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 65,
+        "column": 1
+      },
+      "recorded": true,
+      "observed_call": true,
+      "proof_required": true,
+      "recording_status": "available"
+    }
+  ]
+}

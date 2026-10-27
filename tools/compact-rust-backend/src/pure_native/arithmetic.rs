@@ -35,7 +35,13 @@ impl ArithmeticSink for NativeLeafSink {
             ArithmeticFacts::Unsigned(strategy) => {
                 render_unsigned_arithmetic(strategy, left, right)
             }
-            ArithmeticFacts::Equality { negated } => {
+            ArithmeticFacts::Equality {
+                negated,
+                unit_result,
+            } => {
+                if let Some(result) = unit_result {
+                    return crate::value_lowering::unit_comparison_syntax(left, right, result);
+                }
                 // Interpolating a nested comparison into parse_quote! loses its
                 // expression grouping and panics on valid Boolean equality.
                 let op = if negated {

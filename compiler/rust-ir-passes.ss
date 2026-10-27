@@ -1603,6 +1603,61 @@
            (unit-return-type? type)]
           [else #f]))
 
+      ;; A Unit binding has one possible value, but its initializer may still
+      ;; select and execute storage effects. Preserve those effects before the
+      ;; lexical binding using the existing ordered return/action forms.
+      (define (unit-mutation-initializer? local value)
+        (nanopass-case (Lnodisclose Argument) local
+          [(,var-name ,type)
+           (and (unit-return-type? type)
+                (stateful-body-has-storage-mutation? value))]))
+
+      (define (has-unit-mutation-initializer? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (and (return-value-widening? type type^)
+                (has-unit-mutation-initializer? expr))]
+          [(return ,src ,expr) (has-unit-mutation-initializer? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (or (exists unit-mutation-initializer? local* expr*)
+               (has-unit-mutation-initializer? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (or (exists has-unit-mutation-initializer? expr*)
+               (has-unit-mutation-initializer? expr))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (or (has-unit-mutation-initializer? expr1)
+               (has-unit-mutation-initializer? expr2))]
+          [else #f]))
+
+      (define (unit-initializer-return-bindings-ir local* value* src environment witness-ids emit)
+        (let loop ([locals local*] [values value*] [environment environment])
+          (if (null? locals)
+              (emit environment)
+              (let ([local (car locals)] [value (car values)])
+                (define (scope bindings environment^)
+                  (object (cons "kind" "let")
+                          (cons "bindings" bindings)
+                          (cons "result" (loop (cdr locals) (cdr values) environment^))))
+                (if (unit-mutation-initializer? local value)
+                    (nanopass-case (Lnodisclose Argument) local
+                      [(,var-name ,type)
+                       (object
+                         (cons "kind" "sequence")
+                         (cons "actions" (vector (state-action-ir value src environment witness-ids)))
+                         (cons "result"
+                           (scope
+                             (vector
+                               (object (cons "name" (sourced-rust-var-name var-name))
+                                       (cons "ty" (type-ir type src))
+                                       (cons "value"
+                                         (call-with-rust-origin "expression" (expression-origin value) #t
+                                           (lambda () (kind "unit")) (expression-operation-origin value)))))
+                             (cons (cons var-name
+                                         (object (cons "kind" "parameter")
+                                                 (cons "name" (rust-var-name var-name))))
+                                   environment))))])
+                    (stateful-bindings-ir (list local) (list value) src environment witness-ids scope))))))
+
       (define (stateful-return-plan-ir expr expected-type owner-src environment witness-ids . finish*)
         (call-with-rust-origin "return_plan" (expression-origin expr)
           (expression-origin-preserve? expr)
@@ -1626,12 +1681,16 @@
           [(return ,src ,expr)
            (stateful-return-plan-ir expr expected-type src environment witness-ids finish)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (stateful-bindings-ir local* expr* src environment witness-ids
-             (lambda (bindings environment^)
-               (object (cons "kind" "let")
-                       (cons "bindings" bindings)
-                       (cons "result"
-                             (stateful-return-plan-ir expr expected-type src environment^ witness-ids finish)))))]
+           (if (exists unit-mutation-initializer? local* expr*)
+               (unit-initializer-return-bindings-ir local* expr* src environment witness-ids
+                 (lambda (environment^)
+                   (stateful-return-plan-ir expr expected-type src environment^ witness-ids finish)))
+               (stateful-bindings-ir local* expr* src environment witness-ids
+                 (lambda (bindings environment^)
+                   (object (cons "kind" "let")
+                           (cons "bindings" bindings)
+                           (cons "result"
+                                 (stateful-return-plan-ir expr expected-type src environment^ witness-ids finish))))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
                ;; Keep the compiler-inserted guard folded into the same checked
@@ -2318,9 +2377,10 @@
                                  [(,var-name ,type)
                                   (cons var-name (object (cons "kind" "parameter")
                                                         (cons "name" (rust-var-name var-name))))])) arg*)]
-                      [effectful-return? (and (not (unit-return-type? type))
-                                              (or (terminal-storage-mutation-conditional? expr)
-                                                  (lexical-storage-mutation-return? expr)))]
+                      [effectful-return? (or (has-unit-mutation-initializer? expr)
+                                             (and (not (unit-return-type? type))
+                                                  (or (terminal-storage-mutation-conditional? expr)
+                                                      (lexical-storage-mutation-return? expr))))]
                       [all-names (if (member internal-name names)
                                      names
                                      (append names (list internal-name)))])

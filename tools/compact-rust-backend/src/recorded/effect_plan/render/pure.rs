@@ -109,8 +109,13 @@ pub(in super::super) fn expression(
             }
         }
         Operation::Equal(a, b) | Operation::NotEqual(a, b) => {
+            let negated = matches!(binding.operation, Operation::NotEqual(..));
+            let unit_result =
+                crate::pure_semantics::arithmetic::unit_equality_result(&a.ty, negated);
             let (a, b) = (value(a), value(b));
-            if matches!(binding.operation, Operation::NotEqual(..)) {
+            if let Some(result) = unit_result {
+                crate::value_lowering::unit_comparison_syntax(a, b, result)
+            } else if negated {
                 syn::parse_quote!(#a != #b)
             } else {
                 syn::parse_quote!(#a == #b)

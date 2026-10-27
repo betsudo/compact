@@ -1578,7 +1578,11 @@ fn render_arithmetic_operation(
                 Span::call_site(),
             );
             *next_temp += 1;
-            statements.push(syn::parse_quote!(let #left_name = #left;));
+            if left_ty == Type::Unit {
+                statements.push(syn::parse_quote!(let _: () = #left;));
+            } else {
+                statements.push(syn::parse_quote!(let #left_name = #left;));
+            }
             let (right, right_ty, right_effect) = render_state_expression_observed(
                 right,
                 parameters,
@@ -1599,7 +1603,15 @@ fn render_arithmetic_operation(
                 native_representation::Operation::NotEqual
             };
             native_representation::check_tuple_traits(operation, &left_ty)?;
-            let rendered = if matches!(value, Expr::Equal { .. }) {
+            let negated = matches!(value, Expr::NotEqual { .. });
+            let rendered = if let Some(result) =
+                crate::pure_semantics::arithmetic::unit_equality_result(&left_ty, negated)
+            {
+                // Both operands have the single Unit value, but their native
+                // evaluations still precede the constant comparison result.
+                statements.push(syn::parse_quote!(let _: () = #right;));
+                syn::parse_quote!(#result)
+            } else if !negated {
                 syn::parse_quote!(#left_name == #right)
             } else {
                 syn::parse_quote!(#left_name != #right)

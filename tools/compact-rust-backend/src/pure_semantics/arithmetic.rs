@@ -59,8 +59,17 @@ impl<'a> ArithmeticSource<'a> {
 pub(crate) enum ArithmeticFacts {
     Field(ArithmeticKind),
     Unsigned(UnsignedArithmeticStrategy),
-    Equality { negated: bool },
+    Equality {
+        negated: bool,
+        unit_result: Option<bool>,
+    },
     Ordered(ComparisonOperator),
+}
+
+// Unit has exactly one semantic value. This fact does not skip visiting or
+// checking either source operand; callers obtain it only after signature checks.
+pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
+    matches!(ty, Type::Unit).then_some(!negated)
 }
 
 pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
@@ -130,7 +139,13 @@ pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
                 },
                 &left.ty,
             )?;
-            (ArithmeticFacts::Equality { negated }, Type::Boolean)
+            (
+                ArithmeticFacts::Equality {
+                    negated,
+                    unit_result: unit_equality_result(&left.ty, negated),
+                },
+                Type::Boolean,
+            )
         }
         ArithmeticSource::Ordered { operator, .. } => {
             for actual in [left.ty, right.ty] {

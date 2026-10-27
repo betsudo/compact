@@ -4052,6 +4052,19 @@
       "library": "tests-rust-backend/tuple-return-wrappers-source/lib.rs",
       "generated_library": "tests-rust-backend/tuple-return-wrappers-source/lib.rs",
       "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
+    },
+    {
+      "source": "examples/rust_backend/unit_mutation_initializers.compact",
+      "source_sha256": "91b4feba7e48881142c37363271c6092885060e9864a406e4c116fcf1a5f7d26",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/unit-mutation-initializers-source/Cargo.toml",
+      "library": "tests-rust-backend/unit-mutation-initializers-source/lib.rs",
+      "generated_library": "tests-rust-backend/unit-mutation-initializers-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
     }
   ]
 }
