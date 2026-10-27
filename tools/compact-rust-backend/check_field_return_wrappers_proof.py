@@ -37,11 +37,28 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/field-return-wrappers-source"
+PROOF_RESULT_FORMAT = "compact-field-return-wrappers-proof/v1"
 
 
 def require(value, message):
     if not value:
         raise common.GateError(message)
+
+
+def validate_proof_summary(summary):
+    """Require the complete finite native producer protocol, never a pass flag alone."""
+    require(summary["format"] == PROOF_RESULT_FORMAT and summary["status"] == "passed"
+            and summary["constructor_execution_proved"] is False, "invalid Field wrapper proof summary")
+    require([row["key"] for row in summary["calls"]] == [5, 6], "missing replacement/new insertion proof")
+    require(summary["unselected_branch_proved"] is False, "unexpected unselected branch proof claim")
+    for row in summary["calls"]:
+        require(all(type(row[name]) is int for name in ("key", "before", "after", "proof_bytes")) and
+                row["proof_bytes"] > 0 and
+                row["before"] == 1 and row["after"] == (1 if row["key"] == 5 else 2) and
+                row["changed_result_same_geometry"] is True and
+                row["changed_binding_rejected"] is True and row["changed_result_rejected"] is True and
+                row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists" and
+                row["replay_unchanged"] is True, "incomplete proof/application controls")
 
 
 def run(args):
@@ -147,17 +164,7 @@ def run(args):
         receipt["material_hashes"] = hashes(material_paths + artifacts)
         execute([runner, "--field-return-wrappers", generated], "prove-verify-apply")
         summary = json.loads((generated / "field-wrappers-proof-result.json").read_text())
-        require(summary["format"] == "compact-field-return-wrappers-proof/v1" and summary["status"] == "passed"
-                and summary["constructor_execution_proved"] is False, "invalid Field wrapper proof summary")
-        require([row["key"] for row in summary["calls"]] == [5, 6], "missing replacement/new insertion proof")
-        require(summary["unselected_branch_proved"] is False, "unexpected unselected branch proof claim")
-        for row in summary["calls"]:
-            require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and
-                    row["before"] == 1 and row["after"] == (1 if row["key"] == 5 else 2) and
-                    row["changed_result_same_geometry"] is True and
-                    row["changed_binding_rejected"] is True and row["changed_result_rejected"] is True and
-                    row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists" and
-                    row["replay_unchanged"] is True, "incomplete proof/application controls")
+        validate_proof_summary(summary)
         receipt["proof_result"] = summary
         receipt["result_hashes"] = hashes([p for p in generated.glob("field-wrappers-*") if p.is_file()])
         unchanged(receipt["source_hashes"])

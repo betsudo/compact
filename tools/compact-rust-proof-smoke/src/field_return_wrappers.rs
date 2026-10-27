@@ -24,6 +24,7 @@ use midnight_transient_crypto::proofs::{ProverKey, Zkir};
 const IR: &str =
     include_str!("../../../tests-rust-backend/field-return-wrappers-source/original-ir.json");
 const NAME: &str = "inferred";
+const PROOF_RESULT_FORMAT: &str = "compact-field-return-wrappers-proof/v1";
 struct UnusedWitness;
 impl c::TryWitnesses<u64> for UnusedWitness {
     fn choose(
@@ -128,7 +129,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             "changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-field-return-wrappers-proof/v1","status":"passed",
+    let result = serde_json::json!({"format":PROOF_RESULT_FORMAT,"status":"passed",
         "scope":"two fresh selected Field-wrapped Set insert functional-derived call proofs and funded default-strict local transactions",
         "constructor_execution_proved":false,"unselected_branch_proved":false,"calls":rows});
     write_new(
