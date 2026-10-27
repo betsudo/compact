@@ -218,7 +218,7 @@ not depend on the deferred Forge experiment.
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension in progress. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension integrated by #692. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
@@ -300,13 +300,18 @@ broader Rust AST goal remains incomplete; Forge remains deferred.
 
 ### Current DID clean-source qualification
 
-Original compiler0.31.138 builds from clean signed implementation `926e8de8c`.
-Fresh source/API and separate real proof gates pass: all twelve exact TS DID
-rows, five selected Rust test methods and 40 invalid-route executions, three
-compile-fail controls, a fresh k11/1,804-row/3,296-byte functional deactivation
-proof with immutable binding/version controls, and funded default-strict
-application/replay refusal. All 281 fixtures are fresh; full workspace formatting,
-three version checks, zero new header violations and public Python 332 PASS +
-20 existing SKIP pass. See the [qualification guide](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
-for stage identities and limits. Independent PR review and full integration CI
-remain open; this is local selected application acceptance, not broad-goal completion.
+Original compiler 0.31.138 builds from clean signed review correction `3ac403d8a`.
+Fresh source/API and separate real proof gates pass: twelve exact live TS DID
+rows, five selected Rust methods and 40 invalid-route executions, three typed
+compile-fail controls, a fresh k11 / 1,804-row / 3,296-byte standalone deactivation
+proof with immutable binding/version controls, and an independently proved
+7,413-byte transaction with funded default-strict application/replay refusal.
+The actual applied-state stale check uses the functional fixture. Both gates
+require a clean checkout and exact complete proof/live-TS oracle equality.
+The clean backend library passes 1,846 tests with seven existing explicit-run
+helpers ignored; Python passes 335 with 20 existing skips. Workspace formatting
+and proof-runner strict Clippy pass. Earlier 281-fixture/version/header receipts
+retain their original source identities; full updated CI is still required.
+See the [qualification table](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
+for stage identities and limits. Repeat exact-head review and full integration CI
+remain open. This is selected local application acceptance, not broad-goal completion.

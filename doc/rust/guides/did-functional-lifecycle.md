@@ -64,7 +64,7 @@ or verification verdict substitutes for a run.
 The accepted baseline is canonical `acf529eff` from PR #692, which passed full
 compiler/native/proof/package/wallet/E2E CI and exact-head Claude review.
 Clean original compiler0.31.138 and fresh DID API/proof gates pass at signed
-implementation `926e8de8c`: complete generation, five Rust methods, ten invalid
+reviewed implementation `3ac403d8a`: complete generation, five Rust methods, ten invalid
 inputs across four routes, three compile-fail controls, immutable proof
 verification and funded default-strict application/replay. The first failed
 Clippy/header attempts and earlier development epochs remain retained.

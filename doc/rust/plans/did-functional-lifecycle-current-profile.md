@@ -207,34 +207,38 @@ qualification, exact-PR review and complete integration CI.
 
 ## Clean local qualification — compiler 0.31.138
 
-Signed implementation `926e8de8c83667e6fd45f87a0fc0fe71147e1ccd` is based on
-accepted canonical `acf529eff`. The original Nix compiler package builds from
-that clean source. Its build has `doCheck = false`; the separate maintained
-compiler suite passes both ZKIR lanes with 636/636 manifest and 1/1 JavaScript
-checks each at its recorded earlier preparation epoch.
+Signed reviewed implementation `3ac403d8a0d321508d7d693dbf870964b501b130` is
+based on accepted canonical `acf529eff`. The original Nix compiler package
+builds from that clean source and uses its own Scheme frontend. Its build has
+`doCheck = false`; the separate maintained compiler suite passes both ZKIR lanes
+with 636/636 manifest and 1/1 JavaScript checks each at its recorded earlier
+preparation epoch. These compiler tests remain part of complete integration CI.
 
-Fresh qualification with the clean original 0.31.138 compiler and its own
-Scheme frontend passes:
+Fresh qualification with the clean original compiler passes:
 
 | Gate | Result |
 | --- | --- |
-| Complete generated fixtures | 281 checked, zero stale or failed |
 | Original DID generation | Full IR/origins/capabilities and all twelve programs match |
-| Live TypeScript | 24 observations, including all twelve exact DID rows |
-| Selected Rust behavior | Five test methods; all ten invalid inputs on four routes (40 refusal executions) |
+| Live TypeScript | 24 observations, including all twelve exact DID rows; complete equality with the proof/shared DID oracle |
+| Selected Rust behavior | Five test methods; ten invalid inputs on four routes (40 refusal executions) |
 | Ordinary and consuming APIs | E0308 wrong version/signature, E0382 Program reuse; strict consumer Clippy |
-| Selected functional proof | Fresh direct key k11 / 1,804 rows; 3,296-byte proof; immutable verification |
+| Selected standalone proof | Fresh direct key k11 / 1,804 rows; 3,296-byte proof; immutable verification |
 | Proof controls | Changed binding and same-geometry version input refused; changed IR/program refused before keys/state |
-| Local application | Separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
-| Source hygiene | Complete workspace format, zero new header violations and all three exact version checks |
-| Public Python | 352 discovered: 332 passed and 20 existing explicit skips |
+| Independently proved local transaction | 7,413 retained bytes; separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
+| Applied-state refusal | Functional generated Program rejects the stale version first on actual applied state, without witness callbacks |
+| Source hygiene | Clean checkout required before/after both gates; complete workspace format and proof-runner all-target strict Clippy pass |
+| Backend library | 1,846 passed, seven existing explicit-run helpers ignored at clean reviewed source |
+| Public Python | 355 discovered: 335 passed and 20 existing explicit skips |
+| Empty-result regression | Genuine checked empty-tuple red then seven focused tests green; actual Compact `[]` canonicalizes to Unit and its complete generated consumer passes strict Clippy |
 
-The Unit-fixed backend library also passed 1,846 methods with seven existing
-explicit-run helpers ignored in its earlier development epoch. That result is
-not relabeled as a new clean-source execution. Final PR review and complete
-integration CI remain required. This proves one selected call; constructor
-execution, timestamp-zero Rust success and all twelve exports are not proved.
-Earlier development compiler/proof receipts retain their own literal identities.
+The prior clean `926e8de8c` compiler/API/proof receipts and 281-fixture census
+remain retained at their literal original identities. All three exact version
+checks and zero new header violations also passed at that earlier epoch. Their
+full required CI gates must run on the updated PR; they are not relabeled as
+new local execution. Final exact-head review and complete integration CI remain
+required. This proves one selected standalone call and separately verifies and
+applies its independently proved transaction; constructor execution,
+timestamp-zero Rust success and all twelve exports are not proved.
 
 ## PR #693 independent review follow-up
 
@@ -258,5 +262,6 @@ binding/version controls; an independently proved transaction is default-strictl
 verified, applied and replayed, with exact transaction bytes retained separately.
 Receipt flags summarize live assertions; protocol unit tests are not proof
 substitutes. Earlier clean `926e8de8c` results above remain historical evidence.
-Fresh qualification of this reviewed revision, repeat exact-head review and full
-CI are required before integration; no previous receipt is relabeled.
+Fresh compiler/API/proof qualification now passes at clean signed `3ac403d8a`,
+as recorded above. Repeat exact-head review and full CI remain required before
+integration; no previous receipt is relabeled.

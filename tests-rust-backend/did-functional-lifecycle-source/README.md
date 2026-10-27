@@ -49,3 +49,10 @@ programs, checks changed IR/program refusal before proof setup, generates a fres
 key and proof, and verifies changed binding/version controls against the original
 verifier. A Unit result has no atoms to mutate. Funded default-strict application
 and exact replay rejection are distinct from proof success; no network claim.
+
+The current reviewed clean qualification and artifact scope are centralized in
+[the DID plan](../../doc/rust/plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138).
+The standalone mutation-control proof and independently proved/applied transaction
+are distinct retained artifacts. Post-application stale checks use this fixture's
+functional Program and the actual applied state; historical ordinary selection
+retains its own capture and output behavior.
