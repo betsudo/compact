@@ -717,12 +717,27 @@ pub fn remove_map<K: CellValue, D: DB>(
     remove_set(context, path, key, gas_limit, cost_model)
 }
 
+fn require_map_metadata<D: DB>(context: &QueryContext<D>, path: &[u8]) -> Result<(), CompactError> {
+    let value = field_at_path(context.state.get_ref(), path)
+        .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
+    if !matches!(value, StateValue::Map(_)) {
+        return Err(CompactError::LedgerQueryRejected(
+            "expected Map at metadata query path".into(),
+        ));
+    }
+    Ok(())
+}
+
 pub fn size_map<D: DB>(
     context: &QueryContext<D>,
     path: impl Into<LedgerPath>,
     gas_limit: Option<RunningCost>,
     cost_model: &CostModel,
 ) -> Result<(QueryResults<ResultModeGather, D>, u64), CompactError> {
+    // The VM Size opcode also accepts arrays and trees. A declared Map query
+    // must reject those host-supplied shapes before observing their metadata.
+    let path = path.into();
+    require_map_metadata(context, path.as_slice())?;
     size_set(context, path, gas_limit, cost_model)
 }
 
@@ -732,6 +747,8 @@ pub fn is_empty_map<D: DB>(
     gas_limit: Option<RunningCost>,
     cost_model: &CostModel,
 ) -> Result<(QueryResults<ResultModeGather, D>, bool), CompactError> {
+    let path = path.into();
+    require_map_metadata(context, path.as_slice())?;
     is_empty_set(context, path, gas_limit, cost_model)
 }
 

@@ -471,6 +471,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection" --report "$RUNNER_TEMP/compact-vector-projection.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check generated Map size expression APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression" --report "$RUNNER_TEMP/compact-map-size-expression.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -484,6 +489,10 @@ jobs:
       - name: Qualify constant vector projection proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection-proof"
+
+      - name: Qualify Map size expression proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression-proof"
 
       - name: Rehearse Rust runtime packages
         id: runtime-packages
@@ -507,6 +516,8 @@ jobs:
             ${{ runner.temp }}/compact-functional-consumer.json
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
+            ${{ runner.temp }}/compact-map-size-expression.json
+            ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
             target/package/midnight-compact-runtime-macros-*.crate
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error

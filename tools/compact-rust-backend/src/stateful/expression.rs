@@ -448,6 +448,7 @@ fn render_operation_expression(
         | Expr::ListIsEmpty { .. }
         | Expr::ListHead { .. }
         | Expr::SetSize { .. }
+        | Expr::MapSize { .. }
         | Expr::SetIsEmpty { .. }
         | Expr::MapIsEmpty { .. } => render_observation_operation(
             value,
@@ -876,13 +877,18 @@ fn render_observation_operation(
             *query_effect = true;
             Ok((syn::parse_quote!(#step.result), ty.clone(), false))
         }
-        Expr::SetSize { field, index } => {
+        Expr::SetSize { field, index } | Expr::MapSize { field, index } => {
             let declaration = ledger_fields
                 .get(field.as_str())
                 .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
-            if !matches!(declaration.declaration, LedgerFieldKind::Set { .. })
-                || declaration.index != *index
-            {
+            let (valid_kind, use_slot) = match (value, &declaration.declaration) {
+                (Expr::SetSize { .. }, LedgerFieldKind::Set { .. }) => (true, true),
+                (Expr::MapSize { .. }, LedgerFieldKind::Map { key, value }) => {
+                    (true, map_slot_types(key, value)?.is_some())
+                }
+                _ => (false, false),
+            };
+            if !valid_kind || declaration.index != *index {
                 return Err(RenderError::UnknownLedgerField(field.clone()));
             }
             let step = syn::Ident::new(
@@ -890,17 +896,29 @@ fn render_observation_operation(
                 Span::call_site(),
             );
             *next_temp += 1;
-            let slot = ident(&declaration.id)?;
-            statements.push(syn::parse_quote!(
-                let #step = crate::ledger_slots::#slot.size(context)?;
-            ));
+            if use_slot {
+                let slot = ident(&declaration.id)?;
+                statements.push(syn::parse_quote!(
+                    let #step = crate::ledger_slots::#slot.size(context)?;
+                ));
+            } else {
+                let path = ledger_path_expr(declaration);
+                statements.push(syn::parse_quote!(
+                    let #step = context.size_map(#path)?;
+                ));
+            }
             statements.push(syn::parse_quote!(context = #step.context;));
             statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
             *query_effect = true;
+            let message = if matches!(value, Expr::SetSize { .. }) {
+                "ledger Set size fits Uint<64>"
+            } else {
+                "ledger Map size fits Uint<64>"
+            };
             Ok((
                 syn::parse_quote!(
                     runtime::BoundedUint::<18446744073709551615>::new(#step.result as u128)
-                        .expect("ledger Set size fits Uint<64>")
+                        .expect(#message)
                 ),
                 Type::Unsigned {
                     max: u64::MAX.to_string(),

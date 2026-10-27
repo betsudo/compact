@@ -224,4 +224,33 @@ retains exact source cohorts, the capture portability correction and proof
 scope. Independent external review and intended Linux/hosted integration remain
 open; no publication or merge occurred. The broad Rust AST goal remains active.
 Do not reopen already accepted backend capabilities or the deferred Forge work.
+
+## Next bounded semantic slice — 2026-10-26
+
+The genuine six-source matrix confirms #610 remains missing specifically at
+the stateful expression ingress: direct `Map.size()` returns already work for
+scalar and whole nested-Map values, while named-result, comparison and
+conditional expressions are accepted by TS and refused by the Rust frontend.
+Focused baseline Map checks pass 117 tests with one inherited ignore unchanged.
+Proceed with [Map size in stateful expressions](610-map-size-expressions.md),
+reusing the existing checked metadata operation and public runtime carriers.
+That plan fixes its affected owners, public API and finite behavior/refusal/proof
+acceptance before implementation. It opens no Forge, broad refactor or CI project.
 This future cleanup condition does not authorize publishing or merging now.
+
+## Map size local integration and next slice — 2026-10-26
+
+The [#610 plan](610-map-size-expressions.md#local-integration-checkpoint--2026-10-26)
+now records passing maintained local compiler, API/TS, selected real proof,
+full native/wallet, source/golden/refusal, workspace/Clippy and runtime archive
+checks at signed `e14103c5d`. Independent review and intended Linux/hosted
+integration stay open. The new malformed-Array host-state refusal is explicitly
+stronger than the permissive TS VM; valid Map semantics and canonical query
+cost remain qualified separately.
+
+Proceed next with [direct fixed-vector Fold](661-direct-fold-expressions.md).
+Its plan uses actual current source counterexamples and TS operand-order
+observations; it preserves the already accepted certified pure-helper route.
+The broad backend goal remains active. Forge stays deferred at
+`experiment/zkir-forge`; no publication/merge or cleanup is authorized by this
+local checkpoint.

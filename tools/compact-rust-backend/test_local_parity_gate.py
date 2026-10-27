@@ -354,7 +354,7 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
         mapping = gate.fixture_map()
         self.assertEqual(mapping, fixture_inventory.fixture_map())
         self.assertEqual(freshness.EXTRA_SOURCES, fixture_inventory.extra_sources())
-        self.assertEqual(len(mapping), 170)
+        self.assertEqual(len(mapping), 171)
         inventory_paths = set(gate.inventory.source_paths(gate.ROOT))
         self.assertTrue(set(mapping) <= inventory_paths)
         registrations = {row.source: row for row in fixture_inventory.source_registry()}

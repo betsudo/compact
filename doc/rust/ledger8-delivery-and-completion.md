@@ -194,10 +194,18 @@ This is publication/acceptance work, not a need to rebuild the compiler architec
 
 | Issue | Current gap | Required evidence for a fix |
 | --- | --- | --- |
-| [#674](https://github.com/betsudo/compact/issues/674) | Fixed-vector indexing reaches tuple projection and is rejected before functional admission. | Distinct typed indexing, bounds and owned-element controls; fresh ordinary/functional generated execution. |
-| [#661](https://github.com/betsudo/compact/issues/661) | Direct Fold in a stateful circuit is accepted by the TS/native path but not checked recording. Certified pure helper Fold is a different supported route. | Accumulator/item/capture typing, evaluation/failure order, empty vectors, replay/gas and selected applicable proof cases. |
-| [#610](https://github.com/betsudo/compact/issues/610) | Nested `Map.size()` expressions lack frontend/IR support; direct-return size is a different form. | Genuine nested-expression and whole-ADT source cases; original semantics and source diagnostics. |
+| [#674](https://github.com/betsudo/compact/issues/674) | Constant fixed-vector projection is locally delivered; independent review/Linux integration remain open. | [Recorded local scope and source cohorts](plans/674-constant-vector-projection-decision.md); distinct typed indexing, bounds/ownership controls and fresh selected proofs. |
+| [#661](https://github.com/betsudo/compact/issues/661) | Named direct Fold lacks recording; captured/effectful/witness/multi-iterable forms also expose documented frontend/native gaps. Certified pure-helper Fold remains accepted. | [Bounded direct-Fold plan](plans/661-direct-fold-expressions.md): accumulator/item/capture typing, operand/reducer order, empty vectors, replay/gas and selected applicable proofs. |
+| [#610](https://github.com/betsudo/compact/issues/610) | Stateful `Map.size()` expressions now pass maintained local integration at `e14103c5d`; review/Linux integration remain open. | [Exact local results and limits](plans/610-map-size-expressions.md#local-integration-checkpoint--2026-10-26); genuine TS/four-route consumers, whole-Map metadata, malformed-state controls and two fresh proofs/default-strict applications. |
 | [#516](https://github.com/betsudo/compact/issues/516) | Value wrappers and lexical handling can hide an effectful return. | Preserve conversion timing, branch effects, lexical scope and original first failures across native/recorded paths. |
+
+The next local semantic slice is [direct fixed-vector Fold](plans/661-direct-fold-expressions.md).
+Nine genuine source probes distinguish the accepted pure-helper route from
+missing direct recording, captured reducers, effectful operands/reducers,
+witness reducers and multiple iterables. Actual TS execution establishes
+seed-before-vector witness ordering and first failures. These observations are
+not a Fold implementation or proof claim. Preserve the accepted crosswalk and
+historical authorities while qualifying intentional new admission.
 
 These are not retroactive failures of the bounded delivery. They **are blockers for contracts using them, and for an unqualified full-language claim**. For a deliberately supported-profile release, publish explicit exclusions instead of calling them solved.
 

@@ -87,17 +87,32 @@ impl<Private, D: DB> CircuitContext<Private, D> {
     }
 
     pub fn size_map(
-        self,
+        mut self,
         path: impl Into<ledger::LedgerPath>,
     ) -> Result<CircuitResult<Private, u64, D>, CompactError> {
-        self.size_set(path)
+        let (result, size) = ledger::size_map(&self.query, path, self.gas_limit, &self.cost_model)?;
+        self.query = result.context;
+        Ok(CircuitResult {
+            context: self,
+            result: size,
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: Vec::new(),
+        })
     }
 
     pub fn is_empty_map(
-        self,
+        mut self,
         path: impl Into<ledger::LedgerPath>,
     ) -> Result<CircuitResult<Private, bool, D>, CompactError> {
-        self.is_empty_set(path)
+        let (result, empty) =
+            ledger::is_empty_map(&self.query, path, self.gas_limit, &self.cost_model)?;
+        self.query = result.context;
+        Ok(CircuitResult {
+            context: self,
+            result: empty,
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: Vec::new(),
+        })
     }
 
     pub fn reset_map(
@@ -105,5 +120,57 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         path: impl Into<ledger::LedgerPath>,
     ) -> Result<CircuitResult<Private, (), D>, CompactError> {
         self.reset_set(path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::context::{ConstructorContext, ConstructorResult};
+    use crate::fab::AlignedValue;
+    use crate::ledger::{DefaultDB, LedgerHashMap, StateValue, constructor_cell, contract_state};
+    use crate::recording::RecordingFrame;
+
+    fn context(value: StateValue<DefaultDB>) -> CircuitContext<()> {
+        ConstructorResult::new(ConstructorContext::new(()), contract_state(vec![value]))
+            .into_circuit_context(Default::default())
+    }
+
+    #[test]
+    fn map_metadata_rejects_array_and_keeps_valid_emptiness_cost() {
+        let error = Some(CompactError::LedgerQueryRejected(
+            "expected Map at metadata query path".into(),
+        ));
+        assert_eq!(
+            context(StateValue::Array(vec![].into()))
+                .is_empty_map(&[0][..])
+                .err(),
+            error
+        );
+        assert_eq!(
+            RecordingFrame::new(context(StateValue::Array(vec![].into())))
+                .is_empty_map(&[0][..])
+                .err(),
+            error
+        );
+        for entries in [0, 1] {
+            let mut values = LedgerHashMap::new();
+            if entries == 1 {
+                values = values.insert(
+                    AlignedValue::from(crate::Field::from(1u64)),
+                    constructor_cell(true),
+                );
+            }
+            let map = StateValue::Map(values);
+            let actual = context(map.clone()).is_empty_map(&[0][..]).unwrap();
+            let original = context(map.clone()).is_empty_set(&[0][..]).unwrap();
+            assert_eq!(actual.result, entries == 0);
+            assert_eq!(actual.result, original.result);
+            assert_eq!(actual.gas_cost, original.gas_cost);
+            let (_, recorded) = RecordingFrame::new(context(map))
+                .is_empty_map(&[0][..])
+                .unwrap();
+            assert_eq!(recorded, entries == 0);
+        }
     }
 }

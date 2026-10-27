@@ -42,6 +42,7 @@ pub(super) fn try_run(
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }
+        ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
             let root = arguments
@@ -319,6 +320,11 @@ mod tests {
                 "--constant-vector-projection",
                 1,
                 "usage: compact-rust-proof-smoke --constant-vector-projection <proof-output>",
+            ),
+            (
+                "--map-size-expression",
+                1,
+                "usage: compact-rust-proof-smoke --map-size-expression <proof-output>",
             ),
             (
                 "--wide-add",

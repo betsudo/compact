@@ -208,6 +208,14 @@
     "visibility": "internal"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "choose",
+    "signature": "export circuit choose(active: Boolean): Uint<64>",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/constant_vector_projection.compact",
     "module_path": [],
     "kind": "circuit",
@@ -456,6 +464,14 @@
     "visibility": "internal"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "direct",
+    "signature": "export circuit direct(): Uint<64>",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_context_query.compact",
     "module_path": [],
     "kind": "circuit",
@@ -486,6 +502,14 @@
     "name": "emit",
     "signature": "circuit emit(coin: ShieldedCoinInfo, recipient: Either<ZswapCoinPublicKey, ContractAddress>): []",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "empty",
+    "signature": "export circuit empty(): Boolean",
+    "visibility": "export"
   },
   {
     "source": "examples/rust_backend/effect_plan_public_products.compact",
@@ -920,6 +944,14 @@
     "visibility": "export"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "ordered",
+    "signature": "export circuit ordered(): Uint<64>",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_inequality.compact",
     "module_path": [],
     "kind": "circuit",
@@ -976,6 +1008,14 @@
     "visibility": "internal"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "plus_one",
+    "signature": "export circuit plus_one(): Uint<64>",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_receive_values.compact",
     "module_path": [],
     "kind": "circuit",
@@ -1013,6 +1053,14 @@
     "kind": "circuit",
     "name": "project",
     "signature": "export circuit project(point: JubjubPoint): Coordinates",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "put",
+    "signature": "export circuit put(key: Field, value: Field): Counts",
     "visibility": "export"
   },
   {
@@ -1368,6 +1416,14 @@
     "visibility": "export"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "snapshot",
+    "signature": "export circuit snapshot(): Counts",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/constant_vector_projection.compact",
     "module_path": [],
     "kind": "circuit",
@@ -1680,6 +1736,14 @@
     "visibility": "export"
   },
   {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "witnessed",
+    "signature": "export circuit witnessed(active: Boolean): Uint<64>",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_exact_hash_input.compact",
     "module_path": [],
     "kind": "circuit",
@@ -1937,6 +2001,14 @@
   },
   {
     "source": "examples/rust_backend/effect_plan_witness_domain.compact",
+    "module_path": [],
+    "kind": "constructor",
+    "name": "constructor",
+    "signature": "constructor()",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/map_size_expression.compact",
     "module_path": [],
     "kind": "constructor",
     "name": "constructor",
@@ -2357,6 +2429,14 @@
     "kind": "witness",
     "name": "notifyOnce",
     "signature": "witness notifyOnce(): []",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/map_size_expression.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "offset",
+    "signature": "witness offset(): Uint<64>",
     "visibility": "internal"
   },
   {

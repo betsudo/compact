@@ -430,3 +430,15 @@ pub(super) fn constant_vector_projection(
     }
     crate::constant_vector_projection::run(Path::new(&root))
 }
+
+/// Direct proof path for the genuine #610 Map size source.
+pub(super) fn map_size_expression(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --map-size-expression <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::map_size_expression::run(Path::new(&root))
+}
