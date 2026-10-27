@@ -20,13 +20,23 @@ use midnight_compact_runtime as runtime;
 use serde_json::Value;
 use std::cell::RefCell;
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    run_with(root, prepare_ordinary).map(|_| ())
+    let capture: Value = serde_json::from_str(include_str!(
+        "../../../runtime-rs/tests/fixtures/unit-composition.json"
+    ))?;
+    let row = capture["cases"]
+        .as_array()
+        .ok_or("missing DID cases")?
+        .iter()
+        .find(|r| r["id"] == "did/valid")
+        .ok_or("missing DID valid row")?;
+    run_with(root, row, prepare_ordinary, check_ordinary_final, None).map(|_| ())
 }
 
-// Share the existing funded, default-strict DID transaction path. The selected
-// caller supplies a real generated recording, never a fabricated proof verdict.
+// Share funded default-strict application, with source-specific preparation and
+// post-application checks. Historical callers do not acquire new output files.
 pub(super) fn run_with(
     root: &Path,
+    row: &Value,
     prepare: impl FnOnce(
         &Path,
         &ObservedContractState,
@@ -35,16 +45,13 @@ pub(super) fn run_with(
         (ContractCallPrototype<DefaultDB>, StateValue<DefaultDB>),
         Box<dyn Error>,
     >,
+    check_final: impl FnOnce(
+        midnight_compact_runtime::ledger::ContractAddress,
+        &ContractState<DefaultDB>,
+        &Value,
+    ) -> Result<String, Box<dyn Error>>,
+    changed_input: Option<AlignedValue>,
 ) -> Result<Value, Box<dyn Error>> {
-    let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/unit-composition.json"
-    ))?;
-    let row = capture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|r| r["id"] == "did/valid")
-        .unwrap();
     let prior: ContractState<DefaultDB> =
         tagged_deserialize(&mut hex::decode(row["before"].as_str().unwrap())?.as_slice())?;
     let mut rng = StdRng::seed_from_u64(0x0251);
@@ -68,20 +75,13 @@ pub(super) fn run_with(
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/deactivate.verifier"),
     )?))?;
-    let changed_input = AlignedValue::from((
-        types::SchnorrSignature {
-            announcement: runtime::ec_mul_generator(Field::from(2_u64))?,
-            response: Field::from_le_bytes(&hex::decode(row["responseHex"].as_str().unwrap())?)
-                .ok_or("invalid fixture response")?,
-        },
-        runtime::BoundedUint::<18446744073709551615>::new(1)?,
-    ));
+    let retain_transaction = changed_input.is_some();
     let proof_bytes = super::kernel_shielded_effects::prove_and_verify_call_with_input_control(
         root,
         "deactivate",
         &prepared,
         &verifier,
-        Some(changed_input),
+        changed_input,
     )?;
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
         Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
@@ -102,6 +102,21 @@ pub(super) fn run_with(
         .enable_all()
         .build()?
         .block_on(state.balance_tx(rng, sealed, &resolver))?;
+    // This is the separately generated transaction proof, not the standalone
+    // call proof used for the immutable-verifier mutation controls.
+    let transaction_bytes = if retain_transaction {
+        let mut bytes = Vec::new();
+        tagged_serialize(&sealed, &mut bytes)?;
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join("did-functional-applied-transaction.bin"))?
+            .write_all(&bytes)?;
+        bytes.len()
+    } else {
+        0
+    };
     let verified =
         sealed.well_formed(&state.ledger, WellFormedStrictness::default(), state.time)?;
     let context = TransactionContext {
@@ -118,10 +133,7 @@ pub(super) fn run_with(
         return Err(format!("DID apply failed: {result:?}").into());
     }
     let actual = updated.contract.get(&address).ok_or("DID missing")?;
-    if actual.data.get_ref() != &expected
-        || slots::active.inspect(actual.data.get_ref())?
-        || !slots::deactivated.inspect(actual.data.get_ref())?
-    {
+    if actual.data.get_ref() != &expected {
         return Err("DID final state differs".into());
     }
     let replay_context = TransactionContext {
@@ -147,6 +159,36 @@ pub(super) fn run_with(
             format!("DID replay refused incorrectly or mutated state: {replay_result:?}").into(),
         );
     }
+    let stale_error = check_final(address, actual, row)?;
+    println!(
+        "original DID deactivate: proof verified, changed binding rejected, default-strict separate Dust ledger apply; exact final state and stale repeat rejection; constructor-derived seeded prior state, not a full DID lifecycle"
+    );
+    let mut final_state = Vec::new();
+    tagged_serialize(actual, &mut final_state)?;
+    Ok(serde_json::json!({
+        "proof_bytes":proof_bytes,"changed_binding_rejected":true,
+        "changed_version_input_rejected":retain_transaction,"changed_input_same_geometry":retain_transaction,
+        "strict_application":"default","replay_refusal":"IntentAlreadyExists",
+        "replay_unchanged":replayed == updated,"stale_version_rejected":true,
+        "stale_version_error":stale_error,
+        "standalone_call_proof_file": if retain_transaction { Some("deactivate-input-control.proof") } else { None },
+        "applied_transaction_file": if retain_transaction { Some("did-functional-applied-transaction.bin") } else { None },
+        "applied_transaction_bytes":transaction_bytes,
+        "proof_relationship":"standalone mutation-control proof; transaction independently proved and default-strictly verified",
+        "final_state_hex":hex::encode(final_state)
+    }))
+}
+
+fn check_ordinary_final(
+    address: midnight_compact_runtime::ledger::ContractAddress,
+    actual: &ContractState<DefaultDB>,
+    row: &Value,
+) -> Result<String, Box<dyn Error>> {
+    if slots::active.inspect(actual.data.get_ref())?
+        || !slots::deactivated.inspect(actual.data.get_ref())?
+    {
+        return Err("DID final flags differ".into());
+    }
     let second = c::recorded::deactivate(
         runtime::context::CircuitContext::from_contract_state(9u64, address, actual),
         &Witness {
@@ -160,22 +202,14 @@ pub(super) fn run_with(
         },
         runtime::BoundedUint::new(0)?,
     );
-    if !matches!(second,Err(runtime::CompactError::AssertionFailed(ref message)) if message=="Controller authorization version is stale")
-    {
-        return Err("DID repeat did not reject stale version first".into());
+    match second {
+        Err(runtime::CompactError::AssertionFailed(message))
+            if message == "Controller authorization version is stale" =>
+        {
+            Ok(message)
+        }
+        _ => Err("DID repeat did not reject stale version first".into()),
     }
-    println!(
-        "original DID deactivate: proof verified, changed binding rejected, default-strict separate Dust ledger apply; exact final state and stale repeat rejection; constructor-derived seeded prior state, not a full DID lifecycle"
-    );
-    let mut final_state = Vec::new();
-    tagged_serialize(actual, &mut final_state)?;
-    Ok(serde_json::json!({
-        "proof_bytes":proof_bytes,"changed_binding_rejected":true,
-        "changed_version_input_rejected":true,"changed_input_same_geometry":true,
-        "strict_application":"default","replay_refusal":"IntentAlreadyExists",
-        "replay_unchanged":true,"stale_version_rejected":true,
-        "final_state_hex":hex::encode(final_state)
-    }))
 }
 
 fn prepare_ordinary(

@@ -130,7 +130,21 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     if result_path.exists() {
         return Err("DID functional proof result already exists".into());
     }
-    let mut result = did_deactivate::run_with(root, prepare)?;
+    let capture: Value = serde_json::from_str(include_str!(
+        "../../../tests-rust-backend/did-functional-lifecycle-source/data/unit-composition.json"
+    ))?;
+    let row = capture["cases"]
+        .as_array()
+        .ok_or("missing DID cases")?
+        .iter()
+        .find(|r| r["id"] == "did/valid")
+        .ok_or("missing DID valid row")?;
+    let changed_input = AlignedValue::from((
+        signature(row)?,
+        r::BoundedUint::<18446744073709551615>::new(1)?,
+    ));
+    let mut result =
+        did_deactivate::run_with(root, row, prepare, check_final, Some(changed_input))?;
     result["format"] = json!("compact-did-functional-lifecycle-proof/v1");
     result["status"] = json!("passed");
     result["circuit"] = json!("deactivate");
@@ -167,13 +181,7 @@ fn prepare(
     {
         return Err("DID constructor witness order differs".into());
     }
-    let signature = types::SchnorrSignature {
-        announcement: r::ec_mul_generator(Field::from(2_u64))?,
-        response: Field::from_le_bytes(&hex::decode(
-            row["responseHex"].as_str().ok_or("missing signature")?,
-        )?)
-        .ok_or("invalid DID response")?,
-    };
+    let signature = signature(row)?;
     let version = r::BoundedUint::<18446744073709551615>::new(0)?;
     let witnesses: Vec<_> = (0..4)
         .map(|_| call_witness::Witness {
@@ -247,4 +255,47 @@ fn prepare(
         return Err("DID functional/ordinary prepared statements differ".into());
     }
     Ok((prepared, expected))
+}
+
+fn signature(row: &Value) -> Result<types::SchnorrSignature, Box<dyn Error>> {
+    Ok(types::SchnorrSignature {
+        announcement: r::ec_mul_generator(Field::from(2_u64))?,
+        response: Field::from_le_bytes(&hex::decode(
+            row["responseHex"].as_str().ok_or("missing signature")?,
+        )?)
+        .ok_or("invalid DID response")?,
+    })
+}
+
+fn check_final(
+    address: midnight_compact_runtime::ledger::ContractAddress,
+    actual: &ContractState<DefaultDB>,
+    row: &Value,
+) -> Result<String, Box<dyn Error>> {
+    if did_contract::ledger_slots::active.inspect(actual.data.get_ref())?
+        || !did_contract::ledger_slots::deactivated.inspect(actual.data.get_ref())?
+    {
+        return Err("functional DID final flags differ".into());
+    }
+    let witness = call_witness::Witness {
+        options: row["options"].clone(),
+        calls: RefCell::default(),
+    };
+    let second = c::functional::deactivate::Program::new(signature(row)?, r::BoundedUint::new(0)?)
+        .execute_recorded(
+            r::context::CircuitContext::from_contract_state(9_u64, address, actual),
+            &witness,
+        );
+    match second {
+        Err(r::CompactError::AssertionFailed(message))
+            if message == "Controller authorization version is stale"
+                && witness.calls.borrow().is_empty() =>
+        {
+            Ok(message)
+        }
+        _ => Err(
+            "functional DID applied-state stale version did not refuse first without witnesses"
+                .into(),
+        ),
+    }
 }

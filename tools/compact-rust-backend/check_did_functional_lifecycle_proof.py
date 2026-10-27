@@ -31,22 +31,18 @@ import tomllib
 
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
-from check_did_functional_lifecycle import SOURCE, FIXTURE, SOURCE_MANIFEST_SHA256
+from check_did_functional_lifecycle import (SOURCE, FIXTURE, original_source_closure,
+                                            checked_oracle_captures, require_clean_source)
 from check_functional_effects import digest
 from check_functional_effects import generated_manifest_snapshot, scheme_compiler
-from did_proof_gate import dust_fixture_inventory, hashes, unchanged
+from did_proof_gate import dust_fixture_inventory, hashes, unchanged, require
 
 ROOT = common.ROOT
 PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v1"
 
 
-def require(value, message):
-    if not value:
-        raise common.GateError(message)
-
-
 def validate_proof_summary(summary):
-    """Require checked finite results, never a success flag alone."""
+    """Validate the result protocol; live Rust assertions establish the behavior."""
     require(summary["format"] == PROOF_RESULT_FORMAT and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False
             and summary["all_twelve_exports_proved"] is False
@@ -59,6 +55,11 @@ def validate_proof_summary(summary):
             and summary["strict_application"] == "default"
             and summary["replay_refusal"] == "IntentAlreadyExists"
             and summary["changed_unit_result_control"] == "not applicable: Unit has zero output atoms"
+            and summary["stale_version_error"] == "Controller authorization version is stale"
+            and summary["standalone_call_proof_file"] == "deactivate-input-control.proof"
+            and summary["applied_transaction_file"] == "did-functional-applied-transaction.bin"
+            and type(summary["applied_transaction_bytes"]) is int and summary["applied_transaction_bytes"] > 0
+            and summary["proof_relationship"] == "standalone mutation-control proof; transaction independently proved and default-strictly verified"
             and bool(bytes.fromhex(summary["final_state_hex"])), "incomplete DID proof/application controls")
 
 
@@ -74,20 +75,8 @@ def run(args):
         target = args.target_dir.absolute()
         env["CARGO_TARGET_DIR"] = str(target)
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "MIDNIGHT_PP required")
-        require(digest(SOURCE.parents[3] / "source-manifest.json") == SOURCE_MANIFEST_SHA256,
-                "original pinned DID source manifest differs")
-        manifest = json.loads((SOURCE.parents[3] / "source-manifest.json").read_text())
-        source_root = SOURCE.parents[3]
-        original = ROOT / "examples/rust_backend/did_adoption"
-        require((source_root / "source-manifest.json").read_bytes() ==
-                (original / "source-manifest.json").read_bytes(), "original DID source authority differs")
-        require(len(manifest["files"]) == 2, "complete original DID source closure required")
-        closure = [source_root / "source-manifest.json"]
-        for row in manifest["files"]:
-            path = source_root / row["path"]
-            require(row["modification"] == "none" and digest(path) == row["sha256"]
-                    and path.read_bytes() == (original / row["path"]).read_bytes(), "original DID source changed")
-            closure += [path, original / row["path"]]
+        require_clean_source(receipt)
+        closure = original_source_closure() + checked_oracle_captures()
         paths = closure + [SOURCE, ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
                  ROOT / "tools/compact-rust-backend/check_did_functional_lifecycle.py",
                  ROOT / "tools/compact-rust-backend/check_functional_effects.py",
@@ -99,8 +88,6 @@ def run(args):
                           "tools/compact-rust-proof-smoke", "tests-rust-backend"]:
             paths += [p for p in (ROOT / directory).rglob("*") if p.suffix in {".rs", ".toml", ".json"}]
         paths += sorted((ROOT / "compiler").glob("*.ss"))
-        receipt["source_head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-        receipt["source_dirty"] = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True))
         receipt["source_hashes"] = hashes(paths)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
@@ -204,20 +191,24 @@ def run(args):
         receipt["proof_result"] = summary
         proof_file = generated / "deactivate-input-control.proof"
         require(proof_file.stat().st_size == summary["proof_bytes"], "fresh proof bytes missing")
-        receipt["result_hashes"] = hashes([generated / "did-functional-lifecycle-proof-result.json", proof_file])
+        applied = generated / summary["applied_transaction_file"]
+        require(applied.stat().st_size == summary["applied_transaction_bytes"], "applied transaction bytes missing")
+        receipt["result_hashes"] = hashes([generated / "did-functional-lifecycle-proof-result.json", proof_file, applied])
         unchanged(receipt["source_hashes"])
         unchanged(receipt["dust_fixture_hashes"])
         unchanged(receipt["material_hashes"])
         unchanged(receipt["generated_hashes"])
         for component in components.values():
             unchanged({component["source"]: component["sha256"], component["snapshot"]: component["sha256"]})
+        require_clean_source(receipt)
         receipt["status"] = "passed"
     except Exception as error:
+        receipt["status"] = "failed"
         receipt["error"] = str(error)
-        raise
     finally:
         (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps({"status": receipt["status"], "receipt": str(output / "receipt.json")}))
+    return 0 if receipt["status"] == "passed" else 1
 
 
 if __name__ == "__main__":
@@ -226,4 +217,4 @@ if __name__ == "__main__":
     parser.add_argument("--zkir", type=Path)
     parser.add_argument("--target-dir", type=Path, default=Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")))
     parser.add_argument("--output", type=Path, required=True)
-    run(parser.parse_args())
+    raise SystemExit(run(parser.parse_args()))

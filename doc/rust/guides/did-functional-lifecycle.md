@@ -49,8 +49,8 @@ signature check with a Boolean success callback.
 | Rust lifecycle | Real constructor-derived valid deactivation, four routes, recording replay, private/public state and metering | Constructor execution supplies deployment state; a call proof does not prove the constructor. |
 | Failure controls | Ten invalid inputs through all four routes, preserving first error and callback prefix | Seeded invalid prestates are test inputs. An inaccessible failed context is not evidence of rollback. |
 | ContractLab | Successful publication and late-witness failure keep owned checkpoint semantics | The external witness journal is observable and is not rolled back. |
-| Selected proof | Fresh direct deactivation key/proof, immutable verification and changed binding/version refusal | A Unit result has zero atoms; no result-component mutation is invented. |
-| Local transaction | Separately funded, default-strict application, exact final state and replay rejection without mutation | This is local ledger application, not network submission. |
+| Selected standalone proof | Fresh direct deactivation key/proof, immutable verification and changed binding/version refusal | A Unit result has zero atoms; no result-component mutation is invented. |
+| Local transaction | Independently proved, separately funded, default-strict application, functional applied-state stale refusal, exact final state and replay rejection without mutation | This is local ledger application, not network submission. |
 
 The maintained API and proof gates are separate commands in the
 [fixture README](../../../tests-rust-backend/did-functional-lifecycle-source/README.md).
@@ -73,3 +73,26 @@ See the [qualification table](../plans/did-functional-lifecycle-current-profile.
 for exact source, counts and limits. Independent review and the complete required
 integration CI for this new slice remain open. One selected call is proved;
 constructor execution and all twelve exports are not proved. Forge is deferred.
+
+## Review follow-up and retained artifact scope
+
+Both maintained gates require a clean checkout before and after execution. They
+share the immutable original-source closure check and require all twelve DID
+oracle rows to equal the shared runtime capture; live TypeScript qualification
+then compares the full DID oracle. A dirty checkout or changed oracle is a
+refusal, and a failed proof gate writes `status: failed` with a nonzero exit.
+
+The standalone `deactivate-input-control.proof` exercises positive verification
+and changed binding/version controls with one immutable verifier. The ledger
+transaction is proved independently, verified under default strictness, applied,
+and replayed. Its exact serialized bytes are retained separately as
+`did-functional-applied-transaction.bin`. These are different proof artifacts;
+the standalone mutation controls do not claim to mutate the transaction proof.
+The post-application flags and stale-version first-error check use the functional
+fixture and the actual applied contract state, with no witness callbacks.
+
+Receipt booleans report conclusions of live Rust assertions, not independent
+cryptographic measurements. Python receipt tests validate protocol completeness
+and types; real proof, verifier refusals and strict application come from the
+native runner. The historical `--did-deactivate` path retains its original
+capture and ordinary checks without acquiring new output files or controls.

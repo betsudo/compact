@@ -53,6 +53,48 @@ TESTS = {
 }
 
 
+def original_source_closure():
+    """Check the complete immutable upstream closure shared by both DID gates."""
+    manifest_path = SOURCE_ROOT / "source-manifest.json"
+    original = ROOT / "examples/rust_backend/did_adoption"
+    require(common.sha256(manifest_path) == SOURCE_MANIFEST_SHA256,
+            "original pinned DID source manifest differs")
+    require(manifest_path.read_bytes() == (original / "source-manifest.json").read_bytes(),
+            "original source authority changed")
+    manifest = json.loads(manifest_path.read_text())
+    require(len(manifest["files"]) == 2, "complete pinned DID closure required")
+    paths = [manifest_path, original / "source-manifest.json"]
+    for row in manifest["files"]:
+        path = SOURCE_ROOT / row["path"]
+        authority = original / row["path"]
+        require(row["modification"] == "none" and common.sha256(path) == row["sha256"]
+                and path.read_bytes() == authority.read_bytes(),
+                "DID source differs from its original closure")
+        paths += [path, authority]
+    return paths
+
+
+def checked_oracle_captures():
+    """Bind the proof's seeded row to the complete live-TS-qualified DID oracle."""
+    fixture = FIXTURE / "data/unit-composition.json"
+    shared = ROOT / "runtime-rs/tests/fixtures/unit-composition.json"
+    expected, capture = json.loads(fixture.read_text()), json.loads(shared.read_text())
+    require(expected["runtime_version"] == json.loads((ROOT / "runtime/package.json").read_text())["version"]
+            and expected["cases"] == [row for row in capture["cases"] if row["source"] == "did"],
+            "proof and live-TS DID captures differ")
+    return [fixture, shared]
+
+
+def require_clean_source(receipt):
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    require(receipt.get("source_head", head) == head, "source HEAD changed during qualification")
+    receipt["source_head"] = head
+    receipt["source_dirty"] = bool(subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=ROOT, text=True))
+    require(not receipt["source_dirty"], "clean source checkout required")
+
+
 def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "output must be absent")
@@ -70,10 +112,8 @@ def run(args):
         env["COMPACTC_SCHEME"] = str(scheme)
         runtime = args.ts_runtime.resolve(strict=True)
         version = json.loads((ROOT / "runtime/package.json").read_text())["version"]
-        receipt["source_head"] = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-        receipt["source_dirty"] = bool(subprocess.check_output(
-            ["git", "status", "--porcelain"], cwd=ROOT, text=True))
+        require_clean_source(receipt)
+        closure = original_source_closure() + checked_oracle_captures()
         paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
                  ROOT / "runtime/package.json", ROOT / "runtime-rs/compatibility.json",
                  ROOT / "examples/rust_backend/unit_composition_crypto.compact",
@@ -86,26 +126,12 @@ def run(args):
         paths += [Path(__file__).with_name(name) for name in [
             "local_parity_gate.py", "did_proof_gate.py", "check_functional_effects.py",
             "check_compactc_target.py"]]
-        receipt["source_hashes"] = hashes(paths)
+        receipt["source_hashes"] = hashes(paths + closure)
         receipt["compiler_hashes"] = hashes([compiler, scheme])
         rust_tools = [Path(subprocess.check_output(
             ["rustup", "which", "--toolchain", "1.99.0", name], env=env, text=True).strip())
             for name in ("cargo", "rustc", "rustfmt")]
         receipt["rust_tool_hashes"] = hashes(rust_tools)
-        require(common.sha256(SOURCE_ROOT / "source-manifest.json") == SOURCE_MANIFEST_SHA256,
-                "original pinned DID source manifest differs")
-        manifest = json.loads((SOURCE_ROOT / "source-manifest.json").read_text())
-        require(len(manifest["files"]) == 2, "complete pinned DID closure required")
-        original = ROOT / "examples/rust_backend/did_adoption"
-        require((SOURCE_ROOT / "source-manifest.json").read_bytes() ==
-                (original / "source-manifest.json").read_bytes(), "original source authority changed")
-        for row in manifest["files"]:
-            path = SOURCE_ROOT / row["path"]
-            require(row["modification"] == "none" and common.sha256(path) == row["sha256"]
-                    and path.read_bytes() == (original / row["path"]).read_bytes(),
-                    "DID source differs from its original closure")
-        receipt["original_source_hashes"] = hashes(
-            [original / row["path"] for row in manifest["files"]])
 
         def execute(argv, name, stdout=None):
             common.run(list(map(str, argv)), name, output, receipt, env=env, stdout_path=stdout)
@@ -215,7 +241,6 @@ def run(args):
 
         require(generated_manifest_snapshot(generated) == receipt["generated"], "generated output changed")
         unchanged(receipt["source_hashes"])
-        unchanged(receipt["original_source_hashes"])
         unchanged(receipt["compiler_hashes"])
         unchanged(receipt["rust_tool_hashes"])
         unchanged(receipt["oracle_wrapper_hashes"])
@@ -225,6 +250,7 @@ def run(args):
         unchanged(identity["runtime"]["files"])
         unchanged({identity["node"]["path"]: identity["node"]["sha256"], **identity["node"]["sharedLibraries"]})
         receipt["rust_tests"] = len(TESTS)
+        require_clean_source(receipt)
         receipt["status"] = "passed"
     except Exception as error:
         receipt["status"] = "failed"

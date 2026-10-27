@@ -235,3 +235,28 @@ not relabeled as a new clean-source execution. Final PR review and complete
 integration CI remain required. This proves one selected call; constructor
 execution, timestamp-zero Rust success and all twelve exports are not proved.
 Earlier development compiler/proof receipts retain their own literal identities.
+
+## PR #693 independent review follow-up
+
+Claude reviewed published `6d2981e9d` against canonical `acf529eff` and confirmed
+the lazy, once-only Unit-call fix. Its ten advisory findings were checked against
+the source before changes. The empty-tuple return case reproduced a real
+`let_unit_value` regression and now shares the Unit statement emission while
+retaining its checked tuple identity and typed binding semantics.
+
+The funded strict transaction seam now accepts source-specific final checks.
+The functional route checks flags and stale refusal on the actual applied state
+using its own generated Program, and reads its own live-TS-qualified capture.
+Both gates enforce complete DID oracle equality with the historical shared
+capture, share the immutable source check and require a clean checkout. The
+historical ordinary selector no longer acquires the new mutation control/file.
+Proof exceptions write a failed receipt and nonzero exit; the delivery table
+link and count spacing are corrected.
+
+Artifact scope is explicit: one standalone proof carries immutable-verifier
+binding/version controls; an independently proved transaction is default-strictly
+verified, applied and replayed, with exact transaction bytes retained separately.
+Receipt flags summarize live assertions; protocol unit tests are not proof
+substitutes. Earlier clean `926e8de8c` results above remain historical evidence.
+Fresh qualification of this reviewed revision, repeat exact-head review and full
+CI are required before integration; no previous receipt is relabeled.

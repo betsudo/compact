@@ -302,11 +302,11 @@ broader Rust AST goal remains incomplete; Forge remains deferred.
 
 Original compiler0.31.138 builds from clean signed implementation `926e8de8c`.
 Fresh source/API and separate real proof gates pass: all twelve exact TS DID
-rows, five selected Rust test methods and40 invalid-route executions, three
+rows, five selected Rust test methods and 40 invalid-route executions, three
 compile-fail controls, a fresh k11/1,804-row/3,296-byte functional deactivation
 proof with immutable binding/version controls, and funded default-strict
-application/replay refusal. All281 fixtures are fresh; full workspace formatting,
-three version checks, zero new header violations and public Python332PASS+
-20existingSKIP pass. See the [qualification guide](guides/did-functional-lifecycle.md#clean-local-qualification--compiler-031138)
+application/replay refusal. All 281 fixtures are fresh; full workspace formatting,
+three version checks, zero new header violations and public Python 332 PASS +
+20 existing SKIP pass. See the [qualification guide](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
 for stage identities and limits. Independent PR review and full integration CI
 remain open; this is local selected application acceptance, not broad-goal completion.
