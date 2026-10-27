@@ -180,3 +180,24 @@ still deliberately deferred. This closes the selected local implementation
 and execution slice, not the broader Rust AST goal or former Forge acceptance.
 Cleanup remains conditional on completion and verified GitHub merge, preserving
 unpublished work and all needed inputs, binaries, archives and evidence.
+
+## Publication review repairs — 2026-10-27
+
+The ordinary Map-size expression now uses the existing physical-path context
+query when a declaration has no typed slot carrier, matching the established
+Map-emptiness fallback. A red renderer regression emitted a nonexistent slot;
+its repaired output uses the checked declaration's physical path.
+
+Map emptiness now reaches the same declared-Map shape guard as size in the
+ledger, native context and recording owners. A real Array counterexample was
+accepted before the repair; native and recorded emptiness refuse it afterward.
+Valid empty/nonempty Maps retain their original VM emptiness program, result
+and native cost. This does not replace emptiness with a size comparison or
+claim new proof geometry. Functional adapters continue to reuse these owners.
+
+The review's suspected dropped insertion was checked with genuine unit-return
+and non-tail lexical Map-size sources using the retained original compiler.
+Both generate the insertion; no broader lexical normalizer change is made.
+Focused red/green logs are retained in the 2026-10-27 publication evidence.
+Earlier source/proof/compiler receipts keep their original epochs; current
+complete CI and proof gates remain required before integration.
