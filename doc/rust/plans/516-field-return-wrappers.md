@@ -31,3 +31,32 @@ Exclude general narrowing/cast normalization, every effect-bearing initializer/a
 The focused candidate passes 279 registered fixture outputs with zero stale/failures, five frontend return regressions (including this formerly refused source), and the live TS external consumer gate: 36 cases, 135 Rust executions, 56 successful recorded VM replays, E0308/E0382 controls, four both-target source refusals and strict consumer Clippy. The three pure controls use the pure API; they are not four-route cases. All 335 discovered Python tests pass with 20 explicit existing skips. Historical declaration authorities were preserved; the new source adds nine declarations.
 
 Canonical baseline is the four-PR merged `feefa6577`. New exact-head original compiler package, selected proofs, complete required CI and independent PR review are still open. Focused development receipts do not qualify later bytes or complete #516.
+
+## Packaged arm64 qualification — 2026-10-27
+
+At clean source `5c90b80f32fc7193f564b8fbd08a0c8591410f02`, original compiler
+0.31.136 package `/nix/store/w60wx0hih9fvwgdymsvsipf1cszhqxv8-compactc` passes
+the genuine generated-consumer gate (36 cases / 135 executions / 56 replays),
+all API/source refusal and changed-TS controls, and consumer Clippy. The 341
+public Python tests pass with 20 explicit existing skips. Six protocol controls
+reject the actual earlier producer/consumer format mismatch and false
+proof/verification/application/replay success claims. Full header controls pass;
+the proof runner builds and strict all-target Clippy passes.
+
+Fresh direct native key generation for `inferred` uses **k=7, 76 rows**. Two fresh
+**2,912-byte proofs** cover replacement key 5 and new key 6. Each verifies with
+the immutable selected verifier, rejects changed binding and same-geometry
+changed result, applies a funded default-strict local transaction, and rejects
+`IntentAlreadyExists` replay with unchanged state. Complete regenerated IR and
+all five functional program assets match the linked fixture; changed full IR
+refuses before keys or state. Source, tool, proof material and generated asset
+hashes remain unchanged during the gate. Constructor and unselected branch
+proofs are explicitly not claimed.
+
+Claude CLI returned a retained actual session limit; authorized independent
+Codex CLI review (`gpt-6.1-sol`, high then medium) found the receipt mismatch,
+then accepted its correction and the new controls with no remaining actionable
+findings. PR [#691](https://github.com/betsudo/compact/pull/691) targets
+`codex/rust-backend-ast`. Full latest-head required Linux/compiler/native/proof/
+wallet/package CI and merge are still **OPEN**. This finite local acceptance
+does not close all of #516 or qualify later source bytes automatically.

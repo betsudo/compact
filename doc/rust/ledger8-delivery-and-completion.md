@@ -182,7 +182,7 @@ Issue state is not a completion counter. The older recording-algebra PR #634 rem
 
 The next slice is [#516 Field return wrappers](plans/516-field-return-wrappers.md), based on the clean accepted canonical head above. The genuine retained source compiled for TS but failed Rust at a nested `Set.insert` hidden by an inferred Uint-to-Field cast. Preserve conversion timing and selected effects through existing checked return/lowering/AST owners. Full #516 lexical/initializer debt remains outside this slice.
 
-Focused source/consumer results are recorded in the plan. Full new-head compiler, proof, CI and independent review are required before integration; the four merged predecessors do not qualify later bytes.
+The [packaged arm64 checkpoint](plans/516-field-return-wrappers.md#packaged-arm64-qualification--2026-10-27) at `5c90b80f3` passes the original compiler package, 36-case/135-execution generated consumer, 56 recorded replays, 341 Python tests (20 explicit skips), and two fresh 2,912-byte selected proofs with immutable verification, binding/result negatives, default-strict application and unchanged replay refusal. Independent CLI review has no remaining actionable findings after the receipt-format correction. PR [#691](https://github.com/betsudo/compact/pull/691) is published; full latest-head required CI and merge remain open. The four merged predecessors do not qualify later bytes.
 
 ### 2. Requalify the real applications on the current profile
 
