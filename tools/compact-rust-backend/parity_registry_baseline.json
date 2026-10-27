@@ -208,6 +208,14 @@
     "visibility": "internal"
   },
   {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "choose",
+    "signature": "export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_wide.compact",
     "module_path": [],
     "kind": "circuit",
@@ -333,6 +341,14 @@
     "kind": "circuit",
     "name": "compose",
     "signature": "export circuit compose(selected: Boolean, value: Bytes<32>): []",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "conditional",
+    "signature": "export circuit conditional(active: Boolean): Field",
     "visibility": "export"
   },
   {
@@ -552,6 +568,14 @@
     "visibility": "internal"
   },
   {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "first",
+    "signature": "export pure circuit first(items: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/recorded_tuple13_result.compact",
     "module_path": [],
     "kind": "circuit",
@@ -566,6 +590,14 @@
     "name": "first",
     "signature": "pure circuit first(): [Field, Field, Field, Field, Field, Field, Field, Field, Field, Field, Field, Field]",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "first_text",
+    "signature": "export pure circuit first_text(items: Vector<2, Opaque<\"string\">>): Opaque<\"string\">",
+    "visibility": "export"
   },
   {
     "source": "examples/rust_backend/effect_plan_pure_unit_statements.compact",
@@ -685,6 +717,14 @@
     "kind": "circuit",
     "name": "inspectText",
     "signature": "export circuit inspectText(): Receipt",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "last",
+    "signature": "export pure circuit last(items: Vector<2, Field>): Field",
     "visibility": "export"
   },
   {
@@ -885,6 +925,14 @@
     "kind": "circuit",
     "name": "owned",
     "signature": "export circuit owned(a: Payload, b: Payload): OwnedResult",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "owned",
+    "signature": "export circuit owned(items: Vector<2, Opaque<\"string\">>): OwnedSelection",
     "visibility": "export"
   },
   {
@@ -1312,6 +1360,30 @@
     "visibility": "export"
   },
   {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "singleton",
+    "signature": "export pure circuit singleton(items: Vector<1, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "temporary",
+    "signature": "export circuit temporary(): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "temporary_text",
+    "signature": "export pure circuit temporary_text(items: Vector<2, Opaque<\"string\">>): Opaque<\"string\">",
+    "visibility": "export"
+  },
+  {
     "source": "examples/rust_backend/effect_plan_aligned_witness_results.compact",
     "module_path": [],
     "kind": "circuit",
@@ -1334,6 +1406,14 @@
     "name": "text_roundtrip",
     "signature": "export circuit text_roundtrip(value: Opaque<\"string\">): TextResult",
     "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "texts",
+    "signature": "pure circuit texts(items: Vector<2, Opaque<\"string\">>): Vector<2, Opaque<\"string\">>",
+    "visibility": "internal"
   },
   {
     "source": "examples/rust_backend/effect_plan_owned_values.compact",
@@ -1605,6 +1685,14 @@
     "kind": "circuit",
     "name": "witnessed",
     "signature": "export circuit witnessed(fallback: Opaque<\"Uint8Array\">, selected: Boolean): Hashes",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "witnessed",
+    "signature": "export circuit witnessed(select_first: Boolean): Field",
     "visibility": "export"
   },
   {
@@ -2493,6 +2581,14 @@
     "kind": "witness",
     "name": "tuple_value",
     "signature": "witness tuple_value(): [Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>, Bytes<32>]",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/constant_vector_projection.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "values",
+    "signature": "witness values(): Vector<2, Field>",
     "visibility": "internal"
   },
   {

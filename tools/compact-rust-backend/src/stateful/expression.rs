@@ -356,26 +356,42 @@ fn render_aggregate_expression(
             let field_value = retained_value(syn::parse_quote!((#value).#name), &declaration.ty);
             Ok((field_value, declaration.ty.clone(), witness_effect))
         }
-        Expr::TupleIndex { value, index } => {
+        Expr::TupleIndex {
+            value: operand,
+            index,
+        } => {
             let (value, ty, witness_effect) = render_state_expression_observed(
-                value,
+                operand,
                 parameters,
                 statements,
                 next_temp,
                 query_effect,
                 environment,
             )?;
-            let Type::Tuple { elements } = ty else {
-                environment.refused(source);
-                return Err(RenderError::ExpectedTuple(ty));
+            use crate::pure_semantics::aggregate::projection::{IndexFacts, check_index};
+            let (facts, result) =
+                check_index(ty, *index).inspect_err(|_| environment.refused(source))?;
+            let expression = match facts {
+                IndexFacts::Tuple => {
+                    let index = syn::Index::from(*index);
+                    syn::parse_quote!((#value).#index)
+                }
+                IndexFacts::Vector(ownership) => {
+                    // The child was checked/lowered once above. A bound parameter
+                    // is already an addressable place; do not clone its vector.
+                    let place = match operand.as_ref() {
+                        Expr::Parameter { name } => {
+                            let (_, binding) = parameters
+                                .get(name.as_str())
+                                .expect("checked projection operand binding");
+                            syn::parse_quote!(#binding)
+                        }
+                        _ => value,
+                    };
+                    crate::pure_native::aggregate::projection::vector(place, *index, ownership)
+                }
             };
-            let result = elements
-                .get(*index)
-                .ok_or(RenderError::InvalidTupleIndex(*index))
-                .inspect_err(|_| environment.refused(source))?
-                .clone();
-            let index = syn::Index::from(*index);
-            Ok((syn::parse_quote!((#value).#index), result, witness_effect))
+            Ok((expression, result, witness_effect))
         }
         Expr::Tuple { elements } => {
             let mut rendered_elements = Vec::<syn::Expr>::new();

@@ -113,6 +113,15 @@ pub(super) fn value(value: &Value) -> syn::Expr {
     }
 }
 
+// Evaluate the native expression once, retaining its original `?` conversion.
+// A local also avoids emitting the redundant `Ok(fallible()?)` closure shape.
+fn returning(execution: &syn::Expr, expression: syn::Expr) -> syn::Expr {
+    syn::parse_quote!((#execution).try_returning(|| {
+        let __compact_functional_result = #expression;
+        Ok(__compact_functional_result)
+    }))
+}
+
 struct Renderer<'a> {
     declarations: &'a Declarations,
     slots: Vec<FunctionalCellSlot>,
@@ -138,7 +147,7 @@ impl Renderer<'_> {
     ) -> Result<syn::Expr, RecordingGap> {
         let Some((binding, remaining)) = bindings.split_first() else {
             let result = value(result);
-            return Ok(syn::parse_quote!((#execution).try_returning(|| Ok(#result))));
+            return Ok(returning(&execution, result));
         };
         let step = self.step(binding, execution)?;
         let continuation =
@@ -296,12 +305,12 @@ impl Renderer<'_> {
                 let expression =
                     super::render::pure::certified_call(binding, self.declarations, value)?;
                 let expression = super::functional_paths::expression(expression);
-                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                returning(&current, expression)
             }
             Operation::VectorMap { .. } => {
                 let expression =
                     super::functional_pure_blocks::vector_map(binding, self.declarations)?;
-                syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                returning(&current, expression)
             }
             Operation::If {
                 condition,
@@ -394,7 +403,7 @@ impl Renderer<'_> {
                     tree.expression
                 } else {
                     let expression = pure(binding, operation)?;
-                    syn::parse_quote!(#current.try_returning(|| Ok(#expression)))
+                    returning(&current, expression)
                 }
             }
         };

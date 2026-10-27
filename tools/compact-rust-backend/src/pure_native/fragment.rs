@@ -1,12 +1,29 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Distinct expression and Unit-statement forms from one checked child set.
 //! Statement projection is an output view, never another source/type traversal.
 
 pub(crate) enum NativeFragment {
     Value(syn::Expr),
+    /// Ordinary reads retain the owned binding; a projection borrows its place.
+    /// This is native output information, never source/type admission authority.
+    Place {
+        expression: syn::Expr,
+        place: syn::Ident,
+    },
     Unit {
         expression: syn::Expr,
         statements: Vec<syn::Stmt>,
@@ -23,13 +40,22 @@ impl NativeFragment {
 
     pub(crate) fn into_expression(self) -> syn::Expr {
         match self {
-            Self::Value(expression) | Self::Unit { expression, .. } => expression,
+            Self::Value(expression)
+            | Self::Place { expression, .. }
+            | Self::Unit { expression, .. } => expression,
+        }
+    }
+
+    pub(crate) fn into_projection_place(self) -> syn::Expr {
+        match self {
+            Self::Place { place, .. } => syn::parse_quote!(#place),
+            value => value.into_expression(),
         }
     }
 
     pub(crate) fn into_views(self) -> (syn::Expr, Vec<syn::Stmt>) {
         match self {
-            Self::Value(expression) => (expression, Vec::new()),
+            Self::Value(expression) | Self::Place { expression, .. } => (expression, Vec::new()),
             Self::Unit {
                 expression,
                 statements,
@@ -40,9 +66,10 @@ impl NativeFragment {
 
 pub(crate) fn sequence(steps: Vec<syn::Stmt>, tail: NativeFragment) -> NativeFragment {
     match tail {
-        NativeFragment::Value(value) => {
-            NativeFragment::Value(syn::parse_quote!({ #(#steps)* #value }))
-        }
+        NativeFragment::Value(value)
+        | NativeFragment::Place {
+            expression: value, ..
+        } => NativeFragment::Value(syn::parse_quote!({ #(#steps)* #value })),
         NativeFragment::Unit {
             expression: value,
             statements: tail,
@@ -57,9 +84,10 @@ pub(crate) fn sequence(steps: Vec<syn::Stmt>, tail: NativeFragment) -> NativeFra
 
 pub(crate) fn lexical(bindings: Vec<syn::Stmt>, body: NativeFragment) -> NativeFragment {
     match body {
-        NativeFragment::Value(body) => {
-            NativeFragment::Value(syn::parse_quote!({ #(#bindings)* #body }))
-        }
+        NativeFragment::Value(body)
+        | NativeFragment::Place {
+            expression: body, ..
+        } => NativeFragment::Value(syn::parse_quote!({ #(#bindings)* #body })),
         NativeFragment::Unit {
             expression: body,
             statements: body_statements,

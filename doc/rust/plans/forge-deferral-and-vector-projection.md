@@ -189,3 +189,39 @@ and a genuine-source regression for the existing failure, extend the shared
 checked operation, implement ordinary and functional rendering, and run the
 finite acceptance above. This plan does not implement #674 or claim full
 language parity, fresh proof qualification or release readiness.
+
+## Autonomous implementation checkpoint — 2026-10-25
+
+After the owner activated the primary Rust AST goal, #674 implementation began.
+See [the narrow decision and current evidence](674-constant-vector-projection-decision.md)
+and the maintained `check_constant_vector_projection.py` gate. Source transport,
+checked projection, structured native/functional emission, owned reuse and
+focused generated compile-fail controls are implemented locally. Real proof,
+verification and full integration acceptance remain open; this amendment does
+not reopen or complete the deferred Forge experiment.
+
+
+## Qualification checkpoint — 2026-10-26
+
+The bounded #674 implementation now has executed pinned TS comparisons and
+genuine direct native proofs for both private Field selections, including
+independent verification, changed-binding/result refusals, default-strict funded
+application and replay rejection. Full Rust workspace tests and strict Clippy
+pass. See the narrow decision for exact scope and retained failures. Complete
+integration and remaining review stay open; Forge remains deferred.
+
+After completion and verified GitHub merge, clean up task-owned worktrees and
+reproducible targets while preserving unpublished work and required evidence or
+inputs. Do not remove shared stores/caches, containers or qualification artifacts.
+
+## Local integration checkpoint — 2026-10-26
+
+The #674 implementation now passes the remaining maintained local compiler,
+native consumer/proof, wallet handoff, complete golden/source-refusal and pinned
+oracle gates, alongside runtime archives and their generated consumers. The
+[narrow decision](674-constant-vector-projection-decision.md#local-integration-checkpoint--2026-10-26)
+retains exact source cohorts, the capture portability correction and proof
+scope. Independent external review and intended Linux/hosted integration remain
+open; no publication or merge occurred. The broad Rust AST goal remains active.
+Do not reopen already accepted backend capabilities or the deferred Forge work.
+This future cleanup condition does not authorize publishing or merging now.

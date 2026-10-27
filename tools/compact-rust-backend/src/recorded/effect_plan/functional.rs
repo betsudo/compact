@@ -361,6 +361,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::StructConstruct { .. }
                 | Operation::StructProject { .. }
                 | Operation::TupleProject { .. }
+                | Operation::VectorProject { .. }
                 | Operation::Tuple { .. }
                 | Operation::Vector { .. }
                 | Operation::Add(..)

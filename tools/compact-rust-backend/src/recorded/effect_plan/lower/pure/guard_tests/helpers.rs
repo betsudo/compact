@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 #[derive(Clone, Copy)]
 pub(super) enum Input<'a> {
@@ -130,6 +145,7 @@ pub(super) fn run(
         max_call_depth,
         max_expanded_steps,
         next: 11,
+        vector_projections: Default::default(),
         root_action: None,
         failure_precision: Precision::Unclassified,
         concrete_node: None,
@@ -216,7 +232,7 @@ pub(super) fn checked(
     let declarations = Declarations::with_calls(&ledger, &witnesses, &pure, &stateful)
         .with_type_environment(types)
         .with_root(root);
-    let (plan, certificates) = super::super::super::lower_with_pure_calls_observed(
+    let lowered = super::super::super::lower_with_pure_calls_observed(
         root,
         &declarations,
         &pure,
@@ -224,9 +240,11 @@ pub(super) fn checked(
         observer,
     )
     .map_err(LoweringRejection::into_checked_gap)?;
-    let count = certificates.iter().count();
-    let declarations = declarations.with_certificates(certificates, &pure)?;
-    let checked = super::super::super::super::validate::check(plan, declarations)?;
+    let count = lowered.certificates.iter().count();
+    let declarations = declarations
+        .with_certificates(lowered.certificates, &pure)?
+        .with_vector_projections(lowered.vector_projections);
+    let checked = super::super::super::super::validate::check(lowered.plan, declarations)?;
     let output = super::super::super::super::render(&checked)?;
     let steps = output.steps;
     let result = output.result;

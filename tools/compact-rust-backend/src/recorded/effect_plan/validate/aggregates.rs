@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Product operations are checked independently against canonical source types.
 use super::*;
@@ -52,6 +63,15 @@ pub(super) fn validate(
                 return Ok(false);
             };
             elements.get(*index).is_some_and(|element| element == ty)
+        }
+        Operation::VectorProject { value, index } => {
+            use_value(value)?;
+            let Type::Vector { element, length } = &value.ty else {
+                return Ok(false);
+            };
+            *index < *length
+                && element.as_ref() == ty
+                && declarations.vector_projection_matches(binding.value.id, value.id, *index)
         }
         Operation::Vector { elements: values } => {
             let Type::Vector { element, length } = ty else {

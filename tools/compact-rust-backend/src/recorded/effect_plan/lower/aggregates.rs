@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Rich values preserve member order and keep declarations separate from syntax.
 use super::super::validate;
@@ -75,20 +86,40 @@ impl Lowerer<'_> {
             }
             Expr::TupleIndex { value, index } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
-                let Type::Tuple { elements } = &value.ty else {
-                    return Err(invalid(path, "tuple projection requires a tuple value"));
-                };
-                let ty = elements
-                    .get(*index)
-                    .ok_or_else(|| invalid(path, "tuple projection index is outside its arity"))?
-                    .clone();
-                Ok((
-                    Operation::TupleProject {
-                        value,
-                        index: *index,
-                    },
-                    ty,
-                ))
+                match &value.ty {
+                    Type::Tuple { elements } => {
+                        let ty = elements
+                            .get(*index)
+                            .ok_or_else(|| {
+                                invalid(path, "tuple projection index is outside its arity")
+                            })?
+                            .clone();
+                        Ok((
+                            Operation::TupleProject {
+                                value,
+                                index: *index,
+                            },
+                            ty,
+                        ))
+                    }
+                    Type::Vector { element, length } => {
+                        if *index >= *length {
+                            return Err(invalid(
+                                path,
+                                "vector projection index is outside its length",
+                            ));
+                        }
+                        let ty = (**element).clone();
+                        Ok((
+                            Operation::VectorProject {
+                                value,
+                                index: *index,
+                            },
+                            ty,
+                        ))
+                    }
+                    _ => Err(invalid(path, "tuple projection requires a tuple value")),
+                }
             }
             Expr::Vector { element, elements } => {
                 let ty = Type::Vector {

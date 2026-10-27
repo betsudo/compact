@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Output-only projection of checked fragment operands into existing syntax facts.
 //! This mapping never traverses source, checks types or reselects support policy.
@@ -66,6 +77,15 @@ pub(crate) fn aggregate(
         A::TupleIndex { value, index } => A::TupleIndex {
             value: value.into_expression(),
             index,
+        },
+        A::VectorIndex {
+            value,
+            index,
+            ownership,
+        } => A::VectorIndex {
+            value: value.into_projection_place(),
+            index,
+            ownership,
         },
         A::StructLiteral { name, fields } => A::StructLiteral {
             name,

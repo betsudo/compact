@@ -80,9 +80,14 @@ def main() -> int:
             if compiler is None and registrations[source].frontend_flags:
                 failures.append(f"{source.name}: set COMPACTC to pass registered frontend flags")
                 continue
+            functional = "--rust-functional-ledger8" in registrations[source].frontend_flags
+            # Keep source labels portable in the complete, unmodified checked
+            # program assets. Passing a relative source path is a compiler input,
+            # not post-generation metadata rewriting.
+            source_argument = str(source.relative_to(ROOT) if functional else source)
             compile_command = (
                 [compiler, "--target", "rust", "--skip-zk",
-                 *registrations[source].frontend_flags, str(source), output]
+                 *registrations[source].frontend_flags, source_argument, output]
                 if compiler is not None
                 else [str(BACKEND), str(source), output]
             )
@@ -115,11 +120,31 @@ def main() -> int:
                 continue
             checked += 1
             fresh = generated.read_bytes()
+            programs_changed = False
+            if functional:
+                fresh_programs = {p.name: p.read_bytes() for p in (Path(output) / "contract/checked-programs").glob("*.json")}
+                program_directory = fixture.parent / "checked-programs"
+                retained_programs = {p.name: p.read_bytes() for p in program_directory.glob("*.json")}
+                if not fresh_programs:
+                    failures.append(f"{source.name}: fresh functional checked programs are missing")
+                    continue
+                programs_changed = fresh_programs != retained_programs
+                if programs_changed:
+                    if args.update:
+                        program_directory.mkdir(parents=True, exist_ok=True)
+                        for name, contents in fresh_programs.items():
+                            (program_directory / name).write_bytes(contents)
+                        for name in retained_programs.keys() - fresh_programs.keys():
+                            (program_directory / name).unlink()
+                    else:
+                        failures.append(f"{source.name}: complete functional checked programs differ")
             if not fixture.is_file() or fresh != fixture.read_bytes():
                 changed.append(str(fixture.relative_to(ROOT)))
                 if args.update:
                     fixture.parent.mkdir(parents=True, exist_ok=True)
                     fixture.write_bytes(fresh)
+            elif programs_changed:
+                changed.append(str(fixture.relative_to(ROOT)))
 
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
