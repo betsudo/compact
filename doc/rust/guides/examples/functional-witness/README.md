@@ -1,8 +1,9 @@
 # Isolated witnessed functional SDK consumer
 
-Local slice in progress. The accepted compiler141 development baseline generates the complete
-maintained Field-witness source with default bundled runtime and compiles the
-raw SDK. An external copied testkit needs one explicit source-package adjustment:
+The complete maintained Field-witness source generates with default bundled
+runtime and the raw SDK passes clean local qualification with original compiler
+0.31.143 on macOS arm64. This slice still requires published PR review and full
+Linux CI before integration. An external copied testkit needs one explicit source-package adjustment:
 change only its copied Cargo manifest runtime path from `../runtime-rs` to
 `../generated/contract/runtime-rs`. Preserve the original manifest separately.
 The original repository manifest and compiler-generated files stay unchanged.
@@ -127,10 +128,12 @@ The development prototype and actual documented proof program pass locally:
   statement is source-faithful. A typed callback does not prove an unstated
   algebraic relation or certify arbitrary callback privacy/external effects.
 
-The maintained gate also passes clean local qualification on original compiler
-0.31.141 at source `9043b8c160db890224d8029bd1dd894fa2e96b1c`. These are finite
-selected results. Final source reconciliation, independent review and complete
-Linux CI remain open in the
+The maintained gate passes clean local qualification on original compiler
+0.31.143 at source `16c90293944b22a461faab0e681ecf286fd0bb9b`, including fresh
+proof execution and strict application. The combined branch also passes the
+Passport gate and 399 public Python methods. Earlier compiler141 receipts retain
+their own source identity. These are finite selected results; accepted-canonical
+reconciliation, published PR review and complete Linux CI remain open in the
 [slice plan](../../../plans/functional-isolated-source-sdk-consumer.md).
 No all-export, network, hostile-host or whole-language coverage is claimed.
 Existing complete CI/proof gates remain mandatory before integration.

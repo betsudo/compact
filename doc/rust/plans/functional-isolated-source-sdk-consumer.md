@@ -201,3 +201,36 @@ an explicit identity bridge; otherwise requalify the changed premises. Stop
 publication on any real parent failure. No third branch or hosted rerun is needed
 for this local preparation. The two earlier nonblocking Passport documentation
 clarifications are now applied without changing its qualification code.
+
+
+## Clean provisional compiler143 qualification
+
+Original native compiler 0.31.143 builds from literal clean signed source
+`16c90293944b22a461faab0e681ecf286fd0bb9b`. The maintained SDK gate passes all
+27 commands on macOS arm64: three ContractLab methods, three independent
+positive/refusal pairs, direct owner Clippy, fresh k6/49-row keys, upstream
+material verification, checked-profile proof compilation and fresh proof plus
+separate strict funded application/replay. It retains 319 source inputs, 118 raw
+and 121 final generated members, 105 runtime files, sixteen material files and
+three application artifacts. Standalone proof and transaction sizes are 2,912
+and 6,607 bytes. These are new executions, not cached proof verdicts.
+
+The unchanged Passport gate also passes with this compiler: 202 live TypeScript
+cases across twelve families, eighteen unique Rust methods including the actual
+guide crate, two independent E0308 refusals and changed-expectation/restoration
+controls. Combined public Python checks pass 399 methods with zero failures or
+errors and twenty existing manual-only skip events. Earlier 141/142 receipts
+remain historical and separately identified.
+
+Evidence: `original143-build-v1/receipt.json`, `clean-source-sdk143-v1/receipt.json`,
+`passport-combined143-v1/receipt.json` and `public-python-provisional143-v1.json`
+under the local slice evidence root. A bounded tracked-owner comparison records
+that compiler/frontend/backend/runtime/macros/testkit/proof helper sources match
+the accepted baseline except the declared compiler patch version. Package
+realization alone is not a fresh compiler-suite test result.
+
+The source is still a provisional local combination while Passport's required
+Linux pipeline runs. No accepted-canonical, published PR review, Linux CI or
+merge verdict is inferred. Record the exact source/input bridge after the final
+normal reconciliation; requalify any changed executable premise. This bounded
+consumer qualification does not complete the broader Rust AST goal.
