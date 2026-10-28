@@ -1,8 +1,9 @@
 # Constant-valued Vector indices
 
-Status: local implementation and qualification in progress. Delivery target:
-`codex/rust-backend-ast`. This slice follows the isolated witnessed SDK consumer;
-its publication waits for that slice's acceptance and canonical reconciliation.
+Status: reconciled local implementation; final version0.31.144 qualification
+and PR integration remain pending. Delivery target: `codex/rust-backend-ast`.
+The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
+Vector branch reconciles that accepted canonical source without rewriting history.
 
 ## Gap and accepted baseline
 
@@ -132,15 +133,15 @@ The subsequent clean signed implementation `a1f0fa8b1` built successfully as an
 original native compiler package, with no Scheme override. Its fresh complete
 new-source gate also passes: all seven generated-consumer tests, live TS
 comparison, changed-result refusal and three intended compile-fail controls.
-These are literal a1 execution receipts. The local compiler version remains
-0.31.142 pending normal SDK reconciliation and version advancement; this does
+These are literal a1 execution receipts. That execution used local compiler version0.31.142 before SDK reconciliation
+and version advancement; it does
 not publish or relabel a historical compiler release. Development failures and
 authenticated-reuse receipts remain separate historical evidence.
 
 The later signed proof-binding source `9a9d1b8b6` completed the separate
-new-source and retained literal proof gates described below. Next: finish the
-current ownership controls, reconcile against the accepted SDK branch, and
-complete final-source qualification, PR review and full CI before integration.
+new-source and retained literal proof gates described below. The ownership
+controls and accepted SDK reconciliation are now complete. Next: qualify the
+final version0.31.144 source, then complete PR review and full CI before integration.
 Any changed compiler/source identity receives its required qualification. Existing
 literal proof coverage remains required and does not substitute for new-source
 proofs. The broader backend goal and this slice's integration remain incomplete.
@@ -227,3 +228,18 @@ that retained failed attempt is not a compiler regression or a passing result.
 This completes the packaged-compiler characterization gap without changing
 compiler, runtime, fixture or proof owners. Final reconciled-source qualification
 and full review/integration gates remain open.
+
+## Accepted SDK reconciliation
+
+SDK #698 passed all eleven required GitHub checks and actual Claude review.
+The exact same-run runtime archive passed GitHub digest, safe ZIP/membership,
+source and protocol verification before the normal signed canonical merge at
+`d3a32d9e7`. The completed SDK worktree is recoverably archived after preserving
+all ignored review evidence. Its E2E summary reports480 passed and six skipped
+unique tests, with no failures; skips are not counted as passed.
+
+The Vector branch merged that accepted canonical commit normally at
+`e24e5eea0`, producing the previously previewed conflict-free tree. Version144
+advances the compiler, Nix package, current ledger reference and changelog
+together. All prior compiler/API/crypto receipts retain their literal source
+epochs; final-source qualification below must precede this slice's publication.

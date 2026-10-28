@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.144, language 0.23.105, runtime 0.16.102]
+
+### Added
+
+- Rust emission for unambiguous constant-valued Vector indices using local
+  aliases and unsigned arithmetic. The existing compiler evaluator retains
+  bounds authority; checked projection preserves operand evaluation and the
+  typed FixedVector API. Runtime-derived or ambiguous index facts still refuse.
+- Complete source fixtures, generated Rust/TypeScript ownership controls and
+  separate genuine proof/application gates for the new and retained literal
+  Vector sources.
+
+### Fixed
+
+- Preserve exact inferred unsigned literal and declared stateful arithmetic
+  maxima, including valid zero-valued constant bindings.
+
 ## [Toolchain 0.31.143, language 0.23.105, runtime 0.16.102]
 
 ### Added
