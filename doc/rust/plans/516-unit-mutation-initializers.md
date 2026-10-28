@@ -1,12 +1,13 @@
 # Proposed next slice: ordered Unit mutation initializers (#516)
 
-Status: independent local development from canonical `acf529eff`. The original
-compiler137 realization and all six maintained frontend return regressions pass
-at that clean baseline; the genuine TS/Rust initializer comparison reproduces
-there. PR #693 has exact-head review acceptance but full CI remains pending.
-Keep this branch local until that delivery settles; stop dependent publication
-on a real baseline failure. Two active engineering branches is the hard limit.
-Reconcile the actual canonical merge before this slice is published.
+Status: the independent local implementation `d7e33dc28` is reconciled with
+accepted canonical `373fe452c` after PR #693 passed full Linux/Apple Silicon,
+proof/package/archive/E2E CI and exact-head Claude review. The signed merge
+`e4d7f9be9` preserves both histories. Its tree matches the prepared and tested
+combined source census: 284 registrations, 482 declarations and 196 flat
+libraries, with all historical authority rows unchanged. Compiler 0.31.139 and
+fresh qualification of this final combined source are the next gates; this
+slice is not yet published or accepted.
 
 ## Demonstrated gap and accepted neighbor
 
@@ -150,3 +151,17 @@ acceptance. The canonical reconciliation after #693, final original compiler,
 complete fresh fixture/source census, required CI, exact-head independent
 review and signed reviewed merge remain open. Historical accepted work and
 recording-retirement authorities remain unchanged.
+
+## Clean implementation qualification and canonical reconciliation
+
+Clean signed local `d7e33dc28` built the original compiler at its literal
+0.31.137 version, without an old Scheme override. Fresh maintained API/proof
+gates passed: 58 live TS cases, 196 Rust executions, 62 recording replays, three
+compile-fail controls and two selected standalone proofs with separate strict
+transactions. Those receipts are retained at d7; they are not relabeled as the
+reconciled version 0.31.139 source. The combined census also includes the
+accepted original DID fixture and its complete workflow gates.
+
+The earlier development attempts and their failed source/Clippy/oracle guards
+remain evidence. Final clean compiler, affected API/proof checks, exact-head
+Claude review and complete required CI remain required before integration.

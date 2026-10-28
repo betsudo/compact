@@ -207,7 +207,7 @@ qualification, exact-PR review and complete integration CI.
 
 ## Clean local qualification — compiler 0.31.138
 
-Signed reviewed implementation `bf221d0604490cfc3267820a90aeebbb5c10ee07` is
+Signed qualification implementation `bf221d0604490cfc3267820a90aeebbb5c10ee07` is
 based on accepted canonical `acf529eff`. Its original Nix compiler realization
 selects the same immutable 0.31.138 package built from clean `3ac403d8a`, with
 its own Scheme frontend: all declared compiler/CLI inputs are unchanged. The
@@ -228,10 +228,10 @@ Fresh qualification with the clean original compiler passes:
 | Proof controls | Changed binding and same-geometry version input refused; changed IR/program refused before keys/state |
 | Independently proved local transaction | 7,413 retained bytes; separately funded default-strict apply, exact final state, IntentAlreadyExists replay with unchanged ledger |
 | Applied-state refusal | Functional generated Program rejects the stale version first on actual applied state, without witness callbacks |
-| Source hygiene | Clean checkout required before/after both gates; changed proof Rust formatting and proof-runner all-target strict Clippy pass; complete workspace format passed at prior source epoch |
+| Source hygiene | Clean checkout required before/after both gates; changed proof Rust formatting and proof-runner all-target strict Clippy pass; complete workspace format passed at clean `926e8de8c`, then renewed by final integration CI |
 | Backend library | 1,846 passed, seven existing explicit-run helpers ignored at clean `3ac403d8a`; owner code/lock unchanged, not a relabelled new run |
 | Public Python | 353 discovered: 333 passed and 20 existing explicit skips |
-| Empty-result regression | Genuine checked empty-tuple red then seven focused tests green; actual Compact `[]` canonicalizes to Unit and its complete generated consumer passes strict Clippy |
+| Empty-result regression | Handbuilt, checked empty-tuple IR reproduced a red, then seven focused tests passed; actual Compact `[]` canonicalizes to Unit and its complete generated consumer passes strict Clippy |
 
 The prior clean `926e8de8c` compiler/API/proof receipts and 281-fixture census
 remain retained at their literal original identities. All three exact version
@@ -265,9 +265,10 @@ binding/version controls; an independently proved transaction is default-strictl
 verified, applied and replayed, with exact transaction bytes retained separately.
 Receipt flags summarize live assertions; protocol unit tests are not proof
 substitutes. Earlier clean `926e8de8c` results above remain historical evidence.
-Fresh compiler/API/proof qualification now passes at clean signed `3ac403d8a`,
-as recorded above. Repeat exact-head review and full CI remain required before
-integration; no previous receipt is relabeled.
+At that historical follow-up epoch, fresh compiler/API/proof qualification passed
+at clean signed `3ac403d8a`. The table above records the later bf qualification;
+no previous receipt is relabeled. Subsequent exact-head review and CI are recorded
+in the integration closeout below.
 
 ## Final CI setup and artifact retention corrections
 
@@ -300,3 +301,21 @@ bytes. Both smoke commands pass with external outputs and unchanged checkout
 status. Python now has 353 methods (333 passed, 20 existing skips) after replacing
 weaker duplicate controls with the two real gate-entry refusal controls.
 Repeat exact-head review and complete updated CI remain required.
+
+## Verified integration — PR #693
+
+All eleven final checks succeeded on published `18d79363d`: full native Linux,
+Apple Silicon, selected proofs, runtime packaging, archive consumers, wallet and
+E2E. Actual CI checkout `0c14bca3abe06aedc2477dcf77e48c7782c50c82` has tree
+`1705c61657185907b2819f8458eb418f7aed97f2`, identical to reviewed source and
+signed canonical merge `373fe452c4af8d42ea21941827bd8907ecabdd9d`.
+Claude CLI v3 found no merge-blocking code defect. GitHub verifies all eight
+source signatures and the merge signature. The PR is verified merged.
+
+The retained 52,109,643-byte runtime artifact matches GitHub SHA256
+`c8b726dc8c686b7e71350d069298ca8dd661283daacb4cff969e068e5c41a506`.
+Its complete DID IR, all twelve programs, generated assets and protocol receipts
+were checked against the reviewed fixture. It retains the selected standalone
+proof and a separate independently proved, default-strictly applied transaction.
+Constructor execution and all twelve exports remain outside that proof claim.
+Local bf and CI 0c14 receipts retain their original identities and boundaries.

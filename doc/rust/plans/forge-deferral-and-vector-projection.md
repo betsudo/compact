@@ -306,3 +306,15 @@ original compiler qualification, full required CI, exact-head Claude review and
 signed reviewed merge remain required. Keep two active engineering branches at
 most, preserve unique work before reconciliation and clean only unused own
 checkouts/targets after verified merge. Forge remains deliberately deferred.
+
+## DID integrated; Unit initializer reconciliation — 2026-10-28
+
+PR #693 is verified merged at signed canonical `373fe452c`, with full required
+Linux/Apple Silicon, native/proof/package/archive/wallet/E2E CI and exact-head
+Claude review accepted. The independent Unit initializer implementation d7 is
+preserved and merged with that actual canonical history at `e4d7f9be9`.
+Both fixtures and all existing gates are retained. The corrected combined census
+is 284 source registrations, 482 declarations and 196 flat libraries; historical
+authority rows are unchanged. Compiler 0.31.139, fresh affected qualification,
+its own PR, review and complete CI remain required. Forge stays deferred and
+does not block this backend slice; the broad backend goal remains incomplete.

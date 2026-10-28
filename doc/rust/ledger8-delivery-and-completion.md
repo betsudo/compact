@@ -318,3 +318,18 @@ retain their original source identities; full updated CI is still required.
 See the [qualification table](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
 for stage identities and limits. Repeat exact-head review and full integration CI
 remain open. This is selected local application acceptance, not broad-goal completion.
+
+## Original DID integrated; bounded initializer work next
+
+PR #693 is verified merged at canonical `373fe452c` after all required CI and
+exact-head Claude review. Its complete original DID source, four execution
+routes, compile-fail controls, selected standalone proof and separate strict
+transaction are retained; the constructor and all exports are not claimed
+proved. See the [integration closeout](plans/did-functional-lifecycle-current-profile.md#verified-integration--pr-693).
+
+The next bounded slice is [ordered Unit mutation initializers](plans/516-unit-mutation-initializers.md).
+Its independent implementation is reconciled with the accepted DID baseline;
+final clean compiler139, fresh affected qualification, separate PR review and
+full CI remain open. Recording-retirement authority and all historical evidence
+remain unchanged. This is a semantic/API improvement, not a new CI optimization
+or Forge adoption project.
