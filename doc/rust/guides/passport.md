@@ -11,8 +11,9 @@ and consumer crates for strict Clippy. The SDK's seeded dependency lock is
 qualified separately; original generated source bytes remain unchanged. Every local Cargo
 manifest resolves inside the generated SDK/consumer directory; the source lock
 cohort is validated before execution. The historical P1 archive remains intact.
-This is local qualification on the reviewed statement-source stack; actual
-canonical reconciliation and this slice's own PR review/full CI remain required.
+Actual accepted canonical `f0e4ba788` is reconciled by normal merge `342b9fc46`
+with the same complete Passport source tree. This remains local qualification;
+this slice's own PR review, full CI and verified integration are still required.
 Earlier compiler140 and historical P1 receipts retain their own identities.
 See the [plan and limits](../plans/passport-current-profile-consumer.md).
 

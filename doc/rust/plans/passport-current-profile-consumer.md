@@ -14,9 +14,11 @@ generated SDK dependency. Earlier wording claiming generated-source Clippy was
 too broad; the fresh direct SDK invocation above closes that gap without changing
 generated code or lint allowances. Historical receipts retain their literal scope.
 
-The local stack includes reviewed PR #696 head `9667072e7`; its full CI and actual
-accepted canonical merge remain required before publication. This slice then
-needs its own exact-head PR review, full CI and verified merge.
+PR #696 is verified merged at signed canonical `f0e4ba788` after all eleven
+checks, actual Claude review and retained-artifact verification. Normal signed
+reconciliation `342b9fc46` includes that accepted history without changing the
+qualified Passport source tree. This slice still needs its own exact-head PR
+review, full CI and verified merge.
 
 ## Gap and accepted baseline
 
@@ -31,7 +33,9 @@ The independent baseline is accepted canonical `709a86230` (PR #695), with
 original compiler 0.31.140 and Ledger8.1.3. Statement-action PR #696 has its own
 review and full CI; the pure-library behavior does not depend on its frontend
 fix. Local normal merge `91b412f2e` includes that exact reviewed source for
-sequential compiler142 preparation. It is not a new accepted canonical baseline.
+sequential compiler142 preparation; that earlier merge was not an accepted
+canonical baseline. Actual canonical `f0e4ba788` was subsequently reconciled by
+`342b9fc46` with identical whole source tree and all 179 gate inputs unchanged.
 Keep at most two active engineering branches and retain normal canonical history.
 
 Focused fresh baseline checks pass on the clean accepted source:
