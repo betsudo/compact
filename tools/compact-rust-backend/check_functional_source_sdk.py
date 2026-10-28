@@ -66,6 +66,19 @@ def equal_inventory(root, expected):
         raise ValueError(f"isolated file membership or bytes changed: {root}")
 
 
+def tracked_source_files(folder):
+    """Refuse ignored build output or unowned source before copying its bytes."""
+    relative = folder.relative_to(ROOT)
+    names = subprocess.check_output(["git", "ls-files", "-z", "--", str(relative)], cwd=ROOT)
+    tracked = {ROOT / name for name in names.decode().split("\0") if name}
+    physical = {path for path in folder.rglob("*") if path.is_symlink() or not path.is_dir()}
+    if not tracked or physical != tracked:
+        raise ValueError(f"selected source folder has missing or untracked/ignored entries: {relative}")
+    if any(path.is_symlink() or not path.is_file() for path in physical):
+        raise ValueError(f"selected source folder requires regular tracked files: {relative}")
+    return sorted(tracked)
+
+
 def runtime_files(root):
     result = {}
     for name in ("runtime-rs", "runtime-rs-macros"):
@@ -162,8 +175,7 @@ def proof_artifact(stdout, consumer):
 def validate_result(result):
     required = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
                 "changed_private_witness_rejected", "changed_proof_rejected",
-                "changed_input_new_statement_valid", "same_geometry_controls", "replay_unchanged",
-                "preparation_ledger_unchanged")
+                "changed_input_new_statement_valid", "same_geometry_controls", "replay_unchanged")
     if result.get("status") != "passed" or any(result.get(key) is not True for key in required):
         raise ValueError("proof/mutation/replay result omitted a required assertion")
     if result.get("strict_application") != "default" or result.get("replay_refusal") != "IntentAlreadyExists":
@@ -297,7 +309,7 @@ def main(argv=None):
         receipt["cargo_target_dir"] = str(target)
         receipt["build_inputs"] = common.build_input_receipt(env)
         tools = receipt["tools"] = {}
-        for name, supplied in (("compiler", args.compiler), ("material-runner", args.material_runner), ("zkir", Path(shutil.which("zkir", path=env.get("PATH")) or ""))):
+        for name, supplied in (("compiler", args.compiler), ("material-runner", args.material_runner), ("zkir", Path(prerequisites["zkir"]))):
             path = supplied.resolve(strict=True)
             if not path.is_file():
                 raise ValueError(f"missing selected executable: {name}")
@@ -316,12 +328,21 @@ def main(argv=None):
         if version is None or receipt["versions"]["compiler"] != ".".join(version.groups()):
             raise ValueError("compiler version differs from selected source")
         paths = [Path(__file__), Path(common.__file__), Path(did_proof_gate.__file__), ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "compiler/compiler-version.ss", ROOT / "LICENSE", ORIGINAL]
-        for folder in (EXAMPLE, ROOT / "testkit-rs", ROOT / "tools/compact-rust-proof-smoke/src"):
-            paths += [p for p in folder.rglob("*") if p.is_file()]
+        source_folders = (EXAMPLE, ROOT / "testkit-rs", ROOT / "tools/compact-rust-proof-smoke/src")
+        for folder in source_folders:
+            paths += tracked_source_files(folder)
         expected_runtime = runtime_files(ROOT)
         paths += [ROOT / p for p in expected_runtime]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths}
         receipt["runtime_bundle_hashes"] = expected_runtime
+        # k6 is the explicit maintained fixture recipe; verify actual content
+        # before generating source or compiling the external consumer.
+        material = json.loads(run("verify-material", [tools["material-runner"]["path"], "--prepare-proof-material", "--verify-only", "--parameter-k", "6"]).stdout)
+        if material.get("mode") != "verify-only" or material.get("verification") != "all files checked against locked upstream SHA256 tables" or Path(material["cache_directory"]).resolve() != Path(env["MIDNIGHT_PP"]).resolve() or 6 not in [p["k"] for p in material["parameters"]]:
+            raise ValueError("selected SRS and built-ins require fresh upstream hash verification")
+        receipt["verified_material"] = material
+        material_names = [p["name"] for p in material["assets"]+material["parameters"]]
+        receipt["material_hashes"] = {str(Path(env["MIDNIGHT_PP"]) / n): digest(Path(env["MIDNIGHT_PP"]) / n) for n in material_names}
         shutil.copytree(EXAMPLE / "consumer", output / "consumer")
         shutil.copytree(EXAMPLE / "source", output / "source")
         source = output / "source/field_witness_proof.compact"
@@ -379,12 +400,6 @@ def main(argv=None):
         if not match or int(match[1]) != 6:
             raise ValueError("selected witnessed SDK fixture requires k=6; review geometry/material before changing it")
         receipt["keygen"] = {"mode": "fresh direct native", "k": int(match[1]), "rows": int(match[2])}
-        material = json.loads(run("verify-material", [tools["material-runner"]["path"], "--prepare-proof-material", "--verify-only", "--parameter-k", match[1]]).stdout)
-        if material.get("mode") != "verify-only" or material.get("verification") != "all files checked against locked upstream SHA256 tables" or Path(material["cache_directory"]).resolve() != Path(env["MIDNIGHT_PP"]).resolve() or int(match[1]) not in [p["k"] for p in material["parameters"]]:
-            raise ValueError("selected SRS and built-ins require fresh upstream hash verification")
-        receipt["verified_material"] = material
-        material_names = [p["name"] for p in material["assets"]+material["parameters"]]
-        receipt["material_hashes"] = {str(Path(env["MIDNIGHT_PP"]) / n): digest(Path(env["MIDNIGHT_PP"]) / n) for n in material_names}
         build = run("build-proof", ["cargo", "build", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--bin", "functional-sdk-proof", "--manifest-path", manifest, "--message-format", "json"])
         run("proof-clippy", ["cargo", "clippy", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--all-targets", "--manifest-path", manifest, "--", "-D", "warnings"])
         receipt["compiled_proof"] = proof_artifact(build.stdout, consumer)
@@ -416,6 +431,8 @@ def main(argv=None):
                 raise ValueError("copied testkit library source changed")
         equal_inventory(consumer, receipt["staged_consumer_hashes"])
         equal_inventory(output / "testkit-rs", receipt["staged_testkit_hashes"])
+        for folder in source_folders:
+            tracked_source_files(folder)
         receipt["consumer_hashes"] = inventory(consumer)
         receipt["testkit_hashes"] = inventory(output / "testkit-rs")
         for group in (receipt["source_hashes"], receipt["dust_fixture_hashes"], receipt["material_hashes"]):

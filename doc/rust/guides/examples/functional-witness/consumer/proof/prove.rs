@@ -232,8 +232,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Fresh private randomness for this one call. Both routes below prepare the
     // same statement; a different call needs a fresh value. The seeded RNGs used
     // elsewhere in this executable are deterministic test-fixture setup only.
+    // Non-submitted refusal/mutation controls deliberately retain this value to
+    // isolate their changed input/output identities; never submit those controls.
     let communication_randomness: Fr = rand::rngs::OsRng.r#gen();
-    let preparation_checkpoint = state.ledger.clone();
     let mut preparation_refusals = Vec::new();
     for change_state in [true, false] {
         let mut malformed = api::functional::apply_offset::Program::new(value)
@@ -265,9 +266,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             (_, error) => return Err(format!("unrelated preparation refusal: {error}").into()),
         };
         preparation_refusals.push(refusal);
-        assert!(state.ledger == preparation_checkpoint);
     }
-    let preparation_ledger_unchanged = state.ledger == preparation_checkpoint;
+    // prepare_call takes only an owned recording and CallSpec. These controls
+    // invoke no ledger application; they do not test rollback or shared stores.
     let recorded = api::functional::apply_offset::Program::new(value)
         .execute_recorded(observed.circuit_context(7_u64), &answers)?;
     assert_eq!(recorded.execution.result, value);
@@ -477,7 +478,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         "replay_unchanged":replay_unchanged, "skip_sequence":skips,
         "witness_private_state":witness_private_state,
         "preparation_refusals":preparation_refusals,
-        "preparation_ledger_unchanged":preparation_ledger_unchanged,
         "final_state_hex":hex::encode(final_state),
         "final_data_hex":hex::encode(final_data),
         "expected_data_hex":hex::encode(expected_data),

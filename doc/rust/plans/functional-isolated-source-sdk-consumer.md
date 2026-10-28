@@ -1,8 +1,8 @@
 # Isolated functional source SDK: witnessed Cell consumer
 
-Status: the actual PR #698 review corrections pass fresh clean local qualification
-at `2f67680cc`. Repeat published-head Claude review, complete CI and verified
-merge remain required; earlier source epochs stay explicitly historical. Passport PR #697 passed
+Status: second-review corrections are awaiting fresh clean qualification. The
+earlier `2f67680cc` results retain their literal source epoch. Repeated published-
+head Claude review, complete CI and verified merge remain required. Passport PR #697 passed
 all eleven required checks and exact artifact review, and is accepted at
 canonical `8d9798d609e0090978083ddaa05691fdcdad35bf`. Its completed worktree is
 recoverably archived after preserving ignored review evidence. This SDK branch
@@ -267,7 +267,8 @@ Actual published-head Claude review at `f9fb7df9d` found a required generated-do
 version mismatch and a missing malformed-recording acceptance control. Both are
 being fixed in this same logical slice; acceptance item 4 is not removed. The
 example now explicitly tests tampered final state and noncanonical private output
-before proving/application, with exact preparation variants and unchanged ledger.
+before selected-call proving/application, with exact preparation variants and no
+ledger application invoked by those refusal controls.
 Result fields are derived from actual outcomes; Python additionally checks exact
 Cell=42 encoding and applied/expected state-data equality. Communication randomness
 uses fresh `OsRng`, while deterministic fixture RNGs remain labelled as such.
@@ -292,7 +293,7 @@ actual handwritten Rust formatting check executes, all three native methods and
 three intended positive/refusal pairs pass, and all direct Clippy owners pass.
 Fresh k6/49-row keys and verified material feed new real proofs. Both genuine
 malformed recordings refuse at their exact preparation variants before proving,
-with the original ledger unchanged. The positive then proves, verifies, passes
+without invoking ledger application. The positive then proves, verifies, passes
 all derived mutation controls, default-strictly applies exact state and refuses
 replay with unchanged ledger. Standalone proof and transaction remain 2,912 and
 6,607 bytes. Applied Cell encoding is independently checked as Field 42, and
@@ -302,7 +303,7 @@ All eleven focused boundary controls pass. The full public Python gate runs
 400 selected methods (381 fully exercised parent methods, twenty declared
 manual-only skip events), with zero failures/errors and no unexpected skips.
 Authoritative ledger macro regeneration changed only the compiler-version header
-from142 to143; this directly fixes the initial PR's actual failed version-match
+from 142 to 143; this directly fixes the initial PR's actual failed version-match
 CI step. Its failed source/run/diagnostics remain retained.
 
 Evidence: `original143-build-v2/receipt.json`,
@@ -314,3 +315,24 @@ Initial prerequisite-control path-alias/exception-type harness failures remain
 separate retained failures. These final descriptive status edits do not relabel
 local execution at a later commit. Published-head re-review and the complete new
 CI epoch remain mandatory; no merge or broad-goal completion is claimed.
+
+
+## Corrected preparation scope and tracked-source admission
+
+The second actual PR review confirmed all earlier corrections, then identified
+an overstatement in the preparation description and a concrete source-copy gap.
+`prepare_call` receives only an owned recording and `CallSpec`; the refusal cases
+invoke no ledger application. The earlier external-ledger self-comparison is
+removed rather than presented as rollback/shared-store atomicity evidence.
+Precise genuine preparation refusals remain required before selected-call proving,
+and the meaningful post-application replay/state comparison remains unchanged.
+
+All selected source folders now require exact tracked regular-file membership
+before copying/hashing and again at completion. Ignored build output, stray locks,
+added files and symlinks refuse; they are not silently excluded or admitted. A
+real temporary Git fixture checks valid membership and ignored target/lock refusal.
+Pinned k6/built-in content verification moves ahead of source compilation/Cargo,
+and the already admitted ZKIR path is the one tool authority. Randomness prose
+now explicitly includes non-submitted local refusal/mutation controls. These
+changes require their own clean qualification and repeated PR review; earlier
+receipts retain their source and claim scope. No acceptance capability is removed.

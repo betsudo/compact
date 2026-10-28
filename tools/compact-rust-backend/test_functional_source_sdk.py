@@ -29,6 +29,31 @@ import check_functional_source_sdk as gate
 
 
 class IsolatedSdkControls(unittest.TestCase):
+    def test_ignored_build_output_and_lock_refuse_tracked_source_admission(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            consumer = root / "consumer"
+            (consumer / "src").mkdir(parents=True)
+            (consumer / "Cargo.toml").write_text('[package]\nname="fixture"\nversion="0.0.0"\n')
+            (consumer / "src/lib.rs").write_text("pub fn fixture() {}\n")
+            (root / ".gitignore").write_text("target/\nCargo.lock\n")
+            environment = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            subprocess.run(["git", "init", "-q", root], env=environment, check=True)
+            subprocess.run(["git", "add", ".gitignore", "consumer"], cwd=root, env=environment, check=True)
+            with patch.object(gate, "ROOT", root):
+                expected = {consumer / "Cargo.toml", consumer / "src/lib.rs"}
+                self.assertEqual(set(gate.tracked_source_files(consumer)), expected)
+                for relative in ("target/build/generated.rs", "Cargo.lock"):
+                    injected = consumer / relative
+                    injected.parent.mkdir(parents=True, exist_ok=True)
+                    injected.write_text("ignored build output")
+                    self.assertEqual(subprocess.run(["git", "check-ignore", "--quiet", injected],
+                        cwd=root, env=environment).returncode, 0)
+                    with self.assertRaisesRegex(ValueError, "untracked/ignored"):
+                        gate.tracked_source_files(consumer)
+                    injected.unlink()
+                self.assertEqual(set(gate.tracked_source_files(consumer)), expected)
+
     def test_missing_material_refuses_before_any_external_command(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -181,7 +206,7 @@ class IsolatedSdkControls(unittest.TestCase):
                       changed_input_new_statement_check="valid; witness return is unconstrained relative to input")
         names = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
                  "changed_private_witness_rejected", "changed_proof_rejected", "same_geometry_controls", "replay_unchanged",
-                 "changed_input_new_statement_valid", "preparation_ledger_unchanged")
+                 "changed_input_new_statement_valid")
         result.update({name: True for name in names})
         gate.validate_result(result)
         for name in names:
@@ -192,7 +217,6 @@ class IsolatedSdkControls(unittest.TestCase):
         for key, value in (("strict_application", "relaxed"), ("replay_refusal", "any error"),
                            ("skip_sequence", [None, 1]), ("transaction_bytes", 0),
                            ("preparation_refusals", ["any error"]),
-                           ("preparation_ledger_unchanged", False),
                            ("changed_input_new_statement_valid", False),
                            ("final_data_hex", "01"), ("expected_data_hex", "01"),
                            ("final_cell_le_hex", (43).to_bytes(32, "little").hex()),

@@ -280,8 +280,8 @@ A successful `cargo package --list` or a manifest that names an unpublished regi
 The bounded [isolated witnessed SDK slice](plans/functional-isolated-source-sdk-consumer.md)
 now has a concrete paired source-testkit recipe and actual executable ContractLab/
 ProofLab example. Clean local proof/strict-application qualification passes for
-one complete witnessed Cell source. Final source reconciliation, review and full
-Linux CI are still required; this does not complete the distribution or handoff criterion.
+one complete witnessed Cell source. Published-head review and full Linux CI
+are still required; this does not complete the distribution or handoff criterion.
 
 ### 5. Freeze a finite capability contract and finish the handoff
 

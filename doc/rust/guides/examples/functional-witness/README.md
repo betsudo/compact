@@ -145,13 +145,16 @@ Existing complete CI/proof gates remain mandatory before integration.
 
 ### Preparation refusals and result evidence
 
-Before creating a proving provider or applying a transaction, the example takes
+After the declared privileged setup and before selected-call proving/application,
+the example takes
 fresh genuine generated recordings and separately changes their final state or
 inserts a noncanonical private-output atom. Preparation must return precisely
 `ReplayStateMismatch` or `NonCanonicalPrivateOutput { output_index: 0, atom_index: 0 }`,
-respectively, with the original ledger unchanged. The untouched recording then
-prepares and proves successfully. These controls exercise the existing untrusted
-recording boundary without introducing a new runtime API.
+respectively. `prepare_call` receives only an owned recording and `CallSpec`;
+these controls invoke no ledger application. This is a structural separation,
+not an observed rollback or shared-store atomicity guarantee. The untouched
+recording then prepares and proves successfully. These controls exercise the
+existing untrusted recording boundary without introducing a new runtime API.
 
 Mutation, private-state, replay and geometry fields in the result are derived
 from actual execution/check results. The gate also independently requires the
@@ -160,8 +163,23 @@ applied state data to match the separately executed expected state. Rust's actua
 proof/verification and strict application assertions remain enabled; receipt
 parsing does not substitute for them or attest an arbitrary hostile executable.
 
-Communication-commitment randomness is freshly sampled from `OsRng` for each
-selected call, then shared only by its ordinary/functional same-call comparison.
-Do not replace it with zero or reuse it for a different application call. Other
+Communication-commitment randomness is freshly sampled from `OsRng` for the
+selected application call. It is deliberately retained for the ordinary/functional
+same-call comparison and the non-submitted local refusal/mutation controls, so
+those controls isolate their changed input/output identities. Never submit those
+controls. Do not replace the randomness with zero or reuse it for a different
+application call. Other
 seeded RNGs in this executable are deterministic ledger/prover test fixtures,
 not application privacy guidance.
+
+
+The source folders must contain exactly their tracked regular files before copy
+and again at completion. Ignored build files under `consumer/target/`, a stray ignored lock, added
+files and symlinks refuse admission; they are not silently copied or filtered.
+With the selected k6 recipe, actual k6/built-in material content verification now
+runs before source compilation or Cargo work, while the later keygen still must
+confirm k6. Required paths and the single selected ZKIR executable are admitted
+even earlier. No network or hostile-concurrent-host guarantee is inferred.
+
+The second-review source-closure and scope corrections require their own clean
+qualification; the earlier `2f67680cc` receipt retains its literal source epoch.
