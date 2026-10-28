@@ -131,9 +131,9 @@ The development prototype and actual documented proof program pass locally:
   algebraic relation or certify arbitrary callback privacy/external effects.
 
 The maintained gate passes clean local qualification on original compiler
-0.31.143 at source `2f67680cc9cb2fbdad660e39c2ddbcd7492bec8a`, including all
+0.31.143 at source `fb704896bee4abd596ce81f84975e8b2840ac6ef`, including all
 28 commands, genuine malformed-recording refusals, fresh proof execution and
-strict application. The combined branch also passes 400 public Python methods;
+strict application. The combined branch also passes 401 public Python methods;
 the Passport compatibility gate retains its separate qualified source epoch. Earlier compiler141 receipts retain
 their own source identity. These are finite selected results. The accepted Passport parent has been
 reconciled with the SDK tree unchanged; this SDK slice still requires published
@@ -181,5 +181,6 @@ runs before source compilation or Cargo work, while the later keygen still must
 confirm k6. Required paths and the single selected ZKIR executable are admitted
 even earlier. No network or hostile-concurrent-host guarantee is inferred.
 
-The second-review source-closure and scope corrections require their own clean
-qualification; the earlier `2f67680cc` receipt retains its literal source epoch.
+The second-review source-admission and scope corrections pass that literal clean
+qualification, including twelve focused controls. Earlier source receipts retain
+their own narrower epochs. Current-head PR review and full CI remain required.

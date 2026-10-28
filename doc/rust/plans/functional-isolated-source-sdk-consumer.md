@@ -1,7 +1,7 @@
 # Isolated functional source SDK: witnessed Cell consumer
 
-Status: second-review corrections are awaiting fresh clean qualification. The
-earlier `2f67680cc` results retain their literal source epoch. Repeated published-
+Status: second-review corrections pass fresh clean qualification at `fb704896b`.
+Earlier `2f67680cc` results retain their literal source epoch. Repeated published-
 head Claude review, complete CI and verified merge remain required. Passport PR #697 passed
 all eleven required checks and exact artifact review, and is accepted at
 canonical `8d9798d609e0090978083ddaa05691fdcdad35bf`. Its completed worktree is
@@ -336,3 +336,20 @@ and the already admitted ZKIR path is the one tool authority. Randomness prose
 now explicitly includes non-submitted local refusal/mutation controls. These
 changes require their own clean qualification and repeated PR review; earlier
 receipts retain their source and claim scope. No acceptance capability is removed.
+
+
+The corrected source `fb704896bee4abd596ce81f84975e8b2840ac6ef` realizes original
+compiler143 and passes all 28 updated SDK commands, twelve focused controls and
+401 public Python methods (382 fully exercised parent methods; twenty expected
+manual-only skip events; zero failures/errors). Material content is verified
+before compilation; genuine exact preparation refusals, derived proof controls,
+Field 42 encoding, expected/applied state data, default-strict application and
+unchanged replay refusal all pass. Selected proof/transaction sizes remain
+2,912/6,607 bytes. Current proof hashes and unpublished work survived the bounded
+reclaim of only obsolete single-link compiled blobs in the merged Passport target
+following actual host ENOSPC; all stores and evidence remain intact. These final
+prose edits are not fresh execution at a later commit. New-head review and full
+CI remain mandatory. Evidence: `clean-source-sdk143-review-fixes-v3/receipt.json`,
+`public-python-review-fixes143-v3/receipt.json`,
+`review-v2-fix-focused-controls-v2.json` and
+`owned-passport-cache-reclaim-v1/receipt.json` in the local slice evidence root.
