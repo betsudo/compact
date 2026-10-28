@@ -26,6 +26,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import time
 import tomllib
@@ -39,6 +40,7 @@ CONTROLS = Path(__file__).with_name("tests") / "passport_current_profile"
 SOURCE_MANIFEST_SHA256 = "f122c9c890e841d50f2f2980df4229de584333a9eb6c9a4525794f8ce8a77f78"
 ORACLE_PROVENANCE_SHA256 = "b35b1c5a9959086fcc30f29265b24602d4e2e34844074a9f23f16330ebd4fbd1"
 COMMAND_TIMEOUT_SECONDS = 600
+GUIDE_PACKAGE = GUIDE.parents[1]
 FAMILIES = ("ts", "age", "request", "private-parts", "protocol", "roots", "bindings",
             "signed-flow", "authorization", "protocol-roundtrip", "complete-flow", "codec")
 NEGATIVES = ("wrong_bytes", "wrong_shape")
@@ -102,8 +104,8 @@ def validate_dependencies(metadata, lock_path, allowed, qualified):
 def cargo_target(environment, output):
     selected = Path(environment.get("CARGO_TARGET_DIR") or output / "cargo-target")
     selected = (selected if selected.is_absolute() else ROOT / selected).resolve()
-    if selected.is_relative_to((output / "generated").resolve()):
-        raise ValueError("Cargo target must be outside the generated Passport SDK")
+    if selected.is_relative_to(output.resolve()) and selected != (output / "cargo-target").resolve():
+        raise ValueError("Cargo target must be outside qualification output or its dedicated cargo-target")
     return selected
 
 
@@ -139,16 +141,42 @@ def capture_case_count(rows):
     return 202
 
 
-def typed_refusal(process):
+def typed_refusal(process, expected_path=None, expected_line=None):
     codes = []
+    intended_span = expected_path is None
     for line in process.stdout.splitlines():
         row = json.loads(line)
         message = row.get("message", {})
         if row.get("reason") == "compiler-message" and message.get("level") == "error":
             codes.append((message.get("code") or {}).get("code"))
-    if process.returncode == 0 or codes != ["E0308"]:
-        raise ValueError(f"Passport ordinary misuse did not independently refuse with E0308: {codes}")
+            intended_span = any(span.get("is_primary") and
+                Path(span["file_name"]).name == Path(expected_path).name and
+                span["line_start"] <= expected_line <= span["line_end"]
+                for span in message.get("spans", [])) if expected_path else intended_span
+    if process.returncode == 0 or codes != ["E0308"] or not intended_span:
+        raise ValueError(f"Passport ordinary misuse did not independently refuse at intended E0308: {codes}")
     return codes
+
+
+def bounded_command(command, environment):
+    """Timeout owns the POSIX child process group, including compiler descendants."""
+    process = subprocess.Popen([str(a) for a in command], cwd=ROOT, env=environment,
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               start_new_session=os.name == "posix")
+    try:
+        stdout, stderr = process.communicate(timeout=COMMAND_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired as error:
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        else:
+            process.kill()
+        stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(command, COMMAND_TIMEOUT_SECONDS,
+                                        output=stdout, stderr=stderr) from error
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
 def main(argv=None):
@@ -161,7 +189,7 @@ def main(argv=None):
     if output.exists() or output.is_symlink():
         raise ValueError("Passport qualification destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-passport-current-profile/v2", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-passport-current-profile/v3", "status": "incomplete", "commands": [],
                "scope": "original pure Passport current-profile execution and isolated raw generated SDK consumer",
                "qualified_sdk_bytes": "raw compiler output; formatting is a separate retained copy",
                "proof_applicability": "not applicable: original source has no stateful exports",
@@ -173,8 +201,7 @@ def main(argv=None):
     def run(label, command, *, success=True):
         start = time.monotonic()
         try:
-            process = subprocess.run([str(a) for a in command], cwd=ROOT, env=env,
-                                     text=True, capture_output=True, timeout=COMMAND_TIMEOUT_SECONDS)
+            process = bounded_command([str(a) for a in command], env)
         except subprocess.TimeoutExpired as error:
             for stream, value in (("stdout", error.stdout), ("stderr", error.stderr)):
                 text = value.decode(errors="replace") if isinstance(value, bytes) else value or ""
@@ -226,6 +253,7 @@ def main(argv=None):
             if digest(ORACLE / "upstream-codec-source" / name) != record["sha256"]:
                 raise ValueError(f"original Passport codec source differs: {name}")
         paths = [Path(__file__), ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "compiler/compiler-version.ss", manifest, GUIDE,
+                 GUIDE_PACKAGE / "Cargo.toml", GUIDE_PACKAGE / "Cargo.lock",
                  ROOT / "runtime-rs/Cargo.toml", ROOT / "runtime-rs-macros/Cargo.toml",
                  ROOT / "runtime/package.json", *SOURCE.rglob("*.compact"), *ORACLE.rglob("*"),
                  *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs")]
@@ -246,6 +274,8 @@ def main(argv=None):
             rust_tools[name]["version"] = run("version-" + name, command).stdout.strip()
         receipt["rust_tools"] = rust_tools
         receipt["tool_identity_limits"] = "selected executable hashes/reported versions; not transitive system-library or wrapper security attestation"
+        receipt["ts_runtime_identity_limits"] = "compact-runtime package.json/dist bytes only; transitive onchain-runtime/WASM dependencies are not independently content-hashed"
+        receipt["timeout_process_scope"] = "owned POSIX process group" if os.name == "posix" else "direct child only"
         receipt["ts_runtime_hashes"] = {str(p): digest(p) for p in [runtime / "package.json", *(runtime / "dist").rglob("*")] if p.is_file()}
         source = output / "passport-source"
         source.mkdir()
@@ -308,7 +338,6 @@ def main(argv=None):
         for original in (FIXTURE / "tests").glob("*.rs"):
             if original.name != "provenance.rs":
                 shutil.copyfile(original, consumer / "tests" / original.name)
-        shutil.copyfile(GUIDE, consumer / "tests/documented_guide.rs")
         (consumer / "lib.rs").write_text("pub use passport::{pure_circuits, runtime, types};\n")
         lines = ['[workspace]', '[package]', 'name="compact-rust-vc-passport-adoption-fixture"',
                  'version="0.1.0"', 'edition="2024"', '[lib]', 'path="lib.rs"', '[dependencies]',
@@ -343,7 +372,30 @@ def main(argv=None):
         generated_hashes[str(sdk_lock)] = receipt["sdk_lock_sha256"]
         run("sdk-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", contract / "Cargo.toml", "--all-targets", "--", "-D", "warnings"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", consumer_manifest, "--", "--show-output"])
-        receipt["rust_test_methods"] = rust_test_count(result.stdout, 18)
+        receipt["adoption_rust_test_methods"] = rust_test_count(result.stdout, 16)
+        # Execute the actual documented crate with its original manifest/source.
+        # Its archived P1 lock remains historical; follow the guide's current
+        # source-lock seeding recipe in this owned copy only.
+        guide = output / "guide-consumer"
+        (guide / "src").mkdir(parents=True)
+        for relative in ("Cargo.toml", "Cargo.lock", "src/lib.rs"):
+            shutil.copyfile(GUIDE_PACKAGE / relative, guide / relative)
+        shutil.copyfile(guide / "Cargo.lock", output / "historical-guide-Cargo.lock")
+        shutil.copyfile(ROOT / "Cargo.lock", guide / "Cargo.lock")
+        guide_manifest = guide / "Cargo.toml"
+        guide_metadata = json.loads(run("guide-resolve", ["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", guide_manifest]).stdout)
+        guide_lock = validate_dependencies(guide_metadata, guide / "Cargo.lock", allowed | {guide_manifest.resolve()}, qualified)
+        guide_result = run("guide-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", guide_manifest, "--", "--show-output"])
+        guide_count = rust_test_count(guide_result.stdout, 2)
+        run("guide-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", guide_manifest, "--all-targets", "--", "-D", "warnings"])
+        if ((guide / "Cargo.toml").read_bytes() != (GUIDE_PACKAGE / "Cargo.toml").read_bytes()
+                or (guide / "src/lib.rs").read_bytes() != GUIDE.read_bytes()
+                or digest(guide / "Cargo.lock") != guide_lock):
+            raise ValueError("documented Passport crate changed during qualification")
+        receipt["documented_crate"] = {"manifest_sha256": digest(guide_manifest), "source_sha256": digest(guide / "src/lib.rs"),
+            "historical_lock_sha256": digest(output / "historical-guide-Cargo.lock"), "qualified_lock_sha256": guide_lock,
+            "lock_policy": "documented qualified source-lock seeding; original historical P1 lock preserved separately", "methods": guide_count}
+        receipt["rust_test_methods"] = receipt["adoption_rust_test_methods"] + guide_count
         # Change only an owned oracle copy. The unchanged Rust test must reject it,
         # then execute successfully again after exact-byte restoration.
         control_oracle = consumer / "oracle/upstream-ts-capture.json"
@@ -373,10 +425,25 @@ def main(argv=None):
             "scope": "one existing Rust test rerun against an owned changed oracle, then exact restoration; original authority unchanged"}
         run("clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", consumer_manifest, "--all-targets", "--", "-D", "warnings"])
         receipt["compile_fail"] = {}
+        receipt["positive_twins"] = {}
         for name in NEGATIVES:
+            path = consumer / f"{name}.rs"
+            negative = path.read_text()
+            replacement = negative.replace("FixedBytes::<63>::new([0; 63])", "FixedBytes::<64>::new([0; 64])") if name == "wrong_bytes" else negative.replace("rt::FixedBytes::<32>::new([0; 32])", "passport::types::DigitalPassportClaimCommitments::default()")
+            if replacement == negative:
+                raise ValueError("Passport positive twin source mutation missing")
+            try:
+                path.write_text(replacement)
+                run(name + "-positive", ["cargo", "check", "--locked", "--offline", "--manifest-path", consumer_manifest,
+                    "--features", name, "--bin", name, "--message-format=json"])
+            finally:
+                path.write_text(negative)
+            receipt["positive_twins"][name] = {"passed": True, "restored_sha256": digest(path)}
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", consumer_manifest,
                                  "--features", name, "--bin", name, "--message-format=json"], success=False)
-            receipt["compile_fail"][name] = typed_refusal(process)
+            line = next(i for i, text in enumerate(negative.splitlines(), 1) if
+                        ("FixedBytes::<63>" in text if name == "wrong_bytes" else "digitalPassportClaimRoot(" in text))
+            receipt["compile_fail"][name] = typed_refusal(process, path, line)
         if digest(lock) != receipt["consumer_lock_sha256"]:
             raise ValueError("Passport consumer lock changed during execution")
         current_generated = {str(p): digest(p) for p in generated.rglob("*") if p.is_file() and "node_modules" not in p.parts}

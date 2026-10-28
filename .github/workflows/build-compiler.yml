@@ -511,7 +511,7 @@ jobs:
         if: failure() && steps.passport_current.outcome == 'failure'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: passport-current-failure-${{ github.sha }}
+          name: passport-current-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/compact-passport-current/
             !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
@@ -608,6 +608,8 @@ jobs:
             ${{ runner.temp }}/compact-passport-current/generated/
             !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
             ${{ runner.temp }}/compact-passport-current/consumer/
+            ${{ runner.temp }}/compact-passport-current/guide-consumer/
+            ${{ runner.temp }}/compact-passport-current/historical-guide-Cargo.lock
             !${{ runner.temp }}/compact-passport-current/consumer/target/**
             ${{ runner.temp }}/compact-passport-current/passport-source/
             ${{ runner.temp }}/compact-passport-current/*.json

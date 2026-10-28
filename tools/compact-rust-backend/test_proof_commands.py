@@ -120,6 +120,7 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("compact-passport-current/", failure_upload)
         self.assertIn("!${{ runner.temp }}/compact-passport-current/cargo-target/**", failure_upload)
         self.assertIn("if-no-files-found: ignore", failure_upload)
+        self.assertIn("passport-current-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}", failure_upload)
         # Success still retains the original required package artifact/proof path.
         self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", workflow)
         self.assertIn("compact-passport-current/formatted-generated-lib.rs", workflow)

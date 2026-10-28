@@ -17,6 +17,9 @@
 """Adversarial identity, isolated-consumer and false-success gate controls."""
 import copy
 import json
+import os
+import sys
+import time
 from pathlib import Path
 import re
 import subprocess
@@ -95,7 +98,7 @@ class PassportControlTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output = root / "output"
-            with patch.object(gate.subprocess, "check_output", side_effect=["head\n", " M runtime-rs/src/lib.rs\n"]), patch.object(gate.subprocess, "run") as execute:
+            with patch.object(gate.subprocess, "check_output", side_effect=["head\n", " M runtime-rs/src/lib.rs\n"]), patch.object(gate, "bounded_command") as execute:
                 with self.assertRaisesRegex(RuntimeError, "clean source checkout required"):
                     gate.main(["--compiler", str(root / "missing"), "--ts-runtime", str(root), "--output", str(output)])
                 execute.assert_not_called()
@@ -125,7 +128,7 @@ class PassportControlTests(unittest.TestCase):
                 output = root / "result"
                 process = SimpleNamespace(returncode=0, stdout=reported, stderr="")
                 with patch.object(gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
-                        gate.subprocess, "run", return_value=process) as execute, patch.object(
+                        gate, "bounded_command", return_value=process) as execute, patch.object(
                         gate.shutil, "which", return_value=str(compiler)):
                     with self.assertRaisesRegex(ValueError, "compiler version differs"):
                         gate.main(["--compiler", str(compiler), "--ts-runtime", str(root), "--output", str(output)])
@@ -142,8 +145,8 @@ class PassportControlTests(unittest.TestCase):
             self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": str(shared)}, output), shared)
             self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": "target"}, output),
                              (gate.ROOT / "target").resolve())
-            for path in [output / "generated", output / "generated/contract/target"]:
-                with self.subTest(path=path), self.assertRaisesRegex(ValueError, "outside the generated"):
+            for path in [output, output / "passport-source", output / "consumer", output / "generated", output / "generated/contract/target"]:
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, "outside qualification"):
                     gate.cargo_target({"CARGO_TARGET_DIR": str(path)}, output)
 
     def test_formatting_uses_copy_and_rejects_original_source_mutation(self):
@@ -203,7 +206,7 @@ class PassportControlTests(unittest.TestCase):
                                                 output=b"partial output\n", stderr=b"partial diagnostic\n")
             with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": ""}), patch.object(
                     gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
-                    gate.subprocess, "run", side_effect=timeout), patch.object(
+                    gate, "bounded_command", side_effect=timeout), patch.object(
                     gate.shutil, "which", return_value=str(compiler)), patch.object(gate, "typed_refusal") as refusal:
                 with self.assertRaisesRegex(RuntimeError, "timed out: compiler-version"):
                     gate.main(["--compiler", str(compiler), "--ts-runtime", str(root), "--output", str(output)])
@@ -220,11 +223,36 @@ class PassportControlTests(unittest.TestCase):
             root = Path(temporary)
             with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": "unselected-compiler"}), patch.object(
                     gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
-                    gate.subprocess, "run") as execute:
+                    gate, "bounded_command") as execute:
                 with self.assertRaisesRegex(ValueError, "no COMPACTC_SCHEME override"):
                     gate.main(["--compiler", "missing", "--ts-runtime", "missing", "--output", str(root / "output")])
                 execute.assert_not_called()
 
+
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process-group timeout contract")
+    def test_timeout_stops_real_owned_compiler_descendants(self):
+        child = "import time;print('descendant ready',flush=True);time.sleep(10)"
+        parent = "import subprocess,sys,time;subprocess.Popen([sys.executable,'-u','-c'," + repr(child) + "]);print('parent ready',flush=True);time.sleep(10)"
+        started = time.monotonic()
+        with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3):
+            with self.assertRaises(subprocess.TimeoutExpired) as caught:
+                gate.bounded_command([sys.executable, "-u", "-c", parent], dict(os.environ))
+        self.assertIn("parent ready", caught.exception.stdout)
+        self.assertIn("descendant ready", caught.exception.stdout)
+        self.assertLess(time.monotonic() - started, 3, "descendant pipe remained live after timeout")
+
+    def test_refusal_rejects_an_unrelated_primary_type_error(self):
+        intended = {"file_name": "/owned/wrong_bytes.rs", "is_primary": True,
+                    "line_start": 21, "line_end": 21}
+        def result(span):
+            message = {"level": "error", "code": {"code": "E0308"}, "spans": [span]}
+            return SimpleNamespace(returncode=101, stdout=json.dumps({"reason": "compiler-message", "message": message}))
+        self.assertEqual(gate.typed_refusal(result(intended), Path("/owned/wrong_bytes.rs"), 21), ["E0308"])
+        for span in [dict(intended, line_start=22, line_end=22), dict(intended, file_name="unrelated.rs"),
+                     dict(intended, is_primary=False)]:
+            with self.subTest(span=span), self.assertRaises(ValueError):
+                gate.typed_refusal(result(span), Path("/owned/wrong_bytes.rs"), 21)
 
 if __name__ == "__main__":
     unittest.main()

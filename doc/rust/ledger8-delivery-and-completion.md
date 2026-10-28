@@ -240,10 +240,13 @@ its referenced credential source closure: **75 public pure exports and zero
 proof-applicable exports**. The [current-profile standalone consumer](plans/passport-current-profile-consumer.md)
 is freshly qualified locally at clean signed `2bbf4daaf`, original compiler
 0.31.142/Ledger8.1.3: 202 sampled live TS cases plus codec vectors, 18 Rust methods
-including the complete two-test guide consumer, direct SDK/consumer strict Clippy,
+including the guide test source in a gate-written crate, direct SDK/consumer strict Clippy,
 and two independent type refusals. The v2 gate tests untouched raw SDK bytes,
 formats a separate copy, isolates Cargo targets and retains failure diagnostics.
-A real changed-expectation assertion fails and passes after restoration. All
+A real changed-expectation assertion fails and passes after restoration. The
+review successor now adds the actual documented manifest/source, owned POSIX
+process-group timeouts and intended-locus refusal twins; fresh qualification is
+pending. Its failure uploads cover step failure while job/runner remain alive. All
 384 public Python methods pass with 20 existing manual-only skip events.
 Earlier `834a41025` executed formatted SDK bytes; preserve that narrower epoch.
 Original source/oracle authorities remain unchanged. The maintained gate runs in

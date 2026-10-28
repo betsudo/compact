@@ -1,13 +1,14 @@
 # Current-profile Passport standalone consumer
 
-Status: fresh clean raw-SDK qualification passed at signed `2bbf4daaf`,
+Status: additional review fixes require fresh qualification and repeat review.
+The prior raw-SDK qualification passed at signed `2bbf4daaf`,
 original compiler 0.31.142/Ledger8.1.3. All 202 live TS cases and codec vectors,
-18 Rust methods (including the complete two-test guide consumer), direct SDK
+18 Rust methods (including the unchanged guide test source in a gate-written crate), direct SDK
 and consumer strict Clippy, and two independent E0308 controls pass. The actual
 changed-expectation Rust test fails as intended and passes after exact restoration;
 those are reruns of one existing method, not additional unique test methods.
 All 384 public Python methods pass with zero failures/errors and 20 existing
-manual-only skip events. The 25 focused Passport/workflow controls also pass.
+manual-only skip events. The earlier 25 focused Passport/workflow controls passed.
 
 The v2 gate snapshots and executes the untouched raw SDK; rustfmt touches only
 a retained copy. With ambient `CARGO_TARGET_DIR` unset, the cold qualification
@@ -21,8 +22,18 @@ not a deliberately failed hosted trial.
 Actual Claude CLI review of published `271cf870d` found no merge blocker and
 identified these qualification gaps. Its earlier `834a41025` receipt tested a
 **formatted** SDK; it retains that narrower scope. The new raw SDK hash differs
-from the retained formatted copy. Repeat exact-head review and complete
-current-head CI remain required before integration.
+from the retained formatted copy. The next successor executes the actual unchanged guide manifest and source as a
+separate crate using the documented current source-lock recipe. Its historical
+P1 lock stays archived separately. It also stops owned POSIX compiler process
+groups on command timeout, binds each refusal to its intended source location
+and a correct-type twin, prevents Cargo targets from polluting receipt/source
+directories, and names failure uploads by run attempt. All 27 focused controls
+pass, including a real compiler-descendant timeout control. Fresh full gate,
+repeat exact-head review and current-head CI are still required before integration.
+Failure uploads cover a failed Passport step while the job/runner remains alive;
+hard job cancellation, timeout or runner loss can prevent final uploads. Runtime
+package/dist bytes are pinned, but transitive TS/WASM bytes are not independently
+content-hashed by this gate.
 
 PR #696 is verified merged at signed canonical `f0e4ba788`; normal reconciliation
 `342b9fc46` preserves that accepted history. Passport remains its separate logical
