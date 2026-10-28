@@ -501,6 +501,11 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers" --report "$RUNNER_TEMP/compact-unit-initializers.json" --ts-runtime "$TS_RUNTIME"
 
+      - name: Check standalone original Passport pure consumers
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_passport_current_profile.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-passport-current" --ts-runtime "$TS_RUNTIME"
+
       - name: Prepare verified built-in proof material
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
@@ -586,6 +591,16 @@ jobs:
             ${{ runner.temp }}/compact-unit-initializers/consumer/Cargo.lock
             ${{ runner.temp }}/compact-unit-initializers-proof/receipt.json
             ${{ runner.temp }}/compact-unit-initializers-proof/generated/
+            ${{ runner.temp }}/compact-passport-current/receipt.json
+            ${{ runner.temp }}/compact-passport-current/generated/
+            !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
+            ${{ runner.temp }}/compact-passport-current/consumer/
+            !${{ runner.temp }}/compact-passport-current/consumer/target/**
+            ${{ runner.temp }}/compact-passport-current/passport-source/
+            ${{ runner.temp }}/compact-passport-current/*.json
+            ${{ runner.temp }}/compact-passport-current/raw-generated-lib.rs
+            ${{ runner.temp }}/compact-passport-current/*.stdout
+            ${{ runner.temp }}/compact-passport-current/*.stderr
             ${{ runner.temp }}/compact-direct-fold.json
             ${{ runner.temp }}/compact-direct-fold/generated/
             ${{ runner.temp }}/compact-direct-fold/ts-reference.json

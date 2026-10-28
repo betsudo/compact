@@ -1,5 +1,12 @@
 # Current-profile Passport standalone consumer
 
+Status: the maintained implementation passes locally at signed `b2ba8370f`
+with original compiler140: 202 live TS cases, 18 Rust test methods including the
+documented two-test consumer, strict consumer/generated-source Clippy and two
+independent E0308 refusal controls. Six adversarial Python controls pass.
+Full CI, exact-head PR review and verified integration remain required. The
+results below retain their literal source/compiler epochs.
+
 ## Gap and accepted baseline
 
 The delivery roadmap requires current application behavior and independently

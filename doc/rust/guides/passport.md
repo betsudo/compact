@@ -2,6 +2,16 @@
 
 Current guide for 0.3.0 closeout. **Historical executed example:** verified locally at1705fc1a with Rust1.99 on macOSarm64, using a fresh standalone consumer and bundled runtime sources. Keep the matching compiler/runtime bundle together; see [Version and runtime selection](version-selection.md).
 
+**Current-profile local successor:** the maintained standalone gate passes at
+signed `b2ba8370f` with original compiler0.31.140 and the declared Ledger8.1.3
+runtime cohort. It executes this complete two-test consumer together with the
+sixteen original adoption test methods, compares all202 live TS cases, checks
+two independent ordinary type refusals and runs strict Clippy. Every local Cargo
+manifest resolves inside the generated SDK/consumer directory; the source lock
+cohort is validated before execution. The historical P1 archive remains intact.
+This is local qualification; the successor's own PR review and full CI remain
+required. See the [plan and limits](../plans/passport-current-profile-consumer.md).
+
 ## What this contract provides
 
 The adopted digital-passport source exports75 pure functions for credentials, commitments, selective disclosure, age predicates, requests and signed protocol envelopes. Its authoritative IR has no ledger fields, witnesses or stateful circuits. Call `pure_circuits` directly. ContractLab is useful for contracts that have ledger state; no simulator setup or ledger transaction is needed for this pure source family.
