@@ -8,19 +8,15 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Reviewed deliveries through #693 have passed full required CI and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #694 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
-As of 28 October 2026, [#694](https://github.com/betsudo/compact/pull/694)
-(order-preserving Unit mutation initializers and comparisons) has clean local
-qualification and accepted exact-head independent review; its complete Linux
-integration gate remains pending. The next bounded [statement-action slice](plans/516-unit-action-bindings.md)
-addresses valid Unit initializers in statement blocks and before trailing
-mutations. Its clean local implementation and original compiler qualification pass
-95 live TS cases, 344 Rust executions, 126 replays and four selected proof/strict
-application calls. All 284 registered sources pass their configured emission
-checks. These results remain separate from final canonical/version
-reconciliation, independent review and full CI acceptance. Backend development
-continues independently of the deferred Forge experiment.
+The statement-action follow-up is being reconciled locally with reviewed PR
+#695 head `7134fb240` under a two-branch stack. PR #695's full integration CI
+remains pending; this is not a new canonical baseline. Local compiler141
+qualification can proceed on the combined source, while publication and final
+reconciliation still require the actual accepted canonical merge. Stop dependent
+work if the prerequisite reports a real failure or its head changes.
+
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -331,7 +327,7 @@ See the [qualification table](plans/did-functional-lifecycle-current-profile.md#
 for stage identities and limits. Repeat exact-head review and full integration CI
 remain open. This is selected local application acceptance, not broad-goal completion.
 
-## Original DID integrated; bounded initializer work next
+## Historical Unit initializer preparation before PR #694 integration
 
 PR #693 is verified merged at canonical `373fe452c` after all required CI and
 exact-head Claude review. Its complete original DID source, four execution
@@ -339,9 +335,41 @@ routes, compile-fail controls, selected standalone proof and separate strict
 transaction are retained; the constructor and all exports are not claimed
 proved. See the [integration closeout](plans/did-functional-lifecycle-current-profile.md#verified-integration--pr-693).
 
-The next bounded slice is [ordered Unit mutation initializers](plans/516-unit-mutation-initializers.md).
-Its independent implementation is reconciled with the accepted DID baseline;
-final clean compiler139, fresh affected qualification, separate PR review and
-full CI remain open. Recording-retirement authority and all historical evidence
+At this earlier checkpoint, the next bounded slice was
+[ordered Unit mutation initializers](plans/516-unit-mutation-initializers.md).
+Its clean compiler139, qualification, PR review and full CI were still open.
+The verified PR #694 closeout below supersedes that preparation status. Recording-retirement authority and all historical evidence
 remain unchanged. This is a semantic/API improvement, not a new CI optimization
 or Forge adoption project.
+
+## Unit initializer integration and renderer prerequisite — 2026-10-28
+
+PR [#694](https://github.com/betsudo/compact/pull/694) is verified merged at
+signed canonical `1d0288846` after complete required CI and exact-head Claude
+review. Selected initializer source E2E, proofs, immutable verification and
+separate strict ledger application/replay retain their recorded scope; they do
+not prove constructors or all exports. The completed worktree was recoverably
+archived after preserving generated artifacts.
+
+The next statement-action slice is separately preserved on
+`codex/rust-ast-unit-action-bindings`. Its valid mixed value/Unit scope exposed
+a shared generated-code formatting problem. The bounded
+[functional bind receiver fix](plans/functional-bind-receivers.md) runs first
+on the accepted canonical baseline. It retains typed IR, checked-program and
+runtime semantics; then the statement slice resumes with its own qualification
+and PR. Forge remains deferred and the primary goal remains incomplete.
+
+
+## Historical statement preparation before PR #694 integration
+
+As of 28 October 2026, [#694](https://github.com/betsudo/compact/pull/694)
+(order-preserving Unit mutation initializers and comparisons) has clean local
+qualification and accepted exact-head independent review; its complete Linux
+integration gate remains pending. The next bounded [statement-action slice](plans/516-unit-action-bindings.md)
+addresses valid Unit initializers in statement blocks and before trailing
+mutations. Its clean local implementation and original compiler qualification pass
+95 live TS cases, 344 Rust executions, 126 replays and four selected proof/strict
+application calls. All 284 registered sources pass their configured emission
+checks. These results remain separate from final canonical/version
+reconciliation, independent review and full CI acceptance. Backend development
+continues independently of the deferred Forge experiment.

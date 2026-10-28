@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.141, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve supported Unit mutation initializers in statement scopes and before
+  trailing actions, using the existing ordered lexical binding walk. Typed
+  ordinary methods and consuming functional Programs retain source order,
+  previous-scope lookup, shadowing and first-failure behavior without helper
+  circuits or new runtime/IR types.
+
+### Added
+
+- Mixed Field/Unit statement-scope source cases, independent type/result/reuse
+  refusal binaries for both existing and statement APIs, and actual compilation
+  checks for the formerly refused boundary sources. Selected statement-call
+  proof/verification and strict-application controls extend the maintained gate;
+  they do not prove constructors, seeded prestates or every export.
+
+## [Toolchain 0.31.140, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Emit functional Circuit steps through private block-local receivers instead
+  of chaining expanded bind expressions. This keeps structured generated Rust
+  practical to format while preserving typed values, source order, lazy
+  operands and first-failure behavior. Checked programs, runtime ABI and public
+  APIs are unchanged; source admission and resource limits are unchanged.
+
 ## [Toolchain 0.31.139, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

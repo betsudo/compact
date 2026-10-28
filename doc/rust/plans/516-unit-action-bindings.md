@@ -11,12 +11,17 @@ problem. Independent canonical-based PR #695 addresses that existing AST owner
 before this frontend slice resumes. Preserve this source case and all prior
 receipts. Do not call the diagnostic AST-copy experiment accepted output.
 
-After the prerequisite passes exact-head review/full CI and is integrated,
-reconcile this branch with actual canonical history, complete real source
-regeneration and renew original compiler/API/proof qualification. The final
-compiler version must follow actual canonical (0.31.141 if 0.31.140 integrates).
-Keep this as its own logical PR; do not publish a partially regenerated cohort.
-Two active engineering branches remain the ceiling; no Forge work.
+Local stacked development now includes the exact reviewed PR #695 head
+`7134fb240`. Its local E2E/proofs, Rust CI and both native producers pass;
+full consumer CI is still pending. This supersedes the earlier local sequencing
+choice to wait for canonical acceptance before reconciliation. Keep at most two
+engineering branches. This branch is a dependent local stack, not a new canonical
+baseline; stop before commit or publication on a real parent failure or head drift.
+
+Prepare real source generation and original compiler141 qualification locally.
+Before publication, include the actual accepted canonical merge and verify any
+source-tree bridge explicitly. Retain all original proof/tool epochs. Each slice
+keeps its own PR, exact-head review and complete required CI; no Forge work.
 
 ### Historical development status before PR #694 integration
 
@@ -233,3 +238,14 @@ must first include the actual accepted canonical merge; it is not yet an
 independently regenerated clean branch. Resolve any combined snapshot conflicts
 through new original-compiler output, retaining both prior cohorts. Do not infer
 final qualification from the development Scheme override or relabel its tools.
+
+
+## Local stack admission while prerequisite CI runs
+
+Actual admission guards rechecked the PR head/base, canonical remote identity,
+clean signed child head and the absence of any current failed check. The
+merge-tree preview and real local merge identify only two conflicts: this
+milestone's delivery notes and the generated Unit fixture. Retain both histories
+in the notes and regenerate the fixture with the combined source. Version141
+follows the reviewed prerequisite's version140; this does not assert that140 is
+already integrated. Publication remains gated on accepted canonical history.
