@@ -156,3 +156,31 @@ root (`clean-source-sdk141-v3/receipt.json`). This source epoch precedes normal
 reconciliation with Passport and the final compiler version. Full Linux CI,
 actual PR review and verified normal merge remain required. No broader goal or
 paired-source distribution/handoff completion is claimed.
+
+## Prepublication review fixes and refreshed local gate
+
+Actual Claude CLI local review at `2144850e9` found no blockers and three concrete
+improvements. It was an additional local review, not a published PR review;
+no quota/fallback occurred. Its read-only output and root triage are retained.
+
+Clean signed source `6fe574461` passes the refreshed original141 gate. Both
+explicit parameter providers use synchronous local material access. The pinned
+upstream fee helper retains its own acquisition semantics; its selected built-in
+closure is verified, and no process-level network sandbox is claimed. The README
+now shows exactly the graph-selected direct Clippy commands actually run. Complete
+staged consumer/qualified-lock and copied testkit source/manifest/README/license
+inventories must match at the end, including refusal of added files.
+
+The call comparison now checks all ten upstream prototype fields with an
+exhaustive pattern, instead of Debug text. Result validation also requires the
+source-faithful changed-input control and canonical final-state hex. All 27 gate
+commands pass again, with fresh proofs and strict application/replay. Ten focused
+controls pass; the public Python gate runs 380 methods with zero failures/errors
+and the same twenty existing manual-only skip events. Earlier receipts retain
+their original, narrower validation epoch.
+
+Evidence: `clean-source-sdk141-v4/receipt.json`,
+`local-review-v1-claude-review.raw.json`, `local-review-v1-triage.json` and
+`public-python-review-fixes-v1.json` under the same local evidence root.
+Final accepted-canonical reconciliation, compiler/source qualification, actual
+published-head PR review, full Linux CI and normal verified merge remain open.
