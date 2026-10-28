@@ -37,7 +37,8 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/unit-mutation-initializers-source"
-PROOF_RESULT_FORMAT = "compact-unit-mutation-initializers-proof/v1"
+PROOF_RESULT_FORMAT = "compact-unit-mutation-initializers-proof/v2"
+PROOF_GATE_FORMAT = "compact-unit-mutation-initializers-proof-gate/v2"
 
 
 def require(value, message):
@@ -50,7 +51,9 @@ def validate_proof_summary(summary):
     require(summary["format"] == PROOF_RESULT_FORMAT and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False
             and summary["prestate_setup_proved"] is False and summary["all_exports_proved"] is False, "invalid Unit initializer proof summary")
-    require([row["key"] for row in summary["calls"]] == [5, 6], "missing replacement/new insertion proof")
+    require([(row["circuit"], row["key"]) for row in summary["calls"]] ==
+            [("conditional", 5), ("conditional", 6), ("statement_field", 5), ("statement_field", 6)],
+            "missing return/statement replacement/new insertion proof")
     require(summary["unselected_branch_proved"] is False, "unexpected unselected branch proof claim")
     for index,row in enumerate(summary["calls"]):
         require(all(type(row[name]) is int for name in ("key", "before", "after", "proof_bytes", "transaction_bytes")) and
@@ -69,8 +72,8 @@ def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-unit-mutation-initializers-proof-gate/v1", "status": "incomplete", "commands": [],
-               "scope": "two source-bound functional-derived call proofs and default-strict funded local transactions",
+    receipt = {"format": PROOF_GATE_FORMAT, "status": "incomplete", "commands": [],
+               "scope": "four source-bound return/statement call proofs and independently proved default-strict funded local transactions",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
@@ -125,7 +128,7 @@ def run(args):
         require((generated / "contract/compact-rust-ir.json").read_bytes() == (FIXTURE / "original-ir.json").read_bytes(), "complete linked IR differs")
         fresh = {p.name: p.read_bytes() for p in (generated / "contract/checked-programs").glob("*.json")}
         retained = {p.name: p.read_bytes() for p in (FIXTURE / "checked-programs").glob("*.json")}
-        require(len(fresh) == 9 and fresh == retained, "complete linked functional programs differ")
+        require(len(fresh) == 15 and fresh == retained, "complete linked functional programs differ")
         receipt["formatted_rust_sha256"] = digest(formatted)
         receipt["generated_hashes"] = hashes([generated / path for path in receipt["generated"]["assets"]] +
                                              [generated / "compiler/contract-manifest.json", formatted])
@@ -165,19 +168,23 @@ def run(args):
         require(Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected parameter directory")
         (generated / "keys").mkdir()
         execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
-        execute([components["zkir"]["snapshot"], "compile", generated / "zkir/conditional.zkir",
-                 generated / "keys/conditional.prover", generated / "keys/conditional.verifier"], "keygen")
-        model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-        require(model is not None, "keygen omitted actual circuit model")
-        k, rows = map(int, model.groups())
-        receipt["keygen"] = {"mode": "fresh direct native", "circuit": "conditional", "k": k, "rows": rows}
-        execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
-                "verify-selected-parameters", output / "selected-material.json")
-        selected = json.loads((output / "selected-material.json").read_text())
-        require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]), "selected SRS was not verified")
-        material_paths = [Path(selected["cache_directory"]) / row["name"] for row in selected["assets"] + selected["parameters"]]
-        artifacts = [generated / f"keys/conditional.{ext}" for ext in ("prover", "verifier")]
-        artifacts += [generated / f"zkir/conditional.{ext}" for ext in ("zkir", "bzkir")]
+        receipt["keygen"] = []
+        material_paths, artifacts = [], []
+        for circuit in ("conditional", "statement_field"):
+            execute([components["zkir"]["snapshot"], "compile", generated / f"zkir/{circuit}.zkir",
+                     generated / f"keys/{circuit}.prover", generated / f"keys/{circuit}.verifier"], f"keygen-{circuit}")
+            model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
+            require(model is not None, "keygen omitted actual circuit model")
+            k, rows = map(int, model.groups())
+            receipt["keygen"].append({"mode": "fresh direct native", "circuit": circuit, "k": k, "rows": rows})
+            selected_path = output / f"selected-material-{circuit}.json"
+            execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
+                    f"verify-selected-parameters-{circuit}", selected_path)
+            selected = json.loads(selected_path.read_text())
+            require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]), "selected SRS was not verified")
+            material_paths += [Path(selected["cache_directory"]) / row["name"] for row in selected["assets"] + selected["parameters"]]
+            artifacts += [generated / f"keys/{circuit}.{ext}" for ext in ("prover", "verifier")]
+            artifacts += [generated / f"zkir/{circuit}.{ext}" for ext in ("zkir", "bzkir")]
         require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
         receipt["material_hashes"] = hashes(material_paths + artifacts)
         execute([runner, "--unit-mutation-initializers", generated], "prove-verify-apply")

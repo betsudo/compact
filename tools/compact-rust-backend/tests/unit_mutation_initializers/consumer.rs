@@ -247,6 +247,18 @@ fn live_typescript_four_routes_and_pure_error_order() {
             }}}
             replays += match name {
                 "conditional" => invoke!(conditional, [boolean(0), arg(1)]),
+                "statement_field" => invoke!(statement_field, [boolean(0), arg(1)]),
+                "statement_unit" => invoke!(statement_unit, [boolean(0), arg(1)]),
+                "trailing_conditional" => {
+                    invoke!(trailing_conditional, [boolean(0), boolean(1), arg(2)])
+                }
+                "trailing_unconditional" => invoke!(trailing_unconditional, [boolean(0), arg(1)]),
+                "statement_observed" => {
+                    invoke!(statement_observed, [boolean(0), arg(1)], &witnesses)
+                }
+                "statement_shadowed" => {
+                    invoke!(statement_shadowed, [boolean(0), boolean(1), arg(2)])
+                }
                 "observed" => invoke!(observed, [boolean(0), arg(1)], &witnesses),
                 "sequential" => invoke!(sequential, [boolean(0), boolean(1), arg(2)], &witnesses),
                 "nested" => invoke!(nested, [boolean(0), boolean(1), arg(2)]),

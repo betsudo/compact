@@ -121,17 +121,84 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(row.library, row.generated_library)
         folder = row.library.parent
         self.assertEqual({p.name for p in (folder / 'checked-programs').glob('*.json')},
-                         {f'program-{i}.json' for i in range(9)})
+                         {f'program-{i}.json' for i in range(15)})
         ir = json.loads((folder / 'original-ir.json').read_text())
         circuits = {c['name']: c for c in ir['stateful_circuits']}
         self.assertEqual(set(circuits), {'conditional','observed','sequential','nested',
                          'unit_result','unused','unit_witness_comparison',
-                         'unit_witness_inequality','shadowed'})
+                         'unit_witness_inequality','shadowed','statement_field','statement_unit',
+                         'trailing_conditional','trailing_unconditional','statement_observed','statement_shadowed'})
         self.assertEqual(circuits['unit_result']['result'], {'kind': 'unit'})
         capabilities = json.loads((folder / 'rust-capabilities.json').read_text())['circuits']
         self.assertTrue(all(c['recorded'] and c['observed_call'] for c in capabilities))
         self.assertEqual({c['name'] for c in capabilities if not c['proof_required']},
                          {'unit_witness_comparison','unit_witness_inequality'})
+
+    def test_statement_binding_cohort_reaches_mixed_nonunit_scope(self):
+        folder = inventory.ROOT / 'tests-rust-backend/unit-mutation-initializers-source'
+        ir = json.loads((folder / 'original-ir.json').read_text())
+        circuit = next(c for c in ir['stateful_circuits'] if c['name'] == 'statement_observed')
+
+        def nodes(value):
+            if isinstance(value, dict):
+                yield value
+                for child in value.values():
+                    yield from nodes(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from nodes(child)
+
+        bindings = [(binding['name'], binding['ty']['kind'])
+                    for node in nodes(circuit) if node.get('kind') == 'let'
+                    for binding in node['bindings']]
+        self.assertEqual(bindings, [('first', 'field'), ('inserted', 'unit'),
+                                    ('following', 'field'), ('next', 'unit')])
+
+        def assert_scope(first):
+            def bound_action(node, name, kind):
+                self.assertEqual(node['kind'], 'let')
+                self.assertEqual([(b['name'], b['ty']['kind']) for b in node['bindings']], [(name, kind)])
+                if kind == 'unit':
+                    self.assertEqual(node['bindings'][0]['value'], {'kind': 'unit'})
+                return node['action']
+
+            def inserted_before_binding(sequence, value):
+                self.assertEqual(sequence['kind'], 'sequence')
+                self.assertEqual(len(sequence['actions']), 2)
+                write = sequence['actions'][0]
+                self.assertEqual(write['kind'], 'if')
+                self.assertEqual(write['then'], {'kind': 'set_insert', 'field': 'values', 'index': 0,
+                                                'value': {'kind': 'parameter', 'name': value}})
+                self.assertEqual(write['otherwise'], {'kind': 'sequence', 'actions': []})
+                return write, sequence['actions'][1]
+
+            sequence = bound_action(first, 'first', 'field')
+            write, inserted = inserted_before_binding(sequence, 'first')
+            self.assertEqual(write['condition'], {'kind': 'parameter', 'name': 'selected'})
+            following = bound_action(inserted, 'inserted', 'unit')
+            sequence = bound_action(following, 'following', 'field')
+            write, next_binding = inserted_before_binding(sequence, 'following')
+            self.assertEqual(write['condition'], {'kind': 'equal',
+                                                'left': {'kind': 'parameter', 'name': 'inserted'},
+                                                'right': {'kind': 'unit'}})
+            self.assertEqual(bound_action(next_binding, 'next', 'unit'), {'kind': 'sequence', 'actions': []})
+
+        first = circuit['return_value']['body']['actions'][0]['then']
+        assert_scope(first)
+        # Each counterexample retains the former flat binding list. The scoped
+        # control must reject the actual order/ownership defect independently.
+        flattened = copy.deepcopy(first)
+        inserted = flattened['action']['actions'].pop()
+        flattened = {'kind': 'sequence', 'actions': [flattened, inserted]}
+        late_first_write = copy.deepcopy(first)
+        late_first_write['action']['actions'].reverse()
+        late_second_write = copy.deepcopy(first)
+        late_second_write['action']['actions'][1]['action']['action']['actions'].reverse()
+        for bad in [flattened, late_first_write, late_second_write]:
+            self.assertEqual([(b['name'], b['ty']['kind']) for n in nodes(bad) if n.get('kind') == 'let'
+                              for b in n['bindings']], bindings)
+            with self.assertRaises(AssertionError):
+                assert_scope(bad)
 
     def test_direct_fold_registers_every_complete_source_family(self):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())

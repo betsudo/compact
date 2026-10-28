@@ -1,9 +1,13 @@
 # Functional bind receiver syntax
 
-Status: clean local qualification accepted at `fd7b28259`; PR #695 review
-repairs update the syntax guard and documentation. Complete required CI and
-repeat exact-head review remain open. Canonical parent is signed `1d0288846`,
-the verified integration of PR #694.
+Status: PR #695 is verified merged at signed canonical `709a86230`.
+Reviewed head `7134fb240`, actual CI checkout `9534bac96` and that merge share
+complete tree `94c48222a1102938c99d3a94766d568ea6ca2749`. Exact-head Claude
+review, all eleven CI checks and authenticated retained runtime-artifact/source
+verification pass. Clean local qualification at `fd7b28259` retains its literal
+source epoch; later CI supplies the current published-source qualification.
+The completed worktree was recoverably archived after all ignored evidence was
+preserved. The statement-action follow-up and broader Rust AST goal remain open.
 
 ## Gap and owners
 

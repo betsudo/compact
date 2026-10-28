@@ -764,6 +764,378 @@ pub mod ledger_contract {
             private_transcript_outputs,
         })
     }
+    pub fn statement_field<Private>(
+        context: runtime::context::CircuitContext<Private>,
+        __compact_param_0: bool,
+        __compact_param_1: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let private_transcript_outputs = Vec::new();
+        let mut context = context;
+        context = if __compact_param_0 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let mut context = context;
+            context = if __compact_param_0 {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let step = crate::ledger_slots::values.insert(context, __compact_param_1)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            let __compact_action_local_0: () = ();
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_effectful_result: runtime::Field = runtime::Field::from(
+            (runtime::BoundedUint::<1>::new(1u128).expect("Compact Uint literal fits its maximum"))
+                .value(),
+        );
+        let result = __compact_effectful_result;
+        Ok(runtime::context::CircuitResult {
+            context,
+            result,
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
+    pub fn statement_unit<Private>(
+        context: runtime::context::CircuitContext<Private>,
+        __compact_param_0: bool,
+        __compact_param_1: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let private_transcript_outputs = Vec::new();
+        let mut context = context;
+        context = if __compact_param_0 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let mut context = context;
+            context = if __compact_param_0 {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let step = crate::ledger_slots::values.insert(context, __compact_param_1)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            let __compact_action_local_0: () = ();
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_effectful_result: () = ();
+        Ok(runtime::context::CircuitResult {
+            context,
+            result: (),
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
+    pub fn trailing_conditional<Private>(
+        context: runtime::context::CircuitContext<Private>,
+        __compact_param_0: bool,
+        __compact_param_1: bool,
+        __compact_param_2: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let private_transcript_outputs = Vec::new();
+        let mut context = context;
+        context = if __compact_param_0 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let step = crate::ledger_slots::values.insert(context, __compact_param_2)?;
+            let context = step.context;
+            total_cost += step.gas_cost;
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_action_local_0: () = ();
+        let mut context = context;
+        context = if __compact_param_1 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let __compact_value_0 = __compact_param_2;
+            let __compact_value_1 = runtime::Field::from(1u128);
+            let __compact_action_local_1: runtime::Field = __compact_value_0 + __compact_value_1;
+            let step = crate::ledger_slots::values.insert(context, __compact_action_local_1)?;
+            let context = step.context;
+            total_cost += step.gas_cost;
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_effectful_result: () = ();
+        Ok(runtime::context::CircuitResult {
+            context,
+            result: (),
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
+    pub fn trailing_unconditional<Private>(
+        context: runtime::context::CircuitContext<Private>,
+        __compact_param_0: bool,
+        __compact_param_1: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let private_transcript_outputs = Vec::new();
+        let mut context = context;
+        context = if __compact_param_0 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let step = crate::ledger_slots::values.insert(context, __compact_param_1)?;
+            let context = step.context;
+            total_cost += step.gas_cost;
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_action_local_0: () = ();
+        let __compact_value_0 = __compact_param_1;
+        let __compact_value_1 = runtime::Field::from(1u128);
+        let __compact_action_local_1: runtime::Field = __compact_value_0 + __compact_value_1;
+        let step = crate::ledger_slots::values.insert(context, __compact_action_local_1)?;
+        let context = step.context;
+        total_cost += step.gas_cost;
+        let __compact_effectful_result: () = ();
+        Ok(runtime::context::CircuitResult {
+            context,
+            result: (),
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
+    pub fn statement_observed<Private, W: TryWitnesses<Private>>(
+        context: runtime::context::CircuitContext<Private>,
+        witnesses: &W,
+        __compact_param_0: bool,
+        __compact_param_1: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let mut private_transcript_outputs = Vec::new();
+        let mut context = context;
+        let __compact_argument_0 = runtime::Field::from(1u128);
+        let __compact_argument_1 = __compact_param_0;
+        let __compact_witness_meter_2 = runtime::context::WitnessReadMeter::new(&context);
+        let (__compact_next_private_2, __compact_witness_2) = witnesses.gate(
+            context.witness_context_with(LedgerView {
+                state: context.query.state.get_ref(),
+                meter: &__compact_witness_meter_2,
+            }),
+            __compact_argument_0,
+            __compact_argument_1,
+        )?;
+        total_cost += __compact_witness_meter_2.gas_cost();
+        context.private_state = __compact_next_private_2;
+        private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_2));
+        context = if __compact_witness_2 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let mut context = context;
+            let __compact_argument_3 = runtime::Field::from(2u128);
+            let __compact_argument_4 = __compact_param_1;
+            let __compact_witness_meter_5 = runtime::context::WitnessReadMeter::new(&context);
+            let (__compact_next_private_5, __compact_witness_5) = witnesses.point(
+                context.witness_context_with(LedgerView {
+                    state: context.query.state.get_ref(),
+                    meter: &__compact_witness_meter_5,
+                }),
+                __compact_argument_3,
+                __compact_argument_4,
+            )?;
+            total_cost += __compact_witness_meter_5.gas_cost();
+            context.private_state = __compact_next_private_5;
+            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_5));
+            let __compact_action_local_0: runtime::Field = __compact_witness_5;
+            let mut context = context;
+            context = if __compact_param_0 {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let step = crate::ledger_slots::values.insert(context, __compact_action_local_0)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            let __compact_action_local_1: () = ();
+            let mut context = context;
+            let __compact_argument_6 = runtime::Field::from(3u128);
+            let __compact_value_7 = __compact_param_1;
+            let __compact_value_8 = runtime::Field::from(1u128);
+            let __compact_argument_9 = __compact_value_7 + __compact_value_8;
+            let __compact_witness_meter_10 = runtime::context::WitnessReadMeter::new(&context);
+            let (__compact_next_private_10, __compact_witness_10) = witnesses.point(
+                context.witness_context_with(LedgerView {
+                    state: context.query.state.get_ref(),
+                    meter: &__compact_witness_meter_10,
+                }),
+                __compact_argument_6,
+                __compact_argument_9,
+            )?;
+            total_cost += __compact_witness_meter_10.gas_cost();
+            context.private_state = __compact_next_private_10;
+            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_10));
+            let __compact_action_local_2: runtime::Field = __compact_witness_10;
+            let mut context = context;
+            let _: () = __compact_action_local_1;
+            let _: () = ();
+            context = if true {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let step = crate::ledger_slots::values.insert(context, __compact_action_local_2)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            let __compact_action_local_3: () = ();
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let mut context = context;
+        let __compact_argument_12 = runtime::Field::from(10u128);
+        let __compact_argument_13 = runtime::Field::from(4u128);
+        let __compact_witness_meter_14 = runtime::context::WitnessReadMeter::new(&context);
+        let (__compact_next_private_14, __compact_witness_14) = witnesses.point(
+            context.witness_context_with(LedgerView {
+                state: context.query.state.get_ref(),
+                meter: &__compact_witness_meter_14,
+            }),
+            __compact_argument_12,
+            __compact_argument_13,
+        )?;
+        total_cost += __compact_witness_meter_14.gas_cost();
+        context.private_state = __compact_next_private_14;
+        private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_14));
+        let __compact_effectful_result: runtime::Field = __compact_witness_14;
+        let result = __compact_effectful_result;
+        Ok(runtime::context::CircuitResult {
+            context,
+            result,
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
+    pub fn statement_shadowed<Private>(
+        context: runtime::context::CircuitContext<Private>,
+        __compact_param_0: bool,
+        __compact_param_1: bool,
+        __compact_param_2: runtime::Field,
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
+        let mut total_cost = runtime::context::RunningCost::default();
+        let private_transcript_outputs = Vec::new();
+        let mut context = context;
+        context = if __compact_param_0 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let step = crate::ledger_slots::values.insert(context, __compact_param_2)?;
+            let context = step.context;
+            total_cost += step.gas_cost;
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let __compact_return_local_0: () = ();
+        let mut context = context;
+        context = if __compact_param_1 {
+            #[allow(unused_mut)]
+            let mut context = context;
+            let mut context = context;
+            context = if __compact_param_1 {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let __compact_value_0 = __compact_param_2;
+                let __compact_value_1 = runtime::Field::from(1u128);
+                let __compact_action_local_1: runtime::Field =
+                    __compact_value_0 + __compact_value_1;
+                let step = crate::ledger_slots::values.insert(context, __compact_action_local_1)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            let __compact_action_local_2: () = ();
+            let mut context = context;
+            let _: () = __compact_action_local_2;
+            let _: () = ();
+            context = if true {
+                #[allow(unused_mut)]
+                let mut context = context;
+                let __compact_value_3 = __compact_param_2;
+                let __compact_value_4 = runtime::Field::from(2u128);
+                let __compact_action_local_3: runtime::Field =
+                    __compact_value_3 + __compact_value_4;
+                let step = crate::ledger_slots::values.insert(context, __compact_action_local_3)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                context
+            } else {
+                #[allow(unused_mut)]
+                let mut context = context;
+                context
+            };
+            context
+        } else {
+            #[allow(unused_mut)]
+            let mut context = context;
+            context
+        };
+        let mut context = context;
+        let __compact_query_5 = crate::ledger_slots::values.size(context)?;
+        context = __compact_query_5.context;
+        total_cost += __compact_query_5.gas_cost;
+        let __compact_effectful_result: runtime::Field = runtime::Field::from(
+            (runtime::BoundedUint::<18446744073709551615>::new(__compact_query_5.result as u128)
+                .expect("ledger Set size fits Uint<64>"))
+            .value(),
+        );
+        let result = __compact_effectful_result;
+        Ok(runtime::context::CircuitResult {
+            context,
+            result,
+            gas_cost: total_cost,
+            private_transcript_outputs,
+        })
+    }
     /// Circuits with a replayable ordered ledger program.
     pub mod recorded {
         use midnight_compact_runtime as runtime;
@@ -1356,6 +1728,351 @@ pub mod ledger_contract {
             };
             Ok(frame.finish(__compact_effect_27))
         }
+        pub fn statement_field<Private>(
+            context: runtime::context::CircuitContext<Private>,
+            __compact_param_0: bool,
+            __compact_param_1: runtime::Field,
+        ) -> Result<
+            runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+            runtime::CompactError,
+        > {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: runtime::Field = __compact_param_1;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_0 {
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_0 {
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_1)?;
+                    frame
+                } else {
+                    frame
+                };
+                frame
+            } else {
+                frame
+            };
+            let __compact_effect_10: runtime::BoundedUint<1> =
+                <runtime::BoundedUint<1>>::new(1u128)?;
+            let __compact_effect_11: runtime::Field =
+                runtime::Field::from((__compact_effect_10).value());
+            Ok(frame.finish(__compact_effect_11))
+        }
+        pub fn statement_unit<Private>(
+            context: runtime::context::CircuitContext<Private>,
+            __compact_param_0: bool,
+            __compact_param_1: runtime::Field,
+        ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+        {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: runtime::Field = __compact_param_1;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_0 {
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_0 {
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_1)?;
+                    frame
+                } else {
+                    frame
+                };
+                frame
+            } else {
+                frame
+            };
+            Ok(frame.finish(()))
+        }
+        pub fn trailing_conditional<Private>(
+            context: runtime::context::CircuitContext<Private>,
+            __compact_param_0: bool,
+            __compact_param_1: bool,
+            __compact_param_2: runtime::Field,
+        ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+        {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: bool = __compact_param_1;
+            let __compact_effect_2: runtime::Field = __compact_param_2;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_0 {
+                let frame = crate::ledger_slots::values.record_insert(frame, __compact_effect_2)?;
+                frame
+            } else {
+                frame
+            };
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_1 {
+                let __compact_effect_8: runtime::Field = runtime::Field::from_le_bytes(&[
+                    1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                ])
+                .expect("validated Compact Field literal");
+                let __compact_effect_9: runtime::Field = __compact_effect_2 + __compact_effect_8;
+                let frame = crate::ledger_slots::values.record_insert(frame, __compact_effect_9)?;
+                frame
+            } else {
+                frame
+            };
+            Ok(frame.finish(()))
+        }
+        pub fn trailing_unconditional<Private>(
+            context: runtime::context::CircuitContext<Private>,
+            __compact_param_0: bool,
+            __compact_param_1: runtime::Field,
+        ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+        {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: runtime::Field = __compact_param_1;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_0 {
+                let frame = crate::ledger_slots::values.record_insert(frame, __compact_effect_1)?;
+                frame
+            } else {
+                frame
+            };
+            let __compact_effect_7: runtime::Field = runtime::Field::from_le_bytes(&[
+                1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+            ])
+            .expect("validated Compact Field literal");
+            let __compact_effect_8: runtime::Field = __compact_effect_1 + __compact_effect_7;
+            let frame = crate::ledger_slots::values.record_insert(frame, __compact_effect_8)?;
+            Ok(frame.finish(()))
+        }
+        pub fn statement_observed<Private, W: super::TryWitnesses<Private>>(
+            context: runtime::context::CircuitContext<Private>,
+            witnesses: &W,
+            __compact_param_0: bool,
+            __compact_param_1: runtime::Field,
+        ) -> Result<
+            runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+            runtime::CompactError,
+        > {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: runtime::Field = __compact_param_1;
+            let __compact_effect_2: runtime::Field = runtime::Field::from_le_bytes(&[
+                1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+            ])
+            .expect("validated Compact Field literal");
+            let (frame, __compact_effect_3): (_, bool) =
+                frame.try_witness_metered(|context, meter| {
+                    witnesses.gate(
+                        context.witness_context_with(super::LedgerView {
+                            state: context.query.state.get_ref(),
+                            meter,
+                        }),
+                        __compact_effect_2,
+                        __compact_effect_0,
+                    )
+                })?;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_3 {
+                let __compact_effect_4: runtime::Field = runtime::Field::from_le_bytes(&[
+                    2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                ])
+                .expect("validated Compact Field literal");
+                let (frame, __compact_effect_5): (_, runtime::Field) =
+                    frame.try_witness_metered(|context, meter| {
+                        witnesses.point(
+                            context.witness_context_with(super::LedgerView {
+                                state: context.query.state.get_ref(),
+                                meter,
+                            }),
+                            __compact_effect_4,
+                            __compact_effect_1,
+                        )
+                    })?;
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_0 {
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_5)?;
+                    frame
+                } else {
+                    frame
+                };
+                let __compact_effect_11: runtime::Field = runtime::Field::from_le_bytes(&[
+                    3u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                ])
+                .expect("validated Compact Field literal");
+                let __compact_effect_12: runtime::Field = runtime::Field::from_le_bytes(&[
+                    1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                ])
+                .expect("validated Compact Field literal");
+                let __compact_effect_13: runtime::Field = __compact_effect_1 + __compact_effect_12;
+                let (frame, __compact_effect_14): (_, runtime::Field) =
+                    frame.try_witness_metered(|context, meter| {
+                        witnesses.point(
+                            context.witness_context_with(super::LedgerView {
+                                state: context.query.state.get_ref(),
+                                meter,
+                            }),
+                            __compact_effect_11,
+                            __compact_effect_13,
+                        )
+                    })?;
+                let __compact_effect_16: bool = {
+                    let _: () = ();
+                    let _: () = ();
+                    true
+                };
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_16 {
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_14)?;
+                    frame
+                } else {
+                    frame
+                };
+                frame
+            } else {
+                frame
+            };
+            let __compact_effect_25: runtime::Field = runtime::Field::from_le_bytes(&[
+                10u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+            ])
+            .expect("validated Compact Field literal");
+            let __compact_effect_26: runtime::Field = runtime::Field::from_le_bytes(&[
+                4u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+            ])
+            .expect("validated Compact Field literal");
+            let (frame, __compact_effect_27): (_, runtime::Field) =
+                frame.try_witness_metered(|context, meter| {
+                    witnesses.point(
+                        context.witness_context_with(super::LedgerView {
+                            state: context.query.state.get_ref(),
+                            meter,
+                        }),
+                        __compact_effect_25,
+                        __compact_effect_26,
+                    )
+                })?;
+            Ok(frame.finish(__compact_effect_27))
+        }
+        pub fn statement_shadowed<Private>(
+            context: runtime::context::CircuitContext<Private>,
+            __compact_param_0: bool,
+            __compact_param_1: bool,
+            __compact_param_2: runtime::Field,
+        ) -> Result<
+            runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+            runtime::CompactError,
+        > {
+            let frame = runtime::recording::RecordingFrame::new(context);
+            let __compact_effect_0: bool = __compact_param_0;
+            let __compact_effect_1: bool = __compact_param_1;
+            let __compact_effect_2: runtime::Field = __compact_param_2;
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_0 {
+                let frame = crate::ledger_slots::values.record_insert(frame, __compact_effect_2)?;
+                frame
+            } else {
+                frame
+            };
+            #[allow(
+                clippy::let_and_return,
+                reason = "uniform Unit frames preserve ordered recording steps"
+            )]
+            let frame = if __compact_effect_1 {
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_1 {
+                    let __compact_effect_8: runtime::Field = runtime::Field::from_le_bytes(&[
+                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                        0u8, 0u8,
+                    ])
+                    .expect("validated Compact Field literal");
+                    let __compact_effect_9: runtime::Field =
+                        __compact_effect_2 + __compact_effect_8;
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_9)?;
+                    frame
+                } else {
+                    frame
+                };
+                let __compact_effect_16: bool = {
+                    let _: () = ();
+                    let _: () = ();
+                    true
+                };
+                #[allow(
+                    clippy::let_and_return,
+                    reason = "uniform Unit frames preserve ordered recording steps"
+                )]
+                let frame = if __compact_effect_16 {
+                    let __compact_effect_17: runtime::Field = runtime::Field::from_le_bytes(&[
+                        2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                        0u8, 0u8,
+                    ])
+                    .expect("validated Compact Field literal");
+                    let __compact_effect_18: runtime::Field =
+                        __compact_effect_2 + __compact_effect_17;
+                    let frame =
+                        crate::ledger_slots::values.record_insert(frame, __compact_effect_18)?;
+                    frame
+                } else {
+                    frame
+                };
+                frame
+            } else {
+                frame
+            };
+            let (frame, __compact_effect_set_size_26) =
+                crate::ledger_slots::values.record_size(frame)?;
+            let __compact_effect_26: runtime::BoundedUint<18446744073709551615> =
+                <runtime::BoundedUint<18446744073709551615>>::new(
+                    __compact_effect_set_size_26 as u128,
+                )?;
+            let __compact_effect_27: runtime::Field =
+                runtime::Field::from((__compact_effect_26).value());
+            Ok(frame.finish(__compact_effect_27))
+        }
         /// Typed handle for circuits with a complete recorded trace.
         pub struct Contract;
         impl Contract {
@@ -1493,6 +2210,185 @@ pub mod ledger_contract {
                 )?;
                 Ok(runtime::transaction::RecordedCall::new(
                     observed, recorded, "shadowed", input,
+                ))
+            }
+            pub fn statement_field<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                crate::ledger_contract::recorded::statement_field(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_field_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded =
+                    self.statement_field(observed.circuit_context(private_state), selected, value)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_field",
+                    input,
+                ))
+            }
+            pub fn statement_unit<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                crate::ledger_contract::recorded::statement_unit(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_unit_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded =
+                    self.statement_unit(observed.circuit_context(private_state), selected, value)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_unit",
+                    input,
+                ))
+            }
+            pub fn trailing_conditional<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                first: bool,
+                second: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                crate::ledger_contract::recorded::trailing_conditional(
+                    context, first, second, value,
+                )
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn trailing_conditional_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                first: bool,
+                second: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::concat(&[
+                    runtime::fab::AlignedValue::from(first),
+                    runtime::fab::AlignedValue::from(second),
+                    runtime::fab::AlignedValue::from(value),
+                ]);
+                let recorded = self.trailing_conditional(
+                    observed.circuit_context(private_state),
+                    first,
+                    second,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "trailing_conditional",
+                    input,
+                ))
+            }
+            pub fn trailing_unconditional<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                crate::ledger_contract::recorded::trailing_unconditional(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn trailing_unconditional_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded = self.trailing_unconditional(
+                    observed.circuit_context(private_state),
+                    selected,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "trailing_unconditional",
+                    input,
+                ))
+            }
+            pub fn statement_shadowed<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                outer: bool,
+                inner: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                crate::ledger_contract::recorded::statement_shadowed(context, outer, inner, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_shadowed_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                outer: bool,
+                inner: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::concat(&[
+                    runtime::fab::AlignedValue::from(outer),
+                    runtime::fab::AlignedValue::from(inner),
+                    runtime::fab::AlignedValue::from(value),
+                ]);
+                let recorded = self.statement_shadowed(
+                    observed.circuit_context(private_state),
+                    outer,
+                    inner,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_shadowed",
+                    input,
                 ))
             }
         }
@@ -1837,6 +2733,224 @@ pub mod ledger_contract {
                     observed, recorded, "shadowed", input,
                 ))
             }
+            pub fn statement_field<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                statement_field(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_field_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded =
+                    self.statement_field(observed.circuit_context(private_state), selected, value)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_field",
+                    input,
+                ))
+            }
+            pub fn statement_unit<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                statement_unit(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_unit_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded =
+                    self.statement_unit(observed.circuit_context(private_state), selected, value)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_unit",
+                    input,
+                ))
+            }
+            pub fn trailing_conditional<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                first: bool,
+                second: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                trailing_conditional(context, first, second, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn trailing_conditional_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                first: bool,
+                second: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::concat(&[
+                    runtime::fab::AlignedValue::from(first),
+                    runtime::fab::AlignedValue::from(second),
+                    runtime::fab::AlignedValue::from(value),
+                ]);
+                let recorded = self.trailing_conditional(
+                    observed.circuit_context(private_state),
+                    first,
+                    second,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "trailing_conditional",
+                    input,
+                ))
+            }
+            pub fn trailing_unconditional<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<runtime::recording::RecordedCircuitResult<Private, ()>, runtime::CompactError>
+            {
+                trailing_unconditional(context, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn trailing_unconditional_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, ()>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded = self.trailing_unconditional(
+                    observed.circuit_context(private_state),
+                    selected,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "trailing_unconditional",
+                    input,
+                ))
+            }
+            pub fn statement_observed<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+                runtime::CompactError,
+            >
+            where
+                W: super::TryWitnesses<Private>,
+            {
+                statement_observed(context, self.witnesses, selected, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_observed_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                selected: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
+                runtime::CompactError,
+            >
+            where
+                W: super::TryWitnesses<Private>,
+            {
+                let input = runtime::fab::AlignedValue::from((selected, value));
+                let recorded = self.statement_observed(
+                    observed.circuit_context(private_state),
+                    selected,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_observed",
+                    input,
+                ))
+            }
+            pub fn statement_shadowed<Private>(
+                &self,
+                context: runtime::context::CircuitContext<Private>,
+                outer: bool,
+                inner: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::recording::RecordedCircuitResult<Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                statement_shadowed(context, outer, inner, value)
+            }
+            #[cfg(feature = "ledger-transaction")]
+            pub fn statement_shadowed_call<'observed, Private>(
+                &self,
+                observed: &'observed runtime::transaction::ObservedContractState,
+                private_state: Private,
+                outer: bool,
+                inner: bool,
+                value: runtime::Field,
+            ) -> Result<
+                runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
+                runtime::CompactError,
+            > {
+                let input = runtime::fab::AlignedValue::concat(&[
+                    runtime::fab::AlignedValue::from(outer),
+                    runtime::fab::AlignedValue::from(inner),
+                    runtime::fab::AlignedValue::from(value),
+                ]);
+                let recorded = self.statement_shadowed(
+                    observed.circuit_context(private_state),
+                    outer,
+                    inner,
+                    value,
+                )?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "statement_shadowed",
+                    input,
+                ))
+            }
         }
     }
     /// Groups the contract's exported circuits for Rust consumers.
@@ -1954,6 +3068,61 @@ pub mod ledger_contract {
         ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
         {
             crate::ledger_contract::shadowed(context, selected, inner, value)
+        }
+        pub fn statement_field<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            selected: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+        {
+            crate::ledger_contract::statement_field(context, selected, value)
+        }
+        pub fn statement_unit<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            selected: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+            crate::ledger_contract::statement_unit(context, selected, value)
+        }
+        pub fn trailing_conditional<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            first: bool,
+            second: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+            crate::ledger_contract::trailing_conditional(context, first, second, value)
+        }
+        pub fn trailing_unconditional<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            selected: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, ()>, runtime::CompactError> {
+            crate::ledger_contract::trailing_unconditional(context, selected, value)
+        }
+        pub fn statement_observed<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            selected: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+        where
+            W: TryWitnesses<Private>,
+        {
+            crate::ledger_contract::statement_observed(context, &self.witnesses, selected, value)
+        }
+        pub fn statement_shadowed<Private>(
+            &self,
+            context: runtime::context::CircuitContext<Private>,
+            outer: bool,
+            inner: bool,
+            value: runtime::Field,
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+        {
+            crate::ledger_contract::statement_shadowed(context, outer, inner, value)
         }
         /// Borrow the contract's witnesses for a replayable circuit call.
         pub fn recording(&self) -> recorded::BorrowedContract<'_, W> {
@@ -5109,6 +6278,1989 @@ pub mod ledger_contract {
                                                         .try_returning(|| {
                                                             let __compact_functional_result = __compact_effect_27;
                                                             Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod statement_field {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-9.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                selected: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(selected: bool, value: crate::runtime::Field) -> Self {
+                    Self { selected, value }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<
+                        Private,
+                        crate::runtime::Field,
+                    >,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::SetWrite<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.selected;
+                    let __compact_param_1 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: crate::runtime::Field = __compact_param_1;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    if __compact_effect_0 {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    __compact_execution
+                                                                        .set_insert(
+                                                                            crate::runtime::functional::Set::<
+                                                                                crate::runtime::Field,
+                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                            __compact_effect_1,
+                                                                        )
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        })
+                                                                })
+                                                        }
+                                                    } else {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        }
+                                                    }
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = <crate::runtime::BoundedUint<
+                                                        1,
+                                                    >>::new(1u128)?;
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_10: crate::runtime::BoundedUint<1>,
+                                            __compact_execution|
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = crate::runtime::Field::from(
+                                                                (__compact_effect_10).value(),
+                                                            );
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_11: crate::runtime::Field,
+                                                    __compact_execution|
+                                                {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = __compact_effect_11;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod statement_unit {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-10.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                selected: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(selected: bool, value: crate::runtime::Field) -> Self {
+                    Self { selected, value }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<()>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::SetWrite<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.selected;
+                    let __compact_param_1 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: crate::runtime::Field = __compact_param_1;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    if __compact_effect_0 {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    __compact_execution
+                                                                        .set_insert(
+                                                                            crate::runtime::functional::Set::<
+                                                                                crate::runtime::Field,
+                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                            __compact_effect_1,
+                                                                        )
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        })
+                                                                })
+                                                        }
+                                                    } else {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        }
+                                                    }
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = ();
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = ();
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod trailing_conditional {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-11.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                first: bool,
+                second: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(first: bool, second: bool, value: crate::runtime::Field) -> Self {
+                    Self {
+                        first,
+                        second,
+                        value,
+                    }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<()>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::SetWrite<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.first;
+                    let __compact_param_1 = self.second;
+                    let __compact_param_2 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: bool = __compact_param_1;
+                        let __compact_effect_2: crate::runtime::Field = __compact_param_2;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .set_insert(
+                                                            crate::runtime::functional::Set::<
+                                                                crate::runtime::Field,
+                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                            __compact_effect_2,
+                                                        )
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        })
+                                                })
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = ();
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|(), __compact_execution| {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    if __compact_effect_1 {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                    &[
+                                                                                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                    ],
+                                                                                )
+                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_8: crate::runtime::Field,
+                                                                    __compact_execution|
+                                                                {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = __compact_effect_2
+                                                                                        + __compact_effect_8;
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|
+                                                                            __compact_effect_9: crate::runtime::Field,
+                                                                            __compact_execution|
+                                                                        {
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    __compact_execution
+                                                                                        .set_insert(
+                                                                                            crate::runtime::functional::Set::<
+                                                                                                crate::runtime::Field,
+                                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                                            __compact_effect_9,
+                                                                                        )
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            (__compact_execution)
+                                                                                                .try_returning(|| {
+                                                                                                    let __compact_functional_result = ();
+                                                                                                    Ok(__compact_functional_result)
+                                                                                                })
+                                                                                        });
+                                                                                    __compact_functional_step
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            (__compact_execution)
+                                                                                                .try_returning(|| {
+                                                                                                    let __compact_functional_result = ();
+                                                                                                    Ok(__compact_functional_result)
+                                                                                                })
+                                                                                        })
+                                                                                })
+                                                                        })
+                                                                })
+                                                        }
+                                                    } else {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        }
+                                                    }
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod trailing_unconditional {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-12.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                selected: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(selected: bool, value: crate::runtime::Field) -> Self {
+                    Self { selected, value }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<Private, ()>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<()>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::SetWrite<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.selected;
+                    let __compact_param_1 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: crate::runtime::Field = __compact_param_1;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .set_insert(
+                                                            crate::runtime::functional::Set::<
+                                                                crate::runtime::Field,
+                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                            __compact_effect_1,
+                                                        )
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        })
+                                                })
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = ();
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|(), __compact_execution| {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                    &[
+                                                                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                    ],
+                                                                )
+                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_7: crate::runtime::Field,
+                                                    __compact_execution|
+                                                {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = __compact_effect_1
+                                                                        + __compact_effect_7;
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_8: crate::runtime::Field,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    __compact_execution
+                                                                        .set_insert(
+                                                                            crate::runtime::functional::Set::<
+                                                                                crate::runtime::Field,
+                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                            __compact_effect_8,
+                                                                        )
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod statement_observed {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-13.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
+                crate::runtime::functional::ledger8::WitnessHandler<
+                    Private,
+                    crate::runtime::ledger::DefaultDB,
+                    (crate::runtime::Field, bool),
+                    bool,
+                > for WitnessAdapter<'_, W>
+            {
+                fn call(
+                    &self,
+                    id: crate::runtime::functional::WitnessId,
+                    arguments: (crate::runtime::Field, bool),
+                    context: &crate::runtime::context::CircuitContext<Private>,
+                    meter: &crate::runtime::context::WitnessReadMeter<'_>,
+                ) -> Result<(Private, bool), crate::runtime::CompactError> {
+                    match id.index() {
+                        0u32 => {
+                            let (__compact_witness_arg_0, __compact_witness_arg_1) = arguments;
+                            self.0.gate(
+                                context.witness_context_with(crate::ledger_contract::LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter,
+                                }),
+                                __compact_witness_arg_0,
+                                __compact_witness_arg_1,
+                            )
+                        }
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity {
+                            id: id.index(),
+                        }),
+                    }
+                }
+            }
+            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
+                crate::runtime::functional::ledger8::WitnessHandler<
+                    Private,
+                    crate::runtime::ledger::DefaultDB,
+                    (crate::runtime::Field, crate::runtime::Field),
+                    crate::runtime::Field,
+                > for WitnessAdapter<'_, W>
+            {
+                fn call(
+                    &self,
+                    id: crate::runtime::functional::WitnessId,
+                    arguments: (crate::runtime::Field, crate::runtime::Field),
+                    context: &crate::runtime::context::CircuitContext<Private>,
+                    meter: &crate::runtime::context::WitnessReadMeter<'_>,
+                ) -> Result<(Private, crate::runtime::Field), crate::runtime::CompactError>
+                {
+                    match id.index() {
+                        1u32 => {
+                            let (__compact_witness_arg_0, __compact_witness_arg_1) = arguments;
+                            self.0.point(
+                                context.witness_context_with(crate::ledger_contract::LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter,
+                                }),
+                                __compact_witness_arg_0,
+                                __compact_witness_arg_1,
+                            )
+                        }
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity {
+                            id: id.index(),
+                        }),
+                    }
+                }
+            }
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                selected: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(selected: bool, value: crate::runtime::Field) -> Self {
+                    Self { selected, value }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private, W: crate::ledger_contract::TryWitnesses<Private>>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                    witnesses: &W,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(
+                        crate::runtime::functional::ledger8::NativeLedger8::new(
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
+                    )
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<
+                    Private,
+                    W: crate::ledger_contract::TryWitnesses<Private>,
+                >(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                    witnesses: &W,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<
+                        Private,
+                        crate::runtime::Field,
+                    >,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(
+                        crate::runtime::functional::ledger8::RecordedLedger8::new(
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
+                    )
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::WitnessCall<(crate::runtime::Field, bool), bool>
+                        + crate::runtime::functional::WitnessCall<
+                            (crate::runtime::Field, crate::runtime::Field),
+                            crate::runtime::Field,
+                        > + crate::runtime::functional::SetWrite<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.selected;
+                    let __compact_param_1 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: crate::runtime::Field = __compact_param_1;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    (__compact_execution)
+                                        .try_returning(|| {
+                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                    &[
+                                                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                    ],
+                                                )
+                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                            Ok(__compact_functional_result)
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_2: crate::runtime::Field,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            __compact_execution
+                                                .witness(
+                                                    crate::runtime::functional::Witness::<
+                                                        (crate::runtime::Field, bool),
+                                                        bool,
+                                                    >::new(crate::runtime::functional::WitnessId::new(0u32)),
+                                                    (__compact_effect_2, __compact_effect_0),
+                                                )
+                                        });
+                                    __compact_functional_step
+                                        .bind(|__compact_effect_3: bool, __compact_execution| {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    if __compact_effect_3 {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                    &[
+                                                                                        2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                    ],
+                                                                                )
+                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_4: crate::runtime::Field,
+                                                                    __compact_execution|
+                                                                {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            __compact_execution
+                                                                                .witness(
+                                                                                    crate::runtime::functional::Witness::<
+                                                                                        (crate::runtime::Field, crate::runtime::Field),
+                                                                                        crate::runtime::Field,
+                                                                                    >::new(crate::runtime::functional::WitnessId::new(1u32)),
+                                                                                    (__compact_effect_4, __compact_effect_1),
+                                                                                )
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|
+                                                                            __compact_effect_5: crate::runtime::Field,
+                                                                            __compact_execution|
+                                                                        {
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    if __compact_effect_0 {
+                                                                                        {
+                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    __compact_execution
+                                                                                                        .set_insert(
+                                                                                                            crate::runtime::functional::Set::<
+                                                                                                                crate::runtime::Field,
+                                                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                                                            __compact_effect_5,
+                                                                                                        )
+                                                                                                });
+                                                                                            __compact_functional_step
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        });
+                                                                                                    __compact_functional_step
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        })
+                                                                                                })
+                                                                                        }
+                                                                                    } else {
+                                                                                        {
+                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    (__compact_execution)
+                                                                                                        .try_returning(|| {
+                                                                                                            let __compact_functional_result = ();
+                                                                                                            Ok(__compact_functional_result)
+                                                                                                        })
+                                                                                                });
+                                                                                            __compact_functional_step
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    (__compact_execution)
+                                                                                                        .try_returning(|| {
+                                                                                                            let __compact_functional_result = ();
+                                                                                                            Ok(__compact_functional_result)
+                                                                                                        })
+                                                                                                })
+                                                                                        }
+                                                                                    }
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            (__compact_execution)
+                                                                                                .try_returning(|| {
+                                                                                                    let __compact_functional_result = ();
+                                                                                                    Ok(__compact_functional_result)
+                                                                                                })
+                                                                                        });
+                                                                                    __compact_functional_step
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    (__compact_execution)
+                                                                                                        .try_returning(|| {
+                                                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                                                    &[
+                                                                                                                        3u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                    ],
+                                                                                                                )
+                                                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                                                            Ok(__compact_functional_result)
+                                                                                                        })
+                                                                                                });
+                                                                                            __compact_functional_step
+                                                                                                .bind(|
+                                                                                                    __compact_effect_11: crate::runtime::Field,
+                                                                                                    __compact_execution|
+                                                                                                {
+                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                                                            &[
+                                                                                                                                1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                            ],
+                                                                                                                        )
+                                                                                                                        .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        });
+                                                                                                    __compact_functional_step
+                                                                                                        .bind(|
+                                                                                                            __compact_effect_12: crate::runtime::Field,
+                                                                                                            __compact_execution|
+                                                                                                        {
+                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                    (__compact_execution)
+                                                                                                                        .try_returning(|| {
+                                                                                                                            let __compact_functional_result = __compact_effect_1
+                                                                                                                                + __compact_effect_12;
+                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                        })
+                                                                                                                });
+                                                                                                            __compact_functional_step
+                                                                                                                .bind(|
+                                                                                                                    __compact_effect_13: crate::runtime::Field,
+                                                                                                                    __compact_execution|
+                                                                                                                {
+                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                            __compact_execution
+                                                                                                                                .witness(
+                                                                                                                                    crate::runtime::functional::Witness::<
+                                                                                                                                        (crate::runtime::Field, crate::runtime::Field),
+                                                                                                                                        crate::runtime::Field,
+                                                                                                                                    >::new(crate::runtime::functional::WitnessId::new(1u32)),
+                                                                                                                                    (__compact_effect_11, __compact_effect_13),
+                                                                                                                                )
+                                                                                                                        });
+                                                                                                                    __compact_functional_step
+                                                                                                                        .bind(|
+                                                                                                                            __compact_effect_14: crate::runtime::Field,
+                                                                                                                            __compact_execution|
+                                                                                                                        {
+                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                    (__compact_execution)
+                                                                                                                                        .try_returning(|| {
+                                                                                                                                            let __compact_functional_result = ();
+                                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                                        })
+                                                                                                                                });
+                                                                                                                            __compact_functional_step
+                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                            (__compact_execution)
+                                                                                                                                                .try_returning(|| {
+                                                                                                                                                    let __compact_functional_result = {
+                                                                                                                                                        let _: () = ();
+                                                                                                                                                        let _: () = ();
+                                                                                                                                                        true
+                                                                                                                                                    };
+                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                })
+                                                                                                                                        });
+                                                                                                                                    __compact_functional_step
+                                                                                                                                        .bind(|__compact_effect_16: bool, __compact_execution| {
+                                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                    if __compact_effect_16 {
+                                                                                                                                                        {
+                                                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    __compact_execution
+                                                                                                                                                                        .set_insert(
+                                                                                                                                                                            crate::runtime::functional::Set::<
+                                                                                                                                                                                crate::runtime::Field,
+                                                                                                                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                                                                                                                            __compact_effect_14,
+                                                                                                                                                                        )
+                                                                                                                                                                });
+                                                                                                                                                            __compact_functional_step
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                                                            (__compact_execution)
+                                                                                                                                                                                .try_returning(|| {
+                                                                                                                                                                                    let __compact_functional_result = ();
+                                                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                                                })
+                                                                                                                                                                        });
+                                                                                                                                                                    __compact_functional_step
+                                                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                                                            (__compact_execution)
+                                                                                                                                                                                .try_returning(|| {
+                                                                                                                                                                                    let __compact_functional_result = ();
+                                                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                                                })
+                                                                                                                                                                        })
+                                                                                                                                                                })
+                                                                                                                                                        }
+                                                                                                                                                    } else {
+                                                                                                                                                        {
+                                                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    (__compact_execution)
+                                                                                                                                                                        .try_returning(|| {
+                                                                                                                                                                            let __compact_functional_result = ();
+                                                                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                                                                        })
+                                                                                                                                                                });
+                                                                                                                                                            __compact_functional_step
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    (__compact_execution)
+                                                                                                                                                                        .try_returning(|| {
+                                                                                                                                                                            let __compact_functional_result = ();
+                                                                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                                                                        })
+                                                                                                                                                                })
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                });
+                                                                                                                                            __compact_functional_step
+                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                                            (__compact_execution)
+                                                                                                                                                                .try_returning(|| {
+                                                                                                                                                                    let __compact_functional_result = ();
+                                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                                })
+                                                                                                                                                        });
+                                                                                                                                                    __compact_functional_step
+                                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    (__compact_execution)
+                                                                                                                                                                        .try_returning(|| {
+                                                                                                                                                                            let __compact_functional_result = ();
+                                                                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                                                                        })
+                                                                                                                                                                });
+                                                                                                                                                            __compact_functional_step
+                                                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                                                    (__compact_execution)
+                                                                                                                                                                        .try_returning(|| {
+                                                                                                                                                                            let __compact_functional_result = ();
+                                                                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                                                                        })
+                                                                                                                                                                })
+                                                                                                                                                        })
+                                                                                                                                                })
+                                                                                                                                        })
+                                                                                                                                })
+                                                                                                                        })
+                                                                                                                })
+                                                                                                        })
+                                                                                                })
+                                                                                        })
+                                                                                })
+                                                                        })
+                                                                })
+                                                        }
+                                                    } else {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        }
+                                                    }
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                            &[
+                                                                                10u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                            ],
+                                                                        )
+                                                                        .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_25: crate::runtime::Field,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                    &[
+                                                                                        4u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                    ],
+                                                                                )
+                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_26: crate::runtime::Field,
+                                                                    __compact_execution|
+                                                                {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            __compact_execution
+                                                                                .witness(
+                                                                                    crate::runtime::functional::Witness::<
+                                                                                        (crate::runtime::Field, crate::runtime::Field),
+                                                                                        crate::runtime::Field,
+                                                                                    >::new(crate::runtime::functional::WitnessId::new(1u32)),
+                                                                                    (__compact_effect_25, __compact_effect_26),
+                                                                                )
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|
+                                                                            __compact_effect_27: crate::runtime::Field,
+                                                                            __compact_execution|
+                                                                        {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = __compact_effect_27;
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
+                    })
+                        .finish()
+                }
+            }
+        }
+        pub mod statement_shadowed {
+            /// Review metadata only; never consumed as execution authority.
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-14.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[];
+            const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
+            const SETS: &[crate::runtime::functional::ledger8::SetBinding] =
+                &[crate::runtime::functional::ledger8::SetBinding::new(
+                    crate::runtime::functional::SlotId::new(0u32),
+                    &[0u8],
+                )];
+            /// Adapts this entry's retained witness identities to existing callbacks.
+            pub struct WitnessAdapter<'a, W>(pub &'a W);
+            pub fn ledger8_bindings() -> Result<
+                crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
+                crate::runtime::CompactError,
+            > {
+                (crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
+                    CELLS, COUNTERS,
+                ))?
+                .bind_sets(SETS)
+            }
+            /// Immutable checked request. Creating it performs no ledger or witness work.
+            /// Execution consumes the request and its selected interpreter.
+            pub struct Program {
+                outer: bool,
+                inner: bool,
+                value: crate::runtime::Field,
+            }
+            impl Program {
+                pub fn new(outer: bool, inner: bool, value: crate::runtime::Field) -> Self {
+                    Self {
+                        outer,
+                        inner,
+                        value,
+                    }
+                }
+                /// Execute with this program's compiler-issued ledger8 bindings.
+                pub fn execute_native<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// Record with the same checked body and compiler-issued bindings.
+                pub fn execute_recorded<Private>(
+                    self,
+                    context: crate::runtime::context::CircuitContext<Private>,
+                ) -> Result<
+                    crate::runtime::recording::RecordedCircuitResult<
+                        Private,
+                        crate::runtime::Field,
+                    >,
+                    crate::runtime::CompactError,
+                > {
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
+                }
+                /// One checked body shared by native and recorded target adapters.
+                pub fn run<E>(
+                    self,
+                    __compact_executor: E,
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
+                where
+                    E: crate::runtime::functional::Executor
+                        + crate::runtime::functional::SetWrite<crate::runtime::Field>
+                        + crate::runtime::functional::SetRead<crate::runtime::Field>,
+                {
+                    let __compact_param_0 = self.outer;
+                    let __compact_param_1 = self.inner;
+                    let __compact_param_2 = self.value;
+                    ({
+                        let __compact_effect_0: bool = __compact_param_0;
+                        let __compact_effect_1: bool = __compact_param_1;
+                        let __compact_effect_2: crate::runtime::Field = __compact_param_2;
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .set_insert(
+                                                            crate::runtime::functional::Set::<
+                                                                crate::runtime::Field,
+                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                            __compact_effect_2,
+                                                        )
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = ();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        })
+                                                })
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = ();
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|(), __compact_execution| {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    if __compact_effect_1 {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    if __compact_effect_1 {
+                                                                        {
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                                    &[
+                                                                                                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                    ],
+                                                                                                )
+                                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|
+                                                                                    __compact_effect_8: crate::runtime::Field,
+                                                                                    __compact_execution|
+                                                                                {
+                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            (__compact_execution)
+                                                                                                .try_returning(|| {
+                                                                                                    let __compact_functional_result = __compact_effect_2
+                                                                                                        + __compact_effect_8;
+                                                                                                    Ok(__compact_functional_result)
+                                                                                                })
+                                                                                        });
+                                                                                    __compact_functional_step
+                                                                                        .bind(|
+                                                                                            __compact_effect_9: crate::runtime::Field,
+                                                                                            __compact_execution|
+                                                                                        {
+                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    __compact_execution
+                                                                                                        .set_insert(
+                                                                                                            crate::runtime::functional::Set::<
+                                                                                                                crate::runtime::Field,
+                                                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                                                            __compact_effect_9,
+                                                                                                        )
+                                                                                                });
+                                                                                            __compact_functional_step
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        });
+                                                                                                    __compact_functional_step
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        })
+                                                                                                })
+                                                                                        })
+                                                                                })
+                                                                        }
+                                                                    } else {
+                                                                        {
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = ();
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = ();
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
+                                                                                })
+                                                                        }
+                                                                    }
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = ();
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|(), __compact_execution| {
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = ();
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                        .bind(|(), __compact_execution| {
+                                                                                            (__compact_execution)
+                                                                                                .try_returning(|| {
+                                                                                                    let __compact_functional_result = {
+                                                                                                        let _: () = ();
+                                                                                                        let _: () = ();
+                                                                                                        true
+                                                                                                    };
+                                                                                                    Ok(__compact_functional_result)
+                                                                                                })
+                                                                                        });
+                                                                                    __compact_functional_step
+                                                                                        .bind(|__compact_effect_16: bool, __compact_execution| {
+                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    if __compact_effect_16 {
+                                                                                                        {
+                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                    (__compact_execution)
+                                                                                                                        .try_returning(|| {
+                                                                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                                                                    &[
+                                                                                                                                        2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                                                                    ],
+                                                                                                                                )
+                                                                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                        })
+                                                                                                                });
+                                                                                                            __compact_functional_step
+                                                                                                                .bind(|
+                                                                                                                    __compact_effect_17: crate::runtime::Field,
+                                                                                                                    __compact_execution|
+                                                                                                                {
+                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                            (__compact_execution)
+                                                                                                                                .try_returning(|| {
+                                                                                                                                    let __compact_functional_result = __compact_effect_2
+                                                                                                                                        + __compact_effect_17;
+                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                })
+                                                                                                                        });
+                                                                                                                    __compact_functional_step
+                                                                                                                        .bind(|
+                                                                                                                            __compact_effect_18: crate::runtime::Field,
+                                                                                                                            __compact_execution|
+                                                                                                                        {
+                                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                    __compact_execution
+                                                                                                                                        .set_insert(
+                                                                                                                                            crate::runtime::functional::Set::<
+                                                                                                                                                crate::runtime::Field,
+                                                                                                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                                                                                            __compact_effect_18,
+                                                                                                                                        )
+                                                                                                                                });
+                                                                                                                            __compact_functional_step
+                                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                            (__compact_execution)
+                                                                                                                                                .try_returning(|| {
+                                                                                                                                                    let __compact_functional_result = ();
+                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                })
+                                                                                                                                        });
+                                                                                                                                    __compact_functional_step
+                                                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                                                            (__compact_execution)
+                                                                                                                                                .try_returning(|| {
+                                                                                                                                                    let __compact_functional_result = ();
+                                                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                                                })
+                                                                                                                                        })
+                                                                                                                                })
+                                                                                                                        })
+                                                                                                                })
+                                                                                                        }
+                                                                                                    } else {
+                                                                                                        {
+                                                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                    (__compact_execution)
+                                                                                                                        .try_returning(|| {
+                                                                                                                            let __compact_functional_result = ();
+                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                        })
+                                                                                                                });
+                                                                                                            __compact_functional_step
+                                                                                                                .bind(|(), __compact_execution| {
+                                                                                                                    (__compact_execution)
+                                                                                                                        .try_returning(|| {
+                                                                                                                            let __compact_functional_result = ();
+                                                                                                                            Ok(__compact_functional_result)
+                                                                                                                        })
+                                                                                                                })
+                                                                                                        }
+                                                                                                    }
+                                                                                                });
+                                                                                            __compact_functional_step
+                                                                                                .bind(|(), __compact_execution| {
+                                                                                                    let __compact_functional_step = (__compact_execution)
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        });
+                                                                                                    __compact_functional_step
+                                                                                                        .bind(|(), __compact_execution| {
+                                                                                                            (__compact_execution)
+                                                                                                                .try_returning(|| {
+                                                                                                                    let __compact_functional_result = ();
+                                                                                                                    Ok(__compact_functional_result)
+                                                                                                                })
+                                                                                                        })
+                                                                                                })
+                                                                                        })
+                                                                                })
+                                                                        })
+                                                                })
+                                                        }
+                                                    } else {
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = ();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        }
+                                                    }
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            __compact_execution
+                                                                .set_size(
+                                                                    crate::runtime::functional::Set::<
+                                                                        crate::runtime::Field,
+                                                                    >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                )
+                                                                .bind(|__compact_set_size, __compact_execution| {
+                                                                    __compact_execution
+                                                                        .try_returning(|| <crate::runtime::BoundedUint<
+                                                                            18446744073709551615,
+                                                                        >>::new(__compact_set_size as u128))
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_26: crate::runtime::BoundedUint<
+                                                                18446744073709551615,
+                                                            >,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::Field::from(
+                                                                                (__compact_effect_26).value(),
+                                                                            );
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_27: crate::runtime::Field,
+                                                                    __compact_execution|
+                                                                {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = __compact_effect_27;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
                                                         })
                                                 })
                                         })

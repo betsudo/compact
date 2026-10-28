@@ -1165,5 +1165,727 @@
     "result": 2,
     "keys": [],
     "privateState": 7
+  },
+  {
+    "id": "statement_field-58",
+    "name": "statement_field",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 1,
+    "keys": [],
+    "privateState": 7
+  },
+  {
+    "id": "statement_field-59",
+    "name": "statement_field",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_field-60",
+    "name": "statement_field",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_field-61",
+    "name": "statement_field",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_unit-62",
+    "name": "statement_unit",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [],
+    "privateState": 7
+  },
+  {
+    "id": "statement_unit-63",
+    "name": "statement_unit",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_unit-64",
+    "name": "statement_unit",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_unit-65",
+    "name": "statement_unit",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_unconditional-66",
+    "name": "trailing_unconditional",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_unconditional-67",
+    "name": "trailing_unconditional",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_unconditional-68",
+    "name": "trailing_unconditional",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_unconditional-69",
+    "name": "trailing_unconditional",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-70",
+    "name": "trailing_conditional",
+    "args": [
+      false,
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-71",
+    "name": "trailing_conditional",
+    "args": [
+      false,
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-72",
+    "name": "trailing_conditional",
+    "args": [
+      false,
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-73",
+    "name": "trailing_conditional",
+    "args": [
+      false,
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-74",
+    "name": "trailing_conditional",
+    "args": [
+      true,
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-75",
+    "name": "trailing_conditional",
+    "args": [
+      true,
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-76",
+    "name": "trailing_conditional",
+    "args": [
+      true,
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "trailing_conditional-77",
+    "name": "trailing_conditional",
+    "args": [
+      true,
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": [],
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-78",
+    "name": "statement_shadowed",
+    "args": [
+      false,
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 0,
+    "keys": [],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-79",
+    "name": "statement_shadowed",
+    "args": [
+      false,
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-80",
+    "name": "statement_shadowed",
+    "args": [
+      false,
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 2,
+    "keys": [
+      6,
+      7
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-81",
+    "name": "statement_shadowed",
+    "args": [
+      false,
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 3,
+    "keys": [
+      5,
+      6,
+      7
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-82",
+    "name": "statement_shadowed",
+    "args": [
+      true,
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-83",
+    "name": "statement_shadowed",
+    "args": [
+      true,
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 1,
+    "keys": [
+      5
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-84",
+    "name": "statement_shadowed",
+    "args": [
+      true,
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [],
+    "result": 3,
+    "keys": [
+      5,
+      6,
+      7
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_shadowed-85",
+    "name": "statement_shadowed",
+    "args": [
+      true,
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [],
+    "result": 3,
+    "keys": [
+      5,
+      6,
+      7
+    ],
+    "privateState": 7
+  },
+  {
+    "id": "statement_observed-86",
+    "name": "statement_observed",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        10,
+        8,
+        "0"
+      ]
+    ],
+    "result": 4,
+    "keys": [],
+    "privateState": 9
+  },
+  {
+    "id": "statement_observed-87",
+    "name": "statement_observed",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [
+      [
+        1,
+        7,
+        "1"
+      ],
+      [
+        10,
+        8,
+        "1"
+      ]
+    ],
+    "result": 4,
+    "keys": [
+      5
+    ],
+    "privateState": 9
+  },
+  {
+    "id": "statement_observed-88",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        2,
+        8,
+        "0"
+      ],
+      [
+        3,
+        9,
+        "1"
+      ],
+      [
+        10,
+        10,
+        "2"
+      ]
+    ],
+    "result": 4,
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 11
+  },
+  {
+    "id": "statement_observed-89",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [
+      5
+    ],
+    "events": [
+      [
+        1,
+        7,
+        "1"
+      ],
+      [
+        2,
+        8,
+        "1"
+      ],
+      [
+        3,
+        9,
+        "1"
+      ],
+      [
+        10,
+        10,
+        "2"
+      ]
+    ],
+    "result": 4,
+    "keys": [
+      5,
+      6
+    ],
+    "privateState": 11
+  },
+  {
+    "id": "statement_observed-90",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ]
+    ],
+    "fail": 1,
+    "error": "witness 1 refused"
+  },
+  {
+    "id": "statement_observed-91",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        2,
+        8,
+        "0"
+      ]
+    ],
+    "fail": 2,
+    "error": "witness 2 refused"
+  },
+  {
+    "id": "statement_observed-92",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        2,
+        8,
+        "0"
+      ],
+      [
+        3,
+        9,
+        "1"
+      ]
+    ],
+    "fail": 3,
+    "error": "witness 3 refused"
+  },
+  {
+    "id": "statement_observed-93",
+    "name": "statement_observed",
+    "args": [
+      true,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        2,
+        8,
+        "0"
+      ],
+      [
+        3,
+        9,
+        "1"
+      ],
+      [
+        10,
+        10,
+        "2"
+      ]
+    ],
+    "fail": 10,
+    "error": "witness 10 refused"
+  },
+  {
+    "id": "statement_observed-94",
+    "name": "statement_observed",
+    "args": [
+      false,
+      5
+    ],
+    "seed": [],
+    "events": [
+      [
+        1,
+        7,
+        "0"
+      ],
+      [
+        10,
+        8,
+        "0"
+      ]
+    ],
+    "fail": 10,
+    "error": "witness 10 refused"
   }
 ]

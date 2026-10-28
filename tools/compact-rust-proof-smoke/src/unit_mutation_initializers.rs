@@ -23,8 +23,7 @@ use midnight_transient_crypto::proofs::{ProverKey, Zkir};
 
 const IR: &str =
     include_str!("../../../tests-rust-backend/unit-mutation-initializers-source/original-ir.json");
-const NAME: &str = "conditional";
-const PROOF_RESULT_FORMAT: &str = "compact-unit-mutation-initializers-proof/v1";
+const PROOF_RESULT_FORMAT: &str = "compact-unit-mutation-initializers-proof/v2";
 struct UnusedWitness;
 impl c::TryWitnesses<u64> for UnusedWitness {
     fn point(
@@ -113,6 +112,42 @@ const PROGRAMS: &[(&str, &[u8])] = &[
             "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-8.json"
         ),
     ),
+    (
+        "program-9.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-9.json"
+        ),
+    ),
+    (
+        "program-10.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-10.json"
+        ),
+    ),
+    (
+        "program-11.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-11.json"
+        ),
+    ),
+    (
+        "program-12.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-12.json"
+        ),
+    ),
+    (
+        "program-13.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-13.json"
+        ),
+    ),
+    (
+        "program-14.json",
+        include_bytes!(
+            "../../../tests-rust-backend/unit-mutation-initializers-source/checked-programs/program-14.json"
+        ),
+    ),
 ];
 fn validate_programs(root: &Path) -> Result<(), Box<dyn Error>> {
     let directory = root.join("contract/checked-programs");
@@ -120,12 +155,12 @@ fn validate_programs(root: &Path) -> Result<(), Box<dyn Error>> {
         .map(|row| row.map(|row| row.file_name()))
         .collect::<Result<Vec<_>, _>>()?;
     names.sort();
-    if names
-        != PROGRAMS
-            .iter()
-            .map(|(name, _)| std::ffi::OsString::from(name))
-            .collect::<Vec<_>>()
-    {
+    let mut expected = PROGRAMS
+        .iter()
+        .map(|(name, _)| std::ffi::OsString::from(name))
+        .collect::<Vec<_>>();
+    expected.sort();
+    if names != expected {
         return Err("Unit initializer complete checked-program membership differs".into());
     }
     for (name, bytes) in PROGRAMS {
@@ -145,7 +180,15 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("Unit initializer proof result already exists".into());
     }
     let mut rows = Vec::new();
-    for (index, key_id) in [5_u64, 6].into_iter().enumerate() {
+    for (index, (name, key_id)) in [
+        ("conditional", 5_u64),
+        ("conditional", 6),
+        ("statement_field", 5),
+        ("statement_field", 6),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let key = Field::from(key_id);
         let expected = Field::from(1_u64);
         let expected_size = if key_id == 5 { 1 } else { 2 };
@@ -160,7 +203,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         )?;
         let deploy = make_deploy(
             root,
-            NAME,
+            name,
             seeded.context.query.state.get_ref().clone(),
             &mut rng,
         )?;
@@ -173,12 +216,23 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 block_height: 0,
             },
         );
-        let native = c::conditional(observed.circuit_context(7), true, key)?;
-        let recorded = c::recorded::conditional(observed.circuit_context(7), true, key)?;
-        let functional_native = c::functional::conditional::Program::new(true, key)
-            .execute_native(observed.circuit_context(7))?;
-        let functional = c::functional::conditional::Program::new(true, key)
-            .execute_recorded(observed.circuit_context(7))?;
+        macro_rules! execute_routes {
+            ($entry:ident) => {{
+                (
+                    c::$entry(observed.circuit_context(7), true, key)?,
+                    c::recorded::$entry(observed.circuit_context(7), true, key)?,
+                    c::functional::$entry::Program::new(true, key)
+                        .execute_native(observed.circuit_context(7))?,
+                    c::functional::$entry::Program::new(true, key)
+                        .execute_recorded(observed.circuit_context(7))?,
+                )
+            }};
+        }
+        let (native, recorded, functional_native, functional) = match name {
+            "conditional" => execute_routes!(conditional),
+            "statement_field" => execute_routes!(statement_field),
+            _ => return Err("unqualified Unit initializer circuit".into()),
+        };
         for actual in [
             &native,
             &recorded.execution,
@@ -211,24 +265,30 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             return Err("Unit initializer mutation state or recording differs".into());
         }
         let expected_state = native.context.query.state.get_ref().clone();
-        let prepared = check_generated_trace(root, NAME, functional, (true, key))?;
+        let prepared = check_generated_trace(root, name, functional, (true, key))?;
         let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/conditional.verifier"),
+            root.join(format!("keys/{name}.verifier")),
         )?))?;
         let facade = c::Contract::from(UnusedWitness);
-        let ordinary = facade
-            .recording()
-            .conditional_call(&observed, 7, true, key)?
-            .prepare(verifier.clone(), Fr::from(0_u64))?;
+        let ordinary = match name {
+            "conditional" => facade
+                .recording()
+                .conditional_call(&observed, 7, true, key)?,
+            "statement_field" => facade
+                .recording()
+                .statement_field_call(&observed, 7, true, key)?,
+            _ => return Err("unqualified Unit initializer observed call".into()),
+        }
+        .prepare(verifier.clone(), Fr::from(0_u64))?;
         if format!("{prepared:?}") != format!("{ordinary:?}") {
             return Err(
                 "functional Unit-initializer preparation differs from ordinary observed call"
                     .into(),
             );
         }
-        let proof_bytes = prove(root, index, &prepared, &verifier)?;
-        let transaction_bytes = apply(root, index, prepared, deploy, &expected_state, rng)?;
-        rows.push(serde_json::json!({"key":key_id,"before":1,"after":expected_size,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
+        let proof_bytes = prove(root, name, index, &prepared, &verifier)?;
+        let transaction_bytes = apply(root, name, index, prepared, deploy, &expected_state, rng)?;
+        rows.push(serde_json::json!({"circuit":name,"key":key_id,"before":1,"after":expected_size,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
             "standalone_proof":format!("unit-initializers-{index}.proof"),
             "applied_transaction":format!("unit-initializers-{index}-transaction.bin"),
             "transaction_proof_relationship":"independently proved",
@@ -236,7 +296,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
     let result = serde_json::json!({"format":PROOF_RESULT_FORMAT,"status":"passed",
-        "scope":"two fresh selected Unit-initializer Set insert functional-derived call proofs and funded default-strict local transactions",
+        "scope":"four fresh selected return/statement Unit-initializer Set insert functional-derived proofs and independently proved funded default-strict local transactions",
         "constructor_execution_proved":false,"unselected_branch_proved":false,"prestate_setup_proved":false,
         "all_exports_proved":false,"calls":rows});
     write_new(
@@ -264,6 +324,7 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 
 fn prove(
     root: &Path,
+    name: &str,
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
@@ -275,10 +336,10 @@ fn prove(
             _ => return Err("unexpected unit-initializers proof version".into()),
         };
     let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("zkir/conditional.bzkir"),
+        root.join(format!("zkir/{name}.bzkir")),
     )?))?;
     let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/conditional.prover"),
+        root.join(format!("keys/{name}.prover")),
     )?))?;
     let checked = preimage.check(&ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
@@ -360,6 +421,7 @@ fn prove(
 
 fn apply(
     root: &Path,
+    name: &'static str,
     index: usize,
     prepared: ContractCallPrototype<DefaultDB>,
     deploy: ContractDeploy<DefaultDB>,
@@ -373,7 +435,7 @@ fn apply(
         Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
             .add_call::<ProofPreimage>(prepared);
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, NAME)?;
+    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let provider = LocalProvingProvider {
         rng: StdRng::seed_from_u64(0x0610_5052 + index as u64),
