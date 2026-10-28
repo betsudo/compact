@@ -145,8 +145,8 @@ class PassportControlTests(unittest.TestCase):
             self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": str(shared)}, output), shared)
             self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": "target"}, output),
                              (gate.ROOT / "target").resolve())
-            for path in [output, output / "passport-source", output / "consumer", output / "generated", output / "generated/contract/target"]:
-                with self.subTest(path=path), self.assertRaisesRegex(ValueError, "outside qualification"):
+            for path in [output, output / "passport-source", output / "consumer", output / "generated", output / "generated/contract/target", gate.ORACLE / "target"]:
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, "outside qualification|source/oracle"):
                     gate.cargo_target({"CARGO_TARGET_DIR": str(path)}, output)
 
     def test_formatting_uses_copy_and_rejects_original_source_mutation(self):
@@ -253,6 +253,78 @@ class PassportControlTests(unittest.TestCase):
                      dict(intended, is_primary=False)]:
             with self.subTest(span=span), self.assertRaises(ValueError):
                 gate.typed_refusal(result(span), Path("/owned/wrong_bytes.rs"), 21)
+
+
+    def test_cargo_overrides_cannot_suppress_clippy_or_replace_rustc(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "cargo-home"
+            home.mkdir()
+            environment = {"CARGO_HOME": str(home)}
+            with patch.object(gate, "ROOT", root):
+                clean = gate.cargo_configuration(environment)
+                for name in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC", "RUSTC_WRAPPER",
+                             "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_WARNINGS", "CARGO_TARGET_HOST_RUSTFLAGS"):
+                    with self.subTest(name=name), self.assertRaisesRegex(ValueError, "overrides"):
+                        gate.cargo_configuration(dict(environment, **{name: "unselected"}))
+                config = home / "config.toml"
+                for text in ('[build]\nrustflags=["--cap-lints","allow"]\n',
+                             '[build]\nrustc="unselected"\n',
+                             '[env]\nRUSTFLAGS={value="--cap-lints=allow",force=true}\n',
+                             '[target.host]\nrunner="unselected"\n'):
+                    config.write_text(text)
+                    with self.subTest(config=text), self.assertRaisesRegex(ValueError, "configuration"):
+                        gate.cargo_configuration(environment)
+                config.write_text('[build]\njobs=2\n')
+                self.assertNotEqual(gate.cargo_configuration(environment), clean)
+
+    def test_matching_runtime_requires_exact_manifest_and_full_membership(self):
+        expected = gate.bundled_runtime_files(gate.ROOT)
+        with tempfile.TemporaryDirectory() as temporary:
+            contract = Path(temporary)
+            for relative in expected:
+                destination = contract / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(gate.ROOT / relative, destination)
+            gate.validate_runtime_bundle(contract, expected)
+            manifest = contract / "runtime-rs/Cargo.toml"
+            original = manifest.read_bytes()
+            manifest.write_bytes(original + b'\n[profile.dev]\nopt-level=1\n')
+            with self.assertRaisesRegex(ValueError, "membership or bytes"):
+                gate.validate_runtime_bundle(contract, expected)
+            manifest.write_bytes(original)
+            extra = contract / "runtime-rs/build.rs"
+            extra.write_text('fn main() {}\n')
+            with self.assertRaisesRegex(ValueError, "membership or bytes"):
+                gate.validate_runtime_bundle(contract, expected)
+            extra.unlink()
+            manifest.unlink()
+            with self.assertRaisesRegex(ValueError, "membership or bytes"):
+                gate.validate_runtime_bundle(contract, expected)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX detached-pipe timeout control")
+    def test_timeout_drain_is_bounded_with_detached_owned_test_helper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            pidfile = Path(temporary) / "helper.pid"
+            child = "import os,time;from pathlib import Path;Path(" + repr(str(pidfile)) + ").write_text(str(os.getpid()));print('detached ready',flush=True);time.sleep(30)"
+            parent = "import subprocess,sys,time;subprocess.Popen([sys.executable,'-u','-c'," + repr(child) + "],start_new_session=True);time.sleep(30)"
+            started = time.monotonic()
+            try:
+                with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3), patch.object(gate, "TIMEOUT_DRAIN_SECONDS", 0.2):
+                    with self.assertRaises(subprocess.TimeoutExpired) as caught:
+                        gate.bounded_command([sys.executable, "-u", "-c", parent], dict(os.environ))
+                output = caught.exception.stdout
+                output = output.decode() if isinstance(output, bytes) else output
+                self.assertIn("detached ready", output)
+                self.assertLess(time.monotonic() - started, 3)
+            finally:
+                if pidfile.exists():
+                    pid = int(pidfile.read_text())
+                    try:
+                        self.assertEqual(os.getpgid(pid), pid)
+                        os.killpg(pid, gate.signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
 
 if __name__ == "__main__":
     unittest.main()

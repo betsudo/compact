@@ -1,5 +1,10 @@
 # Using the digital-passport pure API from Rust
 
+Additional review fixes are locally implemented and require fresh qualification:
+Cargo compiler/lint override guards and config identities, bounded post-kill pipe
+drain, exact full runtime-bundle membership, and tighter guide/source isolation.
+Thirty focused controls pass; the prior v3 results below keep their own epoch.
+
 Current guide for 0.3.0 closeout. **Historical executed example:** verified locally at1705fc1a with Rust1.99 on macOSarm64, using a fresh standalone consumer and bundled runtime sources. Keep the matching compiler/runtime bundle together; see [Version and runtime selection](version-selection.md).
 
 **Current-profile successor under review:** the maintained gate in PR #697

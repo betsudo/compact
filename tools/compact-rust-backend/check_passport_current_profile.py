@@ -40,6 +40,7 @@ CONTROLS = Path(__file__).with_name("tests") / "passport_current_profile"
 SOURCE_MANIFEST_SHA256 = "f122c9c890e841d50f2f2980df4229de584333a9eb6c9a4525794f8ce8a77f78"
 ORACLE_PROVENANCE_SHA256 = "b35b1c5a9959086fcc30f29265b24602d4e2e34844074a9f23f16330ebd4fbd1"
 COMMAND_TIMEOUT_SECONDS = 600
+TIMEOUT_DRAIN_SECONDS = 2
 GUIDE_PACKAGE = GUIDE.parents[1]
 FAMILIES = ("ts", "age", "request", "private-parts", "protocol", "roots", "bindings",
             "signed-flow", "authorization", "protocol-roundtrip", "complete-flow", "codec")
@@ -104,6 +105,8 @@ def validate_dependencies(metadata, lock_path, allowed, qualified):
 def cargo_target(environment, output):
     selected = Path(environment.get("CARGO_TARGET_DIR") or output / "cargo-target")
     selected = (selected if selected.is_absolute() else ROOT / selected).resolve()
+    if selected.is_relative_to(ROOT) and not selected.is_relative_to(ROOT / "target"):
+        raise ValueError("Cargo target must not enter selected source/oracle directories")
     if selected.is_relative_to(output.resolve()) and selected != (output / "cargo-target").resolve():
         raise ValueError("Cargo target must be outside qualification output or its dedicated cargo-target")
     return selected
@@ -158,24 +161,92 @@ def typed_refusal(process, expected_path=None, expected_line=None):
     return codes
 
 
+def cargo_configuration(environment):
+    """Admit the selected toolchain without hidden lint/compiler substitutions."""
+    forbidden = {"RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC", "RUSTC_WRAPPER",
+                 "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_RUSTC", "CARGO_BUILD_RUSTFLAGS",
+                 "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_WARNINGS"}
+    rejected = sorted(k for k in forbidden if environment.get(k))
+    rejected += sorted(k for k,v in environment.items() if v and k.startswith("CARGO_TARGET_")
+                       and k.endswith(("_RUSTFLAGS", "_RUNNER")))
+    if rejected:
+        raise ValueError("unsupported Passport Cargo compiler/lint overrides: " + ", ".join(rejected))
+    paths = [parent / ".cargo" / name for parent in (ROOT, *ROOT.parents) for name in ("config", "config.toml")]
+    home = Path(environment.get("CARGO_HOME", str(Path.home() / ".cargo")))
+    paths += [home / name for name in ("config", "config.toml")]
+    snapshots = {}
+    for path in paths:
+        snapshots[str(path)] = digest(path) if path.is_file() else None
+        if not path.is_file():
+            continue
+        config = tomllib.loads(path.read_text())
+        build = config.get("build", {})
+        if any(k in build for k in ("rustflags", "rustc", "rustc-wrapper", "rustc-workspace-wrapper", "warnings")):
+            raise ValueError("unsupported Passport Cargo compiler/lint configuration: " + str(path))
+        if any(k in forbidden for k in config.get("env", {})) or any(
+                key in value for value in config.get("target", {}).values()
+                for key in ("rustflags", "runner")):
+            raise ValueError("unsupported Passport Cargo target/environment configuration: " + str(path))
+    return snapshots
+
+
+def bundled_runtime_files(root):
+    expected = {}
+    for name in ("runtime-rs", "runtime-rs-macros"):
+        package = root / name
+        files = [package / filename for filename in ("Cargo.toml", "README.md", "LICENSE")]
+        if name == "runtime-rs":
+            files.append(package / "compatibility.json")
+        files += [p for p in (package / "src").rglob("*") if p.is_file()]
+        expected.update({str(p.relative_to(root)): digest(p) for p in files})
+    return expected
+
+
+def validate_runtime_bundle(contract, expected):
+    actual = {}
+    for name in ("runtime-rs", "runtime-rs-macros"):
+        for path in (contract / name).rglob("*"):
+            if path.is_symlink():
+                raise ValueError("unexpected bundled Passport runtime symlink")
+            if path.is_file():
+                actual[str(path.relative_to(contract))] = digest(path)
+    if actual != expected:
+        raise ValueError("bundled Passport runtime membership or bytes differ")
+
+
 def bounded_command(command, environment):
-    """Timeout owns the POSIX child process group, including compiler descendants."""
+    """Bound communication, including pipes retained outside the owned group."""
     process = subprocess.Popen([str(a) for a in command], cwd=ROOT, env=environment,
                                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                start_new_session=os.name == "posix")
-    try:
-        stdout, stderr = process.communicate(timeout=COMMAND_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired as error:
-        if os.name == "posix":
-            try:
+    def stop_owned():
+        try:
+            if os.name == "posix":
                 os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        else:
-            process.kill()
-        stdout, stderr = process.communicate()
-        raise subprocess.TimeoutExpired(command, COMMAND_TIMEOUT_SECONDS,
-                                        output=stdout, stderr=stderr) from error
+            elif process.poll() is None:
+                process.kill()
+        except ProcessLookupError:
+            pass
+    try:
+        try:
+            stdout, stderr = process.communicate(timeout=COMMAND_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired as error:
+            stop_owned()
+            try:
+                stdout, stderr = process.communicate(timeout=TIMEOUT_DRAIN_SECONDS)
+            except subprocess.TimeoutExpired as drain:
+                stdout, stderr = drain.stdout, drain.stderr
+                process.stdout.close()
+                process.stderr.close()
+                process.wait(timeout=TIMEOUT_DRAIN_SECONDS)
+            raise subprocess.TimeoutExpired(command, COMMAND_TIMEOUT_SECONDS,
+                                            output=stdout, stderr=stderr) from error
+    except BaseException:
+        stop_owned()
+        process.stdout.close()
+        process.stderr.close()
+        process.wait(timeout=TIMEOUT_DRAIN_SECONDS)
+        raise
     return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
@@ -189,7 +260,7 @@ def main(argv=None):
     if output.exists() or output.is_symlink():
         raise ValueError("Passport qualification destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-passport-current-profile/v3", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-passport-current-profile/v4", "status": "incomplete", "commands": [],
                "scope": "original pure Passport current-profile execution and isolated raw generated SDK consumer",
                "qualified_sdk_bytes": "raw compiler output; formatting is a separate retained copy",
                "proof_applicability": "not applicable: original source has no stateful exports",
@@ -223,6 +294,7 @@ def main(argv=None):
         require_clean_source(receipt)
         if env.get("COMPACTC_SCHEME"):
             raise ValueError("original packaged Passport compiler requires no COMPACTC_SCHEME override")
+        receipt["cargo_configuration_sha256"] = cargo_configuration(env)
         env["CARGO_TARGET_DIR"] = str(cargo_target(env, output))
         receipt["cargo_target_dir"] = env["CARGO_TARGET_DIR"]
         compiler = args.compiler.resolve(strict=True)
@@ -257,7 +329,8 @@ def main(argv=None):
                  ROOT / "runtime-rs/Cargo.toml", ROOT / "runtime-rs-macros/Cargo.toml",
                  ROOT / "runtime/package.json", *SOURCE.rglob("*.compact"), *ORACLE.rglob("*"),
                  *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs")]
-        paths += [p for name in ("runtime-rs", "runtime-rs-macros") for p in (ROOT / name / "src").rglob("*.rs")]
+        runtime_files = bundled_runtime_files(ROOT)
+        paths += [ROOT / name for name in runtime_files]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths if p.is_file()}
         scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
         receipt["tools"] = {str(p): digest(p) for p in (compiler, scheme, node)}
@@ -299,11 +372,8 @@ def main(argv=None):
                 or json.loads((contract / "rust-capabilities.json").read_text())["circuits"]):
             raise ValueError("Passport pure export/IR/capability inventory differs")
         receipt["inventory"] = {"internal_pure_circuits": 89, "public_pure_exports": 75, "stateful_exports": 0}
-        for name in ("runtime-rs", "runtime-rs-macros"):
-            for original in (ROOT / name / "src").rglob("*.rs"):
-                bundled = contract / name / original.relative_to(ROOT / name)
-                if bundled.read_bytes() != original.read_bytes():
-                    raise ValueError(f"bundled Passport runtime source differs: {bundled}")
+        validate_runtime_bundle(contract, runtime_files)
+        receipt["bundled_runtime_hashes"] = runtime_files
         receipt["raw_generated_rust_sha256"] = digest(contract / "lib.rs")
         shutil.copyfile(contract / "lib.rs", output / "raw-generated-lib.rs")
         generated_hashes = {str(p): digest(p) for p in generated.rglob("*") if p.is_file()}
@@ -384,7 +454,7 @@ def main(argv=None):
         shutil.copyfile(ROOT / "Cargo.lock", guide / "Cargo.lock")
         guide_manifest = guide / "Cargo.toml"
         guide_metadata = json.loads(run("guide-resolve", ["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", guide_manifest]).stdout)
-        guide_lock = validate_dependencies(guide_metadata, guide / "Cargo.lock", allowed | {guide_manifest.resolve()}, qualified)
+        guide_lock = validate_dependencies(guide_metadata, guide / "Cargo.lock", (allowed - {consumer_manifest.resolve()}) | {guide_manifest.resolve()}, qualified)
         guide_result = run("guide-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", guide_manifest, "--", "--show-output"])
         guide_count = rust_test_count(guide_result.stdout, 2)
         run("guide-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", guide_manifest, "--all-targets", "--", "-D", "warnings"])
@@ -438,6 +508,8 @@ def main(argv=None):
                     "--features", name, "--bin", name, "--message-format=json"])
             finally:
                 path.write_text(negative)
+            if digest(path) != digest(CONTROLS / f"{name}.rs"):
+                raise ValueError("Passport refusal source restoration differs")
             receipt["positive_twins"][name] = {"passed": True, "restored_sha256": digest(path)}
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", consumer_manifest,
                                  "--features", name, "--bin", name, "--message-format=json"], success=False)
@@ -454,6 +526,8 @@ def main(argv=None):
             for path, expected in receipt[group].items():
                 if digest(path) != expected:
                     raise ValueError(f"Passport qualification input changed: {path}")
+        if cargo_configuration(env) != receipt["cargo_configuration_sha256"]:
+            raise ValueError("Passport Cargo configuration changed during execution")
         require_clean_source(receipt)
         receipt["status"] = "passed"
     except Exception as error:

@@ -1,5 +1,10 @@
 # Current-profile Passport standalone consumer
 
+Additional review fixes are locally implemented and require fresh qualification:
+Cargo compiler/lint override guards and config identities, bounded post-kill pipe
+drain, exact full runtime-bundle membership, and tighter guide/source isolation.
+Thirty focused controls pass; the prior v3 results below keep their own epoch.
+
 Status: fresh clean v3 qualification passed at signed `7b55379b8`, original
 compiler 0.31.142/Ledger8.1.3. The untouched raw SDK passes 202 live TS cases and
 codec vectors, 16 adoption Rust methods, and the actual unchanged two-test guide

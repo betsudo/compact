@@ -1,5 +1,10 @@
 # Passport two-test consumer (historical P1)
 
+Additional review fixes are locally implemented and require fresh qualification:
+Cargo compiler/lint override guards and config identities, bounded post-kill pipe
+drain, exact full runtime-bundle membership, and tighter guide/source isolation.
+Thirty focused controls pass; the prior v3 results below keep their own epoch.
+
 The complete `consumer/src/lib.rs`, manifest and qualified lock are copied byte-for-byte from the original P1 archive. `passport-source/` contains the complete pinned Compact import closure and source manifest. See the [walkthrough](../../passport.md) and [historical receipt](../../../evidence/0.3.0/passport-p1/receipt.json).
 
 Run generation from this directory, using the matching compiler/runtime distribution, to create `generated/contract/`; the [guide commands](../../passport.md#generate-and-consume) use this exact relative layout. Generated sources and the runtime bundle are intentionally not included in this documentation package. The handwritten manifest still points to `../generated/contract` from `consumer/`.
