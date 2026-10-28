@@ -26,6 +26,7 @@ compactc --target rust --target ts --rust-functional-ledger8 \
 ```
 
 Stage the matching reviewed testkit library sources/manifest as `testkit-rs/`,
+including the repository Apache license as `testkit-rs/LICENSE`,
 apply the copied-manifest path adjustment above, and seed `consumer/Cargo.lock`
 from the qualified Compact source lock. Resolve with `cargo metadata --offline`,
 check all local manifests and registry/Git/checksum identities, then execute:

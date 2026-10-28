@@ -62,6 +62,20 @@ class IsolatedSdkControls(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "exactly once"):
                 gate.source_testkit(source, root / "ambiguous")
 
+    def test_repository_license_is_copied_when_testkit_has_no_own_license(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "testkit-source"
+            (source / "src").mkdir(parents=True)
+            (source / "src/lib.rs").write_text("source")
+            (source / "Cargo.toml").write_text('runtime={path = "../runtime-rs"}')
+            (source / "README.md").write_text("readme")
+            (root / "LICENSE").write_text("repository license")
+            with patch.object(gate, "ROOT", root):
+                recipe = gate.source_testkit(source, root / "package")
+            self.assertEqual((root / "package/LICENSE").read_bytes(), (root / "LICENSE").read_bytes())
+            self.assertEqual(recipe["license_source"], str(root / "LICENSE"))
+
     def test_dependency_graph_refuses_checkout_path_and_checksum_drift(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

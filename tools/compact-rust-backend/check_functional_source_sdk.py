@@ -81,15 +81,18 @@ def runtime_files(root):
 def source_testkit(source, destination):
     destination.mkdir()
     shutil.copytree(source / "src", destination / "src")
-    for name in ("Cargo.toml", "README.md", "LICENSE"):
+    for name in ("Cargo.toml", "README.md"):
         shutil.copyfile(source / name, destination / name)
+    license_source = source / "LICENSE" if (source / "LICENSE").is_file() else ROOT / "LICENSE"
+    shutil.copyfile(license_source, destination / "LICENSE")
     original = (destination / "Cargo.toml").read_bytes()
     old, new = b'path = "../runtime-rs"', b'path = "../generated/contract/runtime-rs"'
     if original.count(old) != 1:
         raise ValueError("copied testkit runtime dependency recipe no longer applies exactly once")
     (destination.parent / "original-testkit-Cargo.toml").write_bytes(original)
     (destination / "Cargo.toml").write_bytes(original.replace(old, new))
-    return {"original_sha256": hashlib.sha256(original).hexdigest(),
+    return {"license_source": str(license_source), "license_sha256": digest(license_source),
+            "original_sha256": hashlib.sha256(original).hexdigest(),
             "derived_sha256": digest(destination / "Cargo.toml"),
             "transformation": {"from": old.decode(), "to": new.decode(), "count": 1},
             "scope": "copied library source manifest; development fixtures are outside this dependency graph"}
@@ -275,7 +278,7 @@ def main(argv=None):
         version = re.search(r"make-version 'compiler (\d+) (\d+) (\d+)", (ROOT / "compiler/compiler-version.ss").read_text())
         if version is None or receipt["versions"]["compiler"] != ".".join(version.groups()):
             raise ValueError("compiler version differs from selected source")
-        paths = [Path(__file__), Path(common.__file__), Path(did_proof_gate.__file__), ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "compiler/compiler-version.ss", ORIGINAL]
+        paths = [Path(__file__), Path(common.__file__), Path(did_proof_gate.__file__), ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "compiler/compiler-version.ss", ROOT / "LICENSE", ORIGINAL]
         for folder in (EXAMPLE, ROOT / "testkit-rs", ROOT / "tools/compact-rust-proof-smoke/src"):
             paths += [p for p in folder.rglob("*") if p.is_file()]
         expected_runtime = runtime_files(ROOT)
