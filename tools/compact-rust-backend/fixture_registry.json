@@ -458,7 +458,7 @@
     },
     {
       "source": "examples/rust_backend/constant_valued_vector_indices.compact",
-      "source_sha256": "0d46ee1b51d0f796f6fd3eb8c03ebd8f3ea6cad0c4a2cebfdf13992e8b9b99a4",
+      "source_sha256": "832854d59cede61230aaf775abffbfd2480ba496667dde1760da93d7a25dee94",
       "frontend_outcome": "accepted",
       "frontend_flags": [
         "--rust-functional-ledger8"
@@ -467,7 +467,7 @@
       "manifest": "tests-rust-backend/constant-valued-vector-indices-source/Cargo.toml",
       "library": "tests-rust-backend/constant-valued-vector-indices-source/lib.rs",
       "generated_library": "tests-rust-backend/constant-valued-vector-indices-source/lib.rs",
-      "qualification": "Complete alias/arithmetic Vector source accepted by the clean original native compiler; unmodified full output with rustfmt only and all five complete checked programs. Actual four-route/TS/compile-fail consumer gate passed; new-source proofs, full CI and integration remain separately required. Registration alone asserts no execution or proof coverage."
+      "qualification": "Complete alias/arithmetic Vector source with all five complete checked programs and generated output formatted only. Compiler, four-route/TS/compile-fail consumers and fresh proofs are separately gated for each source revision; earlier receipts retain their own source identities. Registration alone asserts no execution, proof, full CI or integration acceptance."
     },
     {
       "source": "examples/rust_backend/map_size_expression.compact",

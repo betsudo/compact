@@ -28,6 +28,66 @@
   (define constant-bindings (make-parameter #f))
   (define (exact-integer? value) (and (integer? value) (exact? value)))
 
+  ;; These are authoritative analyzed type maxima, not evaluated expressions.
+  (define (unsigned-maximum type)
+    (nanopass-case (Lnodisclose Type) type
+      [(tunsigned ,src ,nat) (and (exact-integer? nat) (>= nat 0) nat)]
+      [(talias ,src ,nominal? ,type-name ,type) (unsigned-maximum type)]
+      [else #f]))
+
+  (define (bind-constant! local value)
+    (nanopass-case (Lnodisclose Argument) local
+      [(,var-name ,type)
+       (let ([shape (constant-shaped? value)] [maximum (unsigned-maximum type)])
+         (eq-hashtable-set! (constant-bindings) var-name
+           (and shape maximum (cons maximum shape)))
+         (and shape maximum (list var-name maximum shape)))]))
+
+  ;; Subtraction's analyzer binds nontrivial operands before its guard. Preserve
+  ;; each base variable's identity even when two constants have equal values.
+  (define (constant-base expr)
+    (nanopass-case (Lnodisclose Expression) expr
+      [(quote ,src ,datum)
+       (and (exact-integer? datum) (>= datum 0)
+            (cons datum (list 'literal datum)))]
+      [(var-ref ,src ,var-name)
+       (let ([info (eq-hashtable-ref (constant-bindings) var-name #f)])
+         (and info (cons (car info) (list 'variable var-name))))]
+      [else #f]))
+
+  (define (subtraction-base expr)
+    (nanopass-case (Lnodisclose Expression) expr
+      [(safe-cast ,src ,type ,type^ ,expr)
+       (let ([base (constant-base expr)] [maximum (unsigned-maximum type)]
+             [source-maximum (unsigned-maximum type^)])
+         (and base maximum source-maximum (= source-maximum (car base)) base))]
+      [else (constant-base expr)]))
+
+  (define (unsigned-bound-operand? expr maximum base)
+    (nanopass-case (Lnodisclose Expression) expr
+      [(safe-cast ,src ,type ,type^ ,expr)
+       (let ([target (unsigned-maximum type)] [source (unsigned-maximum type^)])
+         (and target source (= target maximum) (= source (car base))
+              (equal? (constant-base expr) base)))]
+      [else (and (= maximum (car base)) (equal? (constant-base expr) base))]))
+
+  (define (guarded-subtraction bits mbits expr1 expr2 expr3 expr4 mesg)
+    (let ([left (subtraction-base expr3)] [right (subtraction-base expr4)])
+      (and left right (exact-integer? bits) (> bits 0)
+           (exact-integer? mbits) (> mbits 0)
+           (equal? mesg "result of subtraction would be negative")
+           ;; Match arithmetic-binop in analysis-passes: comparison widens to
+           ;; the larger original type, subtraction uses the left result type.
+           ;; Match both annotations without evaluating either operand.
+           (= mbits (max 1 (integer-length (car left))))
+           (= bits (max 1 (integer-length (max (car left) (car right)))))
+           (let ([maximum (max (car left) (car right))])
+             (and (unsigned-bound-operand? expr1 maximum left)
+                  (unsigned-bound-operand? expr2 maximum right)
+                  (unsigned-bound-operand? expr3 (car left) left)
+                  (unsigned-bound-operand? expr4 (car left) right)
+                  (list 'guarded-subtract bits mbits (cdr left) (cdr right)))))))
+
   ;; A grammar key, not an evaluator. Numeric results come exclusively from
   ;; resolve-indices/simplify. Runtime formals, calls, conditionals and loop
   ;; bindings are deliberately not inferred to be local constants.
@@ -41,15 +101,25 @@
       [(var-ref ,src ,var-name)
        (and (eq-hashtable-ref (constant-bindings) var-name #f)
             (list 'variable var-name))]
-      ;; Analysis widens unsigned operands before arithmetic. This is a
-      ;; transparent typed coercion, not an independently evaluated constant.
+      [(let* ,src ([,local* ,expr*] ...) ,expr)
+       (parameterize ([constant-bindings (hashtable-copy (constant-bindings) #t)])
+         (let loop ([locals local*] [values expr*] [shapes '()])
+           (if (null? locals)
+               (let ([body (constant-shaped? expr)])
+                 (and body (list 'let* (reverse shapes) body)))
+               (let ([shape (bind-constant! (car locals) (car values))])
+                 (and shape (loop (cdr locals) (cdr values) (cons shape shapes)))))))]
+      ;; Analysis annotates unsigned arithmetic operands with the result type,
+      ;; which can narrow for multiplication by zero. drop-safe-casts erases
+      ;; these annotations before authoritative evaluation. Checked source
+      ;; downcasts are distinct nodes and remain outside this grammar.
       [(safe-cast ,src ,type ,type^ ,expr)
        (let ([shape (constant-shaped? expr)])
          (and shape (nanopass-case (Lnodisclose Type) type
               [(tunsigned ,src^ ,nat)
                (nanopass-case (Lnodisclose Type) type^
                  [(tunsigned ,src^^ ,nat^)
-                  (and (>= nat nat^) (list 'widen nat nat^ shape))]
+                  (list 'unsigned-annotation nat nat^ shape)]
                  [else #f])]
               [else #f])))]
       [(+ ,src ,mbits ,expr1 ,expr2)
@@ -58,18 +128,12 @@
        (arithmetic '- mbits expr1 expr2)]
       [(* ,src ,mbits ,expr1 ,expr2)
        (arithmetic '* mbits expr1 expr2)]
-      ;; Only the exact analysis-generated unsigned subtraction guard is pure
-      ;; index grammar. Structural equality here checks that guard's operands;
+      ;; Only the canonical analyzed unsigned subtraction guard is index grammar.
+      ;; Operand identity and type bounds check its casts/widths independently;
       ;; occurrence authority still uses original node identity exclusively.
       [(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) ,mesg)
          (- ,src^^^ ,mbits ,expr3 ,expr4))
-       (let ([left (constant-shaped? expr1)] [right (constant-shaped? expr2)])
-         (and left right mbits
-              (equal? mesg "result of subtraction would be negative")
-              (= bits mbits)
-              (equal? left (constant-shaped? expr3))
-              (equal? right (constant-shaped? expr4))
-              (list 'guarded-subtract mbits left right)))]
+       (guarded-subtraction bits mbits expr1 expr2 expr3 expr4 mesg)]
       [else #f]))
 
   (define-pass collect-vector-indices : Lnodisclose (ir) -> Lnodisclose ()
@@ -79,9 +143,7 @@
          (for-each
            (lambda (local value)
              (Expression value)
-             (nanopass-case (Lnodisclose Argument) local
-               [(,var-name ,type)
-                (eq-hashtable-set! (constant-bindings) var-name (constant-shaped? value))]))
+             (bind-constant! local value))
            local* expr*)
          (Expression expr))
        ir]

@@ -3,7 +3,8 @@
 Current bounded semantic follow-up:
 [constant-valued Vector indices](constant-valued-vector-indices.md). Its local
 implementation follows accepted literal projection and the standalone consumer
-work; original compiler, new-source proofs and complete integration gates remain
+work; original compiler, consumers and fresh proofs are gated separately for each
+source revision; complete integration gates remain
 required. This link does not reopen completed acceptance or resume Forge.
 
 Decision: 2026-10-25, direct owner instruction. Implementation of the next

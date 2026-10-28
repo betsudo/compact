@@ -424,6 +424,29 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      ;; arithmetic-binop annotates both operands with the result bound.
+      ;; For multiplication by zero that bound is smaller than an operand's;
+      ;; this safe-cast is erased by the circuit pipeline, not a checked
+      ;; source downcast. Keep the original operand carrier and let the
+      ;; existing checked arithmetic helper validate the result. Never fold
+      ;; the operand away: its evaluation and failures still occur in order.
+      (define (unsigned-arithmetic-operand-ir expr src lower lower-typed)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src^ (tunsigned ,src1 ,nat) (tunsigned ,src2 ,nat^) ,expr^)
+           (if (< nat nat^)
+               (lower-typed expr^
+                 (with-output-language (Lnodisclose Type) `(tunsigned ,src2 ,nat^)) src^)
+               (lower expr src))]
+          [else (lower expr src)]))
+
+      (define (pure-unsigned-arithmetic-operand-ir expr src)
+        (unsigned-arithmetic-operand-ir expr src expression-ir typed-expression-ir))
+
+      (define (stateful-unsigned-arithmetic-operand-ir expr src witness-ids)
+        (unsigned-arithmetic-operand-ir expr src
+          (lambda (expr src) (stateful-expression-ir expr src witness-ids))
+          (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids))))
+
       (define (resolved-vector-expression original src type expr index)
         (let ([kindex (rust-vector-index original)])
           (unless kindex
@@ -775,8 +798,8 @@
            (if mbits
                (object (cons "kind" "unsigned_add")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "add")
                        (cons "left" (field-argument-ir expr1 owner-src))
                        (cons "right" (field-argument-ir expr2 owner-src))))]
@@ -784,8 +807,8 @@
            (if mbits
                (object (cons "kind" "unsigned_subtract")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "subtract")
                        (cons "left" (field-argument-ir expr1 src))
                        (cons "right" (field-argument-ir expr2 src))))]
@@ -793,8 +816,8 @@
            (if mbits
                (object (cons "kind" "unsigned_multiply")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "multiply")
                        (cons "left" (field-argument-ir expr1 src))
                        (cons "right" (field-argument-ir expr2 src))))]
@@ -906,8 +929,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_add")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(- ,src ,mbits ,expr1 ,expr2)
@@ -916,8 +939,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_subtract")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(* ,src ,mbits ,expr1 ,expr2)
@@ -926,8 +949,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_multiply")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(quote ,src ,datum)
@@ -1920,8 +1943,8 @@
               [(tunsigned ,src^ ,nat)
                (object (cons "kind" kind)
                        (cons "max" (number->string nat))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))]
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))]
               [else (stateful-expression-ir value-expr owner-src witness-ids)])
             (stateful-expression-ir value-expr owner-src witness-ids)))
 
@@ -2207,8 +2230,8 @@
            (if mbits
                (object (cons "kind" "unsigned_add")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "add")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]
@@ -2216,8 +2239,8 @@
            (if mbits
                (object (cons "kind" "unsigned_subtract")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "subtract")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]
@@ -2225,8 +2248,8 @@
            (if mbits
                (object (cons "kind" "unsigned_multiply")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "multiply")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]

@@ -272,3 +272,33 @@ complete Linux/native/proof/package/archive/E2E CI gates remain mandatory.
 The Vector protocol retains standalone proofs, preimages, final-state bytes and
 runner logs/results. Sealed transaction bytes are not separately retained;
 strict application and replay are exercised in the recorded runner execution.
+
+
+## Review repairs — 2026-10-29
+
+The actual PR #699 Claude review exposed valid constant arithmetic forms missing
+from the occurrence grammar. Compound subtraction uses analyzer-created scoped
+temporaries. Its comparison width is the larger original operand bound, while
+its subtraction width follows the left operand. The bridge now checks both
+widths, exact operand identities, cast bounds and the canonical assertion message.
+Independent forged-width, message, operand and checked-downcast controls refuse.
+
+Unsigned safe-cast annotations are erased by the authoritative circuit pipeline;
+they can narrow for multiplication by zero. They are distinct from checked
+source downcasts. Arithmetic emission retains the original carrier under a
+narrowing arithmetic annotation and uses existing checked runtime arithmetic,
+preserving operand evaluation and failures rather than prematurely rejecting a
+valid value. Runtime-dependent indices remain excluded, even for multiplication
+by zero. The maintained complete source exercises these cases in pure and
+stateful routes, including the witnessed circuit selected for real proofs.
+
+The same-type in-range IR mutation now changes the selected witnessed projection.
+It remains an exact whole-IR binding refusal before keys or state, not an
+independent semantic verifier. Linux CI also found that the test helper name
+`collect` conflicts with the newer Scheme import; it has a specific local name.
+
+Historical qualification receipts above remain evidence for their exact source
+epochs. These source repairs require a new original packaged compiler, complete
+fixture comparison, native/TS and API controls, fresh keys/proofs and funded
+transaction checks, full PR CI, and another actual Claude CLI review before
+integration. Development override execution is labelled separately throughout.

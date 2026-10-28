@@ -68,20 +68,56 @@ def validate_proof_summary(summary, source_label):
 
 
 def changed_projection_ir(original):
-    """Change an actual same-type, in-range selection; keep the complete source IR."""
+    """Change the proved witnessed selection; retain whole-source IR binding."""
     changed = copy.deepcopy(original)
-    first = next((row for row in changed.get("circuits", []) if row.get("name") == "first"), None)
-    require(isinstance(first, dict), "missing original first projection")
-    require(first.get("parameters") == [{"name": "items", "ty": {
-        "kind": "vector", "length": 2, "element": {"kind": "field"}}}],
-        "index mutation requires the genuine two-Field Vector input")
-    node = first.get("body", {})
-    while node.get("kind") == "let":
-        node = node.get("body", {})
-    require(node.get("kind") == "tuple_index" and type(node.get("index")) is int
-            and node["index"] == 0 and node.get("value") == {"kind": "parameter", "name": "items"},
-            "index mutation requires the genuine first input projection")
-    node["index"] = 1
+    circuit = next((row for row in changed.get("stateful_circuits", [])
+                    if row.get("name") == "witnessed"), None)
+    require(isinstance(circuit, dict), "missing proved witnessed circuit")
+    require(circuit.get("parameters") == [{"name": "select_first", "ty": {"kind": "boolean"}}]
+            and circuit.get("result") == {"kind": "field"}
+            and circuit.get("return_value") == {"kind": "cell_read", "field": "stored", "index": 0},
+            "index mutation requires the genuine witnessed result")
+    bindings, writes = [], []
+
+    def walk(action):
+        require(isinstance(action, dict), "malformed witnessed action")
+        if action.get("kind") == "sequence":
+            for child in action.get("actions", []):
+                walk(child)
+        elif action.get("kind") == "let":
+            bindings.extend(action.get("bindings", []))
+            walk(action.get("action"))
+        elif action.get("kind") == "cell_write":
+            writes.append(action)
+        else:
+            require(False, "unexpected witnessed action geometry")
+
+    for action in circuit.get("actions", []):
+        walk(action)
+    items = [row for row in bindings if row.get("name") == "items"]
+    selected = [row for row in bindings if row.get("name") == "selected"]
+    require(len(items) == len(selected) == 1 and items[0].get("ty") == {
+        "kind": "vector", "length": 2, "element": {"kind": "field"}}
+        and items[0].get("value") == {"kind": "witness_call", "name": "values", "arguments": []}
+        and selected[0].get("ty") == {"kind": "field"}
+        and writes == [{"kind": "cell_write", "field": "stored", "index": 0,
+                        "value": {"kind": "parameter", "name": "selected"}}],
+        "index mutation requires the genuine witnessed input and stored selection")
+    choice = selected[0].get("value", {})
+    require(choice.get("kind") == "if" and choice.get("condition") == {
+        "kind": "parameter", "name": "select_first"}, "missing witnessed selection")
+    branches = []
+    for name, index in [("then", 0), ("otherwise", 1)]:
+        node = choice.get(name, {})
+        while node.get("kind") == "coerce":
+            require(node.get("ty") == {"kind": "field"}, "unexpected projection coercion")
+            node = node.get("value", {})
+        require(node.get("kind") == "tuple_index" and type(node.get("index")) is int
+                and node["index"] == index
+                and node.get("value") == {"kind": "parameter", "name": "items"},
+                "index mutation requires the genuine witnessed projection")
+        branches.append(node)
+    branches[0]["index"] = 1
     return changed
 
 

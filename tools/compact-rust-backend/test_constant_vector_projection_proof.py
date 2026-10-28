@@ -96,21 +96,39 @@ class VectorProofProtocolTests(unittest.TestCase):
             changed = gate.changed_projection_ir(ir)
             self.assertEqual(ir, before)
             self.assertNotEqual(changed, ir)
-            first = next(row for row in changed["circuits"] if row["name"] == "first")
-            node = first["body"]
-            while node["kind"] == "let":
-                node = node["body"]
-            self.assertEqual(node["index"], 1)
-            node["index"] = 0
+            self.assertEqual(changed["circuits"], ir["circuits"], "unproved pure functions are unchanged")
+            differences = []
+
+            def compare(left, right, path=()):
+                if isinstance(left, dict):
+                    self.assertEqual(left.keys(), right.keys())
+                    for key in left:
+                        compare(left[key], right[key], (*path, key))
+                elif isinstance(left, list):
+                    self.assertEqual(len(left), len(right))
+                    for index, (a, b) in enumerate(zip(left, right)):
+                        compare(a, b, (*path, index))
+                elif left != right:
+                    differences.append((path, left, right))
+
+            compare(ir, changed)
+            self.assertEqual(len(differences), 1)
+            path, old, new = differences[0]
+            self.assertEqual((path[0], path[-1], old, new), ("stateful_circuits", "index", 0, 1))
+            self.assertEqual(ir["stateful_circuits"][path[1]]["name"], "witnessed")
+            node = changed
+            for key in path[:-1]:
+                node = node[key]
+            node[path[-1]] = old
             self.assertEqual(changed, ir)
 
     def test_index_control_refuses_missing_or_wrong_source_geometry(self):
         ir = json.loads((gate.FIXTURE / "original-ir.json").read_text())
-        examples = [{"circuits": []}]
+        examples = [{"stateful_circuits": []}]
         for length in [1, 0, 3]:
             changed = copy.deepcopy(ir)
-            first = next(row for row in changed["circuits"] if row["name"] == "first")
-            first["parameters"][0]["ty"]["length"] = length
+            witnessed = next(row for row in changed["stateful_circuits"] if row["name"] == "witnessed")
+            witnessed["actions"][0]["bindings"][0]["ty"]["length"] = length
             examples.append(changed)
         for row in examples:
             with self.subTest(row=row), self.assertRaises(gate.common.GateError):

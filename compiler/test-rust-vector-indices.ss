@@ -22,7 +22,7 @@
         (rust-vector-indices))
 
 (define collected '())
-(define-pass collect : Lnodisclose (ir) -> Lnodisclose ()
+(define-pass collect-vector-index-nodes : Lnodisclose (ir) -> Lnodisclose ()
   (Expression : Expression (ir) -> Expression ()
     [(vector-ref ,src ,type ,expr ,index)
      (set! collected (cons ir collected))
@@ -46,9 +46,29 @@
      `(seq ,src (assert ,src^ (>= ,src^^ ,bits (quote ,src^^ 0) ,expr2) ,mesg)
         (- ,src^^^ ,mbits ,expr3 ,expr4))]))
 
+(define-pass wrong-subtraction-guard-width : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) ,mesg)
+       (- ,src^^^ ,mbits ,expr3 ,expr4))
+     `(seq ,src (assert ,src^ (>= ,src^^ ,(+ bits 1) ,expr1 ,expr2) ,mesg)
+        (- ,src^^^ ,mbits ,expr3 ,expr4))]))
+
+(define-pass wrong-subtraction-guard-message : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) ,mesg)
+       (- ,src^^^ ,mbits ,expr3 ,expr4))
+     `(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) "unrelated assertion")
+        (- ,src^^^ ,mbits ,expr3 ,expr4))]))
+
+(define-pass checked-narrow-index : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     `(vector-ref ,src ,type ,expr
+        (downcast-unsigned ,src 1 0 ,index))]))
+
 (define (nodes ir)
   (set! collected '())
-  (collect ir)
+  (collect-vector-index-nodes ir)
   (reverse collected))
 
 (define (analyze path)
@@ -134,7 +154,39 @@
     (check 'exact-constant-subtraction-guard (= (rust-vector-index subtraction-node) 1)))
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged-ir)])
     (observe-rust-vector-index! (source forged-node) 1)
-    (check 'unrelated-false-guard-not-erased (not (rust-vector-index forged-node)))))
+    (check 'unrelated-false-guard-not-erased (not (rust-vector-index forged-node))))
+  (for-each
+    (lambda (transform label)
+      (let* ([forged (transform subtraction-ir)] [node (car (nodes forged))])
+        (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged)])
+          (observe-rust-vector-index! (source node) 1)
+          (check label (not (rust-vector-index node))))))
+    (list wrong-subtraction-guard-width wrong-subtraction-guard-message)
+    '(wrong-guard-width-not-erased wrong-guard-message-not-erased)))
+
+(for-each
+  (lambda (row)
+    (let* ([label (car row)] [body (cadr row)] [expected (caddr row)]
+           [ir (analyze (write-source (symbol->string label)
+                 (string-append "export pure circuit choose(items: Vector<3, Field>): Field { " body " }")))]
+           [node (car (nodes ir))])
+      (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts ir)])
+        (observe-rust-vector-index! (source node) expected)
+        (let ([actual (rust-vector-index node)])
+          (check label (and actual (= actual expected)))))))
+  '((compound-left-multiply "const index = 1; return items[index * 2 - 1];" 1)
+    (compound-left-add "const index = 1; return items[(index + 1) - 1];" 1)
+    (compound-right "const a = 2; const one = 1; return items[a - (one * 1)];" 1)
+    (wide-right "const a = 2; const one: Uint<8> = 1; return items[a - one];" 1)
+    (nested-wide "const index = 1; const one: Uint<8> = 1; return items[(index + 1) - one - one];" 0)
+    (direct-zero "const i = 1; return items[i * 0];" 0)
+    (alias-zero "const i = 1; const index = i * 0; return items[index];" 0)
+    (nested-zero "const i = 1; const index = i * 0 + 1; return items[index];" 1)))
+
+(let* ([forged-ir (checked-narrow-index ir)] [node (car (nodes forged-ir))])
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged-ir)])
+    (observe-rust-vector-index! (source node) 0)
+    (check 'checked-downcast-not-admitted (not (rust-vector-index node)))))
 
 (let* ([runtime-zero-ir (analyze (write-source "runtime-zero"
          "export pure circuit choose(items: Vector<3, Field>, i: Uint<8>): Field { const index = i * 0; return items[index]; }"))]
@@ -142,5 +194,12 @@
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-zero-ir)])
     (observe-rust-vector-index! (source runtime-zero-node) 0)
     (check 'inferred-zero-does-not-admit-runtime-formal (not (rust-vector-index runtime-zero-node)))))
+
+(let* ([runtime-ir (analyze (write-source "runtime-compound-zero"
+         "export pure circuit choose(items: Vector<3, Field>, i: Uint<8>): Field { const index = i * 0 + 1; return items[index - 1]; }"))]
+       [node (car (nodes runtime-ir))])
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-ir)])
+    (observe-rust-vector-index! (source node) 0)
+    (check 'compound-inferred-zero-still-rejects-runtime-input (not (rust-vector-index node)))))
 
 (printf "~d Rust Vector index occurrence controls passed\n" checks)
