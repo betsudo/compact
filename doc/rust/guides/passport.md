@@ -3,12 +3,12 @@
 Current guide for 0.3.0 closeout. **Historical executed example:** verified locally at1705fc1a with Rust1.99 on macOSarm64, using a fresh standalone consumer and bundled runtime sources. Keep the matching compiler/runtime bundle together; see [Version and runtime selection](version-selection.md).
 
 **Current-profile local successor:** the maintained standalone gate passes at
-signed `7e1f9d363` with original compiler0.31.142 and the declared Ledger8.1.3
+signed `834a41025` with original compiler0.31.142 and the declared Ledger8.1.3
 runtime cohort. It executes this complete two-test consumer together with the
 sixteen original adoption test methods, compares all202 live TS cases, checks
-two independent ordinary type refusals and runs strict consumer Clippy. Direct
-generated-SDK linting is being qualified separately; consumer dependency
-compilation alone does not establish that stricter result. Every local Cargo
+two independent ordinary type refusals and directly selects both generated SDK
+and consumer crates for strict Clippy. The SDK's seeded dependency lock is
+qualified separately; original generated source bytes remain unchanged. Every local Cargo
 manifest resolves inside the generated SDK/consumer directory; the source lock
 cohort is validated before execution. The historical P1 archive remains intact.
 This is local qualification on the reviewed statement-source stack; actual
