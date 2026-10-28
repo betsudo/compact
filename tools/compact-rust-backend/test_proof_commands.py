@@ -104,6 +104,27 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("check_compactc_target.py --consumer --proof", native)
         self.assertIn("cargo test --workspace --exclude compact --locked", native)
 
+    def test_passport_failure_receipts_do_not_wait_for_runtime_package_success(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        gate = workflow.index("      - name: Check standalone original Passport pure consumers\n")
+        retain = workflow.index("      - name: Retain failed Passport qualification diagnostics\n")
+        prepare = workflow.index("      - name: Prepare verified built-in proof material\n")
+        self.assertLess(gate, retain)
+        self.assertLess(retain, prepare)
+        qualification = workflow[gate:retain]
+        failure_upload = workflow[retain:prepare]
+        self.assertIn("id: passport_current", qualification)
+        self.assertNotIn("continue-on-error", qualification)
+        self.assertIn("if: failure() && steps.passport_current.outcome == 'failure'", failure_upload)
+        self.assertNotIn("runtime-packages", failure_upload)
+        self.assertIn("compact-passport-current/", failure_upload)
+        self.assertIn("!${{ runner.temp }}/compact-passport-current/cargo-target/**", failure_upload)
+        self.assertIn("if-no-files-found: ignore", failure_upload)
+        self.assertIn("passport-current-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}", failure_upload)
+        # Success still retains the original required package artifact/proof path.
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", workflow)
+        self.assertIn("compact-passport-current/formatted-generated-lib.rs", workflow)
+
     def test_native_script_stops_after_a_failed_proof_command(self):
         # Exercise the actual shell boundary without generating or caching proofs.
         with tempfile.TemporaryDirectory(prefix="native failure ") as temporary:

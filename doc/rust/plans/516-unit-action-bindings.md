@@ -1,16 +1,18 @@
 # Unit mutation initializers in statement actions (#516)
 
-Status: fresh clean original compiler141 API/proof qualification passes at
-`cf7a2fa2c`, including the changed qualification gate owners. Earlier all284
-emission and selected DID results retain literal `83d967324` and unchanged
-compiler/runtime/fixture inputs; they are not current-gate execution receipts.
-PR #695 is verified merged at signed canonical `709a86230` after exact-head
-Claude review, all eleven CI checks and retained artifact/source verification.
-Normal merge `2da45e015` reconciles that accepted canonical history into
-`codex/rust-ast-unit-action-bindings`; its complete tracked tree is unchanged
-from documentation successor `1a3ace5fa`. This slice is published as draft PR
-#696; final exact-head review and complete CI remain required. Earlier receipts
-retain their literal source and compiler epochs.
+Status: verified integrated by PR [#696](https://github.com/betsudo/compact/pull/696)
+at signed canonical `f0e4ba788`. Published/reviewed source `9667072e7`, actual CI
+checkout `b7c15323b` and the canonical merge have the same complete tracked tree.
+All eleven required checks passed, including Linux and Apple Silicon, original
+compiler/native, selected proof, package/archive, wallet and E2E gates. Actual
+exact-head Claude CLI review reports no blocking issue.
+
+Fresh local original compiler141 affected API/proof qualification retains its
+literal `cf7a2fa2c` epoch. Earlier all284 emission and selected DID results retain
+literal `83d967324` and unchanged compiler/runtime/fixture inputs. They are not
+relabelled as later executions. See the integration closeout below for retained
+CI artifact scope and limits. This is the bounded statement extension, not all
+of #516 or completion of the broader Rust AST goal.
 
 PR #694 is verified merged at canonical `1d0288846`. The valid mixed
 Field/Unit/Field/Unit review case exposed a shared functional receiver formatting
@@ -292,8 +294,9 @@ gates above subsequently generate and execute their own fresh outputs.
 
 These are local qualification results. PR #695's complete CI and actual canonical
 integration now pass, and the unchanged-tree merge above reconciles its history.
-This follow-up's own published exact-head review and full CI remain gates. Any
-later source change needs a new qualification bridge or affected fresh runs;
+At that local checkpoint, this follow-up's published exact-head review and full
+CI were still pending. They subsequently passed at `9667072e7` as recorded below.
+Any later source change needs a new qualification bridge or affected fresh runs;
 merge history alone does not renew a proof receipt.
 
 ## PR #696 review controls and fresh qualification
@@ -322,6 +325,31 @@ existing explicit manual skip events; the 36 focused fixture/protocol controls
 also pass. No proof/verdict was reused for these affected gate runs.
 
 The earlier all284-emission and DID receipts retain their original epochs;
-their compiler/runtime/fixture inputs are unchanged. These review fixes require
-fresh exact-head PR review and complete CI before integration. They do not
-complete #516 or the broader Rust AST goal.
+their compiler/runtime/fixture inputs are unchanged. At this review-fix epoch,
+fresh exact-head PR review and complete CI were still required; the integration
+closeout below records their subsequent success. They do not complete #516 or
+the broader Rust AST goal.
+
+## Verified integration — PR #696
+
+Signed normal merge `f0e4ba78855f6dcd74b64a2b1e0b12af9fccc86a` integrates reviewed
+`9667072e7` into actual canonical `709a86230`. GitHub confirms MERGED, the same
+tree `a0ea90039c0af7331c669d9650061fb742b72f4a`, exact parents and a verified
+signature. DCO and Assisted-by trailers are retained. All eleven exact-head
+checks and actual Claude review pass; no required gate was removed or waived.
+
+The retained runtime archive for actual CI checkout `b7c15323b` passes the
+GitHub-authenticated digest, ZIP CRC/membership and source/protocol checks:
+52,688,232 bytes, 6,514 entries, SHA-256
+`417712cd99c3c312a59fd24c5d5681f18534c0b7c6bebc30266cf98d5129d864`.
+Both API/proof copies preserve all fifteen Unit Programs and the complete source
+IR; all twelve DID Programs/IR also match. The current four-call outer Unit
+proof-gate/v2 and selected DID proof protocol pass. Boundary admission remains
+Cargo typechecking and strict Clippy, with no execution/proof of those exact
+boundary crates inferred. Unarchived boundary/tool/SRS bytes retain their
+metadata-only limit. Archive verification did not execute new host proofs.
+
+After verified GitHub merge, all 104 ignored worktree entries were preserved and
+checked by content, mode and membership; process/open-file guards passed. The
+completed worktree was recoverably archived. Shared targets, stores, snapshots,
+all predecessor/failure evidence and the separate Forge experiment are retained.

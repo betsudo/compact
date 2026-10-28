@@ -2,6 +2,22 @@
 
 Current guide for 0.3.0 closeout. **Historical executed example:** verified locally at1705fc1a with Rust1.99 on macOSarm64, using a fresh standalone consumer and bundled runtime sources. Keep the matching compiler/runtime bundle together; see [Version and runtime selection](version-selection.md).
 
+**Current-profile successor under review:** the maintained gate in PR #697
+passed on clean signed `f0c09ff56`, original compiler 0.31.142/Ledger8.1.3.
+It builds this unchanged manifest and Rust source as a separate two-test crate,
+using the current source-lock recipe below. Sixteen adoption Rust methods, 202
+live TS cases and codec vectors also pass. SDK, guide and adoption consumer each
+pass direct strict Clippy; both correct-type twins compile and the restored
+misuses each produce the intended E0308. The generated SDK remains untouched;
+formatting uses a separate copy.
+
+Original P1 retains its historical lock and execution identity. Earlier
+`2bbf4daaf` ran only the unchanged guide test source through a gate-written
+manifest; `834a41025` used formatted SDK bytes. The current v3 run preserves
+those distinctions and original source/oracle pins. All 389 public Python
+methods pass (20 existing manual-only skip events). Repeat review and full
+current-head CI remain required; see the [plan and limits](../plans/passport-current-profile-consumer.md).
+
 ## What this contract provides
 
 The adopted digital-passport source exports75 pure functions for credentials, commitments, selective disclosure, age predicates, requests and signed protocol envelopes. Its authoritative IR has no ledger fields, witnesses or stateful circuits. Call `pure_circuits` directly. ContractLab is useful for contracts that have ledger state; no simulator setup or ledger transaction is needed for this pure source family.
@@ -93,7 +109,22 @@ cargo metadata --offline --format-version 1 --manifest-path consumer/Cargo.toml 
 cargo test --locked --manifest-path consumer/Cargo.toml
 ```
 
-These revised lock-preparation commands are guidance; this passport example was not rerun by the current documentation review. The retained acceptance run used `+1.99.0`, `--offline`, `-j4` and a warm dependency target. Its complete lockfile pins the exact registry versions/checksums already reviewed in the Compact workspace. Every local Cargo package resolves under the external example directory; there is no runtime path back into the source checkout. Keep the generated sources unedited.
+The clean `f0c09ff56` v4 gate executes this lock-preparation recipe with the
+unchanged documented manifest and Rust source, then tests and strictly lints
+the actual crate offline under Rust1.99.0. All local manifests resolve inside
+the external consumer closure, and registry/Git/checksum identities match the
+qualified source lock. The archived P1 lock is retained separately and is not
+claimed compatible unchanged with this newer runtime. The current run reused
+an isolated Cargo target; the earlier ambient-unset cold-target result has its
+own source epoch. Keep generated sources unedited.
+
+The gate rejects Cargo compiler/lint substitutions and binds selected Cargo
+configuration identities. Exact bundled runtime membership, manifests, sources
+and support files must match. It stops owned POSIX process groups on timeout,
+bounds post-kill pipe draining and retains partial diagnostics. Detached groups
+remain outside its stop scope. Its separate failure upload requires a live job/runner; hard job
+cancellation, timeout or runner loss may prevent final retention. Runtime
+package/dist byte checks do not attest every transitive TS/WASM dependency.
 
 ## Translate TypeScript calls
 
