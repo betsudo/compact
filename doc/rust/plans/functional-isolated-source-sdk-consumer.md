@@ -102,3 +102,28 @@ work. Stop dependent work for a real current-parent failure or source drift.
 Keep every failed receipt and literal evidence epoch. Update the existing midnight
 knowledge base and CAS checkpoint on meaningful progress. The broader Rust AST
 and supported-profile handoff remain incomplete after this bounded slice.
+
+## Development proof baseline — 28 October
+
+The raw original141 SDK, one-path copied testkit recipe and actual documented
+consumer manifest/proof source pass local development execution. Selected direct
+keygen is k6 / 49 rows. ProofLab freshly generates a 2,912-byte standalone proof;
+immutable verification and binding/input/output/proof-byte controls pass. An
+inconsistent private witness transcript refuses. A separately proved 6,607-byte
+funded transaction passes default strictness, applies exact Cell state and
+refuses replay as IntentAlreadyExists with unchanged ledger state. Parameter k6
+and built-in k13–15 material was independently reverified against upstream tables.
+
+A failed Arc move in the new handwritten harness is retained. A later harness
+incorrectly expected changed input 43 with witness/output 42 to fail checking.
+The complete Compact source has no witness-return-equals-argument assertion:
+that different statement can check successfully while the old immutable proof
+correctly refuses its changed communication commitment. The corrected harness
+preserves source semantics and separately refuses inconsistent witness/output.
+No source constraint or ledger balancing policy was added.
+
+A maintained isolated gate and executable example now encode this recipe,
+positive/static refusal controls, full source/runtime/lock membership and fresh
+proof/application assertions. Development results are not clean final source
+qualification. Parent Passport integration, clean local gate, actual Claude PR
+review, full Linux required CI and verified normal merge remain open.
