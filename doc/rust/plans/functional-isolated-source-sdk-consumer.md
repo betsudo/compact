@@ -127,3 +127,32 @@ positive/static refusal controls, full source/runtime/lock membership and fresh
 proof/application assertions. Development results are not clean final source
 qualification. Parent Passport integration, clean local gate, actual Claude PR
 review, full Linux required CI and verified normal merge remain open.
+
+## Clean local qualification — original compiler 0.31.141
+
+Clean signed source `9043b8c160db890224d8029bd1dd894fa2e96b1c` passes the
+maintained gate on macOS arm64. All 27 commands succeed: three actual ContractLab
+methods, three separate positive/refusal pairs (E0053/E0382/E0382), direct strict
+Clippy for consumer/raw SDK/copied testkit, fresh k6/49-row keys, upstream material
+verification, checked-profile proof compilation, proof Clippy, fresh standalone
+proof and a separately proved default-strict funded transaction/replay.
+
+The receipt binds 319 source inputs, all 118 original generated members, the
+exact 105-file bundled runtime, sixteen verified parameter/built-in files and
+three application artifacts. The final generated inventory is exactly the raw
+118 members plus the fresh prover key, verifier key and binary ZKIR. Cargo's
+actual executable record names the external proof source and confirms enabled
+debug assertions/overflow checks. The retained proof executable is a stable byte
+snapshot. Compiled dependencies are reused; no cold-build or cached proof claim.
+
+The first clean attempt failed because the testkit inherits root LICENSE.
+Its receipt remains failed. The package recipe now copies the exact repository
+license and has a dedicated real-layout refusal/positive control. Nine focused
+gate controls and seventeen script/workflow/header controls pass. Earlier
+prototype receipts keep their own narrower source and correction epochs.
+
+Evidence is retained under the local `rust-ast-functional-sdk-consumer-20261028`
+root (`clean-source-sdk141-v3/receipt.json`). This source epoch precedes normal
+reconciliation with Passport and the final compiler version. Full Linux CI,
+actual PR review and verified normal merge remain required. No broader goal or
+paired-source distribution/handoff completion is claimed.

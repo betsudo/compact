@@ -121,8 +121,10 @@ The development prototype and actual documented proof program pass locally:
   statement is source-faithful. A typed callback does not prove an unstated
   algebraic relation or certify arbitrary callback privacy/external effects.
 
-These are finite development results. Clean maintained-gate qualification,
-independent review and complete CI remain open in the
+The maintained gate also passes clean local qualification on original compiler
+0.31.141 at source `9043b8c160db890224d8029bd1dd894fa2e96b1c`. These are finite
+selected results. Final source reconciliation, independent review and complete
+Linux CI remain open in the
 [slice plan](../../../plans/functional-isolated-source-sdk-consumer.md).
 No all-export, network, hostile-host or whole-language coverage is claimed.
 Existing complete CI/proof gates remain mandatory before integration.

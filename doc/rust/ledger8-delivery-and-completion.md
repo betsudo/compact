@@ -225,7 +225,7 @@ not depend on the deferred Forge experiment.
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension by #692; ordered return-scope Unit initializers by #694. Statement-action extension is locally qualified and awaiting its own PR acceptance. | [Statement-action plan](plans/516-unit-action-bindings.md); lexical/effect order, TS/four-route parity, independent refusal controls and selected fresh proofs. This is not whole-issue closure. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension by #692; ordered return-scope Unit initializers by #694. Statement-action extension is integrated by #696. | [Statement-action plan](plans/516-unit-action-bindings.md); lexical/effect order, TS/four-route parity, independent refusal controls and selected fresh proofs. This is not whole-issue closure. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
@@ -241,9 +241,9 @@ A successful `cargo package --list` or a manifest that names an unpublished regi
 
 The bounded [isolated witnessed SDK slice](plans/functional-isolated-source-sdk-consumer.md)
 now has a concrete paired source-testkit recipe and actual executable ContractLab/
-ProofLab example. Local development proof/strict-application controls pass for
-one complete witnessed Cell source. Clean qualification, review and full CI are
-still required; this does not complete the distribution or handoff criterion.
+ProofLab example. Clean local proof/strict-application qualification passes for
+one complete witnessed Cell source. Final source reconciliation, review and full
+Linux CI are still required; this does not complete the distribution or handoff criterion.
 
 ### 5. Freeze a finite capability contract and finish the handoff
 
