@@ -173,3 +173,30 @@ all source/tool guards. Exceptions retain `status: failed` and a nonzero exit;
 file presence or a partial receipt is not acceptance. Entry controls prove that
 dirty source refuses before generation. This tightens qualification reporting,
 without changing generated APIs, compiler lowering or proof semantics.
+
+## Reconciled local qualification — compiler 0.31.139
+
+Clean signed `463843caa` realizes original compiler0.31.139 from the unchanged
+inputs built at `3979df840`. Fresh Unit API and separate selected proof gates
+pass with no old Scheme override: 58 live TS cases, 196 Rust executions, 62
+recording replays, all three compile-fail controls and strict Clippy. Two fresh
+k7 / 76-row standalone proofs are 2,912 bytes each; independently proved strict
+transactions are 6,589 / 6,591 bytes at this literal epoch. Binding and
+same-geometry Field-result mutations refuse; replay preserves the ledger.
+Changed complete IR and checked-program controls refuse before keys or state.
+
+Affected original DID API and proof gates also pass freshly at clean 463:
+complete twelve-program generation, live TS/four-route behavior, typed refusals,
+selected immutable verification and separate funded strict application/replay.
+The full backend library has 1,826 passes and seven existing ignores, and full
+workspace formatting passes at 3979, whose Rust bodies are unchanged at 463.
+Public Python at 463 has 341 passes and 20 existing skips. Exact CI version
+checks pass in the compiler Nix environment; the earlier host invocation used
+BSD grep without `-P` and is retained as an environment failure.
+
+The PR header check identified four modified files with inherited abbreviated
+headers. Their full license comments are now supplied, with all module bodies
+unchanged. Those are new compiler inputs: preserve the 463 receipts, realize the
+updated original package and renew final selected qualification rather than
+relabeling old runs. Complete required CI and exact-head Claude review remain
+mandatory before integration; this slice remains incomplete until merged.
