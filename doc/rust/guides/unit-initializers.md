@@ -17,7 +17,11 @@ The selected insertion happens exactly once. The unselected arm performs no
 insertion. An unused binding still executes its initializer. A later witness
 reads the updated state, and a failing earlier witness prevents later callbacks.
 Bindings retain lexical scope and shadowing. Users need no helper circuit to
-express this supported source form.
+express this supported source form. The initializer and its uses in this slice
+are in the circuit's return-producing lexical scope. Initializers nested inside
+a statement-only conditional block, or combined with a later conditional mutation
+in a Unit-returning circuit, remain explicit Rust source refusals. The maintained
+gate pins TypeScript admission and Rust refusal for both boundary cases.
 
 ## Ordinary typed APIs
 

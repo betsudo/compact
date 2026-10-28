@@ -42,6 +42,8 @@ initializer admitted by the #516 follow-up. Its complete source cohort is
 and separate proof gates carry execution and selected-proof evidence; source
 generation alone makes neither claim.
 
-Cell-specific lexical redesign, non-Unit mutation initializers and arbitrary
+Unit initializers nested in statement-only blocks, Unit-returning circuits with
+a later conditional mutation, Cell-specific lexical redesign, non-Unit mutation
+initializers and arbitrary
 result conversions remain outside this bounded follow-up. Existing checked
 lowering, resource limits and capability refusals remain in force.

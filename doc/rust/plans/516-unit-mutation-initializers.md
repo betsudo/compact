@@ -200,3 +200,27 @@ unchanged. Those are new compiler inputs: preserve the 463 receipts, realize the
 updated original package and renew final selected qualification rather than
 relabeling old runs. Complete required CI and exact-head Claude review remain
 mandatory before integration; this slice remains incomplete until merged.
+
+## Independent review boundaries
+
+Claude CLI reviewed published `d35e91792` against canonical `373fe452c` and found
+no merge-blocking code defect or false-success path. Two concrete neighboring
+source forms remain unsupported: a Unit mutation initializer inside a
+statement-only conditional block, and a Unit-returning circuit combining it with
+a later conditional mutation. Both actually compile for TS and fail closed for
+Rust before output. Maintained source controls and the guide now state these
+boundaries explicitly; this slice does not expand into shared action-binding
+redesign. These are future semantic gaps, not accepted capabilities.
+
+The other equality emitters cited by review belong to the `cfg(test)` historical
+migration reference, and two cited inequality paths additionally constrain
+operands to Field/Enum or Uint64. They are not production dispatch. Do not reopen
+accepted retirement work or refactor the reference to match the successor.
+Mandatory live TS/four-route behavior and strict Clippy remain the effect-order
+authority; the cheap frontend node-count check alone claims neither behavior nor
+proof acceptance. Source origins are occurrence/path based and can map an
+initializer's action and Unit result to the same real source span. No synthetic
+origin or one-node-per-span assumption is introduced. The unused temporary index
+is harmless and remains stable to avoid unrelated generated fixture churn.
+The API gate now has a single mandatory live-TS path, without an impossible
+optional-TS fallback. Final-source gates and repeat exact-head review follow.

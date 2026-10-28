@@ -114,48 +114,44 @@ def main():
         run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
                          "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
-        if args.ts_runtime:
-            runtime = args.ts_runtime.resolve(strict=True)
-            modules = output / "node_modules/@midnight-ntwrk"
-            modules.mkdir(parents=True)
-            (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
-            (output / "package.json").write_text('{"type":"module"}\n')
-            capture = output / "ts-reference.json"
-            version = json.loads((ROOT / "runtime/package.json").read_text())["version"]
-            run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
-                               "--runtime", runtime, "--version", version, "--output", capture])
-            environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(capture)
-            environment["COMPACT_UNIT_INITIALIZERS_CASES"] = str(FIXTURES / "cases.json")
-            observations = json.loads(capture.read_text())
-            report["typescript"] = {"capture": str(capture), "sha256": digest(capture),
-                                    "cases": len(observations["rows"]),
-                                    "cost_scope": "Sum of actual TS query calls, including witness-view reads; raw last-query cost retained"}
-            # Exercise the actual capture, including its imports and hashing.
-            # Injected report names test portability; they are not a Linux run.
-            injected = output / "ts-kernel-library-control.json"
-            names = ["linux-vdso.so.1", "linux-gate.so.1"]
-            capture_command = ["node", "--import", FIXTURES.parent / "vector_projection/report_libraries.mjs",
-                               FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
-                               "--runtime", runtime, "--version", version]
-            run("kernel-library-names", [*capture_command, "--output", injected],
-                env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps(names)))
-            if sorted(json.loads(injected.read_text())["node"]["kernelVirtualLibraries"]) != sorted(names):
-                raise ValueError("known kernel mapping names were not retained explicitly")
-            missing = output / "missing-reported-library.so"
-            refused_capture = output / "must-not-capture-missing-library.json"
-            if missing.exists():
-                raise ValueError("missing-library control premise is not absent")
-            refused = run("unknown-library-refusal", [*capture_command, "--output", refused_capture],
-                          success=False,
-                          env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps([str(missing)])))
-            if not refused.returncode or "ENOENT" not in refused.stderr or str(missing) not in refused.stderr or refused_capture.exists():
-                raise ValueError("unknown missing shared library did not fail before capture publication")
-            report["typescript"]["library_report_controls"] = {
-                "scope": "actual host capture with injected report names; not Linux qualification",
-                "known_kernel_names_retained": names, "unknown_missing_library_refused": True}
-        else:
-            environment.pop("COMPACT_UNIT_INITIALIZERS_TS_REFERENCE", None)
-            report["typescript"] = "NOT RUN; no --ts-runtime selected"
+        runtime = args.ts_runtime.resolve(strict=True)
+        modules = output / "node_modules/@midnight-ntwrk"
+        modules.mkdir(parents=True)
+        (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
+        (output / "package.json").write_text('{"type":"module"}\n')
+        capture = output / "ts-reference.json"
+        version = json.loads((ROOT / "runtime/package.json").read_text())["version"]
+        run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
+                           "--runtime", runtime, "--version", version, "--output", capture])
+        environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(capture)
+        environment["COMPACT_UNIT_INITIALIZERS_CASES"] = str(FIXTURES / "cases.json")
+        observations = json.loads(capture.read_text())
+        report["typescript"] = {"capture": str(capture), "sha256": digest(capture),
+                                "cases": len(observations["rows"]),
+                                "cost_scope": "Sum of actual TS query calls, including witness-view reads; raw last-query cost retained"}
+        # Exercise the actual capture, including its imports and hashing.
+        # Injected report names test portability; they are not a Linux run.
+        injected = output / "ts-kernel-library-control.json"
+        names = ["linux-vdso.so.1", "linux-gate.so.1"]
+        capture_command = ["node", "--import", FIXTURES.parent / "vector_projection/report_libraries.mjs",
+                           FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
+                           "--runtime", runtime, "--version", version]
+        run("kernel-library-names", [*capture_command, "--output", injected],
+            env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps(names)))
+        if sorted(json.loads(injected.read_text())["node"]["kernelVirtualLibraries"]) != sorted(names):
+            raise ValueError("known kernel mapping names were not retained explicitly")
+        missing = output / "missing-reported-library.so"
+        refused_capture = output / "must-not-capture-missing-library.json"
+        if missing.exists():
+            raise ValueError("missing-library control premise is not absent")
+        refused = run("unknown-library-refusal", [*capture_command, "--output", refused_capture],
+                      success=False,
+                      env=dict(environment, COMPACT_VECTOR_REPORT_LIBRARIES=json.dumps([str(missing)])))
+        if not refused.returncode or "ENOENT" not in refused.stderr or str(missing) not in refused.stderr or refused_capture.exists():
+            raise ValueError("unknown missing shared library did not fail before capture publication")
+        report["typescript"]["library_report_controls"] = {
+            "scope": "actual host capture with injected report names; not Linux qualification",
+            "known_kernel_names_retained": names, "unknown_missing_library_refused": True}
         package = tomllib.loads((generated / "contract/Cargo.toml").read_text())["package"]["name"]
         report["source_refusals"] = {}
         for name, messages in {
@@ -169,6 +165,22 @@ def main():
                 if not process.returncode or not all(m in process.stderr for m in messages) or refused.exists():
                     raise ValueError(f"source {name} did not refuse at its source type/effect boundary")
                 report["source_refusals"][f"{name}-{target}"] = messages
+        report["unsupported_initializer_positions"] = {}
+        for name in ("statement_block", "unit_trailing_conditional"):
+            source = FIXTURES / f"{name}_refusal.compact"
+            run(f"{name}-ts-source", [compiler, "--target", "ts", "--skip-zk", source,
+                                      output / f"{name}-ts-source"])
+            refused = output / f"{name}-rust-refused"
+            process = run(f"{name}-rust-refusal", [compiler, "--target", "rust", "--skip-zk",
+                          "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                          source, refused], success=False)
+            message = "Rust backend does not yet support this nested ledger query: Set.insert"
+            if not process.returncode or message not in process.stderr or refused.exists():
+                raise ValueError(f"unsupported initializer position {name} did not refuse before output")
+            report["unsupported_initializer_positions"][name] = {
+                "scope": "TS source admission and Rust source refusal; no execution or proof claim",
+                "typescript_source_accepted": True, "rust_source_refused": True,
+                "diagnostic": message, "rust_output_absent": True}
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
         consumer = output / "consumer"
@@ -224,20 +236,19 @@ def main():
         if measured != [("58", "196", "62")]:
             raise ValueError(f"unexpected measured route accounting: {measured}")
         report["measured"] = {"cases": 58, "routes": 196, "replays": 62}
-        if args.ts_runtime:
-            changed = json.loads(capture.read_text())
-            next(row for row in changed["rows"] if row["id"] == "conditional-0")["output"]["valueAtoms"] = [[42]]
-            wrong = output / "ts-wrong-result.json"
-            wrong.write_text(json.dumps(changed, indent=2) + "\n")
-            environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(wrong)
-            rejected = run("changed-ts-result", ["cargo", "test", "--locked", "--offline",
-                           "--manifest-path", manifest, "--test", "unit_initializers",
-                           "live_typescript_four_routes_and_pure_error_order", "--", "--exact"],
-                           success=False)
-            environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(capture)
-            if not rejected.returncode or not re.search(r"test result: FAILED\. 0 passed; 1 failed; 0 ignored", rejected.stdout):
-                raise ValueError("changed TS result did not fail the actual Rust consumer")
-            report["typescript"]["changed_result_rejected"] = True
+        changed = json.loads(capture.read_text())
+        next(row for row in changed["rows"] if row["id"] == "conditional-0")["output"]["valueAtoms"] = [[42]]
+        wrong = output / "ts-wrong-result.json"
+        wrong.write_text(json.dumps(changed, indent=2) + "\n")
+        environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(wrong)
+        rejected = run("changed-ts-result", ["cargo", "test", "--locked", "--offline",
+                       "--manifest-path", manifest, "--test", "unit_initializers",
+                       "live_typescript_four_routes_and_pure_error_order", "--", "--exact"],
+                       success=False)
+        environment["COMPACT_UNIT_INITIALIZERS_TS_REFERENCE"] = str(capture)
+        if not rejected.returncode or not re.search(r"test result: FAILED\. 0 passed; 1 failed; 0 ignored", rejected.stdout):
+            raise ValueError("changed TS result did not fail the actual Rust consumer")
+        report["typescript"]["changed_result_rejected"] = True
         report["compile_fail"] = {}
         for name, expected in NEGATIVES.items():
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
@@ -263,16 +274,15 @@ def main():
                 raise ValueError(f"compiler premise changed: {tool}")
         if digest(child_lock) != report["consumer_lock_sha256"]:
             raise ValueError("consumer lock changed after resolution")
-        if args.ts_runtime and digest(capture) != report["typescript"]["sha256"]:
+        if digest(capture) != report["typescript"]["sha256"]:
             raise ValueError("TS reference changed during Rust comparison")
-        if args.ts_runtime:
-            for path, expected in observations["runtime"]["files"].items():
-                if digest(path) != expected:
-                    raise ValueError(f"TS runtime changed during Rust comparison: {path}")
-            node = observations["node"]
-            for path, expected in {node["path"]: node["sha256"], **node["sharedLibraries"]}.items():
-                if digest(path) != expected:
-                    raise ValueError(f"Node tool/library changed: {path}")
+        for path, expected in observations["runtime"]["files"].items():
+            if digest(path) != expected:
+                raise ValueError(f"TS runtime changed during Rust comparison: {path}")
+        node = observations["node"]
+        for path, expected in {node["path"]: node["sha256"], **node["sharedLibraries"]}.items():
+            if digest(path) != expected:
+                raise ValueError(f"Node tool/library changed: {path}")
         require_clean_source(report)
         report["status"] = "passed"
     except Exception as error:
