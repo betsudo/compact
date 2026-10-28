@@ -97,6 +97,8 @@ SPECIAL_FIXTURES = {
         'tests-rust-backend/did-digest-read-reducer/lib.rs',
     'examples/rust_backend/did_adoption/packages/contract/src/did.compact':
         'tests-rust-backend/did-adoption/lib.rs',
+    'examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact':
+        'tests-rust-backend/did-functional-lifecycle-source/lib.rs',
     'examples/rust_backend/vc_passport_adoption/src/digital-passport-credential.compact':
         'tests-rust-backend/vc-passport-adoption/lib.rs',
     'test-center/test-contracts/coracle.compact':

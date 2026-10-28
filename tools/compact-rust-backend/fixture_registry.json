@@ -4054,6 +4054,19 @@
       "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
     },
     {
+      "source": "examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact",
+      "source_sha256": "632f34af543924edb185fe9c8eda54aa4ca0503b0b9e8ee3ff06ec470f6d7456",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/did-functional-lifecycle-source/Cargo.toml",
+      "library": "tests-rust-backend/did-functional-lifecycle-source/lib.rs",
+      "generated_library": "tests-rust-backend/did-functional-lifecycle-source/lib.rs",
+      "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
+    },
+    {
       "source": "examples/rust_backend/unit_mutation_initializers.compact",
       "source_sha256": "91b4feba7e48881142c37363271c6092885060e9864a406e4c116fcf1a5f7d26",
       "frontend_outcome": "accepted",

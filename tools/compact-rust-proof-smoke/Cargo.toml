@@ -26,6 +26,7 @@ default = []
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 
 [dependencies]
+did_contract = { package = "compact-rust-did-functional-lifecycle-source-fixture", path = "../../tests-rust-backend/did-functional-lifecycle-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-captured-source-fixture = { path = "../../tests-rust-backend/direct-fold-captured-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-counter-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-capture-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-counter-local-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-local-capture-source", features = ["ledger-transaction"] }

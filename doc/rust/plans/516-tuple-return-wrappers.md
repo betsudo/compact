@@ -200,3 +200,13 @@ commit and all receipts are retained with their actual identities. Subsequent
 qualification-document updates do not relabel those compiler/proof artifacts.
 Full published-head CI, actual Claude CLI PR review and verified signed merge
 remain required; the two earlier local preflights do not substitute for review.
+
+## Integration closeout — 27 October 2026
+
+PR #692 is verified GitHub MERGED at signed canonical `acf529eff` after all
+current compiler/native/proof/package/archive/wallet/E2E gates pass and actual
+Claude CLI exact-head review finds no merge blocker. Reviewed `98d6b141c`, actual
+CI checkout `57aa037bc` and the merge share complete tree
+`abb79ea5fb2f72151b54380184fe034edd8a8c5a`. Original compiler/proof receipts retain
+their literal source identities. Remaining #516 source shapes and finite review
+coverage follow-ups stay open; this does not complete the broad backend goal.

@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Five logical deliveries through #691 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Six logical deliveries through #692 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -218,7 +218,7 @@ not depend on the deferred Forge experiment.
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension in progress. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension integrated by #692. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
@@ -279,3 +279,42 @@ The next useful engineering work is **real-application functional qualification,
 - This page is a dated explanation. It does not close issues, merge PRs or create new release requirements by itself.
 
 Related audit record: [Keccak and the pinned Ledger8 proof profile](audit/2026-10-18-keccak-profile-boundary.md). Recorded implementation and qualification revisions remain authoritative.
+
+## Current original-DID functional application slice
+
+The canonical backend is clean at verified signed merge `acf529eff` of PR #692.
+Its complete Linux/Darwin/compiler/native/proof/package/archive/wallet/E2E gates
+and exact-head Claude review pass. The next bounded slice qualifies the original
+DID deactivation lifecycle on the current Ledger8.1.3 profile and fixes six
+strict-Clippy Unit locals at the existing checked PureCall AST owner. It adds no
+source-shape admission rule, new IR/ABI or public builder framework.
+
+The development source/API/proof gates pass: complete unchanged two-file original
+source, all twelve generated programs, live TS, five selected Rust test methods,
+ten invalid inputs across four routes, typed refusals and one fresh functional
+proof/default-strict application. Constructor execution and all twelve exports
+are not proved. The [DID plan](plans/did-functional-lifecycle-current-profile.md)
+and [developer guide](guides/did-functional-lifecycle.md) separate these receipts
+from final clean compiler138, full integration CI and review acceptance. The
+broader Rust AST goal remains incomplete; Forge remains deferred.
+
+### Current DID clean-source qualification
+
+Original compiler 0.31.138 realizes at clean signed review correction `bf221d060`
+as the same immutable package built at `3ac403d8a` (compiler inputs unchanged).
+Fresh source/API and separate real proof gates pass: twelve exact live TS DID
+rows, five selected Rust methods and 40 invalid-route executions, three typed
+compile-fail controls, a fresh k11 / 1,804-row / 3,296-byte standalone deactivation
+proof with immutable binding/version controls, and an independently proved
+7,413-byte transaction with funded default-strict application/replay refusal.
+The actual applied-state stale check uses the functional fixture. Both gates
+require a clean checkout and pin the same complete source-fixture oracle used
+by live TS and proof preparation; the historical ordinary oracle stays separate.
+The clean backend library passed 1,846 tests with seven existing explicit-run
+helpers ignored at `3ac403d8a`; that unchanged owner-code result is not relabelled
+as a new run. Python passes 333 with 20 existing skips. Changed proof Rust
+formatting and strict Clippy pass; prior complete workspace formatting is retained. Earlier 281-fixture/version/header receipts
+retain their original source identities; full updated CI is still required.
+See the [qualification table](plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
+for stage identities and limits. Repeat exact-head review and full integration CI
+remain open. This is selected local application acceptance, not broad-goal completion.
