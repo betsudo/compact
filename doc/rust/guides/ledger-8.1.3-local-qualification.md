@@ -61,3 +61,25 @@ controls retain their original graph/source epoch, independently of fresh
 compiler emission and proof qualification.
 
 Without selected graph artifacts, ordinary discovery explicitly skips manual cases. The [portable-fixture guide](retained-python-fixtures.md) explains the default public baseline, invalid-input refusals and exact manual-input selection. Compiler0.31.135 / JSruntime0.16.102 source identities and scoped Rust1.89 checks are recorded in the closure report; this is not a whole-workspace MSRV or new proof claim.
+
+## Selected original-DID functional lifecycle
+
+The [current DID guide](did-functional-lifecycle.md) and complete source fixture
+add a separate current-profile application check without replacing historical
+ordinary DID receipts. The maintained API gate checks all twelve live TS rows,
+five selected Rust test methods, ten invalid inputs on four routes, exact
+witness/first-error behavior, Clippy and three type/ownership refusals. The
+selected proof gate retains complete IR/all twelve program bytes and proves one
+functional-recorded standalone deactivation call with changed binding/version
+rejection. An independently proved transaction passes separately funded
+default-strict application and unchanged ledger on replay refusal. Unit has no result atoms, and constructor execution is not proved.
+
+The development compiler137 prototype retains its own source/tool epoch.
+Clean original compiler0.31.138 and fresh current-profile API/proof gates pass
+at the exact revisions named in the qualification table, based on accepted
+canonical `acf529eff`. Earlier implementation receipts retain their historical
+identities; they do not establish later review corrections.
+The [qualification table](../plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
+records exact counts, source identities and controls. Independent exact-PR
+review and the complete required integration CI remain open for this slice.
+No network or twelve-export proof claim follows from this selected local check.

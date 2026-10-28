@@ -264,3 +264,24 @@ pub(super) fn did_deactivate(
         Err(_) => Err("DID deactivate proof thread panicked".into()),
     }
 }
+
+pub(super) fn did_functional_lifecycle(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --did-functional-lifecycle <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    let proof = std::thread::Builder::new()
+        .name("did-functional-lifecycle-proof".into())
+        .stack_size(64 * 1024 * 1024)
+        .spawn(move || {
+            crate::did_functional_lifecycle::run(Path::new(&root)).map_err(|e| e.to_string())
+        })?;
+    match proof.join() {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(error)) => Err(error.into()),
+        Err(_) => Err("DID functional lifecycle proof worker panicked".into()),
+    }
+}

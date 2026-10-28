@@ -305,7 +305,18 @@ impl Renderer<'_> {
                 let expression =
                     super::render::pure::certified_call(binding, self.declarations, value)?;
                 let expression = super::functional_paths::expression(expression);
-                returning(&current, expression)
+                if binding.value.ty == Type::Unit
+                    || matches!(&binding.value.ty, Type::Tuple { elements } if elements.is_empty())
+                {
+                    // The checked signature has no value to retain. Keep the
+                    // fallible call inside the same lazy success boundary.
+                    syn::parse_quote!((#current).try_returning(|| {
+                        #expression;
+                        Ok(())
+                    }))
+                } else {
+                    returning(&current, expression)
+                }
             }
             Operation::VectorFold {
                 initial,
