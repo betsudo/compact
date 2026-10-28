@@ -290,3 +290,33 @@ integration now pass, and the unchanged-tree merge above reconciles its history.
 This follow-up's own published exact-head review and full CI remain gates. Any
 later source change needs a new qualification bridge or affected fresh runs;
 merge history alone does not renew a proof receipt.
+
+## PR #696 review controls and fresh qualification
+
+The actual Claude CLI review of published `875c2a149` found no production
+correctness blocker and eight nonblocking observations. Signed `cf7a2fa2c`
+corrects stale, unlabeled status text and strengthens affected controls without
+changing compiler, runtime or generated source. The mixed-scope test now checks
+actual nested binding ownership and mutation-before-binding order; three
+flattened/reordered counterexamples retain the old flat binding list yet fail
+the new scoped check. Existing lexical/resource policy remains unchanged.
+
+Both exact boundary admission crates now pass strict Clippy as well as actual
+Cargo compilation with pinned dependencies. They are not executed or proved by
+this admission control; the separate main source cohort has its own executed
+cases. The four-call outer proof gate is explicitly version2, and its existing
+strict nested version2 validator still rejects the old two-call protocol.
+
+Fresh clean original compiler141 qualification at literal `cf7a2fa2c` passes
+95 live TS cases, 344 Rust route checks, 126 replays, all six independent typed
+refusals and both exact boundary crate/lint controls. The affected proof gate
+freshly generates and verifies all four selected standalone proofs with binding
+and result negatives, separately proved funded default-strict transactions and
+unchanged replay refusals. Public Python passes all 370 methods with its 20
+existing explicit manual skip events; the 36 focused fixture/protocol controls
+also pass. No proof/verdict was reused for these affected gate runs.
+
+The earlier all284-emission and DID receipts retain their original epochs;
+their compiler/runtime/fixture inputs are unchanged. These review fixes require
+fresh exact-head PR review and complete CI before integration. They do not
+complete #516 or the broader Rust AST goal.
