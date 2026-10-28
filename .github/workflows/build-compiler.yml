@@ -536,6 +536,10 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection-proof"
 
+      - name: Qualify constant-valued Vector index proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --constant-valued-indices --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-constant-valued-vector-proof"
+
       - name: Qualify Map size expression proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_map_size_expression_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-map-size-expression-proof"
@@ -588,6 +592,8 @@ jobs:
             ${{ runner.temp }}/compact-did-functional-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-constant-valued-vector.json
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/generated/
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
             ${{ runner.temp }}/compact-map-size-expression.json
             ${{ runner.temp }}/compact-field-wrappers.json

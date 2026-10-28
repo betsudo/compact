@@ -457,6 +457,19 @@
       "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
     },
     {
+      "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+      "source_sha256": "0d46ee1b51d0f796f6fd3eb8c03ebd8f3ea6cad0c4a2cebfdf13992e8b9b99a4",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/constant-valued-vector-indices-source/Cargo.toml",
+      "library": "tests-rust-backend/constant-valued-vector-indices-source/lib.rs",
+      "generated_library": "tests-rust-backend/constant-valued-vector-indices-source/lib.rs",
+      "qualification": "Complete alias/arithmetic Vector source accepted by the clean original native compiler; unmodified full output with rustfmt only and all five complete checked programs. Actual four-route/TS/compile-fail consumer gate passed; new-source proofs, full CI and integration remain separately required. Registration alone asserts no execution or proof coverage."
+    },
+    {
       "source": "examples/rust_backend/map_size_expression.compact",
       "source_sha256": "4d37416240bda28b644bbed7471281e64dbf8e547bc4bb2736a2f1b7c82d796c",
       "frontend_outcome": "accepted",

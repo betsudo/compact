@@ -21,6 +21,7 @@ The complete required native/CI suites remain separate. Constructor execution
 is not proved. No proof, verification verdict or transaction is reused.
 """
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -37,6 +38,7 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/constant-vector-projection-source"
+PROOF_RESULT_FORMAT = "compact-vector-projection-proof/v1"
 
 
 def require(value, message):
@@ -44,11 +46,56 @@ def require(value, message):
         raise common.GateError(message)
 
 
+def validate_proof_summary(summary, source_label):
+    require(isinstance(summary, dict), "invalid vector proof summary object")
+    require(summary.get("format") == PROOF_RESULT_FORMAT and summary.get("status") == "passed"
+            and summary.get("source") == source_label
+            and summary.get("constructor_execution_proved") is False, "invalid vector proof summary")
+    rows = summary.get("calls")
+    require(isinstance(rows, list) and len(rows) == 2 and all(isinstance(row, dict) for row in rows),
+            "missing proof branch")
+    require([row.get("select_first") for row in rows] == [False, True]
+            and all(type(row.get("select_first")) is bool for row in rows), "wrong selected proof branches")
+    for row in rows:
+        require(row.get("expected") == (17 if row["select_first"] else 41)
+                and type(row.get("expected")) is int, "wrong source-selected proof result")
+        require(type(row.get("proof_bytes")) is int and row["proof_bytes"] > 0
+                and all(row.get(key) is True for key in ["changed_binding_rejected", "changed_result_rejected",
+                    "changed_input_same_geometry", "changed_input_rejected", "changed_proof_bytes_rejected",
+                    "replay_unchanged"])
+                and row.get("strict_application") == "default"
+                and row.get("replay_refusal") == "IntentAlreadyExists", "incomplete proof/application controls")
+
+
+def changed_projection_ir(original):
+    """Change an actual same-type, in-range selection; keep the complete source IR."""
+    changed = copy.deepcopy(original)
+    first = next((row for row in changed.get("circuits", []) if row.get("name") == "first"), None)
+    require(isinstance(first, dict), "missing original first projection")
+    require(first.get("parameters") == [{"name": "items", "ty": {
+        "kind": "vector", "length": 2, "element": {"kind": "field"}}}],
+        "index mutation requires the genuine two-Field Vector input")
+    node = first.get("body", {})
+    while node.get("kind") == "let":
+        node = node.get("body", {})
+    require(node.get("kind") == "tuple_index" and type(node.get("index")) is int
+            and node["index"] == 0 and node.get("value") == {"kind": "parameter", "name": "items"},
+            "index mutation requires the genuine first input projection")
+    node["index"] = 1
+    return changed
+
+
 def run(args):
+    constant_indices = getattr(args, "constant_valued_indices", False)
+    source = ROOT / "examples/rust_backend/constant_valued_vector_indices.compact" if constant_indices else SOURCE
+    fixture = ROOT / "tests-rust-backend/constant-valued-vector-indices-source" if constant_indices else FIXTURE
+    selector = "--constant-valued-vector-indices" if constant_indices else "--constant-vector-projection"
+    source_label = "constant-valued-vector-indices" if constant_indices else "literal-vector-projection"
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
     receipt = {"format": "compact-vector-projection-proof-gate/v1", "status": "incomplete", "commands": [],
+               "source": str(source.relative_to(ROOT)), "source_label": source_label, "selector": selector,
                "scope": "two source-bound functional-derived call proofs and default-strict funded local transactions",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
@@ -56,7 +103,7 @@ def run(args):
         target = args.target_dir.absolute()
         env["CARGO_TARGET_DIR"] = str(target)
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "MIDNIGHT_PP required")
-        paths = [SOURCE, ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
+        paths = [source, ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
                  ROOT / "tools/compact-rust-backend/check_constant_vector_projection.py",
                  ROOT / "tools/compact-rust-backend/check_functional_effects.py",
                  Path(common.__file__), Path(ledger_static.__file__),
@@ -92,16 +139,16 @@ def run(args):
         runner = components["runner"]["snapshot"]
         generated = output / "generated"
         execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger8",
-                 "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate")
+                 "--rust-runtime-root", ROOT, "--skip-zk", source.relative_to(ROOT), generated], "generate")
         receipt["generated"] = generated_manifest_snapshot(generated)
         formatted = output / "formatted-lib.rs"
         shutil.copyfile(generated / "contract/lib.rs", formatted)
         execute(["rustfmt", "--edition", "2024", formatted], "format-generated")
         # Formatting is the only transformation; full IR and program bytes are exact.
-        require(formatted.read_bytes() == (FIXTURE / "lib.rs").read_bytes(), "linked Rust fixture differs")
-        require((generated / "contract/compact-rust-ir.json").read_bytes() == (FIXTURE / "original-ir.json").read_bytes(), "complete linked IR differs")
+        require(formatted.read_bytes() == (fixture / "lib.rs").read_bytes(), "linked Rust fixture differs")
+        require((generated / "contract/compact-rust-ir.json").read_bytes() == (fixture / "original-ir.json").read_bytes(), "complete linked IR differs")
         fresh = {p.name: p.read_bytes() for p in (generated / "contract/checked-programs").glob("*.json")}
-        retained = {p.name: p.read_bytes() for p in (FIXTURE / "checked-programs").glob("*.json")}
+        retained = {p.name: p.read_bytes() for p in (fixture / "checked-programs").glob("*.json")}
         require(len(fresh) == 5 and fresh == retained, "complete linked functional programs differ")
         receipt["formatted_rust_sha256"] = digest(formatted)
         receipt["generated_hashes"] = hashes([generated / path for path in receipt["generated"]["assets"]] +
@@ -111,7 +158,7 @@ def run(args):
         changed = json.loads((generated / "contract/compact-rust-ir.json").read_text())
         changed["contractName"] = "changed-vector-proof-source"
         (negative / "contract/compact-rust-ir.json").write_text(json.dumps(changed))
-        refused = subprocess.run([runner, "--constant-vector-projection", str(negative)], cwd=ROOT,
+        refused = subprocess.run([runner, selector, str(negative)], cwd=ROOT,
                                  env=env, capture_output=True, text=True, timeout=30)
         (output / "changed-ir.stdout").write_text(refused.stdout)
         (output / "changed-ir.stderr").write_text(refused.stderr)
@@ -120,6 +167,20 @@ def run(args):
         require(not (negative / "keys").exists() and not list(negative.glob("vector-*")),
                 "changed IR refusal created proof/state outputs")
         receipt["changed_ir_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True}
+        negative = output / "changed-index"
+        (negative / "contract").mkdir(parents=True)
+        changed = changed_projection_ir(json.loads((generated / "contract/compact-rust-ir.json").read_text()))
+        (negative / "contract/compact-rust-ir.json").write_text(json.dumps(changed))
+        refused = subprocess.run([runner, selector, str(negative)], cwd=ROOT,
+                                 env=env, capture_output=True, text=True, timeout=30)
+        (output / "changed-index.stdout").write_text(refused.stdout)
+        (output / "changed-index.stderr").write_text(refused.stderr)
+        require(refused.returncode != 0 and "Proof artifact IR differs from the generated source fixture" in refused.stderr,
+                "changed in-range index did not refuse before absent keys/state")
+        require(not (negative / "keys").exists() and not list(negative.glob("vector-*")),
+                "changed index refusal created proof/state outputs")
+        receipt["changed_index_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True,
+                                            "same_type_in_range": True}
         material = output / "proof-material.json"
         execute([runner, "--prepare-proof-material", "--verify-only"], "verify-builtins", material)
         prepared = json.loads(material.read_text())
@@ -142,16 +203,9 @@ def run(args):
         artifacts += [generated / f"zkir/witnessed.{ext}" for ext in ("zkir", "bzkir")]
         require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
         receipt["material_hashes"] = hashes(material_paths + artifacts)
-        execute([runner, "--constant-vector-projection", generated], "prove-verify-apply")
+        execute([runner, selector, generated], "prove-verify-apply")
         summary = json.loads((generated / "vector-proof-result.json").read_text())
-        require(summary["format"] == "compact-vector-projection-proof/v1" and summary["status"] == "passed"
-                and summary["constructor_execution_proved"] is False, "invalid vector proof summary")
-        require([row["select_first"] for row in summary["calls"]] == [False, True], "missing proof branch")
-        for row in summary["calls"]:
-            require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and
-                    row["changed_binding_rejected"] is True and row["changed_result_rejected"] is True and
-                    row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists" and
-                    row["replay_unchanged"] is True, "incomplete proof/application controls")
+        validate_proof_summary(summary, source_label)
         receipt["proof_result"] = summary
         receipt["result_hashes"] = hashes([p for p in generated.glob("vector-*") if p.is_file()])
         unchanged(receipt["source_hashes"])
@@ -175,4 +229,6 @@ if __name__ == "__main__":
     parser.add_argument("--zkir", type=Path)
     parser.add_argument("--target-dir", type=Path, default=Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")))
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--constant-valued-indices", action="store_true",
+                        help="Qualify the distinct complete alias/arithmetic source; default retains literal #674")
     run(parser.parse_args())

@@ -43,6 +43,7 @@ mod boolean_pair_assert;
 mod canonical_output_order;
 mod closed_pure_field;
 mod composite_zswap;
+mod constant_valued_vector_indices;
 mod constant_vector_projection;
 mod coracle_concede;
 mod coracle_guess;

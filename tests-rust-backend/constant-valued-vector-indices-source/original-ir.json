@@ -1,0 +1,1001 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "values",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "first",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "index",
+            "ty": {
+              "kind": "unsigned",
+              "max": "0"
+            },
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "0"
+            }
+          }
+        ],
+        "body": {
+          "kind": "tuple_index",
+          "value": {
+            "kind": "parameter",
+            "name": "items"
+          },
+          "index": 0
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 22,
+        "column": 1
+      }
+    },
+    {
+      "name": "last",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "index",
+            "ty": {
+              "kind": "unsigned",
+              "max": "1"
+            },
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "1",
+              "max": "1"
+            }
+          }
+        ],
+        "body": {
+          "kind": "tuple_index",
+          "value": {
+            "kind": "parameter",
+            "name": "items"
+          },
+          "index": 1
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 23,
+        "column": 1
+      }
+    },
+    {
+      "name": "singleton",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "field"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "index",
+            "ty": {
+              "kind": "unsigned",
+              "max": "0"
+            },
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "0"
+            }
+          }
+        ],
+        "body": {
+          "kind": "tuple_index",
+          "value": {
+            "kind": "parameter",
+            "name": "items"
+          },
+          "index": 0
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 24,
+        "column": 1
+      }
+    },
+    {
+      "name": "first_text",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "opaque_string"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "opaque_string"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "index",
+            "ty": {
+              "kind": "unsigned",
+              "max": "1"
+            },
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "1",
+              "max": "1"
+            }
+          }
+        ],
+        "body": {
+          "kind": "tuple_index",
+          "value": {
+            "kind": "parameter",
+            "name": "items"
+          },
+          "index": 0
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 26,
+        "column": 1
+      }
+    },
+    {
+      "name": "texts",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "opaque_string"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "opaque_string"
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "parameter",
+          "name": "items"
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "opaque_string"
+          }
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 30,
+        "column": 1
+      }
+    },
+    {
+      "name": "temporary_text",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "opaque_string"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "opaque_string"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "index",
+            "ty": {
+              "kind": "unsigned",
+              "max": "0"
+            },
+            "value": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "0"
+            }
+          }
+        ],
+        "body": {
+          "kind": "tuple_index",
+          "value": {
+            "kind": "call",
+            "name": "texts",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "items"
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "opaque_string"
+                  }
+                }
+              }
+            ]
+          },
+          "index": 1
+        }
+      },
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 33,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "choose",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "field"
+            }
+          }
+        },
+        {
+          "name": "select_first",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "index",
+              "ty": {
+                "kind": "unsigned",
+                "max": "1"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "1"
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "selected",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "if",
+                      "condition": {
+                        "kind": "parameter",
+                        "name": "select_first"
+                      },
+                      "then": {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "items"
+                          },
+                          "index": 0
+                        },
+                        "ty": {
+                          "kind": "field"
+                        }
+                      },
+                      "otherwise": {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "items"
+                          },
+                          "index": 1
+                        },
+                        "ty": {
+                          "kind": "field"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "cell_write",
+                      "field": "stored",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "selected"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 38,
+        "column": 1
+      }
+    },
+    {
+      "name": "owned",
+      "parameters": [
+        {
+          "name": "items",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "opaque_string"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "struct",
+        "name": "OwnedSelection",
+        "fields": [
+          {
+            "name": "first",
+            "ty": {
+              "kind": "opaque_string"
+            }
+          },
+          {
+            "name": "repeated",
+            "ty": {
+              "kind": "opaque_string"
+            }
+          },
+          {
+            "name": "original",
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "opaque_string"
+              }
+            }
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "struct_literal",
+          "ty": {
+            "kind": "struct",
+            "name": "OwnedSelection",
+            "fields": [
+              {
+                "name": "first",
+                "ty": {
+                  "kind": "opaque_string"
+                }
+              },
+              {
+                "name": "repeated",
+                "ty": {
+                  "kind": "opaque_string"
+                }
+              },
+              {
+                "name": "original",
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "opaque_string"
+                  }
+                }
+              }
+            ]
+          },
+          "fields": [
+            {
+              "kind": "parameter",
+              "name": "a"
+            },
+            {
+              "kind": "parameter",
+              "name": "b"
+            },
+            {
+              "kind": "parameter",
+              "name": "items"
+            }
+          ]
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "first",
+              "ty": {
+                "kind": "unsigned",
+                "max": "0"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "0",
+                "max": "0"
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "repeated",
+                    "ty": {
+                      "kind": "unsigned",
+                      "max": "0"
+                    },
+                    "value": {
+                      "kind": "unsigned_add",
+                      "max": "0",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "first"
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "0",
+                        "max": "0"
+                      }
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "a",
+                          "ty": {
+                            "kind": "opaque_string"
+                          },
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "items"
+                            },
+                            "index": 0
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "sequence",
+                        "actions": [
+                          {
+                            "kind": "let",
+                            "bindings": [
+                              {
+                                "name": "b",
+                                "ty": {
+                                  "kind": "opaque_string"
+                                },
+                                "value": {
+                                  "kind": "tuple_index",
+                                  "value": {
+                                    "kind": "parameter",
+                                    "name": "items"
+                                  },
+                                  "index": 0
+                                }
+                              }
+                            ],
+                            "action": {
+                              "kind": "sequence",
+                              "actions": [
+                                {
+                                  "kind": "let",
+                                  "bindings": [
+                                    {
+                                      "name": "tmp_10",
+                                      "ty": {
+                                        "kind": "field"
+                                      },
+                                      "value": {
+                                        "kind": "field_literal",
+                                        "value": "1"
+                                      }
+                                    }
+                                  ],
+                                  "action": {
+                                    "kind": "cell_write",
+                                    "field": "stored",
+                                    "index": 0,
+                                    "value": {
+                                      "kind": "parameter",
+                                      "name": "tmp_10"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 44,
+        "column": 1
+      }
+    },
+    {
+      "name": "witnessed",
+      "parameters": [
+        {
+          "name": "select_first",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "items",
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "field"
+                }
+              },
+              "value": {
+                "kind": "witness_call",
+                "name": "values",
+                "arguments": [
+                ]
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "index",
+                    "ty": {
+                      "kind": "unsigned",
+                      "max": "1"
+                    },
+                    "value": {
+                      "kind": "unsigned_literal",
+                      "value": "1",
+                      "max": "1"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "selected",
+                          "ty": {
+                            "kind": "field"
+                          },
+                          "value": {
+                            "kind": "if",
+                            "condition": {
+                              "kind": "parameter",
+                              "name": "select_first"
+                            },
+                            "then": {
+                              "kind": "coerce",
+                              "value": {
+                                "kind": "tuple_index",
+                                "value": {
+                                  "kind": "parameter",
+                                  "name": "items"
+                                },
+                                "index": 0
+                              },
+                              "ty": {
+                                "kind": "field"
+                              }
+                            },
+                            "otherwise": {
+                              "kind": "coerce",
+                              "value": {
+                                "kind": "tuple_index",
+                                "value": {
+                                  "kind": "parameter",
+                                  "name": "items"
+                                },
+                                "index": 1
+                              },
+                              "ty": {
+                                "kind": "field"
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "sequence",
+                        "actions": [
+                          {
+                            "kind": "cell_write",
+                            "field": "stored",
+                            "index": 0,
+                            "value": {
+                              "kind": "parameter",
+                              "name": "selected"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 52,
+        "column": 1
+      }
+    },
+    {
+      "name": "temporary",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "index",
+              "ty": {
+                "kind": "unsigned",
+                "max": "2"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "2",
+                "max": "2"
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_9",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "witness_call",
+                        "name": "values",
+                        "arguments": [
+                        ]
+                      },
+                      "index": 1
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "stored",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_9"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 59,
+        "column": 1
+      }
+    },
+    {
+      "name": "conditional",
+      "parameters": [
+        {
+          "name": "active",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "index",
+              "ty": {
+                "kind": "unsigned",
+                "max": "0"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "0",
+                "max": "0"
+              }
+            }
+          ],
+          "action": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "if",
+                "condition": {
+                  "kind": "parameter",
+                  "name": "active"
+                },
+                "then": {
+                  "kind": "let",
+                  "bindings": [
+                    {
+                      "name": "tmp_7",
+                      "ty": {
+                        "kind": "field"
+                      },
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "witness_call",
+                          "name": "values",
+                          "arguments": [
+                          ]
+                        },
+                        "index": 0
+                      }
+                    }
+                  ],
+                  "action": {
+                    "kind": "cell_write",
+                    "field": "stored",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "tmp_7"
+                    }
+                  }
+                },
+                "otherwise": {
+                  "kind": "let",
+                  "bindings": [
+                    {
+                      "name": "tmp_8",
+                      "ty": {
+                        "kind": "field"
+                      },
+                      "value": {
+                        "kind": "field_literal",
+                        "value": "0"
+                      }
+                    }
+                  ],
+                  "action": {
+                    "kind": "cell_write",
+                    "field": "stored",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "tmp_8"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "file": "constant_valued_vector_indices.compact",
+        "line": 64,
+        "column": 1
+      }
+    }
+  ]
+}

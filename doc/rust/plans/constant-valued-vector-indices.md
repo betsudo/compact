@@ -143,3 +143,33 @@ accepted SDK branch, and finish final-source review/full CI before integration.
 Any changed compiler/source identity receives its required qualification. Existing
 literal proof coverage remains required and does not substitute for new-source
 proofs. The broader backend goal and this slice's integration remain incomplete.
+
+## Separate new-source proof qualification
+
+`tests-rust-backend/constant-valued-vector-indices-source` retains the complete
+original-compiler IR, formatted-only Rust and all five checked programs. It has
+its own source registration and Cargo package. The additive declaration inventory
+adds exactly this source's twelve identities; historical authorities remain
+unchanged. Fresh comparison passes for both old literal and new source fixtures.
+
+The direct proof runner keeps `--constant-vector-projection` and adds
+`--constant-valued-vector-indices`. Thin modules bind each source's separate
+fixture and whole IR to one shared proof protocol. The maintained proof gate's
+`--constant-valued-indices` option selects the new source explicitly; default
+behavior retains the literal source. Full proof orchestration and Linux CI
+require both receipts, with their source labels checked independently.
+
+Before keys or state, the gate requires complete linked Rust/IR/program equality
+and source-bound refusal of a changed full IR and a genuinely in-range same-type
+index change. Each selected branch requires a fresh proof, verification,
+changed binding/input/result and proof-byte refusals, plus a separately proved
+funded default-strict transaction, exact final state and unchanged replay refusal.
+Receipt pass flags cannot replace these fields. Constructor execution remains
+unproved. Existing official material is verified before the new runner build;
+the gate separately verifies its actual selected parameter size.
+
+Source/receipt/orchestration controls and strict selected proof-profile Clippy
+pass for the new fixture and shared runner. Actual new-source proof and ledger
+execution are still open until their retained run succeeds. Compiler, generated
+consumer, proof, application, final source review and integration receipts retain
+their separate identities and scope.
