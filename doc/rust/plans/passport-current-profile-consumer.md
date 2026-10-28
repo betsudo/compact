@@ -1,14 +1,15 @@
 # Current-profile Passport standalone consumer
 
-Status: fresh clean qualification passes locally at signed `7d4fb8bea`
+Status: fresh clean qualification passes locally at signed `7e1f9d363`
 with original compiler142: 202 live TS cases, 18 Rust test methods including the
 documented two-test consumer, strict consumer/generated-source Clippy and two
-independent E0308 refusal controls. Six adversarial Python controls pass.
-The combined public Python suite passes376 methods with20 existing manual skips.
+independent E0308 refusal controls. Seven adversarial Python controls pass, including exact compiler-version rejection.
+The combined public Python suite passes 377 methods with 20 existing manual skip events.
 This local stack includes reviewed PR #696 head `9667072e7`; its full consumer
 CI and actual accepted canonical merge are still required before publication.
 This slice then needs its own exact-head PR review, full CI and verified merge.
-Earlier compiler140 baseline and `b2ba8370f` receipts retain their literal epochs.
+The exact-version guard and its fresh execution belong to `7e1f9d363`. Earlier
+compiler140 baseline, `b2ba8370f` and `7d4fb8bea` receipts retain their literal epochs.
 
 ## Gap and accepted baseline
 
