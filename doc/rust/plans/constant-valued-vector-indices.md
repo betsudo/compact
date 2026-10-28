@@ -1,7 +1,7 @@
 # Constant-valued Vector indices
 
-Status: reconciled local implementation; final version0.31.144 qualification
-and PR integration remain pending. Delivery target: `codex/rust-backend-ast`.
+Status: reconciled local version0.31.144 qualification passes at `3fa7cec1d`.
+Own PR review, full CI and integration remain pending. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
 
@@ -243,3 +243,28 @@ The Vector branch merged that accepted canonical commit normally at
 advances the compiler, Nix package, current ledger reference and changelog
 together. All prior compiler/API/crypto receipts retain their literal source
 epochs; final-source qualification below must precede this slice's publication.
+
+## Current reconciled version144 qualification
+
+At clean signed `3fa7cec1d`, original native compiler0.31.144 realization,
+both complete fresh generated-consumer gates and exact whole-fixture comparison
+pass without a Scheme override or normalization. Each source passes eight Rust
+consumer tests, live TS observations and all four intended-primary-span type/
+ownership refusals. The packaged fifteen-source matrix also passes its expected
+both-target outcomes and nine actual Rust tests/ten TS-matched observations.
+
+The complete public Python gate runs411 selected methods,392 fully exercised
+parent methods and twenty expected manual-only skip events, with no failures,
+errors or unexpected skips. Both separately selected proof gates generate fresh
+k=6/54-row keys, two2912-byte standalone proofs each and separately proved funded
+default-strict transactions with exact expected state and unchanged replay
+refusal. Whole-IR and same-type in-range index changes refuse before keys/state;
+binding/input/result/proof-byte negatives pass. Constructors remain unproved.
+
+A separate root audit rehashes2861 source,20 material,19 generated and seven
+result files per proof gate, all four snapshotted components and their source
+binaries, command logs and seven upstream fixture inputs. Complete original IR
+and all five checked programs match each distinct linked fixture. That audit is
+not an external review or a new cryptographic execution. Final descriptive
+Markdown changes retain an explicit source bridge; own Claude PR review and the
+complete Linux/native/proof/package/archive/E2E CI gates remain mandatory.
