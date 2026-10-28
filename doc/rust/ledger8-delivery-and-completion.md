@@ -15,8 +15,11 @@ As of 28 October 2026, [#694](https://github.com/betsudo/compact/pull/694)
 qualification and accepted exact-head independent review; its complete Linux
 integration gate remains pending. The next bounded [statement-action slice](plans/516-unit-action-bindings.md)
 addresses valid Unit initializers in statement blocks and before trailing
-mutations. Its local development tests and selected proofs are recorded
-separately from clean compiler, review and CI acceptance. Backend development
+mutations. Its clean local implementation and original compiler qualification pass
+95 live TS cases, 344 Rust executions, 126 replays and four selected proof/strict
+application calls. All 284 registered sources pass their configured emission
+checks. These results remain separate from final canonical/version
+reconciliation, independent review and full CI acceptance. Backend development
 continues independently of the deferred Forge experiment.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.

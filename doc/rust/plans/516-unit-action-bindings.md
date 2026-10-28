@@ -1,6 +1,9 @@
 # Unit mutation initializers in statement actions (#516)
 
-Status: local development on a single child of reviewed PR694 head `c0eb15915`.
+Status: clean local implementation `d0c80c914` on a single child of reviewed
+PR694 head `c0eb15915`. Its original compiler 0.31.139 and fresh maintained
+API/proof gates pass at that literal source epoch. This is not integration
+acceptance.
 Accepted canonical remains `373fe452c`; the parent has clean local qualification,
 accepted exact-head review, green Rust CI and original Apple Silicon consumers.
 Its complete Linux integration CI is still open. Do not publish this child before
@@ -135,3 +138,33 @@ with E0382. The public Python runner discovers and runs 369 methods with zero
 failures/errors and its 20 expected genuine-artifact skip events; these skips
 are explicit, not fresh proof execution. The earlier 60 focused protocol,
 fixture and declaration controls also pass. Full required CI is retained.
+
+
+## Clean local qualification at signed d0c80c914
+
+The original compiler builds from the clean signed implementation at its literal
+inherited 0.31.139 version, with no Scheme override. Fresh maintained API and
+separate proof gates pass on exactly that clean source: 95 live TS cases,
+344 Rust executions, 126 replays, old/new ordinary API refusals, strict complete
+generated/consumer Clippy, source/oracle controls and four fresh standalone
+proofs with independent strict transactions. Source remains clean before/after.
+Development receipts above retain their distinct earlier epoch.
+
+The maintained focused emission/fixture/capability gate then passes **all 284
+registered sources**, honoring each registration's frontend flags and checking
+all source/consumer fingerprints, declaration authorities, generated files and
+tool snapshots. All 617 proof-required recorded applicability rows are present;
+this is not 617 proofs. Cargo/runtime execution for the rest of this population
+and the complete required CI remain separate; `--skip-cargo` was explicit.
+
+The earlier paired helper attempt remains failed: its invocation omitted the
+existing Keccak source's `--feature-zkir-v3` flag, so both old/new frontends
+refused identically under v2. Its other 288 paired rows have exact IR and Rust
+identity. This does not reclassify Keccak or broaden the current functional
+proving profile. The succeeding all-registration gate uses the correct existing
+flags and does not replace runtime/proof/CI requirements.
+
+Parent #694 is still frozen at c0 with its full Linux integration gate pending.
+Actual canonical reconciliation, final compiler version, child exact-head
+independent review and complete required CI remain required before integration.
+This bounded local acceptance does not complete the broader backend goal.
