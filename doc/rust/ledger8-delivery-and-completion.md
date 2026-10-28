@@ -238,15 +238,16 @@ tutorial receipts retain their own profiles and scope.
 **Digital passport:** retain the `midnight-vc-passport` integration baseline and
 its referenced credential source closure: **75 public pure exports and zero
 proof-applicable exports**. The [current-profile standalone consumer](plans/passport-current-profile-consumer.md)
-is freshly qualified at clean signed `7b55379b8`, original compiler
+is freshly qualified at clean signed `f0c09ff56`, original compiler
 0.31.142/Ledger8.1.3: 202 sampled live TS cases plus codec vectors, 16 adoption
 Rust methods and the actual unchanged two-test guide manifest/source. The guide
 uses the documented current source-lock recipe; its original historical lock is
 retained separately. Raw SDK, guide and adoption consumer pass strict Clippy.
 Correct-type twins compile and two independent intended-locus E0308 refusals
-pass; changed-expectation failure/restoration controls pass. All 386 public
-Python methods pass with 20 existing manual-only skip events, and all 27 focused
-controls pass. Owned POSIX process-group timeouts and attempt-specific step-failure
+pass; changed-expectation failure/restoration controls pass. All 389 public
+Python methods pass with 20 existing manual-only skip events, and all 30 focused
+controls pass. Cargo compiler/lint configuration guards, exact runtime-bundle identity, bounded
+POSIX process-group/pipe timeouts and attempt-specific step-failure
 uploads retain explicit hard-cancellation/runtime-transitive limits. Earlier
 `834a41025` formatted-SDK and `2bbf4daaf` guide-source-only epochs remain distinct.
 Original source/oracle authorities are unchanged. Own repeat review, complete

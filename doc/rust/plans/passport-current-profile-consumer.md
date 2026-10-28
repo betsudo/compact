@@ -1,11 +1,6 @@
 # Current-profile Passport standalone consumer
 
-Additional review fixes are locally implemented and require fresh qualification:
-Cargo compiler/lint override guards and config identities, bounded post-kill pipe
-drain, exact full runtime-bundle membership, and tighter guide/source isolation.
-Thirty focused controls pass; the prior v3 results below keep their own epoch.
-
-Status: fresh clean v3 qualification passed at signed `7b55379b8`, original
+Status: fresh clean v4 qualification passed at signed `f0c09ff56`, original
 compiler 0.31.142/Ledger8.1.3. The untouched raw SDK passes 202 live TS cases and
 codec vectors, 16 adoption Rust methods, and the actual unchanged two-test guide
 crate (both manifest and source). SDK, adoption consumer and guide crate each
@@ -16,15 +11,15 @@ Correct-type twins of both misuse binaries compile; their restored negative
 sources each fail with exactly one E0308 at the intended primary source location.
 A changed owned oracle triggers a real assertion failure and exact restoration
 passes. These controls rerun existing methods, not additional unique methods.
-All 386 public Python methods pass with zero failures/errors and 20 existing
-manual-only skip events. All 27 focused Passport/workflow controls pass, including
-a real descendant-process timeout control.
+All 389 public Python methods pass with zero failures/errors and 20 existing
+manual-only skip events. All 30 focused Passport/workflow controls pass, including
+real same-group and detached-pipe timeout controls.
 
-The v3 gate pins 181 source inputs and 117 generated SDK files (including the
+The v4 gate pins 186 source inputs and 117 generated SDK files (including the
 explicitly qualified SDK lock). Formatting touches a separate retained copy;
 SDK bytes remain raw. It preserves shared Cargo reuse outside the qualification
 output and rejects targets in receipt/source directories. Earlier `2bbf4daaf`
-passed the ambient-unset cold-target case; the new v3 run reused that Cargo target
+passed the ambient-unset cold-target case; the v3/v4 runs reuse that explicitly mutable Cargo target
 after an independently retained disk-full dependency-build failure. Every test
 and compiler command executed afresh; no verdict or proof was cached. Only
 obsolete build-script binaries/static archives from verified merged #676 were
@@ -32,14 +27,22 @@ reclaimed after process/open-file/source guards; all failed output and evidence
 remain preserved.
 
 Owned POSIX command process groups are stopped and reaped on timeout with partial
-diagnostics. Failure uploads have distinct run-attempt names and cover a failed
+diagnostics; post-kill pipe draining is bounded even if a detached helper holds
+a pipe. Detached process groups are outside the gate's stop scope, and hard
+termination can prevent final receipt writing. Cargo compiler/wrapper/lint
+substitutions are rejected; selected ancestor/home configuration file hashes
+(including absence) are checked before/after. All 105 expected bundled runtime
+files, manifests and support files must match the source owner exactly, with no
+extra build script or symlink. The guide local graph excludes the adoption crate.
+Source/oracle target directories are rejected; the workspace target and external
+dedicated Cargo caches remain supported. Failure uploads have distinct run-attempt names and cover a failed
 Passport step while the job/runner remains alive. Hard job timeout/cancellation
 or runner loss can prevent final uploads. Selected executable and compact-runtime
 package/dist identities are checked; transitive TS/WASM bytes are not independently
 content-hashed by this gate.
 
-Actual Claude review of published `2a37b4bf0` found no code blockers and identified
-these successor gaps. Earlier `834a41025` tested formatted SDK bytes; `2bbf4daaf`
+Actual Claude review through published `668f270d4` found no hard code blockers;
+the concrete Cargo-input/liveness and isolation findings are addressed in v4. Earlier `834a41025` tested formatted SDK bytes; `2bbf4daaf`
 executed the guide test source through a gate-written manifest. Those receipts
 retain their literal narrower scopes. Repeat exact-head PR review and complete
 current-head CI remain required before integration.
