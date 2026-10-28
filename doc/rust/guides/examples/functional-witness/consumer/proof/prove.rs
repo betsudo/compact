@@ -135,6 +135,47 @@ fn public_inputs(p: &ProofPreimage) -> Result<Vec<Fr>, Box<dyn Error>> {
     inputs.extend(p.public_transcript_inputs.iter().copied());
     Ok(inputs)
 }
+fn assert_same_call(
+    actual: &ContractCallPrototype<DefaultDB>,
+    expected: &ContractCallPrototype<DefaultDB>,
+) {
+    // An exhaustive field pattern makes a new upstream field require review.
+    let ContractCallPrototype {
+        address,
+        entry_point,
+        op,
+        guaranteed_public_transcript,
+        fallible_public_transcript,
+        private_transcript_outputs,
+        input,
+        output,
+        communication_commitment_rand,
+        key_location,
+    } = actual;
+    assert_eq!(address, &expected.address);
+    assert_eq!(entry_point, &expected.entry_point);
+    assert_eq!(op, &expected.op);
+    assert_eq!(
+        guaranteed_public_transcript,
+        &expected.guaranteed_public_transcript
+    );
+    assert_eq!(
+        fallible_public_transcript,
+        &expected.fallible_public_transcript
+    );
+    assert_eq!(
+        private_transcript_outputs,
+        &expected.private_transcript_outputs
+    );
+    assert_eq!(input, &expected.input);
+    assert_eq!(output, &expected.output);
+    assert_eq!(
+        communication_commitment_rand,
+        &expected.communication_commitment_rand
+    );
+    assert_eq!(key_location, &expected.key_location);
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let root = PathBuf::from(
         std::env::args_os()
@@ -205,10 +246,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .recording()
         .apply_offset_call(&observed, 7_u64, value)?
         .prepare(verifier.clone(), Fr::from(0_u64))?;
-    assert_eq!(format!("{prepared:?}"), format!("{ordinary:?}"));
+    assert_same_call(&prepared, &ordinary);
     let lab = ProofLab::new(
         Artifacts(root.clone()),
-        MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?,
+        MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?,
     );
     let resolved = futures_executor::block_on(lab.verifier(
         KeyLocation(NAME.into()),
@@ -309,7 +350,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
     let fee_lab = ProofLab::new(
         fee_resolver(&root)?,
-        MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?,
+        MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?,
     );
     let proven = futures_executor::block_on(tx.prove(
         fee_lab.provider(StdRng::seed_from_u64(0x6680_5458)),

@@ -43,6 +43,22 @@ class IsolatedSdkControls(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "symlink"):
                 gate.inventory(root)
 
+    def test_staged_manifest_lock_readme_and_license_drift_refuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            names = ("Cargo.toml", "Cargo.lock", "README.md", "LICENSE")
+            for name in names:
+                (root / name).write_text("staged:"+name)
+            staged = gate.inventory(root)
+            gate.equal_inventory(root, staged)
+            for name in names:
+                original = (root / name).read_bytes()
+                (root / name).write_bytes(original+b" drift")
+                with self.assertRaisesRegex(ValueError, "membership or bytes"):
+                    gate.equal_inventory(root, staged)
+                (root / name).write_bytes(original)
+            gate.equal_inventory(root, staged)
+
     def test_library_recipe_preserves_original_and_refuses_ambiguous_path(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -132,7 +148,8 @@ class IsolatedSdkControls(unittest.TestCase):
     def test_relaxed_missing_or_wrong_replay_results_cannot_pass(self):
         result = dict(status="passed", strict_application="default", replay_refusal="IntentAlreadyExists",
                       witness_private_state=[7, 8], skip_sequence=[None]*6,
-                      standalone_proof_bytes=2912, transaction_bytes=6607)
+                      standalone_proof_bytes=2912, transaction_bytes=6607, final_state_hex="00",
+                      changed_input_new_statement_check="valid; witness return is unconstrained relative to input")
         names = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
                  "changed_private_witness_rejected", "changed_proof_rejected", "same_geometry_controls", "replay_unchanged")
         result.update({name: True for name in names})
@@ -143,7 +160,8 @@ class IsolatedSdkControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate.validate_result(bad)
         for key, value in (("strict_application", "relaxed"), ("replay_refusal", "any error"),
-                           ("skip_sequence", [None, 1]), ("transaction_bytes", 0)):
+                           ("skip_sequence", [None, 1]), ("transaction_bytes", 0),
+                           ("final_state_hex", ""), ("changed_input_new_statement_check", "unqualified")):
             with self.assertRaises(ValueError):
                 gate.validate_result(dict(result, **{key: value}))
 

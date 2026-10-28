@@ -171,6 +171,11 @@ def validate_result(result):
         raise ValueError("selected witness transition or unconditional proof geometry differs")
     if result.get("standalone_proof_bytes", 0) <= 0 or result.get("transaction_bytes", 0) <= 0:
         raise ValueError("proof and applied transaction artifacts must both be nonempty")
+    if result.get("changed_input_new_statement_check") != "valid; witness return is unconstrained relative to input":
+        raise ValueError("selected source witness relation control is missing")
+    final = result.get("final_state_hex", "")
+    if not isinstance(final, str) or not re.fullmatch(r"(?:[0-9a-f]{2})+", final):
+        raise ValueError("retained final contract state must be nonempty canonical hex")
 
 
 def cargo_configuration(environment):
@@ -321,6 +326,7 @@ def main(argv=None):
             equal_inventory(contract / name, {p[len(name)+1:]: v for p,v in expected_runtime.items() if p.startswith(name+"/")})
         receipt["raw_generated_hashes"] = inventory(generated)
         receipt["testkit_recipe"] = source_testkit(ROOT / "testkit-rs", output / "testkit-rs")
+        receipt["staged_testkit_hashes"] = inventory(output / "testkit-rs")
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         cohort = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]}
         ledger = tomllib.loads((contract / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger"]
@@ -328,6 +334,7 @@ def main(argv=None):
             raise ValueError("SDK ledger cohort differs")
         metadata = json.loads(run("metadata", ["cargo", "metadata", "--offline", "--format-version", "1", "--features", "proof", "--manifest-path", manifest]).stdout)
         receipt["dependency_graph"] = dependency_graph(metadata, consumer / "Cargo.lock", output, cohort)
+        receipt["staged_consumer_hashes"] = inventory(consumer)
         cargo = ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--test", "witnessed"]
         native = run("native-tests", cargo)
         if not re.search(r"test result: ok\. 3 passed; 0 failed; 0 ignored", native.stdout):
@@ -394,6 +401,8 @@ def main(argv=None):
         for relative, expected in inventory(ROOT / "testkit-rs/src").items():
             if digest(output / "testkit-rs/src" / relative) != expected:
                 raise ValueError("copied testkit library source changed")
+        equal_inventory(consumer, receipt["staged_consumer_hashes"])
+        equal_inventory(output / "testkit-rs", receipt["staged_testkit_hashes"])
         receipt["consumer_hashes"] = inventory(consumer)
         receipt["testkit_hashes"] = inventory(output / "testkit-rs")
         for group in (receipt["source_hashes"], receipt["dust_fixture_hashes"], receipt["material_hashes"]):
