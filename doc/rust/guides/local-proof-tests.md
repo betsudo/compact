@@ -31,6 +31,17 @@ The resolver supplies matching circuit IR and key material. The parameter provid
 
 For typed observed-call preparation, `proofs.verifier(key, limit).await?` uses the same official resolver and returns the runtime's canonical `VerifierKey`. It distinguishes `ProofError::Unavailable`, `ProofError::Resolve` and `ProofError::Decode`. Display/Debug use stable messages; `Error::source` deliberately exposes the underlying diagnostic. Upstream check/prove errors remain upstream errors.
 
+## Executed isolated source example
+
+The [witnessed functional SDK example](examples/functional-witness/README.md)
+provides a separate executable consumer using these exact APIs. Its clean local
+arm64 gate freshly generates a standalone proof, verifies an immutable key and
+mutation controls, then independently proves and default-strictly applies a
+funded transaction with unchanged-state replay refusal. Privileged constructor
+state insertion and upstream fee funding are declared fixtures. Linux CI and PR
+integration remain required. This does not turn the generic rustdoc excerpt
+above into an executed proof or establish an arbitrary callback policy.
+
 ## Run the maintained tests
 
 From the Compact checkout, using the qualified dependency cache:
