@@ -1,5 +1,25 @@
 # Unit mutation initializers in statement actions (#516)
 
+Status: local statement-action slice on `codex/rust-ast-unit-action-bindings`,
+with review-control corrections prepared. Earlier clean qualification remains
+bound to `d0c80c914` and compiler139; these review changes require final clean
+qualification after the prerequisite is integrated.
+
+PR #694 is verified merged at canonical `1d0288846`. The valid mixed
+Field/Unit/Field/Unit review case exposed a shared functional receiver formatting
+problem. Independent canonical-based PR #695 addresses that existing AST owner
+before this frontend slice resumes. Preserve this source case and all prior
+receipts. Do not call the diagnostic AST-copy experiment accepted output.
+
+After the prerequisite passes exact-head review/full CI and is integrated,
+reconcile this branch with actual canonical history, complete real source
+regeneration and renew original compiler/API/proof qualification. The final
+compiler version must follow actual canonical (0.31.141 if 0.31.140 integrates).
+Keep this as its own logical PR; do not publish a partially regenerated cohort.
+Two active engineering branches remain the ceiling; no Forge work.
+
+### Historical development status before PR #694 integration
+
 Status: clean local implementation `d0c80c914` on a single child of reviewed
 PR694 head `c0eb15915`. Its original compiler 0.31.139 and fresh maintained
 API/proof gates pass at that literal source epoch. This is not integration
@@ -168,3 +188,48 @@ Parent #694 is still frozen at c0 with its full Linux integration gate pending.
 Actual canonical reconciliation, final compiler version, child exact-head
 independent review and complete required CI remain required before integration.
 This bounded local acceptance does not complete the broader backend goal.
+
+
+## Independent review controls and preserved mixed scope
+
+The additional read-only local Claude review of `bb9e1925` found no production
+blocker and four nonblocking observations. It does not replace the later
+published exact-head PR review. Development controls now independently compile
+both formerly refused boundary crates, retain the three old type/result/reuse
+refusals byte-identically and add three separate statement-form refusal binaries.
+Each binary must fail on its own expected diagnostic; one shared diagnostic set
+cannot establish both old and new refusals. A retained genuine counterexample
+showed why isolation is necessary.
+
+The witnessed statement source contains Field bindings before and after a
+Unit mutation and uses the earlier Unit binding for the next mutation. Exact IR
+checks establish these mixed lets. Development E2E passes 95 live TS cases,
+344 Rust route checks and 126 replays with six isolated diagnostic controls and
+both admission crate compilations. These are dirty-source development results,
+not a relabelled clean `d0c80c914` receipt. Runtime Unit values do not by themselves
+distinguish shadowed lexical bindings; exact IR is the binding-resolution evidence.
+
+Its old formatter was intentionally settled after 36m37s; the input and whole
+failed attempt remain preserved. The new emitter in PR #695 formats the same
+valid source without changing its complete IR/origins/capabilities or 15 program
+bytes when the original relative source labels are used. Finish this branch's
+coherent snapshot/source-registry updates only through real compiler output,
+then repeat clean qualification. Full CI, actual PR review and integration are
+still open for this statement slice.
+
+
+## Coherent development cohort with the prerequisite emitter
+
+The actual new emitter now passes the same 95/344/126 development E2E and all
+six isolated refusal controls. Pinned rustfmt formats a copy of the real generated
+source; complete current IR/origins/capabilities and all fifteen Programs are
+copied without AST or text rewriting. Only program13 (the mixed scope) and
+program14 (source offsets) differ from the earlier cohort; the other thirteen,
+including the original nine, remain exact. One current source-registry hash is
+updated; no roles, prior accepted registrations or historical authorities change.
+
+These fixtures require the receiver implementation in PR #695. This branch
+must first include the actual accepted canonical merge; it is not yet an
+independently regenerated clean branch. Resolve any combined snapshot conflicts
+through new original-compiler output, retaining both prior cohorts. Do not infer
+final qualification from the development Scheme override or relabel its tools.

@@ -173,7 +173,7 @@
       "name": "statement_shadowed",
       "source": {
         "file": "unit_mutation_initializers.compact",
-        "line": 124,
+        "line": 126,
         "column": 1
       },
       "recorded": true,

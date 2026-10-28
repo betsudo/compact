@@ -115,8 +115,10 @@ export circuit trailing_unconditional(selected: Boolean, value: Field): [] {
 
 export circuit statement_observed(selected: Boolean, value: Field): Field {
   if (disclose(gate(1, selected))) {
-    const inserted = disclose(selected) ? values.insert(disclose(point(2, value))) : [];
-    const next = inserted == [] ? values.insert(disclose(point(3, value + 1))) : [];
+    const first = disclose(point(2, value));
+    const inserted = disclose(selected) ? values.insert(first) : [];
+    const following = disclose(point(3, value + 1));
+    const next = inserted == [] ? values.insert(following) : [];
   }
   return disclose(point(10, 4));
 }

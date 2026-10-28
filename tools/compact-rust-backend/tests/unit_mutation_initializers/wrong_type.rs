@@ -21,5 +21,4 @@ fn context() -> r::context::CircuitContext<u64> {
 }
 fn main() {
     let _ = c::conditional(context(), r::Field::from(1_u64), r::Field::from(99_u64));
-    let _ = c::statement_field(context(), r::Field::from(1_u64), r::Field::from(99_u64));
 }

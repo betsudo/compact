@@ -4068,7 +4068,7 @@
     },
     {
       "source": "examples/rust_backend/unit_mutation_initializers.compact",
-      "source_sha256": "8d490b9f3d3270001d34ef467fe5dc7272626e18251e917345a4c392d9baa6b9",
+      "source_sha256": "9bdcb772a0234070d292434b1f548aaa7729785c2d14e42661f9daf9829d6caf",
       "frontend_outcome": "accepted",
       "frontend_flags": [
         "--rust-functional-ledger8"

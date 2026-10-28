@@ -17,8 +17,9 @@ The selected insertion happens exactly once. The unselected arm performs no
 insertion. An unused binding still executes its initializer. A later witness
 reads the updated state, and a failing earlier witness prevents later callbacks.
 Bindings retain lexical scope and shadowing. Users need no helper circuit to
-express this supported source form. Initializers also work in statement-only blocks and before later conditional
-or unconditional mutations in Unit-returning circuits. These scopes use the
+express this supported source form. Initializers also work in statement-only
+blocks and before later conditional or unconditional mutations in Unit-returning
+circuits. These scopes use the
 same ordered lexical binding owner as return-producing scopes. Source scopes
 still apply: a binding cannot refer to itself in its initializer.
 
@@ -32,7 +33,11 @@ export circuit statement_field(selected: Boolean, value: Field): Field {
 ```
 
 The unused `inserted` still performs the selected insertion. Returning `1` does
-not erase the effect, and an unselected block does not execute its witnesses.
+not erase the effect. The separate `statement_observed` example demonstrates
+that an unselected block does not execute its witnesses. It also places typed
+Field locals before and after Unit mutation bindings, with witness reads of
+the updated state. Unit shadowing resolution is pinned by exact checked IR;
+Unit runtime values alone cannot distinguish the inner binding from the outer.
 
 ## Ordinary typed APIs
 

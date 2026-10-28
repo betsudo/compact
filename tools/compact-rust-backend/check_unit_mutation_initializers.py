@@ -37,7 +37,9 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "unit_mutation_initializers"
 SOURCE = ROOT / "examples/rust_backend/unit_mutation_initializers.compact"
-NEGATIVES = {"wrong_type": "E0308", "wrong_result": "E0308", "double_execute": "E0382"}
+NEGATIVES = {"wrong_type": "E0308", "wrong_result": "E0308", "double_execute": "E0382",
+             "wrong_statement_type": "E0308", "wrong_statement_result": "E0308",
+             "double_execute_statement": "E0382"}
 
 
 def digest(path):
@@ -55,6 +57,23 @@ def require_clean_source(receipt):
         ["git", "status", "--porcelain"], cwd=ROOT, text=True))
     if receipt["source_dirty"]:
         raise RuntimeError("clean source checkout required")
+
+
+def validate_consumer_lock(metadata, child_lock, allowed_local, locked):
+    """Keep every isolated consumer within the selected repository dependency cohort."""
+    for item in metadata["packages"]:
+        identity = (item["name"], item["version"], item.get("source"))
+        if item.get("source") is None:
+            if Path(item["manifest_path"]).resolve() not in allowed_local:
+                raise ValueError(f"unexpected local consumer dependency: {identity}")
+        elif identity not in locked:
+            raise ValueError(f"consumer dependency differs from repository lock: {identity}")
+    for item in tomllib.loads(child_lock.read_text())["package"]:
+        if item.get("source"):
+            identity = (item["name"], item["version"], item["source"])
+            if identity not in locked or item.get("checksum") != locked[identity]:
+                raise ValueError(f"consumer lock identity/checksum differs: {identity}")
+    return digest(child_lock)
 
 
 def main():
@@ -207,20 +226,8 @@ def main():
         allowed_local = {manifest.resolve(), (generated / "contract/Cargo.toml").resolve(),
                          (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve()}
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
-        for item in metadata["packages"]:
-            identity = (item["name"], item["version"], item.get("source"))
-            if item.get("source") is None:
-                if Path(item["manifest_path"]).resolve() not in allowed_local:
-                    raise ValueError(f"unexpected local consumer dependency: {identity}")
-            elif identity not in locked:
-                raise ValueError(f"consumer dependency differs from repository lock: {identity}")
         child_lock = consumer / "Cargo.lock"
-        for item in tomllib.loads(child_lock.read_text())["package"]:
-            if item.get("source"):
-                identity = (item["name"], item["version"], item["source"])
-                if identity not in locked or item.get("checksum") != locked[identity]:
-                    raise ValueError(f"consumer lock identity/checksum differs: {identity}")
-        report["consumer_lock_sha256"] = digest(child_lock)
+        report["consumer_lock_sha256"] = validate_consumer_lock(metadata, child_lock, allowed_local, locked)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "unit_initializers", "--", "--show-output"]).stdout
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("1", "0", "0")]:
@@ -233,6 +240,26 @@ def main():
                                  "--manifest-path", generated_manifest])
         run("generated-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path",
                                  generated_manifest, "--all-targets", "--", "-D", "warnings"])
+        for name, admission in report["statement_source_admissions"].items():
+            library = Path(admission["generated_entries"]["rust"]["entry"])
+            boundary_manifest = library.with_name("Cargo.toml")
+            boundary_lock = library.with_name("Cargo.lock")
+            shutil.copyfile(ROOT / "Cargo.lock", boundary_lock)
+            metadata = json.loads(run(f"{name}-resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
+                                  "--manifest-path", boundary_manifest]).stdout)
+            allowed = {boundary_manifest.resolve(), (ROOT / "runtime-rs/Cargo.toml").resolve(),
+                       (ROOT / "runtime-rs-macros/Cargo.toml").resolve()}
+            pin = validate_consumer_lock(metadata, boundary_lock, allowed, locked)
+            run(f"{name}-cargo-check", ["cargo", "check", "--locked", "--offline",
+                                      "--manifest-path", boundary_manifest, "--all-targets"])
+            if digest(boundary_lock) != pin:
+                raise ValueError(f"source admission {name} lock changed after resolution")
+            admission["rust_crate_compilation"] = {"manifest": str(boundary_manifest), "lock_sha256": pin,
+                                                    "status": "passed"}
+            admission["scope"] = "TS/Rust source admission and isolated Rust crate compilation; no exact boundary execution or proof claim"
+            for entry in admission["generated_entries"].values():
+                if digest(entry["entry"]) != entry["sha256"]:
+                    raise ValueError(f"source admission {name} generated entry changed during compilation")
         report["rust_consumer_tests"] = 1
         measured = re.findall(r"COMPACT_UNIT_INITIALIZERS (\d+) (\d+) (\d+)", result)
         if measured != [("95", "344", "126")]:
@@ -263,7 +290,7 @@ def main():
                     continue
                 if item.get("reason") == "compiler-message" and item["message"]["level"] == "error":
                     errors.append((item["message"].get("code") or {}).get("code"))
-            if not process.returncode or not errors or set(errors) != {expected}:
+            if not process.returncode or errors != [expected]:
                 raise ValueError(f"{name} did not refuse only with {expected}: {errors}")
             report["compile_fail"][name] = errors
         if generated_manifest_snapshot(generated) != report["generated"]:

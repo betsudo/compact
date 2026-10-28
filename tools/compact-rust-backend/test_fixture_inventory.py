@@ -134,6 +134,26 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual({c['name'] for c in capabilities if not c['proof_required']},
                          {'unit_witness_comparison','unit_witness_inequality'})
 
+    def test_statement_binding_cohort_reaches_mixed_nonunit_scope(self):
+        folder = inventory.ROOT / 'tests-rust-backend/unit-mutation-initializers-source'
+        ir = json.loads((folder / 'original-ir.json').read_text())
+        circuit = next(c for c in ir['stateful_circuits'] if c['name'] == 'statement_observed')
+
+        def nodes(value):
+            if isinstance(value, dict):
+                yield value
+                for child in value.values():
+                    yield from nodes(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from nodes(child)
+
+        bindings = [(binding['name'], binding['ty']['kind'])
+                    for node in nodes(circuit) if node.get('kind') == 'let'
+                    for binding in node['bindings']]
+        self.assertEqual(bindings, [('first', 'field'), ('inserted', 'unit'),
+                                    ('following', 'field'), ('next', 'unit')])
+
     def test_direct_fold_registers_every_complete_source_family(self):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
         rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']

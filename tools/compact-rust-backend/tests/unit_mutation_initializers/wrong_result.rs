@@ -23,7 +23,4 @@ fn main() {
     let _: bool = c::conditional(context(), true, r::Field::from(99_u64))
         .unwrap()
         .result;
-    let _: r::Field = c::statement_unit(context(), true, r::Field::from(99_u64))
-        .unwrap()
-        .result;
 }

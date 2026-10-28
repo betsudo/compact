@@ -513,7 +513,7 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "tmp_32",
+                    "name": "tmp_30",
                     "ty": {
                       "kind": "field"
                     },
@@ -551,7 +551,7 @@
                   "index": 0,
                   "value": {
                     "kind": "parameter",
-                    "name": "tmp_32"
+                    "name": "tmp_30"
                   }
                 }
               },
@@ -701,7 +701,7 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "tmp_30",
+                    "name": "tmp_28",
                     "ty": {
                       "kind": "field"
                     },
@@ -739,7 +739,7 @@
                   "index": 0,
                   "value": {
                     "kind": "parameter",
-                    "name": "tmp_30"
+                    "name": "tmp_28"
                   }
                 }
               },
@@ -815,7 +815,7 @@
                     "kind": "let",
                     "bindings": [
                       {
-                        "name": "tmp_31",
+                        "name": "tmp_29",
                         "ty": {
                           "kind": "field"
                         },
@@ -860,7 +860,7 @@
                       "index": 0,
                       "value": {
                         "kind": "parameter",
-                        "name": "tmp_31"
+                        "name": "tmp_29"
                       }
                     }
                   },
@@ -1899,7 +1899,7 @@
                       "kind": "let",
                       "bindings": [
                         {
-                          "name": "tmp_29",
+                          "name": "tmp_27",
                           "ty": {
                             "kind": "field"
                           },
@@ -1922,7 +1922,7 @@
                         "index": 0,
                         "value": {
                           "kind": "parameter",
-                          "name": "tmp_29"
+                          "name": "tmp_27"
                         }
                       }
                     },
@@ -2017,7 +2017,7 @@
                     "kind": "let",
                     "bindings": [
                       {
-                        "name": "tmp_28",
+                        "name": "tmp_26",
                         "ty": {
                           "kind": "field"
                         },
@@ -2040,7 +2040,7 @@
                       "index": 0,
                       "value": {
                         "kind": "parameter",
-                        "name": "tmp_28"
+                        "name": "tmp_26"
                       }
                     }
                   }
@@ -2117,176 +2117,176 @@
                 ]
               },
               "then": {
-                "kind": "sequence",
-                "actions": [
+                "kind": "let",
+                "bindings": [
                   {
-                    "kind": "if",
-                    "condition": {
-                      "kind": "parameter",
-                      "name": "selected"
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
                     },
-                    "then": {
-                      "kind": "let",
-                      "bindings": [
+                    "value": {
+                      "kind": "witness_call",
+                      "name": "point",
+                      "arguments": [
                         {
-                          "name": "tmp_26",
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "2"
+                          },
                           "ty": {
                             "kind": "field"
-                          },
+                          }
+                        },
+                        {
+                          "kind": "coerce",
                           "value": {
-                            "kind": "witness_call",
-                            "name": "point",
-                            "arguments": [
-                              {
-                                "kind": "coerce",
-                                "value": {
-                                  "kind": "field_literal",
-                                  "value": "2"
-                                },
-                                "ty": {
-                                  "kind": "field"
-                                }
-                              },
-                              {
-                                "kind": "coerce",
-                                "value": {
-                                  "kind": "parameter",
-                                  "name": "value"
-                                },
-                                "ty": {
-                                  "kind": "field"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ],
-                      "action": {
-                        "kind": "set_insert",
-                        "field": "values",
-                        "index": 0,
-                        "value": {
-                          "kind": "parameter",
-                          "name": "tmp_26"
-                        }
-                      }
-                    },
-                    "otherwise": {
-                      "kind": "sequence",
-                      "actions": [
-                      ]
-                    }
-                  },
-                  {
-                    "kind": "let",
-                    "bindings": [
-                      {
-                        "name": "inserted",
-                        "ty": {
-                          "kind": "unit"
-                        },
-                        "value": {
-                          "kind": "unit"
-                        }
-                      }
-                    ],
-                    "action": {
-                      "kind": "sequence",
-                      "actions": [
-                        {
-                          "kind": "if",
-                          "condition": {
-                            "kind": "equal",
-                            "left": {
-                              "kind": "parameter",
-                              "name": "inserted"
-                            },
-                            "right": {
-                              "kind": "unit"
-                            }
+                            "kind": "parameter",
+                            "name": "value"
                           },
-                          "then": {
-                            "kind": "let",
-                            "bindings": [
-                              {
-                                "name": "tmp_27",
-                                "ty": {
-                                  "kind": "field"
-                                },
-                                "value": {
-                                  "kind": "witness_call",
-                                  "name": "point",
-                                  "arguments": [
-                                    {
-                                      "kind": "coerce",
-                                      "value": {
-                                        "kind": "field_literal",
-                                        "value": "3"
-                                      },
-                                      "ty": {
-                                        "kind": "field"
-                                      }
-                                    },
-                                    {
-                                      "kind": "coerce",
-                                      "value": {
-                                        "kind": "add",
-                                        "left": {
-                                          "kind": "parameter",
-                                          "name": "value"
-                                        },
-                                        "right": {
-                                          "kind": "field_literal",
-                                          "value": "1"
-                                        }
-                                      },
-                                      "ty": {
-                                        "kind": "field"
-                                      }
-                                    }
-                                  ]
-                                }
-                              }
-                            ],
-                            "action": {
-                              "kind": "set_insert",
-                              "field": "values",
-                              "index": 0,
-                              "value": {
-                                "kind": "parameter",
-                                "name": "tmp_27"
-                              }
-                            }
-                          },
-                          "otherwise": {
-                            "kind": "sequence",
-                            "actions": [
-                            ]
-                          }
-                        },
-                        {
-                          "kind": "let",
-                          "bindings": [
-                            {
-                              "name": "next",
-                              "ty": {
-                                "kind": "unit"
-                              },
-                              "value": {
-                                "kind": "unit"
-                              }
-                            }
-                          ],
-                          "action": {
-                            "kind": "sequence",
-                            "actions": [
-                            ]
+                          "ty": {
+                            "kind": "field"
                           }
                         }
                       ]
                     }
                   }
-                ]
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "if",
+                      "condition": {
+                        "kind": "parameter",
+                        "name": "selected"
+                      },
+                      "then": {
+                        "kind": "set_insert",
+                        "field": "values",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "first"
+                        }
+                      },
+                      "otherwise": {
+                        "kind": "sequence",
+                        "actions": [
+                        ]
+                      }
+                    },
+                    {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "inserted",
+                          "ty": {
+                            "kind": "unit"
+                          },
+                          "value": {
+                            "kind": "unit"
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "let",
+                        "bindings": [
+                          {
+                            "name": "following",
+                            "ty": {
+                              "kind": "field"
+                            },
+                            "value": {
+                              "kind": "witness_call",
+                              "name": "point",
+                              "arguments": [
+                                {
+                                  "kind": "coerce",
+                                  "value": {
+                                    "kind": "field_literal",
+                                    "value": "3"
+                                  },
+                                  "ty": {
+                                    "kind": "field"
+                                  }
+                                },
+                                {
+                                  "kind": "coerce",
+                                  "value": {
+                                    "kind": "add",
+                                    "left": {
+                                      "kind": "parameter",
+                                      "name": "value"
+                                    },
+                                    "right": {
+                                      "kind": "field_literal",
+                                      "value": "1"
+                                    }
+                                  },
+                                  "ty": {
+                                    "kind": "field"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "action": {
+                          "kind": "sequence",
+                          "actions": [
+                            {
+                              "kind": "if",
+                              "condition": {
+                                "kind": "equal",
+                                "left": {
+                                  "kind": "parameter",
+                                  "name": "inserted"
+                                },
+                                "right": {
+                                  "kind": "unit"
+                                }
+                              },
+                              "then": {
+                                "kind": "set_insert",
+                                "field": "values",
+                                "index": 0,
+                                "value": {
+                                  "kind": "parameter",
+                                  "name": "following"
+                                }
+                              },
+                              "otherwise": {
+                                "kind": "sequence",
+                                "actions": [
+                                ]
+                              }
+                            },
+                            {
+                              "kind": "let",
+                              "bindings": [
+                                {
+                                  "name": "next",
+                                  "ty": {
+                                    "kind": "unit"
+                                  },
+                                  "value": {
+                                    "kind": "unit"
+                                  }
+                                }
+                              ],
+                              "action": {
+                                "kind": "sequence",
+                                "actions": [
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
               },
               "otherwise": {
                 "kind": "sequence",
@@ -2545,7 +2545,7 @@
       ],
       "source": {
         "file": "unit_mutation_initializers.compact",
-        "line": 124,
+        "line": 126,
         "column": 1
       }
     }
