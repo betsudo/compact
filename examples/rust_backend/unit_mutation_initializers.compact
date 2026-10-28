@@ -88,3 +88,44 @@ export pure circuit unitCondition(left: Boolean, right: Boolean): Field {
   if (requireLeft(left) != requireRight(right)) { return 1; }
   else { return 2; }
 }
+
+// These scopes lower to statement actions, including an implicit trailing Unit.
+export circuit statement_field(selected: Boolean, value: Field): Field {
+  if (disclose(selected)) {
+    const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  }
+  return 1;
+}
+
+export circuit statement_unit(selected: Boolean, value: Field): [] {
+  if (disclose(selected)) {
+    const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  }
+}
+
+export circuit trailing_conditional(first: Boolean, second: Boolean, value: Field): [] {
+  const inserted = disclose(first) ? values.insert(disclose(value)) : [];
+  if (disclose(second)) { values.insert(disclose(value + 1)); }
+}
+
+export circuit trailing_unconditional(selected: Boolean, value: Field): [] {
+  const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  values.insert(disclose(value + 1));
+}
+
+export circuit statement_observed(selected: Boolean, value: Field): Field {
+  if (disclose(gate(1, selected))) {
+    const inserted = disclose(selected) ? values.insert(disclose(point(2, value))) : [];
+    const next = inserted == [] ? values.insert(disclose(point(3, value + 1))) : [];
+  }
+  return disclose(point(10, 4));
+}
+
+export circuit statement_shadowed(outer: Boolean, inner: Boolean, value: Field): Field {
+  const inserted = disclose(outer) ? values.insert(disclose(value)) : [];
+  if (disclose(inner)) {
+    const inserted = disclose(inner) ? values.insert(disclose(value + 1)) : [];
+    if (inserted == []) { values.insert(disclose(value + 2)); }
+  }
+  return values.size() as Field;
+}

@@ -1232,11 +1232,19 @@
                    (cons "then" (state-action-ir expr1 src environment witness-ids))
                    (cons "otherwise" (state-action-ir expr2 src environment witness-ids)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (stateful-bindings-ir local* expr* src environment witness-ids
-             (lambda (bindings environment^)
-               (object (cons "kind" "let")
-                       (cons "bindings" bindings)
-                       (cons "action" (state-action-ir expr owner-src environment^ witness-ids)))))]
+           (if (exists unit-mutation-initializer? local* expr*)
+               (unit-initializer-bindings-ir local* expr* src environment witness-ids
+                 (lambda (bindings action)
+                   (object (cons "kind" "let") (cons "bindings" bindings) (cons "action" action)))
+                 (lambda (before after)
+                   (object (cons "kind" "sequence") (cons "actions" (vector before after))))
+                 (lambda (environment^)
+                   (state-action-ir expr owner-src environment^ witness-ids)))
+               (stateful-bindings-ir local* expr* src environment witness-ids
+                 (lambda (bindings environment^)
+                   (object (cons "kind" "let")
+                           (cons "bindings" bindings)
+                           (cons "action" (state-action-ir expr owner-src environment^ witness-ids))))))]
           [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
            (nanopass-case (Lnodisclose ADT-Op) adt-op
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
@@ -1629,29 +1637,29 @@
                (has-unit-mutation-initializer? expr2))]
           [else #f]))
 
-      (define (unit-initializer-return-bindings-ir local* value* src environment witness-ids emit)
+      ;; Both ordered returns and statement actions must execute the initializer
+      ;; before binding its one Unit value. Only the existing let/sequence
+      ;; constructors differ; scope lookup and source provenance share one walk.
+      (define (unit-initializer-bindings-ir local* value* src environment witness-ids scope-ir prepend-action-ir emit)
         (let loop ([locals local*] [values value*] [environment environment])
           (if (null? locals)
               (emit environment)
               (let ([local (car locals)] [value (car values)])
                 (define (scope bindings environment^)
-                  (object (cons "kind" "let")
-                          (cons "bindings" bindings)
-                          (cons "result" (loop (cdr locals) (cdr values) environment^))))
+                  (scope-ir bindings (loop (cdr locals) (cdr values) environment^)))
                 (if (unit-mutation-initializer? local value)
                     (nanopass-case (Lnodisclose Argument) local
                       [(,var-name ,type)
-                       (object
-                         (cons "kind" "sequence")
-                         (cons "actions" (vector (state-action-ir value src environment witness-ids)))
-                         (cons "result"
-                           (scope
-                             (vector
-                               (object (cons "name" (sourced-rust-var-name var-name))
-                                       (cons "ty" (type-ir type src))
-                                       (cons "value"
-                                         (call-with-rust-origin "expression" (expression-origin value) #t
-                                           (lambda () (kind "unit")) (expression-operation-origin value)))))
+                       (let* ([action (state-action-ir value src environment witness-ids)]
+                              [bindings
+                                (vector
+                                  (object (cons "name" (sourced-rust-var-name var-name))
+                                          (cons "ty" (type-ir type src))
+                                          (cons "value"
+                                            (call-with-rust-origin "expression" (expression-origin value) #t
+                                              (lambda () (kind "unit")) (expression-operation-origin value)))))])
+                         (prepend-action-ir action
+                           (scope bindings
                              (cons (cons var-name
                                          (object (cons "kind" "parameter")
                                                  (cons "name" (rust-var-name var-name))))
@@ -1682,7 +1690,11 @@
            (stateful-return-plan-ir expr expected-type src environment witness-ids finish)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (if (exists unit-mutation-initializer? local* expr*)
-               (unit-initializer-return-bindings-ir local* expr* src environment witness-ids
+               (unit-initializer-bindings-ir local* expr* src environment witness-ids
+                 (lambda (bindings result)
+                   (object (cons "kind" "let") (cons "bindings" bindings) (cons "result" result)))
+                 (lambda (action result)
+                   (object (cons "kind" "sequence") (cons "actions" (vector action)) (cons "result" result)))
                  (lambda (environment^)
                    (stateful-return-plan-ir expr expected-type src environment^ witness-ids finish)))
                (stateful-bindings-ir local* expr* src environment witness-ids

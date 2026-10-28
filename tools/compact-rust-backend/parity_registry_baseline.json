@@ -3854,5 +3854,53 @@
     "name": "unitGuard",
     "signature": "witness unitGuard(label: Field, accepted: Boolean): []",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "statement_field",
+    "signature": "export circuit statement_field(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "statement_observed",
+    "signature": "export circuit statement_observed(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "statement_shadowed",
+    "signature": "export circuit statement_shadowed(outer: Boolean, inner: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "statement_unit",
+    "signature": "export circuit statement_unit(selected: Boolean, value: Field): []",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "trailing_conditional",
+    "signature": "export circuit trailing_conditional(first: Boolean, second: Boolean, value: Field): []",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "trailing_unconditional",
+    "signature": "export circuit trailing_unconditional(selected: Boolean, value: Field): []",
+    "visibility": "export"
   }
 ]

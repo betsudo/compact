@@ -165,22 +165,24 @@ def main():
                 if not process.returncode or not all(m in process.stderr for m in messages) or refused.exists():
                     raise ValueError(f"source {name} did not refuse at its source type/effect boundary")
                 report["source_refusals"][f"{name}-{target}"] = messages
-        report["unsupported_initializer_positions"] = {}
+        report["statement_source_admissions"] = {}
         for name in ("statement_block", "unit_trailing_conditional"):
-            source = FIXTURES / f"{name}_refusal.compact"
-            run(f"{name}-ts-source", [compiler, "--target", "ts", "--skip-zk", source,
-                                      output / f"{name}-ts-source"])
-            refused = output / f"{name}-rust-refused"
-            process = run(f"{name}-rust-refusal", [compiler, "--target", "rust", "--skip-zk",
-                          "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
-                          source, refused], success=False)
-            message = "Rust backend does not yet support this nested ledger query: Set.insert"
-            if not process.returncode or message not in process.stderr or refused.exists():
-                raise ValueError(f"unsupported initializer position {name} did not refuse before output")
-            report["unsupported_initializer_positions"][name] = {
-                "scope": "TS source admission and Rust source refusal; no execution or proof claim",
-                "typescript_source_accepted": True, "rust_source_refused": True,
-                "diagnostic": message, "rust_output_absent": True}
+            # Retained source boundaries formerly refused by compiler 0.31.139.
+            source = FIXTURES / f"{name}_admission.compact"
+            admitted = {}
+            for target in ("ts", "rust"):
+                destination = output / f"{name}-{target}-source"
+                command = [compiler, "--target", target, "--skip-zk"]
+                if target == "rust":
+                    command += ["--rust-functional-ledger8", "--rust-runtime-root", ROOT]
+                run(f"{name}-{target}-source", [*command, source, destination])
+                entry = destination / "contract" / ("index.js" if target == "ts" else "lib.rs")
+                if not entry.is_file() or not entry.stat().st_size:
+                    raise ValueError(f"source admission {name}/{target} omitted its generated entry point")
+                admitted[target] = {"entry": str(entry), "sha256": digest(entry), "bytes": entry.stat().st_size}
+            report["statement_source_admissions"][name] = {
+                "scope": "TS and Rust source admission; execution is checked by the complete main source cohort",
+                "generated_entries": admitted}
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
         consumer = output / "consumer"
@@ -233,9 +235,9 @@ def main():
                                  generated_manifest, "--all-targets", "--", "-D", "warnings"])
         report["rust_consumer_tests"] = 1
         measured = re.findall(r"COMPACT_UNIT_INITIALIZERS (\d+) (\d+) (\d+)", result)
-        if measured != [("58", "196", "62")]:
+        if measured != [("95", "344", "126")]:
             raise ValueError(f"unexpected measured route accounting: {measured}")
-        report["measured"] = {"cases": 58, "routes": 196, "replays": 62}
+        report["measured"] = {"cases": 95, "routes": 344, "replays": 126}
         changed = json.loads(capture.read_text())
         next(row for row in changed["rows"] if row["id"] == "conditional-0")["output"]["valueAtoms"] = [[42]]
         wrong = output / "ts-wrong-result.json"

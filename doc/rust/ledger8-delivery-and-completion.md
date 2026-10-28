@@ -8,7 +8,16 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Six logical deliveries through #692 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Reviewed deliveries through #693 have passed full required CI and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+
+As of 28 October 2026, [#694](https://github.com/betsudo/compact/pull/694)
+(order-preserving Unit mutation initializers and comparisons) has clean local
+qualification and accepted exact-head independent review; its complete Linux
+integration gate remains pending. The next bounded [statement-action slice](plans/516-unit-action-bindings.md)
+addresses valid Unit initializers in statement blocks and before trailing
+mutations. Its local development tests and selected proofs are recorded
+separately from clean compiler, review and CI acceptance. Backend development
+continues independently of the deferred Forge experiment.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 

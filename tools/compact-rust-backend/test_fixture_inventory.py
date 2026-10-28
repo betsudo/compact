@@ -121,12 +121,13 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(row.library, row.generated_library)
         folder = row.library.parent
         self.assertEqual({p.name for p in (folder / 'checked-programs').glob('*.json')},
-                         {f'program-{i}.json' for i in range(9)})
+                         {f'program-{i}.json' for i in range(15)})
         ir = json.loads((folder / 'original-ir.json').read_text())
         circuits = {c['name']: c for c in ir['stateful_circuits']}
         self.assertEqual(set(circuits), {'conditional','observed','sequential','nested',
                          'unit_result','unused','unit_witness_comparison',
-                         'unit_witness_inequality','shadowed'})
+                         'unit_witness_inequality','shadowed','statement_field','statement_unit',
+                         'trailing_conditional','trailing_unconditional','statement_observed','statement_shadowed'})
         self.assertEqual(circuits['unit_result']['result'], {'kind': 'unit'})
         capabilities = json.loads((folder / 'rust-capabilities.json').read_text())['circuits']
         self.assertTrue(all(c['recorded'] and c['observed_call'] for c in capabilities))

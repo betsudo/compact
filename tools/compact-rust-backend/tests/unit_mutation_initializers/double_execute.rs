@@ -23,4 +23,7 @@ fn main() {
     let program = c::functional::conditional::Program::new(true, r::Field::from(99_u64));
     let _ = program.execute_native(context()).unwrap();
     let _ = program.execute_native(context()).unwrap();
+    let statement = c::functional::statement_field::Program::new(true, r::Field::from(99_u64));
+    let _ = statement.execute_native(context()).unwrap();
+    let _ = statement.execute_native(context()).unwrap();
 }

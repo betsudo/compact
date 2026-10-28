@@ -28,17 +28,18 @@ import check_unit_mutation_initializers_proof as gate
 
 
 def completed():
-    return {"format": "compact-unit-mutation-initializers-proof/v1", "status": "passed",
+    return {"format": "compact-unit-mutation-initializers-proof/v2", "status": "passed",
             "constructor_execution_proved": False, "unselected_branch_proved": False,
             "prestate_setup_proved": False, "all_exports_proved": False,
-            "calls": [{"key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_bytes": 120,
-                       "standalone_proof":f"unit-initializers-{key-5}.proof",
-                       "applied_transaction":f"unit-initializers-{key-5}-transaction.bin",
+            "calls": [{"circuit": circuit, "key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_bytes": 120,
+                       "standalone_proof":f"unit-initializers-{index}.proof",
+                       "applied_transaction":f"unit-initializers-{index}-transaction.bin",
                        "transaction_proof_relationship":"independently proved",
                        "changed_result_same_geometry": True, "changed_binding_rejected": True,
                        "changed_result_rejected": True, "strict_application": "default",
                        "replay_refusal": "IntentAlreadyExists", "replay_unchanged": True}
-                      for key, after in [(5, 1), (6, 2)]]}
+                      for index, (circuit, key, after) in enumerate([("conditional", 5, 1), ("conditional", 6, 2),
+                       ("statement_field", 5, 1), ("statement_field", 6, 2)])]}
 
 
 class ProofReceiptTests(unittest.TestCase):
@@ -52,7 +53,7 @@ class ProofReceiptTests(unittest.TestCase):
         gate.validate_proof_summary(completed())
 
     def test_old_or_unknown_receipt_format_is_not_success(self):
-        for format_name in ["compact-field-wrappers-expression-proof/v1", "unknown/v1"]:
+        for format_name in ["compact-field-wrappers-expression-proof/v1", "compact-unit-mutation-initializers-proof/v1", "unknown/v1"]:
             data = completed()
             data["format"] = format_name
             with self.subTest(format=format_name), self.assertRaises(gate.common.GateError):
@@ -73,6 +74,7 @@ class ProofReceiptTests(unittest.TestCase):
 
     def test_selected_calls_and_source_transition_are_required(self):
         cases = []
+        data = completed(); data["calls"][2]["circuit"] = "conditional"; cases.append(data)
         data = completed(); data["calls"].pop(); cases.append(data)
         data = completed(); data["calls"].reverse(); cases.append(data)
         data = completed(); data["calls"][0]["after"] = 2; cases.append(data)
