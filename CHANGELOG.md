@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.143, language 0.23.105, runtime 0.16.102]
+
+### Added
+
+- An executable isolated witnessed functional SDK example and maintained
+  qualification gate. The raw bundled SDK shares one runtime with an explicit
+  paired source-testkit package. Typed witness/ownership controls, ContractLab
+  replay, fresh ProofLab proofs, immutable mutation checks and separately proved
+  default-strict funded application/replay retain their distinct evidence.
+- Exact package/lock/runtime/material membership and actual checked-profile
+  proof executable binding, with local/CI diagnostic retention. This selected
+  fixture does not prove constructor/deployment execution or a wallet lifecycle;
+  compiler semantics, public APIs, runtime ABI and ledger profile are unchanged.
+
 ## [Toolchain 0.31.142, language 0.23.105, runtime 0.16.102]
 
 ### Added

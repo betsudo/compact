@@ -13,7 +13,7 @@ formatting uses a separate copy.
 
 Original P1 retains its historical lock and execution identity. Earlier
 `2bbf4daaf` ran only the unchanged guide test source through a gate-written
-manifest; `834a41025` used formatted SDK bytes. The current v3 run preserves
+manifest; `834a41025` used formatted SDK bytes. The current v4 run preserves
 those distinctions and original source/oracle pins. All 389 public Python
 methods pass (20 existing manual-only skip events). Repeat review and full
 current-head CI remain required; see the [plan and limits](../plans/passport-current-profile-consumer.md).

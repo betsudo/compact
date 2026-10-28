@@ -66,7 +66,7 @@ review and full CI; the pure-library behavior does not depend on its frontend
 fix. Local normal merge `91b412f2e` includes that exact reviewed source for
 sequential compiler142 preparation; that earlier merge was not an accepted
 canonical baseline. Actual canonical `f0e4ba788` was subsequently reconciled by
-`342b9fc46` with identical whole source tree and all 179 gate inputs unchanged.
+`342b9fc46` with identical whole source tree and all 179 then-qualified gate inputs unchanged (the earlier reconciliation epoch).
 Keep at most two active engineering branches and retain normal canonical history.
 
 Focused fresh baseline checks pass on the clean accepted source:

@@ -184,3 +184,20 @@ Evidence: `clean-source-sdk141-v4/receipt.json`,
 `public-python-review-fixes-v1.json` under the same local evidence root.
 Final accepted-canonical reconciliation, compiler/source qualification, actual
 published-head PR review, full Linux CI and normal verified merge remain open.
+
+## Provisional local parent reconciliation
+
+Normal signed local merge `c4746b6b6` combines this slice with reviewed Passport
+head `c3bb0b37e` while its full CI is still running. This is preparation, not an
+accepted canonical baseline. The actual accepted canonical remains `f0e4ba788`.
+Only the #516 roadmap summary conflicted; the fuller already verified #696
+record is retained, along with both complete workflow gates and all SDK work.
+
+Prepare original compiler 0.31.143 and fresh local qualification on this clean
+combined source. Publication still requires Passport's complete actual CI and
+verified normal merge, followed by normal reconciliation with accepted canonical.
+If that final reconciliation preserves the whole tree and recorded inputs, retain
+an explicit identity bridge; otherwise requalify the changed premises. Stop
+publication on any real parent failure. No third branch or hosted rerun is needed
+for this local preparation. The two earlier nonblocking Passport documentation
+clarifications are now applied without changing its qualification code.
