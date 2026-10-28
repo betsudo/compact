@@ -1,9 +1,11 @@
 # Unit mutation initializers in statement actions (#516)
 
-Status: local statement-action slice on `codex/rust-ast-unit-action-bindings`,
-with review-control corrections prepared. Earlier clean qualification remains
-bound to `d0c80c914` and compiler139; these review changes require final clean
-qualification after the prerequisite is integrated.
+Status: clean original compiler141 local qualification passes at `83d967324`
+on the dependent `codex/rust-ast-unit-action-bindings` stack. This source includes
+reviewed PR #695 head `7134fb240`; parent full CI and canonical acceptance remain
+pending. Publication still requires actual canonical reconciliation, exact-head
+PR review and complete child CI. Earlier compiler139 results retain their own
+literal source epochs.
 
 PR #694 is verified merged at canonical `1d0288846`. The valid mixed
 Field/Unit/Field/Unit review case exposed a shared functional receiver formatting
@@ -249,3 +251,31 @@ milestone's delivery notes and the generated Unit fixture. Retain both histories
 in the notes and regenerate the fixture with the combined source. Version141
 follows the reviewed prerequisite's version140; this does not assert that140 is
 already integrated. Publication remains gated on accepted canonical history.
+
+
+## Clean original compiler141 local qualification
+
+Signed local merge `83d967324` preserves both `ba78c07b7` and the exact reviewed
+receiver parent `7134fb240`. The ordinary Nix compiler141 build succeeds from
+that clean source without a Scheme override or shared installation change.
+Fresh original-compiler qualification passes:
+
+| Gate | Actual local result | Limit |
+|---|---|---|
+| Unit statement/return API | 95 live TS cases, 344 Rust route checks, 126 recording replays; six separate type/result/reuse refusals; both boundary crates compiled | Selected cases and four API routes, not all Compact programs |
+| Unit proofs and application | Fresh direct keys for conditional and statement_field, both k7/76 rows; four 2,912-byte standalone proofs with immutable verification and binding/result negatives; separately proved funded strict transactions and unchanged replay refusal | Constructor, seeded prestate, unselected branch and all exports are not proved |
+| Original DID regression | Selected deactivation/late-witness API parity with live TS; one fresh 3,296-byte proof, immutable verification/negatives, separate default-strict transaction and replay | One proof call, not the constructor or all twelve exports |
+| Registered source emission | All 284 sources; 679 applicability rows, 617 proof-required and 62 nonproof; no declared-input drift | Emission/identity guards, not 617 proofs or every generated consumer execution |
+| Public Python controls | 370 selected methods, zero failures/errors, 20 existing manual skip events | Manual genuine-graph checks remain separate |
+
+All receipts retain literal source `83d967324` and original compiler141/tool
+identities. The fresh current-source preparation had exact IR, origins,
+capabilities, all fifteen checked Programs and raw Rust equality with the
+prepared cohort; only the established pinned formatter output was reused for
+identical input bytes. No proof or verdict is reused. The clean original141
+gates above subsequently generate and execute their own fresh outputs.
+
+These are local stack results. PR #695's complete native CI, actual canonical
+merge and the follow-up's own published exact-head review/full CI remain gates.
+Any later source change needs a new qualification bridge or affected fresh runs;
+merge history alone does not renew a proof receipt.

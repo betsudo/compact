@@ -12,8 +12,8 @@ The latest delivery adds the missing witness, value, collection, Merkle and Ledg
 
 The statement-action follow-up is being reconciled locally with reviewed PR
 #695 head `7134fb240` under a two-branch stack. PR #695's full integration CI
-remains pending; this is not a new canonical baseline. Local compiler141
-qualification can proceed on the combined source, while publication and final
+remains pending; this is not a new canonical baseline. Clean original compiler141
+local qualification passes on the combined source, while publication and final
 reconciliation still require the actual accepted canonical merge. Stop dependent
 work if the prerequisite reports a real failure or its head changes.
 
@@ -373,3 +373,20 @@ application calls. All 284 registered sources pass their configured emission
 checks. These results remain separate from final canonical/version
 reconciliation, independent review and full CI acceptance. Backend development
 continues independently of the deferred Forge experiment.
+
+
+## Clean local statement-action qualification — compiler141
+
+The dependent local stack is qualified at signed `83d967324` with original
+compiler141: 95 live TS cases, 344 Rust route checks, 126 replays, six independent
+compile-fail controls and two admission-crate compilations pass. Four selected
+fresh Unit proofs and separate strict transactions verify/apply with negatives
+and replay checks. Selected original-DID API/proof regression also passes.
+All 284 configured source-emission comparisons pass; 617 proof-required rows
+are applicability accounting, not 617 executed proofs. Public Python has no
+failures/errors and retains its 20 existing manual skip events.
+
+See the [literal qualification table](plans/516-unit-action-bindings.md#clean-original-compiler141-local-qualification)
+for source/tool epochs and limits. Full parent CI/canonical reconciliation and
+the child PR's own review/full CI remain required. This does not complete the
+primary goal or the deferred Forge experiment.
