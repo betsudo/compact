@@ -1,18 +1,21 @@
 # Unit mutation initializers in statement actions (#516)
 
-Status: clean original compiler141 local qualification passes at `83d967324`.
+Status: fresh clean original compiler141 API/proof qualification passes at
+`cf7a2fa2c`, including the changed qualification gate owners. Earlier all284
+emission and selected DID results retain literal `83d967324` and unchanged
+compiler/runtime/fixture inputs; they are not current-gate execution receipts.
 PR #695 is verified merged at signed canonical `709a86230` after exact-head
 Claude review, all eleven CI checks and retained artifact/source verification.
 Normal merge `2da45e015` reconciles that accepted canonical history into
 `codex/rust-ast-unit-action-bindings`; its complete tracked tree is unchanged
 from documentation successor `1a3ace5fa`. This slice is published as draft PR
-#696; final exact-head review and complete CI remain required. Earlier receipts retain their
-literal source and compiler epochs.
+#696; final exact-head review and complete CI remain required. Earlier receipts
+retain their literal source and compiler epochs.
 
 PR #694 is verified merged at canonical `1d0288846`. The valid mixed
 Field/Unit/Field/Unit review case exposed a shared functional receiver formatting
-problem. Independent canonical-based PR #695 addresses that existing AST owner
-before this frontend slice resumes. Preserve this source case and all prior
+problem. Independent canonical-based PR #695 repaired that existing AST owner
+and is now integrated; this frontend slice resumed as PR #696. Preserve the case and prior
 receipts. Do not call the diagnostic AST-copy experiment accepted output.
 
 Historical local stacked development included the exact reviewed PR #695 head
@@ -23,9 +26,11 @@ the ceiling of two engineering branches. That parent gate has now passed; no
 old receipt is relabeled as execution of the later merge.
 
 Real source generation and original compiler141 qualification pass locally.
-Before publication, verify the final source/input bridge explicitly. Retain all
-original proof/tool epochs. Each slice keeps its own PR, exact-head review and
-complete required CI; no Forge work.
+The accepted canonical merge and final source/input bridge were checked before
+publication: the canonical merge preserves the complete prior tree, all 2,329
+declared compiler input records remain exact, and the same immutable compiler141
+is used. Documentation-only successors do not relabel original proof/tool epochs.
+Each slice keeps its own PR, exact-head review and complete CI; no Forge work.
 
 ### Historical development status before PR #694 integration
 
@@ -301,8 +306,8 @@ actual nested binding ownership and mutation-before-binding order; three
 flattened/reordered counterexamples retain the old flat binding list yet fail
 the new scoped check. Existing lexical/resource policy remains unchanged.
 
-Both exact boundary admission crates now pass strict Clippy as well as actual
-Cargo compilation with pinned dependencies. They are not executed or proved by
+Both exact boundary admission crates now pass `cargo check --all-targets` and
+strict Clippy with pinned dependencies. They are not linked, executed or proved by
 this admission control; the separate main source cohort has its own executed
 cases. The four-call outer proof gate is explicitly version2, and its existing
 strict nested version2 validator still rejects the old two-call protocol.

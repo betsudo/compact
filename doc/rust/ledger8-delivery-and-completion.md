@@ -12,7 +12,7 @@ The latest delivery adds the missing witness, value, collection, Merkle and Ledg
 
 The statement-action follow-up is published as PR #696 after normal signed
 reconciliation with accepted canonical `709a86230` (PR #695). Clean original
-compiler141 local qualification passes; the follow-up retains its own exact-head
+compiler141 API/proof qualification passes at `cf7a2fa2c`; the follow-up retains its own exact-head
 review, complete CI and verified integration gates. Historical development
 checkpoints below retain the prerequisite's earlier pending status explicitly.
 
@@ -350,13 +350,14 @@ separate strict ledger application/replay retain their recorded scope; they do
 not prove constructors or all exports. The completed worktree was recoverably
 archived after preserving generated artifacts.
 
-The next statement-action slice is separately preserved on
+The statement-action slice was separately preserved on
 `codex/rust-ast-unit-action-bindings`. Its valid mixed value/Unit scope exposed
 a shared generated-code formatting problem. The bounded
-[functional bind receiver fix](plans/functional-bind-receivers.md) runs first
-on the accepted canonical baseline. It retains typed IR, checked-program and
-runtime semantics; then the statement slice resumes with its own qualification
-and PR. Forge remains deferred and the primary goal remains incomplete.
+[functional bind receiver fix](plans/functional-bind-receivers.md) was integrated
+first as PR #695 on the accepted canonical baseline. It retains typed IR,
+checked-program and runtime semantics. The statement slice has resumed with its
+own qualification and draft PR #696. Forge remains deferred and the primary
+goal remains incomplete.
 
 
 ## Historical statement preparation before PR #694 integration
@@ -404,6 +405,9 @@ all 51 ignored entries and confirming no open file dependencies. Shared targets,
 stores, snapshots and failure evidence remain preserved.
 
 Normal signed child merge `2da45e015` includes actual accepted canonical history
-and preserves the entire tracked tree of `1a3ace5fa`. The statement-action
-qualification remains bound to original compiler141 at literal `83d967324`.
-Its own PR, exact-head Claude review and full required CI remain mandatory.
+and preserves the entire tracked tree of `1a3ace5fa`. Fresh affected
+statement-action API/proof qualification now passes with original compiler141
+at literal `cf7a2fa2c`, after review-control fixes. The earlier all284 emission
+and selected DID receipts retain `83d967324` and their unchanged compiler/runtime/
+fixture inputs. No documentation successor renews a proof receipt. PR #696's
+final exact-head review and full required CI remain mandatory.
