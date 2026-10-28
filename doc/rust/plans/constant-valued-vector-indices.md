@@ -128,8 +128,18 @@ observations. The failed attempt remains failed evidence. This is development
 frontend execution and authenticated generation reuse, not a clean original
 compiler-package, fresh proof or full integration acceptance claim.
 
-Next: qualify a clean original compiler package, bind complete new-source IR and
-checked programs into the selected proof consumer, run genuine proofs and funded
-applications, and finish current-head review/full CI before integration. Existing
+The subsequent clean signed implementation `a1f0fa8b1` built successfully as an
+original native compiler package, with no Scheme override. Its fresh complete
+new-source gate also passes: all seven generated-consumer tests, live TS
+comparison, changed-result refusal and three intended compile-fail controls.
+These are literal a1 execution receipts. The local compiler version remains
+0.31.142 pending normal SDK reconciliation and version advancement; this does
+not publish or relabel a historical compiler release. Development failures and
+authenticated-reuse receipts remain separate historical evidence.
+
+Next: bind complete new-source IR and checked programs into the selected proof
+consumer, run genuine proofs and funded applications, reconcile against the
+accepted SDK branch, and finish final-source review/full CI before integration.
+Any changed compiler/source identity receives its required qualification. Existing
 literal proof coverage remains required and does not substitute for new-source
 proofs. The broader backend goal and this slice's integration remain incomplete.
