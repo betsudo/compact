@@ -205,3 +205,25 @@ The compiler, backend emitter, both runtimes, complete source fixtures and proof
 runner/protocol trees are unchanged from the literal `9a9d1b8b6` proof epoch.
 This is a checked owner bridge, not new proof execution. Final reconciled source
 qualification, external PR review and complete CI remain required.
+
+## Packaged compiler shape matrix
+
+At clean signed `8aaa30b42`, the original native package also compiled the
+complete fifteen-source matrix for both targets without a Scheme override.
+Nine positive Rust sources produced unedited crates and passed nine external
+Rust tests, covering ten independently expected observations also executed in
+TypeScript. These include alias chains, unsigned arithmetic, both lexical
+shadowing/outer-capture branches and the characterized unambiguous generic
+literal/arithmetic cases.
+
+Runtime indices, out-of-bounds arithmetic, underflow, empty vectors and Boolean
+indices refused both targets at their intended frontend diagnostics before
+output publication. The loop case still compiles to TypeScript and retains
+the named-Fold Rust refusal; it is not admitted by this slice. These are pure
+source cases, without a ledger/proof applicability claim. The first matrix
+harness incorrectly supplied the Rust-only runtime-root option to TypeScript;
+that retained failed attempt is not a compiler regression or a passing result.
+
+This completes the packaged-compiler characterization gap without changing
+compiler, runtime, fixture or proof owners. Final reconciled-source qualification
+and full review/integration gates remain open.
