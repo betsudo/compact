@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.142, language 0.23.105, runtime 0.16.102]
+
+### Added
+
+- Current-profile standalone SDK qualification for the unchanged original
+  Passport pure library: live TypeScript behavior, the documented Rust consumer
+  and adoption tests, independent ordinary type refusals, strict Clippy and
+  source/dependency identity controls. Matching runtime sources stay inside the
+  generated consumer closure. Original source and historical oracle authorities
+  are retained; no stateful export or proof applicability is introduced.
+
 ## [Toolchain 0.31.141, language 0.23.105, runtime 0.16.102]
 
 ### Fixed
