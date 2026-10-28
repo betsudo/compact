@@ -1,0 +1,69 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+export struct OwnedSelection { first: Opaque<"string">; repeated: Opaque<"string">; original: Vector<2, Opaque<"string">>; }
+witness values(): Vector<2, Field>;
+
+export pure circuit first(items: Vector<2, Field>): Field { const index = 0; return items[index]; }
+export pure circuit last(items: Vector<2, Field>): Field { const index = 1; return items[index * 1]; }
+export pure circuit singleton(items: Vector<1, Field>): Field { const index = 0; return items[index]; }
+
+export pure circuit first_text(items: Vector<2, Opaque<"string">>): Opaque<"string"> {
+  const index = 1;
+  return items[index - 1];
+}
+pure circuit texts(items: Vector<2, Opaque<"string">>): Vector<2, Opaque<"string">> {
+  return items;
+}
+export pure circuit temporary_text(items: Vector<2, Opaque<"string">>): Opaque<"string"> {
+  const index = 0;
+  return texts(items)[index + 1];
+}
+
+export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field {
+  const index = 1;
+  const selected = select_first ? items[index - 1] : items[index];
+  stored = disclose(selected);
+  return stored;
+}
+export circuit owned(items: Vector<2, Opaque<"string">>): OwnedSelection {
+  const first = 0;
+  const repeated = first + 0;
+  const a = items[first];
+  const b = items[repeated];
+  stored = 1;
+  return OwnedSelection { first: a, repeated: b, original: items };
+}
+export circuit witnessed(select_first: Boolean): Field {
+  const items = values();
+  const index = 1;
+  const selected = select_first ? items[index - 1] : items[index];
+  stored = disclose(selected);
+  return stored;
+}
+export circuit temporary(): Field {
+  const index = 2;
+  stored = disclose(values()[index - 1]);
+  return stored;
+}
+export circuit conditional(active: Boolean): Field {
+  const index = 0;
+  if (disclose(active)) { stored = disclose(values()[index]); }
+  else { stored = 0; }
+  return stored;
+}

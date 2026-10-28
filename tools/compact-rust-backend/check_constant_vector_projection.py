@@ -50,7 +50,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, help="Execute pinned TS parity using this existing package")
+    parser.add_argument("--source", type=Path, default=SOURCE,
+                        help="Complete source with the maintained projection consumer API (default: #674)")
     args = parser.parse_args()
+    source = args.source.resolve(strict=True)
+    source.relative_to(ROOT)  # All admitted complete sources belong to this checkout.
     output, report_path = args.output.absolute(), args.report.absolute()
     for path in [output, report_path]:
         if path.exists() or path.is_symlink():
@@ -60,7 +64,7 @@ def main():
     environment.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     scheme = scheme_compiler(compiler, environment)
     environment["COMPACTC_SCHEME"] = str(scheme)
-    premises = [SOURCE, Path(__file__), ROOT / "Cargo.lock", ROOT / "runtime-rs/Cargo.toml",
+    premises = [source, Path(__file__), ROOT / "Cargo.lock", ROOT / "runtime-rs/Cargo.toml",
                 ROOT / "runtime-rs/compatibility.json", ROOT / "runtime-rs-macros/Cargo.toml"]
     for directory in [ROOT / "runtime-rs/src", ROOT / "runtime-rs-macros/src",
                       ROOT / "tools/compact-rust-backend/src", FIXTURES]:
@@ -72,7 +76,8 @@ def main():
     tool_pins = {str(path): digest(path) for path in [compiler, scheme]}
     output.mkdir(parents=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report = {"status": "incomplete", "scope": "Focused #674 source/consumer gate; no proof or full CI acceptance",
+    report = {"status": "incomplete", "scope": "Focused Vector projection source/consumer gate; no proof or full CI acceptance",
+              "source": str(source.relative_to(ROOT)),
               "premises": pins, "tools": tool_pins, "commands": []}
     started = time.monotonic()
 
@@ -92,7 +97,7 @@ def main():
     try:
         generated = output / "generated"
         run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
-                         "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
+                         "--rust-runtime-root", ROOT, "--skip-zk", source.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         if args.ts_runtime:
             runtime = args.ts_runtime.resolve(strict=True)

@@ -375,6 +375,8 @@ jobs:
             exit 1
           fi
           nix develop --command ./srcMaps/test.sh
+          nix develop --command scheme --compile-imported-libraries --program \
+            compiler/test-rust-vector-indices.ss "$RUNNER_TEMP/vector-index-occurrences"
           test -d coverage
 
       - name: Check doc/compact-reference.mdx is consistent with compiler/go
@@ -470,6 +472,7 @@ jobs:
         run: |
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection" --report "$RUNNER_TEMP/compact-vector-projection.json" --ts-runtime "$TS_RUNTIME"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --source examples/rust_backend/constant_valued_vector_indices.compact --output "$RUNNER_TEMP/compact-constant-valued-vector" --report "$RUNNER_TEMP/compact-constant-valued-vector.json" --ts-runtime "$TS_RUNTIME"
 
       - name: Check generated Map size expression APIs
         run: |
@@ -584,6 +587,7 @@ jobs:
             ${{ runner.temp }}/compact-did-functional-proof/receipt.json
             ${{ runner.temp }}/compact-did-functional-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
+            ${{ runner.temp }}/compact-constant-valued-vector.json
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
             ${{ runner.temp }}/compact-map-size-expression.json
             ${{ runner.temp }}/compact-field-wrappers.json

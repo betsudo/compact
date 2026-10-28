@@ -23,6 +23,7 @@
           (config-params)
           (nanopass)
           (langs)
+          (rust-vector-indices)
           (pass-helpers))
 
   (define-pass drop-ledger-runtime : Lnodisclose (ir) -> Lposttypescript ()
@@ -1358,6 +1359,7 @@
                  (let ([len (tvector->length type)])
                    (unless (< kindex len)
                      (source-errorf src "invalid vector index ~d for vector of length ~d" kindex len)))
+                 (observe-rust-vector-index! src kindex)
                  (new-let src type expr expr-ctv
                    (lambda (var-name)
                      (let-values ([(var-ref var-ctv) (handle-var-ref src var-name)])

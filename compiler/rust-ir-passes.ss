@@ -26,6 +26,7 @@
           (nanopass)
           (json)
           (rust-source-origins)
+          (rust-vector-indices)
           (langs)
           (pass-helpers))
 
@@ -423,6 +424,20 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      (define (resolved-vector-expression original src type expr index)
+        (let ([kindex (rust-vector-index original)])
+          (unless kindex
+            (source-errorf src "Rust backend has no unique constant-valued Vector index for this occurrence"))
+          ;; The bridge admits only effect-free local constant grammar. The
+          ;; authoritative circuit pass has checked bounds and evaluated its
+          ;; arithmetic successfully, including the exact subtraction guard.
+          ;; Runtime formals/calls/conditionals are excluded even when the
+          ;; general circuit evaluator could infer their numeric result.
+          ;; Existing local bindings still evaluate in their original order;
+          ;; the Vector operand is retained once, with ordinary ownership.
+          (with-output-language (Lnodisclose Expression)
+            `(tuple-ref ,src ,expr ,kindex))))
+
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (expression-ir expr owner-src)]
@@ -438,6 +453,8 @@
            (object (cons "kind" "tuple_index")
                    (cons "value" (expression-ir expr src))
                    (cons "index" kindex))]
+          [(vector-ref ,src ,type ,expr^ ,index)
+           (expression-ir (resolved-vector-expression expr src type expr^ index) owner-src)]
           [(enum-ref ,src ,type ,elt-name^)
            (object (cons "kind" "enum_variant")
                    (cons "ty" (type-ir type src))
@@ -468,6 +485,13 @@
                                     (reverse bytes)
                                     (loop (+ index 1)
                                           (cons (bytevector-u8-ref datum index) bytes)))))))]
+             ;; infer-types assigns an unsigned literal its exact maximum.
+             ;; Arithmetic operands need this case when no widening cast was
+             ;; inserted (for example the 2 in a local constant `i * 2`).
+             [(and (integer? datum) (<= 0 datum (max-unsigned)))
+              (object (cons "kind" "unsigned_literal")
+                      (cons "value" (number->string datum))
+                      (cons "max" (number->string datum)))]
              [(and (integer? datum) (> datum (max-unsigned)) (field? datum))
               (object (cons "kind" "field_literal")
                       (cons "value" (number->string datum)))]
@@ -1802,6 +1826,15 @@
 
       (define (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(+ ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_add" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
+          [(- ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_subtract" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
+          [(* ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_multiply" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
           [(var-ref ,src ,var-name)
            (typed-expression-ir value-expr expected-type owner-src)]
           [(tuple ,src ,tuple-arg* ...)
@@ -1878,8 +1911,25 @@
           (expression-origin-preserve? value-expr)
           (lambda () (stateful-expression-ir-value value-expr owner-src witness-ids)) (expression-operation-origin value-expr)))
 
+      ;; Match the pure typed arithmetic owner: analysis can declare a tighter
+      ;; result than the rounded mbits carrier (notably constant 0 + 0).
+      (define (stateful-typed-unsigned-arithmetic-ir kind value-expr expected-type
+                src mbits expr1 expr2 owner-src witness-ids)
+        (if mbits
+            (nanopass-case (Lnodisclose Type) expected-type
+              [(tunsigned ,src^ ,nat)
+               (object (cons "kind" kind)
+                       (cons "max" (number->string nat))
+                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
+                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))]
+              [else (stateful-expression-ir value-expr owner-src witness-ids)])
+            (stateful-expression-ir value-expr owner-src witness-ids)))
+
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(vector-ref ,src ,type ,expr ,index)
+           (stateful-expression-ir
+             (resolved-vector-expression value-expr src type expr index) owner-src witness-ids)]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
