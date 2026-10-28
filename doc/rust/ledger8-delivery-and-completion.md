@@ -333,3 +333,21 @@ final clean compiler139, fresh affected qualification, separate PR review and
 full CI remain open. Recording-retirement authority and all historical evidence
 remain unchanged. This is a semantic/API improvement, not a new CI optimization
 or Forge adoption project.
+
+
+## Unit initializer integration and renderer prerequisite — 2026-10-28
+
+PR [#694](https://github.com/betsudo/compact/pull/694) is verified merged at
+signed canonical `1d0288846` after complete required CI and exact-head Claude
+review. Selected initializer source E2E, proofs, immutable verification and
+separate strict ledger application/replay retain their recorded scope; they do
+not prove constructors or all exports. The completed worktree was recoverably
+archived after preserving generated artifacts.
+
+The next statement-action slice is separately preserved on
+`codex/rust-ast-unit-action-bindings`. Its valid mixed value/Unit scope exposed
+a shared generated-code formatting problem. The bounded
+[functional bind receiver fix](plans/functional-bind-receivers.md) runs first
+on the accepted canonical baseline. It retains typed IR, checked-program and
+runtime semantics; then the statement slice resumes with its own qualification
+and PR. Forge remains deferred and the primary goal remains incomplete.
