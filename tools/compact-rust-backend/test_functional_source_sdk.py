@@ -110,6 +110,25 @@ class IsolatedSdkControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate.typed_refusal(process(rows, status), code, path, line)
 
+    def test_proof_artifact_binds_actual_source_and_checked_profile(self):
+        consumer = Path("/isolated/consumer")
+        row = {"reason": "compiler-artifact", "package_id": "source-package", "fresh": True,
+               "executable": "/target/proof-checks/functional-sdk-proof",
+               "target": {"name": "functional-sdk-proof", "src_path": str(consumer / "proof/prove.rs")},
+               "profile": {"debug_assertions": True, "overflow_checks": True}}
+        self.assertTrue(gate.proof_artifact(json.dumps(row), consumer)["compiled_cache_reused"])
+        for key in ("debug_assertions", "overflow_checks"):
+            bad = copy.deepcopy(row)
+            bad["profile"][key] = False
+            with self.assertRaisesRegex(ValueError, "checked profile"):
+                gate.proof_artifact(json.dumps(bad), consumer)
+        bad = copy.deepcopy(row)
+        bad["target"]["src_path"] = "/old-checkout/prove.rs"
+        with self.assertRaisesRegex(ValueError, "different consumer"):
+            gate.proof_artifact(json.dumps(bad), consumer)
+        with self.assertRaisesRegex(ValueError, "one actual"):
+            gate.proof_artifact(json.dumps(row)+"\n"+json.dumps(row), consumer)
+
     def test_relaxed_missing_or_wrong_replay_results_cannot_pass(self):
         result = dict(status="passed", strict_application="default", replay_refusal="IntentAlreadyExists",
                       witness_private_state=[7, 8], skip_sequence=[None]*6,

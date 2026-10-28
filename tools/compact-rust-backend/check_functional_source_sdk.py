@@ -140,6 +140,25 @@ def typed_refusal(process, code, path, line):
     return {"code": code, "path": str(path), "line": line}
 
 
+def proof_artifact(stdout, consumer):
+    candidates = []
+    for line in stdout.splitlines():
+        row = json.loads(line)
+        target = row.get("target", {})
+        if row.get("reason") == "compiler-artifact" and row.get("executable") and target.get("name") == "functional-sdk-proof":
+            if Path(target["src_path"]).resolve() != (consumer / "proof/prove.rs").resolve():
+                raise ValueError("proof executable was compiled from a different consumer source")
+            profile = row.get("profile", {})
+            if profile.get("debug_assertions") is not True or profile.get("overflow_checks") is not True:
+                raise ValueError("proof executable lacks checked profile settings")
+            candidates.append({"path": row["executable"], "package_id": row["package_id"],
+                               "source": target["src_path"], "profile": profile,
+                               "compiled_cache_reused": row.get("fresh")})
+    if len(candidates) != 1:
+        raise ValueError("expected one actual Cargo proof executable artifact")
+    return candidates[0]
+
+
 def validate_result(result):
     required = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
                 "changed_private_witness_rejected", "changed_proof_rejected",
@@ -346,9 +365,12 @@ def main(argv=None):
         receipt["verified_material"] = material
         material_names = [p["name"] for p in material["assets"]+material["parameters"]]
         receipt["material_hashes"] = {str(Path(env["MIDNIGHT_PP"]) / n): digest(Path(env["MIDNIGHT_PP"]) / n) for n in material_names}
-        run("build-proof", ["cargo", "build", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--bin", "functional-sdk-proof", "--manifest-path", manifest])
+        build = run("build-proof", ["cargo", "build", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--bin", "functional-sdk-proof", "--manifest-path", manifest, "--message-format", "json"])
         run("proof-clippy", ["cargo", "clippy", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--all-targets", "--manifest-path", manifest, "--", "-D", "warnings"])
-        binary = target / "proof-checks/functional-sdk-proof"
+        receipt["compiled_proof"] = proof_artifact(build.stdout, consumer)
+        binary = Path(receipt["compiled_proof"]["path"]).resolve(strict=True)
+        if not binary.is_relative_to(target):
+            raise ValueError("actual proof executable escaped the selected Cargo target")
         (output / "bin").mkdir()
         receipt["proof_binary"] = common.stable_copy(binary, output / "bin/functional-sdk-proof")
         run("fresh-proof-and-strict-application", [receipt["proof_binary"]["snapshot"], generated, output / "application"])
