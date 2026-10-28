@@ -27,15 +27,13 @@ pub mod types {
         ::core::cmp::Eq,
         ::midnight_compact_runtime::CompactCellValue,
         ::midnight_compact_runtime::CompactStructRepr,
-        ::midnight_compact_runtime::CompactHashInput
+        ::midnight_compact_runtime::CompactHashInput,
     )]
     pub struct OwnedSelection {
         pub first: ::midnight_compact_runtime::OpaqueString,
         pub repeated: ::midnight_compact_runtime::OpaqueString,
-        pub original: ::midnight_compact_runtime::FixedVector<
-            ::midnight_compact_runtime::OpaqueString,
-            2,
-        >,
+        pub original:
+            ::midnight_compact_runtime::FixedVector<::midnight_compact_runtime::OpaqueString, 2>,
     }
 }
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
@@ -46,20 +44,15 @@ pub mod pure_circuits {
         items: runtime::FixedVector<runtime::Field, 2>,
     ) -> Result<runtime::Field, runtime::CompactError> {
         Ok({
-            let __compact_local_i: runtime::BoundedUint<1> = runtime::BoundedUint::<
-                1,
-            >::new(1u128)
+            let __compact_local_i: runtime::BoundedUint<1> = runtime::BoundedUint::<1>::new(1u128)
                 .expect("Compact Uint literal fits its maximum");
             {
-                let __compact_local_index: runtime::BoundedUint<0> = runtime::multiply_unsigned::<
-                    1,
-                    0,
-                    0,
-                >(
-                    __compact_local_i,
-                    runtime::BoundedUint::<0>::new(0u128)
-                        .expect("Compact Uint literal fits its maximum"),
-                )?;
+                let __compact_local_index: runtime::BoundedUint<0> =
+                    runtime::multiply_unsigned::<1, 0, 0>(
+                        __compact_local_i,
+                        runtime::BoundedUint::<0>::new(0u128)
+                            .expect("Compact Uint literal fits its maximum"),
+                    )?;
                 (items).0[0]
             }
         })
@@ -68,15 +61,13 @@ pub mod pure_circuits {
         items: runtime::FixedVector<runtime::Field, 2>,
     ) -> Result<runtime::Field, runtime::CompactError> {
         Ok({
-            let __compact_local_index: runtime::BoundedUint<1> = runtime::BoundedUint::<
-                1,
-            >::new(1u128)
-                .expect("Compact Uint literal fits its maximum");
-            {
-                let __compact_local_one: runtime::BoundedUint<255> = runtime::BoundedUint::<
-                    255,
-                >::new(1u128)
+            let __compact_local_index: runtime::BoundedUint<1> =
+                runtime::BoundedUint::<1>::new(1u128)
                     .expect("Compact Uint literal fits its maximum");
+            {
+                let __compact_local_one: runtime::BoundedUint<255> =
+                    runtime::BoundedUint::<255>::new(1u128)
+                        .expect("Compact Uint literal fits its maximum");
                 (items).0[1]
             }
         })
@@ -85,10 +76,9 @@ pub mod pure_circuits {
         items: runtime::FixedVector<runtime::Field, 1>,
     ) -> Result<runtime::Field, runtime::CompactError> {
         Ok({
-            let __compact_local_index: runtime::BoundedUint<0> = runtime::BoundedUint::<
-                0,
-            >::new(0u128)
-                .expect("Compact Uint literal fits its maximum");
+            let __compact_local_index: runtime::BoundedUint<0> =
+                runtime::BoundedUint::<0>::new(0u128)
+                    .expect("Compact Uint literal fits its maximum");
             (items).0[0]
         })
     }
@@ -96,10 +86,9 @@ pub mod pure_circuits {
         items: runtime::FixedVector<runtime::OpaqueString, 2>,
     ) -> Result<runtime::OpaqueString, runtime::CompactError> {
         Ok({
-            let __compact_local_index: runtime::BoundedUint<1> = runtime::BoundedUint::<
-                1,
-            >::new(1u128)
-                .expect("Compact Uint literal fits its maximum");
+            let __compact_local_index: runtime::BoundedUint<1> =
+                runtime::BoundedUint::<1>::new(1u128)
+                    .expect("Compact Uint literal fits its maximum");
             ((items).0[0]).clone()
         })
     }
@@ -112,10 +101,9 @@ pub mod pure_circuits {
         items: runtime::FixedVector<runtime::OpaqueString, 2>,
     ) -> Result<runtime::OpaqueString, runtime::CompactError> {
         Ok({
-            let __compact_local_index: runtime::BoundedUint<0> = runtime::BoundedUint::<
-                0,
-            >::new(0u128)
-                .expect("Compact Uint literal fits its maximum");
+            let __compact_local_index: runtime::BoundedUint<0> =
+                runtime::BoundedUint::<0>::new(0u128)
+                    .expect("Compact Uint literal fits its maximum");
             ((crate::pure_circuits::texts(items.clone())?).0[1]).clone()
         })
     }
@@ -124,9 +112,8 @@ pub mod pure_circuits {
 #[allow(non_upper_case_globals)]
 pub mod ledger_slots {
     use midnight_compact_runtime as runtime;
-    pub const stored: runtime::slots::CellSlot<runtime::Field> = runtime::slots::CellSlot::new(
-        &[0u8],
-    );
+    pub const stored: runtime::slots::CellSlot<runtime::Field> =
+        runtime::slots::CellSlot::new(&[0u8]);
 }
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
@@ -154,7 +141,8 @@ pub mod ledger_contract {
         }
     }
     impl<'a, S: runtime::public_state::PublicStateSource> From<&'a S>
-    for PublicStateView<'a, S::Database> {
+        for PublicStateView<'a, S::Database>
+    {
         fn from(source: &'a S) -> Self {
             Self {
                 state: source.public_state(),
@@ -172,32 +160,27 @@ pub mod ledger_contract {
     pub fn initial_state<Private>(
         __compact_context: runtime::context::ConstructorContext<Private>,
     ) -> Result<runtime::context::ConstructorResult<Private>, runtime::CompactError> {
-        let state = runtime::ledger::contract_state(
-            vec![
-                runtime::ledger::try_constructor_cell:: < runtime::Field,
-                runtime::ledger::DefaultDB > (Default::default()) ?
-            ],
-        );
-        Ok(runtime::context::ConstructorResult::new(__compact_context, state))
+        let state = runtime::ledger::contract_state(vec![runtime::ledger::try_constructor_cell::<
+            runtime::Field,
+            runtime::ledger::DefaultDB,
+        >(Default::default())?]);
+        Ok(runtime::context::ConstructorResult::new(
+            __compact_context,
+            state,
+        ))
     }
     pub fn choose<Private>(
         context: runtime::context::CircuitContext<Private>,
         __compact_param_0: runtime::FixedVector<runtime::Field, 2>,
         __compact_param_1: bool,
-    ) -> Result<
-        runtime::context::CircuitResult<Private, runtime::Field>,
-        runtime::CompactError,
-    > {
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
-        let __compact_action_local_0: runtime::BoundedUint<1> = runtime::BoundedUint::<
-            1,
-        >::new(1u128)
-            .expect("Compact Uint literal fits its maximum");
-        let __compact_action_local_1: runtime::BoundedUint<255> = runtime::BoundedUint::<
-            255,
-        >::new(1u128)
-            .expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_0: runtime::BoundedUint<1> =
+            runtime::BoundedUint::<1>::new(1u128).expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_1: runtime::BoundedUint<255> =
+            runtime::BoundedUint::<255>::new(1u128).expect("Compact Uint literal fits its maximum");
         let __compact_action_local_2: runtime::Field = if __compact_param_1 {
             (__compact_param_0).0[0]
         } else {
@@ -226,40 +209,28 @@ pub mod ledger_contract {
     > {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
-        let __compact_action_local_0: runtime::BoundedUint<1> = runtime::BoundedUint::<
-            1,
-        >::new(1u128)
-            .expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_0: runtime::BoundedUint<1> =
+            runtime::BoundedUint::<1>::new(1u128).expect("Compact Uint literal fits its maximum");
         let __compact_value_0 = __compact_action_local_0;
-        let __compact_value_1 = runtime::BoundedUint::<0>::new(0u128)
-            .expect("Compact Uint literal fits its maximum");
-        let __compact_action_local_1: runtime::BoundedUint<0> = runtime::multiply_unsigned::<
-            1,
-            0,
-            0,
-        >(__compact_value_0, __compact_value_1)?;
+        let __compact_value_1 =
+            runtime::BoundedUint::<0>::new(0u128).expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_1: runtime::BoundedUint<0> =
+            runtime::multiply_unsigned::<1, 0, 0>(__compact_value_0, __compact_value_1)?;
         let __compact_value_2 = __compact_action_local_1;
-        let __compact_value_3 = runtime::BoundedUint::<0>::new(0u128)
-            .expect("Compact Uint literal fits its maximum");
-        let __compact_action_local_2: runtime::BoundedUint<0> = runtime::add_unsigned::<
-            0,
-            0,
-            0,
-        >(__compact_value_2, __compact_value_3)?;
-        let __compact_action_local_3: runtime::OpaqueString = ((__compact_param_0).0[0])
-            .clone();
-        let __compact_action_local_4: runtime::OpaqueString = ((__compact_param_0).0[0])
-            .clone();
+        let __compact_value_3 =
+            runtime::BoundedUint::<0>::new(0u128).expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_2: runtime::BoundedUint<0> =
+            runtime::add_unsigned::<0, 0, 0>(__compact_value_2, __compact_value_3)?;
+        let __compact_action_local_3: runtime::OpaqueString = ((__compact_param_0).0[0]).clone();
+        let __compact_action_local_4: runtime::OpaqueString = ((__compact_param_0).0[0]).clone();
         let __compact_action_local_5: runtime::Field = runtime::Field::from(1u128);
         let step = crate::ledger_slots::stored.write(context, __compact_action_local_5)?;
         let context = step.context;
         total_cost += step.gas_cost;
-        let __compact_struct_member_4: runtime::OpaqueString = __compact_action_local_3
-            .clone();
-        let __compact_struct_member_5: runtime::OpaqueString = __compact_action_local_4
-            .clone();
-        let __compact_struct_member_6: runtime::FixedVector<runtime::OpaqueString, 2> = __compact_param_0
-            .clone();
+        let __compact_struct_member_4: runtime::OpaqueString = __compact_action_local_3.clone();
+        let __compact_struct_member_5: runtime::OpaqueString = __compact_action_local_4.clone();
+        let __compact_struct_member_6: runtime::FixedVector<runtime::OpaqueString, 2> =
+            __compact_param_0.clone();
         let result = crate::types::OwnedSelection {
             first: __compact_struct_member_4,
             repeated: __compact_struct_member_5,
@@ -276,37 +247,27 @@ pub mod ledger_contract {
         context: runtime::context::CircuitContext<Private>,
         witnesses: &W,
         __compact_param_0: bool,
-    ) -> Result<
-        runtime::context::CircuitResult<Private, runtime::Field>,
-        runtime::CompactError,
-    > {
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
         let mut context = context;
-        let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(
-            &context,
-        );
-        let (__compact_next_private_0, __compact_witness_0) = witnesses
-            .values(
-                context
-                    .witness_context_with(LedgerView {
-                        state: context.query.state.get_ref(),
-                        meter: &__compact_witness_meter_0,
-                    }),
-            )?;
+        let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(&context);
+        let (__compact_next_private_0, __compact_witness_0) =
+            witnesses.values(context.witness_context_with(LedgerView {
+                state: context.query.state.get_ref(),
+                meter: &__compact_witness_meter_0,
+            }))?;
         total_cost += __compact_witness_meter_0.gas_cost();
         context.private_state = __compact_next_private_0;
-        private_transcript_outputs
-            .push(runtime::fab::AlignedValue::from((__compact_witness_0).clone()));
+        private_transcript_outputs.push(runtime::fab::AlignedValue::from(
+            (__compact_witness_0).clone(),
+        ));
         let __compact_action_local_0: runtime::FixedVector<runtime::Field, 2> = __compact_witness_0;
-        let __compact_action_local_1: runtime::BoundedUint<1> = runtime::BoundedUint::<
-            1,
-        >::new(1u128)
-            .expect("Compact Uint literal fits its maximum");
-        let __compact_action_local_2: runtime::BoundedUint<255> = runtime::BoundedUint::<
-            255,
-        >::new(1u128)
-            .expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_1: runtime::BoundedUint<1> =
+            runtime::BoundedUint::<1>::new(1u128).expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_2: runtime::BoundedUint<255> =
+            runtime::BoundedUint::<255>::new(1u128).expect("Compact Uint literal fits its maximum");
         let __compact_action_local_3: runtime::Field = if __compact_param_0 {
             (__compact_action_local_0).0[0]
         } else {
@@ -329,32 +290,24 @@ pub mod ledger_contract {
     pub fn temporary<Private, W: TryWitnesses<Private>>(
         context: runtime::context::CircuitContext<Private>,
         witnesses: &W,
-    ) -> Result<
-        runtime::context::CircuitResult<Private, runtime::Field>,
-        runtime::CompactError,
-    > {
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
-        let __compact_action_local_0: runtime::BoundedUint<2> = runtime::BoundedUint::<
-            2,
-        >::new(2u128)
-            .expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_0: runtime::BoundedUint<2> =
+            runtime::BoundedUint::<2>::new(2u128).expect("Compact Uint literal fits its maximum");
         let mut context = context;
-        let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(
-            &context,
-        );
-        let (__compact_next_private_0, __compact_witness_0) = witnesses
-            .values(
-                context
-                    .witness_context_with(LedgerView {
-                        state: context.query.state.get_ref(),
-                        meter: &__compact_witness_meter_0,
-                    }),
-            )?;
+        let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(&context);
+        let (__compact_next_private_0, __compact_witness_0) =
+            witnesses.values(context.witness_context_with(LedgerView {
+                state: context.query.state.get_ref(),
+                meter: &__compact_witness_meter_0,
+            }))?;
         total_cost += __compact_witness_meter_0.gas_cost();
         context.private_state = __compact_next_private_0;
-        private_transcript_outputs
-            .push(runtime::fab::AlignedValue::from((__compact_witness_0).clone()));
+        private_transcript_outputs.push(runtime::fab::AlignedValue::from(
+            (__compact_witness_0).clone(),
+        ));
         let __compact_action_local_1: runtime::Field = (__compact_witness_0).0[1];
         let step = crate::ledger_slots::stored.write(context, __compact_action_local_1)?;
         let context = step.context;
@@ -374,39 +327,30 @@ pub mod ledger_contract {
         context: runtime::context::CircuitContext<Private>,
         witnesses: &W,
         __compact_param_0: bool,
-    ) -> Result<
-        runtime::context::CircuitResult<Private, runtime::Field>,
-        runtime::CompactError,
-    > {
+    ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+    {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
-        let __compact_action_local_0: runtime::BoundedUint<0> = runtime::BoundedUint::<
-            0,
-        >::new(0u128)
-            .expect("Compact Uint literal fits its maximum");
+        let __compact_action_local_0: runtime::BoundedUint<0> =
+            runtime::BoundedUint::<0>::new(0u128).expect("Compact Uint literal fits its maximum");
         let mut context = context;
         context = if __compact_param_0 {
             #[allow(unused_mut)]
             let mut context = context;
             let mut context = context;
-            let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(
-                &context,
-            );
-            let (__compact_next_private_0, __compact_witness_0) = witnesses
-                .values(
-                    context
-                        .witness_context_with(LedgerView {
-                            state: context.query.state.get_ref(),
-                            meter: &__compact_witness_meter_0,
-                        }),
-                )?;
+            let __compact_witness_meter_0 = runtime::context::WitnessReadMeter::new(&context);
+            let (__compact_next_private_0, __compact_witness_0) =
+                witnesses.values(context.witness_context_with(LedgerView {
+                    state: context.query.state.get_ref(),
+                    meter: &__compact_witness_meter_0,
+                }))?;
             total_cost += __compact_witness_meter_0.gas_cost();
             context.private_state = __compact_next_private_0;
-            private_transcript_outputs
-                .push(runtime::fab::AlignedValue::from((__compact_witness_0).clone()));
+            private_transcript_outputs.push(runtime::fab::AlignedValue::from(
+                (__compact_witness_0).clone(),
+            ));
             let __compact_action_local_1: runtime::Field = (__compact_witness_0).0[0];
-            let step = crate::ledger_slots::stored
-                .write(context, __compact_action_local_1)?;
+            let step = crate::ledger_slots::stored.write(context, __compact_action_local_1)?;
             let context = step.context;
             total_cost += step.gas_cost;
             context
@@ -414,8 +358,7 @@ pub mod ledger_contract {
             #[allow(unused_mut)]
             let mut context = context;
             let __compact_action_local_2: runtime::Field = runtime::Field::from(0u128);
-            let step = crate::ledger_slots::stored
-                .write(context, __compact_action_local_2)?;
+            let step = crate::ledger_slots::stored.write(context, __compact_action_local_2)?;
             let context = step.context;
             total_cost += step.gas_cost;
             context
@@ -445,12 +388,10 @@ pub mod ledger_contract {
             let frame = runtime::recording::RecordingFrame::new(context);
             let __compact_effect_0: runtime::FixedVector<runtime::Field, 2> = __compact_param_0;
             let __compact_effect_1: bool = __compact_param_1;
-            let __compact_effect_2: runtime::BoundedUint<1> = <runtime::BoundedUint<
-                1,
-            >>::new(1u128)?;
-            let __compact_effect_3: runtime::BoundedUint<255> = <runtime::BoundedUint<
-                255,
-            >>::new(1u128)?;
+            let __compact_effect_2: runtime::BoundedUint<1> =
+                <runtime::BoundedUint<1>>::new(1u128)?;
+            let __compact_effect_3: runtime::BoundedUint<255> =
+                <runtime::BoundedUint<255>>::new(1u128)?;
             let (frame, __compact_effect_6): (_, runtime::Field) = if __compact_effect_1 {
                 let __compact_effect_4: runtime::Field = (__compact_effect_0).0[0];
                 (frame, __compact_effect_4)
@@ -458,57 +399,39 @@ pub mod ledger_contract {
                 let __compact_effect_5: runtime::Field = (__compact_effect_0).0[1];
                 (frame, __compact_effect_5)
             };
-            let frame = crate::ledger_slots::stored
-                .record_write(frame, __compact_effect_6)?;
-            let (frame, __compact_effect_8): (_, runtime::Field) = crate::ledger_slots::stored
-                .record_read(frame)?;
+            let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_6)?;
+            let (frame, __compact_effect_8): (_, runtime::Field) =
+                crate::ledger_slots::stored.record_read(frame)?;
             Ok(frame.finish(__compact_effect_8))
         }
         pub fn owned<Private>(
             context: runtime::context::CircuitContext<Private>,
             __compact_param_0: runtime::FixedVector<runtime::OpaqueString, 2>,
         ) -> Result<
-            runtime::recording::RecordedCircuitResult<
-                Private,
-                crate::types::OwnedSelection,
-            >,
+            runtime::recording::RecordedCircuitResult<Private, crate::types::OwnedSelection>,
             runtime::CompactError,
         > {
             let frame = runtime::recording::RecordingFrame::new(context);
-            let __compact_effect_0: runtime::FixedVector<runtime::OpaqueString, 2> = __compact_param_0;
-            let __compact_effect_1: runtime::BoundedUint<1> = <runtime::BoundedUint<
-                1,
-            >>::new(1u128)?;
-            let __compact_effect_2: runtime::BoundedUint<0> = <runtime::BoundedUint<
-                0,
-            >>::new(0u128)?;
-            let __compact_effect_3: runtime::BoundedUint<0> = runtime::multiply_unsigned::<
-                1,
-                0,
-                0,
-            >(__compact_effect_1, __compact_effect_2)?;
-            let __compact_effect_4: runtime::BoundedUint<0> = <runtime::BoundedUint<
-                0,
-            >>::new(0u128)?;
-            let __compact_effect_5: runtime::BoundedUint<0> = runtime::add_unsigned::<
-                0,
-                0,
-                0,
-            >(__compact_effect_3, __compact_effect_4)?;
-            let __compact_effect_6: runtime::OpaqueString = ((__compact_effect_0).0[0])
-                .clone();
-            let __compact_effect_7: runtime::OpaqueString = ((__compact_effect_0).0[0])
-                .clone();
-            let __compact_effect_8: runtime::Field = runtime::Field::from_le_bytes(
-                    &[
-                        1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                    ],
-                )
-                .expect("validated Compact Field literal");
-            let frame = crate::ledger_slots::stored
-                .record_write(frame, __compact_effect_8)?;
+            let __compact_effect_0: runtime::FixedVector<runtime::OpaqueString, 2> =
+                __compact_param_0;
+            let __compact_effect_1: runtime::BoundedUint<1> =
+                <runtime::BoundedUint<1>>::new(1u128)?;
+            let __compact_effect_2: runtime::BoundedUint<0> =
+                <runtime::BoundedUint<0>>::new(0u128)?;
+            let __compact_effect_3: runtime::BoundedUint<0> =
+                runtime::multiply_unsigned::<1, 0, 0>(__compact_effect_1, __compact_effect_2)?;
+            let __compact_effect_4: runtime::BoundedUint<0> =
+                <runtime::BoundedUint<0>>::new(0u128)?;
+            let __compact_effect_5: runtime::BoundedUint<0> =
+                runtime::add_unsigned::<0, 0, 0>(__compact_effect_3, __compact_effect_4)?;
+            let __compact_effect_6: runtime::OpaqueString = ((__compact_effect_0).0[0]).clone();
+            let __compact_effect_7: runtime::OpaqueString = ((__compact_effect_0).0[0]).clone();
+            let __compact_effect_8: runtime::Field = runtime::Field::from_le_bytes(&[
+                1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+            ])
+            .expect("validated Compact Field literal");
+            let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_8)?;
             let __compact_effect_10: crate::types::OwnedSelection = crate::types::OwnedSelection {
                 first: (__compact_effect_6).clone(),
                 repeated: (__compact_effect_7).clone(),
@@ -526,26 +449,17 @@ pub mod ledger_contract {
         > {
             let frame = runtime::recording::RecordingFrame::new(context);
             let __compact_effect_0: bool = __compact_param_0;
-            let (
-                frame,
-                __compact_effect_1,
-            ): (_, runtime::FixedVector<runtime::Field, 2>) = frame
-                .try_witness_metered(|context, meter| {
-                    witnesses
-                        .values(
-                            context
-                                .witness_context_with(super::LedgerView {
-                                    state: context.query.state.get_ref(),
-                                    meter,
-                                }),
-                        )
+            let (frame, __compact_effect_1): (_, runtime::FixedVector<runtime::Field, 2>) =
+                frame.try_witness_metered(|context, meter| {
+                    witnesses.values(context.witness_context_with(super::LedgerView {
+                        state: context.query.state.get_ref(),
+                        meter,
+                    }))
                 })?;
-            let __compact_effect_2: runtime::BoundedUint<1> = <runtime::BoundedUint<
-                1,
-            >>::new(1u128)?;
-            let __compact_effect_3: runtime::BoundedUint<255> = <runtime::BoundedUint<
-                255,
-            >>::new(1u128)?;
+            let __compact_effect_2: runtime::BoundedUint<1> =
+                <runtime::BoundedUint<1>>::new(1u128)?;
+            let __compact_effect_3: runtime::BoundedUint<255> =
+                <runtime::BoundedUint<255>>::new(1u128)?;
             let (frame, __compact_effect_6): (_, runtime::Field) = if __compact_effect_0 {
                 let __compact_effect_4: runtime::Field = (__compact_effect_1).0[0];
                 (frame, __compact_effect_4)
@@ -553,10 +467,9 @@ pub mod ledger_contract {
                 let __compact_effect_5: runtime::Field = (__compact_effect_1).0[1];
                 (frame, __compact_effect_5)
             };
-            let frame = crate::ledger_slots::stored
-                .record_write(frame, __compact_effect_6)?;
-            let (frame, __compact_effect_8): (_, runtime::Field) = crate::ledger_slots::stored
-                .record_read(frame)?;
+            let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_6)?;
+            let (frame, __compact_effect_8): (_, runtime::Field) =
+                crate::ledger_slots::stored.record_read(frame)?;
             Ok(frame.finish(__compact_effect_8))
         }
         pub fn temporary<Private, W: super::TryWitnesses<Private>>(
@@ -567,28 +480,19 @@ pub mod ledger_contract {
             runtime::CompactError,
         > {
             let frame = runtime::recording::RecordingFrame::new(context);
-            let __compact_effect_0: runtime::BoundedUint<2> = <runtime::BoundedUint<
-                2,
-            >>::new(2u128)?;
-            let (
-                frame,
-                __compact_effect_1,
-            ): (_, runtime::FixedVector<runtime::Field, 2>) = frame
-                .try_witness_metered(|context, meter| {
-                    witnesses
-                        .values(
-                            context
-                                .witness_context_with(super::LedgerView {
-                                    state: context.query.state.get_ref(),
-                                    meter,
-                                }),
-                        )
+            let __compact_effect_0: runtime::BoundedUint<2> =
+                <runtime::BoundedUint<2>>::new(2u128)?;
+            let (frame, __compact_effect_1): (_, runtime::FixedVector<runtime::Field, 2>) =
+                frame.try_witness_metered(|context, meter| {
+                    witnesses.values(context.witness_context_with(super::LedgerView {
+                        state: context.query.state.get_ref(),
+                        meter,
+                    }))
                 })?;
             let __compact_effect_2: runtime::Field = (__compact_effect_1).0[1];
-            let frame = crate::ledger_slots::stored
-                .record_write(frame, __compact_effect_2)?;
-            let (frame, __compact_effect_4): (_, runtime::Field) = crate::ledger_slots::stored
-                .record_read(frame)?;
+            let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_2)?;
+            let (frame, __compact_effect_4): (_, runtime::Field) =
+                crate::ledger_slots::stored.record_read(frame)?;
             Ok(frame.finish(__compact_effect_4))
         }
         pub fn conditional<Private, W: super::TryWitnesses<Private>>(
@@ -601,47 +505,34 @@ pub mod ledger_contract {
         > {
             let frame = runtime::recording::RecordingFrame::new(context);
             let __compact_effect_0: bool = __compact_param_0;
-            let __compact_effect_1: runtime::BoundedUint<0> = <runtime::BoundedUint<
-                0,
-            >>::new(0u128)?;
+            let __compact_effect_1: runtime::BoundedUint<0> =
+                <runtime::BoundedUint<0>>::new(0u128)?;
             #[allow(
                 clippy::let_and_return,
                 reason = "uniform Unit frames preserve ordered recording steps"
             )]
             let frame = if __compact_effect_0 {
-                let (
-                    frame,
-                    __compact_effect_2,
-                ): (_, runtime::FixedVector<runtime::Field, 2>) = frame
-                    .try_witness_metered(|context, meter| {
-                        witnesses
-                            .values(
-                                context
-                                    .witness_context_with(super::LedgerView {
-                                        state: context.query.state.get_ref(),
-                                        meter,
-                                    }),
-                            )
+                let (frame, __compact_effect_2): (_, runtime::FixedVector<runtime::Field, 2>) =
+                    frame.try_witness_metered(|context, meter| {
+                        witnesses.values(context.witness_context_with(super::LedgerView {
+                            state: context.query.state.get_ref(),
+                            meter,
+                        }))
                     })?;
                 let __compact_effect_3: runtime::Field = (__compact_effect_2).0[0];
-                let frame = crate::ledger_slots::stored
-                    .record_write(frame, __compact_effect_3)?;
+                let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_3)?;
                 frame
             } else {
-                let __compact_effect_6: runtime::Field = runtime::Field::from_le_bytes(
-                        &[
-                            0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                            0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                            0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                        ],
-                    )
-                    .expect("validated Compact Field literal");
-                let frame = crate::ledger_slots::stored
-                    .record_write(frame, __compact_effect_6)?;
+                let __compact_effect_6: runtime::Field = runtime::Field::from_le_bytes(&[
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                    0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                ])
+                .expect("validated Compact Field literal");
+                let frame = crate::ledger_slots::stored.record_write(frame, __compact_effect_6)?;
                 frame
             };
-            let (frame, __compact_effect_10): (_, runtime::Field) = crate::ledger_slots::stored
-                .record_read(frame)?;
+            let (frame, __compact_effect_10): (_, runtime::Field) =
+                crate::ledger_slots::stored.record_read(frame)?;
             Ok(frame.finish(__compact_effect_10))
         }
         /// Typed handle for circuits with a complete recorded trace.
@@ -669,34 +560,19 @@ pub mod ledger_contract {
                 runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
                 runtime::CompactError,
             > {
-                let input = runtime::fab::AlignedValue::from((
-                    (items).clone(),
-                    select_first,
-                ));
-                let recorded = self
-                    .choose(
-                        observed.circuit_context(private_state),
-                        items,
-                        select_first,
-                    )?;
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "choose",
-                        input,
-                    ),
-                )
+                let input = runtime::fab::AlignedValue::from(((items).clone(), select_first));
+                let recorded =
+                    self.choose(observed.circuit_context(private_state), items, select_first)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed, recorded, "choose", input,
+                ))
             }
             pub fn owned<Private>(
                 &self,
                 context: runtime::context::CircuitContext<Private>,
                 items: runtime::FixedVector<runtime::OpaqueString, 2>,
             ) -> Result<
-                runtime::recording::RecordedCircuitResult<
-                    Private,
-                    crate::types::OwnedSelection,
-                >,
+                runtime::recording::RecordedCircuitResult<Private, crate::types::OwnedSelection>,
                 runtime::CompactError,
             > {
                 crate::ledger_contract::recorded::owned(context, items)
@@ -716,33 +592,22 @@ pub mod ledger_contract {
                 runtime::CompactError,
             > {
                 for __compact_opaque_element in &(items).0 {
-                    runtime::ledger::CellValue::validate_cell_value(
-                        __compact_opaque_element,
-                    )?;
+                    runtime::ledger::CellValue::validate_cell_value(__compact_opaque_element)?;
                 }
                 let input = runtime::fab::AlignedValue::from((items).clone());
-                let recorded = self
-                    .owned(observed.circuit_context(private_state), items)?;
+                let recorded = self.owned(observed.circuit_context(private_state), items)?;
                 runtime::ledger::CellValue::validate_cell_value(
                     &(recorded.execution.result).first,
                 )?;
                 runtime::ledger::CellValue::validate_cell_value(
                     &(recorded.execution.result).repeated,
                 )?;
-                for __compact_opaque_element in &((recorded.execution.result).original).0
-                {
-                    runtime::ledger::CellValue::validate_cell_value(
-                        __compact_opaque_element,
-                    )?;
+                for __compact_opaque_element in &((recorded.execution.result).original).0 {
+                    runtime::ledger::CellValue::validate_cell_value(__compact_opaque_element)?;
                 }
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "owned",
-                        input,
-                    ),
-                )
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed, recorded, "owned", input,
+                ))
             }
         }
         /// A recording handle with access to the contract's witnesses.
@@ -772,34 +637,19 @@ pub mod ledger_contract {
                 runtime::transaction::RecordedCall<'observed, Private, runtime::Field>,
                 runtime::CompactError,
             > {
-                let input = runtime::fab::AlignedValue::from((
-                    (items).clone(),
-                    select_first,
-                ));
-                let recorded = self
-                    .choose(
-                        observed.circuit_context(private_state),
-                        items,
-                        select_first,
-                    )?;
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "choose",
-                        input,
-                    ),
-                )
+                let input = runtime::fab::AlignedValue::from(((items).clone(), select_first));
+                let recorded =
+                    self.choose(observed.circuit_context(private_state), items, select_first)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed, recorded, "choose", input,
+                ))
             }
             pub fn owned<Private>(
                 &self,
                 context: runtime::context::CircuitContext<Private>,
                 items: runtime::FixedVector<runtime::OpaqueString, 2>,
             ) -> Result<
-                runtime::recording::RecordedCircuitResult<
-                    Private,
-                    crate::types::OwnedSelection,
-                >,
+                runtime::recording::RecordedCircuitResult<Private, crate::types::OwnedSelection>,
                 runtime::CompactError,
             > {
                 owned(context, items)
@@ -819,33 +669,22 @@ pub mod ledger_contract {
                 runtime::CompactError,
             > {
                 for __compact_opaque_element in &(items).0 {
-                    runtime::ledger::CellValue::validate_cell_value(
-                        __compact_opaque_element,
-                    )?;
+                    runtime::ledger::CellValue::validate_cell_value(__compact_opaque_element)?;
                 }
                 let input = runtime::fab::AlignedValue::from((items).clone());
-                let recorded = self
-                    .owned(observed.circuit_context(private_state), items)?;
+                let recorded = self.owned(observed.circuit_context(private_state), items)?;
                 runtime::ledger::CellValue::validate_cell_value(
                     &(recorded.execution.result).first,
                 )?;
                 runtime::ledger::CellValue::validate_cell_value(
                     &(recorded.execution.result).repeated,
                 )?;
-                for __compact_opaque_element in &((recorded.execution.result).original).0
-                {
-                    runtime::ledger::CellValue::validate_cell_value(
-                        __compact_opaque_element,
-                    )?;
+                for __compact_opaque_element in &((recorded.execution.result).original).0 {
+                    runtime::ledger::CellValue::validate_cell_value(__compact_opaque_element)?;
                 }
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "owned",
-                        input,
-                    ),
-                )
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed, recorded, "owned", input,
+                ))
             }
             pub fn witnessed<Private>(
                 &self,
@@ -874,16 +713,14 @@ pub mod ledger_contract {
                 W: super::TryWitnesses<Private>,
             {
                 let input = runtime::fab::AlignedValue::from(select_first);
-                let recorded = self
-                    .witnessed(observed.circuit_context(private_state), select_first)?;
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "witnessed",
-                        input,
-                    ),
-                )
+                let recorded =
+                    self.witnessed(observed.circuit_context(private_state), select_first)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "witnessed",
+                    input,
+                ))
             }
             pub fn temporary<Private>(
                 &self,
@@ -911,14 +748,12 @@ pub mod ledger_contract {
             {
                 let input = runtime::fab::AlignedValue::from(());
                 let recorded = self.temporary(observed.circuit_context(private_state))?;
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "temporary",
-                        input,
-                    ),
-                )
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "temporary",
+                    input,
+                ))
             }
             pub fn conditional<Private>(
                 &self,
@@ -947,16 +782,13 @@ pub mod ledger_contract {
                 W: super::TryWitnesses<Private>,
             {
                 let input = runtime::fab::AlignedValue::from(active);
-                let recorded = self
-                    .conditional(observed.circuit_context(private_state), active)?;
-                Ok(
-                    runtime::transaction::RecordedCall::new(
-                        observed,
-                        recorded,
-                        "conditional",
-                        input,
-                    ),
-                )
+                let recorded = self.conditional(observed.circuit_context(private_state), active)?;
+                Ok(runtime::transaction::RecordedCall::new(
+                    observed,
+                    recorded,
+                    "conditional",
+                    input,
+                ))
             }
         }
     }
@@ -988,10 +820,8 @@ pub mod ledger_contract {
             context: runtime::context::CircuitContext<Private>,
             items: runtime::FixedVector<runtime::Field, 2>,
             select_first: bool,
-        ) -> Result<
-            runtime::context::CircuitResult<Private, runtime::Field>,
-            runtime::CompactError,
-        > {
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
+        {
             crate::ledger_contract::choose(context, items, select_first)
         }
         pub fn owned<Private>(
@@ -1008,10 +838,7 @@ pub mod ledger_contract {
             &self,
             context: runtime::context::CircuitContext<Private>,
             select_first: bool,
-        ) -> Result<
-            runtime::context::CircuitResult<Private, runtime::Field>,
-            runtime::CompactError,
-        >
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
         where
             W: TryWitnesses<Private>,
         {
@@ -1020,10 +847,7 @@ pub mod ledger_contract {
         pub fn temporary<Private>(
             &self,
             context: runtime::context::CircuitContext<Private>,
-        ) -> Result<
-            runtime::context::CircuitResult<Private, runtime::Field>,
-            runtime::CompactError,
-        >
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
         where
             W: TryWitnesses<Private>,
         {
@@ -1033,10 +857,7 @@ pub mod ledger_contract {
             &self,
             context: runtime::context::CircuitContext<Private>,
             active: bool,
-        ) -> Result<
-            runtime::context::CircuitResult<Private, runtime::Field>,
-            runtime::CompactError,
-        >
+        ) -> Result<runtime::context::CircuitResult<Private, runtime::Field>, runtime::CompactError>
         where
             W: TryWitnesses<Private>,
         {
@@ -1053,15 +874,12 @@ pub mod ledger_contract {
     pub mod functional {
         pub mod choose {
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = include_str!(
-                "checked-programs/program-0.json"
-            );
-            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[
-                crate::runtime::functional::ledger8::CellBinding::new(
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-0.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] =
+                &[crate::runtime::functional::ledger8::CellBinding::new(
                     crate::runtime::functional::SlotId::new(0u32),
                     &[0u8],
-                ),
-            ];
+                )];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
@@ -1069,10 +887,7 @@ pub mod ledger_contract {
                 crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
                 crate::runtime::CompactError,
             > {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
-                    CELLS,
-                    COUNTERS,
-                )
+                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
             }
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
@@ -1085,25 +900,23 @@ pub mod ledger_contract {
                     items: crate::runtime::FixedVector<crate::runtime::Field, 2>,
                     select_first: bool,
                 ) -> Self {
-                    Self { items, select_first }
+                    Self {
+                        items,
+                        select_first,
+                    }
                 }
                 /// Execute with this program's compiler-issued ledger8 bindings.
                 pub fn execute_native<Private>(
                     self,
                     context: crate::runtime::context::CircuitContext<Private>,
                 ) -> Result<
-                    crate::runtime::context::CircuitResult<
-                        Private,
-                        crate::runtime::Field,
-                    >,
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
                     crate::runtime::CompactError,
                 > {
-                    self.run(
-                        crate::runtime::functional::ledger8::NativeLedger8::new(
-                            context,
-                            ledger8_bindings()?,
-                        ),
-                    )
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
                 }
                 /// Record with the same checked body and compiler-issued bindings.
                 pub fn execute_recorded<Private>(
@@ -1116,21 +929,16 @@ pub mod ledger_contract {
                     >,
                     crate::runtime::CompactError,
                 > {
-                    self.run(
-                        crate::runtime::functional::ledger8::RecordedLedger8::new(
-                            context,
-                            ledger8_bindings()?,
-                        ),
-                    )
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
                 }
                 /// One checked body shared by native and recorded target adapters.
                 pub fn run<E>(
                     self,
                     __compact_executor: E,
-                ) -> Result<
-                    E::Outcome<crate::runtime::Field>,
-                    crate::runtime::CompactError,
-                >
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
                 where
                     E: crate::runtime::functional::Executor
                         + crate::runtime::functional::CellWrite<crate::runtime::Field>
@@ -1274,15 +1082,12 @@ pub mod ledger_contract {
         }
         pub mod owned {
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = include_str!(
-                "checked-programs/program-1.json"
-            );
-            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[
-                crate::runtime::functional::ledger8::CellBinding::new(
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-1.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] =
+                &[crate::runtime::functional::ledger8::CellBinding::new(
                     crate::runtime::functional::SlotId::new(0u32),
                     &[0u8],
-                ),
-            ];
+                )];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
@@ -1290,10 +1095,7 @@ pub mod ledger_contract {
                 crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
                 crate::runtime::CompactError,
             > {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
-                    CELLS,
-                    COUNTERS,
-                )
+                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
             }
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
@@ -1311,18 +1113,13 @@ pub mod ledger_contract {
                     self,
                     context: crate::runtime::context::CircuitContext<Private>,
                 ) -> Result<
-                    crate::runtime::context::CircuitResult<
-                        Private,
-                        crate::types::OwnedSelection,
-                    >,
+                    crate::runtime::context::CircuitResult<Private, crate::types::OwnedSelection>,
                     crate::runtime::CompactError,
                 > {
-                    self.run(
-                        crate::runtime::functional::ledger8::NativeLedger8::new(
-                            context,
-                            ledger8_bindings()?,
-                        ),
-                    )
+                    self.run(crate::runtime::functional::ledger8::NativeLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
                 }
                 /// Record with the same checked body and compiler-issued bindings.
                 pub fn execute_recorded<Private>(
@@ -1335,21 +1132,16 @@ pub mod ledger_contract {
                     >,
                     crate::runtime::CompactError,
                 > {
-                    self.run(
-                        crate::runtime::functional::ledger8::RecordedLedger8::new(
-                            context,
-                            ledger8_bindings()?,
-                        ),
-                    )
+                    self.run(crate::runtime::functional::ledger8::RecordedLedger8::new(
+                        context,
+                        ledger8_bindings()?,
+                    ))
                 }
                 /// One checked body shared by native and recorded target adapters.
                 pub fn run<E>(
                     self,
                     __compact_executor: E,
-                ) -> Result<
-                    E::Outcome<crate::types::OwnedSelection>,
-                    crate::runtime::CompactError,
-                >
+                ) -> Result<E::Outcome<crate::types::OwnedSelection>, crate::runtime::CompactError>
                 where
                     E: crate::runtime::functional::Executor
                         + crate::runtime::functional::CellWrite<crate::runtime::Field>,
@@ -1545,27 +1337,23 @@ pub mod ledger_contract {
         }
         pub mod witnessed {
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = include_str!(
-                "checked-programs/program-2.json"
-            );
-            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[
-                crate::runtime::functional::ledger8::CellBinding::new(
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-2.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] =
+                &[crate::runtime::functional::ledger8::CellBinding::new(
                     crate::runtime::functional::SlotId::new(0u32),
                     &[0u8],
-                ),
-            ];
+                )];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
-            impl<
-                Private,
-                W: crate::ledger_contract::TryWitnesses<Private>,
-            > crate::runtime::functional::ledger8::WitnessHandler<
-                Private,
-                crate::runtime::ledger::DefaultDB,
-                (),
-                crate::runtime::FixedVector<crate::runtime::Field, 2>,
-            > for WitnessAdapter<'_, W> {
+            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
+                crate::runtime::functional::ledger8::WitnessHandler<
+                    Private,
+                    crate::runtime::ledger::DefaultDB,
+                    (),
+                    crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                > for WitnessAdapter<'_, W>
+            {
                 fn call(
                     &self,
                     id: crate::runtime::functional::WitnessId,
@@ -1573,26 +1361,25 @@ pub mod ledger_contract {
                     context: &crate::runtime::context::CircuitContext<Private>,
                     meter: &crate::runtime::context::WitnessReadMeter<'_>,
                 ) -> Result<
-                    (Private, crate::runtime::FixedVector<crate::runtime::Field, 2>),
+                    (
+                        Private,
+                        crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                    ),
                     crate::runtime::CompactError,
                 > {
                     match id.index() {
                         0u32 => {
                             let () = arguments;
-                            self.0
-                                .values(
-                                    context
-                                        .witness_context_with(crate::ledger_contract::LedgerView {
-                                            state: context.query.state.get_ref(),
-                                            meter,
-                                        }),
-                                )
+                            self.0.values(context.witness_context_with(
+                                crate::ledger_contract::LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter,
+                                },
+                            ))
                         }
-                        _ => {
-                            Err(crate::runtime::CompactError::UnknownWitnessIdentity {
-                                id: id.index(),
-                            })
-                        }
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity {
+                            id: id.index(),
+                        }),
                     }
                 }
             }
@@ -1600,10 +1387,7 @@ pub mod ledger_contract {
                 crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
                 crate::runtime::CompactError,
             > {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
-                    CELLS,
-                    COUNTERS,
-                )
+                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
             }
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
@@ -1615,26 +1399,20 @@ pub mod ledger_contract {
                     Self { select_first }
                 }
                 /// Execute with this program's compiler-issued ledger8 bindings.
-                pub fn execute_native<
-                    Private,
-                    W: crate::ledger_contract::TryWitnesses<Private>,
-                >(
+                pub fn execute_native<Private, W: crate::ledger_contract::TryWitnesses<Private>>(
                     self,
                     context: crate::runtime::context::CircuitContext<Private>,
                     witnesses: &W,
                 ) -> Result<
-                    crate::runtime::context::CircuitResult<
-                        Private,
-                        crate::runtime::Field,
-                    >,
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
                     crate::runtime::CompactError,
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::NativeLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// Record with the same checked body and compiler-issued bindings.
@@ -1654,20 +1432,17 @@ pub mod ledger_contract {
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::RecordedLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// One checked body shared by native and recorded target adapters.
                 pub fn run<E>(
                     self,
                     __compact_executor: E,
-                ) -> Result<
-                    E::Outcome<crate::runtime::Field>,
-                    crate::runtime::CompactError,
-                >
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
                 where
                     E: crate::runtime::functional::Executor
                         + crate::runtime::functional::WitnessCall<
@@ -1829,27 +1604,23 @@ pub mod ledger_contract {
         }
         pub mod temporary {
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = include_str!(
-                "checked-programs/program-3.json"
-            );
-            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[
-                crate::runtime::functional::ledger8::CellBinding::new(
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-3.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] =
+                &[crate::runtime::functional::ledger8::CellBinding::new(
                     crate::runtime::functional::SlotId::new(0u32),
                     &[0u8],
-                ),
-            ];
+                )];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
-            impl<
-                Private,
-                W: crate::ledger_contract::TryWitnesses<Private>,
-            > crate::runtime::functional::ledger8::WitnessHandler<
-                Private,
-                crate::runtime::ledger::DefaultDB,
-                (),
-                crate::runtime::FixedVector<crate::runtime::Field, 2>,
-            > for WitnessAdapter<'_, W> {
+            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
+                crate::runtime::functional::ledger8::WitnessHandler<
+                    Private,
+                    crate::runtime::ledger::DefaultDB,
+                    (),
+                    crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                > for WitnessAdapter<'_, W>
+            {
                 fn call(
                     &self,
                     id: crate::runtime::functional::WitnessId,
@@ -1857,26 +1628,25 @@ pub mod ledger_contract {
                     context: &crate::runtime::context::CircuitContext<Private>,
                     meter: &crate::runtime::context::WitnessReadMeter<'_>,
                 ) -> Result<
-                    (Private, crate::runtime::FixedVector<crate::runtime::Field, 2>),
+                    (
+                        Private,
+                        crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                    ),
                     crate::runtime::CompactError,
                 > {
                     match id.index() {
                         0u32 => {
                             let () = arguments;
-                            self.0
-                                .values(
-                                    context
-                                        .witness_context_with(crate::ledger_contract::LedgerView {
-                                            state: context.query.state.get_ref(),
-                                            meter,
-                                        }),
-                                )
+                            self.0.values(context.witness_context_with(
+                                crate::ledger_contract::LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter,
+                                },
+                            ))
                         }
-                        _ => {
-                            Err(crate::runtime::CompactError::UnknownWitnessIdentity {
-                                id: id.index(),
-                            })
-                        }
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity {
+                            id: id.index(),
+                        }),
                     }
                 }
             }
@@ -1884,10 +1654,7 @@ pub mod ledger_contract {
                 crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
                 crate::runtime::CompactError,
             > {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
-                    CELLS,
-                    COUNTERS,
-                )
+                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
             }
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
@@ -1902,26 +1669,20 @@ pub mod ledger_contract {
                     Self {}
                 }
                 /// Execute with this program's compiler-issued ledger8 bindings.
-                pub fn execute_native<
-                    Private,
-                    W: crate::ledger_contract::TryWitnesses<Private>,
-                >(
+                pub fn execute_native<Private, W: crate::ledger_contract::TryWitnesses<Private>>(
                     self,
                     context: crate::runtime::context::CircuitContext<Private>,
                     witnesses: &W,
                 ) -> Result<
-                    crate::runtime::context::CircuitResult<
-                        Private,
-                        crate::runtime::Field,
-                    >,
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
                     crate::runtime::CompactError,
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::NativeLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// Record with the same checked body and compiler-issued bindings.
@@ -1941,20 +1702,17 @@ pub mod ledger_contract {
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::RecordedLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// One checked body shared by native and recorded target adapters.
                 pub fn run<E>(
                     self,
                     __compact_executor: E,
-                ) -> Result<
-                    E::Outcome<crate::runtime::Field>,
-                    crate::runtime::CompactError,
-                >
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
                 where
                     E: crate::runtime::functional::Executor
                         + crate::runtime::functional::WitnessCall<
@@ -2058,27 +1816,23 @@ pub mod ledger_contract {
         }
         pub mod conditional {
             /// Review metadata only; never consumed as execution authority.
-            pub const CHECKED_PROGRAM: &str = include_str!(
-                "checked-programs/program-4.json"
-            );
-            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] = &[
-                crate::runtime::functional::ledger8::CellBinding::new(
+            pub const CHECKED_PROGRAM: &str = include_str!("checked-programs/program-4.json");
+            const CELLS: &[crate::runtime::functional::ledger8::CellBinding] =
+                &[crate::runtime::functional::ledger8::CellBinding::new(
                     crate::runtime::functional::SlotId::new(0u32),
                     &[0u8],
-                ),
-            ];
+                )];
             const COUNTERS: &[crate::runtime::functional::ledger8::CounterBinding] = &[];
             /// Adapts this entry's retained witness identities to existing callbacks.
             pub struct WitnessAdapter<'a, W>(pub &'a W);
-            impl<
-                Private,
-                W: crate::ledger_contract::TryWitnesses<Private>,
-            > crate::runtime::functional::ledger8::WitnessHandler<
-                Private,
-                crate::runtime::ledger::DefaultDB,
-                (),
-                crate::runtime::FixedVector<crate::runtime::Field, 2>,
-            > for WitnessAdapter<'_, W> {
+            impl<Private, W: crate::ledger_contract::TryWitnesses<Private>>
+                crate::runtime::functional::ledger8::WitnessHandler<
+                    Private,
+                    crate::runtime::ledger::DefaultDB,
+                    (),
+                    crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                > for WitnessAdapter<'_, W>
+            {
                 fn call(
                     &self,
                     id: crate::runtime::functional::WitnessId,
@@ -2086,26 +1840,25 @@ pub mod ledger_contract {
                     context: &crate::runtime::context::CircuitContext<Private>,
                     meter: &crate::runtime::context::WitnessReadMeter<'_>,
                 ) -> Result<
-                    (Private, crate::runtime::FixedVector<crate::runtime::Field, 2>),
+                    (
+                        Private,
+                        crate::runtime::FixedVector<crate::runtime::Field, 2>,
+                    ),
                     crate::runtime::CompactError,
                 > {
                     match id.index() {
                         0u32 => {
                             let () = arguments;
-                            self.0
-                                .values(
-                                    context
-                                        .witness_context_with(crate::ledger_contract::LedgerView {
-                                            state: context.query.state.get_ref(),
-                                            meter,
-                                        }),
-                                )
+                            self.0.values(context.witness_context_with(
+                                crate::ledger_contract::LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter,
+                                },
+                            ))
                         }
-                        _ => {
-                            Err(crate::runtime::CompactError::UnknownWitnessIdentity {
-                                id: id.index(),
-                            })
-                        }
+                        _ => Err(crate::runtime::CompactError::UnknownWitnessIdentity {
+                            id: id.index(),
+                        }),
                     }
                 }
             }
@@ -2113,10 +1866,7 @@ pub mod ledger_contract {
                 crate::runtime::functional::ledger8::Ledger8Bindings<'static>,
                 crate::runtime::CompactError,
             > {
-                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(
-                    CELLS,
-                    COUNTERS,
-                )
+                crate::runtime::functional::ledger8::Ledger8Bindings::with_counters(CELLS, COUNTERS)
             }
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
@@ -2128,26 +1878,20 @@ pub mod ledger_contract {
                     Self { active }
                 }
                 /// Execute with this program's compiler-issued ledger8 bindings.
-                pub fn execute_native<
-                    Private,
-                    W: crate::ledger_contract::TryWitnesses<Private>,
-                >(
+                pub fn execute_native<Private, W: crate::ledger_contract::TryWitnesses<Private>>(
                     self,
                     context: crate::runtime::context::CircuitContext<Private>,
                     witnesses: &W,
                 ) -> Result<
-                    crate::runtime::context::CircuitResult<
-                        Private,
-                        crate::runtime::Field,
-                    >,
+                    crate::runtime::context::CircuitResult<Private, crate::runtime::Field>,
                     crate::runtime::CompactError,
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::NativeLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// Record with the same checked body and compiler-issued bindings.
@@ -2167,20 +1911,17 @@ pub mod ledger_contract {
                 > {
                     self.run(
                         crate::runtime::functional::ledger8::RecordedLedger8::new(
-                                context,
-                                ledger8_bindings()?,
-                            )
-                            .with_witnesses(WitnessAdapter(witnesses)),
+                            context,
+                            ledger8_bindings()?,
+                        )
+                        .with_witnesses(WitnessAdapter(witnesses)),
                     )
                 }
                 /// One checked body shared by native and recorded target adapters.
                 pub fn run<E>(
                     self,
                     __compact_executor: E,
-                ) -> Result<
-                    E::Outcome<crate::runtime::Field>,
-                    crate::runtime::CompactError,
-                >
+                ) -> Result<E::Outcome<crate::runtime::Field>, crate::runtime::CompactError>
                 where
                     E: crate::runtime::functional::Executor
                         + crate::runtime::functional::WitnessCall<
