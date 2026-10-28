@@ -241,11 +241,14 @@ proof-applicable exports**. The [current-profile standalone consumer](plans/pass
 is now freshly qualified locally at signed `834a41025`, original compiler
 0.31.142/Ledger8.1.3: all 202 sampled live TS cases plus codec vectors, 18 Rust
 methods including the complete two-test guide consumer, direct SDK and consumer
-strict Clippy, and two independent ordinary type refusals. All original source
-and oracle authorities remain unchanged. Earlier consumer-only Clippy receipts
-are explicitly narrower. The maintained gate and required CI hook are local;
-actual canonical reconciliation is complete at `342b9fc46`; its own PR/review,
-complete CI and verified merge are still required. Recording/proof/application are not applicable to this
+strict Clippy, and two independent ordinary type refusals. That Rust result used
+formatted SDK bytes. The PR #697 review successor qualifies the untouched raw
+SDK, formats a separate copy, isolates Cargo targets and retains failure diagnostics;
+its fresh result is still pending. All original source/oracle authorities remain
+unchanged, and earlier consumer-only Clippy receipts are explicitly narrower.
+This PR wires the maintained gate into the existing required compiler workflow.
+Actual canonical reconciliation is complete at `342b9fc46`; repeat own review,
+complete current-head CI and verified merge are still required. Recording/proof/application are not applicable to this
 original pure library; do not invent stateful exports.
 
 **Finish when:** both intact pinned source closures build and their applicable tests pass on the selected profile. Each refusal becomes a minimal regression and an issue; fix its actual cause before accepting the dependent application. Do not remove exports to make an oversized/unsupported contract appear supported. “Latest” upstream after these pins is a new adoption decision.

@@ -37,6 +37,8 @@ ORACLE = FIXTURE / "oracle"
 GUIDE = ROOT / "doc/rust/guides/examples/passport/consumer/src/lib.rs"
 CONTROLS = Path(__file__).with_name("tests") / "passport_current_profile"
 SOURCE_MANIFEST_SHA256 = "f122c9c890e841d50f2f2980df4229de584333a9eb6c9a4525794f8ce8a77f78"
+ORACLE_PROVENANCE_SHA256 = "b35b1c5a9959086fcc30f29265b24602d4e2e34844074a9f23f16330ebd4fbd1"
+COMMAND_TIMEOUT_SECONDS = 600
 FAMILIES = ("ts", "age", "request", "private-parts", "protocol", "roots", "bindings",
             "signed-flow", "authorization", "protocol-roundtrip", "complete-flow", "codec")
 NEGATIVES = ("wrong_bytes", "wrong_shape")
@@ -96,6 +98,47 @@ def validate_dependencies(metadata, lock_path, allowed, qualified):
     return digest(lock_path)
 
 
+
+def cargo_target(environment, output):
+    selected = Path(environment.get("CARGO_TARGET_DIR") or output / "cargo-target")
+    selected = (selected if selected.is_absolute() else ROOT / selected).resolve()
+    if selected.is_relative_to((output / "generated").resolve()):
+        raise ValueError("Cargo target must be outside the generated Passport SDK")
+    return selected
+
+
+def original_oracle_provenance():
+    path = ORACLE / "provenance.json"
+    if digest(path) != ORACLE_PROVENANCE_SHA256:
+        raise ValueError("original Passport oracle provenance identity differs")
+    provenance = json.loads(path.read_text())
+    if len(provenance["oracle_files"]) != 39 or len(provenance["codec_sources"]) != 2:
+        raise ValueError("original Passport oracle/codec pin inventory differs")
+    return provenance
+
+
+def formatted_copy(source, destination, run):
+    original = digest(source)
+    shutil.copyfile(source, destination)
+    run("format-generated-copy", ["rustfmt", "--edition", "2024", destination])
+    if digest(source) != original:
+        raise ValueError("formatting changed the original Passport SDK source")
+    return digest(destination)
+
+
+def rust_test_count(stdout, expected):
+    summaries = re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", stdout)
+    if sum(int(p) for p, _, _ in summaries) != expected or any(f != "0" or i != "0" for _, f, i in summaries):
+        raise ValueError(f"Passport consumer execution inventory differs: {summaries}")
+    return expected
+
+
+def capture_case_count(rows):
+    if [row["family"] for row in rows] != list(FAMILIES) or sum(row["cases"] for row in rows) != 202:
+        raise ValueError("Passport live TypeScript case inventory differs")
+    return 202
+
+
 def typed_refusal(process):
     codes = []
     for line in process.stdout.splitlines():
@@ -118,16 +161,29 @@ def main(argv=None):
     if output.exists() or output.is_symlink():
         raise ValueError("Passport qualification destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-passport-current-profile/v1", "status": "incomplete", "commands": [],
-               "scope": "original pure Passport current-profile execution and isolated SDK consumer",
+    receipt = {"format": "compact-passport-current-profile/v2", "status": "incomplete", "commands": [],
+               "scope": "original pure Passport current-profile execution and isolated raw generated SDK consumer",
+               "qualified_sdk_bytes": "raw compiler output; formatting is a separate retained copy",
                "proof_applicability": "not applicable: original source has no stateful exports",
                "historical_provenance": "original provenance.rs retains its historical generated-library hash; source/oracle pins are checked separately here",
                "limits": "sampled original behavior, not exhaustive protocol/branch coverage, network or security attestation"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", PYTHONDONTWRITEBYTECODE="1")
+    env.setdefault("CARGO_BUILD_JOBS", "4")
 
     def run(label, command, *, success=True):
         start = time.monotonic()
-        process = subprocess.run([str(a) for a in command], cwd=ROOT, env=env, text=True, capture_output=True)
+        try:
+            process = subprocess.run([str(a) for a in command], cwd=ROOT, env=env,
+                                     text=True, capture_output=True, timeout=COMMAND_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired as error:
+            for stream, value in (("stdout", error.stdout), ("stderr", error.stderr)):
+                text = value.decode(errors="replace") if isinstance(value, bytes) else value or ""
+                (output / f"{label}.{stream}").write_text(text)
+            receipt["commands"].append({"label": label, "command": [str(a) for a in command],
+                                        "exit": None, "timed_out": True,
+                                        "timeout_seconds": COMMAND_TIMEOUT_SECONDS,
+                                        "seconds": time.monotonic() - start})
+            raise RuntimeError(f"Passport command timed out: {label}") from error
         (output / f"{label}.stdout").write_text(process.stdout)
         (output / f"{label}.stderr").write_text(process.stderr)
         receipt["commands"].append({"label": label, "command": [str(a) for a in command],
@@ -138,6 +194,10 @@ def main(argv=None):
 
     try:
         require_clean_source(receipt)
+        if env.get("COMPACTC_SCHEME"):
+            raise ValueError("original packaged Passport compiler requires no COMPACTC_SCHEME override")
+        env["CARGO_TARGET_DIR"] = str(cargo_target(env, output))
+        receipt["cargo_target_dir"] = env["CARGO_TARGET_DIR"]
         compiler = args.compiler.resolve(strict=True)
         runtime = args.ts_runtime.resolve(strict=True)
         if not shutil.which("node"):
@@ -153,7 +213,7 @@ def main(argv=None):
             raise ValueError("Passport compiler version differs from selected source")
         manifest = SOURCE / "source-manifest.json"
         pins = original_source_files()
-        provenance = json.loads((ORACLE / "provenance.json").read_text())
+        provenance = original_oracle_provenance()
         ledger = tomllib.loads((ROOT / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger"]
         if ledger["version"] != "=8.1.3" or ledger["rev"] != LEDGER_REVISION:
             raise ValueError("Passport qualification requires the declared Ledger8.1.3 runtime cohort")
@@ -171,7 +231,21 @@ def main(argv=None):
                  *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs")]
         paths += [p for name in ("runtime-rs", "runtime-rs-macros") for p in (ROOT / name / "src").rglob("*.rs")]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths if p.is_file()}
-        receipt["tools"] = {str(p): digest(p) for p in (compiler, node)}
+        scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
+        receipt["tools"] = {str(p): digest(p) for p in (compiler, scheme, node)}
+        rust_tools = {}
+        for name in ("cargo", "rustc", "rustfmt", "cargo-clippy", "clippy-driver"):
+            path = Path(run("rustup-path-" + name, ["rustup", "which", "--toolchain", "1.99.0", name]).stdout.strip()).resolve(strict=True)
+            rust_tools[name] = {"path": str(path), "sha256": digest(path)}
+            receipt["tools"][str(path)] = digest(path)
+        # Use the selected toolchain for Cargo's own rustc/clippy subprocesses too.
+        env["PATH"] = str(Path(rust_tools["cargo"]["path"]).parent) + os.pathsep + env["PATH"]
+        for name, command in (("cargo", ["cargo", "--version"]), ("rustc", ["rustc", "--version"]),
+                              ("rustfmt", ["rustfmt", "--version"]), ("cargo-clippy", ["cargo", "clippy", "--version"]),
+                              ("clippy-driver", ["clippy-driver", "--version"])):
+            rust_tools[name]["version"] = run("version-" + name, command).stdout.strip()
+        receipt["rust_tools"] = rust_tools
+        receipt["tool_identity_limits"] = "selected executable hashes/reported versions; not transitive system-library or wrapper security attestation"
         receipt["ts_runtime_hashes"] = {str(p): digest(p) for p in [runtime / "package.json", *(runtime / "dist").rglob("*")] if p.is_file()}
         source = output / "passport-source"
         source.mkdir()
@@ -202,9 +276,9 @@ def main(argv=None):
                     raise ValueError(f"bundled Passport runtime source differs: {bundled}")
         receipt["raw_generated_rust_sha256"] = digest(contract / "lib.rs")
         shutil.copyfile(contract / "lib.rs", output / "raw-generated-lib.rs")
-        run("format-generated", ["rustfmt", "--edition", "2024", contract / "lib.rs"])
-        receipt["formatted_generated_rust_sha256"] = digest(contract / "lib.rs")
         generated_hashes = {str(p): digest(p) for p in generated.rglob("*") if p.is_file()}
+        receipt["formatted_generated_rust_sha256"] = formatted_copy(
+            contract / "lib.rs", output / "formatted-generated-lib.rs", run)
         link = contract / "node_modules/@midnight-ntwrk/compact-runtime"
         link.parent.mkdir(parents=True)
         link.symlink_to(runtime, target_is_directory=True)
@@ -227,8 +301,7 @@ def main(argv=None):
             receipt["typescript"].append({"family": family, "cases": len(actual.get("rows", [])), "sha256": digest(capture)})
         if not link.is_symlink() or link.resolve() != runtime:
             raise ValueError("Passport TS runtime link changed during execution")
-        if sum(row["cases"] for row in receipt["typescript"]) != 202:
-            raise ValueError("Passport live TypeScript case inventory differs")
+        receipt["typescript_case_count"] = capture_case_count(receipt["typescript"])
         consumer = output / "consumer"
         shutil.copytree(FIXTURE / "oracle", consumer / "oracle")
         (consumer / "tests").mkdir()
@@ -270,10 +343,34 @@ def main(argv=None):
         generated_hashes[str(sdk_lock)] = receipt["sdk_lock_sha256"]
         run("sdk-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", contract / "Cargo.toml", "--all-targets", "--", "-D", "warnings"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", consumer_manifest, "--", "--show-output"])
-        summaries = re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result.stdout)
-        if sum(int(p) for p, _, _ in summaries) != 18 or any(f != "0" or i != "0" for _, f, i in summaries):
-            raise ValueError(f"Passport consumer execution inventory differs: {summaries}")
-        receipt["rust_test_methods"] = 18
+        receipt["rust_test_methods"] = rust_test_count(result.stdout, 18)
+        # Change only an owned oracle copy. The unchanged Rust test must reject it,
+        # then execute successfully again after exact-byte restoration.
+        control_oracle = consumer / "oracle/upstream-ts-capture.json"
+        pristine = control_oracle.read_bytes()
+        changed = json.loads(pristine)
+        row = next(row for row in changed["rows"] if row["name"] == "claim_root_changed_date")
+        row["value"] = ("1" if row["value"][0] == "0" else "0") + row["value"][1:]
+        changed_bytes = (json.dumps(changed, indent=2) + "\n").encode()
+        (output / "changed-expectation-ts-capture.json").write_bytes(changed_bytes)
+        selected_test = ["cargo", "test", "--locked", "--offline", "--manifest-path", consumer_manifest,
+                         "--test", "pure_oracle", "constructors_and_hashes_match_independent_ts_capture",
+                         "--", "--exact", "--show-output"]
+        try:
+            control_oracle.write_bytes(changed_bytes)
+            refusal = run("changed-expectation", selected_test, success=False)
+            if (refusal.returncode != 101 or "test result: FAILED." not in refusal.stdout
+                    or "assertion `left == right` failed" not in refusal.stdout
+                    or "constructors_and_hashes_match_independent_ts_capture" not in refusal.stdout):
+                raise ValueError("changed Passport expectation did not fail the actual consumer assertion")
+        finally:
+            control_oracle.write_bytes(pristine)
+        restored = run("restored-expectation", selected_test)
+        rust_test_count(restored.stdout, 1)
+        receipt["changed_expectation_control"] = {"rejected": True, "restored_passed": True,
+            "original_sha256": hashlib.sha256(pristine).hexdigest(),
+            "changed_sha256": hashlib.sha256(changed_bytes).hexdigest(), "row": "claim_root_changed_date",
+            "scope": "one existing Rust test rerun against an owned changed oracle, then exact restoration; original authority unchanged"}
         run("clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", consumer_manifest, "--all-targets", "--", "-D", "warnings"])
         receipt["compile_fail"] = {}
         for name in NEGATIVES:

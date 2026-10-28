@@ -19,6 +19,7 @@ import copy
 import json
 from pathlib import Path
 import re
+import subprocess
 import shutil
 import tempfile
 from types import SimpleNamespace
@@ -131,6 +132,98 @@ class PassportControlTests(unittest.TestCase):
                     execute.assert_called_once()
                     self.assertEqual(execute.call_args.args[0], [str(compiler.resolve()), "--version"])
                 self.assertEqual(json.loads((output / "receipt.json").read_text())["status"], "failed")
+
+
+    def test_cargo_target_defaults_outside_sdk_and_preserves_shared_cache(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary).resolve() / "qualification"
+            self.assertEqual(gate.cargo_target({}, output), output / "cargo-target")
+            shared = output.parent / "shared-target"
+            self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": str(shared)}, output), shared)
+            self.assertEqual(gate.cargo_target({"CARGO_TARGET_DIR": "target"}, output),
+                             (gate.ROOT / "target").resolve())
+            for path in [output / "generated", output / "generated/contract/target"]:
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, "outside the generated"):
+                    gate.cargo_target({"CARGO_TARGET_DIR": str(path)}, output)
+
+    def test_formatting_uses_copy_and_rejects_original_source_mutation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original = root / "lib.rs"
+            copy = root / "formatted.rs"
+            raw = "fn original(){true}\n"
+            original.write_text(raw)
+            def formatter(label, command):
+                self.assertEqual(Path(command[-1]), copy)
+                copy.write_text("fn original() { true }\n")
+            self.assertEqual(gate.formatted_copy(original, copy, formatter), gate.digest(copy))
+            self.assertEqual(original.read_text(), raw)
+            def corrupting_formatter(label, command):
+                formatter(label, command)
+                original.write_text("changed original SDK\n")
+            with self.assertRaisesRegex(ValueError, "changed the original"):
+                gate.formatted_copy(original, copy, corrupting_formatter)
+
+    def test_original_oracle_pin_authority_cannot_silently_lose_an_entry(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            oracle = Path(temporary) / "oracle"
+            shutil.copytree(gate.ORACLE, oracle)
+            with patch.object(gate, "ORACLE", oracle):
+                provenance = gate.original_oracle_provenance()
+                self.assertEqual(len(provenance["oracle_files"]), 39)
+                self.assertEqual(len(provenance["codec_sources"]), 2)
+                provenance["oracle_files"].pop(next(iter(provenance["oracle_files"])))
+                (oracle / "provenance.json").write_text(json.dumps(provenance))
+                with self.assertRaisesRegex(ValueError, "provenance identity differs"):
+                    gate.original_oracle_provenance()
+
+    def test_short_or_missing_execution_accounting_cannot_pass(self):
+        valid = "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured"
+        self.assertEqual(gate.rust_test_count(valid, 18), 18)
+        for text in ["", valid.replace("18 passed", "17 passed"),
+                     valid.replace("0 ignored", "1 ignored"), valid.replace("0 failed", "1 failed")]:
+            with self.subTest(stdout=text), self.assertRaises(ValueError):
+                gate.rust_test_count(text, 18)
+        rows = [{"family": family, "cases": 202 if i == 0 else 0}
+                for i, family in enumerate(gate.FAMILIES)]
+        self.assertEqual(gate.capture_case_count(rows), 202)
+        for changed in [rows[:-1], [dict(row, cases=201) if i == 0 else row for i, row in enumerate(rows)],
+                        [dict(row, family="unknown") if i == 0 else row for i, row in enumerate(rows)]]:
+            with self.subTest(rows=changed), self.assertRaises(ValueError):
+                gate.capture_case_count(changed)
+
+    def test_timeout_retains_partial_diagnostics_and_cannot_be_a_refusal(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            compiler = root / "compiler"
+            compiler.write_bytes(b"must not execute")
+            (root / "package.json").write_bytes((gate.ROOT / "runtime/package.json").read_bytes())
+            output = root / "result"
+            timeout = subprocess.TimeoutExpired([str(compiler), "--version"], gate.COMMAND_TIMEOUT_SECONDS,
+                                                output=b"partial output\n", stderr=b"partial diagnostic\n")
+            with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": ""}), patch.object(
+                    gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                    gate.subprocess, "run", side_effect=timeout), patch.object(
+                    gate.shutil, "which", return_value=str(compiler)), patch.object(gate, "typed_refusal") as refusal:
+                with self.assertRaisesRegex(RuntimeError, "timed out: compiler-version"):
+                    gate.main(["--compiler", str(compiler), "--ts-runtime", str(root), "--output", str(output)])
+                refusal.assert_not_called()
+            receipt = json.loads((output / "receipt.json").read_text())
+            self.assertEqual(receipt["status"], "failed")
+            self.assertIsNone(receipt["commands"][0]["exit"])
+            self.assertTrue(receipt["commands"][0]["timed_out"])
+            self.assertEqual((output / "compiler-version.stdout").read_text(), "partial output\n")
+            self.assertEqual((output / "compiler-version.stderr").read_text(), "partial diagnostic\n")
+
+    def test_scheme_override_cannot_impersonate_original_package(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": "unselected-compiler"}), patch.object(
+                    gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                    gate.subprocess, "run") as execute:
+                with self.assertRaisesRegex(ValueError, "no COMPACTC_SCHEME override"):
+                    gate.main(["--compiler", "missing", "--ts-runtime", "missing", "--output", str(root / "output")])
+                execute.assert_not_called()
 
 
 if __name__ == "__main__":

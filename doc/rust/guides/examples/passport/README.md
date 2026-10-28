@@ -8,6 +8,7 @@ The archived two-test result belongs to its original compiler, source, lock and 
 
 The separate [current-profile gate](../../../plans/passport-current-profile-consumer.md)
 now executes an unchanged copy of this complete consumer against a freshly
-generated SDK with its matching bundled runtime. Its fresh local compiler142 result
-belongs to signed `834a41025`; full PR/CI integration is still required. This does
-not rename or renew the historical P1 receipt.
+generated SDK with its matching bundled runtime. The earlier compiler142 result
+at `834a41025` qualified formatted SDK bytes. Its review successor preserves raw
+compiler output and formats only a separate copy; fresh qualification and full
+PR/CI integration are required. This does not rename or renew historical P1.

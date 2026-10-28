@@ -502,9 +502,22 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers" --report "$RUNNER_TEMP/compact-unit-initializers.json" --ts-runtime "$TS_RUNTIME"
 
       - name: Check standalone original Passport pure consumers
+        id: passport_current
         run: |
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_passport_current_profile.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-passport-current" --ts-runtime "$TS_RUNTIME"
+
+      - name: Retain failed Passport qualification diagnostics
+        if: failure() && steps.passport_current.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: passport-current-failure-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/compact-passport-current/
+            !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
+            !${{ runner.temp }}/compact-passport-current/cargo-target/**
+            !${{ runner.temp }}/compact-passport-current/consumer/target/**
+          if-no-files-found: ignore
 
       - name: Prepare verified built-in proof material
         run: |
@@ -599,6 +612,7 @@ jobs:
             ${{ runner.temp }}/compact-passport-current/passport-source/
             ${{ runner.temp }}/compact-passport-current/*.json
             ${{ runner.temp }}/compact-passport-current/raw-generated-lib.rs
+            ${{ runner.temp }}/compact-passport-current/formatted-generated-lib.rs
             ${{ runner.temp }}/compact-passport-current/*.stdout
             ${{ runner.temp }}/compact-passport-current/*.stderr
             ${{ runner.temp }}/compact-direct-fold.json
