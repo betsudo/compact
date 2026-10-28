@@ -1,6 +1,6 @@
 # Constant-valued Vector indices
 
-Status: reconciled local version0.31.144 qualification passes at `3fa7cec1d`.
+Status: reconciled local version 0.31.144 qualification passes at `3fa7cec1d`.
 Own PR review, full CI and integration remain pending. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
@@ -133,7 +133,7 @@ The subsequent clean signed implementation `a1f0fa8b1` built successfully as an
 original native compiler package, with no Scheme override. Its fresh complete
 new-source gate also passes: all seven generated-consumer tests, live TS
 comparison, changed-result refusal and three intended compile-fail controls.
-These are literal a1 execution receipts. That execution used local compiler version0.31.142 before SDK reconciliation
+These are literal a1 execution receipts. That execution used local compiler version 0.31.142 before SDK reconciliation
 and version advancement; it does
 not publish or relabel a historical compiler release. Development failures and
 authenticated-reuse receipts remain separate historical evidence.
@@ -141,7 +141,7 @@ authenticated-reuse receipts remain separate historical evidence.
 The later signed proof-binding source `9a9d1b8b6` completed the separate
 new-source and retained literal proof gates described below. The ownership
 controls and accepted SDK reconciliation are now complete. Next: qualify the
-final version0.31.144 source, then complete PR review and full CI before integration.
+final version 0.31.144 source, then complete PR review and full CI before integration.
 Any changed compiler/source identity receives its required qualification. Existing
 literal proof coverage remains required and does not substitute for new-source
 proofs. The broader backend goal and this slice's integration remain incomplete.
@@ -235,7 +235,7 @@ SDK #698 passed all eleven required GitHub checks and actual Claude review.
 The exact same-run runtime archive passed GitHub digest, safe ZIP/membership,
 source and protocol verification before the normal signed canonical merge at
 `d3a32d9e7`. The completed SDK worktree is recoverably archived after preserving
-all ignored review evidence. Its E2E summary reports480 passed and six skipped
+all ignored review evidence. Its E2E summary reports 480 passed and six skipped
 unique tests, with no failures; skips are not counted as passed.
 
 The Vector branch merged that accepted canonical commit normally at
@@ -246,25 +246,29 @@ epochs; final-source qualification below must precede this slice's publication.
 
 ## Current reconciled version144 qualification
 
-At clean signed `3fa7cec1d`, original native compiler0.31.144 realization,
+At clean signed `3fa7cec1d`, original native compiler 0.31.144 realization,
 both complete fresh generated-consumer gates and exact whole-fixture comparison
 pass without a Scheme override or normalization. Each source passes eight Rust
 consumer tests, live TS observations and all four intended-primary-span type/
 ownership refusals. The packaged fifteen-source matrix also passes its expected
 both-target outcomes and nine actual Rust tests/ten TS-matched observations.
 
-The complete public Python gate runs411 selected methods,392 fully exercised
+The complete public Python gate runs 411 selected methods, 392 fully exercised
 parent methods and twenty expected manual-only skip events, with no failures,
 errors or unexpected skips. Both separately selected proof gates generate fresh
-k=6/54-row keys, two2912-byte standalone proofs each and separately proved funded
+k=6/54-row keys, two 2,912-byte standalone proofs each and separately proved funded
 default-strict transactions with exact expected state and unchanged replay
 refusal. Whole-IR and same-type in-range index changes refuse before keys/state;
 binding/input/result/proof-byte negatives pass. Constructors remain unproved.
 
-A separate root audit rehashes2861 source,20 material,19 generated and seven
+A separate root audit rehashes 2,861 source, 20 material, 19 generated and seven
 result files per proof gate, all four snapshotted components and their source
 binaries, command logs and seven upstream fixture inputs. Complete original IR
 and all five checked programs match each distinct linked fixture. That audit is
 not an external review or a new cryptographic execution. Final descriptive
 Markdown changes retain an explicit source bridge; own Claude PR review and the
 complete Linux/native/proof/package/archive/E2E CI gates remain mandatory.
+
+The Vector protocol retains standalone proofs, preimages, final-state bytes and
+runner logs/results. Sealed transaction bytes are not separately retained;
+strict application and replay are exercised in the recorded runner execution.

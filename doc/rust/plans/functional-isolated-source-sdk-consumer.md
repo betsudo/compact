@@ -364,9 +364,9 @@ The archive rechecks complete source/program/generated/material bindings for
 the SDK and retained Unit/DID/Passport cohorts; receipt-only remote tool/material
 limits remain disclosed. This is not a new root cryptographic execution.
 
-The E2E summary reports480 passed and six skipped unique tests, zero failures.
+The E2E summary reports 480 passed and six skipped unique tests, zero failures.
 Skipped tests are not counted as passed. The completed checkout is recoverably
-archived after preserving all66 ignored review files and checking source,
+archived after preserving all 66 ignored review files and checking source,
 dependency and open-file state. Shared targets required by ongoing backend work,
 stores, qualification artifacts and failure evidence remain retained. The SDK
 fixture does not prove constructor/deployment execution or a wallet lifecycle;
