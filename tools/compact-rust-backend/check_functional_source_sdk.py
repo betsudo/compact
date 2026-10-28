@@ -162,13 +162,16 @@ def proof_artifact(stdout, consumer):
 def validate_result(result):
     required = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
                 "changed_private_witness_rejected", "changed_proof_rejected",
-                "same_geometry_controls", "replay_unchanged")
+                "changed_input_new_statement_valid", "same_geometry_controls", "replay_unchanged",
+                "preparation_ledger_unchanged")
     if result.get("status") != "passed" or any(result.get(key) is not True for key in required):
         raise ValueError("proof/mutation/replay result omitted a required assertion")
     if result.get("strict_application") != "default" or result.get("replay_refusal") != "IntentAlreadyExists":
         raise ValueError("funded transaction did not use default strictness and exact replay refusal")
     if result.get("witness_private_state") != [7, 8] or result.get("skip_sequence") != [None] * 6:
         raise ValueError("selected witness transition or unconditional proof geometry differs")
+    if result.get("preparation_refusals") != ["ReplayStateMismatch", "NonCanonicalPrivateOutput(0,0)"]:
+        raise ValueError("malformed recordings must refuse at their exact preparation boundaries")
     if result.get("standalone_proof_bytes", 0) <= 0 or result.get("transaction_bytes", 0) <= 0:
         raise ValueError("proof and applied transaction artifacts must both be nonempty")
     if result.get("changed_input_new_statement_check") != "valid; witness return is unconstrained relative to input":
@@ -176,6 +179,11 @@ def validate_result(result):
     final = result.get("final_state_hex", "")
     if not isinstance(final, str) or not re.fullmatch(r"(?:[0-9a-f]{2})+", final):
         raise ValueError("retained final contract state must be nonempty canonical hex")
+    data = result.get("final_data_hex", "")
+    if not isinstance(data, str) or not re.fullmatch(r"(?:[0-9a-f]{2})+", data) or data != result.get("expected_data_hex"):
+        raise ValueError("applied contract data differs from the independently executed expected data")
+    if result.get("final_cell_le_hex") != (42).to_bytes(32, "little").hex():
+        raise ValueError("applied Cell does not encode the selected Compact Field value 42")
 
 
 def cargo_configuration(environment):
@@ -276,6 +284,11 @@ def main(argv=None):
         receipt["source_dirty"] = common.dirty_paths()
         if receipt["source_dirty"] or env.get("COMPACTC_SCHEME"):
             raise ValueError("clean selected source and original packaged compiler without Scheme override required")
+        # Fail before generation or Cargo work when selected material/static
+        # locations or the native ZKIR executable are missing.
+        prerequisites = receipt["prerequisites"] = did_proof_gate.prerequisites(env)
+        receipt["dust_fixture_hashes"] = did_proof_gate.dust_fixture_inventory(
+            Path(prerequisites["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         receipt["cargo_configuration_sha256"] = cargo_configuration(env)
         target = Path(env.get("CARGO_TARGET_DIR") or output / "cargo-target").resolve()
         if target.is_relative_to(ROOT) and not target.is_relative_to(ROOT / "target") or target.is_relative_to(output) and target != output / "cargo-target":
@@ -316,6 +329,8 @@ def main(argv=None):
             raise ValueError("documented source differs from complete maintained original")
         consumer = output / "consumer"
         manifest = consumer / "Cargo.toml"
+        run("handwritten-format", [tools["rustfmt"]["path"], "--edition", "2024", "--check",
+                                   *sorted(consumer.rglob("*.rs"))])
         profile = tomllib.loads(manifest.read_text())["profile"]["proof-checks"]
         if profile.get("debug-assertions") is not True or profile.get("overflow-checks") is not True:
             raise ValueError("owned proof checks require assertions and checked overflow")
@@ -361,11 +376,9 @@ def main(argv=None):
         (generated / "keys").mkdir()
         keygen = run("fresh-direct-keygen", [tools["zkir"]["path"], "compile", generated / "zkir/apply_offset.zkir", generated / "keys/apply_offset.prover", generated / "keys/apply_offset.verifier"])
         match = re.search(r"\(k=(\d+), rows=(\d+)\)", keygen.stdout+keygen.stderr)
-        if not match or int(match[1]) > 8:
-            raise ValueError("selected tiny key generation requires automatic k <= 8")
+        if not match or int(match[1]) != 6:
+            raise ValueError("selected witnessed SDK fixture requires k=6; review geometry/material before changing it")
         receipt["keygen"] = {"mode": "fresh direct native", "k": int(match[1]), "rows": int(match[2])}
-        prerequisites = did_proof_gate.prerequisites(env)
-        receipt["dust_fixture_hashes"] = did_proof_gate.dust_fixture_inventory(Path(prerequisites["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         material = json.loads(run("verify-material", [tools["material-runner"]["path"], "--prepare-proof-material", "--verify-only", "--parameter-k", match[1]]).stdout)
         if material.get("mode") != "verify-only" or material.get("verification") != "all files checked against locked upstream SHA256 tables" or Path(material["cache_directory"]).resolve() != Path(env["MIDNIGHT_PP"]).resolve() or int(match[1]) not in [p["k"] for p in material["parameters"]]:
             raise ValueError("selected SRS and built-ins require fresh upstream hash verification")

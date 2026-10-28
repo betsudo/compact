@@ -29,6 +29,32 @@ import check_functional_source_sdk as gate
 
 
 class IsolatedSdkControls(unittest.TestCase):
+    def test_missing_material_refuses_before_any_external_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "material").mkdir()
+            (root / "static").mkdir()
+            zkir = root / "zkir"
+            zkir.write_text("#!/bin/sh\nexit 0\n")
+            zkir.chmod(0o700)
+            selected = {"MIDNIGHT_PP": str(root / "material"),
+                        "MIDNIGHT_LEDGER_TEST_STATIC_DIR": str(root / "static"),
+                        "PATH": str(root)}
+            self.assertEqual(gate.did_proof_gate.prerequisites(selected)["zkir"], str(zkir.resolve()))
+            selected.pop("MIDNIGHT_PP")
+            with patch.dict(os.environ, selected, clear=True), \
+                 patch.object(gate.common, "git_head", return_value="selected-source"), \
+                 patch.object(gate.common, "dirty_paths", return_value=[]), \
+                 patch.object(gate, "bounded_command") as command:
+                with self.assertRaisesRegex(gate.common.GateError, "MIDNIGHT_PP"):
+                    gate.main(["--compiler", str(root / "not-yet-needed"),
+                               "--material-runner", str(root / "not-yet-needed-either"),
+                               "--output", str(root / "qualification")])
+                command.assert_not_called()
+            failed = json.loads((root / "qualification/receipt.json").read_text())
+            self.assertEqual(failed["status"], "failed")
+            self.assertEqual(failed["commands"], [])
+
     def test_extra_file_and_symlink_refuse_after_positive_inventory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -149,9 +175,13 @@ class IsolatedSdkControls(unittest.TestCase):
         result = dict(status="passed", strict_application="default", replay_refusal="IntentAlreadyExists",
                       witness_private_state=[7, 8], skip_sequence=[None]*6,
                       standalone_proof_bytes=2912, transaction_bytes=6607, final_state_hex="00",
+                      final_data_hex="00", expected_data_hex="00",
+                      final_cell_le_hex=(42).to_bytes(32, "little").hex(),
+                      preparation_refusals=["ReplayStateMismatch", "NonCanonicalPrivateOutput(0,0)"],
                       changed_input_new_statement_check="valid; witness return is unconstrained relative to input")
         names = ("changed_binding_rejected", "changed_input_rejected", "changed_output_rejected",
-                 "changed_private_witness_rejected", "changed_proof_rejected", "same_geometry_controls", "replay_unchanged")
+                 "changed_private_witness_rejected", "changed_proof_rejected", "same_geometry_controls", "replay_unchanged",
+                 "changed_input_new_statement_valid", "preparation_ledger_unchanged")
         result.update({name: True for name in names})
         gate.validate_result(result)
         for name in names:
@@ -161,6 +191,11 @@ class IsolatedSdkControls(unittest.TestCase):
                 gate.validate_result(bad)
         for key, value in (("strict_application", "relaxed"), ("replay_refusal", "any error"),
                            ("skip_sequence", [None, 1]), ("transaction_bytes", 0),
+                           ("preparation_refusals", ["any error"]),
+                           ("preparation_ledger_unchanged", False),
+                           ("changed_input_new_statement_valid", False),
+                           ("final_data_hex", "01"), ("expected_data_hex", "01"),
+                           ("final_cell_le_hex", (43).to_bytes(32, "little").hex()),
                            ("final_state_hex", ""), ("changed_input_new_statement_check", "unqualified")):
             with self.assertRaises(ValueError):
                 gate.validate_result(dict(result, **{key: value}))

@@ -51,13 +51,16 @@ use midnight_transient_crypto::{
     },
 };
 use midnight_zswap::prove::ZswapResolver;
-use rand::{SeedableRng, rngs::StdRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use rt::{
     CompactError, Field,
     context::{ConstructorContext, WitnessContext},
     fab::AlignedValue,
     ledger::DefaultDB,
-    transaction::{CallSpec, EncodedSizeLimit, Observation, ObservedContractState, prepare_call},
+    transaction::{
+        CallSpec, EncodedSizeLimit, Observation, ObservedContractState, PrepareCallError,
+        prepare_call,
+    },
 };
 use std::{
     cell::RefCell,
@@ -226,6 +229,45 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     let answers = Answers::default();
     let value = Field::from(42_u64);
+    // Fresh private randomness for this one call. Both routes below prepare the
+    // same statement; a different call needs a fresh value. The seeded RNGs used
+    // elsewhere in this executable are deterministic test-fixture setup only.
+    let communication_randomness: Fr = rand::rngs::OsRng.r#gen();
+    let preparation_checkpoint = state.ledger.clone();
+    let mut preparation_refusals = Vec::new();
+    for change_state in [true, false] {
+        let mut malformed = api::functional::apply_offset::Program::new(value)
+            .execute_recorded(observed.circuit_context(7_u64), &Answers::default())?;
+        if change_state {
+            // Replace only the execution's final state, leaving its genuine
+            // generated public replay program and effects unchanged.
+            malformed.execution.context.query.state = initial.ledger_state.clone();
+        } else {
+            malformed.execution.private_transcript_outputs =
+                vec![rt::exact_private_output(rt::OpaqueBytes(vec![9, 0]))];
+        }
+        let error = match prepare_call(
+            malformed,
+            CallSpec::new(NAME, verifier.clone(), value, communication_randomness),
+        ) {
+            Err(error) => error,
+            Ok(_) => return Err("malformed recording prepared before proof".into()),
+        };
+        let refusal = match (change_state, error) {
+            (true, PrepareCallError::ReplayStateMismatch) => "ReplayStateMismatch",
+            (
+                false,
+                PrepareCallError::NonCanonicalPrivateOutput {
+                    output_index: 0,
+                    atom_index: 0,
+                },
+            ) => "NonCanonicalPrivateOutput(0,0)",
+            (_, error) => return Err(format!("unrelated preparation refusal: {error}").into()),
+        };
+        preparation_refusals.push(refusal);
+        assert!(state.ledger == preparation_checkpoint);
+    }
+    let preparation_ledger_unchanged = state.ledger == preparation_checkpoint;
     let recorded = api::functional::apply_offset::Program::new(value)
         .execute_recorded(observed.circuit_context(7_u64), &answers)?;
     assert_eq!(recorded.execution.result, value);
@@ -236,16 +278,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(*answers.0.borrow(), [(7, value, Field::from(0_u64))]);
     let expected = recorded.execution.context.query.state.get_ref().clone();
+    let witness_private_state = [
+        initial.private_state,
+        recorded.execution.context.private_state,
+    ];
     assert_eq!(contract::ledger_slots::cell.inspect(&expected)?, value);
     let prepared = prepare_call(
         recorded,
-        CallSpec::new(NAME, verifier.clone(), value, Fr::from(0_u64)),
+        CallSpec::new(NAME, verifier.clone(), value, communication_randomness),
     )?;
     let generated = api::Contract::from(Answers::default());
     let ordinary = generated
         .recording()
         .apply_offset_call(&observed, 7_u64, value)?
-        .prepare(verifier.clone(), Fr::from(0_u64))?;
+        .prepare(verifier.clone(), communication_randomness)?;
     assert_same_call(&prepared, &ordinary);
     let lab = ProofLab::new(
         Artifacts(root.clone()),
@@ -281,11 +327,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
     let mut changed_binding = inputs.clone();
     changed_binding[0] = changed_binding[0] + Fr::from(1_u64);
-    assert!(
-        verifier
-            .verify(&PARAMS_VERIFIER, &proof, changed_binding.into_iter())
-            .is_err()
-    );
+    let changed_binding_rejected = verifier
+        .verify(&PARAMS_VERIFIER, &proof, changed_binding.into_iter())
+        .is_err();
+    assert!(changed_binding_rejected);
+    let mut changed_communication_rejected = Vec::new();
+    let mut changed_input_new_statement_valid = false;
+    let mut same_geometry_controls = true;
     for change_output in [false, true] {
         let mut changed = prepared.clone();
         let slot = if change_output {
@@ -297,15 +345,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         assert_eq!(slot.alignment, replacement.alignment);
         assert_eq!(slot.value.0.len(), replacement.value.0.len());
         assert_ne!(*slot, replacement);
+        same_geometry_controls &= slot.alignment == replacement.alignment
+            && slot.value.0.len() == replacement.value.0.len();
         *slot = replacement;
         let bad = call_preimage(&changed)?;
         let bad_inputs = public_inputs(&bad)?;
         assert_ne!(inputs[1], bad_inputs[1]);
-        assert!(
-            verifier
-                .verify(&PARAMS_VERIFIER, &proof, bad_inputs.into_iter())
-                .is_err()
-        );
+        let rejected = verifier
+            .verify(&PARAMS_VERIFIER, &proof, bad_inputs.into_iter())
+            .is_err();
+        assert!(rejected);
+        changed_communication_rejected.push(rejected);
         let checked =
             futures_executor::block_on(lab.provider(StdRng::seed_from_u64(7)).check(&bad));
         // A witness has no algebraic promise to return its argument. Input 43
@@ -314,30 +364,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         if change_output {
             assert!(checked.is_err());
         } else {
-            assert!(checked.is_ok());
+            changed_input_new_statement_valid = checked.is_ok();
+            assert!(changed_input_new_statement_valid);
         }
     }
-    {
+    let changed_private_witness_rejected = {
         let mut changed_private = preimage.clone();
         assert!(!changed_private.private_transcript.is_empty());
         changed_private.private_transcript[0] =
             changed_private.private_transcript[0] + Fr::from(1_u64);
-        assert!(
-            futures_executor::block_on(
-                lab.provider(StdRng::seed_from_u64(8))
-                    .check(&changed_private)
-            )
-            .is_err()
-        );
-    }
+        futures_executor::block_on(
+            lab.provider(StdRng::seed_from_u64(8))
+                .check(&changed_private),
+        )
+        .is_err()
+    };
+    assert!(changed_private_witness_rejected);
     let mut changed_proof = proof.clone();
     changed_proof.0[0] ^= 1;
     assert_eq!(changed_proof.0.len(), proof.0.len());
-    assert!(
-        verifier
-            .verify(&PARAMS_VERIFIER, &changed_proof, inputs.iter().copied())
-            .is_err()
-    );
+    same_geometry_controls &= changed_proof.0.len() == proof.0.len();
+    let changed_proof_rejected = verifier
+        .verify(&PARAMS_VERIFIER, &changed_proof, inputs.iter().copied())
+        .is_err();
+    assert!(changed_proof_rejected);
     // Recheck the unchanged positive after all controls, retaining its exact key.
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
     assert_eq!(
@@ -388,25 +438,52 @@ fn main() -> Result<(), Box<dyn Error>> {
         ..context
     };
     let (replayed, result) = updated.apply(&verified, &context);
-    assert!(
-        matches!(
-            result,
-            TransactionResult::Failure(
-                midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                    midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-                )
-            )
-        ),
-        "{result:?}"
-    );
-    assert!(replayed == updated);
+    let replay_refusal = match result {
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists,
+            ),
+        ) => "IntentAlreadyExists",
+        other => return Err(format!("unexpected replay result: {other:?}").into()),
+    };
+    let replay_unchanged = replayed == updated;
+    assert!(replay_unchanged);
     let mut transaction = Vec::new();
     tagged_serialize(&sealed, &mut transaction)?;
     let mut final_state = Vec::new();
     tagged_serialize(actual, &mut final_state)?;
+    let mut final_data = Vec::new();
+    tagged_serialize(actual.data.get_ref(), &mut final_data)?;
+    let mut expected_data = Vec::new();
+    tagged_serialize(&expected, &mut expected_data)?;
+    let final_cell = contract::ledger_slots::cell.inspect(actual.data.get_ref())?;
     fs::write(out.join("standalone.proof"), &proof.0)?;
     fs::write(out.join("applied-transaction.bin"), &transaction)?;
-    let receipt = serde_json::json!({"status":"passed","standalone_proof_bytes":proof.0.len(),"transaction_bytes":transaction.len(),"proof_relationship":"separate standalone proof and independently proved funded transaction","changed_binding_rejected":true,"changed_input_rejected":true,"changed_output_rejected":true,"changed_proof_rejected":true,"changed_private_witness_rejected":true,"changed_input_new_statement_check":"valid; witness return is unconstrained relative to input","same_geometry_controls":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true,"skip_sequence":skips,"witness_private_state":[7,8],"final_state_hex":hex::encode(final_state),"scope":"selected call from privileged constructor-derived initial state and upstream fee funding; not constructor/deployment proof or wallet lifecycle"});
+    let receipt = serde_json::json!({
+        "status":"passed", "standalone_proof_bytes":proof.0.len(),
+        "transaction_bytes":transaction.len(),
+        "proof_relationship":"separate standalone proof and independently proved funded transaction",
+        "changed_binding_rejected":changed_binding_rejected,
+        "changed_input_rejected":changed_communication_rejected[0],
+        "changed_output_rejected":changed_communication_rejected[1],
+        "changed_proof_rejected":changed_proof_rejected,
+        "changed_private_witness_rejected":changed_private_witness_rejected,
+        "changed_input_new_statement_valid":changed_input_new_statement_valid,
+        "changed_input_new_statement_check":if changed_input_new_statement_valid {
+            "valid; witness return is unconstrained relative to input"
+        } else { "invalid" },
+        "same_geometry_controls":same_geometry_controls,
+        "strict_application":"default", "replay_refusal":replay_refusal,
+        "replay_unchanged":replay_unchanged, "skip_sequence":skips,
+        "witness_private_state":witness_private_state,
+        "preparation_refusals":preparation_refusals,
+        "preparation_ledger_unchanged":preparation_ledger_unchanged,
+        "final_state_hex":hex::encode(final_state),
+        "final_data_hex":hex::encode(final_data),
+        "expected_data_hex":hex::encode(expected_data),
+        "final_cell_le_hex":hex::encode(final_cell.0.to_bytes_le()),
+        "scope":"selected call from privileged constructor-derived initial state and upstream fee funding; not constructor/deployment proof or wallet lifecycle"
+    });
     fs::write(
         out.join("result.json"),
         serde_json::to_vec_pretty(&receipt)?,

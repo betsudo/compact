@@ -1,7 +1,8 @@
 # Isolated functional source SDK: witnessed Cell consumer
 
-Status: clean local qualification complete; this SDK slice still requires its
-published PR review, complete CI and verified merge. Passport PR #697 passed
+Status: the earlier source epoch is locally qualified; actual PR #698 review
+found concrete gaps that are being corrected and require fresh qualification,
+repeat PR review, complete CI and verified merge. Passport PR #697 passed
 all eleven required checks and exact artifact review, and is accepted at
 canonical `8d9798d609e0090978083ddaa05691fdcdad35bf`. Its completed worktree is
 recoverably archived after preserving ignored review evidence. This SDK branch
@@ -258,3 +259,26 @@ at `16c902939`, with the separately recorded descriptive Markdown bridge; it is
 not relabelled as a fresh run at a later commit. These final status edits touch
 Markdown only. Published-head Claude review and the SDK PR's complete Linux CI
 remain required before its own integration. The broad goal remains incomplete.
+
+
+## PR #698 review corrections (qualification pending)
+
+Actual published-head Claude review at `f9fb7df9d` found a required generated-doc
+version mismatch and a missing malformed-recording acceptance control. Both are
+being fixed in this same logical slice; acceptance item 4 is not removed. The
+example now explicitly tests tampered final state and noncanonical private output
+before proving/application, with exact preparation variants and unchanged ledger.
+Result fields are derived from actual outcomes; Python additionally checks exact
+Cell=42 encoding and applied/expected state-data equality. Communication randomness
+uses fresh `OsRng`, while deterministic fixture RNGs remain labelled as such.
+
+The maintained gate adds actual handwritten Rust formatting checks, admits its
+material/static prerequisites before expensive work and pins the selected k6
+recipe to match CI provisioning. Passport's guide now identifies its accepted
+merged parent correctly. The optional suggestion to remove redundant source-copy
+checks is not needed for correctness and is left outside this fix batch.
+
+Earlier 27-command/source/bridge receipts remain literal historical evidence.
+These substantive corrections require their own clean source, original compiler,
+fresh proof/application, public controls and repeat actual Claude PR review before
+publication/integration acceptance. No earlier green result is relabelled.
