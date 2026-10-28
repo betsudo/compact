@@ -1269,34 +1269,39 @@ pub mod ledger_contract {
                         >,
                 {
                     ({
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor)).bind(
-                            |(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(crate::runtime::functional::Map::<
-                                        crate::runtime::Field,
-                                        crate::runtime::Field,
-                                    >::new(
-                                        crate::runtime::functional::SlotId::new(1u32)
-                                    ))
-                                    .bind(|__compact_map_size, __compact_execution| {
+                        {
+                            let __compact_functional_step =
+                                (crate::runtime::functional::Circuit::begin(__compact_executor))
+                                    .bind(|(), __compact_execution| {
                                         __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
+                                            .map_size(crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(
+                                                crate::runtime::functional::SlotId::new(1u32),
+                                            ))
+                                            .bind(|__compact_map_size, __compact_execution| {
+                                                __compact_execution.try_returning(|| {
+                                                    <crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >>::new(
+                                                        __compact_map_size as u128
+                                                    )
+                                                })
+                                            })
+                                    });
+                            __compact_functional_step.bind(
+                                |__compact_effect_0: crate::runtime::BoundedUint<
+                                    18446744073709551615,
+                                >,
+                                 __compact_execution| {
+                                    (__compact_execution).try_returning(|| {
+                                        let __compact_functional_result = __compact_effect_0;
+                                        Ok(__compact_functional_result)
                                     })
-                            },
-                        ))
-                        .bind(
-                            |__compact_effect_0: crate::runtime::BoundedUint<
-                                18446744073709551615,
-                            >,
-                             __compact_execution| {
-                                (__compact_execution).try_returning(|| {
-                                    let __compact_functional_result = __compact_effect_0;
-                                    Ok(__compact_functional_result)
-                                })
-                            },
-                        )
+                                },
+                            )
+                        }
                     })
                     .finish()
                 }
@@ -1384,101 +1389,109 @@ pub mod ledger_contract {
                         >,
                 {
                     ({
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(
-                                        crate::runtime::functional::Map::<
-                                            crate::runtime::Field,
-                                            crate::runtime::Field,
-                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                    )
-                                    .bind(|__compact_map_size, __compact_execution| {
-                                        __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
-                                    })
-                            }))
-                            .bind(|
-                                __compact_effect_0: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        __compact_execution
-                                            .map_size(
-                                                crate::runtime::functional::Map::<
-                                                    crate::runtime::Field,
-                                                    crate::runtime::Field,
-                                                >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                            )
-                                            .bind(|__compact_map_size, __compact_execution| {
-                                                __compact_execution
-                                                    .try_returning(|| <crate::runtime::BoundedUint<
-                                                        18446744073709551615,
-                                                    >>::new(__compact_map_size as u128))
-                                            })
-                                    }))
-                                    .bind(|
-                                        __compact_effect_1: crate::runtime::BoundedUint<
-                                            18446744073709551615,
-                                        >,
-                                        __compact_execution|
-                                    {
-                                        ((__compact_execution)
-                                            .bind(|(), __compact_execution| {
-                                                __compact_execution
-                                                    .map_size(
-                                                        crate::runtime::functional::Map::<
-                                                            crate::runtime::Field,
-                                                            crate::runtime::slots::MapNode<
-                                                                crate::runtime::Field,
-                                                                crate::runtime::Field,
-                                                            >,
-                                                        >::new(crate::runtime::functional::SlotId::new(0u32)),
-                                                    )
-                                                    .bind(|__compact_map_size, __compact_execution| {
-                                                        __compact_execution
-                                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                                18446744073709551615,
-                                                            >>::new(__compact_map_size as u128))
-                                                    })
-                                            }))
-                                            .bind(|
-                                                __compact_effect_2: crate::runtime::BoundedUint<
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    __compact_execution
+                                        .map_size(
+                                            crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                        )
+                                        .bind(|__compact_map_size, __compact_execution| {
+                                            __compact_execution
+                                                .try_returning(|| <crate::runtime::BoundedUint<
                                                     18446744073709551615,
-                                                >,
-                                                __compact_execution|
-                                            {
-                                                ((__compact_execution)
-                                                    .bind(|(), __compact_execution| {
-                                                        (__compact_execution)
-                                                            .try_returning(|| {
-                                                                let __compact_functional_result = crate::types::Counts {
-                                                                    before: __compact_effect_0,
-                                                                    after: __compact_effect_1,
-                                                                    outer: __compact_effect_2,
-                                                                };
-                                                                Ok(__compact_functional_result)
-                                                            })
-                                                    }))
-                                                    .bind(|
-                                                        __compact_effect_3: crate::types::Counts,
-                                                        __compact_execution|
-                                                    {
-                                                        (__compact_execution)
-                                                            .try_returning(|| {
-                                                                let __compact_functional_result = (__compact_effect_3)
-                                                                    .clone();
-                                                                Ok(__compact_functional_result)
-                                                            })
-                                                    })
-                                            })
-                                    })
-                            })
+                                                >>::new(__compact_map_size as u128))
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_0: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            __compact_execution
+                                                .map_size(
+                                                    crate::runtime::functional::Map::<
+                                                        crate::runtime::Field,
+                                                        crate::runtime::Field,
+                                                    >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                )
+                                                .bind(|__compact_map_size, __compact_execution| {
+                                                    __compact_execution
+                                                        .try_returning(|| <crate::runtime::BoundedUint<
+                                                            18446744073709551615,
+                                                        >>::new(__compact_map_size as u128))
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_1: crate::runtime::BoundedUint<
+                                                18446744073709551615,
+                                            >,
+                                            __compact_execution|
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .map_size(
+                                                            crate::runtime::functional::Map::<
+                                                                crate::runtime::Field,
+                                                                crate::runtime::slots::MapNode<
+                                                                    crate::runtime::Field,
+                                                                    crate::runtime::Field,
+                                                                >,
+                                                            >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                        )
+                                                        .bind(|__compact_map_size, __compact_execution| {
+                                                            __compact_execution
+                                                                .try_returning(|| <crate::runtime::BoundedUint<
+                                                                    18446744073709551615,
+                                                                >>::new(__compact_map_size as u128))
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_2: crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = crate::types::Counts {
+                                                                        before: __compact_effect_0,
+                                                                        after: __compact_effect_1,
+                                                                        outer: __compact_effect_2,
+                                                                    };
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_3: crate::types::Counts,
+                                                            __compact_execution|
+                                                        {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = (__compact_effect_3)
+                                                                        .clone();
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -1555,62 +1568,69 @@ pub mod ledger_contract {
                         >,
                 {
                     ({
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(
-                                        crate::runtime::functional::Map::<
-                                            crate::runtime::Field,
-                                            crate::runtime::Field,
-                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                    )
-                                    .bind(|__compact_map_size, __compact_execution| {
-                                        __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
-                                    })
-                            }))
-                            .bind(|
-                                __compact_effect_0: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        (__compact_execution)
-                                            .try_returning(|| {
-                                                let __compact_functional_result = <crate::runtime::BoundedUint<
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    __compact_execution
+                                        .map_size(
+                                            crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                        )
+                                        .bind(|__compact_map_size, __compact_execution| {
+                                            __compact_execution
+                                                .try_returning(|| <crate::runtime::BoundedUint<
                                                     18446744073709551615,
-                                                >>::new(0u128)?;
-                                                Ok(__compact_functional_result)
-                                            })
-                                    }))
-                                    .bind(|
-                                        __compact_effect_1: crate::runtime::BoundedUint<
-                                            18446744073709551615,
-                                        >,
-                                        __compact_execution|
-                                    {
-                                        ((__compact_execution)
-                                            .bind(|(), __compact_execution| {
-                                                (__compact_execution)
-                                                    .try_returning(|| {
-                                                        let __compact_functional_result = __compact_effect_0
-                                                            == __compact_effect_1;
-                                                        Ok(__compact_functional_result)
-                                                    })
-                                            }))
-                                            .bind(|__compact_effect_2: bool, __compact_execution| {
-                                                (__compact_execution)
-                                                    .try_returning(|| {
-                                                        let __compact_functional_result = __compact_effect_2;
-                                                        Ok(__compact_functional_result)
-                                                    })
-                                            })
-                                    })
-                            })
+                                                >>::new(__compact_map_size as u128))
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_0: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = <crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >>::new(0u128)?;
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_1: crate::runtime::BoundedUint<
+                                                18446744073709551615,
+                                            >,
+                                            __compact_execution|
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = __compact_effect_0
+                                                                == __compact_effect_1;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|__compact_effect_2: bool, __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = __compact_effect_2;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -1696,106 +1716,115 @@ pub mod ledger_contract {
                         >,
                 {
                     ({
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(
-                                        crate::runtime::functional::Map::<
-                                            crate::runtime::Field,
-                                            crate::runtime::Field,
-                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                    )
-                                    .bind(|__compact_map_size, __compact_execution| {
-                                        __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
-                                    })
-                            }))
-                            .bind(|
-                                __compact_effect_0: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        (__compact_execution)
-                                            .try_returning(|| {
-                                                let __compact_functional_result = crate::runtime::cast_unsigned::<
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    __compact_execution
+                                        .map_size(
+                                            crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                        )
+                                        .bind(|__compact_map_size, __compact_execution| {
+                                            __compact_execution
+                                                .try_returning(|| <crate::runtime::BoundedUint<
                                                     18446744073709551615,
-                                                    18446744073709551616,
-                                                >(__compact_effect_0)?;
-                                                Ok(__compact_functional_result)
-                                            })
-                                    }))
-                                    .bind(|
-                                        __compact_effect_1: crate::runtime::BoundedUint<
-                                            18446744073709551616,
-                                        >,
-                                        __compact_execution|
-                                    {
-                                        ((__compact_execution)
-                                            .bind(|(), __compact_execution| {
-                                                (__compact_execution)
-                                                    .try_returning(|| {
-                                                        let __compact_functional_result = <crate::runtime::BoundedUint<
-                                                            18446744073709551616,
-                                                        >>::new(1u128)?;
-                                                        Ok(__compact_functional_result)
-                                                    })
-                                            }))
-                                            .bind(|
-                                                __compact_effect_2: crate::runtime::BoundedUint<
-                                                    18446744073709551616,
-                                                >,
-                                                __compact_execution|
-                                            {
-                                                ((__compact_execution)
-                                                    .bind(|(), __compact_execution| {
-                                                        (__compact_execution)
-                                                            .try_returning(|| {
-                                                                let __compact_functional_result = crate::runtime::add_unsigned::<
-                                                                    18446744073709551616,
-                                                                    18446744073709551616,
-                                                                    36893488147419103231,
-                                                                >(__compact_effect_1, __compact_effect_2)?;
-                                                                Ok(__compact_functional_result)
-                                                            })
-                                                    }))
-                                                    .bind(|
-                                                        __compact_effect_3: crate::runtime::BoundedUint<
-                                                            36893488147419103231,
-                                                        >,
-                                                        __compact_execution|
-                                                    {
-                                                        ((__compact_execution)
-                                                            .bind(|(), __compact_execution| {
-                                                                (__compact_execution)
-                                                                    .try_returning(|| {
-                                                                        let __compact_functional_result = crate::runtime::cast_unsigned::<
-                                                                            36893488147419103231,
-                                                                            18446744073709551615,
-                                                                        >(__compact_effect_3)?;
-                                                                        Ok(__compact_functional_result)
-                                                                    })
-                                                            }))
-                                                            .bind(|
-                                                                __compact_effect_4: crate::runtime::BoundedUint<
-                                                                    18446744073709551615,
-                                                                >,
-                                                                __compact_execution|
-                                                            {
-                                                                (__compact_execution)
-                                                                    .try_returning(|| {
-                                                                        let __compact_functional_result = __compact_effect_4;
-                                                                        Ok(__compact_functional_result)
-                                                                    })
-                                                            })
-                                                    })
-                                            })
-                                    })
-                            })
+                                                >>::new(__compact_map_size as u128))
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_0: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = crate::runtime::cast_unsigned::<
+                                                        18446744073709551615,
+                                                        18446744073709551616,
+                                                    >(__compact_effect_0)?;
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_1: crate::runtime::BoundedUint<
+                                                18446744073709551616,
+                                            >,
+                                            __compact_execution|
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = <crate::runtime::BoundedUint<
+                                                                18446744073709551616,
+                                                            >>::new(1u128)?;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_2: crate::runtime::BoundedUint<
+                                                        18446744073709551616,
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = crate::runtime::add_unsigned::<
+                                                                        18446744073709551616,
+                                                                        18446744073709551616,
+                                                                        36893488147419103231,
+                                                                    >(__compact_effect_1, __compact_effect_2)?;
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_3: crate::runtime::BoundedUint<
+                                                                36893488147419103231,
+                                                            >,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::cast_unsigned::<
+                                                                                36893488147419103231,
+                                                                                18446744073709551615,
+                                                                            >(__compact_effect_3)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_4: crate::runtime::BoundedUint<
+                                                                        18446744073709551615,
+                                                                    >,
+                                                                    __compact_execution|
+                                                                {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = __compact_effect_4;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -1880,74 +1909,85 @@ pub mod ledger_contract {
                     let __compact_param_0 = self.active;
                     ({
                         let __compact_effect_0: bool = __compact_param_0;
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                if __compact_effect_0 {
-                                    ((__compact_execution)
-                                        .bind(|(), __compact_execution| {
-                                            __compact_execution
-                                                .map_size(
-                                                    crate::runtime::functional::Map::<
-                                                        crate::runtime::Field,
-                                                        crate::runtime::Field,
-                                                    >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                                )
-                                                .bind(|__compact_map_size, __compact_execution| {
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
                                                     __compact_execution
-                                                        .try_returning(|| <crate::runtime::BoundedUint<
-                                                            18446744073709551615,
-                                                        >>::new(__compact_map_size as u128))
-                                                })
-                                        }))
-                                        .bind(|
-                                            __compact_effect_1: crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >,
-                                            __compact_execution|
-                                        {
-                                            (__compact_execution)
-                                                .try_returning(|| {
-                                                    let __compact_functional_result = __compact_effect_1;
-                                                    Ok(__compact_functional_result)
-                                                })
-                                        })
-                                } else {
-                                    ((__compact_execution)
-                                        .bind(|(), __compact_execution| {
-                                            (__compact_execution)
-                                                .try_returning(|| {
-                                                    let __compact_functional_result = <crate::runtime::BoundedUint<
+                                                        .map_size(
+                                                            crate::runtime::functional::Map::<
+                                                                crate::runtime::Field,
+                                                                crate::runtime::Field,
+                                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                        )
+                                                        .bind(|__compact_map_size, __compact_execution| {
+                                                            __compact_execution
+                                                                .try_returning(|| <crate::runtime::BoundedUint<
+                                                                    18446744073709551615,
+                                                                >>::new(__compact_map_size as u128))
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_1: crate::runtime::BoundedUint<
                                                         18446744073709551615,
-                                                    >>::new(7u128)?;
-                                                    Ok(__compact_functional_result)
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = __compact_effect_1;
+                                                            Ok(__compact_functional_result)
+                                                        })
                                                 })
-                                        }))
-                                        .bind(|
-                                            __compact_effect_2: crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >,
-                                            __compact_execution|
+                                        }
+                                    } else {
                                         {
-                                            (__compact_execution)
-                                                .try_returning(|| {
-                                                    let __compact_functional_result = __compact_effect_2;
-                                                    Ok(__compact_functional_result)
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = <crate::runtime::BoundedUint<
+                                                                18446744073709551615,
+                                                            >>::new(7u128)?;
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_2: crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = __compact_effect_2;
+                                                            Ok(__compact_functional_result)
+                                                        })
                                                 })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_3: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    (__compact_execution)
+                                        .try_returning(|| {
+                                            let __compact_functional_result = __compact_effect_3;
+                                            Ok(__compact_functional_result)
                                         })
-                                }
-                            }))
-                            .bind(|
-                                __compact_effect_3: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                (__compact_execution)
-                                    .try_returning(|| {
-                                        let __compact_functional_result = __compact_effect_3;
-                                        Ok(__compact_functional_result)
-                                    })
-                            })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -2040,115 +2080,124 @@ pub mod ledger_contract {
                     ({
                         let __compact_effect_0: crate::runtime::Field = __compact_param_0;
                         let __compact_effect_1: crate::runtime::Field = __compact_param_1;
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(
-                                        crate::runtime::functional::Map::<
-                                            crate::runtime::Field,
-                                            crate::runtime::Field,
-                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                    )
-                                    .bind(|__compact_map_size, __compact_execution| {
-                                        __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
-                                    })
-                            }))
-                            .bind(|
-                                __compact_effect_2: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        __compact_execution
-                                            .map_insert(
-                                                crate::runtime::functional::Map::<
-                                                    crate::runtime::Field,
-                                                    crate::runtime::Field,
-                                                >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                                __compact_effect_0,
-                                                __compact_effect_1,
-                                            )
-                                    }))
-                                    .bind(|(), __compact_execution| {
-                                        ((__compact_execution)
-                                            .bind(|(), __compact_execution| {
-                                                __compact_execution
-                                                    .map_size(
-                                                        crate::runtime::functional::Map::<
-                                                            crate::runtime::Field,
-                                                            crate::runtime::Field,
-                                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                                    )
-                                                    .bind(|__compact_map_size, __compact_execution| {
-                                                        __compact_execution
-                                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                                18446744073709551615,
-                                                            >>::new(__compact_map_size as u128))
-                                                    })
-                                            }))
-                                            .bind(|
-                                                __compact_effect_4: crate::runtime::BoundedUint<
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    __compact_execution
+                                        .map_size(
+                                            crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                        )
+                                        .bind(|__compact_map_size, __compact_execution| {
+                                            __compact_execution
+                                                .try_returning(|| <crate::runtime::BoundedUint<
                                                     18446744073709551615,
-                                                >,
-                                                __compact_execution|
-                                            {
-                                                ((__compact_execution)
-                                                    .bind(|(), __compact_execution| {
-                                                        __compact_execution
-                                                            .map_size(
-                                                                crate::runtime::functional::Map::<
-                                                                    crate::runtime::Field,
-                                                                    crate::runtime::slots::MapNode<
+                                                >>::new(__compact_map_size as u128))
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_2: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            __compact_execution
+                                                .map_insert(
+                                                    crate::runtime::functional::Map::<
+                                                        crate::runtime::Field,
+                                                        crate::runtime::Field,
+                                                    >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                    __compact_effect_0,
+                                                    __compact_effect_1,
+                                                )
+                                        });
+                                    __compact_functional_step
+                                        .bind(|(), __compact_execution| {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .map_size(
+                                                            crate::runtime::functional::Map::<
+                                                                crate::runtime::Field,
+                                                                crate::runtime::Field,
+                                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                        )
+                                                        .bind(|__compact_map_size, __compact_execution| {
+                                                            __compact_execution
+                                                                .try_returning(|| <crate::runtime::BoundedUint<
+                                                                    18446744073709551615,
+                                                                >>::new(__compact_map_size as u128))
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_4: crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            __compact_execution
+                                                                .map_size(
+                                                                    crate::runtime::functional::Map::<
                                                                         crate::runtime::Field,
-                                                                        crate::runtime::Field,
-                                                                    >,
-                                                                >::new(crate::runtime::functional::SlotId::new(0u32)),
-                                                            )
-                                                            .bind(|__compact_map_size, __compact_execution| {
-                                                                __compact_execution
-                                                                    .try_returning(|| <crate::runtime::BoundedUint<
-                                                                        18446744073709551615,
-                                                                    >>::new(__compact_map_size as u128))
-                                                            })
-                                                    }))
-                                                    .bind(|
-                                                        __compact_effect_5: crate::runtime::BoundedUint<
-                                                            18446744073709551615,
-                                                        >,
-                                                        __compact_execution|
-                                                    {
-                                                        ((__compact_execution)
-                                                            .bind(|(), __compact_execution| {
-                                                                (__compact_execution)
-                                                                    .try_returning(|| {
-                                                                        let __compact_functional_result = crate::types::Counts {
-                                                                            before: __compact_effect_2,
-                                                                            after: __compact_effect_4,
-                                                                            outer: __compact_effect_5,
-                                                                        };
-                                                                        Ok(__compact_functional_result)
-                                                                    })
-                                                            }))
-                                                            .bind(|
-                                                                __compact_effect_6: crate::types::Counts,
-                                                                __compact_execution|
-                                                            {
-                                                                (__compact_execution)
-                                                                    .try_returning(|| {
-                                                                        let __compact_functional_result = (__compact_effect_6)
-                                                                            .clone();
-                                                                        Ok(__compact_functional_result)
-                                                                    })
-                                                            })
-                                                    })
-                                            })
-                                    })
-                            })
+                                                                        crate::runtime::slots::MapNode<
+                                                                            crate::runtime::Field,
+                                                                            crate::runtime::Field,
+                                                                        >,
+                                                                    >::new(crate::runtime::functional::SlotId::new(0u32)),
+                                                                )
+                                                                .bind(|__compact_map_size, __compact_execution| {
+                                                                    __compact_execution
+                                                                        .try_returning(|| <crate::runtime::BoundedUint<
+                                                                            18446744073709551615,
+                                                                        >>::new(__compact_map_size as u128))
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_5: crate::runtime::BoundedUint<
+                                                                18446744073709551615,
+                                                            >,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::types::Counts {
+                                                                                before: __compact_effect_2,
+                                                                                after: __compact_effect_4,
+                                                                                outer: __compact_effect_5,
+                                                                            };
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_6: crate::types::Counts,
+                                                                    __compact_execution|
+                                                                {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = (__compact_effect_6)
+                                                                                .clone();
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -2282,125 +2331,135 @@ pub mod ledger_contract {
                         >,
                 {
                     ({
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                __compact_execution
-                                    .map_size(
-                                        crate::runtime::functional::Map::<
-                                            crate::runtime::Field,
-                                            crate::runtime::Field,
-                                        >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                    )
-                                    .bind(|__compact_map_size, __compact_execution| {
-                                        __compact_execution
-                                            .try_returning(|| <crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >>::new(__compact_map_size as u128))
-                                    })
-                            }))
-                            .bind(|
-                                __compact_effect_0: crate::runtime::BoundedUint<
-                                    18446744073709551615,
-                                >,
-                                __compact_execution|
-                            {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        (__compact_execution)
-                                            .try_returning(|| {
-                                                let __compact_functional_result = crate::runtime::cast_unsigned::<
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    __compact_execution
+                                        .map_size(
+                                            crate::runtime::functional::Map::<
+                                                crate::runtime::Field,
+                                                crate::runtime::Field,
+                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                        )
+                                        .bind(|__compact_map_size, __compact_execution| {
+                                            __compact_execution
+                                                .try_returning(|| <crate::runtime::BoundedUint<
                                                     18446744073709551615,
-                                                    36893488147419103230,
-                                                >(__compact_effect_0)?;
-                                                Ok(__compact_functional_result)
-                                            })
-                                    }))
-                                    .bind(|
-                                        __compact_effect_1: crate::runtime::BoundedUint<
-                                            36893488147419103230,
-                                        >,
-                                        __compact_execution|
-                                    {
-                                        ((__compact_execution)
-                                            .bind(|(), __compact_execution| {
-                                                __compact_execution
-                                                    .witness(
-                                                        crate::runtime::functional::Witness::<
+                                                >>::new(__compact_map_size as u128))
+                                        })
+                                });
+                            __compact_functional_step
+                                .bind(|
+                                    __compact_effect_0: crate::runtime::BoundedUint<
+                                        18446744073709551615,
+                                    >,
+                                    __compact_execution|
+                                {
+                                    let __compact_functional_step = (__compact_execution)
+                                        .bind(|(), __compact_execution| {
+                                            (__compact_execution)
+                                                .try_returning(|| {
+                                                    let __compact_functional_result = crate::runtime::cast_unsigned::<
+                                                        18446744073709551615,
+                                                        36893488147419103230,
+                                                    >(__compact_effect_0)?;
+                                                    Ok(__compact_functional_result)
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_1: crate::runtime::BoundedUint<
+                                                36893488147419103230,
+                                            >,
+                                            __compact_execution|
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    __compact_execution
+                                                        .witness(
+                                                            crate::runtime::functional::Witness::<
+                                                                (),
+                                                                crate::runtime::BoundedUint<18446744073709551615>,
+                                                            >::new(crate::runtime::functional::WitnessId::new(0u32)),
                                                             (),
-                                                            crate::runtime::BoundedUint<18446744073709551615>,
-                                                        >::new(crate::runtime::functional::WitnessId::new(0u32)),
-                                                        (),
-                                                    )
-                                            }))
-                                            .bind(|
-                                                __compact_effect_2: crate::runtime::BoundedUint<
-                                                    18446744073709551615,
-                                                >,
-                                                __compact_execution|
-                                            {
-                                                ((__compact_execution)
-                                                    .bind(|(), __compact_execution| {
-                                                        (__compact_execution)
-                                                            .try_returning(|| {
-                                                                let __compact_functional_result = crate::runtime::cast_unsigned::<
-                                                                    18446744073709551615,
-                                                                    36893488147419103230,
-                                                                >(__compact_effect_2)?;
-                                                                Ok(__compact_functional_result)
-                                                            })
-                                                    }))
-                                                    .bind(|
-                                                        __compact_effect_3: crate::runtime::BoundedUint<
-                                                            36893488147419103230,
-                                                        >,
-                                                        __compact_execution|
-                                                    {
-                                                        ((__compact_execution)
-                                                            .bind(|(), __compact_execution| {
-                                                                (__compact_execution)
-                                                                    .try_returning(|| {
-                                                                        let __compact_functional_result = crate::runtime::add_unsigned::<
-                                                                            36893488147419103230,
-                                                                            36893488147419103230,
-                                                                            36893488147419103231,
-                                                                        >(__compact_effect_1, __compact_effect_3)?;
-                                                                        Ok(__compact_functional_result)
-                                                                    })
-                                                            }))
-                                                            .bind(|
-                                                                __compact_effect_4: crate::runtime::BoundedUint<
-                                                                    36893488147419103231,
-                                                                >,
-                                                                __compact_execution|
-                                                            {
-                                                                ((__compact_execution)
-                                                                    .bind(|(), __compact_execution| {
-                                                                        (__compact_execution)
-                                                                            .try_returning(|| {
-                                                                                let __compact_functional_result = crate::runtime::cast_unsigned::<
-                                                                                    36893488147419103231,
-                                                                                    18446744073709551615,
-                                                                                >(__compact_effect_4)?;
-                                                                                Ok(__compact_functional_result)
-                                                                            })
-                                                                    }))
-                                                                    .bind(|
-                                                                        __compact_effect_5: crate::runtime::BoundedUint<
-                                                                            18446744073709551615,
-                                                                        >,
-                                                                        __compact_execution|
-                                                                    {
-                                                                        (__compact_execution)
-                                                                            .try_returning(|| {
-                                                                                let __compact_functional_result = __compact_effect_5;
-                                                                                Ok(__compact_functional_result)
-                                                                            })
-                                                                    })
-                                                            })
-                                                    })
-                                            })
-                                    })
-                            })
+                                                        )
+                                                });
+                                            __compact_functional_step
+                                                .bind(|
+                                                    __compact_effect_2: crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >,
+                                                    __compact_execution|
+                                                {
+                                                    let __compact_functional_step = (__compact_execution)
+                                                        .bind(|(), __compact_execution| {
+                                                            (__compact_execution)
+                                                                .try_returning(|| {
+                                                                    let __compact_functional_result = crate::runtime::cast_unsigned::<
+                                                                        18446744073709551615,
+                                                                        36893488147419103230,
+                                                                    >(__compact_effect_2)?;
+                                                                    Ok(__compact_functional_result)
+                                                                })
+                                                        });
+                                                    __compact_functional_step
+                                                        .bind(|
+                                                            __compact_effect_3: crate::runtime::BoundedUint<
+                                                                36893488147419103230,
+                                                            >,
+                                                            __compact_execution|
+                                                        {
+                                                            let __compact_functional_step = (__compact_execution)
+                                                                .bind(|(), __compact_execution| {
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::add_unsigned::<
+                                                                                36893488147419103230,
+                                                                                36893488147419103230,
+                                                                                36893488147419103231,
+                                                                            >(__compact_effect_1, __compact_effect_3)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_4: crate::runtime::BoundedUint<
+                                                                        36893488147419103231,
+                                                                    >,
+                                                                    __compact_execution|
+                                                                {
+                                                                    let __compact_functional_step = (__compact_execution)
+                                                                        .bind(|(), __compact_execution| {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = crate::runtime::cast_unsigned::<
+                                                                                        36893488147419103231,
+                                                                                        18446744073709551615,
+                                                                                    >(__compact_effect_4)?;
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        });
+                                                                    __compact_functional_step
+                                                                        .bind(|
+                                                                            __compact_effect_5: crate::runtime::BoundedUint<
+                                                                                18446744073709551615,
+                                                                            >,
+                                                                            __compact_execution|
+                                                                        {
+                                                                            (__compact_execution)
+                                                                                .try_returning(|| {
+                                                                                    let __compact_functional_result = __compact_effect_5;
+                                                                                    Ok(__compact_functional_result)
+                                                                                })
+                                                                        })
+                                                                })
+                                                        })
+                                                })
+                                        })
+                                })
+                        }
                     })
                         .finish()
                 }
@@ -2536,139 +2595,155 @@ pub mod ledger_contract {
                     let __compact_param_0 = self.active;
                     ({
                         let __compact_effect_0: bool = __compact_param_0;
-                        ((crate::runtime::functional::Circuit::begin(__compact_executor))
-                            .bind(|(), __compact_execution| {
-                                if __compact_effect_0 {
-                                    ((__compact_execution)
-                                        .bind(|(), __compact_execution| {
-                                            __compact_execution
-                                                .witness(
-                                                    crate::runtime::functional::Witness::<
-                                                        (),
-                                                        crate::runtime::BoundedUint<18446744073709551615>,
-                                                    >::new(crate::runtime::functional::WitnessId::new(0u32)),
-                                                    (),
-                                                )
-                                        }))
-                                        .bind(|
-                                            __compact_effect_1: crate::runtime::BoundedUint<
-                                                18446744073709551615,
-                                            >,
-                                            __compact_execution|
+                        {
+                            let __compact_functional_step = (crate::runtime::functional::Circuit::begin(
+                                __compact_executor,
+                            ))
+                                .bind(|(), __compact_execution| {
+                                    if __compact_effect_0 {
                                         {
-                                            ((__compact_execution)
+                                            let __compact_functional_step = (__compact_execution)
                                                 .bind(|(), __compact_execution| {
-                                                    (__compact_execution)
-                                                        .try_returning(|| {
-                                                            let __compact_functional_result = crate::runtime::Field::from(
-                                                                (__compact_effect_1).value(),
-                                                            );
-                                                            Ok(__compact_functional_result)
-                                                        })
-                                                }))
+                                                    __compact_execution
+                                                        .witness(
+                                                            crate::runtime::functional::Witness::<
+                                                                (),
+                                                                crate::runtime::BoundedUint<18446744073709551615>,
+                                                            >::new(crate::runtime::functional::WitnessId::new(0u32)),
+                                                            (),
+                                                        )
+                                                });
+                                            __compact_functional_step
                                                 .bind(|
-                                                    __compact_effect_2: crate::runtime::Field,
+                                                    __compact_effect_1: crate::runtime::BoundedUint<
+                                                        18446744073709551615,
+                                                    >,
                                                     __compact_execution|
                                                 {
-                                                    ((__compact_execution)
+                                                    let __compact_functional_step = (__compact_execution)
                                                         .bind(|(), __compact_execution| {
                                                             (__compact_execution)
                                                                 .try_returning(|| {
-                                                                    let __compact_functional_result = crate::runtime::Field::from_le_bytes(
-                                                                            &[
-                                                                                99u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                                                                                0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-                                                                            ],
-                                                                        )
-                                                                        .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                    let __compact_functional_result = crate::runtime::Field::from(
+                                                                        (__compact_effect_1).value(),
+                                                                    );
                                                                     Ok(__compact_functional_result)
                                                                 })
-                                                        }))
+                                                        });
+                                                    __compact_functional_step
                                                         .bind(|
-                                                            __compact_effect_3: crate::runtime::Field,
+                                                            __compact_effect_2: crate::runtime::Field,
                                                             __compact_execution|
                                                         {
-                                                            ((__compact_execution)
+                                                            let __compact_functional_step = (__compact_execution)
                                                                 .bind(|(), __compact_execution| {
-                                                                    __compact_execution
-                                                                        .map_insert(
-                                                                            crate::runtime::functional::Map::<
-                                                                                crate::runtime::Field,
-                                                                                crate::runtime::Field,
-                                                                            >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                                                            __compact_effect_2,
-                                                                            __compact_effect_3,
-                                                                        )
-                                                                }))
-                                                                .bind(|(), __compact_execution| {
-                                                                    ((__compact_execution)
+                                                                    (__compact_execution)
+                                                                        .try_returning(|| {
+                                                                            let __compact_functional_result = crate::runtime::Field::from_le_bytes(
+                                                                                    &[
+                                                                                        99u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                        0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+                                                                                    ],
+                                                                                )
+                                                                                .ok_or(crate::runtime::CompactError::InvalidUnsignedValue)?;
+                                                                            Ok(__compact_functional_result)
+                                                                        })
+                                                                });
+                                                            __compact_functional_step
+                                                                .bind(|
+                                                                    __compact_effect_3: crate::runtime::Field,
+                                                                    __compact_execution|
+                                                                {
+                                                                    let __compact_functional_step = (__compact_execution)
                                                                         .bind(|(), __compact_execution| {
-                                                                            (__compact_execution)
-                                                                                .try_returning(|| {
-                                                                                    let __compact_functional_result = ();
-                                                                                    Ok(__compact_functional_result)
-                                                                                })
-                                                                        }))
+                                                                            __compact_execution
+                                                                                .map_insert(
+                                                                                    crate::runtime::functional::Map::<
+                                                                                        crate::runtime::Field,
+                                                                                        crate::runtime::Field,
+                                                                                    >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                                                    __compact_effect_2,
+                                                                                    __compact_effect_3,
+                                                                                )
+                                                                        });
+                                                                    __compact_functional_step
                                                                         .bind(|(), __compact_execution| {
-                                                                            (__compact_execution)
-                                                                                .try_returning(|| {
-                                                                                    let __compact_functional_result = ();
-                                                                                    Ok(__compact_functional_result)
+                                                                            let __compact_functional_step = (__compact_execution)
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = ();
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
+                                                                                });
+                                                                            __compact_functional_step
+                                                                                .bind(|(), __compact_execution| {
+                                                                                    (__compact_execution)
+                                                                                        .try_returning(|| {
+                                                                                            let __compact_functional_result = ();
+                                                                                            Ok(__compact_functional_result)
+                                                                                        })
                                                                                 })
                                                                         })
                                                                 })
                                                         })
                                                 })
-                                        })
-                                } else {
-                                    ((__compact_execution)
+                                        }
+                                    } else {
+                                        {
+                                            let __compact_functional_step = (__compact_execution)
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                });
+                                            __compact_functional_step
+                                                .bind(|(), __compact_execution| {
+                                                    (__compact_execution)
+                                                        .try_returning(|| {
+                                                            let __compact_functional_result = ();
+                                                            Ok(__compact_functional_result)
+                                                        })
+                                                })
+                                        }
+                                    }
+                                });
+                            __compact_functional_step
+                                .bind(|(), __compact_execution| {
+                                    let __compact_functional_step = (__compact_execution)
                                         .bind(|(), __compact_execution| {
+                                            __compact_execution
+                                                .map_size(
+                                                    crate::runtime::functional::Map::<
+                                                        crate::runtime::Field,
+                                                        crate::runtime::Field,
+                                                    >::new(crate::runtime::functional::SlotId::new(1u32)),
+                                                )
+                                                .bind(|__compact_map_size, __compact_execution| {
+                                                    __compact_execution
+                                                        .try_returning(|| <crate::runtime::BoundedUint<
+                                                            18446744073709551615,
+                                                        >>::new(__compact_map_size as u128))
+                                                })
+                                        });
+                                    __compact_functional_step
+                                        .bind(|
+                                            __compact_effect_8: crate::runtime::BoundedUint<
+                                                18446744073709551615,
+                                            >,
+                                            __compact_execution|
+                                        {
                                             (__compact_execution)
                                                 .try_returning(|| {
-                                                    let __compact_functional_result = ();
-                                                    Ok(__compact_functional_result)
-                                                })
-                                        }))
-                                        .bind(|(), __compact_execution| {
-                                            (__compact_execution)
-                                                .try_returning(|| {
-                                                    let __compact_functional_result = ();
+                                                    let __compact_functional_result = __compact_effect_8;
                                                     Ok(__compact_functional_result)
                                                 })
                                         })
-                                }
-                            }))
-                            .bind(|(), __compact_execution| {
-                                ((__compact_execution)
-                                    .bind(|(), __compact_execution| {
-                                        __compact_execution
-                                            .map_size(
-                                                crate::runtime::functional::Map::<
-                                                    crate::runtime::Field,
-                                                    crate::runtime::Field,
-                                                >::new(crate::runtime::functional::SlotId::new(1u32)),
-                                            )
-                                            .bind(|__compact_map_size, __compact_execution| {
-                                                __compact_execution
-                                                    .try_returning(|| <crate::runtime::BoundedUint<
-                                                        18446744073709551615,
-                                                    >>::new(__compact_map_size as u128))
-                                            })
-                                    }))
-                                    .bind(|
-                                        __compact_effect_8: crate::runtime::BoundedUint<
-                                            18446744073709551615,
-                                        >,
-                                        __compact_execution|
-                                    {
-                                        (__compact_execution)
-                                            .try_returning(|| {
-                                                let __compact_functional_result = __compact_effect_8;
-                                                Ok(__compact_functional_result)
-                                            })
-                                    })
-                            })
+                                })
+                        }
                     })
                         .finish()
                 }

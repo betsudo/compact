@@ -61,3 +61,13 @@ cohort and pinned rustfmt completes in 50.350 seconds. The old formatter was
 intentionally stopped after 36m37s of CPU work; this is a failed/settled attempt,
 not an exact timing baseline or whole-CI performance claim. These development
 observations do not replace clean source, runtime or proof qualification.
+
+
+Clean original compiler140 generated all 27 current functional snapshots. Every
+retained complete IR, origin report, capability report and checked-program file
+compares byte-for-byte equal. The exact generated native/recorded prefix before
+each functional module also remains unchanged. Only current functional Rust
+syntax snapshots change; historical authorities and source registrations do not.
+The four-owner local all-feature run passes 2,520 tests with seven existing
+ignored tests. Public Python selects 369 methods with no failures/errors and
+20 existing manual skip events; these controls are not proof qualification.
