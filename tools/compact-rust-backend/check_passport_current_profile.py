@@ -258,6 +258,17 @@ def main(argv=None):
         if not all(path.is_relative_to(output.resolve()) for path in allowed):
             raise ValueError("Passport local manifest escapes isolated SDK")
         receipt["consumer_lock_sha256"] = validate_dependencies(metadata, lock, allowed, qualified)
+        # Clippy on a consumer does not lint its SDK dependency as a selected
+        # package. Select that unchanged generated crate independently as well.
+        sdk_lock = contract / "Cargo.lock"
+        if sdk_lock.exists():
+            raise ValueError("unexpected generated Passport SDK lock")
+        shutil.copyfile(ROOT / "Cargo.lock", sdk_lock)
+        sdk_metadata = json.loads(run("sdk-resolve", ["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", contract / "Cargo.toml"]).stdout)
+        receipt["sdk_lock_sha256"] = validate_dependencies(sdk_metadata, sdk_lock, allowed, qualified)
+        receipt["sdk_lock_added_by_qualification"] = True
+        generated_hashes[str(sdk_lock)] = receipt["sdk_lock_sha256"]
+        run("sdk-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", contract / "Cargo.toml", "--all-targets", "--", "-D", "warnings"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", consumer_manifest, "--", "--show-output"])
         summaries = re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result.stdout)
         if sum(int(p) for p, _, _ in summaries) != 18 or any(f != "0" or i != "0" for _, f, i in summaries):

@@ -6,7 +6,9 @@ Current guide for 0.3.0 closeout. **Historical executed example:** verified loca
 signed `7e1f9d363` with original compiler0.31.142 and the declared Ledger8.1.3
 runtime cohort. It executes this complete two-test consumer together with the
 sixteen original adoption test methods, compares all202 live TS cases, checks
-two independent ordinary type refusals and runs strict Clippy. Every local Cargo
+two independent ordinary type refusals and runs strict consumer Clippy. Direct
+generated-SDK linting is being qualified separately; consumer dependency
+compilation alone does not establish that stricter result. Every local Cargo
 manifest resolves inside the generated SDK/consumer directory; the source lock
 cohort is validated before execution. The historical P1 archive remains intact.
 This is local qualification on the reviewed statement-source stack; actual
