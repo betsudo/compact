@@ -137,9 +137,10 @@ These are literal a1 execution receipts. The local compiler version remains
 not publish or relabel a historical compiler release. Development failures and
 authenticated-reuse receipts remain separate historical evidence.
 
-Next: bind complete new-source IR and checked programs into the selected proof
-consumer, run genuine proofs and funded applications, reconcile against the
-accepted SDK branch, and finish final-source review/full CI before integration.
+The later signed proof-binding source `9a9d1b8b6` completed the separate
+new-source and retained literal proof gates described below. Next: finish the
+current ownership controls, reconcile against the accepted SDK branch, and
+complete final-source qualification, PR review and full CI before integration.
 Any changed compiler/source identity receives its required qualification. Existing
 literal proof coverage remains required and does not substitute for new-source
 proofs. The broader backend goal and this slice's integration remain incomplete.
@@ -169,7 +170,23 @@ unproved. Existing official material is verified before the new runner build;
 the gate separately verifies its actual selected parameter size.
 
 Source/receipt/orchestration controls and strict selected proof-profile Clippy
-pass for the new fixture and shared runner. Actual new-source proof and ledger
-execution are still open until their retained run succeeds. Compiler, generated
+pass for the new fixture and shared runner. At clean signed `9a9d1b8b6`, both separately selected gates passed with fresh
+k=6/54-row keys and two 2912-byte standalone proofs per source. Each branch
+also completed a separately proved funded default-strict ledger application,
+exact expected state and unchanged replay refusal, with the stated crypto and
+whole-IR/index negatives. These are bounded arm64 receipts; they do not claim
+constructor execution, Linux execution or full integration acceptance.
+
+The full ordinary compiler `./compiler/go` passed at the same head in the
+standard default Nix development shell: all Scheme groups and both JavaScript
+modes. An earlier lean-shell attempt could not find Vitest; its failure and
+overwritten-input preservation remain separate. No source fix was required.
+
+The current API gate adds a reused-context E0382 refusal alongside reused Program,
+wrong length and wrong element type. Every primary error must identify the
+marked misuse in its own external binary. A positive twin executes independent
+Programs with fresh contexts and checks separate cells against 17 and 41,
+bringing the consumer roster to eight. The historical a1 receipt above remains
+seven tests/three controls and is not relabelled by these additions. Compiler,
 consumer, proof, application, final source review and integration receipts retain
 their separate identities and scope.

@@ -37,7 +37,36 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "vector_projection"
 SOURCE = ROOT / "examples/rust_backend/constant_vector_projection.compact"
-NEGATIVES = {"wrong_length": "E0308", "wrong_type": "E0308", "double_execute": "E0382"}
+NEGATIVES = {"wrong_length": "E0308", "wrong_type": "E0308", "double_execute": "E0382",
+             "double_context": "E0382"}
+
+
+def compile_failure(process, name, expected, source):
+    """Accept only errors at the marked ordinary misuse in this consumer binary."""
+    markers = [i for i, line in enumerate(source.splitlines(), 1) if "// expected-error" in line]
+    if len(markers) != 1:
+        raise ValueError(f"{name} needs exactly one intended-error marker")
+    errors = []
+    for line in process.stdout.splitlines():
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if item.get("reason") != "compiler-message" or item["message"]["level"] != "error":
+            continue
+        message = item["message"]
+        primary = [span for span in message.get("spans", []) if span.get("is_primary")]
+        if (message.get("code") or {}).get("code") != expected or not primary or not all(
+            span["file_name"] == f"src/bin/{name}.rs"
+            and span["line_start"] <= markers[0] <= span["line_end"]
+            and any(row["text"] == source.splitlines()[markers[0] - 1] for row in span["text"])
+            for span in primary
+        ):
+            raise ValueError(f"{name} error is not {expected} at its intended source expression")
+        errors.append({"code": expected, "primary_spans": primary})
+    if not process.returncode or not errors:
+        raise ValueError(f"{name} did not refuse at its intended source expression")
+    return errors
 
 
 def digest(path):
@@ -194,9 +223,9 @@ def main():
         report["consumer_lock_sha256"] = digest(child_lock)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "vector"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("7", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("8", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
-        report["rust_consumer_tests"] = 7
+        report["rust_consumer_tests"] = 8
         if args.ts_runtime:
             changed = json.loads(capture.read_text())
             next(row for row in changed["cases"] if row["id"] == "choose-first")["output"]["valueAtoms"] = [[42]]
@@ -215,17 +244,8 @@ def main():
         for name, expected in NEGATIVES.items():
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
                                 "--bin", name, "--features", name, "--message-format=json"], success=False)
-            errors = []
-            for line in process.stdout.splitlines():
-                try:
-                    item = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if item.get("reason") == "compiler-message" and item["message"]["level"] == "error":
-                    errors.append((item["message"].get("code") or {}).get("code"))
-            if not process.returncode or not errors or set(errors) != {expected}:
-                raise ValueError(f"{name} did not refuse only with {expected}: {errors}")
-            report["compile_fail"][name] = errors
+            report["compile_fail"][name] = compile_failure(
+                process, name, expected, (consumer / f"src/bin/{name}.rs").read_text())
         if generated_manifest_snapshot(generated) != report["generated"]:
             raise ValueError("generated assets changed during consumer execution")
         for relative, expected in pins.items():
@@ -255,7 +275,7 @@ def main():
         with report_path.open("x") as stream:
             json.dump(report, stream, indent=2)
             stream.write("\n")
-    print(json.dumps({"status": report["status"], "rust_consumer_tests": 7,
+    print(json.dumps({"status": report["status"], "rust_consumer_tests": report["rust_consumer_tests"],
                       "compile_fail": report["compile_fail"], "report": str(report_path)}))
 
 

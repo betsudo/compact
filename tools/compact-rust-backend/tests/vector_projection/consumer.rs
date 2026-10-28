@@ -30,6 +30,30 @@ fn context() -> CircuitContext<u64> {
 fn fields() -> FixedVector<Field, 2> {
     FixedVector([Field::from(17_u64), Field::from(41_u64)])
 }
+
+#[test]
+fn independent_programs_with_fresh_contexts_execute_successfully() {
+    let first = c::functional::choose::Program::new(fields(), true)
+        .execute_native(context())
+        .unwrap();
+    let last = c::functional::choose::Program::new(fields(), false)
+        .execute_native(context())
+        .unwrap();
+    assert_eq!(first.result, Field::from(17_u64));
+    assert_eq!(last.result, Field::from(41_u64));
+    assert_eq!(
+        slots::stored
+            .inspect(first.context.query.state.get_ref())
+            .unwrap(),
+        first.result
+    );
+    assert_eq!(
+        slots::stored
+            .inspect(last.context.query.state.get_ref())
+            .unwrap(),
+        last.result
+    );
+}
 fn texts() -> FixedVector<OpaqueString, 2> {
     FixedVector([
         OpaqueString::from("α\0first"),

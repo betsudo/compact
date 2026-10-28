@@ -15,12 +15,15 @@ python3 tools/compact-rust-backend/check_constant_vector_projection.py \
   --ts-runtime /existing/package/@midnight-ntwrk/compact-runtime
 ```
 
-The seven consumer tests exercise independent first/last/singleton values,
+The eight consumer tests exercise independent first/last/singleton values,
 non-Copy text and temporary results; ordinary native/recorded and functional
 native/recorded stateful execution; owned vector reuse; one witness evaluation;
 first witness failure; inactive branches; ordered private outputs; state/effects,
-query-summed gas agreement and actual public replay. Three external compile-fail
-binaries require E0308 for wrong length/type and E0382 for double execution.
+query-summed gas agreement and actual public replay. Two independent Programs
+with fresh contexts execute and update separate cells to 17 and 41. Four external
+compile-fail binaries require E0308 for wrong length/type and E0382 for reused
+Program/context ownership. Each error must have a primary span at the marked
+misuse in its own binary; unrelated failures cannot satisfy the gate.
 The two `.compact` negatives must fail at frontend bounds before publication.
 
 Backend unit tests independently cover typed projection, original operand and

@@ -15,5 +15,5 @@
 
 fn main() {
     let _ =
-        vector_fixture::pure_circuits::first(vector_fixture::runtime::FixedVector([false, true]));
+        vector_fixture::pure_circuits::first(vector_fixture::runtime::FixedVector([false, true])); // expected-error
 }
