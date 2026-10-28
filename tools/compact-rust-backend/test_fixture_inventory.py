@@ -40,12 +40,13 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                  'examples/rust_backend/map_size_expression.compact',
                  'examples/rust_backend/field_return_wrappers.compact',
                  'examples/rust_backend/tuple_return_wrappers.compact',
+                 'examples/rust_backend/unit_mutation_initializers.compact',
                  'examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact'}
         names.update(f'examples/rust_backend/direct_fold/{row["source"]}.compact'
                      for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 26)
+        self.assertEqual(len(extension), 27)
         current['sources'] = [row for row in current['sources'] if row not in extension]
         self.assertEqual(current, baseline)
 
@@ -112,6 +113,26 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertTrue(all(c['source'] == 'did' for c in oracle['cases']))
         self.assertEqual(len({c['id'] for c in oracle['cases']}), 12)
 
+    def test_unit_initializers_bind_all_programs_and_separate_nonproof_exports(self):
+        row = next(row for row in inventory.source_registry()
+                   if row.source.name == 'unit_mutation_initializers.compact')
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
+        self.assertEqual(row.library, row.generated_library)
+        folder = row.library.parent
+        self.assertEqual({p.name for p in (folder / 'checked-programs').glob('*.json')},
+                         {f'program-{i}.json' for i in range(9)})
+        ir = json.loads((folder / 'original-ir.json').read_text())
+        circuits = {c['name']: c for c in ir['stateful_circuits']}
+        self.assertEqual(set(circuits), {'conditional','observed','sequential','nested',
+                         'unit_result','unused','unit_witness_comparison',
+                         'unit_witness_inequality','shadowed'})
+        self.assertEqual(circuits['unit_result']['result'], {'kind': 'unit'})
+        capabilities = json.loads((folder / 'rust-capabilities.json').read_text())['circuits']
+        self.assertTrue(all(c['recorded'] and c['observed_call'] for c in capabilities))
+        self.assertEqual({c['name'] for c in capabilities if not c['proof_required']},
+                         {'unit_witness_comparison','unit_witness_inequality'})
+
     def test_direct_fold_registers_every_complete_source_family(self):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
         rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']
@@ -128,7 +149,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 195,
+            inventory.SourceRole.FLAT_LIBRARY: 196,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })

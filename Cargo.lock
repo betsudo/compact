@@ -3046,6 +3046,7 @@ dependencies = [
  "compact-rust-transient-receive-send-oracle-fixture",
  "compact-rust-tuple-return-wrappers-source-fixture",
  "compact-rust-uints-oracle-fixture",
+ "compact-rust-unit-mutation-initializers-source-fixture",
  "compact-rust-vector-key-adt-fixture",
  "compact-rust-wide-uint-oracle-fixture",
  "compact-rust-widening-arith-oracle-fixture",
@@ -3658,6 +3659,14 @@ dependencies = [
  "midnight-storage",
  "midnight-transient-crypto",
  "rand 0.8.6",
+ "serde_json",
+]
+
+[[package]]
+name = "compact-rust-unit-mutation-initializers-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
  "serde_json",
 ]
 

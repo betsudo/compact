@@ -61,18 +61,21 @@ or verification verdict substitutes for a run.
 
 ## Current qualification status
 
-The accepted baseline is canonical `acf529eff` from PR #692, which passed full
-compiler/native/proof/package/wallet/E2E CI and exact-head Claude review.
-Clean original compiler0.31.138 and fresh DID API/proof gates pass at signed
-reviewed implementation `bf221d060`: complete generation, five Rust methods, ten invalid
-inputs across four routes, three compile-fail controls, immutable proof
-verification and funded default-strict application/replay. The first failed
-Clippy/header attempts and earlier development epochs remain retained.
+PR [#693](https://github.com/betsudo/compact/pull/693) is integrated at signed
+canonical `373fe452c`. All required Linux and Apple Silicon checks passed,
+including native, selected proof, package, archive, wallet and E2E gates.
+Exact-head Claude CLI review of `18d79363d` found no merge-blocking code defect.
+
+The original 0.31.138 compiler was built at clean `3ac403d8a`; unchanged declared
+compiler inputs selected that same immutable package at `bf221d060`, where the
+proof runner was rebuilt and the fresh DID API/proof gates rerun. These are
+separate literal source epochs. The actual CI checkout `0c14bca3a` has the same
+complete tree as reviewed `18d79363d` and the canonical merge. Its retained
+runtime archive digest and source/receipt identities were independently checked.
 
 See the [qualification table](../plans/did-functional-lifecycle-current-profile.md#clean-local-qualification--compiler-031138)
-for exact source, counts and limits. Independent review and the complete required
-integration CI for this new slice remain open. One selected call is proved;
-constructor execution and all twelve exports are not proved. Forge is deferred.
+for exact source, counts and limits. One selected call is proved; constructor
+execution and all twelve exports are not proved. Forge is deferred.
 
 ## Review follow-up and retained artifact scope
 

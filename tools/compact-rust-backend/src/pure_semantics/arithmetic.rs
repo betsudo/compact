@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Complete arithmetic-family semantics over independently visited children.
 //! Both operands are visited before any operand-type, maximum or trait checks.
@@ -59,8 +70,17 @@ impl<'a> ArithmeticSource<'a> {
 pub(crate) enum ArithmeticFacts {
     Field(ArithmeticKind),
     Unsigned(UnsignedArithmeticStrategy),
-    Equality { negated: bool },
+    Equality {
+        negated: bool,
+        unit_result: Option<bool>,
+    },
     Ordered(ComparisonOperator),
+}
+
+// Unit has exactly one semantic value. This fact does not skip visiting or
+// checking either source operand; callers obtain it only after signature checks.
+pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
+    matches!(ty, Type::Unit).then_some(!negated)
 }
 
 pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
@@ -130,7 +150,13 @@ pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
                 },
                 &left.ty,
             )?;
-            (ArithmeticFacts::Equality { negated }, Type::Boolean)
+            (
+                ArithmeticFacts::Equality {
+                    negated,
+                    unit_result: unit_equality_result(&left.ty, negated),
+                },
+                Type::Boolean,
+            )
         }
         ArithmeticSource::Ordered { operator, .. } => {
             for actual in [left.ty, right.ty] {

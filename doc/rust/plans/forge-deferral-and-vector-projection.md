@@ -275,3 +275,46 @@ required before merge. Then requalify the actual DID and pure passport sources
 on the current profile to select the next concrete adoption gap. Do not reopen
 accepted architecture work or start another CI optimization project. Forge
 remains deliberately deferred and preserved; the broad Rust AST goal is open.
+
+
+## Independent Unit initializer follow-up — 2026-10-27
+
+Typed pair wrappers (#692) are now verified merged at canonical `acf529eff`.
+Original DID functional lifecycle (#693, exact `18d79363`) has independent
+Claude review acceptance; its full required CI is still pending at this local
+checkpoint. Its clean compiler 0.31.138 and finite API/proof receipts retain their
+own source epoch. Neither acceptance completes the broad backend goal.
+
+The next independently based local slice is
+[ordered Unit mutation initializers](516-unit-mutation-initializers.md), with
+[the user-facing API/evaluation guide](../guides/unit-initializers.md). A genuine
+TypeScript-accepted initializer refused by baseline Rust establishes the gap;
+already accepted local-call/scalar/pair forms stay closed. The maintained local
+API gate passes 58 live TS cases, 196 Rust executions and 62 recording replays,
+including source/typed/oracle refusals and strict Clippy. Separate fresh selected
+k7/76-row proofs and independently proved default-strict funded transactions
+pass insertion/reinsertion, verifier negatives, exact state and unchanged replay
+refusal. Constructor/prestate setup and other exports are not proved.
+
+The full registered fixture comparison freshly checks 281 generated libraries
+with zero stale outputs or failures and no updates requested. Original 282
+registry rows, 418 additive declaration rows and historical ledger/retirement
+authorities remain unchanged; this independent branch adds one source and 17
+new declaration rows. These literal counts describe the pre-#693 local branch,
+not the later combined canonical census. Final canonical reconciliation,
+original compiler qualification, full required CI, exact-head Claude review and
+signed reviewed merge remain required. Keep two active engineering branches at
+most, preserve unique work before reconciliation and clean only unused own
+checkouts/targets after verified merge. Forge remains deliberately deferred.
+
+## DID integrated; Unit initializer reconciliation — 2026-10-28
+
+PR #693 is verified merged at signed canonical `373fe452c`, with full required
+Linux/Apple Silicon, native/proof/package/archive/wallet/E2E CI and exact-head
+Claude review accepted. The independent Unit initializer implementation d7 is
+preserved and merged with that actual canonical history at `e4d7f9be9`.
+Both fixtures and all existing gates are retained. The corrected combined census
+is 284 source registrations, 482 declarations and 196 flat libraries; historical
+authority rows are unchanged. Compiler 0.31.139, fresh affected qualification,
+its own PR, review and complete CI remain required. Forge stays deferred and
+does not block this backend slice; the broad backend goal remains incomplete.

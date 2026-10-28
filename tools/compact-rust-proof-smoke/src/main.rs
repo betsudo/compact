@@ -102,6 +102,7 @@ mod owned_witness_inputs;
 mod public_products;
 mod tuple_return_wrappers;
 mod unit_composition;
+mod unit_mutation_initializers;
 mod unit_value_operations;
 mod wide_add;
 mod wide_casts;

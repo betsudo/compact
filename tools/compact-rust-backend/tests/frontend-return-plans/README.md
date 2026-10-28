@@ -29,19 +29,21 @@ The optional census reads `rows[].source`; it recompiles each source and never
 substitutes previously retained IR. Each baseline must succeed. Accepted native
 compilation and recorded/observed-call availability must not decrease.
 
-## Explicit remaining boundary
+## Accepted wrappers and the next lexical boundary
 
-Tracked in [#516](https://github.com/MediaNoxLabs/compact/issues/516) and CoPS-003
-in the midnight knowledge base.
+The scalar `cast_wrapped_mutation.compact` and tuple
+`tuple_cast_wrapped_mutation.compact` are maintained positive regressions since
+#691/#692. Their nonfailing result conversions preserve the selected storage
+actions and original result types. They are accepted work, not remaining gaps.
 
-`cast_wrapped_mutation.compact` is a retained **unsupported** source, outside the
-positive gate. Inferred integer branch results make the frontend place a
-`safe-cast Field Uint<1>` around the whole conditional; current terminal-return
-traversal does not cross that value wrapper. Explicit branch-local Field casts
-(as in `storage_mutations`) avoid it, but the inferred form needs a separate
-semantic normalization change. Do not count the annotated case as coverage of
-both forms.
+`unit_mutation_initializer.compact` covers the ordered Unit-valued Set insertion
+initializer admitted by the #516 follow-up. Its complete source cohort is
+`examples/rust_backend/unit_mutation_initializers.compact`. The maintained API
+and separate proof gates carry execution and selected-proof evidence; source
+generation alone makes neither claim.
 
-The existing Cell-specific `let-scope-needs-action?` and mutation-bearing let
-initializers are also outside this slice. This change removes ADT identity from
-the terminal storage-mutation classifier, not every frontend shape dependency.
+Unit initializers nested in statement-only blocks, Unit-returning circuits with
+a later conditional mutation, Cell-specific lexical redesign, non-Unit mutation
+initializers and arbitrary
+result conversions remain outside this bounded follow-up. Existing checked
+lowering, resource limits and capability refusals remain in force.

@@ -23,6 +23,7 @@ The previous milestone reports below retain their own revisions and evidence. Cu
 
 - [Start with a task: compile, implement witnesses, test and integrate](guides/index.md)
 - [ContractLab testkit](../../testkit-rs/README.md)
+- [Unit-valued mutation initializers and ordered comparisons](guides/unit-initializers.md)
 
 - [Compiler backend and generated crate guide](../../tools/compact-rust-backend/README.md)
 - [Runtime APIs, ledger ownership and ABI](../../runtime-rs/README.md)

@@ -134,6 +134,11 @@ def regression_errors(source, baseline, candidate):
             assertions = [n for n in nodes(selected) if n.get("kind") == "assert"]
             if explicit and (len(assertions) != 1 or assertions[0].get("message") != "explicit guard before mutation"):
                 errors.append(f"{name}: explicit user assertion lost or replaced")
+    if source.endswith("unit_mutation_initializer.compact"):
+        if len([node for node in nodes(circuits["insert"]) if node.get("kind") == "set_insert"]) != 1:
+            errors.append("Unit initializer storage action lost or duplicated")
+        if not signature(candidate).get("insert", {}).get("recorded"):
+            errors.append("Unit initializer lost checked recording")
     if source.endswith("effect_plan_counter_only.compact"):
         if len(candidate["ir"]["ledger_fields"]) != 2:
             errors.append("Counter-only source gained artificial ledger fields")
@@ -154,7 +159,7 @@ def main():
         setattr(args, name, getattr(args, name).resolve())
     args.output.mkdir(parents=True, exist_ok=True)
     regressions = [f"{FIXTURES}/{name}.compact" for name in
-                   ("storage_mutations", "value_effects", "checked_subtraction", "cast_wrapped_mutation", "tuple_cast_wrapped_mutation")]
+                   ("storage_mutations", "value_effects", "checked_subtraction", "cast_wrapped_mutation", "tuple_cast_wrapped_mutation", "unit_mutation_initializer")]
     regressions.append("examples/rust_backend/effect_plan_counter_only.compact")
     census = []
     if args.source_manifest:

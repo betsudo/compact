@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Same-type comparison preserves Rust representation and evaluation boundaries.
 use super::*;
 #[path = "inequality/source.rs"]
@@ -104,10 +116,18 @@ fn inequality_accepts_existing_same_type_wrappers_and_owned_products() {
         vector(Type::OpaqueString, 0),
         product(vector(Type::OpaqueBytes, 2)),
     ] {
+        let unit = ty == Type::Unit;
         let source = root(ty.clone(), ty);
         let plan = checked(&source);
         validate::check(plan.plan().clone(), authority(&source)).unwrap();
-        assert_eq!(syntax(&plan).matches("!=").count(), 1);
+        let rendered = syntax(&plan);
+        // The checked Unit signature is still admitted, with both operands
+        // retained, but its singleton domain makes inequality false. Emitting
+        // a Rust Unit comparison would fail strict generated-consumer Clippy.
+        assert_eq!(rendered.matches("!=").count(), usize::from(!unit));
+        if unit {
+            assert!(rendered.contains("false"));
+        }
     }
 }
 #[test]

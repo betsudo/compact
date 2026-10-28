@@ -3718,5 +3718,141 @@
     "name": "localRecoveryAuthorityPublicKey",
     "signature": "witness localRecoveryAuthorityPublicKey(): JubjubPoint",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "conditional",
+    "signature": "export circuit conditional(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "nested",
+    "signature": "export circuit nested(outer: Boolean, inner: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "observed",
+    "signature": "export circuit observed(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "requireLeft",
+    "signature": "pure circuit requireLeft(accepted: Boolean): []",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "requireRight",
+    "signature": "pure circuit requireRight(accepted: Boolean): []",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "sequential",
+    "signature": "export circuit sequential(first: Boolean, second: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "shadowed",
+    "signature": "export circuit shadowed(selected: Boolean, inner: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unitCondition",
+    "signature": "export pure circuit unitCondition(left: Boolean, right: Boolean): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unitEq",
+    "signature": "export pure circuit unitEq(left: Boolean, right: Boolean): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unitNe",
+    "signature": "export pure circuit unitNe(left: Boolean, right: Boolean): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unit_result",
+    "signature": "export circuit unit_result(selected: Boolean, value: Field): []",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unit_witness_comparison",
+    "signature": "export circuit unit_witness_comparison(left: Boolean, right: Boolean): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unit_witness_inequality",
+    "signature": "export circuit unit_witness_inequality(left: Boolean, right: Boolean): Boolean",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "unused",
+    "signature": "export circuit unused(selected: Boolean, value: Field): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "gate",
+    "signature": "witness gate(label: Field, accepted: Boolean): Boolean",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "point",
+    "signature": "witness point(label: Field, value: Field): Field",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/unit_mutation_initializers.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "unitGuard",
+    "signature": "witness unitGuard(label: Field, accepted: Boolean): []",
+    "visibility": "internal"
   }
 ]

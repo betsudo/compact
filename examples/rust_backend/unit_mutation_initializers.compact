@@ -1,0 +1,90 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+export ledger values: Set<Field>;
+witness point(label: Field, value: Field): Field;
+witness gate(label: Field, accepted: Boolean): Boolean;
+witness unitGuard(label: Field, accepted: Boolean): [];
+
+export circuit conditional(selected: Boolean, value: Field): Field {
+  const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  return inserted == [] ? 1 : 0;
+}
+
+export circuit observed(selected: Boolean, value: Field): Field {
+  const inserted = disclose(gate(1, selected)) ? values.insert(disclose(point(2, value))) : [];
+  return inserted == [] ? disclose(point(3, 11)) : 0;
+}
+
+export circuit sequential(first: Boolean, second: Boolean, value: Field): Field {
+  const inserted = disclose(gate(10, first)) ? values.insert(disclose(point(11, value))) : [];
+  const next = disclose(inserted == [] ? gate(12, second) : false)
+    ? values.insert(disclose(point(13, value + 1))) : [];
+  return inserted == next ? disclose(point(14, 2)) : 0;
+}
+
+export circuit nested(outer: Boolean, inner: Boolean, value: Field): Field {
+  if (disclose(outer)) {
+    const inserted = disclose(inner) ? values.insert(disclose(value)) : [];
+    return inserted == [] ? 1 : 0;
+  } else { return 2; }
+}
+
+export circuit unit_result(selected: Boolean, value: Field): [] {
+  const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  return inserted;
+}
+
+export circuit unused(selected: Boolean, value: Field): Field {
+  const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  return disclose(point(31, 4));
+}
+
+export circuit unit_witness_comparison(left: Boolean, right: Boolean): Boolean {
+  return unitGuard(21, left) == unitGuard(22, right);
+}
+
+export circuit unit_witness_inequality(left: Boolean, right: Boolean): Boolean {
+  return unitGuard(21, left) != unitGuard(22, right);
+}
+
+export circuit shadowed(selected: Boolean, inner: Boolean, value: Field): Field {
+  const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  if (disclose(inner)) {
+    const inserted = [];
+    return inserted == [] ? 2 : 0;
+  } else { return inserted == [] ? 3 : 0; }
+}
+
+pure circuit requireLeft(accepted: Boolean): [] {
+  assert(accepted, "left guard");
+  return [];
+}
+pure circuit requireRight(accepted: Boolean): [] {
+  assert(accepted, "right guard");
+  return [];
+}
+export pure circuit unitEq(left: Boolean, right: Boolean): Boolean {
+  return requireLeft(left) == requireRight(right);
+}
+export pure circuit unitNe(left: Boolean, right: Boolean): Boolean {
+  return requireLeft(left) != requireRight(right);
+}
+export pure circuit unitCondition(left: Boolean, right: Boolean): Field {
+  if (requireLeft(left) != requireRight(right)) { return 1; }
+  else { return 2; }
+}

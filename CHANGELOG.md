@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.139, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve source order, lexical scope and once-only effects in supported
+  Unit-valued Set mutation initializers. Checked Unit equality and inequality
+  evaluate both operands before producing their Boolean result, retaining
+  witness calls and first-error behavior through structured Rust AST emission.
+  Ordinary typed methods and consuming functional Programs need no helper
+  circuit; existing non-Unit initializer and resource boundaries remain explicit.
+
+### Added
+
+- Complete source-generated Unit initializer coverage against independent
+  expectations and live TypeScript across native, recorded and functional
+  routes, compile-fail/refusal controls and recording replay. Separate selected
+  insertion/reinsertion proofs verify with mutation controls; independently
+  proved funded transactions pass default-strict application and replay checks.
+  These selected calls do not prove constructors, seeded prestates or all exports.
+
 ## [Toolchain 0.31.138, language 0.23.105, runtime 0.16.102]
 
 ### Fixed
