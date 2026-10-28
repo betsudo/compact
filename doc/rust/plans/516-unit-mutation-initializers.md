@@ -165,3 +165,11 @@ accepted original DID fixture and its complete workflow gates.
 The earlier development attempts and their failed source/Clippy/oracle guards
 remain evidence. Final clean compiler, affected API/proof checks, exact-head
 Claude review and complete required CI remain required before integration.
+
+## Qualification reporting controls
+
+Both reusable Unit gates require a clean checkout before generation and after
+all source/tool guards. Exceptions retain `status: failed` and a nonzero exit;
+file presence or a partial receipt is not acceptance. Entry controls prove that
+dirty source refuses before generation. This tightens qualification reporting,
+without changing generated APIs, compiler lowering or proof semantics.

@@ -280,7 +280,7 @@ The next useful engineering work is **real-application functional qualification,
 
 Related audit record: [Keccak and the pinned Ledger8 proof profile](audit/2026-10-18-keccak-profile-boundary.md). Recorded implementation and qualification revisions remain authoritative.
 
-## Current original-DID functional application slice
+## Original-DID preparation history — before PR #693 integration
 
 The canonical backend is clean at verified signed merge `acf529eff` of PR #692.
 Its complete Linux/Darwin/compiler/native/proof/package/archive/wallet/E2E gates
@@ -298,7 +298,7 @@ and [developer guide](guides/did-functional-lifecycle.md) separate these receipt
 from final clean compiler138, full integration CI and review acceptance. The
 broader Rust AST goal remains incomplete; Forge remains deferred.
 
-### Current DID clean-source qualification
+### Retained DID clean-source qualification
 
 Original compiler 0.31.138 realizes at clean signed review correction `bf221d060`
 as the same immutable package built at `3ac403d8a` (compiler inputs unchanged).

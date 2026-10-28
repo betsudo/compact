@@ -63,6 +63,8 @@ expectations and live TypeScript with native, recorded and both functional
 routes, including full state, effects, private outputs, cost and recording
 replay. Pure comparisons use the existing pure API. Rust compile-fail,
 both-target source refusal and changed-oracle controls are separate checks.
+Both maintained gates require a clean checkout before and after execution,
+retain literal source/tool identities and write failed receipts on exceptions.
 
 The separate `check_unit_mutation_initializers_proof.py` gate qualifies only the
 selected `conditional` call for insertion and reinsertion. Standalone proofs and

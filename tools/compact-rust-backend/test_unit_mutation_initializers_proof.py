@@ -18,6 +18,11 @@
 import copy
 import re
 import unittest
+import json
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import check_unit_mutation_initializers_proof as gate
 
@@ -75,6 +80,33 @@ class ProofReceiptTests(unittest.TestCase):
         for data in cases:
             with self.subTest(data=data), self.assertRaises(gate.common.GateError):
                 gate.validate_proof_summary(data)
+
+    def test_dirty_gate_entries_fail_before_generation(self):
+        import check_unit_mutation_initializers as api
+        for name in ["api", "proof"]:
+            with self.subTest(gate=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                output = root / "output"
+                report = root / "receipt.json" if name == "api" else output / "receipt.json"
+                compiler = root / "compactc"
+                compiler.write_bytes(b"must not execute")
+                with patch.object(api.subprocess, "check_output",
+                                  side_effect=["head\n", " M runtime-rs/src/lib.rs\n"]), patch.object(
+                        api.subprocess, "run") as execute, patch.object(
+                        api, "scheme_compiler", return_value=compiler):
+                    with self.assertRaisesRegex(RuntimeError, "clean source checkout required"):
+                        if name == "api":
+                            with patch("sys.argv", ["gate", "--compiler", str(compiler),
+                                       "--output", str(output), "--report", str(report),
+                                       "--ts-runtime", str(root)]):
+                                api.main()
+                        else:
+                            gate.run(SimpleNamespace(output=output, target_dir=root))
+                    execute.assert_not_called()
+                receipt = json.loads(report.read_text())
+                self.assertEqual(receipt["status"], "failed")
+                self.assertTrue(receipt["source_dirty"])
+                self.assertEqual(receipt["error"], "clean source checkout required")
 
     def test_scope_claims_and_integer_types_are_exact(self):
         for field in ["constructor_execution_proved", "unselected_branch_proved", "prestate_setup_proved", "all_exports_proved"]:

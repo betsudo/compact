@@ -31,7 +31,7 @@ import tomllib
 
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
-from check_unit_mutation_initializers import SOURCE, digest
+from check_unit_mutation_initializers import SOURCE, digest, require_clean_source
 from check_functional_effects import generated_manifest_snapshot, scheme_compiler
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
@@ -74,6 +74,7 @@ def run(args):
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
+        require_clean_source(receipt)
         target = args.target_dir.absolute()
         env["CARGO_TARGET_DIR"] = str(target)
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "MIDNIGHT_PP required")
@@ -87,8 +88,6 @@ def run(args):
                           "tools/compact-rust-proof-smoke", "tests-rust-backend"]:
             paths += [p for p in (ROOT / directory).rglob("*") if p.suffix in {".rs", ".toml", ".json"}]
         paths += sorted((ROOT / "compiler").glob("*.ss"))
-        receipt["source_head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-        receipt["source_dirty"] = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True))
         receipt["source_hashes"] = hashes(paths)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
@@ -192,8 +191,10 @@ def run(args):
         unchanged(receipt["generated_hashes"])
         for component in components.values():
             unchanged({component["source"]: component["sha256"], component["snapshot"]: component["sha256"]})
+        require_clean_source(receipt)
         receipt["status"] = "passed"
     except Exception as error:
+        receipt["status"] = "failed"
         receipt["error"] = str(error)
         raise
     finally:

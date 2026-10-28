@@ -44,6 +44,19 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+
+def require_clean_source(receipt):
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    if receipt.get("source_head", head) != head:
+        raise RuntimeError("source HEAD changed during qualification")
+    receipt["source_head"] = head
+    receipt["source_dirty"] = bool(subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=ROOT, text=True))
+    if receipt["source_dirty"]:
+        raise RuntimeError("clean source checkout required")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
@@ -96,6 +109,7 @@ def main():
         return process
 
     try:
+        require_clean_source(report)
         generated = output / "generated"
         run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
                          "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
@@ -259,8 +273,10 @@ def main():
             for path, expected in {node["path"]: node["sha256"], **node["sharedLibraries"]}.items():
                 if digest(path) != expected:
                     raise ValueError(f"Node tool/library changed: {path}")
+        require_clean_source(report)
         report["status"] = "passed"
     except Exception as error:
+        report["status"] = "failed"
         report["error"] = str(error)
         raise
     finally:
