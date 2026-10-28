@@ -17,11 +17,27 @@ The selected insertion happens exactly once. The unselected arm performs no
 insertion. An unused binding still executes its initializer. A later witness
 reads the updated state, and a failing earlier witness prevents later callbacks.
 Bindings retain lexical scope and shadowing. Users need no helper circuit to
-express this supported source form. The initializer and its uses in this slice
-are in the circuit's return-producing lexical scope. Initializers nested inside
-a statement-only conditional block, or combined with a later conditional mutation
-in a Unit-returning circuit, remain explicit Rust source refusals. The maintained
-gate pins TypeScript admission and Rust refusal for both boundary cases.
+express this supported source form. Initializers also work in statement-only
+blocks and before later conditional or unconditional mutations in Unit-returning
+circuits. These scopes use the
+same ordered lexical binding owner as return-producing scopes. Source scopes
+still apply: a binding cannot refer to itself in its initializer.
+
+```compact
+export circuit statement_field(selected: Boolean, value: Field): Field {
+  if (disclose(selected)) {
+    const inserted = disclose(selected) ? values.insert(disclose(value)) : [];
+  }
+  return 1;
+}
+```
+
+The unused `inserted` still performs the selected insertion. Returning `1` does
+not erase the effect. The separate `statement_observed` example demonstrates
+that an unselected block does not execute its witnesses. It also places typed
+Field locals before and after Unit mutation bindings, with witness reads of
+the updated state. Unit shadowing resolution is pinned by exact checked IR;
+Unit runtime values alone cannot distinguish the inner binding from the outer.
 
 ## Ordinary typed APIs
 
@@ -62,7 +78,7 @@ unknown values.
 The complete source cohort is
 `examples/rust_backend/unit_mutation_initializers.compact`. The maintained
 `check_unit_mutation_initializers.py` gate generates unedited Rust/TS, original
-IR/origins/capabilities and all nine checked programs. It compares independent
+IR/origins/capabilities and all fifteen checked programs. It compares independent
 expectations and live TypeScript with native, recorded and both functional
 routes, including full state, effects, private outputs, cost and recording
 replay. Pure comparisons use the existing pure API. Rust compile-fail,
@@ -71,7 +87,8 @@ Both maintained gates require a clean checkout before and after execution,
 retain literal source/tool identities and write failed receipts on exceptions.
 
 The separate `check_unit_mutation_initializers_proof.py` gate qualifies only the
-selected `conditional` call for insertion and reinsertion. Standalone proofs and
+selected `conditional` and `statement_field` calls for insertion and
+reinsertion. Standalone proofs and
 independently proved funded transactions are distinct retained artifacts. The
 constructor, prestate setup, unselected branch and other exports are not proved
 by those selected calls. Unit-witness-only exports remain nonproof according to
@@ -81,5 +98,5 @@ the frontend; recordability is a separate dimension. See
 This bounded slice does not admit arbitrary non-Unit effectful initializers,
 general result casts, new runtime/IR types or a Cell lexical redesign. Existing
 resource limits and capability refusals remain in force. The
-[acceptance plan](../plans/516-unit-mutation-initializers.md) records development
+[statement-action plan](../plans/516-unit-action-bindings.md) records development
 results separately from final clean compiler, review and CI acceptance.

@@ -513,7 +513,7 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "tmp_13",
+                    "name": "tmp_30",
                     "ty": {
                       "kind": "field"
                     },
@@ -551,7 +551,7 @@
                   "index": 0,
                   "value": {
                     "kind": "parameter",
-                    "name": "tmp_13"
+                    "name": "tmp_30"
                   }
                 }
               },
@@ -701,7 +701,7 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "tmp_11",
+                    "name": "tmp_28",
                     "ty": {
                       "kind": "field"
                     },
@@ -739,7 +739,7 @@
                   "index": 0,
                   "value": {
                     "kind": "parameter",
-                    "name": "tmp_11"
+                    "name": "tmp_28"
                   }
                 }
               },
@@ -815,7 +815,7 @@
                     "kind": "let",
                     "bindings": [
                       {
-                        "name": "tmp_12",
+                        "name": "tmp_29",
                         "ty": {
                           "kind": "field"
                         },
@@ -860,7 +860,7 @@
                       "index": 0,
                       "value": {
                         "kind": "parameter",
-                        "name": "tmp_12"
+                        "name": "tmp_29"
                       }
                     }
                   },
@@ -1618,6 +1618,934 @@
       "source": {
         "file": "unit_mutation_initializers.compact",
         "line": 65,
+        "column": 1
+      }
+    },
+    {
+      "name": "statement_field",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "parameter",
+                      "name": "selected"
+                    },
+                    "then": {
+                      "kind": "set_insert",
+                      "field": "values",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "value"
+                      }
+                    },
+                    "otherwise": {
+                      "kind": "sequence",
+                      "actions": [
+                      ]
+                    }
+                  },
+                  {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "inserted",
+                        "ty": {
+                          "kind": "unit"
+                        },
+                        "value": {
+                          "kind": "unit"
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "sequence",
+                      "actions": [
+                      ]
+                    }
+                  }
+                ]
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "field_cast",
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "1"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 93,
+        "column": 1
+      }
+    },
+    {
+      "name": "statement_unit",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "sequence",
+                "actions": [
+                  {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "parameter",
+                      "name": "selected"
+                    },
+                    "then": {
+                      "kind": "set_insert",
+                      "field": "values",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "value"
+                      }
+                    },
+                    "otherwise": {
+                      "kind": "sequence",
+                      "actions": [
+                      ]
+                    }
+                  },
+                  {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "inserted",
+                        "ty": {
+                          "kind": "unit"
+                        },
+                        "value": {
+                          "kind": "unit"
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "sequence",
+                      "actions": [
+                      ]
+                    }
+                  }
+                ]
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "unit"
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 100,
+        "column": 1
+      }
+    },
+    {
+      "name": "trailing_conditional",
+      "parameters": [
+        {
+          "name": "first",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "second",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "sequence",
+              "actions": [
+                {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "parameter",
+                    "name": "first"
+                  },
+                  "then": {
+                    "kind": "set_insert",
+                    "field": "values",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "value"
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "sequence",
+                    "actions": [
+                    ]
+                  }
+                },
+                {
+                  "kind": "let",
+                  "bindings": [
+                    {
+                      "name": "inserted",
+                      "ty": {
+                        "kind": "unit"
+                      },
+                      "value": {
+                        "kind": "unit"
+                      }
+                    }
+                  ],
+                  "action": {
+                    "kind": "if",
+                    "condition": {
+                      "kind": "parameter",
+                      "name": "second"
+                    },
+                    "then": {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "tmp_27",
+                          "ty": {
+                            "kind": "field"
+                          },
+                          "value": {
+                            "kind": "add",
+                            "left": {
+                              "kind": "parameter",
+                              "name": "value"
+                            },
+                            "right": {
+                              "kind": "field_literal",
+                              "value": "1"
+                            }
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "set_insert",
+                        "field": "values",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "tmp_27"
+                        }
+                      }
+                    },
+                    "otherwise": {
+                      "kind": "sequence",
+                      "actions": [
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "unit"
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 106,
+        "column": 1
+      }
+    },
+    {
+      "name": "trailing_unconditional",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "sequence",
+              "actions": [
+                {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "parameter",
+                    "name": "selected"
+                  },
+                  "then": {
+                    "kind": "set_insert",
+                    "field": "values",
+                    "index": 0,
+                    "value": {
+                      "kind": "parameter",
+                      "name": "value"
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "sequence",
+                    "actions": [
+                    ]
+                  }
+                },
+                {
+                  "kind": "let",
+                  "bindings": [
+                    {
+                      "name": "inserted",
+                      "ty": {
+                        "kind": "unit"
+                      },
+                      "value": {
+                        "kind": "unit"
+                      }
+                    }
+                  ],
+                  "action": {
+                    "kind": "let",
+                    "bindings": [
+                      {
+                        "name": "tmp_26",
+                        "ty": {
+                          "kind": "field"
+                        },
+                        "value": {
+                          "kind": "add",
+                          "left": {
+                            "kind": "parameter",
+                            "name": "value"
+                          },
+                          "right": {
+                            "kind": "field_literal",
+                            "value": "1"
+                          }
+                        }
+                      }
+                    ],
+                    "action": {
+                      "kind": "set_insert",
+                      "field": "values",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "tmp_26"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "unit"
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 111,
+        "column": 1
+      }
+    },
+    {
+      "name": "statement_observed",
+      "parameters": [
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "witness_call",
+                "name": "gate",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "1"
+                    },
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "selected"
+                    },
+                    "ty": {
+                      "kind": "boolean"
+                    }
+                  }
+                ]
+              },
+              "then": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "witness_call",
+                      "name": "point",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "field_literal",
+                            "value": "2"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "value"
+                          },
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "if",
+                      "condition": {
+                        "kind": "parameter",
+                        "name": "selected"
+                      },
+                      "then": {
+                        "kind": "set_insert",
+                        "field": "values",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "first"
+                        }
+                      },
+                      "otherwise": {
+                        "kind": "sequence",
+                        "actions": [
+                        ]
+                      }
+                    },
+                    {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "inserted",
+                          "ty": {
+                            "kind": "unit"
+                          },
+                          "value": {
+                            "kind": "unit"
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "let",
+                        "bindings": [
+                          {
+                            "name": "following",
+                            "ty": {
+                              "kind": "field"
+                            },
+                            "value": {
+                              "kind": "witness_call",
+                              "name": "point",
+                              "arguments": [
+                                {
+                                  "kind": "coerce",
+                                  "value": {
+                                    "kind": "field_literal",
+                                    "value": "3"
+                                  },
+                                  "ty": {
+                                    "kind": "field"
+                                  }
+                                },
+                                {
+                                  "kind": "coerce",
+                                  "value": {
+                                    "kind": "add",
+                                    "left": {
+                                      "kind": "parameter",
+                                      "name": "value"
+                                    },
+                                    "right": {
+                                      "kind": "field_literal",
+                                      "value": "1"
+                                    }
+                                  },
+                                  "ty": {
+                                    "kind": "field"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "action": {
+                          "kind": "sequence",
+                          "actions": [
+                            {
+                              "kind": "if",
+                              "condition": {
+                                "kind": "equal",
+                                "left": {
+                                  "kind": "parameter",
+                                  "name": "inserted"
+                                },
+                                "right": {
+                                  "kind": "unit"
+                                }
+                              },
+                              "then": {
+                                "kind": "set_insert",
+                                "field": "values",
+                                "index": 0,
+                                "value": {
+                                  "kind": "parameter",
+                                  "name": "following"
+                                }
+                              },
+                              "otherwise": {
+                                "kind": "sequence",
+                                "actions": [
+                                ]
+                              }
+                            },
+                            {
+                              "kind": "let",
+                              "bindings": [
+                                {
+                                  "name": "next",
+                                  "ty": {
+                                    "kind": "unit"
+                                  },
+                                  "value": {
+                                    "kind": "unit"
+                                  }
+                                }
+                              ],
+                              "action": {
+                                "kind": "sequence",
+                                "actions": [
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "witness_call",
+              "name": "point",
+              "arguments": [
+                {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "10"
+                  },
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "4"
+                  },
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 116,
+        "column": 1
+      }
+    },
+    {
+      "name": "statement_shadowed",
+      "parameters": [
+        {
+          "name": "outer",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "inner",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "outer"
+              },
+              "then": {
+                "kind": "set_insert",
+                "field": "values",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "otherwise": {
+                "kind": "sequence",
+                "actions": [
+                ]
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "inserted",
+                "ty": {
+                  "kind": "unit"
+                },
+                "value": {
+                  "kind": "unit"
+                }
+              }
+            ],
+            "result": {
+              "kind": "sequence",
+              "actions": [
+                {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "parameter",
+                    "name": "inner"
+                  },
+                  "then": {
+                    "kind": "sequence",
+                    "actions": [
+                      {
+                        "kind": "if",
+                        "condition": {
+                          "kind": "parameter",
+                          "name": "inner"
+                        },
+                        "then": {
+                          "kind": "let",
+                          "bindings": [
+                            {
+                              "name": "tmp_24",
+                              "ty": {
+                                "kind": "field"
+                              },
+                              "value": {
+                                "kind": "add",
+                                "left": {
+                                  "kind": "parameter",
+                                  "name": "value"
+                                },
+                                "right": {
+                                  "kind": "field_literal",
+                                  "value": "1"
+                                }
+                              }
+                            }
+                          ],
+                          "action": {
+                            "kind": "set_insert",
+                            "field": "values",
+                            "index": 0,
+                            "value": {
+                              "kind": "parameter",
+                              "name": "tmp_24"
+                            }
+                          }
+                        },
+                        "otherwise": {
+                          "kind": "sequence",
+                          "actions": [
+                          ]
+                        }
+                      },
+                      {
+                        "kind": "let",
+                        "bindings": [
+                          {
+                            "name": "inserted_Compact1",
+                            "ty": {
+                              "kind": "unit"
+                            },
+                            "value": {
+                              "kind": "unit"
+                            }
+                          }
+                        ],
+                        "action": {
+                          "kind": "if",
+                          "condition": {
+                            "kind": "equal",
+                            "left": {
+                              "kind": "parameter",
+                              "name": "inserted_Compact1"
+                            },
+                            "right": {
+                              "kind": "unit"
+                            }
+                          },
+                          "then": {
+                            "kind": "let",
+                            "bindings": [
+                              {
+                                "name": "tmp_25",
+                                "ty": {
+                                  "kind": "field"
+                                },
+                                "value": {
+                                  "kind": "add",
+                                  "left": {
+                                    "kind": "parameter",
+                                    "name": "value"
+                                  },
+                                  "right": {
+                                    "kind": "field_literal",
+                                    "value": "2"
+                                  }
+                                }
+                              }
+                            ],
+                            "action": {
+                              "kind": "set_insert",
+                              "field": "values",
+                              "index": 0,
+                              "value": {
+                                "kind": "parameter",
+                                "name": "tmp_25"
+                              }
+                            }
+                          },
+                          "otherwise": {
+                            "kind": "sequence",
+                            "actions": [
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "otherwise": {
+                    "kind": "sequence",
+                    "actions": [
+                    ]
+                  }
+                }
+              ],
+              "result": {
+                "kind": "value",
+                "value": {
+                  "kind": "field_cast",
+                  "value": {
+                    "kind": "set_size",
+                    "field": "values",
+                    "index": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "unit_mutation_initializers.compact",
+        "line": 126,
         "column": 1
       }
     }
