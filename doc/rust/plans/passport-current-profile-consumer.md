@@ -1,11 +1,14 @@
 # Current-profile Passport standalone consumer
 
-Status: the maintained implementation passes locally at signed `b2ba8370f`
-with original compiler140: 202 live TS cases, 18 Rust test methods including the
+Status: fresh clean qualification passes locally at signed `7d4fb8bea`
+with original compiler142: 202 live TS cases, 18 Rust test methods including the
 documented two-test consumer, strict consumer/generated-source Clippy and two
 independent E0308 refusal controls. Six adversarial Python controls pass.
-Full CI, exact-head PR review and verified integration remain required. The
-results below retain their literal source/compiler epochs.
+The combined public Python suite passes376 methods with20 existing manual skips.
+This local stack includes reviewed PR #696 head `9667072e7`; its full consumer
+CI and actual accepted canonical merge are still required before publication.
+This slice then needs its own exact-head PR review, full CI and verified merge.
+Earlier compiler140 baseline and `b2ba8370f` receipts retain their literal epochs.
 
 ## Gap and accepted baseline
 
@@ -18,7 +21,9 @@ distribution qualification gap; it introduces no speculative language feature.
 
 The independent baseline is accepted canonical `709a86230` (PR #695), with
 original compiler 0.31.140 and Ledger8.1.3. Statement-action PR #696 has its own
-review and full CI; this pure-library work does not depend on its frontend fix.
+review and full CI; the pure-library behavior does not depend on its frontend
+fix. Local normal merge `91b412f2e` includes that exact reviewed source for
+sequential compiler142 preparation. It is not a new accepted canonical baseline.
 Keep at most two active engineering branches and retain normal canonical history.
 
 Focused fresh baseline checks pass on the clean accepted source:
