@@ -152,13 +152,23 @@ impl Renderer<'_> {
         let step = self.step(binding, execution)?;
         let continuation =
             self.sequence(remaining, result, syn::parse_quote!(__compact_execution))?;
+        // Keep the expanded step out of the next call's receiver. Besides
+        // making the sequence legible, this avoids repeated formatting of
+        // nested call/closure receivers. The local consumes the same Circuit
+        // once; all operand evaluation stays inside its success boundary.
         if binding.value.ty == Type::Unit {
-            Ok(syn::parse_quote!((#step).bind(|(), __compact_execution| #continuation)))
+            Ok(syn::parse_quote!({
+                let __compact_functional_step = #step;
+                __compact_functional_step.bind(|(), __compact_execution| #continuation)
+            }))
         } else {
             let output = name(&binding.value);
             let ty = rust_type(&binding.value.ty)
                 .map_err(|error| invalid(&binding.path, error.to_string()))?;
-            Ok(syn::parse_quote!((#step).bind(|#output: #ty, __compact_execution| #continuation)))
+            Ok(syn::parse_quote!({
+                let __compact_functional_step = #step;
+                __compact_functional_step.bind(|#output: #ty, __compact_execution| #continuation)
+            }))
         }
     }
 

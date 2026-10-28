@@ -558,6 +558,78 @@ fn missing_witness_source_and_target_capability_are_not_inferred_from_guard_or_t
 }
 
 #[test]
+fn rendered_sequence_avoids_nested_bind_receivers_for_values_units_and_branches() {
+    use syn::visit_mut::{self, VisitMut};
+
+    #[derive(Default)]
+    struct Binds(usize);
+    impl VisitMut for Binds {
+        fn visit_expr_method_call_mut(&mut self, call: &mut syn::ExprMethodCall) {
+            if call.method == "bind" {
+                self.0 += 1;
+            }
+            visit_mut::visit_expr_method_call_mut(self, call);
+        }
+    }
+
+    #[derive(Default)]
+    struct Receivers {
+        binds: usize,
+        nested_binds: usize,
+    }
+    impl VisitMut for Receivers {
+        fn visit_expr_method_call_mut(&mut self, call: &mut syn::ExprMethodCall) {
+            if call.method == "bind" {
+                self.binds += 1;
+                let mut receiver = Binds::default();
+                receiver.visit_expr_mut(&mut call.receiver);
+                if receiver.0 != 0 {
+                    self.nested_binds += 1;
+                }
+            }
+            visit_mut::visit_expr_method_call_mut(self, call);
+        }
+    }
+
+    // Wrapping an expanded step in a block, cast or parentheses must not hide
+    // it from the guard. These syntax-only counterexamples are never executed.
+    for mut expression in [
+        syn::parse_quote!((c.bind(f)).bind(g)),
+        syn::parse_quote!(({ c.bind(f) }).bind(g)),
+        syn::parse_quote!(
+            ({
+                let step = c.bind(f);
+                step
+            })
+            .bind(g)
+        ),
+        syn::parse_quote!(((c.bind(f)) as Carrier).bind(g)),
+    ] {
+        let mut receivers = Receivers::default();
+        receivers.visit_expr_mut(&mut expression);
+        assert_ne!(receivers.nested_binds, 0);
+    }
+
+    // The checked plan includes Field/Boolean results, Unit assertions/writes
+    // and both conditional arms. Traverse syntax rather than matching whitespace
+    // or a private local name: expanded bind receivers trigger formatter work.
+    let checked = checked(None);
+    let authority = AuthorityDouble::node_spans();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let mut rendered = super::super::functional_render::render(&program).unwrap();
+    let mut receivers = Receivers::default();
+    receivers.visit_expr_mut(&mut rendered.body);
+    assert!(
+        receivers.binds >= 14,
+        "both branches and success boundaries remain"
+    );
+    assert_eq!(
+        receivers.nested_binds, 0,
+        "do not chain expanded bind receivers"
+    );
+}
+
+#[test]
 fn witness_rendering_selects_exact_mode_for_nested_opaque_results_only() {
     use quote::ToTokens;
     for (result, exact) in [
