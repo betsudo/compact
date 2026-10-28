@@ -132,8 +132,9 @@ The maintained gate passes clean local qualification on original compiler
 0.31.143 at source `16c90293944b22a461faab0e681ecf286fd0bb9b`, including fresh
 proof execution and strict application. The combined branch also passes the
 Passport gate and 399 public Python methods. Earlier compiler141 receipts retain
-their own source identity. These are finite selected results; accepted-canonical
-reconciliation, published PR review and complete Linux CI remain open in the
+their own source identity. These are finite selected results. The accepted Passport parent has been
+reconciled with the SDK tree unchanged; this SDK slice still requires published
+PR review and complete Linux CI as recorded in the
 [slice plan](../../../plans/functional-isolated-source-sdk-consumer.md).
 No all-export, network, hostile-host or whole-language coverage is claimed.
 Existing complete CI/proof gates remain mandatory before integration.

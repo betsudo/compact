@@ -1,10 +1,16 @@
 # Isolated functional source SDK: witnessed Cell consumer
 
-Status: bounded baseline and delivery plan, not an accepted new capability.
-Start from clean accepted canonical `f0e4ba788` (verified PR #696), original
-compiler 0.31.141 and Ledger8.1.3. Passport PR #697 is independently reviewed
-and awaiting its own complete CI; do not substitute its results for this slice.
-Keep at most these two engineering branches active.
+Status: clean local qualification complete; this SDK slice still requires its
+published PR review, complete CI and verified merge. Passport PR #697 passed
+all eleven required checks and exact artifact review, and is accepted at
+canonical `8d9798d609e0090978083ddaa05691fdcdad35bf`. Its completed worktree is
+recoverably archived after preserving ignored review evidence. This SDK branch
+has reconciled that actual accepted parent with its qualified tree unchanged.
+
+The initial baseline below is retained as history: canonical `f0e4ba788`
+(verified PR #696), original compiler 0.31.141 and Ledger8.1.3. Final local
+qualification uses original compiler 0.31.143. Parent results do not substitute
+for this slice's own proof execution, PR review or required CI.
 
 ## Gap and accepted work
 
@@ -185,7 +191,7 @@ Evidence: `clean-source-sdk141-v4/receipt.json`,
 Final accepted-canonical reconciliation, compiler/source qualification, actual
 published-head PR review, full Linux CI and normal verified merge remain open.
 
-## Provisional local parent reconciliation
+## Provisional local parent reconciliation (historical preparation)
 
 Normal signed local merge `c4746b6b6` combines this slice with reviewed Passport
 head `c3bb0b37e` while its full CI is still running. This is preparation, not an
@@ -234,3 +240,21 @@ Linux pipeline runs. No accepted-canonical, published PR review, Linux CI or
 merge verdict is inferred. Record the exact source/input bridge after the final
 normal reconciliation; requalify any changed executable premise. This bounded
 consumer qualification does not complete the broader Rust AST goal.
+
+
+## Accepted canonical reconciliation
+
+Passport #697 is verified merged at `8d9798d609e0090978083ddaa05691fdcdad35bf`:
+all eleven checks passed, including full Linux native/proof/package/archive/E2E
+and Apple Silicon. The authenticated retained CI archive reports actual checkout
+`6bb7750793306637fb0283f8192fba7b45f82149` with the exact reviewed tree. A normal
+GPG/DCO/Assisted-by merge and GitHub readback establish canonical acceptance.
+
+This SDK branch normally merged that actual canonical parent as
+`0c3b8afb22840d64bd69507d9352ff04cca15229`; its whole tree is identical to the
+prior documentation successor `b43bca649`. No source or executable premise
+changed in reconciliation. The original143 qualification remains a literal run
+at `16c902939`, with the separately recorded descriptive Markdown bridge; it is
+not relabelled as a fresh run at a later commit. These final status edits touch
+Markdown only. Published-head Claude review and the SDK PR's complete Linux CI
+remain required before its own integration. The broad goal remains incomplete.
