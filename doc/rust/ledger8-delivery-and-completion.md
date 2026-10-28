@@ -238,21 +238,19 @@ tutorial receipts retain their own profiles and scope.
 **Digital passport:** retain the `midnight-vc-passport` integration baseline and
 its referenced credential source closure: **75 public pure exports and zero
 proof-applicable exports**. The [current-profile standalone consumer](plans/passport-current-profile-consumer.md)
-is freshly qualified locally at clean signed `2bbf4daaf`, original compiler
-0.31.142/Ledger8.1.3: 202 sampled live TS cases plus codec vectors, 18 Rust methods
-including the guide test source in a gate-written crate, direct SDK/consumer strict Clippy,
-and two independent type refusals. The v2 gate tests untouched raw SDK bytes,
-formats a separate copy, isolates Cargo targets and retains failure diagnostics.
-A real changed-expectation assertion fails and passes after restoration. The
-review successor now adds the actual documented manifest/source, owned POSIX
-process-group timeouts and intended-locus refusal twins; fresh qualification is
-pending. Its failure uploads cover step failure while job/runner remain alive. All
-384 public Python methods pass with 20 existing manual-only skip events.
-Earlier `834a41025` executed formatted SDK bytes; preserve that narrower epoch.
-Original source/oracle authorities remain unchanged. The maintained gate runs in
-the existing required compiler workflow. Actual canonical reconciliation is
-complete at `342b9fc46`; repeat own review, complete current-head CI and verified
-merge remain required. Recording/proof/application are not applicable to this
+is freshly qualified at clean signed `7b55379b8`, original compiler
+0.31.142/Ledger8.1.3: 202 sampled live TS cases plus codec vectors, 16 adoption
+Rust methods and the actual unchanged two-test guide manifest/source. The guide
+uses the documented current source-lock recipe; its original historical lock is
+retained separately. Raw SDK, guide and adoption consumer pass strict Clippy.
+Correct-type twins compile and two independent intended-locus E0308 refusals
+pass; changed-expectation failure/restoration controls pass. All 386 public
+Python methods pass with 20 existing manual-only skip events, and all 27 focused
+controls pass. Owned POSIX process-group timeouts and attempt-specific step-failure
+uploads retain explicit hard-cancellation/runtime-transitive limits. Earlier
+`834a41025` formatted-SDK and `2bbf4daaf` guide-source-only epochs remain distinct.
+Original source/oracle authorities are unchanged. Own repeat review, complete
+current-head CI and verified merge remain required. Recording/proof/application are not applicable to this
 original pure library; do not invent stateful exports.
 
 **Finish when:** both intact pinned source closures build and their applicable tests pass on the selected profile. Each refusal becomes a minimal regression and an issue; fix its actual cause before accepting the dependent application. Do not remove exports to make an oversized/unsupported contract appear supported. “Latest” upstream after these pins is a new adoption decision.

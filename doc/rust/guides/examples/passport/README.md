@@ -7,11 +7,11 @@ Run generation from this directory, using the matching compiler/runtime distribu
 The archived two-test result belongs to its original compiler, source, lock and host. Relocation preserves the handwritten bytes and paths, but no test was rerun during ADR0350 staging. Before treating a new generation as accepted, qualify its compiler/runtime/output and dependency identities against that receipt. The newer lock-seeding recipe is guidance, not a claim that it was executed in P1.
 
 The separate [current-profile gate](../../../plans/passport-current-profile-consumer.md)
-executes the unchanged Rust test source through a gate-written manifest against
-a freshly generated SDK with its matching bundled runtime. The review successor
-adds the actual documented manifest/source with the current source-lock recipe;
-its fresh qualification is pending. The archived P1 lock is retained separately. Clean signed `2bbf4daaf` passes against
-untouched raw compiler output, with formatting confined to a separate copy.
-The earlier `834a41025` result qualified formatted bytes and retains that scope.
+passes at clean signed `7b55379b8`: it builds this unchanged manifest and Rust
+source as an actual two-test crate against the untouched raw generated SDK and
+matching bundled runtime. It applies the current qualified source-lock seeding
+recipe and retains the original historical P1 lock separately. Earlier `2bbf4daaf`
+ran only the unchanged Rust test source in a gate-written manifest; `834a41025`
+qualified formatted SDK bytes. Those epochs retain their narrower scopes.
 Repeat review and complete current-head CI/merge remain required. This does not
 rename or renew historical P1.

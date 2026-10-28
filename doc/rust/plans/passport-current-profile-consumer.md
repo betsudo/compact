@@ -1,39 +1,43 @@
 # Current-profile Passport standalone consumer
 
-Status: additional review fixes require fresh qualification and repeat review.
-The prior raw-SDK qualification passed at signed `2bbf4daaf`,
-original compiler 0.31.142/Ledger8.1.3. All 202 live TS cases and codec vectors,
-18 Rust methods (including the unchanged guide test source in a gate-written crate), direct SDK
-and consumer strict Clippy, and two independent E0308 controls pass. The actual
-changed-expectation Rust test fails as intended and passes after exact restoration;
-those are reruns of one existing method, not additional unique test methods.
-All 384 public Python methods pass with zero failures/errors and 20 existing
-manual-only skip events. The earlier 25 focused Passport/workflow controls passed.
+Status: fresh clean v3 qualification passed at signed `7b55379b8`, original
+compiler 0.31.142/Ledger8.1.3. The untouched raw SDK passes 202 live TS cases and
+codec vectors, 16 adoption Rust methods, and the actual unchanged two-test guide
+crate (both manifest and source). SDK, adoption consumer and guide crate each
+pass direct strict Clippy. The guide uses the documented qualified source-lock
+seeding recipe; its original historical P1 lock is separately retained unchanged.
 
-The v2 gate snapshots and executes the untouched raw SDK; rustfmt touches only
-a retained copy. With ambient `CARGO_TARGET_DIR` unset, the cold qualification
-uses its own external target directory. Original Scheme and selected Rust tools,
-179 gate inputs, 117 SDK files including the explicitly qualified Cargo.lock,
-and original 39-oracle/two-codec provenance are bound and checked. Commands are
-bounded and retain partial timeout diagnostics. The required workflow separately
-uploads Passport failure diagnostics; that upload has local structural controls,
-not a deliberately failed hosted trial.
+Correct-type twins of both misuse binaries compile; their restored negative
+sources each fail with exactly one E0308 at the intended primary source location.
+A changed owned oracle triggers a real assertion failure and exact restoration
+passes. These controls rerun existing methods, not additional unique methods.
+All 386 public Python methods pass with zero failures/errors and 20 existing
+manual-only skip events. All 27 focused Passport/workflow controls pass, including
+a real descendant-process timeout control.
 
-Actual Claude CLI review of published `271cf870d` found no merge blocker and
-identified these qualification gaps. Its earlier `834a41025` receipt tested a
-**formatted** SDK; it retains that narrower scope. The new raw SDK hash differs
-from the retained formatted copy. The next successor executes the actual unchanged guide manifest and source as a
-separate crate using the documented current source-lock recipe. Its historical
-P1 lock stays archived separately. It also stops owned POSIX compiler process
-groups on command timeout, binds each refusal to its intended source location
-and a correct-type twin, prevents Cargo targets from polluting receipt/source
-directories, and names failure uploads by run attempt. All 27 focused controls
-pass, including a real compiler-descendant timeout control. Fresh full gate,
-repeat exact-head review and current-head CI are still required before integration.
-Failure uploads cover a failed Passport step while the job/runner remains alive;
-hard job cancellation, timeout or runner loss can prevent final uploads. Runtime
-package/dist bytes are pinned, but transitive TS/WASM bytes are not independently
+The v3 gate pins 181 source inputs and 117 generated SDK files (including the
+explicitly qualified SDK lock). Formatting touches a separate retained copy;
+SDK bytes remain raw. It preserves shared Cargo reuse outside the qualification
+output and rejects targets in receipt/source directories. Earlier `2bbf4daaf`
+passed the ambient-unset cold-target case; the new v3 run reused that Cargo target
+after an independently retained disk-full dependency-build failure. Every test
+and compiler command executed afresh; no verdict or proof was cached. Only
+obsolete build-script binaries/static archives from verified merged #676 were
+reclaimed after process/open-file/source guards; all failed output and evidence
+remain preserved.
+
+Owned POSIX command process groups are stopped and reaped on timeout with partial
+diagnostics. Failure uploads have distinct run-attempt names and cover a failed
+Passport step while the job/runner remains alive. Hard job timeout/cancellation
+or runner loss can prevent final uploads. Selected executable and compact-runtime
+package/dist identities are checked; transitive TS/WASM bytes are not independently
 content-hashed by this gate.
+
+Actual Claude review of published `2a37b4bf0` found no code blockers and identified
+these successor gaps. Earlier `834a41025` tested formatted SDK bytes; `2bbf4daaf`
+executed the guide test source through a gate-written manifest. Those receipts
+retain their literal narrower scopes. Repeat exact-head PR review and complete
+current-head CI remain required before integration.
 
 PR #696 is verified merged at signed canonical `f0e4ba788`; normal reconciliation
 `342b9fc46` preserves that accepted history. Passport remains its separate logical
