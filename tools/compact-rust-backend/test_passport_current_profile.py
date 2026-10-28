@@ -18,6 +18,7 @@
 import copy
 import json
 from pathlib import Path
+import re
 import shutil
 import tempfile
 from types import SimpleNamespace
@@ -109,6 +110,27 @@ class PassportControlTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "destination must be absent"):
                 gate.main(["--compiler", "missing", "--ts-runtime", "missing", "--output", str(root)])
             self.assertEqual(sentinel.read_text(), "preserve this evidence")
+
+    def test_compiler_version_prefix_or_prose_is_not_selected_identity(self):
+        version = re.search(r"make-version 'compiler (\d+) (\d+) (\d+)",
+                            (gate.ROOT / "compiler/compiler-version.ss").read_text())
+        selected = ".".join(version.groups())
+        for reported in [selected + "0\n", "unselected " + selected + "\n"]:
+            with self.subTest(reported=reported), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                compiler = root / "compiler"
+                compiler.write_bytes(b"must not execute")
+                (root / "package.json").write_bytes((gate.ROOT / "runtime/package.json").read_bytes())
+                output = root / "result"
+                process = SimpleNamespace(returncode=0, stdout=reported, stderr="")
+                with patch.object(gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                        gate.subprocess, "run", return_value=process) as execute, patch.object(
+                        gate.shutil, "which", return_value=str(compiler)):
+                    with self.assertRaisesRegex(ValueError, "compiler version differs"):
+                        gate.main(["--compiler", str(compiler), "--ts-runtime", str(root), "--output", str(output)])
+                    execute.assert_called_once()
+                    self.assertEqual(execute.call_args.args[0], [str(compiler.resolve()), "--version"])
+                self.assertEqual(json.loads((output / "receipt.json").read_text())["status"], "failed")
 
 
 if __name__ == "__main__":

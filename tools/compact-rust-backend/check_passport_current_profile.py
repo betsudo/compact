@@ -149,7 +149,7 @@ def main(argv=None):
         if version is None:
             raise ValueError("selected source compiler version is unavailable")
         selected_version = ".".join(version.groups())
-        if selected_version not in run("compiler-version", [compiler, "--version"]).stdout:
+        if run("compiler-version", [compiler, "--version"]).stdout.strip() != selected_version:
             raise ValueError("Passport compiler version differs from selected source")
         manifest = SOURCE / "source-manifest.json"
         pins = original_source_files()
