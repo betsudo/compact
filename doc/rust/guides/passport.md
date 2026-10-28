@@ -2,7 +2,7 @@
 
 Current guide for 0.3.0 closeout. **Historical executed example:** verified locally at1705fc1a with Rust1.99 on macOSarm64, using a fresh standalone consumer and bundled runtime sources. Keep the matching compiler/runtime bundle together; see [Version and runtime selection](version-selection.md).
 
-**Current-profile successor under review:** the maintained gate in PR #697
+**Accepted current-profile successor:** the maintained gate in merged [PR #697](https://github.com/betsudo/compact/pull/697)
 passed on clean signed `f0c09ff56`, original compiler 0.31.142/Ledger8.1.3.
 It builds this unchanged manifest and Rust source as a separate two-test crate,
 using the current source-lock recipe below. Sixteen adoption Rust methods, 202
@@ -13,10 +13,13 @@ formatting uses a separate copy.
 
 Original P1 retains its historical lock and execution identity. Earlier
 `2bbf4daaf` ran only the unchanged guide test source through a gate-written
-manifest; `834a41025` used formatted SDK bytes. The current v3 run preserves
+manifest; `834a41025` used formatted SDK bytes. The current v4 run preserves
 those distinctions and original source/oracle pins. All 389 public Python
-methods pass (20 existing manual-only skip events). Repeat review and full
-current-head CI remain required; see the [plan and limits](../plans/passport-current-profile-consumer.md).
+methods pass (20 existing manual-only skip events). Actual Claude PR review and
+all eleven required checks, including full Linux native/proof/package/archive/E2E
+and Apple Silicon, passed before canonical merge `8d9798d609e0090978083ddaa05691fdcdad35bf`.
+Future compiler/toolchain changes still require their own qualification; see the
+[plan and limits](../plans/passport-current-profile-consumer.md).
 
 ## What this contract provides
 

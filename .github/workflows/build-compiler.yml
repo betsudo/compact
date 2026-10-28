@@ -523,8 +523,23 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
+
+      - name: Qualify isolated witnessed functional SDK
+        id: functional_sdk
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_source_sdk.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --material-runner "$CARGO_TARGET_DIR/proof-checks/compact-rust-proof-smoke" --output "$RUNNER_TEMP/compact-functional-source-sdk"
+
+      - name: Retain failed isolated SDK qualification diagnostics
+        if: failure() && steps.functional_sdk.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: functional-source-sdk-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-functional-source-sdk/
+            !${{ runner.temp }}/compact-functional-source-sdk/cargo-target/**
+          if-no-files-found: ignore
 
       - name: Check and test native Rust backend
         run: bash tools/compact-rust-backend/check_native_ci.sh
@@ -576,6 +591,8 @@ jobs:
             target/rust-runtime-release.json
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
+            ${{ runner.temp }}/compact-functional-source-sdk/
+            !${{ runner.temp }}/compact-functional-source-sdk/cargo-target/**
             ${{ runner.temp }}/compact-functional-consumer.json
             ${{ runner.temp }}/compact-did-functional/receipt.json
             ${{ runner.temp }}/compact-did-functional/generated/

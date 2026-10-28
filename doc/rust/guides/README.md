@@ -46,3 +46,10 @@ historical baseline and explicitly selected manual graph controls.
   generated API, genuine witnesses, four-route failure controls and separate
   selected proof/default-strict application gates on Ledger8.1.3. Development
   receipts and final integration acceptance retain separate source epochs.
+
+- [Isolated witnessed functional SDK](examples/functional-witness/README.md):
+  complete source, default bundled runtime and explicit copied-testkit recipe.
+  Three ContractLab tests, independent compile-fail controls and actual ProofLab
+  proof/default-strict funded application pass clean local qualification. Linux
+  CI and PR integration retain their separate acceptance gates; constructor/
+  deployment and wallet lifecycles are outside this selected test.

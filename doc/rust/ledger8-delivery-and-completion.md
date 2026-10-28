@@ -277,6 +277,12 @@ Also retain the existing type/conversion/resource refusals. Counting a top-level
 
 A successful `cargo package --list` or a manifest that names an unpublished registry version is insufficient. Decide whether release distribution is a paired source SDK or published packages. Keep deployment identity, wallet/network clients and provider adapters separate from generated contract semantics.
 
+The bounded [isolated witnessed SDK slice](plans/functional-isolated-source-sdk-consumer.md)
+now has a concrete paired source-testkit recipe and actual executable ContractLab/
+ProofLab example. Clean local proof/strict-application qualification passes for
+one complete witnessed Cell source. Published-head review and full Linux CI
+are still required; this does not complete the distribution or handoff criterion.
+
 ### 5. Freeze a finite capability contract and finish the handoff
 
 **Finish when:** one selected revision/profile has a readable capability/exception book, per-stage evidence, examples, migration notes and independent review. Include actual application outcomes, supported hosts, residual source gaps and relevant decoder limits. Reconcile the existing conformance register rather than inventing a new percentage from fixture counts.
