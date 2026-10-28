@@ -106,6 +106,8 @@ class ProofReceiptTests(unittest.TestCase):
                             gate.run(SimpleNamespace(output=output, target_dir=root))
                     execute.assert_not_called()
                 receipt = json.loads(report.read_text())
+                if name == "proof":
+                    self.assertEqual(receipt["format"], "compact-unit-mutation-initializers-proof-gate/v2")
                 self.assertEqual(receipt["status"], "failed")
                 self.assertTrue(receipt["source_dirty"])
                 self.assertEqual(receipt["error"], "clean source checkout required")

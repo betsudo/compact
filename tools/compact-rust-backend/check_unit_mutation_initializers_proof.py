@@ -38,6 +38,7 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/unit-mutation-initializers-source"
 PROOF_RESULT_FORMAT = "compact-unit-mutation-initializers-proof/v2"
+PROOF_GATE_FORMAT = "compact-unit-mutation-initializers-proof-gate/v2"
 
 
 def require(value, message):
@@ -71,7 +72,7 @@ def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-unit-mutation-initializers-proof-gate/v1", "status": "incomplete", "commands": [],
+    receipt = {"format": PROOF_GATE_FORMAT, "status": "incomplete", "commands": [],
                "scope": "four source-bound return/statement call proofs and independently proved default-strict funded local transactions",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")

@@ -5,8 +5,8 @@ PR #695 is verified merged at signed canonical `709a86230` after exact-head
 Claude review, all eleven CI checks and retained artifact/source verification.
 Normal merge `2da45e015` reconciles that accepted canonical history into
 `codex/rust-ast-unit-action-bindings`; its complete tracked tree is unchanged
-from documentation successor `1a3ace5fa`. This slice still needs its own PR,
-exact-head review and complete CI. Earlier qualification receipts retain their
+from documentation successor `1a3ace5fa`. This slice is published as draft PR
+#696; final exact-head review and complete CI remain required. Earlier receipts retain their
 literal source and compiler epochs.
 
 PR #694 is verified merged at canonical `1d0288846`. The valid mixed
@@ -75,6 +75,12 @@ aggregate conversion, Cell lexical redesign, general effect frameworks, target
 expansion, CI optimization and Forge. Proofs remain selected call coverage;
 constructors and prestate setup are not proved by those calls.
 
+The qualified mutation cohort uses `Set.insert`. The shared walk delegates to
+existing checked storage-action owners; it adds no source-family allowlist, but
+does not establish new Map/Counter/Cell/Merkle parity claims. Existing lexical
+nesting and resource limits are retained. No universal depth/compile-time bound
+or acceptance of every equivalent flat source form is claimed.
+
 ## Acceptance
 
 1. Preserve the reviewed/local-qualified parent and its original source refusal
@@ -108,7 +114,7 @@ constructors and prestate setup are not proved by those calls.
    and targets after verified merge, preserving unpublished/ignored artifacts.
 
 
-## Development results — 28 October 2026
+## Historical development results — 28 October 2026
 
 The shared frontend walk now admits the four source shapes refused by the
 original compiler 0.31.139. A separate prototype passes 80 Rust executions and
@@ -142,8 +148,9 @@ The proof gate is being extended to retain the existing two return-form calls
 and add two statement-form calls, each with fresh keys, standalone verification,
 negative controls and independently proved default-strict transactions. Its first
 build caught the test resolver's required static circuit-name lifetime; that
-failed attempt is retained. No new proof success is claimed yet. Parent #694
-remains unchanged, with its full Linux gate still pending.
+failed attempt is retained. At this development checkpoint no new proof success
+was claimed, and parent #694's full Linux gate was still pending. Its later
+verified integration and the final local proof results are recorded separately.
 
 
 The separate development proof gate v2 now passes all terminal guards. It binds
@@ -169,7 +176,7 @@ are explicit, not fresh proof execution. The earlier 60 focused protocol,
 fixture and declaration controls also pass. Full required CI is retained.
 
 
-## Clean local qualification at signed d0c80c914
+## Historical clean local qualification at signed d0c80c914
 
 The original compiler builds from the clean signed implementation at its literal
 inherited 0.31.139 version, with no Scheme override. Fresh maintained API and
@@ -193,10 +200,11 @@ identity. This does not reclassify Keccak or broaden the current functional
 proving profile. The succeeding all-registration gate uses the correct existing
 flags and does not replace runtime/proof/CI requirements.
 
-Parent #694 is still frozen at c0 with its full Linux integration gate pending.
-Actual canonical reconciliation, final compiler version, child exact-head
-independent review and complete required CI remain required before integration.
-This bounded local acceptance does not complete the broader backend goal.
+At this historical epoch parent #694 remained frozen at c0 with its full Linux
+integration gate pending. Canonical reconciliation and final compiler versioning
+were later completed as recorded above. The child PR's own exact-head review
+and complete required CI remain mandatory. This bounded local acceptance does
+not complete the broader backend goal.
 
 
 ## Independent review controls and preserved mixed scope

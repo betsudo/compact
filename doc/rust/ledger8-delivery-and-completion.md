@@ -10,12 +10,11 @@ The latest delivery adds the missing witness, value, collection, Merkle and Ledg
 
 **The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #695 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
-The statement-action follow-up is being reconciled locally with reviewed PR
-#695 head `7134fb240` under a two-branch stack. PR #695's full integration CI
-remains pending; this is not a new canonical baseline. Clean original compiler141
-local qualification passes on the combined source, while publication and final
-reconciliation still require the actual accepted canonical merge. Stop dependent
-work if the prerequisite reports a real failure or its head changes.
+The statement-action follow-up is published as PR #696 after normal signed
+reconciliation with accepted canonical `709a86230` (PR #695). Clean original
+compiler141 local qualification passes; the follow-up retains its own exact-head
+review, complete CI and verified integration gates. Historical development
+checkpoints below retain the prerequisite's earlier pending status explicitly.
 
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.

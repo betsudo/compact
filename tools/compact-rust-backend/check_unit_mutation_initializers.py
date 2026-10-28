@@ -200,7 +200,7 @@ def main():
                     raise ValueError(f"source admission {name}/{target} omitted its generated entry point")
                 admitted[target] = {"entry": str(entry), "sha256": digest(entry), "bytes": entry.stat().st_size}
             report["statement_source_admissions"][name] = {
-                "scope": "TS and Rust source admission; execution is checked by the complete main source cohort",
+                "scope": "Exact boundary source admission only; the separate main cohort executes its own cases, not these boundary crates",
                 "generated_entries": admitted}
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
@@ -252,11 +252,13 @@ def main():
             pin = validate_consumer_lock(metadata, boundary_lock, allowed, locked)
             run(f"{name}-cargo-check", ["cargo", "check", "--locked", "--offline",
                                       "--manifest-path", boundary_manifest, "--all-targets"])
+            run(f"{name}-clippy", ["cargo", "clippy", "--locked", "--offline",
+                                  "--manifest-path", boundary_manifest, "--all-targets", "--", "-D", "warnings"])
             if digest(boundary_lock) != pin:
                 raise ValueError(f"source admission {name} lock changed after resolution")
             admission["rust_crate_compilation"] = {"manifest": str(boundary_manifest), "lock_sha256": pin,
-                                                    "status": "passed"}
-            admission["scope"] = "TS/Rust source admission and isolated Rust crate compilation; no exact boundary execution or proof claim"
+                                                    "status": "passed", "strict_clippy": "passed"}
+            admission["scope"] = "TS/Rust source admission and isolated Rust crate compilation/strict Clippy; no exact boundary execution or proof claim"
             for entry in admission["generated_entries"].values():
                 if digest(entry["entry"]) != entry["sha256"]:
                     raise ValueError(f"source admission {name} generated entry changed during compilation")

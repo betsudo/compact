@@ -154,6 +154,52 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(bindings, [('first', 'field'), ('inserted', 'unit'),
                                     ('following', 'field'), ('next', 'unit')])
 
+        def assert_scope(first):
+            def bound_action(node, name, kind):
+                self.assertEqual(node['kind'], 'let')
+                self.assertEqual([(b['name'], b['ty']['kind']) for b in node['bindings']], [(name, kind)])
+                if kind == 'unit':
+                    self.assertEqual(node['bindings'][0]['value'], {'kind': 'unit'})
+                return node['action']
+
+            def inserted_before_binding(sequence, value):
+                self.assertEqual(sequence['kind'], 'sequence')
+                self.assertEqual(len(sequence['actions']), 2)
+                write = sequence['actions'][0]
+                self.assertEqual(write['kind'], 'if')
+                self.assertEqual(write['then'], {'kind': 'set_insert', 'field': 'values', 'index': 0,
+                                                'value': {'kind': 'parameter', 'name': value}})
+                self.assertEqual(write['otherwise'], {'kind': 'sequence', 'actions': []})
+                return write, sequence['actions'][1]
+
+            sequence = bound_action(first, 'first', 'field')
+            write, inserted = inserted_before_binding(sequence, 'first')
+            self.assertEqual(write['condition'], {'kind': 'parameter', 'name': 'selected'})
+            following = bound_action(inserted, 'inserted', 'unit')
+            sequence = bound_action(following, 'following', 'field')
+            write, next_binding = inserted_before_binding(sequence, 'following')
+            self.assertEqual(write['condition'], {'kind': 'equal',
+                                                'left': {'kind': 'parameter', 'name': 'inserted'},
+                                                'right': {'kind': 'unit'}})
+            self.assertEqual(bound_action(next_binding, 'next', 'unit'), {'kind': 'sequence', 'actions': []})
+
+        first = circuit['return_value']['body']['actions'][0]['then']
+        assert_scope(first)
+        # Each counterexample retains the former flat binding list. The scoped
+        # control must reject the actual order/ownership defect independently.
+        flattened = copy.deepcopy(first)
+        inserted = flattened['action']['actions'].pop()
+        flattened = {'kind': 'sequence', 'actions': [flattened, inserted]}
+        late_first_write = copy.deepcopy(first)
+        late_first_write['action']['actions'].reverse()
+        late_second_write = copy.deepcopy(first)
+        late_second_write['action']['actions'][1]['action']['action']['actions'].reverse()
+        for bad in [flattened, late_first_write, late_second_write]:
+            self.assertEqual([(b['name'], b['ty']['kind']) for n in nodes(bad) if n.get('kind') == 'let'
+                              for b in n['bindings']], bindings)
+            with self.assertRaises(AssertionError):
+                assert_scope(bad)
+
     def test_direct_fold_registers_every_complete_source_family(self):
         definitions = json.loads((inventory.ROOT / 'tools/compact-rust-backend/tests/direct_fold/sources.json').read_text())
         rows = [row for row in inventory.source_registry() if row.source.parent.name == 'direct_fold']
