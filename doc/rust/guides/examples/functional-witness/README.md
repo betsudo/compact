@@ -131,9 +131,10 @@ The development prototype and actual documented proof program pass locally:
   algebraic relation or certify arbitrary callback privacy/external effects.
 
 The maintained gate passes clean local qualification on original compiler
-0.31.143 at source `16c90293944b22a461faab0e681ecf286fd0bb9b`, including fresh
-proof execution and strict application. The combined branch also passes the
-Passport gate and 399 public Python methods. Earlier compiler141 receipts retain
+0.31.143 at source `2f67680cc9cb2fbdad660e39c2ddbcd7492bec8a`, including all
+28 commands, genuine malformed-recording refusals, fresh proof execution and
+strict application. The combined branch also passes 400 public Python methods;
+the Passport compatibility gate retains its separate qualified source epoch. Earlier compiler141 receipts retain
 their own source identity. These are finite selected results. The accepted Passport parent has been
 reconciled with the SDK tree unchanged; this SDK slice still requires published
 PR review and complete Linux CI as recorded in the

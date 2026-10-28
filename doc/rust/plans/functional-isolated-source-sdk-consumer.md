@@ -1,8 +1,8 @@
 # Isolated functional source SDK: witnessed Cell consumer
 
-Status: the earlier source epoch is locally qualified; actual PR #698 review
-found concrete gaps that are being corrected and require fresh qualification,
-repeat PR review, complete CI and verified merge. Passport PR #697 passed
+Status: the actual PR #698 review corrections pass fresh clean local qualification
+at `2f67680cc`. Repeat published-head Claude review, complete CI and verified
+merge remain required; earlier source epochs stay explicitly historical. Passport PR #697 passed
 all eleven required checks and exact artifact review, and is accepted at
 canonical `8d9798d609e0090978083ddaa05691fdcdad35bf`. Its completed worktree is
 recoverably archived after preserving ignored review evidence. This SDK branch
@@ -261,7 +261,7 @@ Markdown only. Published-head Claude review and the SDK PR's complete Linux CI
 remain required before its own integration. The broad goal remains incomplete.
 
 
-## PR #698 review corrections (qualification pending)
+## PR #698 review corrections (qualified locally; integration pending)
 
 Actual published-head Claude review at `f9fb7df9d` found a required generated-doc
 version mismatch and a missing malformed-recording acceptance control. Both are
@@ -282,3 +282,35 @@ Earlier 27-command/source/bridge receipts remain literal historical evidence.
 These substantive corrections require their own clean source, original compiler,
 fresh proof/application, public controls and repeat actual Claude PR review before
 publication/integration acceptance. No earlier green result is relabelled.
+
+
+## Clean review-fix qualification
+
+Clean signed source `2f67680cc9cb2fbdad660e39c2ddbcd7492bec8a` realizes the original
+compiler143 package and passes all 28 updated SDK commands on macOS arm64. The
+actual handwritten Rust formatting check executes, all three native methods and
+three intended positive/refusal pairs pass, and all direct Clippy owners pass.
+Fresh k6/49-row keys and verified material feed new real proofs. Both genuine
+malformed recordings refuse at their exact preparation variants before proving,
+with the original ledger unchanged. The positive then proves, verifies, passes
+all derived mutation controls, default-strictly applies exact state and refuses
+replay with unchanged ledger. Standalone proof and transaction remain 2,912 and
+6,607 bytes. Applied Cell encoding is independently checked as Field 42, and
+actual/expected serialized state data agree.
+
+All eleven focused boundary controls pass. The full public Python gate runs
+400 selected methods (381 fully exercised parent methods, twenty declared
+manual-only skip events), with zero failures/errors and no unexpected skips.
+Authoritative ledger macro regeneration changed only the compiler-version header
+from142 to143; this directly fixes the initial PR's actual failed version-match
+CI step. Its failed source/run/diagnostics remain retained.
+
+Evidence: `original143-build-v2/receipt.json`,
+`clean-source-sdk143-review-fixes-v2/receipt.json`,
+`public-python-review-fixes143-v2/receipt.json`,
+`review-fix-focused-controls-v2.json` and
+`ledger-doc-regeneration143-v1/receipt.json` in the same local slice evidence root.
+Initial prerequisite-control path-alias/exception-type harness failures remain
+separate retained failures. These final descriptive status edits do not relabel
+local execution at a later commit. Published-head re-review and the complete new
+CI epoch remain mandatory; no merge or broad-goal completion is claimed.
