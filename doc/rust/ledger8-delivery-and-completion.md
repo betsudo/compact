@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Six logical deliveries through #692 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #694 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
 
@@ -319,7 +319,7 @@ See the [qualification table](plans/did-functional-lifecycle-current-profile.md#
 for stage identities and limits. Repeat exact-head review and full integration CI
 remain open. This is selected local application acceptance, not broad-goal completion.
 
-## Original DID integrated; bounded initializer work next
+## Historical Unit initializer preparation before PR #694 integration
 
 PR #693 is verified merged at canonical `373fe452c` after all required CI and
 exact-head Claude review. Its complete original DID source, four execution
@@ -327,13 +327,12 @@ routes, compile-fail controls, selected standalone proof and separate strict
 transaction are retained; the constructor and all exports are not claimed
 proved. See the [integration closeout](plans/did-functional-lifecycle-current-profile.md#verified-integration--pr-693).
 
-The next bounded slice is [ordered Unit mutation initializers](plans/516-unit-mutation-initializers.md).
-Its independent implementation is reconciled with the accepted DID baseline;
-final clean compiler139, fresh affected qualification, separate PR review and
-full CI remain open. Recording-retirement authority and all historical evidence
+At this earlier checkpoint, the next bounded slice was
+[ordered Unit mutation initializers](plans/516-unit-mutation-initializers.md).
+Its clean compiler139, qualification, PR review and full CI were still open.
+The verified PR #694 closeout below supersedes that preparation status. Recording-retirement authority and all historical evidence
 remain unchanged. This is a semantic/API improvement, not a new CI optimization
 or Forge adoption project.
-
 
 ## Unit initializer integration and renderer prerequisite — 2026-10-28
 

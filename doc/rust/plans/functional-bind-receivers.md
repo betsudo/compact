@@ -1,7 +1,9 @@
 # Functional bind receiver syntax
 
-Status: bounded implementation and local qualification in progress. Canonical
-parent is signed `1d0288846`, the verified integration of PR #694.
+Status: clean local qualification accepted at `fd7b28259`; PR #695 review
+repairs update the syntax guard and documentation. Complete required CI and
+repeat exact-head review remain open. Canonical parent is signed `1d0288846`,
+the verified integration of PR #694.
 
 ## Gap and owners
 
@@ -62,7 +64,6 @@ intentionally stopped after 36m37s of CPU work; this is a failed/settled attempt
 not an exact timing baseline or whole-CI performance claim. These development
 observations do not replace clean source, runtime or proof qualification.
 
-
 Clean original compiler140 generated all 27 current functional snapshots. Every
 retained complete IR, origin report, capability report and checked-program file
 compares byte-for-byte equal. The exact generated native/recorded prefix before
@@ -71,3 +72,30 @@ syntax snapshots change; historical authorities and source registrations do not.
 The four-owner local all-feature run passes 2,520 tests with seven existing
 ignored tests. Public Python selects 369 methods with no failures/errors and
 20 existing manual skip events; these controls are not proof qualification.
+
+
+## Clean source E2E and selected proofs
+
+At exact clean `fd7b28259`, original compiler140 realizes the same immutable
+package built at `bc8e91766`, with all 2,327 declared input records unchanged.
+The maintained generic functional gate passes 160 scenarios across four routes.
+The initializer gate passes 58 live TS cases, 196 Rust route checks, 62 recording
+replays and three independent argument/result/consuming-reuse refusals. Selected
+DID deactivation and late-witness failure compare all four Rust APIs with live TS.
+These gates retain complete state, effects, witness outputs and query-cost checks.
+
+Fresh direct native key generation produces two 2,912-byte initializer proofs
+and one 3,296-byte DID deactivation proof. Immutable verification and applicable
+same-geometry input/result/binding mutation controls pass. Separately proved
+funded transactions pass default-strict application, exact poststate checks and
+unchanged replay refusal. Constructors, seeded prestates and all exports are
+not proved. Explicit all-284 registered-source emission checks pass with no
+declared input drift; all 27 refreshed fixture crates compile. Emission is not
+runtime execution or proof coverage for all registered sources.
+
+The focused AST regression covers value/Unit bindings and branches. The current
+Call/Fold source snapshots and maintained source E2E/full CI cover those existing
+owners; the focused regression does not claim every graph shape or universal
+formatting bounds. Review hardening recursively checks receivers and includes
+syntax-only block, cast and parenthesis counterexamples. Flattening all
+continuations or replacing the effect framework is outside this slice.
