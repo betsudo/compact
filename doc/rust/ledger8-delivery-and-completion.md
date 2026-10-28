@@ -8,7 +8,7 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #694 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #695 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
 The statement-action follow-up is being reconciled locally with reviewed PR
 #695 head `7134fb240` under a two-branch stack. PR #695's full integration CI
@@ -226,7 +226,7 @@ not depend on the deferred Forge experiment.
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension integrated by #692. Other lexical/initializer gaps remain. | [Plan](plans/516-field-return-wrappers.md); conversion/effect order, TS/four-route parity, refusal controls and selected fresh proofs. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension by #692; ordered return-scope Unit initializers by #694. Statement-action extension is locally qualified and awaiting its own PR acceptance. | [Statement-action plan](plans/516-unit-action-bindings.md); lexical/effect order, TS/four-route parity, independent refusal controls and selected fresh proofs. This is not whole-issue closure. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
@@ -387,6 +387,24 @@ are applicability accounting, not 617 executed proofs. Public Python has no
 failures/errors and retains its 20 existing manual skip events.
 
 See the [literal qualification table](plans/516-unit-action-bindings.md#clean-original-compiler141-local-qualification)
-for source/tool epochs and limits. Full parent CI/canonical reconciliation and
-the child PR's own review/full CI remain required. This does not complete the
-primary goal or the deferred Forge experiment.
+for source/tool epochs and limits. The child PR's own review/full CI remain
+required. This does not complete the primary goal or the deferred Forge experiment.
+
+## Receiver prerequisite integrated; statement canonical history reconciled
+
+PR #695 is verified merged at signed canonical `709a86230`. Reviewed source
+`7134fb240`, actual CI checkout `9534bac96` and the canonical merge share the
+same complete tracked tree. All eleven checks pass, including native Linux,
+original Apple Silicon consumers, selected proof gates, package/archive consumers
+and E2E. Independent retained-artifact verification checks the authenticated ZIP
+digest, complete Unit/DID IR and Programs, reviewed source hashes and archived
+proof protocols; it is not a new host proof execution or an all-export proof.
+
+The completed prerequisite worktree was recoverably archived after preserving
+all 51 ignored entries and confirming no open file dependencies. Shared targets,
+stores, snapshots and failure evidence remain preserved.
+
+Normal signed child merge `2da45e015` includes actual accepted canonical history
+and preserves the entire tracked tree of `1a3ace5fa`. The statement-action
+qualification remains bound to original compiler141 at literal `83d967324`.
+Its own PR, exact-head Claude review and full required CI remain mandatory.

@@ -1,11 +1,13 @@
 # Unit mutation initializers in statement actions (#516)
 
-Status: clean original compiler141 local qualification passes at `83d967324`
-on the dependent `codex/rust-ast-unit-action-bindings` stack. This source includes
-reviewed PR #695 head `7134fb240`; parent full CI and canonical acceptance remain
-pending. Publication still requires actual canonical reconciliation, exact-head
-PR review and complete child CI. Earlier compiler139 results retain their own
-literal source epochs.
+Status: clean original compiler141 local qualification passes at `83d967324`.
+PR #695 is verified merged at signed canonical `709a86230` after exact-head
+Claude review, all eleven CI checks and retained artifact/source verification.
+Normal merge `2da45e015` reconciles that accepted canonical history into
+`codex/rust-ast-unit-action-bindings`; its complete tracked tree is unchanged
+from documentation successor `1a3ace5fa`. This slice still needs its own PR,
+exact-head review and complete CI. Earlier qualification receipts retain their
+literal source and compiler epochs.
 
 PR #694 is verified merged at canonical `1d0288846`. The valid mixed
 Field/Unit/Field/Unit review case exposed a shared functional receiver formatting
@@ -13,17 +15,17 @@ problem. Independent canonical-based PR #695 addresses that existing AST owner
 before this frontend slice resumes. Preserve this source case and all prior
 receipts. Do not call the diagnostic AST-copy experiment accepted output.
 
-Local stacked development now includes the exact reviewed PR #695 head
+Historical local stacked development included the exact reviewed PR #695 head
 `7134fb240`. Its local E2E/proofs, Rust CI and both native producers pass;
-full consumer CI is still pending. This supersedes the earlier local sequencing
-choice to wait for canonical acceptance before reconciliation. Keep at most two
-engineering branches. This branch is a dependent local stack, not a new canonical
-baseline; stop before commit or publication on a real parent failure or head drift.
+full consumer CI was pending at that development checkpoint. The decision
+allowed local work while preserving the accepted-canonical publication gate and
+the ceiling of two engineering branches. That parent gate has now passed; no
+old receipt is relabeled as execution of the later merge.
 
-Prepare real source generation and original compiler141 qualification locally.
-Before publication, include the actual accepted canonical merge and verify any
-source-tree bridge explicitly. Retain all original proof/tool epochs. Each slice
-keeps its own PR, exact-head review and complete required CI; no Forge work.
+Real source generation and original compiler141 qualification pass locally.
+Before publication, verify the final source/input bridge explicitly. Retain all
+original proof/tool epochs. Each slice keeps its own PR, exact-head review and
+complete required CI; no Forge work.
 
 ### Historical development status before PR #694 integration
 
@@ -225,7 +227,7 @@ then repeat clean qualification. Full CI, actual PR review and integration are
 still open for this statement slice.
 
 
-## Coherent development cohort with the prerequisite emitter
+## Historical development cohort with the prerequisite emitter
 
 The actual new emitter now passes the same 95/344/126 development E2E and all
 six isolated refusal controls. Pinned rustfmt formats a copy of the real generated
@@ -235,22 +237,22 @@ program14 (source offsets) differ from the earlier cohort; the other thirteen,
 including the original nine, remain exact. One current source-registry hash is
 updated; no roles, prior accepted registrations or historical authorities change.
 
-These fixtures require the receiver implementation in PR #695. This branch
-must first include the actual accepted canonical merge; it is not yet an
-independently regenerated clean branch. Resolve any combined snapshot conflicts
-through new original-compiler output, retaining both prior cohorts. Do not infer
-final qualification from the development Scheme override or relabel its tools.
+These fixtures require the receiver implementation in PR #695. At this
+development epoch, the accepted canonical merge and independently regenerated
+clean qualification were still pending. The later results below satisfy those
+separate gates. No final qualification is inferred from the development Scheme
+override and its tool identity remains unchanged.
 
 
-## Local stack admission while prerequisite CI runs
+## Historical local stack admission while prerequisite CI ran
 
 Actual admission guards rechecked the PR head/base, canonical remote identity,
 clean signed child head and the absence of any current failed check. The
 merge-tree preview and real local merge identify only two conflicts: this
 milestone's delivery notes and the generated Unit fixture. Retain both histories
 in the notes and regenerate the fixture with the combined source. Version141
-follows the reviewed prerequisite's version140; this does not assert that140 is
-already integrated. Publication remains gated on accepted canonical history.
+follows the reviewed prerequisite's version140. Version140 was not integrated
+at this development epoch; its later accepted canonical merge is recorded above.
 
 
 ## Clean original compiler141 local qualification
@@ -275,7 +277,8 @@ prepared cohort; only the established pinned formatter output was reused for
 identical input bytes. No proof or verdict is reused. The clean original141
 gates above subsequently generate and execute their own fresh outputs.
 
-These are local stack results. PR #695's complete native CI, actual canonical
-merge and the follow-up's own published exact-head review/full CI remain gates.
-Any later source change needs a new qualification bridge or affected fresh runs;
+These are local qualification results. PR #695's complete CI and actual canonical
+integration now pass, and the unchanged-tree merge above reconciles its history.
+This follow-up's own published exact-head review and full CI remain gates. Any
+later source change needs a new qualification bridge or affected fresh runs;
 merge history alone does not renew a proof receipt.
