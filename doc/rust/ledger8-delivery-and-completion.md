@@ -8,13 +8,14 @@ We now have a Rust compiler path that composes supported operations instead of r
 
 The latest delivery adds the missing witness, value, collection, Merkle and Ledger8 effect families to that functional surface. It has real execution, proof, verification and ledger-application evidence for selected cases.
 
-**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #695 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
+**The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #696 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
-The statement-action follow-up is published as PR #696 after normal signed
-reconciliation with accepted canonical `709a86230` (PR #695). Clean original
-compiler141 API/proof qualification passes at `cf7a2fa2c`; the follow-up retains its own exact-head
-review, complete CI and verified integration gates. Historical development
-checkpoints below retain the prerequisite's earlier pending status explicitly.
+The statement-action follow-up is verified merged as PR #696 at signed canonical
+`f0e4ba788`, with the same complete tree as reviewed `9667072e7` and actual CI
+checkout `b7c15323b`. All eleven checks, actual Claude review and retained runtime
+artifact verification pass. Local compiler141 receipts retain literal `cf7a2fa2c`
+and earlier epochs; the [integration closeout](plans/516-unit-action-bindings.md#verified-integration--pr-696)
+records current scope. Historical development checkpoints remain separate.
 
 
 There is no honest overall completion percentage. A checked-operation variant, a source-language construct, a test scenario and a proved transaction are different units.
@@ -186,7 +187,18 @@ Issue state is not a completion counter. The older recording-algebra PR #634 rem
 
 ## What is left, in priority order
 
-### 1. Complete the typed-pair return extension
+### 1. Preserve accepted return and statement extensions
+
+The typed-pair extension is integrated by reviewed PR [#692](https://github.com/betsudo/compact/pull/692)
+at signed canonical `acf529eff`. Ordered return-scope Unit initializers are
+integrated by [#694](https://github.com/betsudo/compact/pull/694) at `1d0288846`;
+the bounded functional bind receiver prerequisite is integrated by
+[#695](https://github.com/betsudo/compact/pull/695) at `709a86230`. These accepted
+capabilities are not new feature work. Statement-action PR #696 is now integrated
+at `f0e4ba788` after full CI/review and artifact verification. None closes all of
+#516.
+
+#### Historical typed-pair preparation (superseded by PR #692 integration)
 
 The [scalar #516 slice](plans/516-field-return-wrappers.md) is integrated by
 [#691](https://github.com/betsudo/compact/pull/691) after full current Linux and
@@ -212,9 +224,35 @@ not depend on the deferred Forge experiment.
 
 ### 2. Requalify the real applications on the current profile
 
-**DID:** retain the exact `midnight-did v0.7.0` source baseline and real witnesses. Run current Ledger8.1.3 ordinary and functional paths, state/effects/private outputs/gas/replay and selected applicable proof/application cases. Older original application acceptance used Ledger8.0.3; later tutorial receipts are narrower and do not establish fresh full functional acceptance.
+**DID:** the selected current-profile deactivation lifecycle is integrated by
+reviewed PR [#693](https://github.com/betsudo/compact/pull/693), signed merge
+`373fe452c`. It preserves the complete original source closure and all twelve
+Programs, with live TS/four-route Rust comparisons, typed refusals and selected
+fresh proof/default-strict application/replay evidence. See its
+[integration closeout](plans/did-functional-lifecycle-current-profile.md#verified-integration--pr-693).
+Constructor execution and proofs for every export are not claimed. Broader
+application acceptance must be assessed against its actual missing scenarios;
+do not reopen the accepted deactivation slice. Original Ledger8.0.3 and narrower
+tutorial receipts retain their own profiles and scope.
 
-**Digital passport:** retain the `midnight-vc-passport` integration baseline and its referenced credential source closure. The accepted passport source is a pure library: **75 pure exports and zero proof-applicable exports**. Re-run its actual pure behavior/TS oracle controls on the current toolchain; report recording/proof as not applicable where appropriate. Do not invent stateful exports to claim functional/proof adoption.
+**Digital passport:** retain the `midnight-vc-passport` integration baseline and
+its referenced credential source closure: **75 public pure exports and zero
+proof-applicable exports**. The [current-profile standalone consumer](plans/passport-current-profile-consumer.md)
+is freshly qualified at clean signed `f0c09ff56`, original compiler
+0.31.142/Ledger8.1.3: 202 sampled live TS cases plus codec vectors, 16 adoption
+Rust methods and the actual unchanged two-test guide manifest/source. The guide
+uses the documented current source-lock recipe; its original historical lock is
+retained separately. Raw SDK, guide and adoption consumer pass strict Clippy.
+Correct-type twins compile and two independent intended-locus E0308 refusals
+pass; changed-expectation failure/restoration controls pass. All 389 public
+Python methods pass with 20 existing manual-only skip events, and all 30 focused
+controls pass. Cargo compiler/lint configuration guards, exact runtime-bundle identity, bounded
+POSIX process-group/pipe timeouts and attempt-specific step-failure
+uploads retain explicit hard-cancellation/runtime-transitive limits. Earlier
+`834a41025` formatted-SDK and `2bbf4daaf` guide-source-only epochs remain distinct.
+Original source/oracle authorities are unchanged. Own repeat review, complete
+current-head CI and verified merge remain required. Recording/proof/application are not applicable to this
+original pure library; do not invent stateful exports.
 
 **Finish when:** both intact pinned source closures build and their applicable tests pass on the selected profile. Each refusal becomes a minimal regression and an issue; fix its actual cause before accepting the dependent application. Do not remove exports to make an oversized/unsupported contract appear supported. “Latest” upstream after these pins is a new adoption decision.
 
@@ -225,7 +263,7 @@ not depend on the deferred Forge experiment.
 | [#674](https://github.com/betsudo/compact/issues/674) | Integrated by #688 in the supported constant fixed-vector scope. | [Scope and controls](plans/674-constant-vector-projection-decision.md); no arbitrary dynamic indexing claim. |
 | [#661](https://github.com/betsudo/compact/issues/661) | Integrated by #690 for the maintained direct Fold cohort. | [Source-family plan](plans/661-direct-fold-expressions.md); 21 full sources, selected proofs, explicit checked/refusal boundaries. |
 | [#610](https://github.com/betsudo/compact/issues/610) | Integrated by #689 for stateful Map size expressions. | [Scope and controls](plans/610-map-size-expressions.md); whole-Map metadata, malformed-state controls and two selected proof/application cases. |
-| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension by #692; ordered return-scope Unit initializers by #694. Statement-action extension is locally qualified and awaiting its own PR acceptance. | [Statement-action plan](plans/516-unit-action-bindings.md); lexical/effect order, TS/four-route parity, independent refusal controls and selected fresh proofs. This is not whole-issue closure. |
+| [#516](https://github.com/betsudo/compact/issues/516) | Scalar wrappers integrated by #691; typed scalar-pair/inline-Fold extension by #692; ordered return-scope Unit initializers by #694. Statement-action extension is integrated by #696 after exact-head review, full CI and retained-artifact verification; whole-issue closure is not claimed. | [Statement-action plan](plans/516-unit-action-bindings.md); lexical/effect order, TS/four-route parity, independent refusal controls and selected fresh proofs. This is not whole-issue closure. |
 
 Arm64 checks are the local development gate and Linux required integration runs in GitHub Actions. A local Linux runner is not a prerequisite for bounded backend work. Preserve accepted crosswalk and historical authorities; later source heads require their own integration evidence.
 
@@ -274,7 +312,7 @@ Use three distinct status labels:
 | Maintained native Ledger8 supported-profile release complete | **Not yet** | Requires candidate/review closure, real-application requalification, consumable artifacts and a finite release handoff. Known exceptions must be explicit. |
 | Every valid Ledger8 Compact program / full TS-spec parity | **Not established** | Known source gaps must be fixed and a broader requirement-to-stage coverage claim needs its own bounded agreement and evidence. |
 
-The next useful engineering work is **real-application functional qualification, led by DID**, while the PRs are reviewed. It will select which remaining source gaps actually block adoption. Package/extraction acceptance can proceed independently. This is a recommendation, not a newly activated goal or an expansion into Ledger9.
+The current bounded work is **Passport's current-profile standalone consumer integration**, with its own review and complete required CI. Statement-action integration is accepted through #696. Accepted typed-pair, DID deactivation and return-scope Unit work retain their recorded scope. After integration, assess the remaining application, distribution and capability obligations against the actual selected candidate; select a concrete semantic or API gap only when current evidence shows it. This does not expand the target to Ledger9 or declare the broader goal complete.
 
 ## Source and decision map
 

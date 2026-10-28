@@ -5,3 +5,13 @@ The complete `consumer/src/lib.rs`, manifest and qualified lock are copied byte-
 Run generation from this directory, using the matching compiler/runtime distribution, to create `generated/contract/`; the [guide commands](../../passport.md#generate-and-consume) use this exact relative layout. Generated sources and the runtime bundle are intentionally not included in this documentation package. The handwritten manifest still points to `../generated/contract` from `consumer/`.
 
 The archived two-test result belongs to its original compiler, source, lock and host. Relocation preserves the handwritten bytes and paths, but no test was rerun during ADR0350 staging. Before treating a new generation as accepted, qualify its compiler/runtime/output and dependency identities against that receipt. The newer lock-seeding recipe is guidance, not a claim that it was executed in P1.
+
+The separate [current-profile gate](../../../plans/passport-current-profile-consumer.md)
+passes at clean signed `f0c09ff56`: it builds this unchanged manifest and Rust
+source as an actual two-test crate against the untouched raw generated SDK and
+matching bundled runtime. It applies the current qualified source-lock seeding
+recipe and retains the original historical P1 lock separately. Earlier `2bbf4daaf`
+ran only the unchanged Rust test source in a gate-written manifest; `834a41025`
+qualified formatted SDK bytes. Those epochs retain their narrower scopes.
+Repeat review and complete current-head CI/merge remain required. This does not
+rename or renew historical P1.
