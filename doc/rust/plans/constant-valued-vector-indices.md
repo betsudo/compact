@@ -190,3 +190,18 @@ bringing the consumer roster to eight. The historical a1 receipt above remains
 seven tests/three controls and is not relabelled by these additions. Compiler,
 consumer, proof, application, final source review and integration receipts retain
 their separate identities and scope.
+
+## Ownership-control qualification
+
+At clean signed `e2b12807c`, fresh complete native generation and the live
+TypeScript comparison pass for both selected sources with all eight external
+Rust consumer tests. All four compile-fail binaries fail at their intended
+primary source spans: E0308 for length/type and E0382 for Program/context reuse.
+The complete public Python gate runs 399 selected methods, with 380 fully
+exercised parent methods, 20 expected manual-only skip events and no failures
+or unexpected skips.
+
+The compiler, backend emitter, both runtimes, complete source fixtures and proof
+runner/protocol trees are unchanged from the literal `9a9d1b8b6` proof epoch.
+This is a checked owner bridge, not new proof execution. Final reconciled source
+qualification, external PR review and complete CI remain required.
