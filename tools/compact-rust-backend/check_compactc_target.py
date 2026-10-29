@@ -950,6 +950,13 @@ def main() -> None:
             selected = "vote_commit" if args.micro_dao_vote_commit else "cash_out" if args.micro_dao_cash_out else "buy_in" if args.micro_dao_buy_in else "set_topic" if args.micro_dao_set_topic else "advance" if args.micro_dao_advance else "vote_reveal" if args.micro_dao_reveal else "dao_voting_token"
             output = base / "micro-dao-selected"
             run(compiler, "--target", "rust", "--skip-zk", str(source), str(output))
+            # Check the complete proof consumer binding before generating keys.
+            # The Rust runner repeats this guard before reading keys or state.
+            retained = ROOT / "tools/compact-rust-backend/tests/micro-dao-source-schema20-ir.json"
+            assert (
+                json.loads((output / "contract/compact-rust-ir.json").read_text())
+                == json.loads(retained.read_text())
+            ), "original full microDAO source/proof IR mismatch"
             info = json.loads((output / "compiler/contract-info.json").read_text())
             report = json.loads((output / "contract/rust-capabilities.json").read_text())
             assert len(info["circuits"]) == 11 and sum(c["proof"] for c in info["circuits"]) == 7

@@ -1,11 +1,68 @@
 # Constant-valued Vector indices
 
 Status: repaired source `1058fb791` passes original native compiler, consumer
-and fresh proof qualification. This descriptive successor records that executed
-epoch; a fresh PR #699 review, full CI and integration remain pending.
+and fresh proof qualification. Claude review at `d9e7c614b` found no merge
+blockers. Full Linux CI then exposed stale retained arithmetic IR in the
+microDAO proof consumer; the fixture repair below requires fresh affected checks
+and a new PR review. Full CI and integration remain pending.
 Earlier `3fa7cec1d` and `70c5cb26a` receipts retain their historical scope. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
+
+## Linux CI fixture repair — 2026-10-29
+
+The full Linux job rejected `original full microDAO source/proof IR mismatch`
+before proof execution. Fresh original compiler 0.31.144 output differs in one
+`buy_in` product bound: `(2^64 - 1)^2`, instead of the rounded `2^128 - 1`.
+Two wide-add intermediate bounds similarly retain the analyzed sum maxima.
+These follow the stateful declared-bound correction above; the surrounding
+checked casts, source contracts, ABI and proof-binding guards are unchanged.
+
+Refresh only those two complete, unmodified compiler IR files and their current
+registry hashes. Preserve the historical ledger8.1.3 registry and explicitly
+account for the two refreshed pins in its continuity control. Also compare the
+full microDAO IR before key generation in the maintained target gate; the Rust
+proof runner retains its independent check before keys/state are read.
+
+An audit compiled all 89 registered retained-IR sources. Apart from the two
+arithmetic cases, it observed one hygienic local-name difference
+and two historical probe filename differences. These are recorded separately,
+not normalized or swept into this repair. Flat output, affected native/recorded
+behavior, source-binding negatives and genuine selected proofs must still pass.
+The earlier failed CI and all local diagnostic attempts remain evidence.
+
+The flat-output gate found five further stale generated libraries/snapshots:
+microDAO, wide addition, mixed-width subtraction and both Passport consumers.
+Their full compiler outputs are refreshed with rustfmt only. Subtraction now
+keeps the wider right operand until the checked subtraction instead of inserting
+an extra narrowing cast. The source contracts and declared public results stay
+unchanged. The 283-output scan and focused five-output recheck retain separate
+results; their counts are not additive coverage.
+
+The VC Passport consumer keeps its original oracle provenance and all 39 oracle
+file hashes unchanged. `generated-rust.json` separately pins the refreshed Rust
+library and links its predecessor hash; the provenance test checks both records.
+This prevents a current Rust refresh from relabeling historical TS captures as a
+new execution epoch.
+
+The first fixture retest exposed historical funded-mint inclusion controls whose
+retired recognizer requires the old rounded product maximum. Preserve their
+complete original input in `micro-dao-source-pre-analyzed-bounds-schema20-ir.json`
+(SHA256 `519e534e844b3cc4ee2f111f39e8634f199853aa9b888698cc2b58ef8f6c574b`).
+The three historical test owners use that frozen input. A separate current-input
+control requires ordinary generic composition and confirms that the retired
+recognizer refuses the tighter bound. No production recognizer is expanded or
+restored; genuine current-source native/proof consumers use the refreshed IR.
+
+Local repair validation: all 30 registry controls, 24 focused funded-mint
+controls (including the new current-input case), the five refreshed outputs,
+affected generated consumers, all three VC Passport provenance controls and
+workspace formatting pass. The first backend run retained 1,814 passes and 13
+historical-input failures; the focused retest resolves those failures without
+claiming a new full-suite run. Fresh original-compiler microDAO token, reveal,
+advance, set-topic, buy-in, cash-out and vote-commit gates pass with their existing
+verification/application policies and negatives. The separate wide-add carry
+proof gate also passes. Full Linux CI and new-head review remain required.
 
 ## Gap and accepted baseline
 

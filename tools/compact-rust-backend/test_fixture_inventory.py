@@ -49,6 +49,25 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual({row['source'] for row in extension}, names)
         self.assertEqual(len(extension), 28)
         current['sources'] = [row for row in current['sources'] if row not in extension]
+        # Stateful arithmetic now keeps the analyzed result maximum instead of
+        # its rounded bit carrier. Only these complete generated IR inputs were
+        # refreshed; their sources, consumers and historical registry stay put.
+        refreshed = {
+            'examples/rust_backend/effect_plan_wide_add.compact':
+                '148ce2df4dc5ad0588f8e8c76281a46fb4edd8a7c3363023d9a1098b39436cb6',
+            'test-center/test-contracts/micro-dao.compact':
+                '39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d',
+        }
+        self.assertEqual(
+            fingerprint(directory / 'tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json'),
+            '519e534e844b3cc4ee2f111f39e8634f199853aa9b888698cc2b58ef8f6c574b')
+        originals = {row['source']: row for row in baseline['sources']}
+        for row in current['sources']:
+            if row['source'] in refreshed:
+                self.assertEqual(row['retained_ir_sha256'], refreshed[row['source']])
+                self.assertEqual(fingerprint(inventory.ROOT / row['retained_ir']),
+                                 refreshed[row['source']])
+                row['retained_ir_sha256'] = originals[row['source']]['retained_ir_sha256']
         self.assertEqual(current, baseline)
 
     def test_vector_projection_registers_complete_functional_flat_output(self):

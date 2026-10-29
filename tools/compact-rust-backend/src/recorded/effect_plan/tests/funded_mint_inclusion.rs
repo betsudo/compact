@@ -17,7 +17,7 @@ mod structure;
 
 fn source() -> Json {
     serde_json::from_str(include_str!(
-        "../../../../tests/micro-dao-source-schema20-ir.json"
+        "../../../../tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json"
     ))
     .unwrap()
 }

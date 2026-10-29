@@ -2649,11 +2649,9 @@ pub mod pure_circuits {
                                 "result of subtraction would be negative".to_owned(),
                             ));
                         }
-                        runtime::subtract_unsigned::<4294967295, 4294967295, 4294967295>(
+                        runtime::subtract_unsigned::<4294967295, 17179869180, 4294967295>(
                             __compact_local_yearAdjusted,
-                            runtime::cast_unsigned::<17179869180, 4294967295>(
-                                __compact_local_t_17,
-                            )?,
+                            __compact_local_t_17,
                         )?
                     }
                 };
@@ -2678,11 +2676,9 @@ pub mod pure_circuits {
                                     "result of subtraction would be negative".to_owned(),
                                 ));
                             }
-                            runtime::subtract_unsigned::<4294967295, 4294967295, 4294967295>(
+                            runtime::subtract_unsigned::<4294967295, 429496729500, 4294967295>(
                                 __compact_local_yearAdjusted,
-                                runtime::cast_unsigned::<429496729500, 4294967295>(
-                                    __compact_local_t_18,
-                                )?,
+                                __compact_local_t_18,
                             )?
                         }
                     };
@@ -2711,11 +2707,9 @@ pub mod pure_circuits {
                                         "result of subtraction would be negative".to_owned(),
                                     ));
                                 }
-                                runtime::subtract_unsigned::<4294967295, 4294967295, 4294967295>(
+                                runtime::subtract_unsigned::<4294967295, 1717986918000, 4294967295>(
                                     __compact_local_yearAdjusted,
-                                    runtime::cast_unsigned::<1717986918000, 4294967295>(
-                                        __compact_local_t_19,
-                                    )?,
+                                    __compact_local_t_19,
                                 )?
                             }
                         };
