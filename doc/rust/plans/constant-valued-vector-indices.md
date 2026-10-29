@@ -1,8 +1,9 @@
 # Constant-valued Vector indices
 
-Status: PR #699 review repairs in progress. Original qualification epochs
-`3fa7cec1d` and `70c5cb26a` remain historical; additional stateful subtraction
-and numeric-alias repairs require fresh qualification, review and full CI. Delivery target: `codex/rust-backend-ast`.
+Status: repaired source `1058fb791` passes original native compiler, consumer
+and fresh proof qualification. This descriptive successor records that executed
+epoch; a fresh PR #699 review, full CI and integration remain pending.
+Earlier `3fa7cec1d` and `70c5cb26a` receipts retain their historical scope. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
 
@@ -338,3 +339,48 @@ they are unit controls, not compiler or proof execution.
 Updated whole fixtures, original packaged compiler qualification, current native
 and TS execution, fresh actual proofs, a new independent review and full CI are
 required for these repairs. Previous receipts retain their own exact epochs.
+
+
+## Current repair qualification — 1058fb791 — 2026-10-29
+
+The clean signed source `1058fb791738d381ac4f294c36160136950fe165`
+(tree `7d5e3cce06e0a62f093eaaa86315aaffbf5516f2`) passes the following
+local arm64 gates. This later plan-only commit records the results; it does not
+claim fresh execution at its own commit identity.
+
+- Original packaged compiler 0.31.144, without a Scheme override:
+  `/nix/store/2r25br2g9zag9mfb705jcp03vrfp8lzx-compactc`.
+  The Scheme executable SHA256 is
+  `6c0a71aa6ff9bddc8a9b3cd2481cd53578a0d84ce50ef6b37b82dc744296acc7`.
+- Each of the distinct new/literal source gates passes eight Vector Rust tests
+  across ordinary/functional native/recorded routes, live TS comparisons,
+  changed-result rejection and four primary-span type/ownership refusals.
+  Each also runs three actual numeric-alias Rust tests against ten live pure
+  TS observations, including checked casts and error ordering.
+- Full original IR, formatted-only Rust and all five checked programs match
+  each complete linked fixture. The 22-source dual-target matrix passes its
+  expected accept/refusal outcomes, 16 Rust tests and 17 TS observations.
+  The five corrected second-review sources compile in both targets, including
+  literal/alias constructors; this observation is not a constructor proof.
+- Separate source-level Scheme 10.4.1 program-mode tests pass 34 occurrence
+  controls. Full public Python runs 412 methods: 393 fully exercised parent
+  methods, 20 expected manual-artifact skip events, no failures or errors.
+  Synthetic capture canaries are explicitly separate from compiler execution.
+- Each separate source proof gate generates fresh k=6/54-row keys and two
+  2,912-byte standalone proofs. Binding, input, result and proof-byte negatives
+  pass, alongside separately proved funded default-strict transactions, exact
+  state and unchanged `IntentAlreadyExists` replay refusal.
+- The root postexecution audit rehashes each gate's 2,861 source, 20 material,
+  19 generated, seven result and seven static-fixture files, four snapshotted
+  components and nine commands. This is content/receipt consistency checking,
+  not a new cryptographic execution or external review.
+
+Receipt families are `original-native-build144-review-v4`,
+`review-native144-consumers-v4`, `review-native-shape-matrix144-v4`,
+`review-native144-{new,literal}-source-proof-v4` and
+`review-native144-root-source-receipt-audit-v4.json`.
+A checked descriptive-only source bridge must precede publication. Required
+new-head Claude review and complete Linux/native/proof/package/archive/E2E CI
+remain mandatory. Constructors remain unproved and sealed Vector transaction
+bytes are not separately retained. Forge remains deferred; the broader Rust AST
+goal is incomplete.
