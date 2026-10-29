@@ -138,8 +138,30 @@
   ;; constant binding already execute at that binding's original location.
   (define-pass collect-index-guards : (Lnodisclose Expression) (ir) -> (Lnodisclose Expression) ()
     (Expression : Expression (ir) -> Expression ()
-      [(assert ,src ,[expr] ,mesg)
+      ;; Explicit calls are required: generated processor argument evaluation
+      ;; order is not a source-language evaluation-order guarantee.
+      [(+ ,src ,mbits ,expr1 ,expr2) (Expression expr1) (Expression expr2) ir]
+      [(- ,src ,mbits ,expr1 ,expr2) (Expression expr1) (Expression expr2) ir]
+      [(* ,src ,mbits ,expr1 ,expr2) (Expression expr1) (Expression expr2) ir]
+      [(safe-cast ,src ,type ,type^ ,expr) (Expression expr) ir]
+      [(seq ,src ,expr* ... ,expr)
+       (for-each Expression expr*) (Expression expr) ir]
+      [(let* ,src ([,local* ,expr*] ...) ,expr)
+       (for-each Expression expr*) (Expression expr) ir]
+      [(assert ,src ,expr ,mesg)
+       (Expression expr)
        (index-guards (cons (cons src mesg) (index-guards)))
+       ir]))
+
+  ;; Count every original assertion before selecting index guards. An assert
+  ;; outside an index must not lend an observation to an index guard with the
+  ;; same source object, even when only one copy reaches the circuit evaluator.
+  (define-pass collect-assert-sources : Lnodisclose (ir) -> Lnodisclose ()
+    (Expression : Expression (ir) -> Expression ()
+      [(assert ,src ,[expr] ,mesg)
+       (let ([observations (vector-ref (collecting) 3)])
+         (eq-hashtable-set! observations src
+           (if (eq-hashtable-contains? observations src) 'ambiguous 'unobserved)))
        ir]))
 
   (define-pass collect-vector-indices : Lnodisclose (ir) -> Lnodisclose ()
@@ -165,13 +187,7 @@
            (parameterize ([index-guards '()])
              (collect-index-guards index)
              (eq-hashtable-set! (vector-ref (collecting) 2) ir
-               (reverse (index-guards)))
-             (for-each (lambda (guard)
-                         (let ([observations (vector-ref (collecting) 3)])
-                           (eq-hashtable-set! observations (car guard)
-                             (if (eq-hashtable-contains? observations (car guard))
-                                 'ambiguous 'unobserved))))
-                       (index-guards)))))
+               (reverse (index-guards))))))
        (Expression expr)
        (Expression index)
        ir]))
@@ -180,6 +196,7 @@
     (let ([facts (vector (make-eq-hashtable) (make-eq-hashtable)
                         (make-eq-hashtable) (make-eq-hashtable))])
       (parameterize ([collecting facts] [constant-bindings (make-eq-hashtable)])
+        (collect-assert-sources ir)
         (collect-vector-indices ir))
       facts))
 

@@ -42,6 +42,14 @@
     [(vector-ref ,src ,type ,expr ,index)
      `(vector-ref ,src ,type ,expr (+ ,src 3 ,index ,index))]))
 
+(define external-guard-source (make-parameter #f))
+(define-pass guard-source-outside-index : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     (let ([guard-src (external-guard-source)])
+       `(seq ,src (assert ,guard-src (quote ,guard-src #t) "outside the index")
+          (vector-ref ,src ,type ,expr ,index)))]))
+
 (define-pass false-subtraction-guard : Lnodisclose (ir) -> Lnodisclose ()
   (Expression : Expression (ir) -> Expression ()
     [(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) ,mesg)
@@ -201,6 +209,14 @@
       (observe-rust-vector-index-guard! (car guard-sources) 'true)
       (check 'duplicate-guard-source-not-authority
         (eq? (rust-vector-index-guard-state copied-node) 'unknown))))
+  (let* ([copied-ir (parameterize ([external-guard-source (car guard-sources)])
+                      (guard-source-outside-index subtraction-ir))]
+         [copied-node (car (nodes copied-ir))])
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied-ir)])
+      (observe-rust-vector-index! (source copied-node) 1)
+      (observe-rust-vector-index-guard! (car guard-sources) 'true)
+      (check 'outside-assert-cannot-lend-a-guard-observation
+        (eq? (rust-vector-index-guard-state copied-node) 'unknown))))
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged-ir)])
     (observe-rust-vector-index! (source forged-node) 1)
     (check 'unrelated-false-guard-not-erased (not (rust-vector-index forged-node))))
@@ -224,7 +240,10 @@
       (observe-rust-vector-index! (source ordered-node) 0)
       (for-each (lambda (src) (observe-rust-vector-index-guard! src 'false)) ordered-sources)
       (check 'first-index-failure-source-retained
-        (eq? (car (rust-vector-index-guard-state ordered-node)) (car ordered-sources))))))
+        ;; Source offsets are an independent order oracle; do not mirror the
+        ;; nanopass traversal used by the bridge under test.
+        (= (source-object-bfp (car (rust-vector-index-guard-state ordered-node)))
+           (apply min (map source-object-bfp ordered-sources)))))))
 
 (for-each
   (lambda (row)

@@ -108,17 +108,26 @@ fn constant_index_keeps_failing_guards_in_both_multiply_positions() {
         pure_circuits::index_total_wide(items()).unwrap(),
         runtime::Field::from(17_u64)
     );
+    assert_eq!(
+        pure_circuits::index_guard_wide_success(items()).unwrap(),
+        runtime::Field::from(17_u64)
+    );
     if let Some(reference) = ts() {
         assert_eq!(reference["indices"]["index_guard_success"]["value"], "17");
         assert_eq!(reference["indices"]["index_total_wide"]["value"], "17");
+        assert_eq!(
+            reference["indices"]["index_guard_wide_success"]["value"],
+            "17"
+        );
     }
 }
 
 #[test]
 fn vector_operand_failure_precedes_index_failure() {
     let items = || runtime::FixedVector([17_u64, 29].map(runtime::Field::from));
-    let first = pure_circuits::index_order(items(), true).unwrap_err();
-    assert!(format!("{first:?}").contains("Vector operand before index"));
+    assert!(matches!(pure_circuits::index_order(items(), true),
+        Err(CompactError::AssertionFailed(message))
+            if message == "Vector operand before index"));
     assert!(matches!(pure_circuits::index_order(items(), false),
         Err(CompactError::AssertionFailed(message))
             if message == "result of subtraction would be negative"));

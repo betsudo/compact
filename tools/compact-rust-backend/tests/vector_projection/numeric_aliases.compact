@@ -54,6 +54,11 @@ export pure circuit index_guard_wide(items: Vector<2, Field>): Field {
   const b: Uint<200> = 2;
   return items[(a - b) * 0];
 }
+export pure circuit index_guard_wide_success(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 2;
+  const b: Uint<200> = 1;
+  return items[(a - b) * 0];
+}
 pure circuit vector_before_index(items: Vector<2, Field>, fail: Boolean): Vector<2, Field> {
   assert(!fail, "Vector operand before index");
   return items;

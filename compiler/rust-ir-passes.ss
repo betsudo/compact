@@ -458,8 +458,10 @@
           (lambda (expr src) (stateful-expression-ir expr src witness-ids))
           (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids))))
 
-      ;; Recover the analyzed carrier of the admitted index grammar, without
-      ;; evaluating it or using its resolved numeric value as a type bound.
+      ;; Recover the carrier used by ordinary expression lowering, without
+      ;; evaluating the index or using its resolved value as a type bound.
+      ;; Explicit analyzed types stay intact; bare arithmetic has only mbits
+      ;; here, so its unused evaluation binding retains that native carrier.
       (define (vector-index-type index locals)
         (nanopass-case (Lnodisclose Expression) index
           [(quote ,src ,datum)
@@ -467,8 +469,9 @@
           [(var-ref ,src ,var-name)
            (let ([local (assq var-name locals)])
              (if local (cdr local)
-                 (or (eq-hashtable-ref (current-variable-types) var-name #f)
-                     (internal-errorf 'vector-index-type "missing index variable type"))))]
+                 (let ([types (current-variable-types)])
+                   (or (and types (eq-hashtable-ref types var-name #f))
+                       (source-errorf src "Rust backend has no type for this constant Vector index binding")))))]
           [(safe-cast ,src ,type ,type^ ,expr) type]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]

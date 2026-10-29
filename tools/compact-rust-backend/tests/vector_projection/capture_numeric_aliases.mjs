@@ -65,4 +65,7 @@ result.indices.index_guard_success = {value: String(selected)};
 const wideSelected = pureCircuits.index_total_wide([17n, 29n]);
 assert.equal(wideSelected, 17n);
 result.indices.index_total_wide = {value: String(wideSelected)};
+const wideGuardSelected = pureCircuits.index_guard_wide_success([17n, 29n]);
+assert.equal(wideGuardSelected, 17n);
+result.indices.index_guard_wide_success = {value: String(wideGuardSelected)};
 writeFileSync(process.argv[3], JSON.stringify(result, null, 2) + '\n');

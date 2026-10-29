@@ -204,6 +204,38 @@ def main():
         else:
             environment.pop("COMPACT_VECTOR_NUMERIC_TS_REFERENCE", None)
             report["numeric_aliases"]["typescript"] = "NOT RUN; no --ts-runtime selected"
+        # Exercise both evaluated-guard and unknown-guard lowering through the
+        # stateful/witness routes and simple constructors. Failing paths have
+        # behavior controls, not proofs of an unsatisfiable circuit.
+        guard_generated = {}
+        guard_snapshots = {}
+        guard_dependencies = []
+        for name, source_name in [
+            ("guard_fixture", "guard_lowering.compact"),
+            ("guard_constructor_known", "guard_constructor_known.compact"),
+            ("guard_constructor_unknown", "guard_constructor_unknown.compact"),
+        ]:
+            target = output / name
+            run(name + "-generate", [compiler, "--target", "rust",
+                *(["--target", "ts"] if args.ts_runtime else []),
+                "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                "--skip-zk", FIXTURES / source_name, target])
+            check_manifest(target)
+            guard_generated[name] = target
+            guard_snapshots[name] = generated_manifest_snapshot(target)
+            guard_package = tomllib.loads((target / "contract/Cargo.toml").read_text())["package"]["name"]
+            guard_dependencies.append(
+                f'{name}={{package={json.dumps(guard_package)},path={json.dumps(str(target / "contract"))}}}')
+        report["guard_lowering"] = {
+            "generated": guard_snapshots, "rust_tests": 4,
+            "scope": "Stateful/witness native+recorded+functional and simple constructor behavior; no proof acceptance"}
+        if args.ts_runtime:
+            guard_capture = output / "guard-ts-reference.json"
+            run("guard-typescript", ["node", FIXTURES / "capture_guard_lowering.mjs",
+                *[guard_generated[name] / "contract/index.js" for name in guard_generated], runtime, guard_capture])
+            report["guard_lowering"]["typescript_capture_sha256"] = digest(guard_capture)
+        else:
+            report["guard_lowering"]["typescript"] = "NOT RUN; no --ts-runtime selected"
         package = tomllib.loads((generated / "contract/Cargo.toml").read_text())["package"]["name"]
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
@@ -213,11 +245,12 @@ def main():
         (consumer / "src/lib.rs").write_text("")
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/vector.rs")
         shutil.copyfile(FIXTURES / "numeric_aliases.rs", consumer / "tests/numeric.rs")
+        shutil.copyfile(FIXTURES / "guard_lowering.rs", consumer / "tests/guards.rs")
         lines = ['[workspace]', '[package]', 'name="constant-vector-consumer"', 'version="0.0.0"',
                  'edition="2024"', '[dependencies]',
                  f'vector_fixture={{package={json.dumps(package)},path={json.dumps(str(generated / "contract"))}}}',
                  f'numeric_fixture={{package={json.dumps(numeric_package)},path={json.dumps(str(numeric_generated / "contract"))}}}',
-                 f'serde_json="={serde}"', '[features]']
+                 f'serde_json="={serde}"', *guard_dependencies, '[features]']
         lines.extend(f'{name}=[]' for name in NEGATIVES)
         for name in NEGATIVES:
             shutil.copyfile(FIXTURES / f"{name}.rs", consumer / f"src/bin/{name}.rs")
@@ -231,6 +264,7 @@ def main():
         allowed_local = {manifest.resolve(), (generated / "contract/Cargo.toml").resolve(),
                          (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve(),
                          (numeric_generated / "contract/Cargo.toml").resolve()}
+        allowed_local.update((target / "contract/Cargo.toml").resolve() for target in guard_generated.values())
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
         for item in metadata["packages"]:
             identity = (item["name"], item["version"], item.get("source"))
@@ -255,6 +289,10 @@ def main():
                              "--manifest-path", manifest, "--test", "numeric"]).stdout
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", numeric_result) != [("5", "0", "0")]:
             raise ValueError("unexpected numeric alias/boundary control accounting")
+        guard_result = run("guard-consumer", ["cargo", "test", "--locked", "--offline",
+            "--manifest-path", manifest, "--test", "guards"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", guard_result) != [("4", "0", "0")]:
+            raise ValueError("unexpected stateful/constructor guard control accounting")
 
         if args.ts_runtime:
             changed = json.loads(capture.read_text())
@@ -281,6 +319,11 @@ def main():
             raise ValueError("numeric generated assets changed during execution")
         if generated_manifest_snapshot(generated) != report["generated"]:
             raise ValueError("generated assets changed during consumer execution")
+        for name, target in guard_generated.items():
+            if generated_manifest_snapshot(target) != guard_snapshots[name]:
+                raise ValueError("guard generated assets changed during consumer execution: " + name)
+        if args.ts_runtime and digest(guard_capture) != report["guard_lowering"]["typescript_capture_sha256"]:
+            raise ValueError("guard TS reference changed during Rust execution")
         for relative, expected in pins.items():
             if digest(ROOT / relative) != expected:
                 raise ValueError(f"source/runtime premise changed: {relative}")

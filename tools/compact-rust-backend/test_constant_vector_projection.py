@@ -42,6 +42,7 @@ class ProjectionApiRefusalTests(unittest.TestCase):
             "index_guard_wide(){failure('result of subtraction would be negative');},"
             "index_guard_success(items){return items[0];},"
             "index_total_wide(items){return items[0];},"
+            "index_guard_wide_success(items){return items[0];},"
             "index_order(items,fail){failure(fail?'Vector operand before index':"
             "'result of subtraction would be negative');}};"
         )

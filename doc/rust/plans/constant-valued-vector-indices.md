@@ -1,14 +1,15 @@
 # Constant-valued Vector indices
 
-Status: a fresh independent Codex CLI review of `e73f8a448` exposed a reproduced
-guard-erasure bug. Its local correctness repair is in progress; this PR is not
-ready for integration or dependent feature work.
+Delivery and integration status: [PR #699](https://github.com/betsudo/compact/pull/699).
+This plan records the implementation and acceptance requirements; each retained
+qualification/review receipt applies to its exact source head. A merged PR and
+its complete required gates establish delivery to `codex/rust-backend-ast`.
 
 Earlier repaired source `1058fb791` passes original native compiler, consumer
 and fresh proof qualification. Claude review at `d9e7c614b` found no merge
 blockers. Full Linux CI then exposed stale retained arithmetic IR in the
-microDAO proof consumer; the fixture repair below requires fresh affected checks
-and a new PR review. Full CI and integration remain pending.
+microDAO proof consumer; the fixture repair below required fresh affected checks
+and a new PR review. Full CI and integration were pending at that stage.
 Earlier `3fa7cec1d` and `70c5cb26a` receipts retain their historical scope. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
@@ -23,9 +24,13 @@ could not retain a failure was incorrect.
 
 The per-invocation bridge now also retains the existing circuit evaluator's
 truth observations for canonical subtraction guards inside the original index.
-These use exact source-object identity; absent or conflicting observations never
+These use exact source-object identity. Every assertion in the original program
+is counted, including assertions outside indices; a duplicate source object
+cannot lend a successful observation to an index guard. Absent or conflicting observations never
 become successful evaluation. No comparison or arithmetic is evaluated by the
-bridge. In source evaluation order, proven successful guards permit ordinary
+bridge. The guard collector explicitly walks operands and bindings in source
+order; it does not rely on generated processor argument evaluation order.
+In source evaluation order, proven successful guards permit ordinary
 constant selection, and a proven first failure becomes an assertion at its
 original index location. The Vector operand is bound once before that assertion.
 Unknown guard facts retain the original typed index evaluation instead of
@@ -39,9 +44,22 @@ are retained as local evidence and are not the selected repair.
 Maintained actual-compiler Rust/TypeScript controls cover failure at both
 multiplication operand positions, successful subtraction, wide constant success
 and failure, and a Vector operand assertion that must fail before the index.
-Internal controls separately exercise missing, conflicting and same-coordinate
-foreign guard observations. These are pure behavior controls; they do not claim
-proof execution. Both existing distinct source-bound Vector proof gates remain
+Successful **wide subtraction** additionally requires a real successful guard
+observation: falling back to unsupported runtime wide multiplication cannot
+silently pass that control. Internal controls separately exercise missing,
+conflicting, outside-index, duplicate and same-coordinate foreign guard sources.
+The first-failure oracle uses source offsets independently of the collector's
+traversal.
+
+The maintained consumer gate also compiles three separate guard contracts.
+It executes known/unknown guard paths through native, recorded and both
+functional interpreters, checking exact errors and witness counts. Two simple
+constructor controls check the same guard failures. TypeScript executes the
+corresponding stateful and constructor wrappers. Constructor `if` actions remain
+outside this slice's accepted scope. An unavailable variable-type environment
+produces a source diagnostic rather than a raw Scheme table exception.
+These are behavior controls, including successful inactive branches; they do
+not claim proofs of failing paths. Both existing distinct source-bound Vector proof gates remain
 required with the repaired original compiler, as do the complete CI gates and
 fresh actual Claude and Codex CLI reviews.
 
