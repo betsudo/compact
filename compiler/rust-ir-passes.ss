@@ -424,6 +424,16 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      ;; Rust's existing type-ir erases numeric aliases to the same carrier.
+      ;; Use the bridge's shared analyzed-bound query for typed expressions and
+      ;; cast annotations too; do not mistake an aliased Uint for a new value.
+      (define (unsigned-canonical-type type)
+        (let ([maximum (rust-unsigned-maximum type)])
+          (if maximum
+              (with-output-language (Lnodisclose Type)
+                `(tunsigned ,(type-origin type) ,maximum))
+              type)))
+
       ;; arithmetic-binop annotates both operands with the result bound.
       ;; For multiplication by zero that bound is smaller than an operand's;
       ;; this safe-cast is erased by the circuit pipeline, not a checked
@@ -432,11 +442,12 @@
       ;; the operand away: its evaluation and failures still occur in order.
       (define (unsigned-arithmetic-operand-ir expr src lower lower-typed)
         (nanopass-case (Lnodisclose Expression) expr
-          [(safe-cast ,src^ (tunsigned ,src1 ,nat) (tunsigned ,src2 ,nat^) ,expr^)
-           (if (< nat nat^)
-               (lower-typed expr^
-                 (with-output-language (Lnodisclose Type) `(tunsigned ,src2 ,nat^)) src^)
-               (lower expr src))]
+          [(safe-cast ,src^ ,type ,type^ ,expr^)
+           (let ([maximum (rust-unsigned-maximum type)]
+                 [source-maximum (rust-unsigned-maximum type^)])
+             (if (and maximum source-maximum (< maximum source-maximum))
+                 (lower-typed expr^ type^ src^)
+                 (lower expr src)))]
           [else (lower expr src)]))
 
       (define (pure-unsigned-arithmetic-operand-ir expr src)
@@ -530,13 +541,13 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
                 (if value
                     (object (cons "kind" "field_literal")
                             (cons "value" (number->string value)))
-                    (nanopass-case (Lnodisclose Type) type^
+                    (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                       [(tunsigned ,src1 ,nat)
                        (object (cons "kind" "field_cast")
                                (cons "value" (typed-expression-ir expr type^ src)))]
@@ -825,7 +836,7 @@
 
       (define (typed-expression-ir expr expected-type owner-src)
         (call-with-rust-origin "expression" (expression-origin expr) #t
-          (lambda () (typed-expression-ir-value expr expected-type owner-src)) (expression-operation-origin expr)))
+          (lambda () (typed-expression-ir-value expr (unsigned-canonical-type expected-type) owner-src)) (expression-operation-origin expr)))
 
       (define (typed-expression-ir-value expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
@@ -1845,10 +1856,23 @@
       ;; them in order and append each private transcript value exactly once.
       (define (stateful-typed-expression-ir value-expr expected-type owner-src witness-ids)
         (call-with-rust-origin "expression" (expression-origin value-expr) #t
-          (lambda () (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)) (expression-operation-origin value-expr)))
+          (lambda () (stateful-typed-expression-ir-value value-expr (unsigned-canonical-type expected-type) owner-src witness-ids)) (expression-operation-origin value-expr)))
 
       (define (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (stateful-bindings-ir local* expr* src (current-counter-environment) witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "body" (stateful-typed-expression-ir expr expected-type src witness-ids)))))]
+          [(seq ,src ,expr* ... ,expr)
+           (if (checked-unsigned-subtraction? expr* expr)
+               (stateful-typed-expression-ir expr expected-type src witness-ids)
+               (object (cons "kind" "sequence")
+                       (cons "steps" (list->vector
+                                      (map (lambda (step) (stateful-expression-ir step src witness-ids)) expr*)))
+                       (cons "value" (stateful-typed-expression-ir expr expected-type src witness-ids))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (stateful-typed-unsigned-arithmetic-ir "unsigned_add" value-expr expected-type
              src mbits expr1 expr2 owner-src witness-ids)]
@@ -1904,11 +1928,11 @@
           [(quote ,src ,datum)
            (typed-expression-ir value-expr expected-type src)]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
-                  (nanopass-case (Lnodisclose Type) type^
+                  (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                     [(tunsigned ,src1 ,nat)
                      (object (cons "kind" "field_cast")
                              (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))]
@@ -2142,11 +2166,11 @@
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
-                  (nanopass-case (Lnodisclose Type) type^
+                  (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                     [(tunsigned ,src1 ,nat)
                      (object (cons "kind" "field_cast")
                              (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))]

@@ -17,7 +17,7 @@
 
 (library (rust-vector-indices)
   (export current-rust-vector-index-facts make-rust-vector-index-facts
-          observe-rust-vector-index! rust-vector-index)
+          observe-rust-vector-index! rust-vector-index rust-unsigned-maximum)
   (import (except (chezscheme) errorf) (utils) (nanopass) (langs))
 
   ;; Fresh for one compiler invocation. Source objects are used only to join
@@ -29,16 +29,16 @@
   (define (exact-integer? value) (and (integer? value) (exact? value)))
 
   ;; These are authoritative analyzed type maxima, not evaluated expressions.
-  (define (unsigned-maximum type)
+  (define (rust-unsigned-maximum type)
     (nanopass-case (Lnodisclose Type) type
       [(tunsigned ,src ,nat) (and (exact-integer? nat) (>= nat 0) nat)]
-      [(talias ,src ,nominal? ,type-name ,type) (unsigned-maximum type)]
+      [(talias ,src ,nominal? ,type-name ,type) (rust-unsigned-maximum type)]
       [else #f]))
 
   (define (bind-constant! local value)
     (nanopass-case (Lnodisclose Argument) local
       [(,var-name ,type)
-       (let ([shape (constant-shaped? value)] [maximum (unsigned-maximum type)])
+       (let ([shape (constant-shaped? value)] [maximum (rust-unsigned-maximum type)])
          (eq-hashtable-set! (constant-bindings) var-name
            (and shape maximum (cons maximum shape)))
          (and shape maximum (list var-name maximum shape)))]))
@@ -58,15 +58,15 @@
   (define (subtraction-base expr)
     (nanopass-case (Lnodisclose Expression) expr
       [(safe-cast ,src ,type ,type^ ,expr)
-       (let ([base (constant-base expr)] [maximum (unsigned-maximum type)]
-             [source-maximum (unsigned-maximum type^)])
+       (let ([base (constant-base expr)] [maximum (rust-unsigned-maximum type)]
+             [source-maximum (rust-unsigned-maximum type^)])
          (and base maximum source-maximum (= source-maximum (car base)) base))]
       [else (constant-base expr)]))
 
   (define (unsigned-bound-operand? expr maximum base)
     (nanopass-case (Lnodisclose Expression) expr
       [(safe-cast ,src ,type ,type^ ,expr)
-       (let ([target (unsigned-maximum type)] [source (unsigned-maximum type^)])
+       (let ([target (rust-unsigned-maximum type)] [source (rust-unsigned-maximum type^)])
          (and target source (= target maximum) (= source (car base))
               (equal? (constant-base expr) base)))]
       [else (and (= maximum (car base)) (equal? (constant-base expr) base))]))
@@ -94,7 +94,8 @@
   (define (constant-shaped? expr)
     (define (arithmetic operator bits left right)
       (let ([left (constant-shaped? left)] [right (constant-shaped? right)])
-        (and left right (list operator bits left right))))
+        (and (exact-integer? bits) (> bits 0) left right
+             (list operator bits left right))))
     (nanopass-case (Lnodisclose Expression) expr
       [(quote ,src ,datum)
        (and (exact-integer? datum) (>= datum 0) (list 'literal datum))]
@@ -114,18 +115,13 @@
       ;; these annotations before authoritative evaluation. Checked source
       ;; downcasts are distinct nodes and remain outside this grammar.
       [(safe-cast ,src ,type ,type^ ,expr)
-       (let ([shape (constant-shaped? expr)])
-         (and shape (nanopass-case (Lnodisclose Type) type
-              [(tunsigned ,src^ ,nat)
-               (nanopass-case (Lnodisclose Type) type^
-                 [(tunsigned ,src^^ ,nat^)
-                  (list 'unsigned-annotation nat nat^ shape)]
-                 [else #f])]
-              [else #f])))]
+       (let ([shape (constant-shaped? expr)]
+             [maximum (rust-unsigned-maximum type)]
+             [source-maximum (rust-unsigned-maximum type^)])
+         (and shape maximum source-maximum
+              (list 'unsigned-annotation maximum source-maximum shape)))]
       [(+ ,src ,mbits ,expr1 ,expr2)
        (arithmetic '+ mbits expr1 expr2)]
-      [(- ,src ,mbits ,expr1 ,expr2)
-       (arithmetic '- mbits expr1 expr2)]
       [(* ,src ,mbits ,expr1 ,expr2)
        (arithmetic '* mbits expr1 expr2)]
       ;; Only the canonical analyzed unsigned subtraction guard is index grammar.

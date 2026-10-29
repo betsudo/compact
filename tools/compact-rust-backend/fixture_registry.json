@@ -458,7 +458,7 @@
     },
     {
       "source": "examples/rust_backend/constant_valued_vector_indices.compact",
-      "source_sha256": "832854d59cede61230aaf775abffbfd2480ba496667dde1760da93d7a25dee94",
+      "source_sha256": "299cc0462b10dc7f7a25f4586437fa3c4f6ada26bd136691cb2949e0044949e6",
       "frontend_outcome": "accepted",
       "frontend_flags": [
         "--rust-functional-ledger8"

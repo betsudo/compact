@@ -18,12 +18,50 @@
 import copy
 import json
 import subprocess
+import shutil
+from pathlib import Path
+import tempfile
 import unittest
 
 from check_constant_vector_projection import compile_failure
 
 
 class ProjectionApiRefusalTests(unittest.TestCase):
+    def test_numeric_capture_rejects_wrong_success_and_preserves_positive_twin(self):
+        node = shutil.which("node")
+        self.assertIsNotNone(node, "Node is required for the maintained JS capture controls")
+        script = Path(__file__).with_name("tests") / "vector_projection/capture_numeric_aliases.mjs"
+        positive = (
+            "export const pureCircuits={zero(){return 0n;},"
+            "checked(x){if(x!==0n)throw Error('checked cast');return 0n;},"
+            "ordered(x){throw Error(x===0n?'second failure':'checked cast');}};"
+        )
+        controls = {
+            "positive": positive,
+            "wrong_zero": positive.replace("zero(){return 0n;}", "zero(){return 1n;}"),
+            "cast_did_not_fail": positive.replace(
+                "checked(x){if(x!==0n)throw Error('checked cast');return 0n;}",
+                "checked(){return 0n;}"),
+            "later_did_not_fail": positive.replace(
+                "ordered(x){throw Error(x===0n?'second failure':'checked cast');}",
+                "ordered(){return 0n;}"),
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            for name, source in controls.items():
+                with self.subTest(name=name):
+                    module = Path(folder) / (name + ".mjs")
+                    output = Path(folder) / (name + ".json")
+                    module.write_text(source)
+                    process = subprocess.run([node, str(script), str(module), str(output)],
+                                             capture_output=True, text=True, timeout=30)
+                    if name == "positive":
+                        self.assertEqual(process.returncode, 0, process.stderr)
+                        self.assertEqual(len(json.loads(output.read_text())["zero"]), 4)
+                    else:
+                        self.assertNotEqual(process.returncode, 0)
+                        self.assertIn("AssertionError", process.stderr)
+                        self.assertFalse(output.exists(), "wrong behavior must not publish a capture")
+
     def test_only_primary_error_at_the_marked_expression_counts(self):
         source = "fn main() {\n    misuse(); // expected-error\n}\n"
         span = {"file_name": "src/bin/double_context.rs", "is_primary": True,

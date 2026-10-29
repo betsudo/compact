@@ -15,11 +15,13 @@
 
 import CompactStandardLibrary;
 
+type Idx = Uint<8>;
+
 export ledger stored: Field;
 export struct OwnedSelection { first: Opaque<"string">; repeated: Opaque<"string">; original: Vector<2, Opaque<"string">>; }
 witness values(): Vector<2, Field>;
 
-export pure circuit first(items: Vector<2, Field>): Field { const i = 1; const index = i * 0; return items[index]; }
+export pure circuit first(items: Vector<2, Field>): Field { const i: Idx = 1; const index = i * 0; return items[index]; }
 export pure circuit last(items: Vector<2, Field>): Field { const index = 1; const one: Uint<8> = 1; return items[(index * 2) - one]; }
 export pure circuit singleton(items: Vector<1, Field>): Field { const index = 0; return items[index]; }
 
@@ -36,14 +38,15 @@ export pure circuit temporary_text(items: Vector<2, Opaque<"string">>): Opaque<"
 }
 
 export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field {
-  const index = 1;
-  const one: Uint<8> = 1;
+  const original = 2;
+  const index = original - 1;
+  const one: Idx = 1;
   const selected = select_first ? items[index - (one * 1)] : items[(index * 2) - one];
   stored = disclose(selected);
   return stored;
 }
 export circuit owned(items: Vector<2, Opaque<"string">>): OwnedSelection {
-  const i = 1;
+  const i: Idx = 1;
   const first = i * 0;
   const repeated = first + 0;
   const a = items[first];
@@ -53,8 +56,9 @@ export circuit owned(items: Vector<2, Opaque<"string">>): OwnedSelection {
 }
 export circuit witnessed(select_first: Boolean): Field {
   const items = values();
-  const index = 1;
-  const one: Uint<8> = 1;
+  const original = 2;
+  const index = (original * 1) - 1;
+  const one: Idx = 1;
   const selected = select_first ? items[index - (one * 1)] : items[(index * 2) - one];
   stored = disclose(selected);
   return stored;

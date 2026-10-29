@@ -17,7 +17,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 18,
+        "line": 20,
         "column": 1
       }
     }
@@ -36,7 +36,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 20,
+        "line": 22,
         "column": 1
       }
     }
@@ -66,12 +66,12 @@
             "name": "i",
             "ty": {
               "kind": "unsigned",
-              "max": "1"
+              "max": "255"
             },
             "value": {
               "kind": "unsigned_literal",
               "value": "1",
-              "max": "1"
+              "max": "255"
             }
           }
         ],
@@ -111,7 +111,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 22,
+        "line": 24,
         "column": 1
       }
     },
@@ -176,7 +176,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 23,
+        "line": 25,
         "column": 1
       }
     },
@@ -224,7 +224,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 24,
+        "line": 26,
         "column": 1
       }
     },
@@ -272,7 +272,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 26,
+        "line": 28,
         "column": 1
       }
     },
@@ -314,7 +314,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 30,
+        "line": 32,
         "column": 1
       }
     },
@@ -378,7 +378,7 @@
       },
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 33,
+        "line": 35,
         "column": 1
       }
     }
@@ -417,15 +417,15 @@
           "kind": "let",
           "bindings": [
             {
-              "name": "index",
+              "name": "original",
               "ty": {
                 "kind": "unsigned",
-                "max": "1"
+                "max": "2"
               },
               "value": {
                 "kind": "unsigned_literal",
-                "value": "1",
-                "max": "1"
+                "value": "2",
+                "max": "2"
               }
             }
           ],
@@ -436,15 +436,23 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "one",
+                    "name": "index",
                     "ty": {
                       "kind": "unsigned",
-                      "max": "255"
+                      "max": "2"
                     },
                     "value": {
-                      "kind": "unsigned_literal",
-                      "value": "1",
-                      "max": "255"
+                      "kind": "unsigned_subtract",
+                      "max": "2",
+                      "left": {
+                        "kind": "parameter",
+                        "name": "original"
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "1",
+                        "max": "2"
+                      }
                     }
                   }
                 ],
@@ -455,44 +463,15 @@
                       "kind": "let",
                       "bindings": [
                         {
-                          "name": "selected",
+                          "name": "one",
                           "ty": {
-                            "kind": "field"
+                            "kind": "unsigned",
+                            "max": "255"
                           },
                           "value": {
-                            "kind": "if",
-                            "condition": {
-                              "kind": "parameter",
-                              "name": "select_first"
-                            },
-                            "then": {
-                              "kind": "coerce",
-                              "value": {
-                                "kind": "tuple_index",
-                                "value": {
-                                  "kind": "parameter",
-                                  "name": "items"
-                                },
-                                "index": 0
-                              },
-                              "ty": {
-                                "kind": "field"
-                              }
-                            },
-                            "otherwise": {
-                              "kind": "coerce",
-                              "value": {
-                                "kind": "tuple_index",
-                                "value": {
-                                  "kind": "parameter",
-                                  "name": "items"
-                                },
-                                "index": 1
-                              },
-                              "ty": {
-                                "kind": "field"
-                              }
-                            }
+                            "kind": "unsigned_literal",
+                            "value": "1",
+                            "max": "255"
                           }
                         }
                       ],
@@ -500,12 +479,63 @@
                         "kind": "sequence",
                         "actions": [
                           {
-                            "kind": "cell_write",
-                            "field": "stored",
-                            "index": 0,
-                            "value": {
-                              "kind": "parameter",
-                              "name": "selected"
+                            "kind": "let",
+                            "bindings": [
+                              {
+                                "name": "selected",
+                                "ty": {
+                                  "kind": "field"
+                                },
+                                "value": {
+                                  "kind": "if",
+                                  "condition": {
+                                    "kind": "parameter",
+                                    "name": "select_first"
+                                  },
+                                  "then": {
+                                    "kind": "coerce",
+                                    "value": {
+                                      "kind": "tuple_index",
+                                      "value": {
+                                        "kind": "parameter",
+                                        "name": "items"
+                                      },
+                                      "index": 0
+                                    },
+                                    "ty": {
+                                      "kind": "field"
+                                    }
+                                  },
+                                  "otherwise": {
+                                    "kind": "coerce",
+                                    "value": {
+                                      "kind": "tuple_index",
+                                      "value": {
+                                        "kind": "parameter",
+                                        "name": "items"
+                                      },
+                                      "index": 1
+                                    },
+                                    "ty": {
+                                      "kind": "field"
+                                    }
+                                  }
+                                }
+                              }
+                            ],
+                            "action": {
+                              "kind": "sequence",
+                              "actions": [
+                                {
+                                  "kind": "cell_write",
+                                  "field": "stored",
+                                  "index": 0,
+                                  "value": {
+                                    "kind": "parameter",
+                                    "name": "selected"
+                                  }
+                                }
+                              ]
                             }
                           }
                         ]
@@ -520,7 +550,7 @@
       ],
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 38,
+        "line": 40,
         "column": 1
       }
     },
@@ -622,12 +652,12 @@
               "name": "i",
               "ty": {
                 "kind": "unsigned",
-                "max": "1"
+                "max": "255"
               },
               "value": {
                 "kind": "unsigned_literal",
                 "value": "1",
-                "max": "1"
+                "max": "255"
               }
             }
           ],
@@ -734,7 +764,7 @@
                                         "kind": "let",
                                         "bindings": [
                                           {
-                                            "name": "tmp_10",
+                                            "name": "tmp_11",
                                             "ty": {
                                               "kind": "field"
                                             },
@@ -750,7 +780,7 @@
                                           "index": 0,
                                           "value": {
                                             "kind": "parameter",
-                                            "name": "tmp_10"
+                                            "name": "tmp_11"
                                           }
                                         }
                                       }
@@ -772,7 +802,7 @@
       ],
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 45,
+        "line": 48,
         "column": 1
       }
     },
@@ -822,15 +852,15 @@
                 "kind": "let",
                 "bindings": [
                   {
-                    "name": "index",
+                    "name": "original",
                     "ty": {
                       "kind": "unsigned",
-                      "max": "1"
+                      "max": "2"
                     },
                     "value": {
                       "kind": "unsigned_literal",
-                      "value": "1",
-                      "max": "1"
+                      "value": "2",
+                      "max": "2"
                     }
                   }
                 ],
@@ -841,15 +871,48 @@
                       "kind": "let",
                       "bindings": [
                         {
-                          "name": "one",
+                          "name": "index",
                           "ty": {
                             "kind": "unsigned",
-                            "max": "255"
+                            "max": "2"
                           },
                           "value": {
-                            "kind": "unsigned_literal",
-                            "value": "1",
-                            "max": "255"
+                            "kind": "let",
+                            "bindings": [
+                              {
+                                "name": "t_10",
+                                "ty": {
+                                  "kind": "unsigned",
+                                  "max": "2"
+                                },
+                                "value": {
+                                  "kind": "unsigned_multiply",
+                                  "max": "2",
+                                  "left": {
+                                    "kind": "parameter",
+                                    "name": "original"
+                                  },
+                                  "right": {
+                                    "kind": "unsigned_literal",
+                                    "value": "1",
+                                    "max": "2"
+                                  }
+                                }
+                              }
+                            ],
+                            "body": {
+                              "kind": "unsigned_subtract",
+                              "max": "2",
+                              "left": {
+                                "kind": "parameter",
+                                "name": "t_10"
+                              },
+                              "right": {
+                                "kind": "unsigned_literal",
+                                "value": "1",
+                                "max": "2"
+                              }
+                            }
                           }
                         }
                       ],
@@ -860,44 +923,15 @@
                             "kind": "let",
                             "bindings": [
                               {
-                                "name": "selected",
+                                "name": "one",
                                 "ty": {
-                                  "kind": "field"
+                                  "kind": "unsigned",
+                                  "max": "255"
                                 },
                                 "value": {
-                                  "kind": "if",
-                                  "condition": {
-                                    "kind": "parameter",
-                                    "name": "select_first"
-                                  },
-                                  "then": {
-                                    "kind": "coerce",
-                                    "value": {
-                                      "kind": "tuple_index",
-                                      "value": {
-                                        "kind": "parameter",
-                                        "name": "items"
-                                      },
-                                      "index": 0
-                                    },
-                                    "ty": {
-                                      "kind": "field"
-                                    }
-                                  },
-                                  "otherwise": {
-                                    "kind": "coerce",
-                                    "value": {
-                                      "kind": "tuple_index",
-                                      "value": {
-                                        "kind": "parameter",
-                                        "name": "items"
-                                      },
-                                      "index": 1
-                                    },
-                                    "ty": {
-                                      "kind": "field"
-                                    }
-                                  }
+                                  "kind": "unsigned_literal",
+                                  "value": "1",
+                                  "max": "255"
                                 }
                               }
                             ],
@@ -905,12 +939,63 @@
                               "kind": "sequence",
                               "actions": [
                                 {
-                                  "kind": "cell_write",
-                                  "field": "stored",
-                                  "index": 0,
-                                  "value": {
-                                    "kind": "parameter",
-                                    "name": "selected"
+                                  "kind": "let",
+                                  "bindings": [
+                                    {
+                                      "name": "selected",
+                                      "ty": {
+                                        "kind": "field"
+                                      },
+                                      "value": {
+                                        "kind": "if",
+                                        "condition": {
+                                          "kind": "parameter",
+                                          "name": "select_first"
+                                        },
+                                        "then": {
+                                          "kind": "coerce",
+                                          "value": {
+                                            "kind": "tuple_index",
+                                            "value": {
+                                              "kind": "parameter",
+                                              "name": "items"
+                                            },
+                                            "index": 0
+                                          },
+                                          "ty": {
+                                            "kind": "field"
+                                          }
+                                        },
+                                        "otherwise": {
+                                          "kind": "coerce",
+                                          "value": {
+                                            "kind": "tuple_index",
+                                            "value": {
+                                              "kind": "parameter",
+                                              "name": "items"
+                                            },
+                                            "index": 1
+                                          },
+                                          "ty": {
+                                            "kind": "field"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "action": {
+                                    "kind": "sequence",
+                                    "actions": [
+                                      {
+                                        "kind": "cell_write",
+                                        "field": "stored",
+                                        "index": 0,
+                                        "value": {
+                                          "kind": "parameter",
+                                          "name": "selected"
+                                        }
+                                      }
+                                    ]
                                   }
                                 }
                               ]
@@ -928,7 +1013,7 @@
       ],
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 54,
+        "line": 57,
         "column": 1
       }
     },
@@ -1000,7 +1085,7 @@
       ],
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 62,
+        "line": 66,
         "column": 1
       }
     },
@@ -1109,7 +1194,7 @@
       ],
       "source": {
         "file": "constant_valued_vector_indices.compact",
-        "line": 67,
+        "line": 71,
         "column": 1
       }
     }

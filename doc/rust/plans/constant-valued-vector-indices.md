@@ -1,7 +1,8 @@
 # Constant-valued Vector indices
 
-Status: reconciled local version 0.31.144 qualification passes at `3fa7cec1d`.
-Own PR review, full CI and integration remain pending. Delivery target: `codex/rust-backend-ast`.
+Status: PR #699 review repairs in progress. Original qualification epochs
+`3fa7cec1d` and `70c5cb26a` remain historical; additional stateful subtraction
+and numeric-alias repairs require fresh qualification, review and full CI. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
 
@@ -105,7 +106,7 @@ existing named-Fold refusal. Multiple instantiated occurrences sharing one
 original source object are conservatively ambiguous and require a separate
 transport decision; do not advertise unrestricted generic or loop coverage.
 
-Seventeen independent internal controls cover missing facts, exact original-node
+The initial seventeen independent internal controls cover missing facts, exact original-node
 lookup, repeated observations, identical coordinates on distinct source objects,
 equal-looking distinct nodes, conflicts, invocation isolation, duplicate source
 occurrences, runtime formals, an unrelated false subtraction guard and inferred
@@ -244,7 +245,7 @@ advances the compiler, Nix package, current ledger reference and changelog
 together. All prior compiler/API/crypto receipts retain their literal source
 epochs; final-source qualification below must precede this slice's publication.
 
-## Current reconciled version144 qualification
+## Historical reconciled version144 qualification — 3fa7cec1d
 
 At clean signed `3fa7cec1d`, original native compiler 0.31.144 realization,
 both complete fresh generated-consumer gates and exact whole-fixture comparison
@@ -302,3 +303,38 @@ epochs. These source repairs require a new original packaged compiler, complete
 fixture comparison, native/TS and API controls, fresh keys/proofs and funded
 transaction checks, full PR CI, and another actual Claude CLI review before
 integration. Development override execution is labelled separately throughout.
+
+
+## Second review repair scope — 2026-10-29
+
+The authentic second Claude review identified retained stateful subtraction whose
+analyzed guard/temporary wrappers lost the declared result maximum. Typed
+stateful `seq` and `let*` now carry the expected type through their tail while
+retaining all preceding evaluations and explicit guards. Compound source cases
+and the maintained witnessed circuit exercise a retained `const index = 2 - 1`.
+
+Structural/nested unsigned aliases use one shared analyzed-maximum query in
+`rust-vector-indices.ss`, also consumed by typed arithmetic/cast emission.
+Rust already represents these aliases through their underlying numeric carrier;
+the fix preserves that carrier instead of adding a checked narrowing before
+multiplication by zero. Genuine checked source downcasts remain checked.
+Runtime-dependent indices are still refused. Explicit Field-arithmetic and
+unguarded-subtraction occurrence controls additionally close the unsigned grammar.
+
+Corrected original-compiler source and execution controls confirm both defects.
+The review's suggested `Uint<0..0>` is invalid (exclusive upper bound); the valid
+zero range is `Uint<0..1>`, which demonstrates the actual runtime discrepancy.
+Its constructor concern is refuted by valid disclosure-declared source: both
+literal and aliased constructor selections compile in both targets. The circuit
+index evaluator visits the constructor before discarding its transformed body.
+No constructor proof claim follows from this source observation.
+
+The expanded occurrence suite has 34 controls. The maintained API gate also
+generates a separate pure numeric-alias control and runs three Rust tests against
+live TypeScript, including a genuine checked cast and first-failure ordering.
+Synthetic capture canaries refuse missing failures before publishing a capture;
+they are unit controls, not compiler or proof execution.
+
+Updated whole fixtures, original packaged compiler qualification, current native
+and TS execution, fresh actual proofs, a new independent review and full CI are
+required for these repairs. Previous receipts retain their own exact epochs.

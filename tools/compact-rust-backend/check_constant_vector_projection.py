@@ -182,6 +182,28 @@ def main():
             if not process.returncode or message not in process.stderr or refused.exists():
                 raise ValueError(f"source {name} did not refuse at its static vector bound")
             report["source_refusals"][name] = message
+        # Exercise the numeric source owners retained by constant bindings:
+        # aliases, zero multiplication, genuine checked casts and first failure.
+        numeric_generated = output / "numeric-generated"
+        run("numeric-generate", [compiler, "--target", "rust",
+                                *(["--target", "ts"] if args.ts_runtime else []),
+                                "--rust-runtime-root", ROOT, "--skip-zk",
+                                FIXTURES / "numeric_aliases.compact", numeric_generated])
+        from check_compactc_target import check_manifest
+        check_manifest(numeric_generated, require_zkir=False)
+        numeric_snapshot = {str(path.relative_to(numeric_generated)): digest(path)
+                            for path in numeric_generated.rglob("*") if path.is_file()}
+        report["numeric_aliases"] = {"generated": numeric_snapshot, "rust_tests": 3}
+        numeric_package = tomllib.loads((numeric_generated / "contract/Cargo.toml").read_text())["package"]["name"]
+        if args.ts_runtime:
+            numeric_capture = output / "numeric-ts-reference.json"
+            run("numeric-typescript", ["node", FIXTURES / "capture_numeric_aliases.mjs",
+                                       numeric_generated / "contract/index.js", numeric_capture])
+            environment["COMPACT_VECTOR_NUMERIC_TS_REFERENCE"] = str(numeric_capture)
+            report["numeric_aliases"]["typescript_capture_sha256"] = digest(numeric_capture)
+        else:
+            environment.pop("COMPACT_VECTOR_NUMERIC_TS_REFERENCE", None)
+            report["numeric_aliases"]["typescript"] = "NOT RUN; no --ts-runtime selected"
         package = tomllib.loads((generated / "contract/Cargo.toml").read_text())["package"]["name"]
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
@@ -190,9 +212,11 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         (consumer / "src/lib.rs").write_text("")
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/vector.rs")
+        shutil.copyfile(FIXTURES / "numeric_aliases.rs", consumer / "tests/numeric.rs")
         lines = ['[workspace]', '[package]', 'name="constant-vector-consumer"', 'version="0.0.0"',
                  'edition="2024"', '[dependencies]',
                  f'vector_fixture={{package={json.dumps(package)},path={json.dumps(str(generated / "contract"))}}}',
+                 f'numeric_fixture={{package={json.dumps(numeric_package)},path={json.dumps(str(numeric_generated / "contract"))}}}',
                  f'serde_json="={serde}"', '[features]']
         lines.extend(f'{name}=[]' for name in NEGATIVES)
         for name in NEGATIVES:
@@ -205,7 +229,8 @@ def main():
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)
         allowed_local = {manifest.resolve(), (generated / "contract/Cargo.toml").resolve(),
-                         (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve()}
+                         (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve(),
+                         (numeric_generated / "contract/Cargo.toml").resolve()}
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
         for item in metadata["packages"]:
             identity = (item["name"], item["version"], item.get("source"))
@@ -226,6 +251,11 @@ def main():
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("8", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
         report["rust_consumer_tests"] = 8
+        numeric_result = run("numeric-consumer", ["cargo", "test", "--locked", "--offline",
+                             "--manifest-path", manifest, "--test", "numeric"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", numeric_result) != [("3", "0", "0")]:
+            raise ValueError("unexpected numeric alias/boundary control accounting")
+
         if args.ts_runtime:
             changed = json.loads(capture.read_text())
             next(row for row in changed["cases"] if row["id"] == "choose-first")["output"]["valueAtoms"] = [[42]]
@@ -246,6 +276,9 @@ def main():
                                 "--bin", name, "--features", name, "--message-format=json"], success=False)
             report["compile_fail"][name] = compile_failure(
                 process, name, expected, (consumer / f"src/bin/{name}.rs").read_text())
+        if {str(path.relative_to(numeric_generated)): digest(path)
+            for path in numeric_generated.rglob("*") if path.is_file()} != numeric_snapshot:
+            raise ValueError("numeric generated assets changed during execution")
         if generated_manifest_snapshot(generated) != report["generated"]:
             raise ValueError("generated assets changed during consumer execution")
         for relative, expected in pins.items():

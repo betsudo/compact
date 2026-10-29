@@ -66,6 +66,18 @@
      `(vector-ref ,src ,type ,expr
         (downcast-unsigned ,src 1 0 ,index))]))
 
+(define-pass field-arithmetic-index : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     `(vector-ref ,src ,type ,expr
+        (+ ,src #f (quote ,src 0) (quote ,src 1)))]))
+
+(define-pass unguarded-subtraction-index : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     `(vector-ref ,src ,type ,expr
+        (- ,src 1 (quote ,src 1) (quote ,src 0)))]))
+
 (define (nodes ir)
   (set! collected '())
   (collect-vector-index-nodes ir)
@@ -168,7 +180,7 @@
   (lambda (row)
     (let* ([label (car row)] [body (cadr row)] [expected (caddr row)]
            [ir (analyze (write-source (symbol->string label)
-                 (string-append "export pure circuit choose(items: Vector<3, Field>): Field { " body " }")))]
+                 (string-append "type Idx = Uint<8>; type Nested = Idx; export pure circuit choose(items: Vector<3, Field>): Field { " body " }")))]
            [node (car (nodes ir))])
       (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts ir)])
         (observe-rust-vector-index! (source node) expected)
@@ -181,12 +193,24 @@
     (nested-wide "const index = 1; const one: Uint<8> = 1; return items[(index + 1) - one - one];" 0)
     (direct-zero "const i = 1; return items[i * 0];" 0)
     (alias-zero "const i = 1; const index = i * 0; return items[index];" 0)
-    (nested-zero "const i = 1; const index = i * 0 + 1; return items[index];" 1)))
+    (nested-zero "const i = 1; const index = i * 0 + 1; return items[index];" 1)
+    (typed-alias-zero "const i: Idx = 1; const index = i * 0; return items[index];" 0)
+    (nested-alias-zero "const i: Nested = 1; const index = i * 0; return items[index];" 0)
+    (alias-wide-right "const i = 2; const one: Idx = 1; return items[i - one];" 1)))
 
 (let* ([forged-ir (checked-narrow-index ir)] [node (car (nodes forged-ir))])
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged-ir)])
     (observe-rust-vector-index! (source node) 0)
     (check 'checked-downcast-not-admitted (not (rust-vector-index node)))))
+
+(for-each
+  (lambda (transform label)
+    (let* ([forged (transform ir)] [node (car (nodes forged))])
+      (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged)])
+        (observe-rust-vector-index! (source node) 1)
+        (check label (not (rust-vector-index node))))))
+  (list field-arithmetic-index unguarded-subtraction-index)
+  '(field-arithmetic-not-admitted unguarded-subtraction-not-admitted))
 
 (let* ([runtime-zero-ir (analyze (write-source "runtime-zero"
          "export pure circuit choose(items: Vector<3, Field>, i: Uint<8>): Field { const index = i * 0; return items[index]; }"))]

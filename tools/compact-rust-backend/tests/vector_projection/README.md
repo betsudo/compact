@@ -82,3 +82,14 @@ worktrees and reproducible build targets are eligible for cleanup after this
 work is complete and merged in GitHub, while preserving unpublished changes,
 needed inputs and evidence. This condition does not authorize publishing/merging
 or deleting shared stores, caches, containers or qualification artifacts.
+
+
+The live API gate also generates the separate pure `numeric_aliases.compact`
+control. Three actual Rust tests compare live TypeScript behavior for nested
+unsigned aliases and multiplication by zero at inputs 0, 1, 5 and 255. Explicit
+checked source casts must still reject nonzero values, and their failure must
+precede the later assertion. This pure control generates no ZKIR or proof.
+Its complete generated-file inventory is retained independently of the selected
+Vector source. Capture unit controls use an explicitly synthetic module to
+reject wrong values or missing failures before publishing a capture; they do
+not claim compiler execution.
