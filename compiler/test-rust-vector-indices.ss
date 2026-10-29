@@ -37,6 +37,11 @@
      (let ([expr^ ir])
        `(seq ,src ,expr^ (vector-ref ,src ,type ,expr ,index)))]))
 
+(define-pass duplicate-index-guards : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     `(vector-ref ,src ,type ,expr (+ ,src 3 ,index ,index))]))
+
 (define-pass false-subtraction-guard : Lnodisclose (ir) -> Lnodisclose ()
   (Expression : Expression (ir) -> Expression ()
     [(seq ,src (assert ,src^ (>= ,src^^ ,bits ,expr1 ,expr2) ,mesg)
@@ -95,6 +100,13 @@
 (define (source node)
   (nanopass-case (Lnodisclose Expression) node
     [(vector-ref ,src ,type ,expr ,index) src]))
+
+(define guard-sources '())
+(define-pass collect-guard-sources : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(assert ,src ,[expr] ,mesg)
+     (set! guard-sources (cons src guard-sources))
+     ir]))
 
 (define checks 0)
 (define (check label result)
@@ -163,7 +175,32 @@
        [forged-node (car (nodes forged-ir))])
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts subtraction-ir)])
     (observe-rust-vector-index! (source subtraction-node) 1)
-    (check 'exact-constant-subtraction-guard (= (rust-vector-index subtraction-node) 1)))
+    (check 'exact-constant-subtraction-guard (= (rust-vector-index subtraction-node) 1))
+    (check 'numeric-fact-does-not-prove-guard (eq? (rust-vector-index-guard-state subtraction-node) 'unknown))
+    (set! guard-sources '())
+    (collect-guard-sources subtraction-ir)
+    (let* ([guard-src (car guard-sources)]
+           [copy-src (make-source-object (source-object-sfd guard-src)
+                       (source-object-bfp guard-src) (source-object-efp guard-src))])
+      (observe-rust-vector-index-guard! copy-src 'true)
+      (check 'guard-coordinates-not-authority (eq? (rust-vector-index-guard-state subtraction-node) 'unknown))
+      (observe-rust-vector-index-guard! guard-src 'false)
+      (check 'failing-guard-retained (eq? (car (rust-vector-index-guard-state subtraction-node)) guard-src))
+      (observe-rust-vector-index-guard! guard-src 'true)
+      (check 'guard-conflict-not-erased (eq? (rust-vector-index-guard-state subtraction-node) 'unknown))
+      (observe-rust-vector-index-guard! guard-src 'true)
+      (check 'guard-conflict-not-overwritten (eq? (rust-vector-index-guard-state subtraction-node) 'unknown))))
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts subtraction-ir)])
+    (observe-rust-vector-index! (source subtraction-node) 1)
+    (observe-rust-vector-index-guard! (car guard-sources) 'true)
+    (check 'successful-guard-is-authoritative (eq? (rust-vector-index-guard-state subtraction-node) 'safe)))
+  (let* ([copied-ir (duplicate-index-guards subtraction-ir)]
+         [copied-node (car (nodes copied-ir))])
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied-ir)])
+      (observe-rust-vector-index! (source copied-node) 2)
+      (observe-rust-vector-index-guard! (car guard-sources) 'true)
+      (check 'duplicate-guard-source-not-authority
+        (eq? (rust-vector-index-guard-state copied-node) 'unknown))))
   (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts forged-ir)])
     (observe-rust-vector-index! (source forged-node) 1)
     (check 'unrelated-false-guard-not-erased (not (rust-vector-index forged-node))))
@@ -175,6 +212,19 @@
           (check label (not (rust-vector-index node))))))
     (list wrong-subtraction-guard-width wrong-subtraction-guard-message)
     '(wrong-guard-width-not-erased wrong-guard-message-not-erased)))
+
+(let* ([ordered-ir (analyze (write-source "guard-order"
+         "export pure circuit choose(items: Vector<3, Field>): Field { const a = 1; const b = 2; const c = 3; return items[(a - b) * 0 + (a - c) * 0]; }"))]
+       [ordered-node (car (nodes ordered-ir))])
+  (set! guard-sources '())
+  (collect-guard-sources ordered-ir)
+  (let ([ordered-sources (reverse guard-sources)])
+    (check 'two-ordered-guards (= (length ordered-sources) 2))
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts ordered-ir)])
+      (observe-rust-vector-index! (source ordered-node) 0)
+      (for-each (lambda (src) (observe-rust-vector-index-guard! src 'false)) ordered-sources)
+      (check 'first-index-failure-source-retained
+        (eq? (car (rust-vector-index-guard-state ordered-node)) (car ordered-sources))))))
 
 (for-each
   (lambda (row)

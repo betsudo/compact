@@ -27,3 +27,39 @@ export pure circuit ordered(x: Idx): Uint<0..1> {
   assert(x == 255, "second failure");
   return narrowed * 0;
 }
+
+export pure circuit index_guard_left(items: Vector<2, Field>): Field {
+  const a = 1;
+  const b = 2;
+  return items[(a - b) * 0];
+}
+export pure circuit index_guard_right(items: Vector<2, Field>): Field {
+  const a = 1;
+  const b = 2;
+  return items[0 * (a - b)];
+}
+export pure circuit index_guard_success(items: Vector<2, Field>): Field {
+  const a = 2;
+  const b = 1;
+  return items[(a - b) * 0];
+}
+// Constant index evaluation already supports wide constants. This is distinct
+// from a runtime wide-Uint multiplication API.
+export pure circuit index_total_wide(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 1;
+  return items[a * 0];
+}
+export pure circuit index_guard_wide(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 1;
+  const b: Uint<200> = 2;
+  return items[(a - b) * 0];
+}
+pure circuit vector_before_index(items: Vector<2, Field>, fail: Boolean): Vector<2, Field> {
+  assert(!fail, "Vector operand before index");
+  return items;
+}
+export pure circuit index_order(items: Vector<2, Field>, fail: Boolean): Field {
+  const a = 1;
+  const b = 2;
+  return vector_before_index(items, fail)[(a - b) * 0];
+}

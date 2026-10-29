@@ -1,6 +1,10 @@
 # Constant-valued Vector indices
 
-Status: repaired source `1058fb791` passes original native compiler, consumer
+Status: a fresh independent Codex CLI review of `e73f8a448` exposed a reproduced
+guard-erasure bug. Its local correctness repair is in progress; this PR is not
+ready for integration or dependent feature work.
+
+Earlier repaired source `1058fb791` passes original native compiler, consumer
 and fresh proof qualification. Claude review at `d9e7c614b` found no merge
 blockers. Full Linux CI then exposed stale retained arithmetic IR in the
 microDAO proof consumer; the fixture repair below requires fresh affected checks
@@ -8,6 +12,38 @@ and a new PR review. Full CI and integration remain pending.
 Earlier `3fa7cec1d` and `70c5cb26a` receipts retain their historical scope. Delivery target: `codex/rust-backend-ast`.
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
+
+## Constant index failure repair — 2026-10-29
+
+The packaged compiler reproduced `items[(a - b) * 0]` for constant `a = 1`,
+`b = 2`: generated TypeScript fails its subtraction assertion, while the old
+generated Rust returns the first element. A resolved numeric position does not
+prove that evaluating the index succeeds. The earlier claim that this grammar
+could not retain a failure was incorrect.
+
+The per-invocation bridge now also retains the existing circuit evaluator's
+truth observations for canonical subtraction guards inside the original index.
+These use exact source-object identity; absent or conflicting observations never
+become successful evaluation. No comparison or arithmetic is evaluated by the
+bridge. In source evaluation order, proven successful guards permit ordinary
+constant selection, and a proven first failure becomes an assertion at its
+original index location. The Vector operand is bound once before that assertion.
+Unknown guard facts retain the original typed index evaluation instead of
+discarding its work. Outer local bindings retain their existing execution.
+
+This preserves already-supported wide **constant indices** without adding a
+general runtime wide multiplication API. The initial attempt to execute all
+index arithmetic regressed such a source; that attempt and its observed failure
+are retained as local evidence and are not the selected repair.
+
+Maintained actual-compiler Rust/TypeScript controls cover failure at both
+multiplication operand positions, successful subtraction, wide constant success
+and failure, and a Vector operand assertion that must fail before the index.
+Internal controls separately exercise missing, conflicting and same-coordinate
+foreign guard observations. These are pure behavior controls; they do not claim
+proof execution. Both existing distinct source-bound Vector proof gates remain
+required with the repaired original compiler, as do the complete CI gates and
+fresh actual Claude and Codex CLI reviews.
 
 ## Linux CI fixture repair — 2026-10-29
 
@@ -95,11 +131,12 @@ Generic and loop forms must be characterized explicitly before admission.
 Rust retains the Vector operand once and selects the validated position through
 existing `tuple_index` IR and structured AST emission. General CTV knowledge is
 insufficient to erase index evaluation. This bridge additionally requires a
-closed, effect-free constant grammar with no runtime formal, call or conditional.
+closed constant grammar with no runtime formal, call or conditional.
 Its unsigned subtraction guard must match the exact subtracted operands. The
 existing circuit evaluator must successfully resolve the result and bounds.
-Within this narrow grammar there is no remaining index effect or possible
-failure to erase; original local bindings retain their evaluation order. Forms
+Canonical subtraction can still fail even when an enclosing multiplication
+resolves to zero; its guard handling is specified above. Original local bindings
+retain their evaluation order. Forms
 outside it refuse even when the general CTV owner infers a number. No runtime ABI,
 schema or public indexing helper is intended.
 

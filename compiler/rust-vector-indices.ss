@@ -17,7 +17,8 @@
 
 (library (rust-vector-indices)
   (export current-rust-vector-index-facts make-rust-vector-index-facts
-          observe-rust-vector-index! rust-vector-index rust-unsigned-maximum)
+          observe-rust-vector-index! rust-vector-index rust-unsigned-maximum
+          observe-rust-vector-index-guard! rust-vector-index-guard-state)
   (import (except (chezscheme) errorf) (utils) (nanopass) (langs))
 
   ;; Fresh for one compiler invocation. Source objects are used only to join
@@ -26,6 +27,7 @@
   (define current-rust-vector-index-facts (make-parameter #f))
   (define collecting (make-parameter #f))
   (define constant-bindings (make-parameter #f))
+  (define index-guards (make-parameter '()))
   (define (exact-integer? value) (and (integer? value) (exact? value)))
 
   ;; These are authoritative analyzed type maxima, not evaluated expressions.
@@ -132,6 +134,14 @@
        (guarded-subtraction bits mbits expr1 expr2 expr3 expr4 mesg)]
       [else #f]))
 
+  ;; Retain only guards syntactically inside this index. Guards in an outer
+  ;; constant binding already execute at that binding's original location.
+  (define-pass collect-index-guards : (Lnodisclose Expression) (ir) -> (Lnodisclose Expression) ()
+    (Expression : Expression (ir) -> Expression ()
+      [(assert ,src ,[expr] ,mesg)
+       (index-guards (cons (cons src mesg) (index-guards)))
+       ir]))
+
   (define-pass collect-vector-indices : Lnodisclose (ir) -> Lnodisclose ()
     (Expression : Expression (ir) -> Expression ()
       [(let* ,src ([,local* ,expr*] ...) ,expr)
@@ -151,13 +161,24 @@
            (eq-hashtable-set! by-source src
              (if (eq-hashtable-contains? by-source src) 'ambiguous ir)))
          (when (constant-shaped? index)
-           (eq-hashtable-set! by-node ir 'unobserved)))
+           (eq-hashtable-set! by-node ir 'unobserved)
+           (parameterize ([index-guards '()])
+             (collect-index-guards index)
+             (eq-hashtable-set! (vector-ref (collecting) 2) ir
+               (reverse (index-guards)))
+             (for-each (lambda (guard)
+                         (let ([observations (vector-ref (collecting) 3)])
+                           (eq-hashtable-set! observations (car guard)
+                             (if (eq-hashtable-contains? observations (car guard))
+                                 'ambiguous 'unobserved))))
+                       (index-guards)))))
        (Expression expr)
        (Expression index)
        ir]))
 
   (define (make-rust-vector-index-facts ir)
-    (let ([facts (vector (make-eq-hashtable) (make-eq-hashtable))])
+    (let ([facts (vector (make-eq-hashtable) (make-eq-hashtable)
+                        (make-eq-hashtable) (make-eq-hashtable))])
       (parameterize ([collecting facts] [constant-bindings (make-eq-hashtable)])
         (collect-vector-indices ir))
       facts))
@@ -179,4 +200,30 @@
     (let* ([facts (current-rust-vector-index-facts)]
            [index (and facts (eq-hashtable-ref (vector-ref facts 1) expr #f))])
       (and (exact-integer? index) (>= index 0) index)))
+
+  ;; The existing circuit evaluator supplies these truth facts. This bridge
+  ;; never evaluates a comparison or arithmetic expression itself. Conflicting
+  ;; copies cannot turn a failing/unknown guard into successful evaluation.
+  (define (observe-rust-vector-index-guard! src truth)
+    (let ([facts (current-rust-vector-index-facts)])
+      (when facts
+        (let* ([guards (vector-ref facts 3)]
+               [old (eq-hashtable-ref guards src #f)])
+          (when old
+            (eq-hashtable-set! guards src
+              (cond [(eq? old 'unobserved) truth]
+                    [(eq? old truth) old]
+                    [else 'ambiguous])))))))
+
+  (define (rust-vector-index-guard-state expr)
+    (let* ([facts (current-rust-vector-index-facts)]
+           [guards (and facts (eq-hashtable-ref (vector-ref facts 2) expr #f))])
+      (if guards
+          (let loop ([guards guards])
+            (if (null? guards) 'safe
+                (case (eq-hashtable-ref (vector-ref facts 3) (caar guards) 'unobserved)
+                  [(true) (loop (cdr guards))]
+                  [(false) (car guards)]
+                  [else 'unknown])))
+          'unknown)))
 )

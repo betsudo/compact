@@ -32,9 +32,18 @@ class ProjectionApiRefusalTests(unittest.TestCase):
         self.assertIsNotNone(node, "Node is required for the maintained JS capture controls")
         script = Path(__file__).with_name("tests") / "vector_projection/capture_numeric_aliases.mjs"
         positive = (
+            "function failure(message){throw Object.assign(Error('failed assert: '+message),"
+            "{name:'CompactError'});}\n"
             "export const pureCircuits={zero(){return 0n;},"
             "checked(x){if(x!==0n)throw Error('checked cast');return 0n;},"
-            "ordered(x){throw Error(x===0n?'second failure':'checked cast');}};"
+            "ordered(x){throw Error(x===0n?'second failure':'checked cast');},"
+            "index_guard_left(){failure('result of subtraction would be negative');},"
+            "index_guard_right(){failure('result of subtraction would be negative');},"
+            "index_guard_wide(){failure('result of subtraction would be negative');},"
+            "index_guard_success(items){return items[0];},"
+            "index_total_wide(items){return items[0];},"
+            "index_order(items,fail){failure(fail?'Vector operand before index':"
+            "'result of subtraction would be negative');}};"
         )
         controls = {
             "positive": positive,
@@ -45,6 +54,12 @@ class ProjectionApiRefusalTests(unittest.TestCase):
             "later_did_not_fail": positive.replace(
                 "ordered(x){throw Error(x===0n?'second failure':'checked cast');}",
                 "ordered(){return 0n;}"),
+            "index_guard_erased": positive.replace(
+                "index_guard_left(){failure('result of subtraction would be negative');}",
+                "index_guard_left(items){return items[0];}"),
+            "index_operand_order_reversed": positive.replace(
+                "fail?'Vector operand before index':'result of subtraction would be negative'",
+                "'result of subtraction would be negative'"),
         }
         with tempfile.TemporaryDirectory() as folder:
             for name, source in controls.items():

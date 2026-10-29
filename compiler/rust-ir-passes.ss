@@ -458,19 +458,65 @@
           (lambda (expr src) (stateful-expression-ir expr src witness-ids))
           (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids))))
 
+      ;; Recover the analyzed carrier of the admitted index grammar, without
+      ;; evaluating it or using its resolved numeric value as a type bound.
+      (define (vector-index-type index locals)
+        (nanopass-case (Lnodisclose Expression) index
+          [(quote ,src ,datum)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,datum))]
+          [(var-ref ,src ,var-name)
+           (let ([local (assq var-name locals)])
+             (if local (cdr local)
+                 (or (eq-hashtable-ref (current-variable-types) var-name #f)
+                     (internal-errorf 'vector-index-type "missing index variable type"))))]
+          [(safe-cast ,src ,type ,type^ ,expr) type]
+          [(+ ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(- ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(* ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (vector-index-type expr
+             (append (map (lambda (local)
+                            (nanopass-case (Lnodisclose Argument) local
+                              [(,var-name ,type) (cons var-name type)])) local*) locals))]
+          [else (internal-errorf 'vector-index-type "unexpected admitted index")]))
+
       (define (resolved-vector-expression original src type expr index)
         (let ([kindex (rust-vector-index original)])
           (unless kindex
             (source-errorf src "Rust backend has no unique constant-valued Vector index for this occurrence"))
-          ;; The bridge admits only effect-free local constant grammar. The
-          ;; authoritative circuit pass has checked bounds and evaluated its
-          ;; arithmetic successfully, including the exact subtraction guard.
-          ;; Runtime formals/calls/conditionals are excluded even when the
-          ;; general circuit evaluator could infer their numeric result.
-          ;; Existing local bindings still evaluate in their original order;
-          ;; the Vector operand is retained once, with ordinary ownership.
-          (with-output-language (Lnodisclose Expression)
-            `(tuple-ref ,src ,expr ,kindex))))
+          ;; A known numeric result does not prove successful evaluation:
+          ;; multiplication by zero can retain a failing subtraction guard.
+          ;; Keep the first failure supplied by the same circuit evaluator.
+          ;; Total constant arithmetic with proven guards needs no runtime
+          ;; arithmetic support (including wide constant index arithmetic).
+          ;; An unavailable/conflicting guard fact instead retains evaluation.
+          ;; The admitted grammar's only failure is its canonical subtraction
+          ;; guard: unsigned addition/multiplication cannot overflow the
+          ;; analyzed result, and genuine checked downcasts are not admitted.
+          (let ([guard (rust-vector-index-guard-state original)])
+            (cond
+            [(eq? guard 'safe)
+             (with-output-language (Lnodisclose Expression)
+               `(tuple-ref ,src ,expr ,kindex))]
+            [(pair? guard)
+             (let ([var-name (make-source-id src 'vector_index_value)]
+                   [guard-src (car guard)] [message (cdr guard)])
+               (with-output-language (Lnodisclose Expression)
+                 `(let* ,src (((,var-name ,type) ,expr))
+                    (seq ,src (assert ,guard-src (quote ,guard-src #f) ,message)
+                      (tuple-ref ,src (var-ref ,src ,var-name) ,kindex)))))]
+            [else
+             (let ([var-name (make-source-id src 'vector_index_value)]
+                   [index-name (make-source-id src 'vector_index_position)]
+                   [index-type (vector-index-type index '())])
+               (with-output-language (Lnodisclose Expression)
+                 `(let* ,src (((,var-name ,type) ,expr)
+                              ((,index-name ,index-type) ,index))
+                    (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
 
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr

@@ -193,7 +193,7 @@ def main():
         check_manifest(numeric_generated, require_zkir=False)
         numeric_snapshot = {str(path.relative_to(numeric_generated)): digest(path)
                             for path in numeric_generated.rglob("*") if path.is_file()}
-        report["numeric_aliases"] = {"generated": numeric_snapshot, "rust_tests": 3}
+        report["numeric_aliases"] = {"generated": numeric_snapshot, "rust_tests": 5}
         numeric_package = tomllib.loads((numeric_generated / "contract/Cargo.toml").read_text())["package"]["name"]
         if args.ts_runtime:
             numeric_capture = output / "numeric-ts-reference.json"
@@ -253,7 +253,7 @@ def main():
         report["rust_consumer_tests"] = 8
         numeric_result = run("numeric-consumer", ["cargo", "test", "--locked", "--offline",
                              "--manifest-path", manifest, "--test", "numeric"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", numeric_result) != [("3", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", numeric_result) != [("5", "0", "0")]:
             raise ValueError("unexpected numeric alias/boundary control accounting")
 
         if args.ts_runtime:

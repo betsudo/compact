@@ -79,3 +79,57 @@ fn checked_cast_failure_precedes_the_later_assertion() {
         );
     }
 }
+
+#[test]
+fn constant_index_keeps_failing_guards_in_both_multiply_positions() {
+    let items = || runtime::FixedVector([17_u64, 29].map(runtime::Field::from));
+    for (name, actual) in [
+        ("index_guard_left", pure_circuits::index_guard_left(items())),
+        (
+            "index_guard_right",
+            pure_circuits::index_guard_right(items()),
+        ),
+        ("index_guard_wide", pure_circuits::index_guard_wide(items())),
+    ] {
+        assert!(matches!(actual, Err(CompactError::AssertionFailed(message))
+            if message == "result of subtraction would be negative"));
+        if let Some(reference) = ts() {
+            assert_eq!(
+                reference["indices"][name]["error"],
+                "CompactError: failed assert: result of subtraction would be negative"
+            );
+        }
+    }
+    assert_eq!(
+        pure_circuits::index_guard_success(items()).unwrap(),
+        runtime::Field::from(17_u64)
+    );
+    assert_eq!(
+        pure_circuits::index_total_wide(items()).unwrap(),
+        runtime::Field::from(17_u64)
+    );
+    if let Some(reference) = ts() {
+        assert_eq!(reference["indices"]["index_guard_success"]["value"], "17");
+        assert_eq!(reference["indices"]["index_total_wide"]["value"], "17");
+    }
+}
+
+#[test]
+fn vector_operand_failure_precedes_index_failure() {
+    let items = || runtime::FixedVector([17_u64, 29].map(runtime::Field::from));
+    let first = pure_circuits::index_order(items(), true).unwrap_err();
+    assert!(format!("{first:?}").contains("Vector operand before index"));
+    assert!(matches!(pure_circuits::index_order(items(), false),
+        Err(CompactError::AssertionFailed(message))
+            if message == "result of subtraction would be negative"));
+    if let Some(reference) = ts() {
+        assert_eq!(
+            reference["indices"]["index_order_true"]["error"],
+            "CompactError: failed assert: Vector operand before index"
+        );
+        assert_eq!(
+            reference["indices"]["index_order_false"]["error"],
+            "CompactError: failed assert: result of subtraction would be negative"
+        );
+    }
+}

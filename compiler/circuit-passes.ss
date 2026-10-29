@@ -1501,6 +1501,8 @@
          `(seq ,src ,expr* ... ,expr)
          ctv)]
       [(assert ,src ,[expr ctv] ,mesg)
+       (observe-rust-vector-index-guard! src
+         (or (ifconstant ctv (lambda (value) (if value 'true 'false))) 'unknown))
        (values
          `(assert ,src ,expr ,mesg)
          (CTV-tuple no-var-name '()))]
