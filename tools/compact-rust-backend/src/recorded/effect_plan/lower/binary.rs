@@ -67,17 +67,17 @@ impl Lowerer<'_> {
             {
                 (Operation::UnsignedAdd(a, b), uint(max))
             }
-            Expr::UnsignedSubtract { max, .. } | Expr::UnsignedMultiply { max, .. }
+            Expr::UnsignedMultiply { max, .. }
+                if validate::unsigned_multiply_type(&a.ty, &b.ty, &uint(max)) =>
+            {
+                (Operation::UnsignedMultiply(a, b), uint(max))
+            }
+            Expr::UnsignedSubtract { max, .. }
                 if validate::bound(&a.ty).is_some()
                     && validate::bound(&b.ty).is_some()
                     && validate::bound(&uint(max)).is_some() =>
             {
-                let operation = match expression {
-                    Expr::UnsignedSubtract { .. } => Operation::UnsignedSubtract(a, b),
-                    Expr::UnsignedMultiply { .. } => Operation::UnsignedMultiply(a, b),
-                    _ => unreachable!("unsigned arithmetic arm"),
-                };
-                (operation, uint(max))
+                (Operation::UnsignedSubtract(a, b), uint(max))
             }
             _ => return Err(invalid(path, "invalid arithmetic operand types")),
         })

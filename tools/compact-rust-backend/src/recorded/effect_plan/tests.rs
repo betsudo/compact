@@ -69,6 +69,8 @@ mod tuple_equality;
 mod vector_map;
 #[path = "tests/wide_add.rs"]
 mod wide_add;
+#[path = "tests/wide_zero.rs"]
+mod wide_zero;
 #[path = "tests/wide_casts.rs"]
 mod wide_casts;
 #[path = "tests/wide_values.rs"]

@@ -140,6 +140,11 @@ pub(crate) enum UnsignedArithmeticStrategy {
         high: u128,
         low: u128,
     },
+    /// A canonical wide operand times an operand whose only possible value is
+    /// zero. Both checked operand expressions must still be evaluated.
+    WideZeroProduct {
+        result: u128,
+    },
 }
 
 pub(crate) fn checked_unsigned_arithmetic(
@@ -153,6 +158,16 @@ pub(crate) fn checked_unsigned_arithmetic(
     let left = unsigned_maximum(left_max)?;
     let right = unsigned_maximum(right_max)?;
     let result = unsigned_maximum(result_max)?;
+    if kind == ArithmeticKind::Multiply
+        && let UnsignedMaximum::Small(result) = result
+        && matches!(
+            (left, right),
+            (UnsignedMaximum::Wide { .. }, UnsignedMaximum::Small(0))
+                | (UnsignedMaximum::Small(0), UnsignedMaximum::Wide { .. })
+        )
+    {
+        return Ok(UnsignedArithmeticStrategy::WideZeroProduct { result });
+    }
     if kind == ArithmeticKind::Add
         && let UnsignedMaximum::Wide { high, low } = result
     {

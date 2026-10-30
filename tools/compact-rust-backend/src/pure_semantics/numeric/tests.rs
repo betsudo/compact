@@ -187,6 +187,63 @@ fn wide_result_addition_admits_both_operand_carriers() {
 }
 
 #[test]
+fn wide_zero_product_is_admitted_from_operand_bounds_in_both_orders() {
+    for wide in [TWO_128, MAX_248] {
+        for (left, right) in [(wide, "0"), ("0", wide)] {
+            assert_eq!(
+                checked_unsigned_arithmetic(ArithmeticKind::Multiply, left, right, "0"),
+                Ok(UnsignedArithmeticStrategy::WideZeroProduct { result: 0 }),
+            );
+        }
+    }
+}
+
+#[test]
+fn zero_product_keeps_both_children_once_in_source_order() {
+    for (left, right) in [(TWO_128, "0"), ("0", MAX_248)] {
+        let text = output(unsigned_arithmetic_syntax(
+            &operation(ArithmeticKind::Multiply),
+            syn::parse_quote!(left_child()?),
+            syn::parse_quote!(right_child()?),
+            left,
+            right,
+            "0",
+        ))
+        .unwrap();
+        assert_eq!(text.matches("left_child").count(), 1);
+        assert_eq!(text.matches("right_child").count(), 1);
+        assert!(text.find("left_child").unwrap() < text.find("right_child").unwrap());
+        assert!(text.find("right_child").unwrap() < text.find("BoundedUint").unwrap());
+        assert!(!text.contains("narrow_wide_uint"));
+    }
+}
+
+#[test]
+fn zero_product_does_not_infer_a_zero_operand_from_the_result_bound() {
+    for (left, right, result) in [
+        (TWO_128, "1", "0"),
+        ("1", TWO_128, "0"),
+        (TWO_128, "0", TWO_128),
+    ] {
+        assert!(matches!(
+            checked_unsigned_arithmetic(ArithmeticKind::Multiply, left, right, result),
+            Err(RenderError::UnsupportedWideUnsignedOperation { .. })
+        ));
+    }
+    for (left, right, result, malformed) in [
+        ("01", TWO_128, "0", "01"),
+        (TWO_128, "00", "0", "00"),
+        (TWO_128, "0", "bad", "bad"),
+        (TWO_248, "0", "0", TWO_248),
+    ] {
+        assert_eq!(
+            checked_unsigned_arithmetic(ArithmeticKind::Multiply, left, right, result),
+            Err(RenderError::InvalidUnsignedMaximum(malformed.into()))
+        );
+    }
+}
+
+#[test]
 fn unsupported_wide_operations_report_the_first_wide_bound() {
     for kind in [
         ArithmeticKind::Add,
@@ -279,6 +336,33 @@ fn arithmetic_adapters_match_old_native_output_and_errors_across_bound_partition
         for left in bounds {
             for right in bounds {
                 for result in bounds {
+                    // Keep the old refusal independently visible for the newly
+                    // admitted domain; all other old output/error comparisons
+                    // remain exact below.
+                    if kind == ArithmeticKind::Multiply
+                        && matches!(unsigned_maximum(result), Ok(UnsignedMaximum::Small(_)))
+                        && ((left == "0" && [TWO_128, MAX_248].contains(&right))
+                            || (right == "0" && [TWO_128, MAX_248].contains(&left)))
+                    {
+                        assert!(matches!(
+                            old::unsigned_arithmetic_syntax(
+                                &operation,
+                                syn::parse_quote!(left()),
+                                syn::parse_quote!(right()),
+                                left,
+                                right,
+                                result
+                            ),
+                            Err(RenderError::UnsupportedWideUnsignedOperation { .. })
+                        ));
+                        assert_eq!(
+                            checked_unsigned_arithmetic(kind, left, right, result),
+                            Ok(UnsignedArithmeticStrategy::WideZeroProduct {
+                                result: result.parse().unwrap()
+                            })
+                        );
+                        continue;
+                    }
                     assert_eq!(
                         output(unsigned_arithmetic_syntax(
                             &operation,
