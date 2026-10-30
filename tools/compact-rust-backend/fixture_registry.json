@@ -4091,6 +4091,19 @@
       "library": "tests-rust-backend/unit-mutation-initializers-source/lib.rs",
       "generated_library": "tests-rust-backend/unit-mutation-initializers-source/lib.rs",
       "qualification": "Complete source-bound functional generated output, formatted only. The focused live gate checks fresh output and four Rust routes; proof and full integration acceptance require their separate actual gates. Registration alone asserts no execution or proof coverage."
+    },
+    {
+      "source": "examples/rust_backend/wide_zero_multiplication.compact",
+      "source_sha256": "64e0e1ec0fed36226dc5887245088f22200625ca3e6acbf4c3baf9103c2eadfa",
+      "frontend_outcome": "accepted",
+      "frontend_flags": [
+        "--rust-functional-ledger8"
+      ],
+      "role": "flat_library",
+      "manifest": "tests-rust-backend/wide-zero-multiplication-source/Cargo.toml",
+      "library": "tests-rust-backend/wide-zero-multiplication-source/lib.rs",
+      "generated_library": "tests-rust-backend/wide-zero-multiplication-source/lib.rs",
+      "qualification": "Complete current source-bound output formatted only, with four exact checked programs. Actual fresh frontend/output, external API/TS/compile-fail and selected proof gates own acceptance; registration alone asserts no execution/proof/fullCI coverage."
     }
   ]
 }

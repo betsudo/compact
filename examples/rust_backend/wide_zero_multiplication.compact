@@ -32,13 +32,23 @@ export pure circuit checkedLeft(x: Uint<200>, z: Uint<8>): Uint<0..1> {
 export pure circuit checkedRight(z: Uint<8>, x: Uint<200>): Uint<0..1> {
   return (z as Uint<0..1>) * ((x as Uint<128>) as Uint<200>);
 }
-export circuit multiplyRight(x: Uint<200>): Uint<0..1> {
-  calls.increment(1);
-  return x * 0;
+pure circuit guardedZero(z: Uint<8>): Uint<0..1> {
+  assert(z == 0, "zero operand guard");
+  return 0;
 }
-export circuit multiplyLeft(x: Uint<200>): Uint<0..1> {
+export pure circuit firstErrorLeft(x: Uint<200>, z: Uint<8>): Uint<0..1> {
+  return ((x as Uint<128>) as Uint<200>) * guardedZero(z);
+}
+export pure circuit firstErrorRight(z: Uint<8>, x: Uint<200>): Uint<0..1> {
+  return guardedZero(z) * ((x as Uint<128>) as Uint<200>);
+}
+export circuit multiplyRight(x: Uint<200>): Uint<8> {
   calls.increment(1);
-  return 0 * x;
+  return (x * 0) as Uint<8>;
+}
+export circuit multiplyLeft(x: Uint<200>): Uint<8> {
+  calls.increment(1);
+  return (0 * x) as Uint<8>;
 }
 export circuit witnessedRight(): Uint<0..1> {
   calls.increment(1);

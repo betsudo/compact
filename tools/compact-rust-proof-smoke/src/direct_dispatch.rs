@@ -188,6 +188,7 @@ pub(super) fn try_run(
         ("--owned-witness-inputs", _) => Some(expressions::owned_witness_inputs(arguments)),
         ("--public-products", _) => Some(expressions::public_products(arguments)),
         ("--wide-add", _) => Some(expressions::wide_add(arguments)),
+        ("--wide-zero", _) => Some(expressions::wide_zero(arguments)),
         ("--wide-casts", _) => Some(expressions::wide_casts(arguments)),
         ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments)),
         ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments)),
