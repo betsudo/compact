@@ -344,17 +344,20 @@ fn arithmetic_adapters_match_old_native_output_and_errors_across_bound_partition
                         && ((left == "0" && [TWO_128, MAX_248].contains(&right))
                             || (right == "0" && [TWO_128, MAX_248].contains(&left)))
                     {
-                        assert!(matches!(
-                            old::unsigned_arithmetic_syntax(
+                        assert_eq!(
+                            output(old::unsigned_arithmetic_syntax(
                                 &operation,
                                 syn::parse_quote!(left()),
                                 syn::parse_quote!(right()),
                                 left,
                                 right,
                                 result
-                            ),
-                            Err(RenderError::UnsupportedWideUnsignedOperation { .. })
-                        ));
+                            )),
+                            Err(RenderError::UnsupportedWideUnsignedOperation {
+                                operation: "multiplication",
+                                max: if left == "0" { right } else { left }.into(),
+                            })
+                        );
                         assert_eq!(
                             checked_unsigned_arithmetic(kind, left, right, result),
                             Ok(UnsignedArithmeticStrategy::WideZeroProduct {

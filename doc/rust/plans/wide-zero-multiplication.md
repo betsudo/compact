@@ -4,15 +4,8 @@
 
 # Checked wide-Uint multiplication by zero
 
-Status: local slice stacked on PR #699. Work began at reviewed `59072920a`.
-The parent now includes signed fixture repair `6166ab906`, whose fresh Codex
-source review passes under the authorized Claude quota fallback. Complete
-parent CI/archive acceptance remains open. Unique edits were preserved before
-normal signed parent reconciliation; no history was overwritten.
-The owner explicitly authorized local progress while #699's long-running CI is
-pending or red. Parent integration still requires its complete checks, proof
-gates and retained evidence. A parent failure will be repaired on its branch;
-this slice will incorporate a correction when it changes a shared premise.
+Status: implementation under integration review, stacked on PR #699.
+Complete compiler/backend CI and retained proof evidence remain required.
 
 ## Gap and public API
 
@@ -39,8 +32,8 @@ API. The same law applies with zero at either operand position.
   owners of execution and untrusted boundaries.
 - `compiler/rust-ir-passes.ss`: carry the declared return type through the
   existing ordinary return owner and use its existing typed arithmetic lowering
-  for multiplication returning the zero singleton. Preserve other historical
-  return annotations.
+  for multiplication returning the zero singleton, including conditional arms.
+  Preserve other historical return annotations.
 
 The original stateful frontend rounds the internal product carrier to maximum
 one; pure typed products carry maximum zero. Preserve either annotation, then
@@ -79,9 +72,8 @@ claim to repair that upstream circuit-lowering issue.
    and reject exact-source/program/input/result/proof mutations. Pure functions
    and failed paths do not acquire a proof claim from those selected calls.
 7. Use focused checks locally. Before integration, retain the complete required
-   CI/proof gates, both fresh actual Claude and Codex CLI reviews, documentation,
-   signed DCO/Assisted-by commits and source-bound receipts. Notify the owner
-   when the logical PR is ready for review.
+   CI/proof gates, independent source review, documentation and source-bound
+   receipts.
 
 ## Exclusions
 
@@ -118,8 +110,7 @@ checks that entire IR and program roster before keys/state. This selected proof
 scope does not imply a pure-function, failing-path, constructor or witnessed
 call proof. Full required integration CI remains mandatory.
 
-The exact local proof receipt and review/integration status are recorded in the
-main-session checkpoint. Development failures remain retained; parser-summary
+The local proof receipt and CI artifacts retain their exact source identities. Development failures remain retained; parser-summary
 controls do not stand in for cryptographic execution. Forge stays deferred.
 
 ### Zero-singleton proof boundary discovered during qualification
@@ -147,3 +138,18 @@ four programs and the formatted linked library match fresh original compiler
 output; both pre-key source/program negatives reject. These receipts are local
 source-bound executions; fresh CLI reviews and complete current CI/archive
 acceptance are still required before integration.
+
+### Conditional return regression
+
+The API gate separately generates `tests/wide_zero_multiplication/conditional.compact`.
+Both conditional arms return literal-zero products after a Counter increment.
+An external consumer requires the exact `BoundedUint<0>` result for both Boolean
+choices at all four wide boundaries, through native, recorded and both
+functional routes, comparing state, effects, gas and public replay with a manual
+Counter transition. This is behavior coverage; the separately retained
+zero-singleton protocol mismatch precludes a successful proof claim for it.
+
+The selected proof result mutation retains `BoundedUint<255>` and checks exact
+alignment and atom-count equality before requiring preimage and verifier refusal.
+API command stdout/stderr are retained in CI for failure diagnosis. Historical
+numeric reference bytes remain unchanged, with exact old refusal-bound checks.

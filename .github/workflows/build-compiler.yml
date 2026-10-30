@@ -619,6 +619,9 @@ jobs:
             ${{ runner.temp }}/compact-wide-zero.json
             ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
             ${{ runner.temp }}/compact-wide-zero/typescript.json
+            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
+            ${{ runner.temp }}/compact-wide-zero/*.stdout
+            ${{ runner.temp }}/compact-wide-zero/*.stderr
             ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
             ${{ runner.temp }}/compact-wide-zero-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json

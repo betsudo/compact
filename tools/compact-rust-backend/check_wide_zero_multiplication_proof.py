@@ -58,7 +58,7 @@ def validate_proof_summary(summary):
         require(type(row.get("result")) is int and row["result"] == 0
                 and type(row.get("proof_bytes")) is int and row["proof_bytes"] > 0
                 and all(row.get(key) is True for key in ["changed_binding_rejected", "changed_result_rejected",
-                    "changed_input_same_geometry", "changed_input_rejected", "changed_proof_bytes_rejected",
+                    "changed_input_same_geometry", "changed_result_same_geometry", "changed_input_rejected", "changed_proof_bytes_rejected",
                     "replay_unchanged"])
                 and row.get("strict_application") == "default"
                 and row.get("replay_refusal") == "IntentAlreadyExists", "incomplete proof/application controls")

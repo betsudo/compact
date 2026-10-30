@@ -7,7 +7,7 @@
 The complete source is `examples/rust_backend/wide_zero_multiplication.compact`.
 Run `check_wide_zero_multiplication.py` with an original compiler and explicit
 TS runtime to qualify fresh, unedited Rust/TS emission. The gate requires six
-consumer tests, both ordinary compile-fail controls and their positive twin.
+consumer tests plus the separate conditional-return regression, both ordinary compile-fail controls and their positive twin.
 
 The fixtures cover both operand orders at 0, 1, 2^128 and 2^200−1; aliases,
 zero-typed parameters, exact cast errors and distinct first-error order; native,

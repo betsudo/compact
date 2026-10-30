@@ -23,7 +23,7 @@ from local_parity_gate import GateError
 class WideZeroProofSummaryTests(unittest.TestCase):
     def test_complete_routes_and_exact_primitive_types_are_required(self):
         row = dict(result=0, proof_bytes=2912, changed_binding_rejected=True,
-                   changed_result_rejected=True, changed_input_same_geometry=True,
+                   changed_result_rejected=True, changed_input_same_geometry=True, changed_result_same_geometry=True,
                    changed_input_rejected=True, changed_proof_bytes_rejected=True,
                    replay_unchanged=True, strict_application="default", replay_refusal="IntentAlreadyExists")
         value = dict(format="compact-wide-zero-proof/v1", status="passed",
@@ -31,6 +31,7 @@ class WideZeroProofSummaryTests(unittest.TestCase):
                      calls=[dict(row, name=name) for name in ["multiplyRight", "multiplyLeft"]])
         validate_proof_summary(value)
         for field, changed in [("result",False),("result",1),("proof_bytes",True),
+                               ("changed_result_same_geometry",False),("changed_result_same_geometry",1),
                                ("changed_input_rejected",False),("changed_input_rejected",1),
                                ("strict_application","relaxed"),("replay_refusal","other")]:
             with self.subTest(field=field,changed=changed):

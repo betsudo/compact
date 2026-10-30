@@ -59,7 +59,7 @@ def main():
                 Path(__file__).with_name("check_functional_effects.py")]
     for folder in (ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
                    ROOT / "tools/compact-rust-backend/src", FIXTURES):
-        premises.extend(p for p in folder.rglob("*") if p.is_file() and p.suffix in (".rs", ".toml", ".mjs", ".json"))
+        premises.extend(p for p in folder.rglob("*") if p.is_file() and p.suffix in (".rs", ".toml", ".mjs", ".json", ".compact"))
     pins = {str(path.relative_to(ROOT)): digest(path) for path in premises}
     tools = {str(path): digest(path) for path in (compiler, scheme)}
     output.mkdir(parents=True)
@@ -87,6 +87,11 @@ def main():
                          "--rust-require-recording", "--rust-runtime-root", ROOT,
                          "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
+        conditional = output / "conditional-generated"
+        run("generate-conditional", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+            "--rust-require-recording", "--rust-runtime-root", ROOT, "--skip-zk",
+            FIXTURES / "conditional.compact", conditional])
+        report["conditional_generated"] = generated_manifest_snapshot(conditional)
         runtime = args.ts_runtime.resolve(strict=True)
         modules = output / "node_modules/@midnight-ntwrk"
         modules.mkdir(parents=True)
@@ -94,7 +99,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         capture = output / "typescript.json"
         run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated / "contract/index.js",
-                           "--runtime", runtime, "--version",
+                           "--conditional", conditional / "contract/index.js", "--runtime", runtime, "--version",
                            json.loads((ROOT / "runtime/package.json").read_text())["version"],
                            "--output", capture])
         observations = json.loads(capture.read_text())
@@ -105,12 +110,15 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         (consumer / "src/lib.rs").write_text("")
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/behavior.rs")
+        shutil.copyfile(FIXTURES / "conditional.rs", consumer / "tests/conditional.rs")
         package = tomllib.loads((generated / "contract/Cargo.toml").read_text())["package"]["name"]
+        conditional_package = tomllib.loads((conditional / "contract/Cargo.toml").read_text())["package"]["name"]
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
         lines = ['[workspace]', '[package]', 'name="wide-zero-source-consumer"', 'version="0.0.0"',
                  'edition="2024"', '[dependencies]',
                  f'wide_zero_fixture={{package={json.dumps(package)},path={json.dumps(str(generated / "contract"))},features=["ledger-transaction"]}}',
+                 f'conditional_fixture={{package={json.dumps(conditional_package)},path={json.dumps(str(conditional / "contract"))},features=["ledger-transaction"]}}',
                  f'serde_json="={serde}"', '[features]']
         lines.extend(f'{name}=[]' for name in NEGATIVES)
         for name in (*NEGATIVES, "positive"):
@@ -123,7 +131,7 @@ def main():
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)
-        allowed = {p.resolve() for p in (manifest, generated / "contract/Cargo.toml",
+        allowed = {p.resolve() for p in (manifest, generated / "contract/Cargo.toml", conditional / "contract/Cargo.toml",
                    ROOT / "runtime-rs/Cargo.toml", ROOT / "runtime-rs-macros/Cargo.toml")}
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
         for item in metadata["packages"]:
@@ -144,6 +152,10 @@ def main():
                                    "--test", "behavior"]).stdout
         if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("6", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
+        conditional_result = run("conditional", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
+            "--test", "conditional"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", conditional_result) != [("1", "0", "0")]:
+            raise ValueError("unexpected conditional consumer accounting")
         run("positive", ["cargo", "run", "--locked", "--offline", "--manifest-path", manifest, "--bin", "positive"])
         report["compile_fail"] = {}
         for name in NEGATIVES:
@@ -161,6 +173,26 @@ def main():
         if not refused.returncode or not re.search(r"test result: FAILED\. 0 passed; 1 failed; 0 ignored", refused.stdout):
             raise ValueError("changed TS result did not fail the actual Rust consumer")
         report["changed_ts_result_rejected"] = True
+        report["changed_ts_controls_rejected"] = []
+        for group, field, replacement, test in [
+            ("stateful", "result", "1", "behavior"),
+            ("errors", "kind", "assert", "behavior"),
+            ("conditional", "result", "1", "conditional"),
+        ]:
+            changed = json.loads(capture.read_text())
+            changed["rows"][group][0][field] = replacement
+            wrong = output / f"typescript-changed-{group}.json"
+            wrong.write_text(json.dumps(changed))
+            command = ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--test", test]
+            if test == "behavior":
+                command += ["genuine_typescript_capture_agrees_with_wide_zero_source_results", "--", "--exact"]
+            refused = run("changed-ts-" + group, command, success=False,
+                env=dict(environment, COMPACT_WIDE_ZERO_TS_REFERENCE=str(wrong)))
+            if not refused.returncode or not re.search(r"test result: FAILED\. 0 passed; 1 failed; 0 ignored", refused.stdout):
+                raise ValueError(f"changed TS {group} did not fail the actual Rust consumer")
+            report["changed_ts_controls_rejected"].append(group)
+        if generated_manifest_snapshot(conditional) != report["conditional_generated"]:
+            raise ValueError("conditional generated assets changed")
         if generated_manifest_snapshot(generated) != report["generated"]:
             raise ValueError("generated assets changed during consumer execution")
         if digest(child_lock) != report["consumer_lock_sha256"] or digest(capture) != report["typescript_sha256"]:

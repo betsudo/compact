@@ -280,14 +280,71 @@ fn genuine_typescript_capture_agrees_with_wide_zero_source_results() {
                 .collect();
             assert_eq!(found.len(), 1);
             let row = found[0];
-            assert_eq!(row["result"], "0");
-            assert_eq!(row["calls"], "1");
-            let witnessed = name.starts_with("witnessed");
-            assert_eq!(row["privateState"], if witnessed { 43 } else { 42 });
-            assert_eq!(row["witnesses"], usize::from(witnessed));
+            let w = W {
+                count: Cell::new(0),
+                value: x,
+                fail: false,
+            };
+            // Compare actual wrapper observations with the actual Rust route.
+            let (result, out) = match name {
+                "multiplyRight" => {
+                    let o = c::multiplyRight(context(), x).unwrap();
+                    (o.result.value(), o.context)
+                }
+                "multiplyLeft" => {
+                    let o = c::multiplyLeft(context(), x).unwrap();
+                    (o.result.value(), o.context)
+                }
+                "witnessedRight" => {
+                    let o = c::witnessedRight(context(), &w).unwrap();
+                    (o.result.value(), o.context)
+                }
+                _ => {
+                    let o = c::witnessedLeft(context(), &w).unwrap();
+                    (o.result.value(), o.context)
+                }
+            };
+            assert_eq!(row["result"], result.to_string());
+            assert_eq!(
+                row["calls"],
+                slots::calls
+                    .inspect(out.query.state.get_ref())
+                    .unwrap()
+                    .value()
+                    .to_string()
+            );
+            assert_eq!(row["privateState"], out.private_state);
+            assert_eq!(row["witnesses"], w.count.get());
         }
     }
-    assert_eq!(reference["rows"]["errors"].as_array().unwrap().len(), 8);
+    let errors = reference["rows"]["errors"].as_array().unwrap();
+    let one = r::BoundedUint::<255>::new(1).unwrap();
+    let zero = r::BoundedUint::<255>::new(0).unwrap();
+    let big = wide(1, 0);
+    let actual = [
+        ("checkedLeft", p::checkedLeft(big, one)),
+        ("checkedRight", p::checkedRight(one, big)),
+        ("checkedLeft", p::checkedLeft(wide(0, 1), one)),
+        ("checkedRight", p::checkedRight(zero, big)),
+        ("firstErrorLeft", p::firstErrorLeft(big, one)),
+        ("firstErrorRight", p::firstErrorRight(one, big)),
+        ("firstErrorLeft", p::firstErrorLeft(wide(0, 1), one)),
+        ("firstErrorRight", p::firstErrorRight(zero, big)),
+    ];
+    assert_eq!(errors.len(), actual.len());
+    for (row, (name, result)) in errors.iter().zip(actual) {
+        assert_eq!(row["name"], name);
+        match result.unwrap_err() {
+            r::CompactError::InvalidUnsignedValue | r::CompactError::UnsignedOutOfRange { .. } => {
+                assert_eq!(row["kind"], "cast")
+            }
+            r::CompactError::AssertionFailed(message) => {
+                assert_eq!(row["kind"], "assert");
+                assert_eq!(row["message"], format!("failed assert: {message}"));
+            }
+            error => panic!("unexpected Rust error: {error:?}"),
+        }
+    }
 }
 fn num_decimal(value: U) -> String {
     // Independent fixture roster, with no bigint runtime dependency.

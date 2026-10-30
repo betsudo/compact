@@ -165,7 +165,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         let proof_bytes = prove(root, name, index, &prepared, &verifier, x)?;
         apply(root, name, index, prepared, deploy, &expected, rng)?;
         rows.push(serde_json::json!({"name":name,"proof_bytes":proof_bytes,"result":0,"changed_binding_rejected":true,
-            "changed_input_same_geometry":true,"changed_input_rejected":true,"changed_result_rejected":true,
+            "changed_input_same_geometry":true,"changed_result_same_geometry":true,"changed_input_rejected":true,"changed_result_rejected":true,
             "changed_proof_bytes_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
     let result = serde_json::json!({"format":"compact-wide-zero-proof/v1","status":"passed","calls":rows,
@@ -279,7 +279,13 @@ fn prove(
     // Bind a genuinely different public result through the exact upstream
     // communication commitment, rather than changing an arbitrary input slot.
     let mut changed_call = call.clone();
-    changed_call.output = AlignedValue::from(r::BoundedUint::<1>::new(1)?);
+    changed_call.output = AlignedValue::from(r::BoundedUint::<255>::new(1)?);
+    if changed_call.output == call.output
+        || changed_call.output.alignment != call.output.alignment
+        || changed_call.output.value.0.len() != call.output.value.0.len()
+    {
+        return Err("changed wide-zero result did not preserve source geometry".into());
+    }
     let changed_commitment = self::commitment(&changed_call);
     if changed_commitment == commitment {
         return Err("changed result did not change commitment".into());

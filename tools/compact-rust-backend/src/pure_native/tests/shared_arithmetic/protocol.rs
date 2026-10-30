@@ -129,7 +129,8 @@ fn arithmetic_source(source: &Expr) -> Option<ArithmeticSource<'_>> {
 
 /// Exact frozen native views plus real () consumer agreement on types/refusals.
 /// The old body uses retained helpers; their output-only move is independently
-/// pinned by the complete old helper source in old_unsigned.rs.
+/// checked by the historical strategy adapter in old_unsigned.rs. The frozen
+/// numeric reference independently checks admission/refusal compatibility.
 pub(super) fn compare(
     source: &Expr,
     parameters: &HashMap<&str, (&Type, syn::Ident)>,

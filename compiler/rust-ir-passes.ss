@@ -2373,7 +2373,15 @@
                        (cons "value" (stateful-expression-ir return-expr src witness-ids))))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "expression")
-                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+                   (cons "value"
+                     ;; Carry the singleton result into each conditional arm,
+                     ;; just as for a direct zero-product return below.
+                     (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
+                       [(tunsigned ,src^ ,nat)
+                        (if (= nat 0)
+                            (stateful-typed-expression-ir return-expr expected-type src witness-ids)
+                            (stateful-expression-ir return-expr src witness-ids))]
+                       [else (stateful-expression-ir return-expr src witness-ids)])))]
           [(== ,src ,type ,expr1 ,expr2)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]

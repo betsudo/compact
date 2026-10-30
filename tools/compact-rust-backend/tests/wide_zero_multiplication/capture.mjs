@@ -23,8 +23,8 @@ import {pathToFileURL} from 'node:url';
 import {parseArgs} from 'node:util';
 
 const {values:options}=parseArgs({options:Object.fromEntries(
-  ['generated','runtime','version','output'].map(name=>[name,{type:'string'}]))});
-for (const name of ['generated','runtime','version','output']) assert.ok(options[name],`missing --${name}`);
+  ['generated','conditional','runtime','version','output'].map(name=>[name,{type:'string'}]))});
+for (const name of ['generated','conditional','runtime','version','output']) assert.ok(options[name],`missing --${name}`);
 const hash=path=>createHash('sha256').update(readFileSync(path)).digest('hex');
 function inventory(folder) {
   const files=new Set(), packages=new Set();
@@ -57,7 +57,9 @@ const before=inventory(runtime), wrapperHash=hash(wrapper), selfHash=hash(proces
 assert.equal(before[realpathSync(runtimePath)],hash(runtimePath),'runtime entry omitted from closure inventory');
 const nodeIdentity={path:realpathSync(process.execPath),version:process.version,sha256:hash(process.execPath)};
 const r=await import(pathToFileURL(runtimePath)), c=await import(pathToFileURL(wrapper));
-const rows={pure:[],stateful:[],errors:[]};
+const rows={pure:[],stateful:[],errors:[],conditional:[]};
+const conditionalWrapper=realpathSync(options.conditional), conditionalHash=hash(conditionalWrapper);
+const conditional=await import(pathToFileURL(conditionalWrapper));
 const values=[0n,1n,1n<<128n,(1n<<200n)-1n], max128=(1n<<128n)-1n;
 for(const x of values) {
   for(const [name,args] of [['rightZero',[x]],['leftZero',[x]],['rightParameter',[x,0n]],['leftParameter',[0n,x]],['nested',[x,false]],['nested',[x,true]]]) {
@@ -99,6 +101,20 @@ for(const name of ['checkedLeft','checkedRight']) {
   assert.equal(c.pureCircuits[name](...args),0n);
 }
 const key={bytes:new Uint8Array(32)};
+for(const x of values) {
+  for(const active of [false,true]) {
+    const contract=new conditional.Contract({});
+    const initial=contract.initialState({initialPrivateState:42,initialZswapLocalState:r.emptyZswapLocalState(key)});
+    const ctx=r.createCircuitContext(r.dummyContractAddress(),key,initial.currentContractState.data,42,undefined,undefined,0);
+    const out=contract.circuits.conditional(ctx,x,active);
+    assert.equal(out.result,0n);
+    assert.equal(conditional.ledger(out.context.currentQueryContext.state).calls,1n);
+    assert.equal(out.context.currentPrivateState,42);
+    rows.conditional.push({input:String(x),active,result:String(out.result),calls:'1',privateState:42});
+  }
+}
+assert.equal(hash(conditionalWrapper),conditionalHash,'conditional wrapper changed');
+
 for(const name of ['multiplyRight','multiplyLeft','witnessedRight','witnessedLeft']) {
   for(const value of values) {
     const witnessed=name.startsWith('witnessed');
@@ -133,4 +149,4 @@ for(const name of process.report.getReport().sharedObjects) {
   else if(name.startsWith('/System/Library/')||name.startsWith('/usr/lib/'))systemLibraries.push(name);
   else sharedLibraries[realpathSync(name)]=hash(name);
 }
-writeFileSync(options.output,JSON.stringify({format:'wide-zero-ts/v1',rows,wrapper:{path:wrapper,sha256:wrapperHash},capture:{path:realpathSync(process.argv[1]),sha256:selfHash},runtime:{files:before},node:{...nodeIdentity,sharedLibraries,kernelVirtualLibraries,systemLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'}},null,2)+'\n',{flag:'wx'});
+writeFileSync(options.output,JSON.stringify({format:'wide-zero-ts/v1',rows,wrapper:{path:wrapper,sha256:wrapperHash},conditionalWrapper:{path:conditionalWrapper,sha256:conditionalHash},capture:{path:realpathSync(process.argv[1]),sha256:selfHash},runtime:{files:before},node:{...nodeIdentity,sharedLibraries,kernelVirtualLibraries,systemLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'}},null,2)+'\n',{flag:'wx'});

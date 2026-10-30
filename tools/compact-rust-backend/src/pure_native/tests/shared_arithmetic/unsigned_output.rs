@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A complete frozen helper independently authenticates output-only factoring.
+//! The historical strategy adapter checks output factoring; the independent
+//! frozen numeric reference separately checks historical admission and errors.
 use super::*;
 fn tokens(result: Result<syn::Expr, RenderError>) -> Result<String, RenderError> {
     result.map(|expr| expr.to_token_stream().to_string())
@@ -88,16 +89,23 @@ fn historical_helper_still_refuses_the_new_wide_zero_domain() {
                 max: WIDE.into()
             })
         );
-        assert!(
-            crate::value_lowering::unsigned_arithmetic_syntax(
-                &operation,
-                syn::parse_quote!(left()),
-                syn::parse_quote!(right()),
-                left,
-                right,
-                "0"
-            )
-            .is_ok()
+        let current = crate::value_lowering::unsigned_arithmetic_syntax(
+            &operation,
+            syn::parse_quote!(left()),
+            syn::parse_quote!(right()),
+            left,
+            right,
+            "0",
+        )
+        .unwrap();
+        let expected: syn::Expr = syn::parse_quote!({
+            let _ = left();
+            let _ = right();
+            runtime::BoundedUint::<0>::new(0)?
+        });
+        assert_eq!(
+            current.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
         );
     }
 }
