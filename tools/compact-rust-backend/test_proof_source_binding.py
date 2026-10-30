@@ -45,5 +45,26 @@ class CompleteProofSourceBindingTests(unittest.TestCase):
             self.assertFalse((output / 'keys').exists())
 
 
+    def test_primitive_json_type_changes_cannot_pass_early_pairing(self):
+        source = Path(__file__).with_name('tests') / 'mixed-width-operand-schema20-ir.json'
+        original = json.loads(source.read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / 'contract').mkdir()
+            for family, key, replacement in [
+                ('ledger_fields', 'index', False),
+                ('ledger_fields', 'index', 0.0),
+                (None, 'schema_version', 20.0),
+            ]:
+                changed = json.loads(json.dumps(original))
+                target = changed if family is None else changed[family][0]
+                self.assertEqual(target[key], replacement)
+                self.assertIsNot(type(target[key]), type(replacement))
+                target[key] = replacement
+                (output / 'contract/compact-rust-ir.json').write_text(json.dumps(changed))
+                with self.assertRaisesRegex(ValueError, 'complete proof source IR differs'):
+                    check_complete_ir_binding(output, source)
+
+
 if __name__ == '__main__':
     unittest.main()

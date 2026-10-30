@@ -848,11 +848,24 @@ macro_rules! compare { ($name:ident $(,$arg:expr)*) => {{
         print(json.dumps({"composition": label, "source_sha256": hashlib.sha256(composed_source.read_bytes()).hexdigest(), "proof_apis": sum(c["proof_required"] for c in report["circuits"]), "retained_unrelated_witness": True}))
 
 
+def same_json_types_and_values(left, right) -> bool:
+    """Preserve JSON primitive types: Python otherwise equates false/0/0.0."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            same_json_types_and_values(value, right[key]) for key, value in left.items())
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            same_json_types_and_values(a, b) for a, b in zip(left, right, strict=True))
+    return left == right
+
+
 def check_complete_ir_binding(output: Path, retained: Path) -> None:
     """Compare the complete original compiler input before proof material work."""
     actual = json.loads((output / "contract/compact-rust-ir.json").read_text())
     expected = json.loads(retained.read_text())
-    if actual != expected:
+    if not same_json_types_and_values(actual, expected):
         raise ValueError(f"complete proof source IR differs from {retained}")
 
 
