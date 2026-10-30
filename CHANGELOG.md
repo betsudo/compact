@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Preserve exact inferred unsigned literal and declared stateful arithmetic
   maxima, including valid zero-valued constant bindings.
+- Refresh complete current compiler IR inputs used by proof runners while
+  retaining historical compatibility inputs separately. Check the complete
+  mixed-width source binding before the full native proof sequence.
 
 ## [Toolchain 0.31.143, language 0.23.105, runtime 0.16.102]
 

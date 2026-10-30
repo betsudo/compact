@@ -70,6 +70,13 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                 row['retained_ir_sha256'] = originals[row['source']]['retained_ir_sha256']
         self.assertEqual(current, baseline)
 
+    def test_mixed_width_current_and_historical_ir_remain_distinct_exact_inputs(self):
+        directory = inventory.ROOT / 'tools/compact-rust-backend/tests'
+        self.assertEqual(fingerprint(directory / 'mixed-width-operand-pre-analyzed-bounds-schema20-ir.json'),
+                         'a4eef2edb49e75a43356c9edc5bd76e1e04a5707bf781699c2922499d4e84ce9')
+        self.assertEqual(fingerprint(directory / 'mixed-width-operand-schema20-ir.json'),
+                         '3fcc1ae8b2e313a7a7389d07ecf5c6ed7f2db3c28269598eb77137a6e1dd49cb')
+
     def test_vector_projection_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'constant_vector_projection.compact')

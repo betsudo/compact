@@ -848,6 +848,14 @@ macro_rules! compare { ($name:ident $(,$arg:expr)*) => {{
         print(json.dumps({"composition": label, "source_sha256": hashlib.sha256(composed_source.read_bytes()).hexdigest(), "proof_apis": sum(c["proof_required"] for c in report["circuits"]), "retained_unrelated_witness": True}))
 
 
+def check_complete_ir_binding(output: Path, retained: Path) -> None:
+    """Compare the complete original compiler input before proof material work."""
+    actual = json.loads((output / "contract/compact-rust-ir.json").read_text())
+    expected = json.loads(retained.read_text())
+    if actual != expected:
+        raise ValueError(f"complete proof source IR differs from {retained}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--consumer", action="store_true", help="build and run a separate consumer")
@@ -1137,6 +1145,16 @@ def main() -> None:
                 capture=subprocess.run,
             )
             return
+        if args.proof:
+            # Check the mixed-width fixture before the expensive proof sequence.
+            # Rust independently repeats this full binding at its proof boundary.
+            preflight = base / "mixed-width-source-binding"
+            run(compiler, "--target", "rust", "--skip-zk",
+                str(MIXED_WIDTH_OPERAND_SOURCE), str(preflight))
+            if (preflight / "keys").exists():
+                raise ValueError("source-binding preflight unexpectedly produced keys")
+            check_complete_ir_binding(
+                preflight, ROOT / "tools/compact-rust-backend/tests/mixed-width-operand-schema20-ir.json")
         run(sys.executable, str(Path(__file__).resolve()), "--qualified-coin-cell",
             *(["--proof"] if args.proof else []))
         run(sys.executable, str(Path(__file__).resolve()), "--native-zswap-intents",

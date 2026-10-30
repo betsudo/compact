@@ -14,6 +14,23 @@ Earlier `3fa7cec1d` and `70c5cb26a` receipts retain their historical scope. Deli
 The isolated witnessed SDK #698 is verified merged at `d3a32d9e7`; the local
 Vector branch reconciles that accepted canonical source without rewriting history.
 
+## Mixed-width proof fixture follow-up — 2026-10-30
+
+The subsequent Linux run reached the final mixed-width proof route and refused
+its stale complete IR input. Fresh original compiler output removes two
+redundant operand casts, including one in the constructor. Preserve the entire
+historical input as `mixed-width-operand-pre-analyzed-bounds-schema20-ir.json`
+for the existing migration controls; the proof runner uses the separately
+refreshed current fixture. A distinct current-input test checks generic public
+ownership and retired-recognizer exclusion.
+
+The native gate now checks this entire current IR before the expensive proof
+sequence. Independent Rust proof-boundary checks remain in place. Changes in
+unselected circuits, constructor data and schema must also refuse; no cast
+stripping, source-label rewriting or partial comparison is permitted. Fresh
+affected proofs and new exact-head CLI reviews/CI remain required before this
+repair is accepted.
+
 ## Constant index failure repair — 2026-10-29
 
 The packaged compiler reproduced `items[(a - b) * 0]` for constant `a = 1`,
