@@ -354,9 +354,11 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
         mapping = gate.fixture_map()
         self.assertEqual(mapping, fixture_inventory.fixture_map())
         self.assertEqual(freshness.EXTRA_SOURCES, fixture_inventory.extra_sources())
-        self.assertEqual(len(mapping), 197)
+        self.assertEqual(len(mapping), 198)
         self.assertEqual(mapping[gate.ROOT / "examples/rust_backend/constant_valued_vector_indices.compact"],
                          gate.ROOT / "tests-rust-backend/constant-valued-vector-indices-source/lib.rs")
+        self.assertEqual(mapping[gate.ROOT / "examples/rust_backend/wide_zero_multiplication.compact"],
+                         gate.ROOT / "tests-rust-backend/wide-zero-multiplication-source/lib.rs")
         inventory_paths = set(gate.inventory.source_paths(gate.ROOT))
         self.assertTrue(set(mapping) <= inventory_paths)
         registrations = {row.source: row for row in fixture_inventory.source_registry()}

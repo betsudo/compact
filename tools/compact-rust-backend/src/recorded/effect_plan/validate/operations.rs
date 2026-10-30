@@ -125,7 +125,12 @@ pub(super) fn validate(
             use_value(b)?;
             unsigned_add_type(&a.ty, &b.ty, ty)
         }
-        Operation::UnsignedSubtract(a, b) | Operation::UnsignedMultiply(a, b) => {
+        Operation::UnsignedMultiply(a, b) => {
+            use_value(a)?;
+            use_value(b)?;
+            unsigned_multiply_type(&a.ty, &b.ty, ty)
+        }
+        Operation::UnsignedSubtract(a, b) => {
             use_value(a)?;
             use_value(b)?;
             bound(&a.ty).is_some() && bound(&b.ty).is_some() && bound(ty).is_some()

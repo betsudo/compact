@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.145, language 0.23.105, runtime 0.16.102]
+
+### Added
+
+- Checked Rust emission for wide-Uint multiplication with a zero-typed operand.
+  Both operands still execute once in source order; other wide products remain
+  explicitly unsupported. Existing generated carriers and runtime checks are
+  retained, including the exact zero result type.
+
+### Fixed
+
+- Use the declared singleton-zero result bound for ordinary stateful zero
+  multiplication returns, through the existing typed arithmetic owner.
+
 ## [Toolchain 0.31.144, language 0.23.105, runtime 0.16.102]
 
 ### Added

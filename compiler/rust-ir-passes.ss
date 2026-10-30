@@ -2328,22 +2328,22 @@
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]
           [else (expression-ir value-expr owner-src)]))
 
-      (define (stateful-return-ir return-expr owner-src witness-ids)
+      (define (stateful-return-ir return-expr expected-type owner-src witness-ids)
         (call-with-rust-origin "return_plan" (expression-origin return-expr)
           (expression-origin-preserve? return-expr)
-          (lambda () (stateful-return-ir-value return-expr owner-src witness-ids)) (expression-operation-origin return-expr)))
+          (lambda () (stateful-return-ir-value return-expr expected-type owner-src witness-ids)) (expression-operation-origin return-expr)))
 
-      (define (stateful-return-ir-value return-expr owner-src witness-ids)
+      (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
-          [(return ,src ,expr) (stateful-return-ir expr src witness-ids)]
-          [(seq ,src ,expr* ... ,expr) (stateful-return-ir expr src witness-ids)]
+          [(return ,src ,expr) (stateful-return-ir expr expected-type src witness-ids)]
+          [(seq ,src ,expr* ... ,expr) (stateful-return-ir expr expected-type src witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (if (and (let-scope-needs-action? local* expr)
                     (stateful-body-has-actions? expr))
-               (stateful-return-ir expr src witness-ids)
+               (stateful-return-ir expr expected-type src witness-ids)
                (object (cons "kind" "expression")
                        (cons "value" (stateful-expression-ir return-expr src witness-ids))))]
           [(var-ref ,src ,var-name)
@@ -2373,7 +2373,15 @@
                        (cons "value" (stateful-expression-ir return-expr src witness-ids))))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "expression")
-                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+                   (cons "value"
+                     ;; Carry the singleton result into each conditional arm,
+                     ;; just as for a direct zero-product return below.
+                     (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
+                       [(tunsigned ,src^ ,nat)
+                        (if (= nat 0)
+                            (stateful-typed-expression-ir return-expr expected-type src witness-ids)
+                            (stateful-expression-ir return-expr src witness-ids))]
+                       [else (stateful-expression-ir return-expr src witness-ids)])))]
           [(== ,src ,type ,expr1 ,expr2)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
@@ -2412,7 +2420,16 @@
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(* ,src ,mbits ,expr1 ,expr2)
            (object (cons "kind" "expression")
-                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+                   (cons "value"
+                     ;; Zero's declared singleton bound is authoritative. The
+                     ;; rounded mbits carrier is 1 even when this result is 0.
+                     ;; Keep all other historical return annotations intact.
+                     (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
+                       [(tunsigned ,src^ ,nat)
+                        (if (= nat 0)
+                            (stateful-typed-expression-ir return-expr expected-type src witness-ids)
+                            (stateful-expression-ir return-expr src witness-ids))]
+                       [else (stateful-expression-ir return-expr src witness-ids)])))]
           [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
            (nanopass-case (Lnodisclose ADT-Op) adt-op
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
@@ -2562,7 +2579,7 @@
                                                                               (object (cons "kind" "parameter")
                                                                                       (cons "name" (rust-var-name var-name))))]))
                                                                    arg*) witness-ids)))
-                                              (stateful-return-ir expr src witness-ids)))
+                                              (stateful-return-ir expr type src witness-ids)))
                                     (cons "actions"
                                           (if effectful-return?
                                               (vector)

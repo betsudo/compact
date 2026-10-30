@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Binary operation temporaries stay off recursive dispatch for unrelated families.
 use super::super::validate;
 use super::*;
@@ -67,17 +79,17 @@ impl Lowerer<'_> {
             {
                 (Operation::UnsignedAdd(a, b), uint(max))
             }
-            Expr::UnsignedSubtract { max, .. } | Expr::UnsignedMultiply { max, .. }
+            Expr::UnsignedMultiply { max, .. }
+                if validate::unsigned_multiply_type(&a.ty, &b.ty, &uint(max)) =>
+            {
+                (Operation::UnsignedMultiply(a, b), uint(max))
+            }
+            Expr::UnsignedSubtract { max, .. }
                 if validate::bound(&a.ty).is_some()
                     && validate::bound(&b.ty).is_some()
                     && validate::bound(&uint(max)).is_some() =>
             {
-                let operation = match expression {
-                    Expr::UnsignedSubtract { .. } => Operation::UnsignedSubtract(a, b),
-                    Expr::UnsignedMultiply { .. } => Operation::UnsignedMultiply(a, b),
-                    _ => unreachable!("unsigned arithmetic arm"),
-                };
-                (operation, uint(max))
+                (Operation::UnsignedSubtract(a, b), uint(max))
             }
             _ => return Err(invalid(path, "invalid arithmetic operand types")),
         })

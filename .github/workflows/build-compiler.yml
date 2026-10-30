@@ -468,6 +468,11 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
+      - name: Check generated wide-zero multiplication APIs
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero" --report "$RUNNER_TEMP/compact-wide-zero.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Check generated constant vector projection APIs
         run: |
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
@@ -551,6 +556,10 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection-proof"
 
+      - name: Qualify wide-zero multiplication proofs
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero-proof"
+
       - name: Qualify constant-valued Vector index proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --constant-valued-indices --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-constant-valued-vector-proof"
@@ -607,6 +616,14 @@ jobs:
             ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
             ${{ runner.temp }}/compact-did-functional-proof/receipt.json
             ${{ runner.temp }}/compact-did-functional-proof/generated/
+            ${{ runner.temp }}/compact-wide-zero.json
+            ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-wide-zero/typescript.json
+            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
+            ${{ runner.temp }}/compact-wide-zero/*.stdout
+            ${{ runner.temp }}/compact-wide-zero/*.stderr
+            ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
+            ${{ runner.temp }}/compact-wide-zero-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-constant-valued-vector.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json

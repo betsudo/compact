@@ -1,8 +1,20 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! A complete frozen helper independently authenticates output-only factoring.
+//! The historical strategy adapter checks output factoring; the independent
+//! frozen numeric reference separately checks historical admission and errors.
 use super::*;
 fn tokens(result: Result<syn::Expr, RenderError>) -> Result<String, RenderError> {
     result.map(|expr| expr.to_token_stream().to_string())
@@ -55,5 +67,45 @@ fn checked_strategy_rendering_and_legacy_entrypoint_match_exact_old_helper() {
             .map(|strategy| crate::value_lowering::render_unsigned_arithmetic(strategy, l, r));
             assert_eq!(tokens(checked), old);
         }
+    }
+}
+
+#[test]
+fn historical_helper_still_refuses_the_new_wide_zero_domain() {
+    let operation = unsigned(ArithmeticKind::Multiply, "0", Expr::Unit, Expr::Unit);
+    for (left, right) in [(WIDE, "0"), ("0", WIDE)] {
+        let prior = old_unsigned::unsigned_arithmetic_syntax(
+            &operation,
+            syn::parse_quote!(left()),
+            syn::parse_quote!(right()),
+            left,
+            right,
+            "0",
+        );
+        assert_eq!(
+            prior.err(),
+            Some(RenderError::UnsupportedWideUnsignedOperation {
+                operation: "multiplication",
+                max: WIDE.into()
+            })
+        );
+        let current = crate::value_lowering::unsigned_arithmetic_syntax(
+            &operation,
+            syn::parse_quote!(left()),
+            syn::parse_quote!(right()),
+            left,
+            right,
+            "0",
+        )
+        .unwrap();
+        let expected: syn::Expr = syn::parse_quote!({
+            let _ = left();
+            let _ = right();
+            runtime::BoundedUint::<0>::new(0)?
+        });
+        assert_eq!(
+            current.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
     }
 }
