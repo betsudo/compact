@@ -204,8 +204,16 @@ fn oracle_programs_and_captures_match_recorded_provenance() {
         );
     }
     let lib = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("lib.rs");
+    // The oracle provenance describes its original compiler epoch. Preserve it
+    // when the current compiler refreshes the complete generated Rust fixture.
+    let current: serde_json::Value =
+        serde_json::from_str(include_str!("../generated-rust.json")).unwrap();
+    assert_eq!(
+        current["historical_generated_rust_sha256"],
+        provenance["branch_typescript_and_rust"]["checked_in_generated_rust_sha256"]
+    );
     assert_eq!(
         format!("{:x}", Sha256::digest(std::fs::read(lib).unwrap())),
-        provenance["branch_typescript_and_rust"]["checked_in_generated_rust_sha256"]
+        current["generated_rust_sha256"]
     );
 }

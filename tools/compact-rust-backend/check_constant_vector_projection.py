@@ -37,7 +37,36 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "vector_projection"
 SOURCE = ROOT / "examples/rust_backend/constant_vector_projection.compact"
-NEGATIVES = {"wrong_length": "E0308", "wrong_type": "E0308", "double_execute": "E0382"}
+NEGATIVES = {"wrong_length": "E0308", "wrong_type": "E0308", "double_execute": "E0382",
+             "double_context": "E0382"}
+
+
+def compile_failure(process, name, expected, source):
+    """Accept only errors at the marked ordinary misuse in this consumer binary."""
+    markers = [i for i, line in enumerate(source.splitlines(), 1) if "// expected-error" in line]
+    if len(markers) != 1:
+        raise ValueError(f"{name} needs exactly one intended-error marker")
+    errors = []
+    for line in process.stdout.splitlines():
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if item.get("reason") != "compiler-message" or item["message"]["level"] != "error":
+            continue
+        message = item["message"]
+        primary = [span for span in message.get("spans", []) if span.get("is_primary")]
+        if (message.get("code") or {}).get("code") != expected or not primary or not all(
+            span["file_name"] == f"src/bin/{name}.rs"
+            and span["line_start"] <= markers[0] <= span["line_end"]
+            and any(row["text"] == source.splitlines()[markers[0] - 1] for row in span["text"])
+            for span in primary
+        ):
+            raise ValueError(f"{name} error is not {expected} at its intended source expression")
+        errors.append({"code": expected, "primary_spans": primary})
+    if not process.returncode or not errors:
+        raise ValueError(f"{name} did not refuse at its intended source expression")
+    return errors
 
 
 def digest(path):
@@ -50,7 +79,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, help="Execute pinned TS parity using this existing package")
+    parser.add_argument("--source", type=Path, default=SOURCE,
+                        help="Complete source with the maintained projection consumer API (default: #674)")
     args = parser.parse_args()
+    source = args.source.resolve(strict=True)
+    source.relative_to(ROOT)  # All admitted complete sources belong to this checkout.
     output, report_path = args.output.absolute(), args.report.absolute()
     for path in [output, report_path]:
         if path.exists() or path.is_symlink():
@@ -60,7 +93,7 @@ def main():
     environment.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     scheme = scheme_compiler(compiler, environment)
     environment["COMPACTC_SCHEME"] = str(scheme)
-    premises = [SOURCE, Path(__file__), ROOT / "Cargo.lock", ROOT / "runtime-rs/Cargo.toml",
+    premises = [source, Path(__file__), ROOT / "Cargo.lock", ROOT / "runtime-rs/Cargo.toml",
                 ROOT / "runtime-rs/compatibility.json", ROOT / "runtime-rs-macros/Cargo.toml"]
     for directory in [ROOT / "runtime-rs/src", ROOT / "runtime-rs-macros/src",
                       ROOT / "tools/compact-rust-backend/src", FIXTURES]:
@@ -72,7 +105,8 @@ def main():
     tool_pins = {str(path): digest(path) for path in [compiler, scheme]}
     output.mkdir(parents=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report = {"status": "incomplete", "scope": "Focused #674 source/consumer gate; no proof or full CI acceptance",
+    report = {"status": "incomplete", "scope": "Focused Vector projection source/consumer gate; no proof or full CI acceptance",
+              "source": str(source.relative_to(ROOT)),
               "premises": pins, "tools": tool_pins, "commands": []}
     started = time.monotonic()
 
@@ -92,7 +126,7 @@ def main():
     try:
         generated = output / "generated"
         run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
-                         "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
+                         "--rust-runtime-root", ROOT, "--skip-zk", source.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         if args.ts_runtime:
             runtime = args.ts_runtime.resolve(strict=True)
@@ -148,6 +182,60 @@ def main():
             if not process.returncode or message not in process.stderr or refused.exists():
                 raise ValueError(f"source {name} did not refuse at its static vector bound")
             report["source_refusals"][name] = message
+        # Exercise the numeric source owners retained by constant bindings:
+        # aliases, zero multiplication, genuine checked casts and first failure.
+        numeric_generated = output / "numeric-generated"
+        run("numeric-generate", [compiler, "--target", "rust",
+                                *(["--target", "ts"] if args.ts_runtime else []),
+                                "--rust-runtime-root", ROOT, "--skip-zk",
+                                FIXTURES / "numeric_aliases.compact", numeric_generated])
+        from check_compactc_target import check_manifest
+        check_manifest(numeric_generated, require_zkir=False)
+        numeric_snapshot = {str(path.relative_to(numeric_generated)): digest(path)
+                            for path in numeric_generated.rglob("*") if path.is_file()}
+        report["numeric_aliases"] = {"generated": numeric_snapshot, "rust_tests": 5}
+        numeric_package = tomllib.loads((numeric_generated / "contract/Cargo.toml").read_text())["package"]["name"]
+        if args.ts_runtime:
+            numeric_capture = output / "numeric-ts-reference.json"
+            run("numeric-typescript", ["node", FIXTURES / "capture_numeric_aliases.mjs",
+                                       numeric_generated / "contract/index.js", numeric_capture])
+            environment["COMPACT_VECTOR_NUMERIC_TS_REFERENCE"] = str(numeric_capture)
+            report["numeric_aliases"]["typescript_capture_sha256"] = digest(numeric_capture)
+        else:
+            environment.pop("COMPACT_VECTOR_NUMERIC_TS_REFERENCE", None)
+            report["numeric_aliases"]["typescript"] = "NOT RUN; no --ts-runtime selected"
+        # Exercise both evaluated-guard and unknown-guard lowering through the
+        # stateful/witness routes and simple constructors. Failing paths have
+        # behavior controls, not proofs of an unsatisfiable circuit.
+        guard_generated = {}
+        guard_snapshots = {}
+        guard_dependencies = []
+        for name, source_name in [
+            ("guard_fixture", "guard_lowering.compact"),
+            ("guard_constructor_known", "guard_constructor_known.compact"),
+            ("guard_constructor_unknown", "guard_constructor_unknown.compact"),
+        ]:
+            target = output / name
+            run(name + "-generate", [compiler, "--target", "rust",
+                *(["--target", "ts"] if args.ts_runtime else []),
+                "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                "--skip-zk", FIXTURES / source_name, target])
+            check_manifest(target)
+            guard_generated[name] = target
+            guard_snapshots[name] = generated_manifest_snapshot(target)
+            guard_package = tomllib.loads((target / "contract/Cargo.toml").read_text())["package"]["name"]
+            guard_dependencies.append(
+                f'{name}={{package={json.dumps(guard_package)},path={json.dumps(str(target / "contract"))}}}')
+        report["guard_lowering"] = {
+            "generated": guard_snapshots, "rust_tests": 4,
+            "scope": "Stateful/witness native+recorded+functional and simple constructor behavior; no proof acceptance"}
+        if args.ts_runtime:
+            guard_capture = output / "guard-ts-reference.json"
+            run("guard-typescript", ["node", FIXTURES / "capture_guard_lowering.mjs",
+                *[guard_generated[name] / "contract/index.js" for name in guard_generated], runtime, guard_capture])
+            report["guard_lowering"]["typescript_capture_sha256"] = digest(guard_capture)
+        else:
+            report["guard_lowering"]["typescript"] = "NOT RUN; no --ts-runtime selected"
         package = tomllib.loads((generated / "contract/Cargo.toml").read_text())["package"]["name"]
         lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
         serde = next(row["version"] for row in lock["package"] if row["name"] == "serde_json")
@@ -156,10 +244,13 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         (consumer / "src/lib.rs").write_text("")
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "tests/vector.rs")
+        shutil.copyfile(FIXTURES / "numeric_aliases.rs", consumer / "tests/numeric.rs")
+        shutil.copyfile(FIXTURES / "guard_lowering.rs", consumer / "tests/guards.rs")
         lines = ['[workspace]', '[package]', 'name="constant-vector-consumer"', 'version="0.0.0"',
                  'edition="2024"', '[dependencies]',
                  f'vector_fixture={{package={json.dumps(package)},path={json.dumps(str(generated / "contract"))}}}',
-                 f'serde_json="={serde}"', '[features]']
+                 f'numeric_fixture={{package={json.dumps(numeric_package)},path={json.dumps(str(numeric_generated / "contract"))}}}',
+                 f'serde_json="={serde}"', *guard_dependencies, '[features]']
         lines.extend(f'{name}=[]' for name in NEGATIVES)
         for name in NEGATIVES:
             shutil.copyfile(FIXTURES / f"{name}.rs", consumer / f"src/bin/{name}.rs")
@@ -171,7 +262,9 @@ def main():
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)
         allowed_local = {manifest.resolve(), (generated / "contract/Cargo.toml").resolve(),
-                         (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve()}
+                         (ROOT / "runtime-rs/Cargo.toml").resolve(), (ROOT / "runtime-rs-macros/Cargo.toml").resolve(),
+                         (numeric_generated / "contract/Cargo.toml").resolve()}
+        allowed_local.update((target / "contract/Cargo.toml").resolve() for target in guard_generated.values())
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in lock["package"]}
         for item in metadata["packages"]:
             identity = (item["name"], item["version"], item.get("source"))
@@ -189,9 +282,18 @@ def main():
         report["consumer_lock_sha256"] = digest(child_lock)
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
                                    "--test", "vector"]).stdout
-        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("7", "0", "0")]:
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result) != [("8", "0", "0")]:
             raise ValueError("unexpected generated-consumer accounting")
-        report["rust_consumer_tests"] = 7
+        report["rust_consumer_tests"] = 8
+        numeric_result = run("numeric-consumer", ["cargo", "test", "--locked", "--offline",
+                             "--manifest-path", manifest, "--test", "numeric"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", numeric_result) != [("5", "0", "0")]:
+            raise ValueError("unexpected numeric alias/boundary control accounting")
+        guard_result = run("guard-consumer", ["cargo", "test", "--locked", "--offline",
+            "--manifest-path", manifest, "--test", "guards"]).stdout
+        if re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", guard_result) != [("4", "0", "0")]:
+            raise ValueError("unexpected stateful/constructor guard control accounting")
+
         if args.ts_runtime:
             changed = json.loads(capture.read_text())
             next(row for row in changed["cases"] if row["id"] == "choose-first")["output"]["valueAtoms"] = [[42]]
@@ -210,19 +312,18 @@ def main():
         for name, expected in NEGATIVES.items():
             process = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
                                 "--bin", name, "--features", name, "--message-format=json"], success=False)
-            errors = []
-            for line in process.stdout.splitlines():
-                try:
-                    item = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if item.get("reason") == "compiler-message" and item["message"]["level"] == "error":
-                    errors.append((item["message"].get("code") or {}).get("code"))
-            if not process.returncode or not errors or set(errors) != {expected}:
-                raise ValueError(f"{name} did not refuse only with {expected}: {errors}")
-            report["compile_fail"][name] = errors
+            report["compile_fail"][name] = compile_failure(
+                process, name, expected, (consumer / f"src/bin/{name}.rs").read_text())
+        if {str(path.relative_to(numeric_generated)): digest(path)
+            for path in numeric_generated.rglob("*") if path.is_file()} != numeric_snapshot:
+            raise ValueError("numeric generated assets changed during execution")
         if generated_manifest_snapshot(generated) != report["generated"]:
             raise ValueError("generated assets changed during consumer execution")
+        for name, target in guard_generated.items():
+            if generated_manifest_snapshot(target) != guard_snapshots[name]:
+                raise ValueError("guard generated assets changed during consumer execution: " + name)
+        if args.ts_runtime and digest(guard_capture) != report["guard_lowering"]["typescript_capture_sha256"]:
+            raise ValueError("guard TS reference changed during Rust execution")
         for relative, expected in pins.items():
             if digest(ROOT / relative) != expected:
                 raise ValueError(f"source/runtime premise changed: {relative}")
@@ -250,7 +351,7 @@ def main():
         with report_path.open("x") as stream:
             json.dump(report, stream, indent=2)
             stream.write("\n")
-    print(json.dumps({"status": report["status"], "rust_consumer_tests": 7,
+    print(json.dumps({"status": report["status"], "rust_consumer_tests": report["rust_consumer_tests"],
                       "compile_fail": report["compile_fail"], "report": str(report_path)}))
 
 

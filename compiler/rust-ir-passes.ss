@@ -26,6 +26,7 @@
           (nanopass)
           (json)
           (rust-source-origins)
+          (rust-vector-indices)
           (langs)
           (pass-helpers))
 
@@ -423,6 +424,103 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      ;; Rust's existing type-ir erases numeric aliases to the same carrier.
+      ;; Use the bridge's shared analyzed-bound query for typed expressions and
+      ;; cast annotations too; do not mistake an aliased Uint for a new value.
+      (define (unsigned-canonical-type type)
+        (let ([maximum (rust-unsigned-maximum type)])
+          (if maximum
+              (with-output-language (Lnodisclose Type)
+                `(tunsigned ,(type-origin type) ,maximum))
+              type)))
+
+      ;; arithmetic-binop annotates both operands with the result bound.
+      ;; For multiplication by zero that bound is smaller than an operand's;
+      ;; this safe-cast is erased by the circuit pipeline, not a checked
+      ;; source downcast. Keep the original operand carrier and let the
+      ;; existing checked arithmetic helper validate the result. Never fold
+      ;; the operand away: its evaluation and failures still occur in order.
+      (define (unsigned-arithmetic-operand-ir expr src lower lower-typed)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src^ ,type ,type^ ,expr^)
+           (let ([maximum (rust-unsigned-maximum type)]
+                 [source-maximum (rust-unsigned-maximum type^)])
+             (if (and maximum source-maximum (< maximum source-maximum))
+                 (lower-typed expr^ type^ src^)
+                 (lower expr src)))]
+          [else (lower expr src)]))
+
+      (define (pure-unsigned-arithmetic-operand-ir expr src)
+        (unsigned-arithmetic-operand-ir expr src expression-ir typed-expression-ir))
+
+      (define (stateful-unsigned-arithmetic-operand-ir expr src witness-ids)
+        (unsigned-arithmetic-operand-ir expr src
+          (lambda (expr src) (stateful-expression-ir expr src witness-ids))
+          (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids))))
+
+      ;; Recover the carrier used by ordinary expression lowering, without
+      ;; evaluating the index or using its resolved value as a type bound.
+      ;; Explicit analyzed types stay intact; bare arithmetic has only mbits
+      ;; here, so its unused evaluation binding retains that native carrier.
+      (define (vector-index-type index locals)
+        (nanopass-case (Lnodisclose Expression) index
+          [(quote ,src ,datum)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,datum))]
+          [(var-ref ,src ,var-name)
+           (let ([local (assq var-name locals)])
+             (if local (cdr local)
+                 (let ([types (current-variable-types)])
+                   (or (and types (eq-hashtable-ref types var-name #f))
+                       (source-errorf src "Rust backend has no type for this constant Vector index binding")))))]
+          [(safe-cast ,src ,type ,type^ ,expr) type]
+          [(+ ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(- ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(* ,src ,mbits ,expr1 ,expr2)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
+          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (vector-index-type expr
+             (append (map (lambda (local)
+                            (nanopass-case (Lnodisclose Argument) local
+                              [(,var-name ,type) (cons var-name type)])) local*) locals))]
+          [else (internal-errorf 'vector-index-type "unexpected admitted index")]))
+
+      (define (resolved-vector-expression original src type expr index)
+        (let ([kindex (rust-vector-index original)])
+          (unless kindex
+            (source-errorf src "Rust backend has no unique constant-valued Vector index for this occurrence"))
+          ;; A known numeric result does not prove successful evaluation:
+          ;; multiplication by zero can retain a failing subtraction guard.
+          ;; Keep the first failure supplied by the same circuit evaluator.
+          ;; Total constant arithmetic with proven guards needs no runtime
+          ;; arithmetic support (including wide constant index arithmetic).
+          ;; An unavailable/conflicting guard fact instead retains evaluation.
+          ;; The admitted grammar's only failure is its canonical subtraction
+          ;; guard: unsigned addition/multiplication cannot overflow the
+          ;; analyzed result, and genuine checked downcasts are not admitted.
+          (let ([guard (rust-vector-index-guard-state original)])
+            (cond
+            [(eq? guard 'safe)
+             (with-output-language (Lnodisclose Expression)
+               `(tuple-ref ,src ,expr ,kindex))]
+            [(pair? guard)
+             (let ([var-name (make-source-id src 'vector_index_value)]
+                   [guard-src (car guard)] [message (cdr guard)])
+               (with-output-language (Lnodisclose Expression)
+                 `(let* ,src (((,var-name ,type) ,expr))
+                    (seq ,src (assert ,guard-src (quote ,guard-src #f) ,message)
+                      (tuple-ref ,src (var-ref ,src ,var-name) ,kindex)))))]
+            [else
+             (let ([var-name (make-source-id src 'vector_index_value)]
+                   [index-name (make-source-id src 'vector_index_position)]
+                   [index-type (vector-index-type index '())])
+               (with-output-language (Lnodisclose Expression)
+                 `(let* ,src (((,var-name ,type) ,expr)
+                              ((,index-name ,index-type) ,index))
+                    (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
+
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (expression-ir expr owner-src)]
@@ -438,6 +536,8 @@
            (object (cons "kind" "tuple_index")
                    (cons "value" (expression-ir expr src))
                    (cons "index" kindex))]
+          [(vector-ref ,src ,type ,expr^ ,index)
+           (expression-ir (resolved-vector-expression expr src type expr^ index) owner-src)]
           [(enum-ref ,src ,type ,elt-name^)
            (object (cons "kind" "enum_variant")
                    (cons "ty" (type-ir type src))
@@ -468,6 +568,13 @@
                                     (reverse bytes)
                                     (loop (+ index 1)
                                           (cons (bytevector-u8-ref datum index) bytes)))))))]
+             ;; infer-types assigns an unsigned literal its exact maximum.
+             ;; Arithmetic operands need this case when no widening cast was
+             ;; inserted (for example the 2 in a local constant `i * 2`).
+             [(and (integer? datum) (<= 0 datum (max-unsigned)))
+              (object (cons "kind" "unsigned_literal")
+                      (cons "value" (number->string datum))
+                      (cons "max" (number->string datum)))]
              [(and (integer? datum) (> datum (max-unsigned)) (field? datum))
               (object (cons "kind" "field_literal")
                       (cons "value" (number->string datum)))]
@@ -483,13 +590,13 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
                 (if value
                     (object (cons "kind" "field_literal")
                             (cons "value" (number->string value)))
-                    (nanopass-case (Lnodisclose Type) type^
+                    (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                       [(tunsigned ,src1 ,nat)
                        (object (cons "kind" "field_cast")
                                (cons "value" (typed-expression-ir expr type^ src)))]
@@ -751,8 +858,8 @@
            (if mbits
                (object (cons "kind" "unsigned_add")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "add")
                        (cons "left" (field-argument-ir expr1 owner-src))
                        (cons "right" (field-argument-ir expr2 owner-src))))]
@@ -760,8 +867,8 @@
            (if mbits
                (object (cons "kind" "unsigned_subtract")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "subtract")
                        (cons "left" (field-argument-ir expr1 src))
                        (cons "right" (field-argument-ir expr2 src))))]
@@ -769,8 +876,8 @@
            (if mbits
                (object (cons "kind" "unsigned_multiply")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (expression-ir expr1 src))
-                       (cons "right" (expression-ir expr2 src)))
+                       (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                       (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))
                (object (cons "kind" "multiply")
                        (cons "left" (field-argument-ir expr1 src))
                        (cons "right" (field-argument-ir expr2 src))))]
@@ -778,7 +885,7 @@
 
       (define (typed-expression-ir expr expected-type owner-src)
         (call-with-rust-origin "expression" (expression-origin expr) #t
-          (lambda () (typed-expression-ir-value expr expected-type owner-src)) (expression-operation-origin expr)))
+          (lambda () (typed-expression-ir-value expr (unsigned-canonical-type expected-type) owner-src)) (expression-operation-origin expr)))
 
       (define (typed-expression-ir-value expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
@@ -882,8 +989,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_add")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(- ,src ,mbits ,expr1 ,expr2)
@@ -892,8 +999,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_subtract")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(* ,src ,mbits ,expr1 ,expr2)
@@ -902,8 +1009,8 @@
                  [(tunsigned ,src^ ,nat)
                   (object (cons "kind" "unsigned_multiply")
                           (cons "max" (number->string nat))
-                          (cons "left" (expression-ir expr1 src))
-                          (cons "right" (expression-ir expr2 src)))]
+                          (cons "left" (pure-unsigned-arithmetic-operand-ir expr1 src))
+                          (cons "right" (pure-unsigned-arithmetic-operand-ir expr2 src)))]
                  [else (expression-ir expr owner-src)])
                (expression-ir expr owner-src))]
           [(quote ,src ,datum)
@@ -1798,10 +1905,32 @@
       ;; them in order and append each private transcript value exactly once.
       (define (stateful-typed-expression-ir value-expr expected-type owner-src witness-ids)
         (call-with-rust-origin "expression" (expression-origin value-expr) #t
-          (lambda () (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)) (expression-operation-origin value-expr)))
+          (lambda () (stateful-typed-expression-ir-value value-expr (unsigned-canonical-type expected-type) owner-src witness-ids)) (expression-operation-origin value-expr)))
 
       (define (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (stateful-bindings-ir local* expr* src (current-counter-environment) witness-ids
+             (lambda (bindings environment^)
+               (object (cons "kind" "let")
+                       (cons "bindings" bindings)
+                       (cons "body" (stateful-typed-expression-ir expr expected-type src witness-ids)))))]
+          [(seq ,src ,expr* ... ,expr)
+           (if (checked-unsigned-subtraction? expr* expr)
+               (stateful-typed-expression-ir expr expected-type src witness-ids)
+               (object (cons "kind" "sequence")
+                       (cons "steps" (list->vector
+                                      (map (lambda (step) (stateful-expression-ir step src witness-ids)) expr*)))
+                       (cons "value" (stateful-typed-expression-ir expr expected-type src witness-ids))))]
+          [(+ ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_add" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
+          [(- ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_subtract" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
+          [(* ,src ,mbits ,expr1 ,expr2)
+           (stateful-typed-unsigned-arithmetic-ir "unsigned_multiply" value-expr expected-type
+             src mbits expr1 expr2 owner-src witness-ids)]
           [(var-ref ,src ,var-name)
            (typed-expression-ir value-expr expected-type owner-src)]
           [(tuple ,src ,tuple-arg* ...)
@@ -1848,11 +1977,11 @@
           [(quote ,src ,datum)
            (typed-expression-ir value-expr expected-type src)]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
-                  (nanopass-case (Lnodisclose Type) type^
+                  (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                     [(tunsigned ,src1 ,nat)
                      (object (cons "kind" "field_cast")
                              (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))]
@@ -1878,8 +2007,25 @@
           (expression-origin-preserve? value-expr)
           (lambda () (stateful-expression-ir-value value-expr owner-src witness-ids)) (expression-operation-origin value-expr)))
 
+      ;; Match the pure typed arithmetic owner: analysis can declare a tighter
+      ;; result than the rounded mbits carrier (notably constant 0 + 0).
+      (define (stateful-typed-unsigned-arithmetic-ir kind value-expr expected-type
+                src mbits expr1 expr2 owner-src witness-ids)
+        (if mbits
+            (nanopass-case (Lnodisclose Type) expected-type
+              [(tunsigned ,src^ ,nat)
+               (object (cons "kind" kind)
+                       (cons "max" (number->string nat))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))]
+              [else (stateful-expression-ir value-expr owner-src witness-ids)])
+            (stateful-expression-ir value-expr owner-src witness-ids)))
+
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(vector-ref ,src ,type ,expr ,index)
+           (stateful-expression-ir
+             (resolved-vector-expression value-expr src type expr index) owner-src witness-ids)]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
@@ -2069,11 +2215,11 @@
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) type
+           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
-                  (nanopass-case (Lnodisclose Type) type^
+                  (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type^)
                     [(tunsigned ,src1 ,nat)
                      (object (cons "kind" "field_cast")
                              (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))]
@@ -2157,8 +2303,8 @@
            (if mbits
                (object (cons "kind" "unsigned_add")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "add")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]
@@ -2166,8 +2312,8 @@
            (if mbits
                (object (cons "kind" "unsigned_subtract")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "subtract")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]
@@ -2175,8 +2321,8 @@
            (if mbits
                (object (cons "kind" "unsigned_multiply")
                        (cons "max" (number->string (- (expt 2 mbits) 1)))
-                       (cons "left" (stateful-expression-ir expr1 src witness-ids))
-                       (cons "right" (stateful-expression-ir expr2 src witness-ids)))
+                       (cons "left" (stateful-unsigned-arithmetic-operand-ir expr1 src witness-ids))
+                       (cons "right" (stateful-unsigned-arithmetic-operand-ir expr2 src witness-ids)))
                (object (cons "kind" "multiply")
                        (cons "left" (stateful-expression-ir expr1 src witness-ids))
                        (cons "right" (stateful-expression-ir expr2 src witness-ids))))]

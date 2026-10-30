@@ -454,6 +454,8 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
          "acc_jubjub_gate", "compact-acc-jubjub-gate/v1", "--output", "--target"),
         ("vector-projection-proofs", "check_constant_vector_projection_proof.py", "vector-projection-proofs",
          "vector_projection_proof_gate", "compact-vector-projection-proof-gate/v1", "--output", "--target-dir"),
+        ("constant-valued-vector-index-proofs", "check_constant_vector_projection_proof.py", "constant-valued-vector-index-proofs",
+         "constant_valued_vector_index_proof_gate", "compact-vector-projection-proof-gate/v1", "--output", "--target-dir"),
         ("map-size-expression-proofs", "check_map_size_expression_proof.py", "map-size-expression-proofs",
          "map_size_expression_proof_gate", "compact-map-size-expression-proof-gate/v1", "--output", "--target-dir"),
         ("direct-fold-proofs", "check_direct_fold_proof.py", "direct-fold-proofs",
@@ -466,6 +468,8 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
         scheme = str(directory / "bin/compactc-scheme")
         arguments = [sys.executable, str(ROOT / "tools/compact-rust-backend" / script),
                      "--compiler", str(snapshot)]
+        if label == "constant-valued-vector-index-proofs":
+            arguments += ["--constant-valued-indices"]
         if target_flag != "--target-dir":
             arguments += ["--scheme", scheme]
         arguments += [target_flag, environment["CARGO_TARGET_DIR"], output_flag, str(child)]
@@ -475,6 +479,11 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
         value = json.loads(path.read_text())
         if not isinstance(value, dict) or value.get("format") != expected_format or value.get("status") != "passed":
             raise GateError(f"{label}: missing successful expected child receipt")
+        if script == "check_constant_vector_projection_proof.py":
+            expected_source = ("constant-valued-vector-indices" if "--constant-valued-indices" in arguments
+                               else "literal-vector-projection")
+            if value.get("source_label") != expected_source:
+                raise GateError(f"{label}: proof receipt belongs to another Vector source")
         receipt[key] = {"path": str(path), "sha256": sha256(path)}
         children.append(receipt[key])
     for child in children:

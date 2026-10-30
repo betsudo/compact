@@ -25,5 +25,5 @@ fn main() {
         true,
     );
     let _ = program.execute_native(context());
-    let _ = program.execute_native(context());
+    let _ = program.execute_native(context()); // expected-error
 }

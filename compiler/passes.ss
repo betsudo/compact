@@ -35,6 +35,7 @@
           (save-contract-info-passes)
           (typescript-passes)
           (rust-ir-passes)
+          (rust-vector-indices)
           (circuit-passes)
           (zkir-passes)
           (zkir-v3-passes)
@@ -140,7 +141,9 @@
                         (let* ([lsrc-ir (run-passes parser-passes pathname)]
                                [frontend-ir (run-passes frontend-passes lsrc-ir)]
                                [analyzed-ir (run-passes analysis-passes frontend-ir)]
-                               [circuit-ir (run-passes circuit-passes analyzed-ir)]
+                               [rust-index-facts (and (emit-rust-ir) (make-rust-vector-index-facts analyzed-ir))]
+                               [circuit-ir (parameterize ([current-rust-vector-index-facts rust-index-facts])
+                                             (run-passes circuit-passes analyzed-ir))]
                                [proof-circuit-name* (extract-circuit-names circuit-ir)])
                           (define output-subdirectories '("compiler" "contract" "zkir" "keys"))
                           (for-each
@@ -153,7 +156,8 @@
                             (with-target-ports
                               '((rust.ir.json . "contract/compact-rust-ir.json")
                                 (rust.origins.json . "contract/compact-rust-origins.raw.json"))
-                              (run-passes rust-ir-passes analyzed-ir)))
+                              (parameterize ([current-rust-vector-index-facts rust-index-facts])
+                                (run-passes rust-ir-passes analyzed-ir))))
                           (with-target-ports
                             (map (lambda (sym) (cons sym (format "zkir/~a.zkir" sym)))
                                  proof-circuit-name*)

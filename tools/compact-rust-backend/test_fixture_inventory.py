@@ -37,6 +37,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         baseline = json.loads((directory / 'fixture_registry.ledger-8.1.3.json').read_text())
         current = json.loads((directory / 'fixture_registry.json').read_text())
         names = {'examples/rust_backend/constant_vector_projection.compact',
+                 'examples/rust_backend/constant_valued_vector_indices.compact',
                  'examples/rust_backend/map_size_expression.compact',
                  'examples/rust_backend/field_return_wrappers.compact',
                  'examples/rust_backend/tuple_return_wrappers.compact',
@@ -46,9 +47,35 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                      for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 27)
+        self.assertEqual(len(extension), 28)
         current['sources'] = [row for row in current['sources'] if row not in extension]
+        # Stateful arithmetic now keeps the analyzed result maximum instead of
+        # its rounded bit carrier. Only these complete generated IR inputs were
+        # refreshed; their sources, consumers and historical registry stay put.
+        refreshed = {
+            'examples/rust_backend/effect_plan_wide_add.compact':
+                '148ce2df4dc5ad0588f8e8c76281a46fb4edd8a7c3363023d9a1098b39436cb6',
+            'test-center/test-contracts/micro-dao.compact':
+                '39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d',
+        }
+        self.assertEqual(
+            fingerprint(directory / 'tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json'),
+            '519e534e844b3cc4ee2f111f39e8634f199853aa9b888698cc2b58ef8f6c574b')
+        originals = {row['source']: row for row in baseline['sources']}
+        for row in current['sources']:
+            if row['source'] in refreshed:
+                self.assertEqual(row['retained_ir_sha256'], refreshed[row['source']])
+                self.assertEqual(fingerprint(inventory.ROOT / row['retained_ir']),
+                                 refreshed[row['source']])
+                row['retained_ir_sha256'] = originals[row['source']]['retained_ir_sha256']
         self.assertEqual(current, baseline)
+
+    def test_mixed_width_current_and_historical_ir_remain_distinct_exact_inputs(self):
+        directory = inventory.ROOT / 'tools/compact-rust-backend/tests'
+        self.assertEqual(fingerprint(directory / 'mixed-width-operand-pre-analyzed-bounds-schema20-ir.json'),
+                         'a4eef2edb49e75a43356c9edc5bd76e1e04a5707bf781699c2922499d4e84ce9')
+        self.assertEqual(fingerprint(directory / 'mixed-width-operand-schema20-ir.json'),
+                         '3fcc1ae8b2e313a7a7389d07ecf5c6ed7f2db3c28269598eb77137a6e1dd49cb')
 
     def test_vector_projection_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
@@ -57,6 +84,16 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 5)
+
+    def test_constant_valued_vector_indices_have_a_distinct_complete_source_binding(self):
+        rows = {row.source.name: row for row in inventory.source_registry()}
+        current = rows['constant_valued_vector_indices.compact']
+        original = rows['constant_vector_projection.compact']
+        self.assertEqual(current.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(current.role, inventory.SourceRole.FLAT_LIBRARY)
+        self.assertEqual(current.library, current.generated_library)
+        self.assertNotEqual(current.library, original.library)
+        self.assertEqual(len(list((current.library.parent / 'checked-programs').glob('*.json'))), 5)
 
     def test_map_size_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
@@ -216,7 +253,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 196,
+            inventory.SourceRole.FLAT_LIBRARY: 197,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })
