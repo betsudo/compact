@@ -66,7 +66,6 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
                 slots::calls
                     .inspect(native.context.query.state.get_ref())
                     .unwrap()
-                    .value()
                     .to_string()
             );
             assert_eq!(found[0]["privateState"], native.context.private_state);

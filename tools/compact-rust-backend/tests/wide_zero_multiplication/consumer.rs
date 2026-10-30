@@ -310,7 +310,6 @@ fn genuine_typescript_capture_agrees_with_wide_zero_source_results() {
                 slots::calls
                     .inspect(out.query.state.get_ref())
                     .unwrap()
-                    .value()
                     .to_string()
             );
             assert_eq!(row["privateState"], out.private_state);
