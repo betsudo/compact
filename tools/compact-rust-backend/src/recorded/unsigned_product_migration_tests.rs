@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Complete old product admission versus native validation and checked composition.
 use super::*;
 use crate::ir::Contract;
@@ -15,7 +27,7 @@ mod inclusion;
 
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../tests/mixed-width-operand-schema20-ir.json"
+        "../../tests/mixed-width-operand-pre-analyzed-bounds-schema20-ir.json"
     ))
     .unwrap()
 }
@@ -135,4 +147,19 @@ fn assert_old_positive(c: &Contract, label: &str) {
         "pure guard precedes the public Counter query"
     );
     assert_current(c);
+}
+
+#[test]
+fn complete_current_compiler_product_fixture_keeps_generic_public_ownership() {
+    let current: Value = serde_json::from_str(include_str!(
+        "../../tests/mixed-width-operand-schema20-ir.json"
+    ))
+    .unwrap();
+    assert_ne!(
+        current,
+        fixture(),
+        "historical input must remain independently preserved"
+    );
+    let current = contract(current);
+    assert_current(&current);
 }

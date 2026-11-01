@@ -21,10 +21,24 @@ use crate::ir::{Contract, Expr, StateAction, StateReturn, Type};
 use crate::recorded::admission_probe::trace;
 
 fn source() -> Contract {
+    // Freeze the historical recognizer's original input. Current compiler IR
+    // has a tighter product maximum and is exercised independently below.
     serde_json::from_str(include_str!(
-        "../../../tests/micro-dao-source-schema20-ir.json"
+        "../../../tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json"
     ))
     .unwrap()
+}
+
+#[test]
+fn current_analyzed_product_uses_generic_composition_without_old_shape_admission() {
+    let c: Contract = serde_json::from_str(include_str!(
+        "../../../tests/micro-dao-source-schema20-ir.json"
+    ))
+    .unwrap();
+    let maps = Context::new(&c);
+    assert!(maps.old(root(&c)).is_none());
+    assert!(maps.domain(root(&c)).unwrap().is_some());
+    public_owner(&c, "buy_in");
 }
 fn root(c: &Contract) -> &StatefulCircuit {
     c.stateful_circuits

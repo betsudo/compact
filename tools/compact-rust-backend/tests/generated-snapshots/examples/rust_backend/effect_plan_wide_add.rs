@@ -173,7 +173,7 @@ pub mod ledger_contract {
             <runtime::WideUint<1u128, 340282366920938463463374607431768211455u128>>::from_le_bytes(
                 (runtime::add_wide_unsigned::<
                     1u128,
-                    340282366920938463463374607431768211455u128,
+                    340282366920938463463374607431768211454u128,
                     _,
                     _,
                 >(__compact_value_0, __compact_value_1)?)
@@ -212,16 +212,13 @@ pub mod ledger_contract {
         let __compact_struct_member_2: runtime::WideUint<
             3u128,
             340282366920938463463374607431768211455u128,
-        > =
-            <runtime::WideUint<3u128, 340282366920938463463374607431768211455u128>>::from_le_bytes(
-                (runtime::add_wide_unsigned::<
-                    3u128,
-                    340282366920938463463374607431768211455u128,
-                    _,
-                    _,
-                >(__compact_value_0, __compact_value_1)?)
-                .as_le_bytes(),
-            )?;
+        > = <runtime::WideUint<3u128, 340282366920938463463374607431768211455u128>>::from_le_bytes(
+            (runtime::add_wide_unsigned::<2u128, 254u128, _, _>(
+                __compact_value_0,
+                __compact_value_1,
+            )?)
+            .as_le_bytes(),
+        )?;
         let result = crate::types::Wider {
             value: __compact_struct_member_2,
         };
@@ -389,10 +386,10 @@ pub mod ledger_contract {
             >>::from_le_bytes(&(__compact_effect_1).value().to_le_bytes())?;
             let __compact_effect_6: runtime::WideUint<
                 1u128,
-                340282366920938463463374607431768211455u128,
+                340282366920938463463374607431768211454u128,
             > = runtime::add_wide_unsigned::<
                 1u128,
-                340282366920938463463374607431768211455u128,
+                340282366920938463463374607431768211454u128,
                 _,
                 _,
             >(__compact_effect_4, __compact_effect_5)?;
@@ -437,15 +434,11 @@ pub mod ledger_contract {
                 <runtime::WideUint<2u128, 254u128>>::from_le_bytes(
                     &(__compact_effect_1).value().to_le_bytes(),
                 )?;
-            let __compact_effect_6: runtime::WideUint<
-                3u128,
-                340282366920938463463374607431768211455u128,
-            > = runtime::add_wide_unsigned::<
-                3u128,
-                340282366920938463463374607431768211455u128,
-                _,
-                _,
-            >(__compact_effect_4, __compact_effect_5)?;
+            let __compact_effect_6: runtime::WideUint<2u128, 254u128> =
+                runtime::add_wide_unsigned::<2u128, 254u128, _, _>(
+                    __compact_effect_4,
+                    __compact_effect_5,
+                )?;
             let __compact_effect_7: runtime::WideUint<
                 3u128,
                 340282366920938463463374607431768211455u128,

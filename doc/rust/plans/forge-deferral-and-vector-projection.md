@@ -1,5 +1,12 @@
 # Primary Rust AST direction and next slice
 
+Current bounded semantic follow-up:
+[constant-valued Vector indices](constant-valued-vector-indices.md). Its local
+implementation follows accepted literal projection and the standalone consumer
+work; original compiler, consumers and fresh proofs are gated separately for each
+source revision; complete integration gates remain
+required. This link does not reopen completed acceptance or resume Forge.
+
 Decision: 2026-10-25, direct owner instruction. Implementation of the next
 feature is not part of this separation change.
 

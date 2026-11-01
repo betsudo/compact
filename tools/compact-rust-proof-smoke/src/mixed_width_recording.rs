@@ -24,6 +24,12 @@ const RETAINED_IR: &str =
     include_str!("../../compact-rust-backend/tests/mixed-width-operand-schema20-ir.json");
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    // Both selected calls bind the complete original source before any key or
+    // state access. The direct pinned entry point also repeats this check.
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        RETAINED_IR,
+    )?;
     let mut rng = StdRng::seed_from_u64(0x0134_4d49_5845_4457);
     let initial = mixed::initial_state(
         ConstructorContext::new(()),

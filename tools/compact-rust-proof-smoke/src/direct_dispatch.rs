@@ -42,6 +42,9 @@ pub(super) fn try_run(
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }
+        ("--constant-valued-vector-indices", _) => {
+            Some(collections::constant_valued_vector_indices(arguments))
+        }
         ("--field-return-wrappers", _) => Some(collections::field_return_wrappers(arguments)),
         ("--unit-mutation-initializers", _) => {
             Some(collections::unit_mutation_initializers(arguments))
@@ -327,6 +330,11 @@ mod tests {
                 "--constant-vector-projection",
                 1,
                 "usage: compact-rust-proof-smoke --constant-vector-projection <proof-output>",
+            ),
+            (
+                "--constant-valued-vector-indices",
+                1,
+                "usage: compact-rust-proof-smoke --constant-valued-vector-indices <proof-output>",
             ),
             (
                 "--direct-fold",

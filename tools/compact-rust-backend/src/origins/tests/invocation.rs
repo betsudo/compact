@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #![cfg(unix)]
 use super::fixture::{self, Sandbox};
 use crate::{
@@ -27,7 +42,21 @@ fn successful_configured_invocation_uses_exact_args_private_receipt_and_validate
         fingerprint.companion_sha256,
         Some(crate::origins::frontend::digest(&raw))
     );
-    assert!(fingerprint.configured_executable_sha256.is_some());
+    assert_eq!(
+        fingerprint.configured_executable_sha256,
+        Some(crate::origins::frontend::digest(
+            &fs::read("/bin/sh").unwrap()
+        ))
+    );
+    assert_eq!(
+        args.lines().collect::<Vec<_>>(),
+        vec![
+            "--skip-zk",
+            "--emit-rust-ir",
+            sandbox.source.to_str().unwrap(),
+            artifact.output_dir().to_str().unwrap()
+        ]
+    );
     let rendered = artifact
         .render(RenderOptions {
             apply_frontend_proof_metadata: true,
@@ -63,7 +92,7 @@ fn invocation_never_adopts_stale_companion_from_the_parent_output() {
 #[test]
 fn failed_process_never_issues_and_fresh_stage_is_cleaned() {
     let sandbox = Sandbox::new(&fixture::empty_ir(), Some(b"stale"), None, 19);
-    let result = ConfiguredFrontend::new(sandbox.executable.as_os_str()).invoke(sandbox.request());
+    let result = ConfiguredFrontend::new("/bin/sh").invoke(sandbox.request());
     assert!(matches!(
         result,
         Err(FrontendError::ProcessExit { code: Some(19) })
@@ -75,6 +104,29 @@ fn failed_process_never_issues_and_fresh_stage_is_cleaned() {
             .to_string_lossy()
             .starts_with(".compact-origin-invocation-")
     }));
+}
+
+#[test]
+fn configured_interpreter_reads_the_exact_fixture_while_its_writer_is_open() {
+    let ir = fixture::empty_ir();
+    let sandbox = Sandbox::new(&ir, None, None, 0);
+    let script = fs::read(&sandbox.executable).unwrap();
+    let writer = fs::OpenOptions::new()
+        .write(true)
+        .open(&sandbox.executable)
+        .unwrap();
+    let artifact = sandbox.invoke();
+    assert_eq!(
+        artifact.fingerprint().exact_ir_sha256,
+        crate::origins::frontend::digest(&serde_json::to_vec(&ir).unwrap())
+    );
+    assert_eq!(fs::read(&sandbox.executable).unwrap(), script);
+    artifact
+        .render(RenderOptions::default())
+        .unwrap()
+        .finish_metadata()
+        .unwrap();
+    drop(writer);
 }
 
 #[test]

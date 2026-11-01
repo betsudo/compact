@@ -848,6 +848,27 @@ macro_rules! compare { ($name:ident $(,$arg:expr)*) => {{
         print(json.dumps({"composition": label, "source_sha256": hashlib.sha256(composed_source.read_bytes()).hexdigest(), "proof_apis": sum(c["proof_required"] for c in report["circuits"]), "retained_unrelated_witness": True}))
 
 
+def same_json_types_and_values(left, right) -> bool:
+    """Preserve JSON primitive types: Python otherwise equates false/0/0.0."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            same_json_types_and_values(value, right[key]) for key, value in left.items())
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            same_json_types_and_values(a, b) for a, b in zip(left, right, strict=True))
+    return left == right
+
+
+def check_complete_ir_binding(output: Path, retained: Path) -> None:
+    """Compare the complete original compiler input before proof material work."""
+    actual = json.loads((output / "contract/compact-rust-ir.json").read_text())
+    expected = json.loads(retained.read_text())
+    if not same_json_types_and_values(actual, expected):
+        raise ValueError(f"complete proof source IR differs from {retained}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--consumer", action="store_true", help="build and run a separate consumer")
@@ -950,6 +971,13 @@ def main() -> None:
             selected = "vote_commit" if args.micro_dao_vote_commit else "cash_out" if args.micro_dao_cash_out else "buy_in" if args.micro_dao_buy_in else "set_topic" if args.micro_dao_set_topic else "advance" if args.micro_dao_advance else "vote_reveal" if args.micro_dao_reveal else "dao_voting_token"
             output = base / "micro-dao-selected"
             run(compiler, "--target", "rust", "--skip-zk", str(source), str(output))
+            # Check the complete proof consumer binding before generating keys.
+            # The Rust runner repeats this guard before reading keys or state.
+            retained = ROOT / "tools/compact-rust-backend/tests/micro-dao-source-schema20-ir.json"
+            assert (
+                json.loads((output / "contract/compact-rust-ir.json").read_text())
+                == json.loads(retained.read_text())
+            ), "original full microDAO source/proof IR mismatch"
             info = json.loads((output / "compiler/contract-info.json").read_text())
             report = json.loads((output / "contract/rust-capabilities.json").read_text())
             assert len(info["circuits"]) == 11 and sum(c["proof"] for c in info["circuits"]) == 7
@@ -1130,6 +1158,16 @@ def main() -> None:
                 capture=subprocess.run,
             )
             return
+        if args.proof:
+            # Check the mixed-width fixture before the expensive proof sequence.
+            # Rust independently repeats this full binding at its proof boundary.
+            preflight = base / "mixed-width-source-binding"
+            run(compiler, "--target", "rust", "--skip-zk",
+                str(MIXED_WIDTH_OPERAND_SOURCE), str(preflight))
+            if (preflight / "keys").exists():
+                raise ValueError("source-binding preflight unexpectedly produced keys")
+            check_complete_ir_binding(
+                preflight, ROOT / "tools/compact-rust-backend/tests/mixed-width-operand-schema20-ir.json")
         run(sys.executable, str(Path(__file__).resolve()), "--qualified-coin-cell",
             *(["--proof"] if args.proof else []))
         run(sys.executable, str(Path(__file__).resolve()), "--native-zswap-intents",

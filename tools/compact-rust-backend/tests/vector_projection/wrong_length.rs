@@ -15,6 +15,7 @@
 
 fn main() {
     let _ = vector_fixture::pure_circuits::first(vector_fixture::runtime::FixedVector([
+        // expected-error
         vector_fixture::runtime::Field::from(1_u64),
         vector_fixture::runtime::Field::from(2_u64),
         vector_fixture::runtime::Field::from(3_u64),

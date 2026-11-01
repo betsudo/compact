@@ -1,0 +1,70 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+type Idx = Uint<8>;
+type Nested = Idx;
+
+export pure circuit zero(x: Nested): Uint<0..1> {
+  return x * 0;
+}
+export pure circuit checked(x: Idx): Uint<0..1> {
+  return (x as Uint<0..1>) * 0;
+}
+export pure circuit ordered(x: Idx): Uint<0..1> {
+  const narrowed = x as Uint<0..1>;
+  assert(x == 255, "second failure");
+  return narrowed * 0;
+}
+
+export pure circuit index_guard_left(items: Vector<2, Field>): Field {
+  const a = 1;
+  const b = 2;
+  return items[(a - b) * 0];
+}
+export pure circuit index_guard_right(items: Vector<2, Field>): Field {
+  const a = 1;
+  const b = 2;
+  return items[0 * (a - b)];
+}
+export pure circuit index_guard_success(items: Vector<2, Field>): Field {
+  const a = 2;
+  const b = 1;
+  return items[(a - b) * 0];
+}
+// Constant index evaluation already supports wide constants. This is distinct
+// from a runtime wide-Uint multiplication API.
+export pure circuit index_total_wide(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 1;
+  return items[a * 0];
+}
+export pure circuit index_guard_wide(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 1;
+  const b: Uint<200> = 2;
+  return items[(a - b) * 0];
+}
+export pure circuit index_guard_wide_success(items: Vector<2, Field>): Field {
+  const a: Uint<200> = 2;
+  const b: Uint<200> = 1;
+  return items[(a - b) * 0];
+}
+pure circuit vector_before_index(items: Vector<2, Field>, fail: Boolean): Vector<2, Field> {
+  assert(!fail, "Vector operand before index");
+  return items;
+}
+export pure circuit index_order(items: Vector<2, Field>, fail: Boolean): Field {
+  const a = 1;
+  const b = 2;
+  return vector_before_index(items, fail)[(a - b) * 0];
+}

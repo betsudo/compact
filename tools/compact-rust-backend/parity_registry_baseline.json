@@ -3902,5 +3902,101 @@
     "name": "trailing_unconditional",
     "signature": "export circuit trailing_unconditional(selected: Boolean, value: Field): []",
     "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "choose",
+    "signature": "export circuit choose(items: Vector<2, Field>, select_first: Boolean): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "conditional",
+    "signature": "export circuit conditional(active: Boolean): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "first",
+    "signature": "export pure circuit first(items: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "first_text",
+    "signature": "export pure circuit first_text(items: Vector<2, Opaque<\"string\">>): Opaque<\"string\">",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "last",
+    "signature": "export pure circuit last(items: Vector<2, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "owned",
+    "signature": "export circuit owned(items: Vector<2, Opaque<\"string\">>): OwnedSelection",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "singleton",
+    "signature": "export pure circuit singleton(items: Vector<1, Field>): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "temporary",
+    "signature": "export circuit temporary(): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "temporary_text",
+    "signature": "export pure circuit temporary_text(items: Vector<2, Opaque<\"string\">>): Opaque<\"string\">",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "texts",
+    "signature": "pure circuit texts(items: Vector<2, Opaque<\"string\">>): Vector<2, Opaque<\"string\">>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "witnessed",
+    "signature": "export circuit witnessed(select_first: Boolean): Field",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/constant_valued_vector_indices.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "values",
+    "signature": "witness values(): Vector<2, Field>",
+    "visibility": "internal"
   }
 ]

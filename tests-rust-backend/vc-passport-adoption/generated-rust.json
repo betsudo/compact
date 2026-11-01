@@ -1,0 +1,6 @@
+{
+  "compiler_version": "0.31.144",
+  "generated_rust_sha256": "b0cef81d039c0eddc383c29793fe4c750eee11d44709f22fe0ceff97bd4b30d4",
+  "historical_generated_rust_sha256": "55c3b9662584787ca5577759f20d7e041370f4db98693153640f10d348aec29b",
+  "scope": "Current complete rustfmt-only Rust compiler output after preserving analyzed arithmetic operand widths. Historical oracle provenance and TypeScript captures remain unchanged; this record asserts no new TypeScript/proof execution."
+}

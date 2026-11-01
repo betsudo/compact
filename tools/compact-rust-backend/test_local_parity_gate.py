@@ -354,7 +354,9 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
         mapping = gate.fixture_map()
         self.assertEqual(mapping, fixture_inventory.fixture_map())
         self.assertEqual(freshness.EXTRA_SOURCES, fixture_inventory.extra_sources())
-        self.assertEqual(len(mapping), 196)
+        self.assertEqual(len(mapping), 197)
+        self.assertEqual(mapping[gate.ROOT / "examples/rust_backend/constant_valued_vector_indices.compact"],
+                         gate.ROOT / "tests-rust-backend/constant-valued-vector-indices-source/lib.rs")
         inventory_paths = set(gate.inventory.source_paths(gate.ROOT))
         self.assertTrue(set(mapping) <= inventory_paths)
         registrations = {row.source: row for row in fixture_inventory.source_registry()}
@@ -379,6 +381,7 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
                    "did-relation-proofs": "compact-did-relation-gate/v1",
                    "acc-jubjub-proofs": "compact-acc-jubjub-gate/v1",
                    "vector-projection-proofs": "compact-vector-projection-proof-gate/v1",
+                   "constant-valued-vector-index-proofs": "compact-vector-projection-proof-gate/v1",
                    "map-size-expression-proofs": "compact-map-size-expression-proof-gate/v1",
                    "direct-fold-proofs": "compact-direct-fold-proof-gate/v1"}
         def command(argv, label, directory, receipt, **kwargs):
@@ -387,7 +390,7 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
             self.assertNotIn("--skip", argv)
             self.assertEqual(argv[argv.index("--compiler") + 1], str(root / "bin/compactc"))
             self.assertEqual(kwargs["env"]["COMPACTC_SCHEME"], str(root / "bin/compactc-scheme"))
-            if label in {"vector-projection-proofs", "map-size-expression-proofs", "direct-fold-proofs"}:
+            if label in {"vector-projection-proofs", "constant-valued-vector-index-proofs", "map-size-expression-proofs", "direct-fold-proofs"}:
                 self.assertNotIn("--scheme", argv)
                 self.assertEqual(argv[argv.index("--target-dir") + 1], str(root / "target"))
             else:
@@ -395,7 +398,16 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
             flag = "--output" if "--output" in argv else "--run-dir"
             child = Path(argv[argv.index(flag) + 1]); child.mkdir()
             value = {"format": formats[label], "status": "passed"}
+            if label in {"vector-projection-proofs", "constant-valued-vector-index-proofs"}:
+                selected = label == "constant-valued-vector-index-proofs"
+                self.assertEqual("--constant-valued-indices" in argv, selected)
+                value["source_label"] = "constant-valued-vector-indices" if selected else "literal-vector-projection"
             if fault and label == fault[0]:
+                if fault[1] == "proof_source":
+                    value["source_label"] = ("literal-vector-projection" if label == "constant-valued-vector-index-proofs"
+                                             else "constant-valued-vector-indices")
+                    (child / "receipt.json").write_text(json.dumps(value))
+                    return
                 if fault[1] == "changed_earlier":
                     (root / "did-proof/receipt.json").write_text("changed")
                     (child / "receipt.json").write_text(json.dumps(value))
@@ -415,8 +427,8 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
     def test_full_proof_orchestration_requires_every_child_and_hashes_receipts(self):
         with tempfile.TemporaryDirectory() as tmp:
             calls, receipt = self.run_proofs(Path(tmp))
-            self.assertEqual([label for label, _ in calls], ["did-proof-lifecycles", "did-digest-reducer-proof", "did-primitive-reducer-proofs", "did-relation-proofs", "acc-jubjub-proofs", "vector-projection-proofs", "map-size-expression-proofs", "direct-fold-proofs"])
-            self.assertEqual(set(receipt), {"did_proof_gate", "did_digest_reducer_gate", "did_primitive_reducer_gate", "did_relation_gate", "acc_jubjub_gate", "vector_projection_proof_gate", "map_size_expression_proof_gate", "direct_fold_proof_gate"})
+            self.assertEqual([label for label, _ in calls], ["did-proof-lifecycles", "did-digest-reducer-proof", "did-primitive-reducer-proofs", "did-relation-proofs", "acc-jubjub-proofs", "vector-projection-proofs", "constant-valued-vector-index-proofs", "map-size-expression-proofs", "direct-fold-proofs"])
+            self.assertEqual(set(receipt), {"did_proof_gate", "did_digest_reducer_gate", "did_primitive_reducer_gate", "did_relation_gate", "acc_jubjub_gate", "vector_projection_proof_gate", "constant_valued_vector_index_proof_gate", "map_size_expression_proof_gate", "direct_fold_proof_gate"})
             for row in receipt.values():
                 self.assertEqual(row["sha256"], gate.sha256(Path(row["path"])))
 
@@ -426,11 +438,17 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
                 self.run_proofs(Path(tmp), ("did-primitive-reducer-proofs", "changed_earlier"))
 
     def test_failed_missing_or_invalid_child_receipts_fail_orchestration(self):
-        for label in ("did-proof-lifecycles", "did-digest-reducer-proof", "did-primitive-reducer-proofs", "did-relation-proofs", "acc-jubjub-proofs", "vector-projection-proofs", "map-size-expression-proofs", "direct-fold-proofs"):
+        for label in ("did-proof-lifecycles", "did-digest-reducer-proof", "did-primitive-reducer-proofs", "did-relation-proofs", "acc-jubjub-proofs", "vector-projection-proofs", "constant-valued-vector-index-proofs", "map-size-expression-proofs", "direct-fold-proofs"):
             for fault in ("command", "missing", "malformed", "format", "status"):
                 with self.subTest(label=label, fault=fault), tempfile.TemporaryDirectory() as tmp:
                     with self.assertRaises((gate.GateError, OSError, ValueError)):
                         self.run_proofs(Path(tmp), (label, fault))
+
+    def test_one_vector_source_receipt_cannot_satisfy_the_other_gate(self):
+        for label in ["vector-projection-proofs", "constant-valued-vector-index-proofs"]:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaisesRegex(gate.GateError, "another Vector source"):
+                    self.run_proofs(Path(tmp), (label, "proof_source"))
 
 
 if __name__ == '__main__':

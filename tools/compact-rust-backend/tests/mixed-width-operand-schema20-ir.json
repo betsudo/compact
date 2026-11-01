@@ -697,12 +697,8 @@
               "name": "y"
             },
             "right": {
-              "kind": "unsigned_cast",
-              "max": "4294967295",
-              "value": {
-                "kind": "parameter",
-                "name": "t_9"
-              }
+              "kind": "parameter",
+              "name": "t_9"
             }
           }
         }
@@ -966,12 +962,8 @@
                     "name": "base"
                   },
                   "right": {
-                    "kind": "unsigned_cast",
-                    "max": "4294967295",
-                    "value": {
-                      "kind": "parameter",
-                      "name": "t_8"
-                    }
+                    "kind": "parameter",
+                    "name": "t_8"
                   }
                 }
               }

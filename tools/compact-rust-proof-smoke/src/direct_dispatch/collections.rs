@@ -431,6 +431,18 @@ pub(super) fn constant_vector_projection(
     crate::constant_vector_projection::run(Path::new(&root))
 }
 
+/// The same proof protocol, bound to the complete new alias/arithmetic source.
+pub(super) fn constant_valued_vector_indices(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --constant-valued-vector-indices <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::constant_valued_vector_indices::run(Path::new(&root))
+}
+
 /// Direct proof path for the genuine #610 Map size source.
 pub(super) fn map_size_expression(
     arguments: &mut impl Iterator<Item = OsString>,

@@ -182,9 +182,9 @@ pub mod pure_circuits {
                         "result of subtraction would be negative".to_owned(),
                     ));
                 }
-                runtime::subtract_unsigned::<4294967295, 4294967295, 4294967295>(
+                runtime::subtract_unsigned::<4294967295, 17179869180, 4294967295>(
                     y,
-                    runtime::cast_unsigned::<17179869180, 4294967295>(__compact_local_t_9)?,
+                    __compact_local_t_9,
                 )?
             }
         })
@@ -274,10 +274,9 @@ pub mod ledger_contract {
                 ));
             }
             let __compact_value_4 = __compact_constructor_param_0;
-            let __compact_value_5 =
-                runtime::cast_unsigned::<17179869180, 4294967295>(__compact_expression_local_2)?;
+            let __compact_value_5 = __compact_expression_local_2;
             let __compact_constructor_local_6: runtime::BoundedUint<4294967295> =
-                runtime::subtract_unsigned::<4294967295, 4294967295, 4294967295>(
+                runtime::subtract_unsigned::<4294967295, 17179869180, 4294967295>(
                     __compact_value_4,
                     __compact_value_5,
                 )?;

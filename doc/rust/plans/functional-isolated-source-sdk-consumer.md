@@ -353,3 +353,21 @@ CI remain mandatory. Evidence: `clean-source-sdk143-review-fixes-v3/receipt.json
 `public-python-review-fixes143-v3/receipt.json`,
 `review-v2-fix-focused-controls-v2.json` and
 `owned-passport-cache-reclaim-v1/receipt.json` in the local slice evidence root.
+
+## Verified integration — 2026-10-28
+
+The bounded isolated SDK slice is accepted through PR #698 and normal signed
+canonical merge `d3a32d9e7`, with exact reviewed/CI tree
+`c736072bff74c21d8183f77d2c70de96a0757688`. Actual Claude review, all eleven
+required checks and the authenticated same-run qualification archive passed.
+The archive rechecks complete source/program/generated/material bindings for
+the SDK and retained Unit/DID/Passport cohorts; receipt-only remote tool/material
+limits remain disclosed. This is not a new root cryptographic execution.
+
+The E2E summary reports 480 passed and six skipped unique tests, zero failures.
+Skipped tests are not counted as passed. The completed checkout is recoverably
+archived after preserving all 66 ignored review files and checking source,
+dependency and open-file state. Shared targets required by ongoing backend work,
+stores, qualification artifacts and failure evidence remain retained. The SDK
+fixture does not prove constructor/deployment execution or a wallet lifecycle;
+its integration does not complete the broader Rust AST goal or deferred Forge.

@@ -38,6 +38,7 @@ compact-rust-direct-fold-inline-branch-source-fixture = { path = "../../tests-ru
 compact-rust-direct-fold-single-source-fixture = { path = "../../tests-rust-backend/direct-fold-single-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-empty-ordered-source-fixture = { path = "../../tests-rust-backend/direct-fold-empty-ordered-source", features = ["ledger-transaction"] }
 compact-rust-constant-vector-projection-source-fixture = { path = "../../tests-rust-backend/constant-vector-projection-source", features = ["ledger-transaction"] }
+compact-rust-constant-valued-vector-indices-source-fixture = { path = "../../tests-rust-backend/constant-valued-vector-indices-source", features = ["ledger-transaction"] }
 compact-rust-map-size-expression-source-fixture = { path = "../../tests-rust-backend/map-size-expression-source", features = ["ledger-transaction"] }
 compact-rust-field-return-wrappers-source-fixture = { path = "../../tests-rust-backend/field-return-wrappers-source", features = ["ledger-transaction"] }
 compact-rust-unit-mutation-initializers-source-fixture = { path = "../../tests-rust-backend/unit-mutation-initializers-source", features = ["ledger-transaction"] }
