@@ -2333,6 +2333,16 @@
           (expression-origin-preserve? return-expr)
           (lambda () (stateful-return-ir-value return-expr expected-type owner-src witness-ids)) (expression-operation-origin return-expr)))
 
+      ;; Preserve the analyzed zero singleton through return wrappers. Other
+      ;; result annotations retain their historical untyped expression owner.
+      (define (stateful-return-expression-ir expr expected-type src witness-ids)
+        (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
+          [(tunsigned ,src^ ,nat)
+           (if (= nat 0)
+               (stateful-typed-expression-ir expr expected-type src witness-ids)
+               (stateful-expression-ir expr src witness-ids))]
+          [else (stateful-expression-ir expr src witness-ids)]))
+
       (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
@@ -2345,7 +2355,7 @@
                     (stateful-body-has-actions? expr))
                (stateful-return-ir expr expected-type src witness-ids)
                (object (cons "kind" "expression")
-                       (cons "value" (stateful-expression-ir return-expr src witness-ids))))]
+                       (cons "value" (stateful-return-expression-ir return-expr expected-type src witness-ids))))]
           [(var-ref ,src ,var-name)
            (object (cons "kind" "expression")
                    (cons "value" (expression-ir return-expr src)))]
@@ -2373,15 +2383,7 @@
                        (cons "value" (stateful-expression-ir return-expr src witness-ids))))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "expression")
-                   (cons "value"
-                     ;; Carry the singleton result into each conditional arm,
-                     ;; just as for a direct zero-product return below.
-                     (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
-                       [(tunsigned ,src^ ,nat)
-                        (if (= nat 0)
-                            (stateful-typed-expression-ir return-expr expected-type src witness-ids)
-                            (stateful-expression-ir return-expr src witness-ids))]
-                       [else (stateful-expression-ir return-expr src witness-ids)])))]
+                   (cons "value" (stateful-return-expression-ir return-expr expected-type src witness-ids)))]
           [(== ,src ,type ,expr1 ,expr2)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
@@ -2420,16 +2422,7 @@
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(* ,src ,mbits ,expr1 ,expr2)
            (object (cons "kind" "expression")
-                   (cons "value"
-                     ;; Zero's declared singleton bound is authoritative. The
-                     ;; rounded mbits carrier is 1 even when this result is 0.
-                     ;; Keep all other historical return annotations intact.
-                     (nanopass-case (Lnodisclose Type) (unsigned-canonical-type expected-type)
-                       [(tunsigned ,src^ ,nat)
-                        (if (= nat 0)
-                            (stateful-typed-expression-ir return-expr expected-type src witness-ids)
-                            (stateful-expression-ir return-expr src witness-ids))]
-                       [else (stateful-expression-ir return-expr src witness-ids)])))]
+                   (cons "value" (stateful-return-expression-ir return-expr expected-type src witness-ids)))]
           [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
            (nanopass-case (Lnodisclose ADT-Op) adt-op
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)

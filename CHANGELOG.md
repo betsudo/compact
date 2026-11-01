@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Use the declared singleton-zero result bound for ordinary stateful zero
-  multiplication returns, through the existing typed arithmetic owner.
+  multiplication returns, including conditional arms and lexical bindings,
+  through the existing typed expression owner.
 
 ## [Toolchain 0.31.144, language 0.23.105, runtime 0.16.102]
 

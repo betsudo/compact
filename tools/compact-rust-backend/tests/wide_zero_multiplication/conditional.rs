@@ -23,7 +23,7 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
     )
     .unwrap();
     let rows = reference["rows"]["conditional"].as_array().unwrap();
-    assert_eq!(rows.len(), 8);
+    assert_eq!(rows.len(), 24);
     for (index, bytes) in [
         vec![],
         vec![1],
@@ -38,7 +38,10 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
     .enumerate()
     {
         let x = U::from_le_bytes(&bytes).unwrap();
-        for active in [false, true] {
+        for (name, active) in ["conditional", "wrapped", "nested"]
+            .into_iter()
+            .flat_map(|name| [false, true].map(|active| (name, active)))
+        {
             let context = || {
                 c::initial_state(r::context::ConstructorContext::new(42_u64))
                     .unwrap()
@@ -48,7 +51,12 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
                 .record_increment(r::recording::RecordingFrame::new(context()), 1)
                 .unwrap()
                 .finish(r::BoundedUint::<0>::new(0).unwrap());
-            let native = c::conditional(context(), x, active).unwrap();
+            let native = match name {
+                "conditional" => c::conditional(context(), x, active),
+                "wrapped" => c::wrapped(context(), x, active),
+                _ => c::nested(context(), x, active),
+            }
+            .unwrap();
             let decimal = [
                 "0",
                 "1",
@@ -57,7 +65,9 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
             ][index];
             let found: Vec<_> = rows
                 .iter()
-                .filter(|row| row["input"] == decimal && row["active"] == active)
+                .filter(|row| {
+                    row["name"] == name && row["input"] == decimal && row["active"] == active
+                })
                 .collect();
             assert_eq!(found.len(), 1);
             assert_eq!(found[0]["result"], native.result.value().to_string());
@@ -69,13 +79,32 @@ fn conditional_return_keeps_the_singleton_in_both_arms_and_all_routes() {
                     .to_string()
             );
             assert_eq!(found[0]["privateState"], native.context.private_state);
-            let recorded = c::recorded::conditional(context(), x, active).unwrap();
-            let functional = c::functional::conditional::Program::new(x, active)
-                .execute_native(context())
-                .unwrap();
-            let functional_recorded = c::functional::conditional::Program::new(x, active)
-                .execute_recorded(context())
-                .unwrap();
+            let recorded = match name {
+                "conditional" => c::recorded::conditional(context(), x, active),
+                "wrapped" => c::recorded::wrapped(context(), x, active),
+                _ => c::recorded::nested(context(), x, active),
+            }
+            .unwrap();
+            let functional = match name {
+                "conditional" => {
+                    c::functional::conditional::Program::new(x, active).execute_native(context())
+                }
+                "wrapped" => {
+                    c::functional::wrapped::Program::new(x, active).execute_native(context())
+                }
+                _ => c::functional::nested::Program::new(x, active).execute_native(context()),
+            }
+            .unwrap();
+            let functional_recorded = match name {
+                "conditional" => {
+                    c::functional::conditional::Program::new(x, active).execute_recorded(context())
+                }
+                "wrapped" => {
+                    c::functional::wrapped::Program::new(x, active).execute_recorded(context())
+                }
+                _ => c::functional::nested::Program::new(x, active).execute_recorded(context()),
+            }
+            .unwrap();
             for actual in [
                 &native,
                 &recorded.execution,

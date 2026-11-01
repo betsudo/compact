@@ -59,6 +59,7 @@ const nodeIdentity={path:realpathSync(process.execPath),version:process.version,
 const r=await import(pathToFileURL(runtimePath)), c=await import(pathToFileURL(wrapper));
 const rows={pure:[],stateful:[],errors:[],conditional:[]};
 const conditionalWrapper=realpathSync(options.conditional), conditionalHash=hash(conditionalWrapper);
+assert.equal(realpathSync(createRequire(conditionalWrapper).resolve('@midnight-ntwrk/compact-runtime')),realpathSync(runtimePath));
 const conditional=await import(pathToFileURL(conditionalWrapper));
 const values=[0n,1n,1n<<128n,(1n<<200n)-1n], max128=(1n<<128n)-1n;
 for(const x of values) {
@@ -102,15 +103,15 @@ for(const name of ['checkedLeft','checkedRight']) {
 }
 const key={bytes:new Uint8Array(32)};
 for(const x of values) {
-  for(const active of [false,true]) {
+  for(const [name,active] of ['conditional','wrapped','nested'].flatMap(name=>[false,true].map(active=>[name,active]))) {
     const contract=new conditional.Contract({});
     const initial=contract.initialState({initialPrivateState:42,initialZswapLocalState:r.emptyZswapLocalState(key)});
     const ctx=r.createCircuitContext(r.dummyContractAddress(),key,initial.currentContractState.data,42,undefined,undefined,0);
-    const out=contract.circuits.conditional(ctx,x,active);
+    const out=contract.circuits[name](ctx,x,active);
     assert.equal(out.result,0n);
     assert.equal(conditional.ledger(out.context.currentQueryContext.state).calls,1n);
     assert.equal(out.context.currentPrivateState,42);
-    rows.conditional.push({input:String(x),active,result:String(out.result),calls:'1',privateState:42});
+    rows.conditional.push({name,input:String(x),active,result:String(out.result),calls:String(conditional.ledger(out.context.currentQueryContext.state).calls),privateState:out.context.currentPrivateState});
   }
 }
 assert.equal(hash(conditionalWrapper),conditionalHash,'conditional wrapper changed');

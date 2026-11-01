@@ -71,8 +71,15 @@ def main():
     def run(label, command, success=True, env=None):
         command = list(map(str, command))
         began = time.monotonic()
-        process = subprocess.run(command, cwd=ROOT, env=environment if env is None else env,
-                                 capture_output=True, text=True, timeout=300)
+        try:
+            process = subprocess.run(command, cwd=ROOT, env=environment if env is None else env,
+                                     capture_output=True, text=True, timeout=300)
+        except subprocess.TimeoutExpired as error:
+            for suffix, data in [("stdout", error.stdout), ("stderr", error.stderr)]:
+                (output / f"{label}.{suffix}").write_bytes(data.encode() if isinstance(data, str) else data or b"")
+            report["commands"].append({"label": label, "command": command, "exit": None,
+                "timed_out_seconds": 300, "seconds": time.monotonic() - began})
+            raise
         (output / f"{label}.stdout").write_text(process.stdout)
         (output / f"{label}.stderr").write_text(process.stderr)
         report["commands"].append({"label": label, "command": command, "exit": process.returncode,

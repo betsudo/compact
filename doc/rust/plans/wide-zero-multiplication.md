@@ -142,7 +142,8 @@ acceptance are still required before integration.
 ### Conditional return regression
 
 The API gate separately generates `tests/wide_zero_multiplication/conditional.compact`.
-Both conditional arms return literal-zero products after a Counter increment.
+Direct, lexically wrapped and nested conditionals return literal-zero products
+following a Counter increment.
 An external consumer requires the exact `BoundedUint<0>` result for both Boolean
 choices at all four wide boundaries, through native, recorded and both
 functional routes, comparing state, effects, gas and public replay with a manual
@@ -153,3 +154,10 @@ The selected proof result mutation retains `BoundedUint<255>` and checks exact
 alignment and atom-count equality before requiring preimage and verifier refusal.
 API command stdout/stderr are retained in CI for failure diagnosis. Historical
 numeric reference bytes remain unchanged, with exact old refusal-bound checks.
+
+The singleton-return expression owner also preserves the declared type through
+non-action lexical bindings. Other result types retain their existing lowering.
+The separate conditional wrapper resolves the same qualified TypeScript runtime;
+its captured state values are observed from execution. Failed API/proof logs
+are uploaded independently of later runtime-package rehearsal, including partial
+output and command metadata when an API command times out.

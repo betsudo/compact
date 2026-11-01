@@ -19,3 +19,12 @@ export circuit conditional(x: Uint<200>, active: Boolean): Uint<0..1> {
   calls.increment(1);
   return active ? x * 0 : 0 * x;
 }
+export circuit wrapped(x: Uint<200>, active: Boolean): Uint<0..1> {
+  calls.increment(1);
+  const opposite = !active;
+  return opposite ? x * 0 : 0 * x;
+}
+export circuit nested(x: Uint<200>, active: Boolean): Uint<0..1> {
+  calls.increment(1);
+  return active ? (active ? x * 0 : 0 * x) : 0 * x;
+}
