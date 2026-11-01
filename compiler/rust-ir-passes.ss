@@ -1909,6 +1909,8 @@
 
       (define (stateful-typed-expression-ir-value value-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
+          [(return ,src ,expr)
+           (stateful-return-expression-ir expr expected-type src witness-ids)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (stateful-bindings-ir local* expr* src (current-counter-environment) witness-ids
              (lambda (bindings environment^)
