@@ -1,6 +1,6 @@
 # Proposed next bounded slice: struct member projections in wider aggregate literals
 
-Candidate R is admitted on codex/rust-ast-struct-member-literal-widening from the exact clean Q docs head85c95bb21e6b2f53833ea9fd53820f19c42c91c9. Q bounded source/receipt closeout is accepted locally at executione8d. No R implementation is accepted yet. Primary Rust AST goal ACTIVE/INCOMPLETE, LOCAL ONLY; Forge deferred/incomplete. Preserve canonical1bdf and all local predecessor refs. Reconcile actual checkpoint/refs and clean baseline first. Reuse the existing Q actual-type context owner through an explicit local shallow-stack if Q is not integrated; never duplicate it or call the stack canonical.
+Candidate R is admitted on codex/rust-ast-struct-member-literal-widening from the exact clean Q docs head85c95bb21e6b2f53833ea9fd53820f19c42c91c9. Q bounded source/receipt closeout is accepted locally at executione8d. Reviewed bounded local qualification is accepted at literal execution886a69bc53952d9ef944c6eede74688b8d7fabc9; complete required CI and reviewed integration remain open. Primary Rust AST goal ACTIVE/INCOMPLETE, LOCAL ONLY; Forge deferred/incomplete. Preserve canonical1bdf and all local predecessor refs. Reconcile actual checkpoint/refs and clean baseline first. Reuse the existing Q actual-type context owner through an explicit local shallow-stack if Q is not integrated; never duplicate it or call the stack canonical.
 
 ## Concrete gap and accepted controls
 
@@ -100,3 +100,53 @@ transactions/replay controls. Full exact-head current source/API, SDK and runner
 checks, allmodels, locked material before freshkeys and authentic source/receipt
 reviews remain required. A distinct full Fold k9 diagnostic is only a pre-key
 cap refusal; no admitted source or older k9 requirement is substituted.
+
+
+## Reviewed bounded local qualification — 2026-11-02
+
+Literal execution886a69bc53952d9ef944c6eede74688b8d7fabc9 uses original default
+native167. Full exact-head source/API protocol passes99commands:18complete
+sources,28cases(26pure+8stateful routes),18strict unedited SDK roots,5marked
+Rust refusals,5frontend refusals and6native malformedIR refusals. Whole source
+and independent/goldenIR/allPrograms are bound; Cargo config/flags and source/
+tool hashes are admitted and rechecked. Actual complete producer and same-
+geometry expected changes fail their consumers. The retained failed c198 API
+epoch and preflight refusal are not counted as accepted current execution.
+
+Both complete stateful helper export models are k7/85rows. Material verification
+precedes fresh direct keys. Two2912Bstandalone proofs verify with their actual
+immutable verifiers. Separate independently proved funded default-strict
+transactions are6553/6561B; exact replay refuses IntentAlreadyExists without
+ledger mutation. Inputs are genuine generated types::Input structs; outputs
+remain Vector2Uint16 and Vector2Field. Corrupted bytes, changed binding, real-
+carrier same-geometry changed results and the other verifier all refuse. Full
+IR/Program/membership controls and a separate complete Fold k9 diagnostic refuse
+before keys. That diagnostic is not R source/proof admission or an N k9 waiver.
+
+Actual independent source/API/proof-source and receipt CLI reviews use
+gpt-6-astra/high after verified actual Claude quota, finding no introduced or
+blockingP1/P2 issue in their scopes. Source review independently confirms20
+control assets equal166/167. Receipt review checks1609protocol inputs,1994proof
+source entries against original/frozen source,202generated assets,146strict-root
+files and18locks,219runtime files and20Node libraries plus tools/material/keys/
+results/logs. These scopes overlap and are not added. Own closeout audit checks
+4345binding records/3941paths. Observed-closeout log pins do not establish
+retrospective hostile-host trust.
+
+Historical283freshfixtures/1830backendtests(7pre-existing ignored)/strictClippy
+pass atc198;5relevant source owner directories are unchanged through886a. This
+is not current whole-CI acceptance. A signed docs-only successor must bridge
+the literal receipt by rechecking source/evidence and signature history.
+
+The accepted scope is pure typed aggregate member context and the maintained
+stateful exports calling those pure helpers. The separately characterized
+[direct stateful Vector literal proposal](direct-stateful-vector-literal-returns.md)
+retains a genuine open gap; no helper extraction is presented as its solution.
+Constructor execution/all18source/allinput proof, full required arm64/Linux CI,
+reviewed integration, N originalk9 and broader-goal completion are unclaimed.
+No publication or cleanup: this local candidate is not merged in GitHub.
+
+Evidence: rust-ast-struct-member-literal-widening-20261102/original-native-v3,
+proof-v1/protocol/receipt.json,proof-v1/receipt.json,receipt-audit-v1.json,
+code-review-v1/codex/final.txt,receipt-review-v1/codex/final.txt and
+qualification-summary-v1.json. All failed/predecessor epochs remain retained.

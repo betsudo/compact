@@ -473,3 +473,21 @@ addresses2existing source mismatches while preserving4alreadyaccepted source
 controls. It is a concrete source-characterized proposal, not another framework
 or completed feature. Backend progress stays independent of the deferred Forge
 experiment. No local candidate cleanup is due before verified GitHub merge.
+
+
+## Local struct-member context qualification — 2026-11-02
+
+The [struct-member literal slice](plans/struct-member-literal-widening.md) has
+reviewed bounded local compiler167/source/API and two genuine helper proof/
+default-strict application receipts at literal886a69bc5. Original narrow struct
+fields, existing typed/native Coerce/AST ownership and accepted output controls
+are preserved. No runtime ABI/schema change or integrated canonical claim.
+
+The [direct stateful Vector literal proposal](plans/direct-stateful-vector-literal-returns.md)
+records9complete sources/54original166/current167 commands and3source traces.
+All8direct forms remain unsupported at actual stateful return-context owners;
+the full helper control works with6byte-identical assets. The next fix must
+preserve direct source/effects and cover both carrier construction and implicit
+whole-body aggregate cast context. Helper substitution is not the fix. Full
+required arm64/Linux CI, reviewed integration and the broader goal remain open;
+Forge remains deliberately deferred. No candidate cleanup before verified merge.

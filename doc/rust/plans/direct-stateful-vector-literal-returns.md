@@ -1,0 +1,29 @@
+# Proposed next bounded slice: direct stateful Vector literal returns
+
+Proposal only; finish R receipt/docs closeout before branch admission. Primary Rust AST goal ACTIVE/INCOMPLETE, LOCAL ONLY. Preserve canonical and every Q/R/P/O/N/M predecessor; no Forge, publication or cleanup.
+
+## Actual gap and accepted behavior
+
+next-direct-stateful-literal-characterization-v1/receipt.json retains9complete sources/54commands under original166 and current167. All9TSsources compile. Four direct implicit Uint/Field widening cases from Vector or exported Struct inputs fail both Rust and independentIR with a nested Cell.write refusal. Four direct identity/explicit-element cases emit IR but fail native Rust validation because the result remains a Tuple instead of the declared Vector. These are original166 as well as current167 failures, not R regressions. A complete maintained pure-helper control with2stateful exports works in every lane; all6fullIR/raw/Rust/capability/Program assets are byte-identical166/167. Do not reopen helper-based returns or accepted #674 projection, #661 Fold or Map functionality.
+
+next-direct-stateful-traces-v1 retains3actual167 traces. Implicit widening wraps the entire stateful seq(Cell.write,tuple(projections)) in safe-cast(targetVector2Uint16,sourceTupleUint8s,...), before emit-rust-ir. Identity has the same complete Cell.write seq and tuple tail with declared circuit result Vector2Uint8, without an outer cast. The failure has two concrete forms of the same stateful expected-result/literal-carrier ingress: losing the Vector construction context, or lowering an effectful whole-body cast as an ordinary value. These traces support owner investigation, not a feasibility/implementation claim.
+
+## Intended API and affected owners
+
+Keep original complete exports exactly as written: run(input:Vector2Uint8 or types::Input) -> FixedVector<BoundedUint<65535 or255>,2> / FixedVector<Field,2>, with the source Cell.write and literal tail. Support the ordinary/recorded/functional consuming APIs at the existing current Ledger8 profile. The source remains direct; extracting its return to a pure helper is an already-working control, not the implementation of this gap.
+
+First reconcile compiler/rust-ir-passes.ss stateful value/step/return owners and actual expected-type context. Preserve source statement handling outside value lowering. Reuse existing typed literal construction, Q/R actual-element context, existing native Coerce legality/certification and Vector AST/recording owners. Correctly retain the complete effectful sequence when an aggregate safe-cast wraps it. No arbitrary Tuple-to-Vector conversion relation, schema/runtime ABI, dependency, executor, broad expression normalization or framework.
+
+## Scope exclusions
+
+No constructor result redesign, new dynamic indexing, Map/Fold migration, generic all-stateful cast normalization, nominal redesign, effect lifting/source rewriting or helper substitution. Preserve existing primitive cast guards, original parameter/field bounds, source order, profile/private policy and complete required integration gates. No CI optimization or Forge work.
+
+## Acceptance
+
+1. Read exact current checkpoint/refs and roadmap/crosswalk/checked-recording ownership, preserving accepted authorities. Admit a separate clean local baseline from the reviewed predecessor, explicitly stacked only where required by existing source-context ownership. Focused baseline first; retain all original166/current167 complete-source refusals and traces.
+2. Fix all8observed direct forms: Vector/Struct inputs, identity, explicit-element and implicit Uint/Field widening, with original Cell.write and source syntax. Characterize cohesive lexical/conditional/alias/nested tails and assertions before/after state changes before expanding scope. Do not select only easier identity cases or replace direct code by a helper. Preserve6accepted helper/control assets.
+3. Independent complete TS output/alignment and unmodified generated ordinary/recorded/functional execution, typed results, Cell state/effects/private output, gas and real trace replay; source order and first errors remain observable through explicit assertions. Failed transactions/ContractLab scenarios preserve their documented checkpoint semantics without promising rollback of external callbacks or inventing partial traces.
+4. Positive typed twins and marked wrong argument/result length/element/max/Field carrier and consumed Program/context Rust refusals. Preserve source length/kind/implicit narrowing/nominal refusals. Native untrusted IR/recording rejects malformed carrier/type/field/index and invalid unselected branches under existing complete validation; no default-off-only dependency claim.
+5. Complete source/imports/golden+independentIR/allPrograms/current original compiler/recipe/serialization/Cargo config/tool/runtime/profile identities, strict unedited SDK roots and actual producer/result mutations failing consumers. No generated code/expected normalization.
+6. Inspect models for full selected sources, retain automatic k<=8 and verify locked material before fresh direct keys. Genuine selected Uint/Field proofs with immutable verifiers and corrupted/binding/same-geometry real-carrier result/wrong-verifier negatives; separately independently proved funded default-strict transactions and exact replay refusal. Retain every source/export and explicitly disclose selected coverage/over-cap obligations; do not trim, raise cap or waive original N k9.
+7. Signed Conventional DCO/Assisted commits, actual Claude-first independent source/receipt CLI review (actual-quota different-model Codex fallback), docs and verified Obsidian process/CAS/handoff. Full required arm64/Linux CI and reviewed integration remain open until actually run. No cleanup before completed owned work is verified merged in GitHub.
