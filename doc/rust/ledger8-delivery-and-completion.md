@@ -501,12 +501,28 @@ All 283 retained compiler fixtures and the predecessor S API gate (155 commands,
 50 cases / 200 Rust routes) freshly pass. The other 21 required T exports remain
 unproved, including the intact k=9 wide input; constructor execution is unproved.
 
-The next [stateful local Vector proposal](plans/stateful-local-vector-widening.md)
-retains eight valid stateful binding forms that pass TS / IR but fail native
-checking because their declared wider local type lacks a corresponding Vector
-conversion. Pure-local and direct-return controls pass. It is a source-only
-proposal with no new implementation, model or proof acceptance. Accepted
-Fold/Map/projection and previous return work keep their recorded scopes.
+The [stateful local Vector slice](plans/stateful-local-vector-widening.md) has
+reviewed bounded compiler173 qualification at execution `408dd00ee`:24complete
+sources,34cases/132stateful Rust routes plus one pure route,144API commands and
+24strict unedited SDK roots. Local initializers retain their supplied source
+before conversion and execute once with surrounding actions. Witnesses observe
+both before/after-write positions; checked/discarded initializers preserve first
+errors. Eight misuse/twin pairs, seven frontend and eight native IR refusals,
+four complete producer controls and the result oracle cover the boundary.
+Three fresh selected proofs and separate funded default-strict applications pass
+with immutable negatives/replay. All860worktree proof-runner dependencies are
+prebuild-pinned. Current T API qualification passes unchanged IR/Programs; the
+283fixture and35baseline results retain their explicit source/tool bridges.
+The other22required U exports remain unproved, including intact `wide_local` k9.
+
+The next [stateful product-Vector proposal](plans/stateful-product-vector-widening.md)
+retains13complete sources/39current173commands. Eleven pass TS: seven valid
+stateful product/empty/nested/helper/Field/Boolean-component/full-proof-source
+forms fail before IR at nested Cell.write; a local product conversion emits IR
+then fails native type checking. Three controls pass all lanes and two frontend
+refusals remain. This is source-only evidence; no new implementation, model or
+proof acceptance is inferred. Existing pure coercion and prior return/local
+binding work stay accepted within their recorded scopes.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before

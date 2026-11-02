@@ -148,8 +148,16 @@ with immutable negative and replay controls. All other exports and constructor
 proofs retain their explicit unproved status. Complete required CI/integration
 remains separate from this bounded local result.
 
-A declared wider Vector local is a separate source gap, documented in the
-[next local-binding plan](../plans/stateful-local-vector-widening.md). The native
-checker currently refuses its missing initializer conversion. That correct
-refusal must remain while frontend lowering is repaired; the accepted return
-conversion and checked-recording ownership are not reopened.
+The [local-binding slice](../plans/stateful-local-vector-widening.md) now preserves
+supplied nonidentity Vector conversions in the typed stateful expression owner.
+It selects the same ordered body when a local initializer contains such a cast,
+including scalar/Unit result bodies, and reaches the original source before
+Coerce. Both witness positions, once-only outputs, discarded guard-bearing
+initializers and actual helper values are checked. Native/recording binding,
+shape/type/layout/resource validation is unchanged and independently rejects
+malformed annotations, including a false local binding type and dead branch.
+Compiler173 bounded local API/selected proof/default-strict application and
+actual Codex fallback reviews retain their literal execution and bridge scopes.
+Stateful product-Vector conversions remain a separate
+[source-only proposal](../plans/stateful-product-vector-widening.md); accepted
+pure coercion and current return/local owners are not reopened.

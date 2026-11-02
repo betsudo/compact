@@ -160,3 +160,71 @@ worktree dependency in the raw Cargo depfile are pinned before the runner build;
 the depfile itself is privately retained. No model/proof feasibility or maintained
 source/API/proof/review acceptance is claimed yet. All full CI/integration and
 prior wide k=9 obligations remain open.
+
+
+## Reviewed original compiler173 local qualification
+
+Execution `408dd00ee8c35b050ed6f307be0bf89edd839984` is the maintained source
+and proof authority. The exact original Nix recipe passes and supplies default
+`compactc`/Scheme from `/nix/store/m798iqfhmg8wcnxlw1p584mihn7r2kd6-compactc`.
+No alternate compiler, backend or generated-code edits are used.
+
+The maintained gate passes144commands,24complete SDK roots and34actual TS/Rust
+cases:132stateful ordinary/recorded/functional Rust executions and one pure route.
+All8marked API misuse cases refuse at intended spans and all8independent
+correct-type twins compile. Seven frontend refusals, eight malformed IR controls
+(including a wrong declared local type and a dead branch), four complete producer
+negatives and the wrong result oracle behave as intended. Both witness-order
+mutations fail the explicit ledger-observation assertion. Checked/discarded
+initializer guards, helper return values, scalar/Unit results and source bounds
+remain observable. All actual generated IR and Programs match their complete
+independent/golden assets.
+
+The first maintained attempt correctly refused bad test metadata after20commands:
+`proofs` had one declared local conversion but two branches plus its Field export
+contain three. Signed `408dd00` changes only that count and retains exact checking;
+failed `proof-v1` receipts reached no keys or proofs. Current `proof-v2` is the
+accepted execution epoch.
+
+All25exports/models are inventoried:24proof-required and one pure/nonproof. Only
+`proofs.run` (k8/130rows) and `run_field` (k7/85rows) are selected. Material is
+verified before two fresh direct native key generations. Three fresh2912-byte
+standalone proofs cover both local-binding branch states and Field. Three
+independently proved funded transactions6605/6605/6561bytes verify and apply with
+default strict validation. Corruption, changed binding, changed actual typed
+same-geometry result, immutable wrong verifier and unchanged-state replay refusal
+controls pass. Constructors, all unenumerated inputs and the other22required
+exports are not proved. Intact `wide_local` is k9 and remains unproved under the
+unchanged automatic k<=8cap.
+
+Current T predecessor qualification freshly passes136commands/37cases,144stateful
+Rust routes plus one pure route and23SDK roots at the execution head; full IR and
+Program membership/bytes match the retained T assets. The35focused baseline tests
+retain `6359c1f52` with an exact unchanged native/runtime/macros/history/Cargo owner
+bridge. All283retained fixtures freshly passed at `3a155bcd3`; the sole U metadata
+count correction preserves the same exact compiler/package and fixture inputs.
+`fixture-metadata-successor-bridge-v1.json` records that reuse without relabeling
+it as a new current-head execution. Older T/S full native, CI and proof receipts
+keep their original source epochs.
+
+Actual Claude review reached usage_limit_reached429, so it is retained as
+incomplete. Actual user-authorized Codex CLI gpt-6-astra/high source review and a
+separate receipt/hash/premise review report no actionable P1/P2. The latter
+independently rehashed10292pinrecords/5949distinctpaths, checked all8twins and
+negative outcomes, every preceding T IR/Program and both source/fixture bridges.
+The raw depfile is privately retained during the gate; all860physical worktree
+dependencies, including generated and embedded-golden include membership, are
+directly covered by prebuild source pins. No post-run closure gap is presented as
+an execution-time pin. The proof source map contains4286files. This is coding-agent
+inspection, not crypto reexecution, global supply-chain acceptance or a human
+security audit.
+
+Evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-stateful-local-vector-widening-20261102`.
+`original-native-v4/receipt.json`, `proof-v2/protocol/receipt.json`,
+`proof-v2/receipt.json`, `current-t-api-v1/receipt.json`, `receipt-audit-v1.json`
+and the actual source/receipt Codex review outputs retain their separate scopes.
+The next [stateful product-Vector proposal](stateful-product-vector-widening.md)
+is source-only. Full required arm64/Linux CI, reviewed integration, prior N/S/T
+wide-k9 obligations and the broad Rust AST goal remain open. No publication or
+cleanup is implied. Forge remains deliberately deferred.
