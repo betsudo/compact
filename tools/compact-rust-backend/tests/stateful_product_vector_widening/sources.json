@@ -4,91 +4,130 @@
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "boolean_component",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "boolean_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "checked_helper",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "empty_product",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "empty_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "field_product",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "field_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "helper",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "identity_control",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u8_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "local_field",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "field_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "local_product",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "local_scalar_control",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "multiple_local",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "field_product_vector",
+    "proof_required": true,
+    "local_conversions": 2
   },
   {
     "source": "nested_product",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "nested_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "parameter",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "proofs",
@@ -96,69 +135,102 @@
     "entries": [
       "run",
       "run_field"
-    ]
+    ],
+    "descriptor": {
+      "run": "u16_product_vector",
+      "run_field": "field_product_vector"
+    },
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "pure_control",
     "stateful": false,
     "entries": [
-      "run"
-    ]
+      "value"
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": false,
+    "local_conversions": 0
   },
   {
     "source": "read_only",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "scalar_result",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "scalar_product",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "stateful_helper",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "triple_product",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "triple_product_vector",
+    "proof_required": true,
+    "local_conversions": 0
   },
   {
     "source": "unit_result",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "unit",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "wide_local",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "wide_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "witness_after",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   },
   {
     "source": "witness_before",
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "u16_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   }
 ]

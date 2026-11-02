@@ -1,0 +1,928 @@
+[
+  {
+    "id": "aliases",
+    "source": "aliases",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "boolean_component",
+    "source": "boolean_component",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          true
+        ],
+        [
+          "4",
+          false
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        true
+      ],
+      [
+        "4",
+        false
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "checked_helper",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "4",
+        "41"
+      ],
+      [
+        "3",
+        "31"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "empty_product",
+    "source": "empty_product",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      []
+    ],
+    "expected": [],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "field_product",
+    "source": "field_product",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "helper",
+    "source": "helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "identity_control",
+    "source": "identity_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "local_field",
+    "source": "local_field",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "local_product",
+    "source": "local_product",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "local_scalar_control",
+    "source": "local_scalar_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "expected": [
+      "3",
+      "4"
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "multiple_local",
+    "source": "multiple_local",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2"
+  },
+  {
+    "id": "nested_product",
+    "source": "nested_product",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "31"
+          ],
+          [
+            "4",
+            "41"
+          ]
+        ],
+        [
+          [
+            "5",
+            "51"
+          ],
+          [
+            "6",
+            "61"
+          ]
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ],
+      [
+        [
+          "5",
+          "51"
+        ],
+        [
+          "6",
+          "61"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "parameter",
+    "source": "parameter",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "proof_branch_0",
+    "source": "proofs",
+    "entry": "run",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "proof_branch_1",
+    "source": "proofs",
+    "entry": "run",
+    "constructor": [
+      "1"
+    ],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "4",
+        "41"
+      ],
+      [
+        "3",
+        "31"
+      ]
+    ],
+    "initialSeen": "1",
+    "seen": "3"
+  },
+  {
+    "id": "proof_field",
+    "source": "proofs",
+    "entry": "run_field",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2"
+  },
+  {
+    "id": "pure_control",
+    "source": "pure_control",
+    "entry": "value",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "read_only",
+    "source": "read_only",
+    "entry": "run",
+    "constructor": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "args": [],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "0",
+    "noMutation": true
+  },
+  {
+    "id": "scalar_result",
+    "source": "scalar_result",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      "4",
+      "41"
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "stateful_helper",
+    "source": "stateful_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "4",
+        "41"
+      ],
+      [
+        "3",
+        "31"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "3"
+  },
+  {
+    "id": "triple_product",
+    "source": "triple_product",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          true,
+          "31"
+        ],
+        [
+          "4",
+          false,
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        true,
+        "31"
+      ],
+      [
+        "4",
+        false,
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "unit_result",
+    "source": "unit_result",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [],
+    "initialSeen": "0",
+    "seen": "41"
+  },
+  {
+    "id": "wide_local",
+    "source": "wide_local",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "340282366920938463463374607431768211465",
+          "3"
+        ],
+        [
+          "0",
+          "4"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "340282366920938463463374607431768211465",
+        "3"
+      ],
+      [
+        "0",
+        "4"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "witness_after",
+    "source": "witness_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "privateState": 8,
+    "witnessValues": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "witnessSeen": "1"
+  },
+  {
+    "id": "witness_before",
+    "source": "witness_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "privateState": 8,
+    "witnessValues": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "witnessSeen": "0"
+  },
+  {
+    "id": "checked_guard_first",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          "400",
+          "100000"
+        ],
+        [
+          "300",
+          "70000"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "error": {
+      "kind": "assert",
+      "message": "helper denied"
+    }
+  },
+  {
+    "id": "checked_row1_component0",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          "400",
+          "100000"
+        ],
+        [
+          "300",
+          "70000"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_row1_component1",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          "400",
+          "100000"
+        ],
+        [
+          "4",
+          "70000"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "error": {
+      "kind": "unsigned",
+      "value": "70000",
+      "max": "65535"
+    }
+  },
+  {
+    "id": "checked_row0_component0",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          "400",
+          "100000"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "error": {
+      "kind": "unsigned",
+      "value": "400",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_row0_component1",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          "3",
+          "100000"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "error": {
+      "kind": "unsigned",
+      "value": "100000",
+      "max": "65535"
+    }
+  }
+]

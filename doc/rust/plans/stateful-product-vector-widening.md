@@ -119,3 +119,30 @@ malformed IR and producer controls, selected genuine proofs/default-strict
 applications, independent source/receipt review and integration gates remain open.
 Keep all historical evidence at its actual source head. Do not label emission or
 this source commit as completed slice qualification.
+
+## Maintained API gate
+
+`tools/compact-rust-backend/check_stateful_product_vector_widening.py` runs the
+complete 23-source corpus and 30 declared TS/Rust cases: 116 stateful executions
+across ordinary, recorded and consuming functional routes, plus one pure route.
+The actual development consumer passed all cases with complete unedited compiler
+174 SDKs. The maintained gate adds full independent IR/Program goldens, physical
+local-conversion origins, strict complete SDK roots, ten marked compile refusals
+with independent correct-type twins, seven frontend refusals, nine malformed-IR
+controls, a same-geometry changed result and four regenerated complete producer
+controls. Its acceptance still requires an actual clean-head passing receipt.
+
+The checked helper's declared errors distinguish its guard and each of four
+source component narrowings before outward widening. Asymmetric row/component
+values expose reversals; the stateful helper observes the caller write and
+performs its own write exactly once. Both witness positions read the specified
+ledger value and preserve narrow private transcript geometry. Replay, effects,
+private outputs and gas agreement are checked separately from result equality.
+
+The first unaffected-control byte comparison used different absolute source
+paths and correctly failed on preserved Program origin filenames. No origin or
+JSON normalization was applied. Fresh current generation using the exact
+original source paths produces byte-identical complete IR and Program membership
+for all three controls (five files), retained in
+`accepted-control-comparison-v2/receipt.json`. The failed comparison/diffs remain.
+No proof/application or integration result follows from these API controls.
