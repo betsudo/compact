@@ -459,35 +459,28 @@ final exact-head review and full required CI remain mandatory.
 
 ## Local source-semantics qualification — 2026-11-02
 
-Canonical codex/rust-backend-ast remains at1bdf185ea35929292a79d35946d4a98fb344d11c.
-The explicit local candidate stack is not integrated canonical. The
-[aggregate literal projection slice](plans/aggregate-literal-projection-widening.md)
-has reviewed bounded compiler166/source/API and two selected genuine
-proof/default-strict application receipts at executione8d9293ba. Existing native
-Coerce/typed validation/AST ownership is reused; no IR/runtime ABI change is made.
-All earlier branch/evidence authorities remain distinct. Full required arm64/Linux
-CI and reviewed integration remain open; the broader goal remains incomplete.
+Canonical `codex/rust-backend-ast` remains at
+`1bdf185ea35929292a79d35946d4a98fb344d11c`. The local candidate stack is not
+integrated canonical.
 
-The [next struct-member literal proposal](plans/struct-member-literal-widening.md)
-addresses2existing source mismatches while preserving4alreadyaccepted source
-controls. It is a concrete source-characterized proposal, not another framework
-or completed feature. Backend progress stays independent of the deferred Forge
-experiment. No local candidate cleanup is due before verified GitHub merge.
+The [aggregate literal projection slice](plans/aggregate-literal-projection-widening.md)
+has reviewed bounded compiler 166/source/API and two selected genuine
+proof/default-strict application receipts at execution `e8d9293ba`. Existing
+native coercion, typed validation and AST ownership are reused. No IR/runtime
+ABI change is made. Earlier branch and evidence authorities remain distinct.
 
-
-## Local struct-member context qualification — 2026-11-02
-
-The [struct-member literal slice](plans/struct-member-literal-widening.md) has
-reviewed bounded local compiler167/source/API and two genuine helper proof/
-default-strict application receipts at literal886a69bc5. Original narrow struct
-fields, existing typed/native Coerce/AST ownership and accepted output controls
-are preserved. No runtime ABI/schema change or integrated canonical claim.
+The [struct-member literal slice](plans/struct-member-literal-widening.md) adds
+reviewed bounded compiler 167/source/API and two genuine helper proof/application
+receipts at execution `886a69bc5`. Original narrow struct fields and accepted
+output controls are preserved.
 
 The [direct stateful Vector literal proposal](plans/direct-stateful-vector-literal-returns.md)
-records9complete sources/54original166/current167 commands and3source traces.
-All8direct forms remain unsupported at actual stateful return-context owners;
-the full helper control works with6byte-identical assets. The next fix must
-preserve direct source/effects and cover both carrier construction and implicit
-whole-body aggregate cast context. Helper substitution is not the fix. Full
-required arm64/Linux CI, reviewed integration and the broader goal remain open;
-Forge remains deliberately deferred. No candidate cleanup before verified merge.
+records nine complete sources, 54 original-166/current-167 commands and three
+source traces. All eight direct forms remain unsupported at the stateful
+return-context boundary; the full helper control works with six byte-identical
+artifacts. The next repair must preserve direct source/effects and cover both
+carrier construction and implicit whole-body aggregate cast context.
+
+Full required arm64/Linux CI, reviewed integration and the broader goal remain
+open. Forge remains deliberately deferred. No candidate cleanup is due before
+verified GitHub merge.

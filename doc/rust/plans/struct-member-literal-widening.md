@@ -1,152 +1,144 @@
-# Proposed next bounded slice: struct member projections in wider aggregate literals
+# Struct member projections in wider aggregate literals
 
-Candidate R is admitted on codex/rust-ast-struct-member-literal-widening from the exact clean Q docs head85c95bb21e6b2f53833ea9fd53820f19c42c91c9. Q bounded source/receipt closeout is accepted locally at executione8d. Reviewed bounded local qualification is accepted at literal execution886a69bc53952d9ef944c6eede74688b8d7fabc9; complete required CI and reviewed integration remain open. Primary Rust AST goal ACTIVE/INCOMPLETE, LOCAL ONLY; Forge deferred/incomplete. Preserve canonical1bdf and all local predecessor refs. Reconcile actual checkpoint/refs and clean baseline first. Reuse the existing Q actual-type context owner through an explicit local shallow-stack if Q is not integrated; never duplicate it or call the stack canonical.
+## Status
 
-## Concrete gap and accepted controls
+Bounded local qualification is reviewed at execution revision
+`886a69bc53952d9ef944c6eede74688b8d7fabc9` on
+`codex/rust-ast-struct-member-literal-widening`. The primary Rust AST goal remains
+active and incomplete. Full required CI and reviewed integration remain open.
+Forge remains deferred.
 
-`next-struct-projection-characterization-v2/receipt.json` retains six full sources and36 original165/current166 TS/Rust/independentIR commands. Both compilers accept the TS and independent IR for `[input.right,input.left]` from a declared Input struct with two Uint8 fields into Vector2Uint16 or Vector2Field, but native Rust lowering rejects the actual narrow struct_field values against the desired widened elements. This is existing behavior under165 as well as166, not evidence of a Q regression.
+This is an explicit local stack on Q's clean documentation revision
+`85c95bb21e6b2f53833ea9fd53820f19c42c91c9`. Canonical
+`codex/rust-backend-ast` remains at
+`1bdf185ea35929292a79d35946d4a98fb344d11c`. The candidate stack is not integrated
+canonical. All predecessor refs and evidence are preserved.
 
-Four controls already work in all lanes: standalone struct member scalar widening, explicit member casts, wider struct literals using indexed inputs, and wider struct literals using narrow variables. All16 full IR/raw-origin/Rust/capability assets for those four controls are byte-identical across165/166. Do not reopen struct literal or standalone scalar support. First v1 characterization incorrectly passed a Rust-only flag to the TS lane; retained as invocation failure, superseded by exact full-source v2 with correct lane arguments, not counted as language refusal.
+## Gap and accepted controls
 
-## Owners and intended public API
+Original compiler 166 and current compiler 167 accept the TypeScript source and
+independent IR for narrow struct fields used in wider vector literals. Before
+the repair, Rust rejected the actual narrow `struct_field` values against the
+wider element type. Standalone member widening, explicit member casts and wider
+struct literals were already supported and remain controls.
 
-`compiler/rust-ir-passes.ss` currently lowers elt-ref to struct_field in the ordinary expression owner. Q typed literal source metadata reaches tuple/vector projection arms but does not handle elt-ref. Actual original166 next-struct-source-trace-v1 retains safe-cast(Vector2Uint16, Tuple<Uint8,Uint8>, tuple(elt-ref right1,elt-ref left0)) through emit-rust-ir. Source type authority already exists; no target-derived guess or registry is needed. Preserve that trace before editing. Candidate change: route that one typed projection form through the existing authoritative source/target Coerce helper, preserving the complete base expression first. Native struct field legality, Coerce planning/certification/resource bounds and syn Rust AST emission remain their existing owners. No IR/runtime ABI, dependency, executor, normalization framework, nominal redesign or general aggregate rewrite.
+The initial six-source comparison contains 36 commands. Expanded characterization
+contains 23 complete sources and 69 commands per compiler:
 
-Intended generated API keeps the declared exported Input struct and narrow BoundedUint255 fields; existing pure `value(Input) -> FixedVector<BoundedUint<65535>,2>` or `FixedVector<Field,2>` returns the declared output. Use consuming generated ordinary/recorded/functional Programs only for complete maintained stateful helper exports. Types do not authenticate untrusted external values or observed chain state.
+| Cohort | Original 166 | Current 167 |
+| --- | --- | --- |
+| 13 valid sources exposing the gap | TS and IR accept; Rust rejects | All three lanes accept |
+| 5 accepted control sources | All three lanes accept | All three lanes accept |
+| 5 invalid sources | Frontend refusal in every lane | Same refusal causes |
 
-## Scope exclusions
+All 20 full IR, raw-origin, Rust and capability artifacts for the five accepted
+controls are byte-identical across 166 and 167. The original invocation that
+passed a Rust-only flag to the TS lane is retained as an invocation failure; it
+is not counted as a language refusal.
 
-No new dynamic indexing, struct literal framework, structural-to-nominal conversion, general expression context normalization, compiler optimization, CI optimization, Forge or publication. No reopening already accepted standalone member/scalar/struct literal behavior. Existing complete CI and proof gates remain required for integration.
+## Ownership and implementation
 
-## Acceptance
+A focused clean baseline passed 22 tests at signed plan revision `5273136e2`.
+The actual frontend trace retains both desired `Vector<2, Uint<16>>` and source
+`[Uint<8>, Uint<8>]` types around the literal's `elt-ref` expressions through
+`emit-rust-ir`. The source types are supplied by frontend analysis.
 
-1. Exact clean focused baseline and actual frontend source-type trace; distinguish original165/current166 behavior and accepted controls. Preserve all earlier evidence and unedited complete source.
-2. Independently current TypeScript-aligned results and unmodified generated Rust for the admitted Uint/Field cases, reversed/different/boundary inputs and cohesive nested/alias contexts only if actual source proves their relevance. Original narrow field types and checks stay intact. Use source assertions to observe first-error/order where possible; inspect source-once lowering rather than inventing observable effects for pure code.
-3. Ordinary wrong field type and result maximum/carrier/length compile-fail controls with correct-type positive twins and actual marked Rust error spans. Preserve implicit narrowing, nominal and missing-field frontend refusals. Native untrusted IR rejects field-name/index/type mismatches and invalid unselected branches at existing owners.
-4. Preserve byte-identical accepted full controls; complete producer mutations and same-geometry changed expected results must fail actual consumers. Bind all source/imports, independent and golden IR, all Programs, original compiler/recipe/serialization/Rust/Cargo config/runtime/tool identities. Strict unedited SDK roots required.
-5. For complete small stateful Uint/Field helper exports, inspect all models and verify locked material before fresh direct keys. Keep automatic k<=8 and every full source. Require actual distinct-carrier four-route behavior, fresh genuine proofs with immutable verifier and corrupt/binding/result/wrong-verifier negatives; separately independently proved funded default-strict application and replay refusal. No constructor/all-input or full-language proof claim.
-6. Signed Conventional DCO/Assisted commits; actual Claude-first independent CLI source/receipt reviews with actual-limit Codex different-model fallback; docs and verified Obsidian process/CAS. Full required arm64/Linux CI and reviewed integration remain open until actually executed. No cleanup before verified GitHub merge of completed owned work.
+Implementation `f7c9235f2` adds one typed `elt-ref` arm to
+`compiler/rust-ir-passes.ss`. It calls the existing projection helper, which
+lowers the complete base/member expression before applying existing `Coerce`
+when the source and target types differ. Identity and absent literal-context
+behavior remain unchanged.
 
+Existing native owners continue to validate the complete base struct, field
+name at its declaration index, actual field type, ownership, coercion legality,
+recording certification and resource bounds. Rust syntax remains structured AST
+emission. Compiler 167 identifies this source change. No IR schema, runtime ABI,
+dependency, executor or conversion relation is added.
 
-## Admission decision
+## Generated API and qualified behavior
 
-Actual current checkpoint6b763987 and all refs/worktrees were inspected before
-creating the separate branch. Canonical1bdf185ea, reviewedQ85c95, P3d94, O03a114,
-N857244 and Forgeexperiment e299 remain retained. Use an explicit local
-shallow-stack on Q: the exact authoritative literal-source context helper is
-already present there. Reusing it avoids duplicate owner logic; no candidate
-is called integrated canonical. Focused current clean baseline is required
-before the one cohesive elt-ref typed-projection extension.
+Inputs remain the actual generated `types::Input` and `types::Envelope` structs
+with their declared narrow fields. Examples return the declared
+`FixedVector<BoundedUint<65535>, 2>`, `FixedVector<Field, 2>`, wide integers,
+tuples and nested carriers. Ordinary invalid use is rejected by Rust types;
+untrusted IR is checked explicitly at the existing native boundary.
 
+The maintained gate is
+`tools/compact-rust-backend/check_struct_member_literal_widening.py`. Its 18
+complete sources and 28 cases cover 26 pure calls and eight stateful route
+executions. These include wide, product, nested, alias, lexical, conditional,
+empty-mixed and checked-narrowing cases. Distinct source assertions expose
+first-error order. Stateful helper exports exercise ordinary, recorded,
+functional native and functional recorded routes with genuine Uint16 and Field
+results.
 
-## Focused baseline and implementation decision
+The complete source/API protocol at execution revision `886a69bc5` passes 99
+commands, including:
 
-At signed5273136e2 the focused22coercion/projection/order/historical tests pass.
-Expanded23-source/69-command original166 characterization identifies18TS-valid
-sources:13Rust mismatches and5acceptedcontrols. Five genuine frontend refusals
-retain length/kind/missing-field/implicit-narrowing/nominal causes in every lane.
-The complete cases include wide,tuple,nested member/literal,alias,local,conditional,
-source assertion,empty-mixed and checked-narrowing contexts.
+- 18 strict, unedited generated SDK roots;
+- five marked Rust refusals and five frontend refusals;
+- six malformed native-IR controls for geometry, conversion, field name,
+  field index, non-struct input and an invalid unselected branch;
+- actual consumer failures after changing expected output or either complete
+  producer;
+- exact source/import, independent and golden IR, all Program, compiler, runtime,
+  tool and Cargo configuration identities.
 
-Existing frontend/native owners match the reviewed Q source. The change adds
-one typed elt-ref arm through the existing source-type projection helper. That
-helper lowers the complete original member/base expression first, then uses
-authoritative source and target types for existing Coerce. Identity and absent
-literal source context keep original IR. Native field-name/index/type validation
-and ownership remain unchanged. Compiler167 records the source change; no IR,
-runtime ABI, dependency or executor changes. Current compiler/API/proof and
-independent review acceptance remain open.
+The first API execution at `c198` failed because the test named `wide` collided
+with a constructor helper named `wide`. Only the helper was renamed to
+`wide_value`. The failed epoch remains retained. Development checks passed all
+28 cases and strict consumer Clippy; the final clean-head protocol independently
+reran and passed the complete gate. Early preflight refusal before the compiler
+build completed admitted no execution.
 
+## Genuine proof and application evidence
 
-## Original167 and maintained current-source corpus
+`check_struct_member_literal_widening_proof.py` includes the whole unmodified
+helper SDK and both checked Programs. Its include root exposes the actual
+`types` module. Inputs are constructed as the declared structs; generated code
+is not rewritten into vector inputs.
 
-Original default native167 builds at signedf7c9235f2. All23sources/69commands
-now have the intended outcomes:18TS-valid sources emit Rust and independentIR,
-5frontend refusals retain their original causes. All20full IR/raw/Rust/capability
-assets for5acceptedcontrol sources are byte-identical to166.
+Both complete helper export models are k=7 with 85 rows. Locked material is
+verified before fresh direct keys. Each selected standalone proof is 2,912 bytes
+and verifies with its immutable verifier. Separate, independently proved funded
+transactions are 6,553 and 6,561 bytes and pass default-strict ledger application.
+Replay refuses `IntentAlreadyExists` without changing the ledger.
 
-The maintained source/API gate is check_struct_member_literal_widening.py.
-Its18complete positive sources have28cases:26pure calls and8stateful route
-executions. Cases retain wide/tuple/nested/alias/local/conditional/empty source,
-ordered distinct source assertions and checked narrowing. Existing generated
-public structs live in types::Input/Envelope; the declared Uint8 fields are
-kept, not replaced by vectors or wider hand-written producers. Independent
-TS descriptors include actual struct output field order and Uint/Field carriers.
-Five marked Rust refusals,5frontend refusals,6native malformed controls, complete
-producer mutations, strict SDK roots and Cargo config identity are required.
-Development36-command generation alone is not clean-head API/proof acceptance.
+Corrupt proof bytes, changed public binding, a changed result using its real
+carrier and unchanged geometry, and the other immutable verifier are rejected.
+Complete IR, Program and membership controls refuse before keys. A separate
+complete Fold source supplies a k=9 diagnostic that refuses before keys; it does
+not replace admitted proof inputs or waive the older N k=9 obligation.
 
+## Review, provenance and limits
 
-## Retained fixture repair and complete struct SDK proof preparation
+Actual independent source and receipt CLI reviews used `gpt-6-astra` with high
+reasoning after verified Claude quota. Neither found an introduced or blocking
+P1/P2 issue within its scope. The source review independently confirms the 20
+unchanged control artifacts.
 
-The first current source/API execution atc198 retains its failure: the test
-wide and a local wide() constructor helper collide. Renaming only that helper
-to wide_value makes all28consumer tests and strict consumer Clippy pass in an
-external development copy; complete emitted SDK bytes remain unchanged. This
-is not clean-head API acceptance. The maintained harness carries the same fix.
-All6malformed nativeIR controls independently reject at the exact existing
-field/index/type/conversion/geometry owners, including an unselected true branch.
-The historical283fixture freshness,1830backend tests(7pre-existing ignored) and
-strict backend Clippy pass atc198.
+The receipt review checks 1,609 protocol inputs, 1,994 proof-source entries
+against original and frozen locations, 202 generated assets, 146 strict-root
+files and 18 locks, 219 runtime files and 20 Node libraries, plus tool, material,
+key, result and log bindings. These scopes overlap and are not added together.
+The own closeout audit checks 4,345 binding records across 3,941 paths.
+Closeout log pins are observations at closeout, not retrospective host trust.
 
-The separate opt-in struct-member-literal-widening proof runner includes the
-whole unmodified generated helper SDK and both Programs. It exposes the actual
-generated types module at the include root, preserving types::Input and its
-narrow fields. Each native/recorded/functional route reconstructs that declared
-Input struct; no vector substitution or generated-code editing is used. Both
-result carriers remain Uint16/Field, with same-geometry real-carrier result
-negatives, immutable verifier and independently proved funded default-strict
-transactions/replay controls. Full exact-head current source/API, SDK and runner
-checks, allmodels, locked material before freshkeys and authentic source/receipt
-reviews remain required. A distinct full Fold k9 diagnostic is only a pre-key
-cap refusal; no admitted source or older k9 requirement is substituted.
+Historical validation at `c198` passed 283 fixture freshness checks, 1,830 backend
+tests with seven pre-existing ignored tests, and strict backend Clippy. The five
+relevant source owner directories are unchanged through execution `886a69bc5`.
+This is not current whole-CI acceptance. The signed documentation successor
+bridges literal receipts by rechecking source/evidence and signature history.
 
+The accepted scope is pure typed member context and the maintained stateful
+exports calling those pure helpers. [Direct stateful Vector literal
+returns](direct-stateful-vector-literal-returns.md) remain a separately
+characterized gap. No constructor execution proof, all-source/all-input proof,
+universal language support, full CI, integration or broader-goal completion is
+claimed. No publication or cleanup is due before verified GitHub merge.
 
-## Reviewed bounded local qualification — 2026-11-02
-
-Literal execution886a69bc53952d9ef944c6eede74688b8d7fabc9 uses original default
-native167. Full exact-head source/API protocol passes99commands:18complete
-sources,28cases(26pure+8stateful routes),18strict unedited SDK roots,5marked
-Rust refusals,5frontend refusals and6native malformedIR refusals. Whole source
-and independent/goldenIR/allPrograms are bound; Cargo config/flags and source/
-tool hashes are admitted and rechecked. Actual complete producer and same-
-geometry expected changes fail their consumers. The retained failed c198 API
-epoch and preflight refusal are not counted as accepted current execution.
-
-Both complete stateful helper export models are k7/85rows. Material verification
-precedes fresh direct keys. Two2912Bstandalone proofs verify with their actual
-immutable verifiers. Separate independently proved funded default-strict
-transactions are6553/6561B; exact replay refuses IntentAlreadyExists without
-ledger mutation. Inputs are genuine generated types::Input structs; outputs
-remain Vector2Uint16 and Vector2Field. Corrupted bytes, changed binding, real-
-carrier same-geometry changed results and the other verifier all refuse. Full
-IR/Program/membership controls and a separate complete Fold k9 diagnostic refuse
-before keys. That diagnostic is not R source/proof admission or an N k9 waiver.
-
-Actual independent source/API/proof-source and receipt CLI reviews use
-gpt-6-astra/high after verified actual Claude quota, finding no introduced or
-blockingP1/P2 issue in their scopes. Source review independently confirms20
-control assets equal166/167. Receipt review checks1609protocol inputs,1994proof
-source entries against original/frozen source,202generated assets,146strict-root
-files and18locks,219runtime files and20Node libraries plus tools/material/keys/
-results/logs. These scopes overlap and are not added. Own closeout audit checks
-4345binding records/3941paths. Observed-closeout log pins do not establish
-retrospective hostile-host trust.
-
-Historical283freshfixtures/1830backendtests(7pre-existing ignored)/strictClippy
-pass atc198;5relevant source owner directories are unchanged through886a. This
-is not current whole-CI acceptance. A signed docs-only successor must bridge
-the literal receipt by rechecking source/evidence and signature history.
-
-The accepted scope is pure typed aggregate member context and the maintained
-stateful exports calling those pure helpers. The separately characterized
-[direct stateful Vector literal proposal](direct-stateful-vector-literal-returns.md)
-retains a genuine open gap; no helper extraction is presented as its solution.
-Constructor execution/all18source/allinput proof, full required arm64/Linux CI,
-reviewed integration, N originalk9 and broader-goal completion are unclaimed.
-No publication or cleanup: this local candidate is not merged in GitHub.
-
-Evidence: rust-ast-struct-member-literal-widening-20261102/original-native-v3,
-proof-v1/protocol/receipt.json,proof-v1/receipt.json,receipt-audit-v1.json,
-code-review-v1/codex/final.txt,receipt-review-v1/codex/final.txt and
-qualification-summary-v1.json. All failed/predecessor epochs remain retained.
+Local evidence root: `rust-ast-struct-member-literal-widening-20261102`.
+Authoritative records include `original-native-v3/receipt.json`,
+`proof-v1/protocol/receipt.json`, `proof-v1/receipt.json`, `receipt-audit-v1.json`,
+the source and receipt review outputs, `qualification-summary-v2.json` and the
+documentation bridge. Failed and predecessor epochs retain their original scope.
