@@ -136,6 +136,16 @@
     }
   },
   {
+    "source": "nonmutating",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
     "source": "source_checked",
     "stateful": true,
     "entries": [
@@ -263,6 +273,16 @@
     ],
     "descriptor": {
       "run": "wide_vector"
+    }
+  },
+  {
+    "source": "witness_literal",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
     }
   }
 ]

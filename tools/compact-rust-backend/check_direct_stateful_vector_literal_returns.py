@@ -90,7 +90,7 @@ def check_return_origins(ir, raw):
     for node, path in zip(nodes, paths):
         if (path and path[0] == "stateful_circuits" and "return_value" in path
                 and isinstance(node, dict) and node.get("kind") == "coerce"
-                and node.get("value", {}).get("kind") == "tuple"):
+                and node.get("value", {}).get("kind") in {"tuple", "vector"}):
             origin = origins.get(path)
             require(origin is not None and origin[1:] == ["inherited", "return_plan"],
                     "return conversion origin label/category differs")
@@ -174,10 +174,10 @@ def main():
 
     try:
         definitions = json.loads((FIXTURES / "sources.json").read_text())
-        require(len(definitions) == 26 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
+        require(len(definitions) == 28 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
         cases = json.loads((FIXTURES / "cases.json").read_text())
         case_count = len(cases)
-        require(case_count == 41 and len({r["id"] for r in cases}) == case_count, "case roster differs")
+        require(case_count == 43 and len({r["id"] for r in cases}) == case_count, "case roster differs")
         stateful_sources = {r["source"] for r in definitions if r["stateful"]}
         require({r["source"] for r in cases} == {r["source"] for r in definitions}, "a complete source has no consumer")
         stateful_cases = sum(r["source"] in stateful_sources for r in cases)
@@ -334,7 +334,7 @@ def main():
             (output / (name + "-ir.json")).write_text(json.dumps(malformed, indent=2) + "\n")
             rejected = run(name + "-ir", ["cargo", "run", "--locked", "--offline", "--quiet", "-p", "compact-rust-backend", "--bin", "compact-rust-backend"], success=False, stdin=json.dumps(malformed))
             expected = {
-                "wrong_dimension": ['expression has type Tuple', 'length: 2'],
+                "wrong_dimension": ['expression has type Vector', 'length: 2', 'length: 3'],
                 "wrong_element": ['expression has type Unsigned', 'expected Boolean'],
                 "wrong_field": ['invalid struct field "absent"'],
                 "wrong_index": ['invalid struct field "right"'],

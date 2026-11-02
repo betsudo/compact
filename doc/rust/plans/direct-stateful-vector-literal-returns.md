@@ -148,8 +148,8 @@ acceptance are still open.
 ## Maintained qualification corpus
 
 `tools/compact-rust-backend/check_direct_stateful_vector_literal_returns.py`
-binds 26 complete stateful sources, their independent and golden full IR, all
-checked Programs and unedited SDKs. The 41 declared cases use an independently
+binds 28 complete stateful/impure sources, their independent and golden full IR, all
+checked Programs and unedited SDKs. The 43 declared cases use an independently
 executed TypeScript oracle and ordinary, recorded, functional native and
 functional recorded Rust APIs. Success checks include typed alignment/results,
 Cell state, private state/output, cross-route effects/gas and recorded replay.
@@ -169,8 +169,27 @@ immutable verifier/corruption/binding/same-geometry typed-result controls and
 exact replay refusal. Constructor execution and unselected exports are unproved;
 the complete required integration gates and original N k=9 obligation stay open.
 
-Development execution passes all 41 cases and seven malformed-IR refusals. These
+Initial development execution passes all 41 storage cases and seven malformed-IR refusals. These
 are development observations, not clean-head qualification or proof acceptance.
 Run the maintained gates using a new output directory and a default current-head
 original compiler receipt. No generated SDK rewriting or source trimming is
 permitted. Full source/receipt reviews and actual proof results remain required.
+
+
+### Review and strict-root follow-up
+
+The first clean protocol caught the retained characterization Program source paths
+rather than the maintained repository-relative paths. Actual full regeneration
+fixed those goldens without normalization; exact byte checks remain unchanged.
+The next protocol passed current execution but caught strict Clippy on the
+13-element intermediate Tuple type. Uniform source literals now materialize a
+Vector at their original checked element bound before the existing aggregate
+conversion. Heterogeneous source carriers retain the Tuple path. No lint allow,
+validator/runtime/ABI change or wider source bound is introduced.
+
+Claude's actual source review found a coverage gap for the same routing without
+storage mutation and with witness-call elements. Add separate non-mutating and
+sequential witness sources. The latter must check TS-aligned two calls in source
+order, evolving private state and both private transcript outputs exactly once
+across all four APIs. These are API coverage, not a witness proof claim. Current
+compiler 169, expanded protocol and final source/receipt review remain pending.

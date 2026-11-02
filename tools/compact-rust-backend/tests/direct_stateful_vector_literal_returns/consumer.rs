@@ -400,3 +400,86 @@ stateful_case!(
     [],
     [FixedVector::new([u(400), u(300)])]
 );
+
+stateful_case!(
+    nonmutating,
+    nonmutating,
+    run,
+    [],
+    [FixedVector::new([u(0), u(255)])]
+);
+
+#[derive(Default)]
+struct SequenceWitness(std::cell::RefCell<Vec<(u64, u128)>>);
+impl witness_literal::ledger_contract::Witnesses<u64> for SequenceWitness {
+    fn next(
+        &self,
+        context: r::context::WitnessContext<
+            '_,
+            u64,
+            witness_literal::ledger_contract::LedgerView<'_>,
+        >,
+    ) -> (u64, BoundedUint<255>) {
+        let state = *context.private_state;
+        let value = u128::from(state - 4);
+        self.0.borrow_mut().push((state, value));
+        (state + 1, u(value))
+    }
+}
+#[test]
+fn witness_literal() {
+    use witness_literal::ledger_contract as api;
+    let oracle = row("witness_literal");
+    let mut observed = None;
+    for lane in 0..4 {
+        let witnesses = SequenceWitness::default();
+        let ctx = api::initial_state(r::context::ConstructorContext::new(7_u64))
+            .unwrap()
+            .into_circuit_context(Default::default());
+        let held = ctx.query.state.clone();
+        let out = match lane {
+            0 => api::run(ctx, &witnesses),
+            1 => api::recorded::run(ctx, &witnesses).map(replay),
+            2 => api::functional::run::Program::new().execute_native(ctx, &witnesses),
+            3 => api::functional::run::Program::new()
+                .execute_recorded(ctx, &witnesses)
+                .map(replay),
+            _ => unreachable!(),
+        }
+        .unwrap();
+        check::<FixedVector<BoundedUint<65535>, 2>>(Ok(out.result), &oracle);
+        assert_eq!(
+            out.context.private_state,
+            oracle["privateState"].as_u64().unwrap()
+        );
+        assert_eq!(
+            out.private_transcript_outputs
+                .into_iter()
+                .map(encode)
+                .collect::<Vec<_>>(),
+            oracle["privateOutputs"].as_array().unwrap().clone()
+        );
+        let calls=witnesses.0.borrow().iter().map(|(private_state,value)|json!({"privateState":private_state,"value":value.to_string()})).collect::<Vec<_>>();
+        assert_eq!(
+            calls,
+            oracle["observedWitnesses"].as_array().unwrap().clone()
+        );
+        assert_eq!(out.context.query.state, held);
+        assert_eq!(
+            witness_literal::ledger_slots::seen
+                .inspect(held.get_ref())
+                .unwrap(),
+            Field::from(0_u64)
+        );
+        let state = (
+            out.context.query.state,
+            out.context.query.effects,
+            out.gas_cost,
+        );
+        if let Some(before) = &observed {
+            assert_eq!(&state, before);
+        } else {
+            observed = Some(state);
+        }
+    }
+}

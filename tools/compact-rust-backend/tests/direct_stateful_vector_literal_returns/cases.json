@@ -784,5 +784,41 @@
       "value": "300",
       "max": "255"
     }
+  },
+  {
+    "id": "nonmutating",
+    "source": "nonmutating",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "0"
+  },
+  {
+    "id": "witness_literal",
+    "source": "witness_literal",
+    "entry": "run",
+    "args": [],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "3",
+      "4"
+    ],
+    "seen": "0",
+    "privateState": 9,
+    "witnessValues": [
+      "3",
+      "4"
+    ]
   }
 ]

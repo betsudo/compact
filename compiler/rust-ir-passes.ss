@@ -1928,6 +1928,24 @@
               (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids
                 (if (null? finish*) (lambda (value) value) (car finish*))))) (expression-operation-origin expr)))
 
+      ;; A uniform source literal already has one checked Rust element carrier.
+      ;; Materialize that source as a Vector before its aggregate conversion,
+      ;; keeping the original bound (not the wider destination bound). This
+      ;; avoids a generated N-tuple type at the source-value boundary. Mixed
+      ;; carriers retain their exact Tuple source and the same native Coerce.
+      (define (uniform-vector-literal-source-type source)
+        (nanopass-case (Lnodisclose Type) source
+          [(ttuple ,src ,type* ...)
+           (and (pair? type*)
+                (let ([element (car type*)])
+                  (and (for-all (lambda (other)
+                                   (equal? (type-ir-value element src)
+                                           (type-ir-value other src)))
+                                (cdr type*))
+                       (with-output-language (Lnodisclose Type)
+                         `(tvector ,src ,(length type*) ,element)))))]
+          [else #f]))
+
       (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids finish)
         (nanopass-case (Lnodisclose Expression) expr
           [(safe-cast ,src ,type ,type^ ,expr^)
@@ -1936,7 +1954,11 @@
                ;; Reach the original source value after its actions, then
                ;; apply the existing checked conversion exactly once. The
                ;; supplied source type retains intermediate casts and guards.
-               (stateful-return-plan-ir expr^ type^ src environment witness-ids
+               (stateful-return-plan-ir expr^
+                 (if (stateful-vector-literal-return? expr^ type)
+                     (or (uniform-vector-literal-source-type type^) type^)
+                     type^)
+                 src environment witness-ids
                  (lambda (value)
                    (finish (return-widening-ir type value))))
                (object (cons "kind" "value")

@@ -84,9 +84,9 @@ const bySource=new Map(definitions.map(row=>[row.source,row]));
 for(const spec of specs){
  const source=spec.source,path=pathToFileURL(wrappers[source].path);
  if(!modules.has(source))modules.set(source,await import(path));const m=modules.get(source);
- let out,value,error;
+ let out,value,error;const observed=[];
  {
-  const c=new m.Contract({}),init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)},...spec.constructor.map(convert));
+  const c=new m.Contract(source==='witness_literal'?{next:({privateState})=>{const value=BigInt(privateState-4);observed.push({privateState,value:String(value)});return [privateState+1,value];}}:{}),init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)},...spec.constructor.map(convert));
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
   try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
  }
@@ -103,10 +103,13 @@ for(const spec of specs){
  const encoded=encode({value:descriptor.toValue(value),alignment:descriptor.alignment()});
  {
   assert.equal(m.ledger(out.context.currentQueryContext.state).seen,BigInt(spec.seen),spec.id);
-  assert.equal(out.context.currentPrivateState,7,spec.id);assert.deepEqual(out.proofData.privateTranscriptOutputs,[],spec.id);
+  assert.equal(out.context.currentPrivateState,spec.privateState??7,spec.id);
+  const privateValues=(spec.witnessValues??[]).map(value=>encode({value:u8.toValue(BigInt(value)),alignment:u8.alignment()}));
+  assert.deepEqual(out.proofData.privateTranscriptOutputs.map(encode),privateValues,spec.id);
+  assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value})),spec.id);
   assert.deepEqual(encode(out.proofData.output),encoded,spec.id);
  }
- rows.push({...spec,result:encoded,privateState:7,privateOutputs:[]});
+ rows.push({...spec,result:encoded,privateState:spec.privateState??7,privateOutputs:out.proofData.privateTranscriptOutputs.map(encode),observedWitnesses:observed});
 }
 assert.deepEqual(inventory(runtime),before,'runtime production closure changed');
 for(const {path,sha256} of Object.values(wrappers)) assert.equal(hash(path),sha256);
