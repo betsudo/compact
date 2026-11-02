@@ -1783,21 +1783,39 @@
       ;; ordered evaluation; the existing native/recording Coerce owners still
       ;; independently check the reached value and its representation bounds.
       (define (vector-value-widening? target source)
-        ;; Type emission already erases these scalar aliases. Unwrap them only
-        ;; for Vector conversion classification; do not change other owners.
+        ;; Type emission already erases these aliases. Unwrap them only for
+        ;; Vector conversion classification; do not change other owners.
         (define (leaf-carrier type)
           (nanopass-case (Lnodisclose Type) type
             [(talias ,src ,nominal? ,type-name ,type^) (leaf-carrier type^)]
             [else type]))
+        (define (scalar-widening? target source)
+          (let ([target (leaf-carrier target)] [source (leaf-carrier source)])
+            (or (return-component-widening? target source)
+                ;; A Boolean product component is preserved, never converted
+                ;; to a number. Other identity types keep their current owner.
+                (nanopass-case (Lnodisclose Type) source
+                  [(tboolean ,src)
+                   (nanopass-case (Lnodisclose Type) target
+                     [(tboolean ,src^) #t]
+                     [else #f])]
+                  [else #f]))))
+        (define (element-widening? target source)
+          (nanopass-case (Lnodisclose Type) (leaf-carrier source)
+            [(ttuple ,src ,type* ...)
+             (nanopass-case (Lnodisclose Type) (leaf-carrier target)
+               [(ttuple ,src^ ,type^* ...)
+                (and (= (length type*) (length type^*))
+                     (for-all scalar-widening? type^* type*))]
+               [else #f])]
+            [else (or (vector-value-widening? target source)
+                      (scalar-widening? target source))]))
         (nanopass-case (Lnodisclose Type) (vector-carrier-type source)
           [(tvector ,src ,len ,type)
            (nanopass-case (Lnodisclose Type) (vector-carrier-type target)
              [(tvector ,src^ ,len^ ,type^)
               (and (= len len^)
-                   (or (vector-value-widening? type^ type)
-                       (return-component-widening?
-                         (leaf-carrier type^)
-                         (leaf-carrier type))))]
+                   (element-widening? type^ type))]
              [else #f])]
           [else #f]))
 

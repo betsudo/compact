@@ -75,8 +75,7 @@ No arbitrary Struct/nominal conversion redesign, narrowing relaxation, unchecked
 identity extension to unprobed types, new primitive, cap increase, effect framework,
 backend refactor or CI optimization. Preserve original full source and output
 geometry; no generated-code editing, source extraction or proof/verdict cache.
-No Forge work, publication, shared install or cleanup. This remains a proposal;
-implementation has not started.
+No Forge work, publication, shared install or cleanup. Qualification remains bounded to the actual completed gates below.
 
 
 ## Admission
@@ -88,3 +87,35 @@ All predecessor work and evidence are preserved. Focused baseline and actual
 product-cast traces precede implementation; no V compiler/API/model/proof
 acceptance is claimed. Existing pure coercion, typed native/recording validators,
 AST owners and original retirement/crosswalk authorities stay intact.
+
+## Source implementation and qualification boundary
+
+Restart reconciliation found clean admission `1b04a74ce`, all 38 focused baseline
+checks passed and the unchanged original compiler 173 recipe passed. The retained
+trace shows supplied Vector-of-product casts enclosing ordered ledger writes and
+local bindings. Existing native Coerce already owns independent tuple/Vector
+shape, scalar bounds, Boolean identity, conversion work and AST emission.
+
+The frontend classifier now recognizes equal-arity scalar products within
+matching Vector dimensions, including nested Vectors and unchanged Boolean
+components. It retains numeric monotone conversions and alias carriers at this
+owner, and selects the existing ordered evaluation/Coerce path. No native,
+recording, runtime, IR schema, ABI or public option changes are introduced.
+Compiler version 174 names this source change; original recipes are retained.
+
+The complete source corpus contains 23 TS-valid contracts and two original
+frontend refusals. Before implementation, nine valid contracts fail on nested
+ledger evaluation and eleven emit IR but fail native checking; the three existing
+controls pass. Additional forms include transparent aliases, checked helper first
+errors, an observable stateful helper, both witness positions, read-only storage,
+multiple conversions, scalar/Unit results, a three-component product and an intact
+wide local. An earlier development source roster had ten `>=` tokenization errors;
+its files/logs remain retained and the corrected source-only characterization is
+`characterization-original-v2/receipt.json`. Source characterization alone is not
+API execution, model feasibility, proof or application acceptance.
+
+Complete current compiler/API, marked compile refusals with correct-type twins,
+malformed IR and producer controls, selected genuine proofs/default-strict
+applications, independent source/receipt review and integration gates remain open.
+Keep all historical evidence at its actual source head. Do not label emission or
+this source commit as completed slice qualification.
