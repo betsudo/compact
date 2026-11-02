@@ -79,6 +79,20 @@ pub(super) fn try_run(
         ("--vector-alias-source-widening-models", _) => {
             Some(collections::vector_alias_source_widening(arguments, true))
         }
+        #[cfg(all(
+            feature = "aggregate-literal-projection-widening",
+            compact_aggregate_literal_projection_generated
+        ))]
+        ("--aggregate-literal-projection-widening", _) => Some(
+            collections::aggregate_literal_projection_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "aggregate-literal-projection-widening",
+            compact_aggregate_literal_projection_generated
+        ))]
+        ("--aggregate-literal-projection-widening-models", _) => Some(
+            collections::aggregate_literal_projection_widening(arguments, true),
+        ),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

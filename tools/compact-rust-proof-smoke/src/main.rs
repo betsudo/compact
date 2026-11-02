@@ -87,6 +87,27 @@ pub use vector_alias_source_fixture::{ledger_contract, ledger_slots, pure_circui
 ))]
 mod vector_alias_source_widening;
 
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+pub mod aggregate_literal_projection_fixture {
+    include!(concat!(
+        env!("COMPACT_AGGREGATE_LITERAL_PROJECTION_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+pub use aggregate_literal_projection_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+mod aggregate_literal_projection_widening;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

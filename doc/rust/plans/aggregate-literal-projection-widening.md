@@ -195,3 +195,28 @@ and recheck config membership/bytes, reject build/target lint flags, wrappers
 and unchecked profiles. Focused controls exercise suppression, wrappers and a
 new config file. No source/proof binding or native validator is relaxed. The
 failed original run remains evidence; clean successor qualification is required.
+
+
+## Distinct typed helper proof gate
+
+At clean signeda5633c0f8 the current source/API gate passes all109commands:
+31cases,29pure and8stateful routes,21strict SDK roots,5marked Rust refusals,
+4source refusals,5native malformed-IR controls and complete producer/result
+mutations. Cargo config membership and bytes are admitted and rechecked.
+
+The opt-in aggregate-literal-projection-widening proof runner includes the
+complete current helper SDK and both unmodified checked Programs. Its two
+exports return genuine FixedVector<BoundedUint<65535>,2> and FixedVector<Field,2>
+results. A small typed route macro compares each native/recorded/functional
+result before sharing upstream prepared call handling. Changed-result controls
+construct the corresponding genuine carrier for each export and retain original
+alignment/atom geometry. Source/IR/Program binding, complete model inspection,
+automatic k<=8, verified locked parameters before fresh direct keys, immutable
+verifiers, independent funded default-strict transactions and replay controls
+remain required. A separate retained complete Fold source supplies only a k9
+diagnostic; it cannot replace admitted source or proof inputs.
+
+Proof machinery source preparation and development compilation do not imply
+proof acceptance. Exact clean-head original native compiler, complete source/API
+regeneration, default/all-features and opt-in runner checks, authentic fresh
+source review and actual proof/application receipts are required next.

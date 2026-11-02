@@ -31,4 +31,17 @@ fn main() {
         );
         println!("cargo::rustc-cfg=compact_vector_alias_source_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_aggregate_literal_projection_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_AGGREGATE_LITERAL_PROJECTION_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_AGGREGATE_LITERAL_PROJECTION_WIDENING").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_AGGREGATE_LITERAL_PROJECTION_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute() && root.join("contract/lib.rs").is_file(),
+            "COMPACT_AGGREGATE_LITERAL_PROJECTION_GENERATED must name the complete generated SDK"
+        );
+        println!("cargo::rustc-cfg=compact_aggregate_literal_projection_generated");
+    }
 }
