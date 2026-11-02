@@ -195,3 +195,21 @@ SDK-root, marked refusal/twin, source/malformed/producer/result controls. Curren
 176 build/API, macro parser controls/strict Clippy, fresh independent review and
 selected proof/application qualification remain open; no trimming or disabling
 of the failing combined shape is permitted.
+
+## Three-component signature successor
+
+The 176 maintained gate executes all 32 consumer cases successfully (including
+both combined nested witnesses), then stops at command92 on eight strict
+triple_product SDK signature type-complexity diagnostics. This is retained as
+`source-api-v3/receipt.json`; it is not full gate acceptance. Fresh independent
+source review v3 reports no P1/P2 in the bridge repair at `2508fec89`, with SDK/
+golden/current gate acceptance explicitly pending at review time.
+
+Compiler177 extends the same function-only style marker to the other actually
+observed complex carrier: a Vector of a product of three or more scalar
+components. It retains the nested Vector-of-product case and all independent
+macro/type/semantic/refusal checks. No module/crate-level exception or signature,
+body, source/IR/Program normalization is introduced. The complete triple source
+is retained and must pass strict root Clippy; it is not replaced by a simpler
+source. Current177 clean-head source/API and fresh source-delta review remain
+required. Earlier compiler/native/SDK/review outcomes keep their own epochs.

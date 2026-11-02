@@ -1046,7 +1046,7 @@ impl CompactSignatureLint {
         }
     }
 
-    fn has_nested_product_vector(signature: &syn::Signature) -> bool {
+    fn has_complex_product_vector(signature: &syn::Signature) -> bool {
         let mut pending = signature
             .inputs
             .iter()
@@ -1059,8 +1059,13 @@ impl CompactSignatureLint {
             pending.push(ty);
         }
         while let Some(ty) = pending.pop() {
-            if Self::vector_element(ty).and_then(Self::vector_element)
-                .is_some_and(|element| matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2)) {
+            let element = Self::vector_element(ty);
+            let wide_product =
+                matches!(element, Some(syn::Type::Tuple(product)) if product.elems.len() >= 3);
+            let nested_product = element.and_then(Self::vector_element).is_some_and(
+                |element| matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2),
+            );
+            if wide_product || nested_product {
                 return true;
             }
             match ty {
@@ -1095,11 +1100,11 @@ impl CompactSignatureLint {
                 )]
             ));
         }
-        if Self::has_nested_product_vector(signature) {
+        if Self::has_complex_product_vector(signature) {
             attrs.push(syn::parse_quote!(
                 #[allow(
                     clippy::type_complexity,
-                    reason = "preserves nested Compact Vector/product carriers in this signature"
+                    reason = "preserves Compact Vector/product carriers in this signature"
                 )]
             ));
         }
