@@ -899,7 +899,7 @@
         (nanopass-case (Lnodisclose Expression) expr
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (expression-ir expr owner-src)]
-          [(safe-cast ,src ,type ,type^ ,value)
+          [(safe-cast ,src ,type ,type^ ,expr^)
            (expression-ir expr owner-src)]
           [(var-ref ,src ,var-name)
            (let ([actual-type (and (current-variable-types)
@@ -922,7 +922,7 @@
       (define (typed-expression-ir-value expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src)]
-          [(safe-cast ,src ,type ,type^ ,value-expr)
+          [(safe-cast ,src ,type ,type^ ,expr^)
            ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
            ;; Lower that complete cast first, then preserve its wider Vector
            ;; context instead of losing it while unwrapping the source alias.
