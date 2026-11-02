@@ -86,7 +86,7 @@ for(const spec of specs){
  if(!modules.has(source))modules.set(source,await import(path));const m=modules.get(source);
  let out,value,error;const observed=[];const stateful=bySource.get(source).stateful;
  if(stateful){
-  const c=new m.Contract(source==='witness_value'?{vector_value:({privateState,ledger})=>{assert.equal(ledger.seen,1n,'write must precede witness');const value=[BigInt(privateState-4),BigInt(privateState-3)];observed.push({privateState,value:value.map(String),seen:encode({value:r.CompactTypeField.toValue(ledger.seen),alignment:r.CompactTypeField.alignment()})});return [privateState+1,value];}}:{});
+  const c=new m.Contract(source==='witness_value'?{vector_value:({privateState,ledger})=>{const seen=ledger.seen;assert.equal(seen,1n,'write must precede witness');const value=[BigInt(privateState-4),BigInt(privateState-3)];observed.push({privateState,value:value.map(String),seen:encode({value:r.CompactTypeField.toValue(seen),alignment:r.CompactTypeField.alignment()})});return [privateState+1,value];}}:{});
   const init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)},...spec.constructor.map(convert));
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
   try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
