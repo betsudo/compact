@@ -1,0 +1,7 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+circuit change(input:Vector<2,[Uint<8>,Uint<16>]>):Vector<2,[Uint<8>,Uint<16>]>{assert(seen==1,"caller write absent");seen=2;return [input[1],input[0]];}
+export circuit run(input:Vector<2,[Uint<8>,Uint<16>]>):Vector<2,[Uint<16>,Uint<32>]>{seen=1;const wide:Vector<2,[Uint<16>,Uint<32>]> =change(input);seen=3;return wide;}

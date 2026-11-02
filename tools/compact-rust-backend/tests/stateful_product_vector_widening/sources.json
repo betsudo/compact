@@ -1,0 +1,164 @@
+[
+  {
+    "source": "aliases",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "boolean_component",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "checked_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "empty_product",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "field_product",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "identity_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "local_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "local_product",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "local_scalar_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "multiple_local",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "nested_product",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "proofs",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ]
+  },
+  {
+    "source": "pure_control",
+    "stateful": false,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "read_only",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "scalar_result",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "stateful_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "triple_product",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "unit_result",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "wide_local",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "witness_after",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "witness_before",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  }
+]
