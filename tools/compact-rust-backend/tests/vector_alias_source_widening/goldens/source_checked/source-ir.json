@@ -1,0 +1,181 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+    {
+      "name": "Input",
+      "ty": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 4,
+        "column": 1
+      }
+    }
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "checked",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "input denied"
+          }
+        ],
+        "value": {
+          "kind": "parameter",
+          "name": "input"
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 5,
+        "column": 1
+      }
+    },
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "after",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "local",
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            },
+            "value": {
+              "kind": "call",
+              "name": "checked",
+              "arguments": [
+                {
+                  "kind": "parameter",
+                  "name": "ok"
+                },
+                {
+                  "kind": "parameter",
+                  "name": "input"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "assert",
+              "condition": {
+                "kind": "parameter",
+                "name": "after"
+              },
+              "message": "after denied"
+            }
+          ],
+          "value": {
+            "kind": "coerce",
+            "value": {
+              "kind": "parameter",
+              "name": "local"
+            },
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

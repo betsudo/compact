@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary; export type Input=Vector<2,Uint<8>>; export ledger seen:Field; pure circuit widen(input:Input):Vector<2,Uint<16>>{return input;} pure circuit reverse(input:Input):Vector<2,Uint<16>>{const local:Input=[input[1],input[0]];return local;} export circuit run(input:Input):Vector<2,Uint<16>>{seen=1;return widen(input);} export circuit run_reverse(input:Input):Vector<2,Uint<16>>{seen=2;return reverse(input);}

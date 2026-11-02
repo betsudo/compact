@@ -119,3 +119,34 @@ IR/origins rather than adding redundant wrappers. Four other control sources
 retained all16 original IR/raw/Rust/capability bytes in that partial run; all
 five controls must be freshly compared after this correction. Failed/partial
 receipts remain evidence; the nominal case is not removed from acceptance.
+
+
+## Corrected current-source result and maintained corpus
+
+Default original165 at clean signed9d42ba6da builds without substitutions.
+The full22-source/66-command characterization now passes:18TS-valid sources
+emit Rust and independently equal IR, and4frontend refusals retain their
+original causes. All20 original control assets across5sources (fullIR, raw
+origins, unedited Rust and capability bytes) are byte-identical to original164,
+including the previously affected conditional. The failed Nix compile at638
+was an undeclared nanopass metavariable, corrected at9d42; its logs and the
+partial predecessor characterization remain retained.
+
+The maintained gate is
+`tools/compact-rust-backend/check_vector_alias_source_widening.py`. Its complete
+source corpus includes20sources and26 independently specified cases:24pure
+calls and8stateful route executions. This includes alias chains, empty/nested/
+product/wide/Field carriers, explicit nominal source and target controls,
+identity and conditional controls, call-argument/literal-element/local contexts,
+and ordered input/later-assertion failures. Every result has an explicit TS
+descriptor, and route counts derive from the declared case roster. No native
+error substitution is permitted in this population.
+
+Four Rust refusal controls cover wrong output length, wrong input element,
+wrong output maximum and consuming Program reuse;4source refusals retain
+frontend dimension/kind/narrowing/nominal authority. Changed full producers and
+same-geometry expectations must fail actual consumers. Three malformed IR
+controls include validating impossible element conversion even for zero
+length. ActualSDKroots remain strict, unedited compile inputs. Full current
+clean-head source/API execution, fresh selected proofs/applications and
+independent review remain required; generation alone is not acceptance.

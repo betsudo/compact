@@ -1,0 +1,6 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export type Input=Vector<2,Uint<8>>;
+pure circuit checked(ok:Boolean,input:Input):Input{assert(ok,"input denied");return input;}
+export pure circuit value(ok:Boolean,after:Boolean,input:Input):Vector<2,Uint<16>>{const local:Input=checked(ok,input);assert(after,"after denied");return local;}
