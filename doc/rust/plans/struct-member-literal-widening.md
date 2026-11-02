@@ -1,6 +1,6 @@
 # Proposed next bounded slice: struct member projections in wider aggregate literals
 
-Proposal only. Q bounded source/receipt closeout is accepted locally at executione8d; actual current docs head/ref reconciliation and a separate clean branch are required before implementation. Preserve canonical1bdf and all local predecessor refs. Reconcile actual checkpoint/refs and clean baseline first. Reuse the existing Q actual-type context owner through an explicit local shallow-stack if Q is not integrated; never duplicate it or call the stack canonical.
+Candidate R is admitted on codex/rust-ast-struct-member-literal-widening from the exact clean Q docs head85c95bb21e6b2f53833ea9fd53820f19c42c91c9. Q bounded source/receipt closeout is accepted locally at executione8d. No R implementation is accepted yet. Primary Rust AST goal ACTIVE/INCOMPLETE, LOCAL ONLY; Forge deferred/incomplete. Preserve canonical1bdf and all local predecessor refs. Reconcile actual checkpoint/refs and clean baseline first. Reuse the existing Q actual-type context owner through an explicit local shallow-stack if Q is not integrated; never duplicate it or call the stack canonical.
 
 ## Concrete gap and accepted controls
 
@@ -26,3 +26,14 @@ No new dynamic indexing, struct literal framework, structural-to-nominal convers
 4. Preserve byte-identical accepted full controls; complete producer mutations and same-geometry changed expected results must fail actual consumers. Bind all source/imports, independent and golden IR, all Programs, original compiler/recipe/serialization/Rust/Cargo config/runtime/tool identities. Strict unedited SDK roots required.
 5. For complete small stateful Uint/Field helper exports, inspect all models and verify locked material before fresh direct keys. Keep automatic k<=8 and every full source. Require actual distinct-carrier four-route behavior, fresh genuine proofs with immutable verifier and corrupt/binding/result/wrong-verifier negatives; separately independently proved funded default-strict application and replay refusal. No constructor/all-input or full-language proof claim.
 6. Signed Conventional DCO/Assisted commits; actual Claude-first independent CLI source/receipt reviews with actual-limit Codex different-model fallback; docs and verified Obsidian process/CAS. Full required arm64/Linux CI and reviewed integration remain open until actually executed. No cleanup before verified GitHub merge of completed owned work.
+
+
+## Admission decision
+
+Actual current checkpoint6b763987 and all refs/worktrees were inspected before
+creating the separate branch. Canonical1bdf185ea, reviewedQ85c95, P3d94, O03a114,
+N857244 and Forgeexperiment e299 remain retained. Use an explicit local
+shallow-stack on Q: the exact authoritative literal-source context helper is
+already present there. Reusing it avoids duplicate owner logic; no candidate
+is called integrated canonical. Focused current clean baseline is required
+before the one cohesive elt-ref typed-projection extension.
