@@ -1,0 +1,714 @@
+[
+  {
+    "id": "alias_element",
+    "source": "alias_element",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "alias_field",
+    "source": "alias_field",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "alias_parameter",
+    "source": "alias_parameter",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "helper_field",
+    "source": "helper_field",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "helper_identity_control",
+    "source": "helper_identity_control",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "helper_unsigned",
+    "source": "helper_unsigned",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "helper_unsigned_small",
+    "source": "helper_unsigned",
+    "entry": "run",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "2",
+      "3"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "literal_control",
+    "source": "literal_control",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "local_parameter",
+    "source": "local_parameter",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "nested_helper",
+    "source": "nested_helper",
+    "entry": "run",
+    "args": [
+      [
+        [
+          "0",
+          "255"
+        ],
+        [
+          "1",
+          "254"
+        ]
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "1",
+        "254"
+      ]
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "nested_parameter",
+    "source": "nested_parameter",
+    "entry": "run",
+    "args": [
+      [
+        [
+          "0",
+          "255"
+        ],
+        [
+          "1",
+          "254"
+        ]
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "1",
+        "254"
+      ]
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "parameter_unsigned",
+    "source": "parameter_unsigned",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "parameter_unsigned_small",
+    "source": "parameter_unsigned",
+    "entry": "run",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "2",
+      "3"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "pure_parameter_control",
+    "source": "pure_parameter_control",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "0"
+  },
+  {
+    "id": "stateful_helper",
+    "source": "stateful_helper",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "struct_projection",
+    "source": "struct_projection",
+    "entry": "run",
+    "args": [
+      {
+        "value": [
+          "0",
+          "255"
+        ]
+      }
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "wide_parameter",
+    "source": "wide_parameter",
+    "entry": "run",
+    "args": [
+      [
+        "340282366920938463463374607431768211456",
+        "680564733841876926926749214863536422911"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "340282366920938463463374607431768211456",
+      "680564733841876926926749214863536422911"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "conditional_helpers_0",
+    "source": "conditional_helpers",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "0"
+    ],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "conditional_helpers_1",
+    "source": "conditional_helpers",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "1"
+    ],
+    "initialSeen": "1",
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "3"
+  },
+  {
+    "id": "read_only_condition_0",
+    "source": "read_only_condition",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "0"
+    ],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "0",
+    "noMutation": true
+  },
+  {
+    "id": "read_only_condition_1",
+    "source": "read_only_condition",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "1"
+    ],
+    "initialSeen": "1",
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "1",
+    "noMutation": true
+  },
+  {
+    "id": "proof_branch_0",
+    "source": "proofs",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "0"
+    ],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "proof_branch_1",
+    "source": "proofs",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "1"
+    ],
+    "initialSeen": "1",
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "3"
+  },
+  {
+    "id": "proof_field",
+    "source": "proofs",
+    "entry": "run_field",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [
+      "0"
+    ],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "2"
+  },
+  {
+    "id": "read_only_vector",
+    "source": "read_only_vector",
+    "entry": "run",
+    "args": [],
+    "constructor": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "0",
+    "noMutation": true
+  },
+  {
+    "id": "empty_ok",
+    "source": "empty_helper",
+    "entry": "run",
+    "args": [
+      true,
+      []
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [],
+    "seen": "1"
+  },
+  {
+    "id": "empty_denied",
+    "source": "empty_helper",
+    "entry": "run",
+    "args": [
+      false,
+      []
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "empty denied"
+    }
+  },
+  {
+    "id": "guards_ok",
+    "source": "ordered_guards",
+    "entry": "run",
+    "args": [
+      true,
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "first_denied",
+    "source": "ordered_guards",
+    "entry": "run",
+    "args": [
+      false,
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    }
+  },
+  {
+    "id": "second_denied",
+    "source": "ordered_guards",
+    "entry": "run",
+    "args": [
+      true,
+      false,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "second denied"
+    }
+  },
+  {
+    "id": "both_denied",
+    "source": "ordered_guards",
+    "entry": "run",
+    "args": [
+      false,
+      false,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    }
+  },
+  {
+    "id": "checked_ok",
+    "source": "helper_checked",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "1",
+        "2"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "2",
+      "1"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "helper_denied",
+    "source": "helper_checked",
+    "entry": "run",
+    "args": [
+      false,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "helper denied"
+    }
+  },
+  {
+    "id": "checked_first",
+    "source": "helper_checked",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "1",
+        "300"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_second",
+    "source": "helper_checked",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "300",
+        "1"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_both",
+    "source": "helper_checked",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "constructor": [],
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "witness_value",
+    "source": "witness_value",
+    "entry": "run",
+    "args": [],
+    "constructor": [],
+    "initialSeen": "0",
+    "expected": [
+      "3",
+      "4"
+    ],
+    "seen": "1",
+    "privateState": 8,
+    "witnessValues": [
+      [
+        "3",
+        "4"
+      ]
+    ]
+  }
+]

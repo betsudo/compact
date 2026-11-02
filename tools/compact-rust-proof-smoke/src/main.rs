@@ -154,6 +154,27 @@ pub use direct_stateful_vector_fixture::{ledger_contract, ledger_slots, runtime,
 ))]
 mod direct_stateful_vector_literal_returns;
 
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub mod stateful_vector_value_fixture {
+    include!(concat!(
+        env!("COMPACT_STATEFUL_VECTOR_VALUE_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub use stateful_vector_value_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+mod stateful_vector_value_widening;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

@@ -117,3 +117,32 @@ erasure without changing other alias owners. Compiler172 identifies this fix.
 The pure control's first current Rust command accidentally requested functional
 stateful emission; retain that refusal and use the correct pure flags in the
 next current characterization. No API/proof acceptance is inferred.
+
+
+## Current172 characterization and maintained consumer
+
+Original default172 recipe passes at c010572. The complete current30-source/
+90-command characterization passes all23TS-valid sources in Rust and independent
+IR, with all7frontend refusals retained. Three original unaffected controls keep
+all14IR/raw/Rust/capability/Program assets unchanged170/172. The full accepted S
+helper-only control retains all6assets as well.
+
+The maintained corpus copies complete23positive sources and7frontend negatives,
+with37explicit cases. Actual TS and generated Rust development execution pass:
+36stateful cases across144ordinary/recorded/functional routes plus1pure case.
+Checks include both constructor-controlled helper and read-only branch outcomes,
+read-only public state preservation, guarded empty helper evaluation, checked
+helper first-error order, stateful helper effects, nested/wide/aliased carriers,
+and a Vector-valued witness with exactly one narrow private transcript output
+and private-state evolution. Current maintained strict/refusal/producer and
+proof qualification is still pending, not inferred from development runs.
+
+The opt-in proof adapter includes the whole unedited selected `proofs` SDK and
+both Programs, with genuine Vector<2,Uint8> input. It must prove both Uint branch
+states (keep vs flip helper) and Field separately, using actual narrowed helper
+values before conversion. Default/all-features builds need no generated SDK;
+explicit gate builds bind the complete current source/IR/Programs plus every
+physical generated and embedded-golden include. All models/applicability,
+verified material, immutable keys/verifiers, strict funded application and replay
+controls remain required. Compiler/native/runtime ownership and ABI stay as in
+the reviewed S baseline except the stated frontend conversion/context change.

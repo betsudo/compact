@@ -1,0 +1,257 @@
+[
+  {
+    "source": "alias_element",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "alias_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "field_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "alias_parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "conditional_helpers",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "empty_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "empty_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "helper_checked",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "helper_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "field_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "helper_identity_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u8_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "helper_unsigned",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "literal_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "local_parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "nested_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "nested_u16"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "nested_parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "nested_u16"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "ordered_guards",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "parameter_unsigned",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "proofs",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "pure_parameter_control",
+    "stateful": false,
+    "entries": [
+      "value"
+    ],
+    "descriptor": {
+      "value": "u16_vector"
+    },
+    "proof_required": false
+  },
+  {
+    "source": "read_only_condition",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "read_only_vector",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "stateful_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "struct_projection",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "wide_parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "wide_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "witness_value",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  }
+]

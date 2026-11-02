@@ -28,6 +28,7 @@ vector-alias-source-widening = ["ledger-transaction", "midnight-compact-runtime/
 aggregate-literal-projection-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 struct-member-literal-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 direct-stateful-vector-literal-returns = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
+stateful-vector-value-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 

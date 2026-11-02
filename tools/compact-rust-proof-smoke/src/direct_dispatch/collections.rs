@@ -605,3 +605,23 @@ pub(super) fn direct_stateful_vector_literal_returns(
         crate::direct_stateful_vector_literal_returns::run(Path::new(&root))
     }
 }
+
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub(super) fn stateful_vector_value_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --stateful-vector-value-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::stateful_vector_value_widening::models(Path::new(&root))
+    } else {
+        crate::stateful_vector_value_widening::run(Path::new(&root))
+    }
+}

@@ -134,6 +134,33 @@ pub(super) fn try_run(
             }
             crate::direct_stateful_vector_literal_returns::inventory(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening", _) => Some(
+            collections::stateful_vector_value_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening-models", _) => {
+            Some(collections::stateful_vector_value_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::stateful_vector_value_widening::inventory(std::path::Path::new(&root))
+        })()),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

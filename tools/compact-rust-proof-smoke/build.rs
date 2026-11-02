@@ -70,4 +70,17 @@ fn main() {
         );
         println!("cargo::rustc-cfg=compact_direct_stateful_vector_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_stateful_vector_value_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_VECTOR_VALUE_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_STATEFUL_VECTOR_VALUE_WIDENING").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_STATEFUL_VECTOR_VALUE_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute() && root.join("contract/lib.rs").is_file(),
+            "COMPACT_STATEFUL_VECTOR_VALUE_GENERATED must name the complete generated SDK"
+        );
+        println!("cargo::rustc-cfg=compact_stateful_vector_value_generated");
+    }
 }
