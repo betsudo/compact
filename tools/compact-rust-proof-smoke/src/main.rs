@@ -101,7 +101,9 @@ pub mod aggregate_literal_projection_fixture {
     feature = "aggregate-literal-projection-widening",
     compact_aggregate_literal_projection_generated
 ))]
-pub use aggregate_literal_projection_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+pub use aggregate_literal_projection_fixture::{
+    ledger_contract, ledger_slots, pure_circuits, runtime,
+};
 #[cfg(all(
     feature = "aggregate-literal-projection-widening",
     compact_aggregate_literal_projection_generated
@@ -122,12 +124,35 @@ pub mod struct_member_literal_fixture {
     feature = "struct-member-literal-widening",
     compact_struct_member_literal_generated
 ))]
-pub use struct_member_literal_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime, types};
+pub use struct_member_literal_fixture::{
+    ledger_contract, ledger_slots, pure_circuits, runtime, types,
+};
 #[cfg(all(
     feature = "struct-member-literal-widening",
     compact_struct_member_literal_generated
 ))]
 mod struct_member_literal_widening;
+
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub mod direct_stateful_vector_fixture {
+    include!(concat!(
+        env!("COMPACT_DIRECT_STATEFUL_VECTOR_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub use direct_stateful_vector_fixture::{ledger_contract, ledger_slots, runtime, types};
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+mod direct_stateful_vector_literal_returns;
 
 mod coracle_concede;
 mod coracle_guess;

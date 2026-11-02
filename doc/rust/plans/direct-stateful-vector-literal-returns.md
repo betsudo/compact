@@ -143,3 +143,34 @@ Vector alias carrier helper. No Unit-to-Vector conversion is introduced.
 No native validator, runtime, IR schema, dependency or executor changes. Original
 current compiler, complete current source/API/proof and independent review
 acceptance are still open.
+
+
+## Maintained qualification corpus
+
+`tools/compact-rust-backend/check_direct_stateful_vector_literal_returns.py`
+binds 26 complete stateful sources, their independent and golden full IR, all
+checked Programs and unedited SDKs. The 41 declared cases use an independently
+executed TypeScript oracle and ordinary, recorded, functional native and
+functional recorded Rust APIs. Success checks include typed alignment/results,
+Cell state, private state/output, cross-route effects/gas and recorded replay.
+Failures check the actual first diagnostic; no partial trace or external callback
+rollback is invented. Six marked Rust misuse controls, seven retained frontend
+refusals, malformed native IR including a dead branch and action-as-value, source
+producer changes and a changed oracle result protect the boundaries.
+
+`tools/compact-rust-backend/check_direct_stateful_vector_literal_returns_proof.py`
+runs that whole protocol before proof admission. Its opt-in proof runner includes
+the complete `direct_branch_proofs` SDK and two Programs. It observes every corpus
+export model, then separately enforces k<=8 for selected exports and verifies
+locked material before fresh direct keys. The three selected scenarios are the
+Uint return with constructor state 0 and 1, and the Field return. Each requires a
+standalone proof plus a separately proved funded default-strict application,
+immutable verifier/corruption/binding/same-geometry typed-result controls and
+exact replay refusal. Constructor execution and unselected exports are unproved;
+the complete required integration gates and original N k=9 obligation stay open.
+
+Development execution passes all 41 cases and seven malformed-IR refusals. These
+are development observations, not clean-head qualification or proof acceptance.
+Run the maintained gates using a new output directory and a default current-head
+original compiler receipt. No generated SDK rewriting or source trimming is
+permitted. Full source/receipt reviews and actual proof results remain required.

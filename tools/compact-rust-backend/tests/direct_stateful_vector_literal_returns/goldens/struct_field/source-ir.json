@@ -1,0 +1,141 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "struct_field.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "struct",
+            "name": "Input",
+            "fields": [
+              {
+                "name": "left",
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              },
+              {
+                "name": "right",
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_0",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_0"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "struct_field",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "field": "right",
+                    "index": 1
+                  },
+                  {
+                    "kind": "struct_field",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "field": "left",
+                    "index": 0
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "field"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "struct_field.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ]
+}

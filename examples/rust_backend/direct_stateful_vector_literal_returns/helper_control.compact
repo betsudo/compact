@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary; export ledger seen:Field; pure circuit widen(input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{return [input[1],input[0]];} pure circuit fields(input:Vector<2,Uint<8>>):Vector<2,Field>{return [input[1],input[0]];} export circuit run(input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{seen=1;return widen(input);} export circuit run_field(input:Vector<2,Uint<8>>):Vector<2,Field>{seen=2;return fields(input);}

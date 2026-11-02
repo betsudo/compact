@@ -1,0 +1,268 @@
+[
+  {
+    "source": "alias",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "alias_identity",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u8_vector"
+    }
+  },
+  {
+    "source": "checked",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "conditional_disclosed",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "direct_branch_proofs",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    }
+  },
+  {
+    "source": "direct_proofs",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    }
+  },
+  {
+    "source": "empty",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "empty_vector"
+    }
+  },
+  {
+    "source": "guarded_after",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "guarded_before",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "helper_control",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    }
+  },
+  {
+    "source": "heterogeneous",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u32_vector"
+    }
+  },
+  {
+    "source": "local",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "nested",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "nested_u16"
+    }
+  },
+  {
+    "source": "source_checked",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "state_condition",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "struct_explicit",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "struct_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "field_vector"
+    }
+  },
+  {
+    "source": "struct_identity",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u8_vector"
+    }
+  },
+  {
+    "source": "struct_unsigned",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "vector_explicit",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "vector_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "field_vector"
+    }
+  },
+  {
+    "source": "vector_identity",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u8_vector"
+    }
+  },
+  {
+    "source": "vector_thirteen",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_thirteen"
+    }
+  },
+  {
+    "source": "vector_unsigned",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    }
+  },
+  {
+    "source": "wide_struct",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "wide_vector"
+    }
+  },
+  {
+    "source": "wide_vector",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "wide_vector"
+    }
+  }
+]

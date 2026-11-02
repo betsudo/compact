@@ -57,4 +57,17 @@ fn main() {
         );
         println!("cargo::rustc-cfg=compact_struct_member_literal_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_direct_stateful_vector_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_DIRECT_STATEFUL_VECTOR_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_DIRECT_STATEFUL_VECTOR_LITERAL_RETURNS").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_DIRECT_STATEFUL_VECTOR_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute() && root.join("contract/lib.rs").is_file(),
+            "COMPACT_DIRECT_STATEFUL_VECTOR_GENERATED must name the complete generated SDK"
+        );
+        println!("cargo::rustc-cfg=compact_direct_stateful_vector_generated");
+    }
 }

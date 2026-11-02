@@ -1,0 +1,334 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "first",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "first denied"
+          }
+        ],
+        "value": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "input"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 6,
+        "column": 1
+      }
+    },
+    {
+      "name": "second",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "second denied"
+          }
+        ],
+        "value": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "input"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "a",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "b",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_2",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_2"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "call",
+                      "name": "first",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "a"
+                          },
+                          "ty": {
+                            "kind": "boolean"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "input"
+                          },
+                          "ty": {
+                            "kind": "vector",
+                            "length": 2,
+                            "element": {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "index": 1
+                  },
+                  {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "call",
+                      "name": "second",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "b"
+                          },
+                          "ty": {
+                            "kind": "boolean"
+                          }
+                        },
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "other"
+                          },
+                          "ty": {
+                            "kind": "vector",
+                            "length": 2,
+                            "element": {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "index": 0
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "source_checked.compact",
+        "line": 8,
+        "column": 1
+      }
+    }
+  ]
+}

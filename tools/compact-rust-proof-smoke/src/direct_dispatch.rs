@@ -107,6 +107,33 @@ pub(super) fn try_run(
         ("--struct-member-literal-widening-models", _) => {
             Some(collections::struct_member_literal_widening(arguments, true))
         }
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns", _) => Some(
+            collections::direct_stateful_vector_literal_returns(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns-models", _) => Some(
+            collections::direct_stateful_vector_literal_returns(arguments, true),
+        ),
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::direct_stateful_vector_literal_returns::inventory(std::path::Path::new(&root))
+        })()),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

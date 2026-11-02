@@ -1,0 +1,138 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+    {
+      "name": "Output",
+      "ty": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "source": {
+        "file": "alias_identity.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "alias_identity.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_0",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_0"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "vector",
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              },
+              "elements": [
+                {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 1
+                },
+                {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 0
+                }
+              ]
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "alias_identity.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ]
+}

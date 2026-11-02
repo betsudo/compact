@@ -584,3 +584,24 @@ pub(super) fn struct_member_literal_widening(
         crate::struct_member_literal_widening::run(Path::new(&root))
     }
 }
+
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub(super) fn direct_stateful_vector_literal_returns(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage =
+        "usage: compact-rust-proof-smoke --direct-stateful-vector-literal-returns <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::direct_stateful_vector_literal_returns::models(Path::new(&root))
+    } else {
+        crate::direct_stateful_vector_literal_returns::run(Path::new(&root))
+    }
+}

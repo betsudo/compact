@@ -1,0 +1,6 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+export circuit run(ok:Boolean,input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{if(disclose(ok)){seen=1;return [input[1],input[0]];}else{seen=2;return [input[0],input[1]];}}
