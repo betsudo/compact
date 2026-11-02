@@ -1,0 +1,73 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+    {
+      "name": "Output",
+      "ty": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "source": {
+        "file": "alias_cast.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "parameter",
+          "name": "input"
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        }
+      },
+      "source": {
+        "file": "alias_cast.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

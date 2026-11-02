@@ -104,3 +104,46 @@ IR/Program goldens, an explicit TS runtime and pinned Rust tools with inherited
 compiler/wrapper substitutions refused. Consumers and strict root SDK copies
 are external to the unedited generated bundle. Changed outputs/producers must
 fail actual consumers; the zero-length reducer retains static signature checks.
+
+
+## Local qualification checkpoint and opt-in proof gate
+
+At clean `6101240f4`, the maintained source/API gate passes 91 commands over
+17 complete positive sources and 32 cases (27 pure calls and 20 stateful route
+executions). All 283 historical generated fixtures are fresh. Backend library
+checks and strict Clippy pass. Independent Claude CLI review reports no
+introduced actionable P1/P2 defect; this is static source review, not proof or
+CI acceptance. The two documented legacy operand-order differences remain
+explicit compatibility controls.
+
+The follow-up adds a direct non-Fold transparent Vector alias cast control,
+covering the pure cast dispatch independently. Its original144 TS success and
+Rust refusal, and current164 Rust/IR success, were characterized separately.
+The maintained corpus becomes 18 sources and 33 cases; fresh complete execution
+of that expanded corpus remains required.
+
+The opt-in proof gate is
+`tools/compact-rust-backend/check_fold_vector_result_widening_proof.py`:
+
+```sh
+python3 tools/compact-rust-backend/check_fold_vector_result_widening_proof.py   --compiler-receipt /absolute/original-native/receipt.json   --ts-runtime /absolute/node_modules/@midnight-ntwrk/compact-runtime   --zkir /absolute/bin/zkir --output /absolute/new-proof-evidence
+```
+
+Use Rust 1.99.0 and an absolute `MIDNIGHT_PP` containing the locked upstream
+proof material; `--prepare-only` stops before keys, proofs or applications.
+The gate rechecks the complete current source/API corpus, builds the whole
+unedited helper SDK through an explicit Cargo feature and absolute generated
+bundle, and refuses changed IR/Program membership before keys or state.
+Default and all-features checks work without a generated SDK. Actual model
+inspection at610 gives k8 for both complete helper exports (`run` and
+`run_checked`, 123 and 141 rows). The gate checks the unchanged k<=8 bound and
+locked material before fresh direct keys. A separately compiler-produced
+length8 diagnostic exercises an actual k9 refusal; it cannot replace or trim
+the admitted source.
+
+Acceptance requires two fresh standalone proofs, immutable verification and
+binding/result/corruption/distinct-verifier negatives, plus independently
+proved funded default-strict transactions and unchanged-ledger replay refusal.
+Both helper exports are selected; constructor execution is not proved. Proof
+machinery compilation alone is not this acceptance. Full required arm64/Linux
+CI, reviewed integration and the broader Rust AST goal remain open.

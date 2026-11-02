@@ -740,5 +740,23 @@
     },
     "nativeError": null,
     "seen": null
+  },
+  {
+    "id": "alias_cast",
+    "source": "alias_cast",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
   }
 ]

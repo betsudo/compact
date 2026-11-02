@@ -163,6 +163,8 @@ pure_case!(
     [false, false, vector([7, 7]), vector([9, 8])]
 );
 
+pure_case!(alias_cast, alias_cast, [vector([0, 255])]);
+
 fn replay<T>(
     out: r::recording::RecordedCircuitResult<u64, T>,
 ) -> r::context::CircuitResult<u64, T> {

@@ -45,6 +45,27 @@ mod closed_pure_field;
 mod composite_zswap;
 mod constant_valued_vector_indices;
 mod constant_vector_projection;
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+mod fold_vector_result_fixture {
+    include!(concat!(
+        env!("COMPACT_FOLD_VECTOR_RESULT_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+pub use fold_vector_result_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+mod fold_vector_result_widening;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

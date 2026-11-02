@@ -4,6 +4,10 @@
     "stateful": false
   },
   {
+    "source": "alias_cast",
+    "stateful": false
+  },
+  {
     "source": "aliased",
     "stateful": false
   },

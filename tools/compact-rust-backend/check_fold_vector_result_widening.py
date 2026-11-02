@@ -169,7 +169,7 @@ def main():
 
     try:
         definitions = json.loads((FIXTURES / "sources.json").read_text())
-        require(len(definitions) == 17 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
+        require(len(definitions) == 18 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
         generated = output / "generated"
         snapshots, irs = {}, {}
         report["sources"] = {}
@@ -219,8 +219,8 @@ def main():
         run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
                 "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
         reference = json.loads(ts.read_text())
-        require(reference["status"] == "passed" and len(reference["rows"]) == 32, "incomplete TypeScript oracle")
-        report["typescript"] = {"path": str(ts), "sha256": digest(ts), "cases": 32}
+        require(reference["status"] == "passed" and len(reference["rows"]) == 33, "incomplete TypeScript oracle")
+        report["typescript"] = {"path": str(ts), "sha256": digest(ts), "cases": 33}
         legacy = json.loads((FIXTURES / "legacy-order-baseline.json").read_text())
         require(digest(SOURCES / legacy["source"]) == legacy["source_sha256"], "legacy order control source changed")
         require(sorted(row["id"] for row in reference["rows"] if row["nativeError"]) == sorted(legacy["case_ids"]),
@@ -243,7 +243,7 @@ def main():
         manifest.write_text('[workspace]\n[package]\nname="fold-vector-result-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
-        require("test result: ok. 32 passed; 0 failed; 0 ignored;" in result.stdout, "all32 consumer tests must execute")
+        require("test result: ok. 33 passed; 0 failed; 0 ignored;" in result.stdout, "all33 consumer tests must execute")
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest, "--lib", "--tests", "--", "-D", "warnings"])
         report["strict_sdk_roots"] = {}
         for spec in definitions:
@@ -333,7 +333,7 @@ def main():
         for path, sha in tools.items():
             require(digest(path) == sha, "tool/compiler receipt changed: " + path)
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "clean HEAD changed during qualification")
-        report.update(status="passed", rust_tests=32, pure_routes=27, stateful_routes=20, generated_hashes=snapshots)
+        report.update(status="passed", rust_tests=33, pure_routes=28, stateful_routes=20, generated_hashes=snapshots)
     except Exception as e:
         report.update(status="failed", error=str(e))
         raise

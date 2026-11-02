@@ -503,3 +503,23 @@ pub(super) fn unit_mutation_initializers(
     }
     crate::unit_mutation_initializers::run(Path::new(&root))
 }
+
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+pub(super) fn fold_vector_result_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --fold-vector-result-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::fold_vector_result_widening::models(Path::new(&root))
+    } else {
+        crate::fold_vector_result_widening::run(Path::new(&root))
+    }
+}

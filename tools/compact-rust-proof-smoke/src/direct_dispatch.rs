@@ -51,6 +51,20 @@ pub(super) fn try_run(
         }
         ("--tuple-return-wrappers", _) => Some(collections::tuple_return_wrappers(arguments)),
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
+        #[cfg(all(
+            feature = "fold-vector-result-widening",
+            compact_fold_vector_result_generated
+        ))]
+        ("--fold-vector-result-widening", _) => {
+            Some(collections::fold_vector_result_widening(arguments, false))
+        }
+        #[cfg(all(
+            feature = "fold-vector-result-widening",
+            compact_fold_vector_result_generated
+        ))]
+        ("--fold-vector-result-widening-models", _) => {
+            Some(collections::fold_vector_result_widening(arguments, true))
+        }
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
