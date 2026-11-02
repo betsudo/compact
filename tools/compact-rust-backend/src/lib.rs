@@ -1065,7 +1065,10 @@ impl CompactSignatureLint {
             let nested_product = element.and_then(Self::vector_element).is_some_and(
                 |element| matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2),
             );
-            if wide_product || nested_product {
+            let vector_component = matches!(element, Some(syn::Type::Tuple(product))
+                if product.elems.len() >= 2
+                    && product.elems.iter().any(|ty| Self::vector_element(ty).is_some()));
+            if wide_product || nested_product || vector_component {
                 return true;
             }
             match ty {
@@ -3782,3 +3785,6 @@ mod constructor_prepass;
 
 #[cfg(test)]
 mod named_collection_tests;
+
+#[cfg(test)]
+mod signature_lint_tests;

@@ -1,7 +1,24 @@
 # Stateful Vector products with Vector elements
 
-Status: source-only proposal after V. No next implementation, SDK execution,
-model/key/proof feasibility or integration acceptance is claimed.
+Status: isolated local continuation from reviewed V documentation head
+`0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
+`codex/rust-ast-vector-product-elements`. The first change repairs the observed
+strict signature baseline. Aggregate coercion semantics, SDK execution,
+model/key/proof feasibility and integration acceptance remain open.
+
+## Strict signature baseline repair
+
+A fresh check after restart reproduced all eight `type_complexity` diagnostics
+in the complete unedited compiler177 identity SDK. The signature AST metadata
+owner omitted a Vector whose product has a fixed-Vector component, such as
+`FixedVector<(FixedVector<BoundedUint<255>,2>,BoundedUint<65535>),2>`.
+Compiler178 extends only this existing function/method-scoped style matcher.
+It preserves the complete carrier, signature, body and once-only effects; no
+module/crate allowance, alias erasure or semantic admission change is introduced.
+Focused controls check ordinary functions, Program methods and witness methods,
+the previous supported shapes and unrelated/simple carriers. Full newly emitted
+SDK-root strict validation is required before claiming this baseline repaired.
+Original failures and V's literal execution/proof epochs remain preserved.
 
 ## Actual gap and baseline
 
