@@ -534,10 +534,10 @@ metadata regression; its fix and all failures are retained. Current U API
 regression (144commands/34cases/24roots) and all283current fixtures pass.
 The sole refreshed snapshot adds seven scoped signature style attributes;
 historical complete bytes and compatibility tests remain preserved. Source
-reviews cover their exact epochs. No V model inventory, key generation, genuine proof or application gate has
-run; compiler-emitted ZKIR assets do not establish model sizing or proof
-acceptance. That qualification, independent receipt review and the full slice
-remain open. Existing predecessor proofs retain their own source epochs.
+reviews cover their exact epochs. At that source/API checkpoint, no V model inventory, key generation, genuine
+proof or application gate had run; emitted ZKIR did not establish model sizing
+or proof acceptance. That qualification and independent receipt review remained
+open until the later438bf result below. Existing predecessor proofs retain their own source epochs.
 
 The V successor at438bf now has reviewed bounded local compiler177 qualification:
 the current153-command/25-root/32-case protocol passes, all26export models are
