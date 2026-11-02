@@ -129,7 +129,7 @@ def run(args):
         runner = components["runner"]["snapshot"]
         depfile = built.with_suffix(".d")
         dependencies = depfile.read_text()
-        for path in [generated / "contract/lib.rs", *sorted((generated / "contract/checked-programs").glob("*.json"))]:
+        for path in [main_gate.FIXTURES / "sources.json", generated / "contract/lib.rs", *sorted((generated / "contract/checked-programs").glob("*.json"))]:
             # Cargo's Make depfile escapes spaces; it must track every included file.
             require(str(path).replace(" ", "\\ ") in dependencies, "runner omitted an actual generated SDK/Program dependency")
         report["runner_depfile"] = {"path": str(depfile), "sha256": digest(depfile), "all_generated_includes": True}
@@ -170,10 +170,14 @@ def run(args):
         require(full_models["format"] == "compact-direct-stateful-vector-model-inventory/v1"
                 and [(r["source"], r["circuit"]) for r in full_models["circuits"]]
                 == [(s["source"], entry) for s in definitions for entry in s["entries"]], "complete model roster differs")
-        require(all(type(r["k"]) is int and r["k"] >= 0 and r["selected_for_proof"] == (r["source"] == "direct_branch_proofs") for r in full_models["circuits"]), "model observation differs")
+        by_source = {s["source"]:s for s in definitions}
+        require(all(r["proof_required"] is by_source[r["source"]]["proof_required"]
+                    and (type(r["k"]) is int and r["k"] >= 0 if r["proof_required"] else r["k"] is None)
+                    and r["selected_for_proof"] == (r["source"] == "direct_branch_proofs")
+                    for r in full_models["circuits"]), "model observation/applicability differs")
         require(main_gate.inventory(full_generated) == full_before, "model observation changed producers")
         report["all_source_models"] = full_models
-        report["unproved_exports"] = [r for r in full_models["circuits"] if not r["selected_for_proof"]]
+        report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]
         execute("models", [runner, "--direct-stateful-vector-literal-returns-models", generated], output / "models.json")
         models = json.loads((output / "models.json").read_text())
         require(models["format"] == "compact-direct-stateful-vector-models/v1" and [r["circuit"] for r in models["circuits"]] == ALL_SELECTED_CIRCUITS,

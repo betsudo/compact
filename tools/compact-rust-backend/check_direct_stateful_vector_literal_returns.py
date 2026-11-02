@@ -46,14 +46,15 @@ def inventory(root):
 def source_manifest_snapshot(output, stateful):
     if stateful:
         return generated_manifest_snapshot(output)
-    # Pure-only exports emit no ZKIR or Programs. Authenticate every declared
+    # Witness-only stateful execution has no public ledger proof obligation.
+    # Authenticate every declared
     # asset through the established manifest checker without inventing a proof
     # obligation; stateful helper manifests use the unchanged full checker.
     require(__debug__, "manifest qualification requires Python without -O/-OO")
     check_manifest(output, require_zkir=False)
     path = output / "compiler/contract-manifest.json"
     manifest = json.loads(path.read_text())
-    require("zkir" not in manifest and not (output / "zkir").exists(), "pure-only source acquired ZKIR")
+    require("zkir" not in manifest and not (output / "zkir").exists(), "proof-not-applicable source acquired ZKIR")
     files = {}
     def visit(root, entries):
         for name, entry in entries.items():
@@ -66,10 +67,9 @@ def source_manifest_snapshot(output, stateful):
                 files[str(child.relative_to(output))] = digest(child)
     for directory in ["compiler", "contract"]:
         visit(output / directory, manifest[directory])
-    require(not inventory(output / "contract/checked-programs"), "pure-only source acquired checked Programs")
     return {"manifest_sha256": digest(path), "assets": files,
             "declared_asset_bytes": sum((output / p).stat().st_size for p in files),
-            "proof_applicability": "pure-only; no ZKIR/Programs"}
+            "proof_applicability": "stateful witness-only; explicit not_applicable and no ZKIR"}
 
 
 def check_return_origins(ir, raw):
@@ -217,11 +217,14 @@ def main():
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
                 require({c["name"] for c in caps} == set(spec["entries"])
-                        and all(all(c[k] for k in ["recorded", "observed_call", "proof_required"]) for c in caps), "direct stateful APIs unavailable")
+                        and all(c["recorded"] is True and c["observed_call"] is True
+                                and c["proof_required"] is spec["proof_required"]
+                                and c["recording_status"] == ("available" if spec["proof_required"] else "not_applicable")
+                                for c in caps), "direct stateful APIs unavailable")
             else:
                 require(not caps, "pure-only source unexpectedly acquired ledger proof APIs")
             report["sources"][name] = {"source_sha256": digest(SOURCES / (name + ".compact")),
-                    "manifest": source_manifest_snapshot(target, spec["stateful"]), "programs": programs, "return_conversion_origins": origin_count}
+                    "manifest": source_manifest_snapshot(target, spec["proof_required"]), "programs": programs, "return_conversion_origins": origin_count}
             snapshots[name] = inventory(target)
         modules = output / "node_modules/@midnight-ntwrk"
         modules.mkdir(parents=True)

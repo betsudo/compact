@@ -7,7 +7,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "alias_identity",
@@ -17,7 +18,8 @@
     ],
     "descriptor": {
       "run": "u8_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "checked",
@@ -27,7 +29,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "conditional_disclosed",
@@ -37,7 +40,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "direct_branch_proofs",
@@ -49,7 +53,8 @@
     "descriptor": {
       "run": "u16_vector",
       "run_field": "field_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "direct_proofs",
@@ -61,7 +66,8 @@
     "descriptor": {
       "run": "u16_vector",
       "run_field": "field_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "empty",
@@ -71,7 +77,8 @@
     ],
     "descriptor": {
       "run": "empty_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "guarded_after",
@@ -81,7 +88,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "guarded_before",
@@ -91,7 +99,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "helper_control",
@@ -103,7 +112,8 @@
     "descriptor": {
       "run": "u16_vector",
       "run_field": "field_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "heterogeneous",
@@ -113,7 +123,8 @@
     ],
     "descriptor": {
       "run": "u32_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "local",
@@ -123,7 +134,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "nested",
@@ -133,7 +145,8 @@
     ],
     "descriptor": {
       "run": "nested_u16"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "nonmutating",
@@ -143,7 +156,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "source_checked",
@@ -153,7 +167,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "state_condition",
@@ -163,7 +178,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "struct_explicit",
@@ -173,7 +189,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "struct_field",
@@ -183,7 +200,8 @@
     ],
     "descriptor": {
       "run": "field_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "struct_identity",
@@ -193,7 +211,8 @@
     ],
     "descriptor": {
       "run": "u8_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "struct_unsigned",
@@ -203,7 +222,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "vector_explicit",
@@ -213,7 +233,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "vector_field",
@@ -223,7 +244,8 @@
     ],
     "descriptor": {
       "run": "field_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "vector_identity",
@@ -233,7 +255,8 @@
     ],
     "descriptor": {
       "run": "u8_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "vector_thirteen",
@@ -243,7 +266,8 @@
     ],
     "descriptor": {
       "run": "u16_thirteen"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "vector_unsigned",
@@ -253,7 +277,8 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "wide_struct",
@@ -263,7 +288,8 @@
     ],
     "descriptor": {
       "run": "wide_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "wide_vector",
@@ -273,7 +299,8 @@
     ],
     "descriptor": {
       "run": "wide_vector"
-    }
+    },
+    "proof_required": true
   },
   {
     "source": "witness_literal",
@@ -283,6 +310,7 @@
     ],
     "descriptor": {
       "run": "u16_vector"
-    }
+    },
+    "proof_required": false
   }
 ]

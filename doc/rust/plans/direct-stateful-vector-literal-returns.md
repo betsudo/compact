@@ -209,3 +209,17 @@ The first non-mutating fixture was inferred pure by the compiler and correctly
 refused functional-stateful emission. Its complete failed source is retained.
 The actual impure positive reads the public Cell in a condition without writing
 it; it has a genuine existing stateful API obligation.
+
+
+Current170 development passes43cases/172routes, including the actual two-call
+witness transcript and private-state evolution. All1833native unit tests pass
+with7existingignored; strictnativeClippy passes. All283retained compiler fixtures
+are freshly identical, with no rewriting.
+
+The expanded clean gate correctly exposed an overly broad proof assumption in
+the harness: the witness-only export is recorded/observed but has explicit
+`proof_required:false`, `recording_status:not_applicable` and no ZKIR. Preserve
+that established distinction. Definitions now pin proof applicability explicitly;
+all31exports are inventoried, with30actual models and one explicit non-applicable
+row. The selected direct proofsource still has2requiredexports/3scenarios, and
+28requiredexports remain unproved. No witness-only proof obligation is invented.

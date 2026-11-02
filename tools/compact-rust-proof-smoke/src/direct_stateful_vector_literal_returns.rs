@@ -85,6 +85,19 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
     for source in definitions.as_array().ok_or("invalid source roster")? {
         let name = source["source"].as_str().ok_or("missing source name")?;
         let entries = source["entries"].as_array().ok_or("missing exports")?;
+        let proof_required = source["proof_required"]
+            .as_bool()
+            .ok_or("missing proof applicability")?;
+        if !proof_required {
+            if root.join(name).join("zkir").exists() {
+                return Err("proof-not-applicable source acquired ZKIR".into());
+            }
+            for entry in entries {
+                rows.push(serde_json::json!({"source":name,"circuit":entry,"k":null,
+                    "proof_required":false,"selected_for_proof":false}));
+            }
+            continue;
+        }
         let mut actual = std::fs::read_dir(root.join(name).join("zkir"))?
             .map(|row| row.map(|row| row.file_name()))
             .collect::<Result<Vec<_>, _>>()?;
@@ -108,7 +121,7 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
                 root.join(name).join(format!("zkir/{entry}.zkir")),
             )?))?;
             rows.push(
-                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),
+                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"proof_required":true,
                 "selected_for_proof":name == "direct_branch_proofs"}),
             );
         }
