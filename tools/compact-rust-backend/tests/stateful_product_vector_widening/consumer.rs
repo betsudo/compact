@@ -311,9 +311,11 @@ stateful_case!(
     [],
     [true, FixedVector::new([(u(3), u(100000)), (u(4), u(41))])]
 );
+type WitnessObservation = (u64, Vec<(u128, u128)>, Value);
+
 struct VectorWitness {
     expected_seen: u64,
-    calls: std::cell::RefCell<Vec<(u64, Vec<(u128, u128)>, Value)>>,
+    calls: std::cell::RefCell<Vec<WitnessObservation>>,
 }
 impl VectorWitness {
     fn record(
