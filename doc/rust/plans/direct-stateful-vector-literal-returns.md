@@ -4,7 +4,7 @@
 
 S is admitted on `codex/rust-ast-direct-stateful-vector-literal-returns` from
 reviewed R documentation head `c0b294d3b4dc6372591e38b3d6a28dba8064e6b5`.
-No S implementation is accepted yet. The primary Rust AST goal remains
+Bounded local S qualification is accepted at execution `7ab60b62061a728b3e81f34ae31e9693b1063d41`, with the source/receipt scopes below. The investigation sections retain earlier checkpoint states; the final receipt section records current local acceptance. The primary Rust AST goal remains
 active and incomplete, with local work only. Preserve canonical and every
 R/Q/P/O/N/M predecessor. Forge, publication and cleanup remain excluded.
 
@@ -247,3 +247,56 @@ Parse the actual Make dependency paths and resolve them before membership checks
 retain raw depfile hashes and require every physical SDK/Program/roster include.
 This changes no IR/Program/source normalization or proof binding. Renew the exact
 clean gate before any fresh proof acceptance. All failed bytes remain retained.
+
+
+## Reviewed bounded local qualification — 2026-11-02
+
+Execution `7ab60b62061a728b3e81f34ae31e9693b1063d41` / compiler170 passes the
+default original native recipe and the complete maintained source/API/proof gate.
+The current source gate passes155commands:31complete sources,50cases/200Rust
+routes, actualTS,31strict unedited SDK roots,6marked Rust compile-fail controls,
+7frontend refusals,7native malformed-IR refusals, forged-origin refusal and
+actual failures after two complete producer changes and one oracle-result change.
+Complete independent/golden IR and all Programs remain byte-bound. Current native
+1833unit tests pass with7existingignored; all283retained compiler fixtures are
+fresh with zero rewrites. A separately captured strict native Clippy run at7ab
+pins its actual `-D warnings` command, toolchain and clean source identity.
+
+The34export inventory retains33proof-required models and one explicit witness
+not-applicable row. Selected `direct_branch_proofs.run` is k8/130rows;
+`run_field` is k7/85rows. Locked material is verified before two fresh direct key
+pairs. The three genuine2912B standalone proofs cover Uint initialSeen0 and1,
+and Field initialSeen0. Three separately proved funded default-strict
+transactions are6604/6604/6561B. Corruption, changed public binding, real typed
+same-geometry changed output, opposite immutable verifier and exact
+`IntentAlreadyExists` replay controls pass. Each replay leaves the ledger intact.
+
+Actual Claude source reviews v1–v3 and a separate current-delta/receipt review
+are retained. The final review reports no blocking P1/P2 issue and independently
+rehashes4736pin records, source/frozen Git identities, complete source/tool/key/
+material/output maps and31strict roots. Its low audit duplicate/missing-v5 pin
+is corrected in an author successor packet4751records/4347distinct paths; the
+original reviewed packet remains untouched. Raw Cargo depfile bytes are retained
+in private evidence with the exact admitted digest. This is local engineering
+review and finite qualification, with no broader host-trust or security-audit
+claim. All failed epochs, complete original sources and preceding goldens remain.
+
+Evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-vector-literal-returns-20261102`.
+Current receipts: `original-native-v9/receipt.json`, `proof-v6/receipt.json`,
+`proof-v6/protocol/receipt.json`, `receipt-audit-v1.json`, its corrected successor
+`receipt-audit-v2.json`, `strict-native-clippy-v2/receipt.json`, actual CLI review
+results and the signed documentation bridge. Log/retention hashes are observed
+at closeout; they are not retrospective execution-time attestations.
+
+Constructor execution,31unselected required exports and unenumerated inputs are
+unproved. The full `wide_struct` and `wide_vector` models are k9 and remain
+unproved under the unchanged automatic k<=8 rule. Original N k9 qualification,
+complete required arm64/Linux CI, reviewed integration and the broader backend
+goal remain open. This does not complete deferred Forge work. Canonical1bdf and
+all predecessor stores/results/worktrees remain preserved; cleanup follows
+verified GitHub merge of completed owned work.
+
+The next [stateful Vector value-widening proposal](stateful-vector-value-widening.md)
+is based on a fresh source-only probe. No next-slice implementation is admitted
+by this closeout.

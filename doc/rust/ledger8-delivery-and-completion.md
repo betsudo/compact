@@ -474,12 +474,27 @@ reviewed bounded compiler 167/source/API and two genuine helper proof/applicatio
 receipts at execution `886a69bc5`. Original narrow struct fields and accepted
 output controls are preserved.
 
-The [direct stateful Vector literal proposal](plans/direct-stateful-vector-literal-returns.md)
-records nine complete sources, 54 original-166/current-167 commands and three
-source traces. All eight direct forms remain unsupported at the stateful
-return-context boundary; the full helper control works with six byte-identical
-artifacts. The next repair must preserve direct source/effects and cover both
-carrier construction and implicit whole-body aggregate cast context.
+The [direct stateful Vector literal slice](plans/direct-stateful-vector-literal-returns.md)
+now has reviewed bounded compiler170 qualification at execution `7ab60b620`:
+31complete sources,50cases/200Rust routes,155source/API commands,31strict unedited
+SDK roots and independent refusal/mutation controls. The ordered return owner
+preserves original bounds and action order; the native aggregate owner evaluates
+effectful Vector children once while preserving successful pure Vector ASTs.
+No validator, recording certification, runtime or ABI change is introduced.
+Three genuine proofs cover both direct Uint branch states and the Field export;
+three separately proved funded default-strict applications and immutable negative
+controls pass. All1833native tests pass/7existingignored;283retained compiler
+fixtures are freshly identical. Two unselected wide-input models are k9 and remain
+unproved;31required exports beyond the selected two and all unenumerated inputs
+remain outside proof acceptance. Constructor execution is unproved.
+
+The next [stateful Vector value-widening proposal](plans/stateful-vector-value-widening.md)
+retains eight complete sources/24current170 commands. All five Vector-valued
+helper/parameter/projection widening forms pass TS and fail Rust/independentIR
+on a nested Cell.write; identity-helper, pure-parameter and direct-literal
+controls pass. This is a source-only next-slice proposal, with no new feature or
+proof acceptance. Accepted Fold/Map/projection and prior return work remain
+accepted within their recorded scopes.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before
