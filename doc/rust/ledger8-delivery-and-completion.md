@@ -515,7 +515,7 @@ prebuild-pinned. Current T API qualification passes unchanged IR/Programs; the
 283 fixture and 35 baseline results retain their explicit source/tool bridges.
 The other 22 required U exports remain unproved, including intact `wide_local` k=9.
 
-The next [stateful product-Vector proposal](plans/stateful-product-vector-widening.md)
+The proposal-time [stateful product-Vector baseline](plans/stateful-product-vector-widening.md)
 retains 13 complete sources / 39 current 173 commands. Eleven pass TS: seven valid
 stateful product/empty/nested/helper/Field/Boolean-component/full-proof-source
 forms fail before IR at nested Cell.write; a local product conversion emits IR
@@ -523,6 +523,20 @@ then fails native type checking. Three controls pass all lanes and two frontend
 refusals remain. This is source-only evidence; no new implementation, model or
 proof acceptance is inferred. Existing pure coercion and prior return/local
 binding work stay accepted within their recorded scopes.
+
+The product-Vector successor has a bounded compiler177 source/API stage at
+`2da9c2dbc`:153 commands,25 strict complete unedited SDK roots,32 TS/Rust cases
+with124 stateful executions plus one pure, ten marked misuse/twin pairs, seven
+exact frontend diagnostics, nine malformed-IR controls and complete producer/
+result mutations. It preserves numeric/product bounds and ordered actions with
+both combined nested witness positions. Independent review found a witness bridge
+metadata regression; its fix and all failures are retained. Current U API
+regression (144commands/34cases/24roots) and all283current fixtures pass.
+The sole refreshed snapshot adds seven scoped signature style attributes;
+historical complete bytes and compatibility tests remain preserved. Source
+reviews cover their exact epochs. No V models, keys, proofs or application have
+run; that qualification, independent receipt review and the full slice remain
+open. Existing predecessor proofs retain their own source epochs.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before

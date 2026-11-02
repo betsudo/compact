@@ -236,3 +236,72 @@ official --only/--update. Removing exactly those seven full attribute blocks
 restores the complete old bytes. No source, body, signature, IR, Program or
 historical compatibility test changes. Current no-update283fixture verification
 and the complete current V gate still require passing successor receipts.
+
+## Bounded local source/API stage — compiler177
+
+Execution `2da9c2dbc17c19673c3dba9a457cd05cb8e81e3f` has now passed the
+complete maintained source/API gate. Documentation successors do not create a
+new execution or proof epoch. This closes the source/API stage, not V's full
+qualification or the broader goal.
+
+| Actual local gate | Outcome |
+| --- | --- |
+| Original default177 Nix recipe | Passed; native package `ns8yq0izaz811mj0vjqpypym5p92ccbj` |
+| Complete V source/API gate | 153 commands; 25 unedited SDK roots; 32 cases, 124 stateful Rust executions plus one pure route |
+| Ordinary misuse | Ten marked refusals and ten independently compiled correct-type twins |
+| Untrusted boundaries | Seven exact source/SHA/exit/stdout/stderr refusals; nine malformed-IR controls including dead branch and empty Vector element |
+| Mutation controls | Four complete producer regenerations and a same-geometry result oracle fail the intended consumer assertions |
+| Current U predecessor API | 144 commands; 24 complete SDK roots; 34 cases, 132 stateful routes plus one pure; full independent IR/Programs remain exact |
+| Retained current fixtures | 283 checked, zero stale and zero failed after the sole scoped-attribute snapshot repair |
+| Current focused local checks | 31 macro tests and strict macro/backend Clippy at `8a5719324`; source owners unchanged in the execution successor |
+| Earlier full backend tests | 1,833 passed / seven existing ignored at `1c0623fd4`; retained as that epoch, not relabeled current |
+
+Actual Codex CLI source reviews v1/v3/v4/v5 (`gpt-6-astra`, high) report no
+P1/P2 for their exact original/delta scopes. Review v2 is the real witness bridge
+P2 finding; its failed SDK reproduction and all failed gates remain retained.
+The bridge fix is now exercised by complete before/after-write nested witness
+SDKs in the passing gate. Claude's actual prior429 and explicit reset-window
+observation support the authorized fallback; no fresh Claude approval is claimed.
+These are source reviews, not independent cryptographic or receipt acceptance.
+
+Author stage audit verifies all ten signed Conventional DCO/Assisted-by source
+commits, all657 predecessor refs and 2,247 declared source/tool/generated/root/TS
+receipt pins. This is an author audit, not a supply-chain attestation. Rust route
+gas agreement is not TS gas parity; VM replay checks state/effects, not replay gas.
+Canonical, U and all predecessors/Forge remain preserved and local. No hosted
+run, publication, shared install, merge or cleanup occurred.
+
+Evidence root: `rust-ast-stateful-product-vector-widening-20261102` with
+`source-api-v5/receipt.json`, `current-u-api-v1/receipt.json`,
+`retained-fixture-freshness-v2/receipt.json`, `source-stage-audit-v1.json`,
+`current-snapshot-repair-v1/receipt.json`, actual source reviews and all earlier
+failures. Original compiler/model/proof receipts must retain their own heads.
+
+## Remaining current-slice work
+
+No V model inventory, keys, proofs or ledger application has run. Continue this
+slice before dependent features:
+
+1. Add the bounded opt-in proof adapter at
+   `tools/compact-rust-backend/check_stateful_product_vector_widening_proof.py`
+   and `tools/compact-rust-proof-smoke/src/stateful_product_vector_widening.rs`,
+   with existing guarded build/dispatch owners. Include the complete generated
+   SDK and full source/IR/two Program assets, never extracted or hand-edited code.
+   Preserve default/all-feature builds without SDK configuration.
+2. Pin exact source/backend/tool/Cargo configuration/recipe/generated physical
+   inputs before compilation; retain the actual depfile before shared-target
+   reuse and check each reached worktree input against the prebuild map.
+3. Inventory all26 exports:25 proof-required and one pure. Observe every complete
+   model before selecting `proofs.run` and `run_field`; do not infer k. Retain
+   every complete over-cap source/model. Automatic k<=8 is unchanged; no trim,
+   cap increase, forced generation or proof feasibility claim.
+4. Verify locked proving parameters before any fresh selected keys. Execute both
+   Uint helper branches and the Field product export with genuine standalone
+   proofs and separately proved funded default-strict transactions. Keep immutable
+   wrong-verifier, corruption, binding, real typed same-geometry result and
+   unchanged-state replay refusal controls. Selected proofs do not prove
+   constructors, unselected exports or all inputs.
+5. Obtain independent source and separate receipt/premise reviews of the actual
+   completed epoch, then update signed docs, verified Obsidian process and CAS.
+   Complete required CI/Linux/integration remains a later authorized gate.
+   No Forge, publication or cleanup is admitted by this local stage.
