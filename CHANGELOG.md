@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.168, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Retain the declared Vector context for direct stateful literal returns. Use
+  existing ordered return plans for the complete action sequence and apply
+  frontend-supplied aggregate casts after reaching their original source value.
+  Preserve empty literal construction, intermediate bounds and condition order;
+  reuse existing checked coercion and Rust AST owners without an IR/runtime ABI
+  change.
+
 ## [Toolchain 0.31.167, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

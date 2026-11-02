@@ -118,3 +118,28 @@ continuations. The native planner already supports bounded, nonempty
 Tuple-to-Vector coercion. Investigate reuse of that relation after source actions;
 no new conversion relation is needed. Empty literals and explicit checked casts
 require actual characterization before selecting their construction path.
+
+
+## Baseline and implementation decision
+
+The signed clean S baseline passes 32 coercion, projection, order, historical
+Vector and stateful-return guard tests. Expanded original-167 characterization
+retains 33 complete sources and 99 commands: 26 TS-valid sources, 25 Rust
+mismatches and one accepted helper control, plus seven frontend refusals. The
+private conditional remains a privacy refusal; a separate disclosed version is
+positive. Whole-vector narrowing remains refused. Empty, nested, heterogeneous,
+wide, alias and 13-element cases are preserved. The direct proof source has an
+explicit constructor state so both branch outcomes can be qualified.
+
+Compiler 168 selects the existing ordered return plan for Vector-result literal
+tails. Actual literal syntax is inspected only for frontend routing; native and
+recording admission remain independent. Helper calls retain their old route.
+The supplied source type is carried through aggregate casts as the expected
+source value; the existing checked coercion is applied as a continuation after
+actions. This retains intermediate casts and evaluates conditions once. Identity
+and empty literals use the existing typed Vector builder, with the existing
+Vector alias carrier helper. No Unit-to-Vector conversion is introduced.
+
+No native validator, runtime, IR schema, dependency or executor changes. Original
+current compiler, complete current source/API/proof and independent review
+acceptance are still open.

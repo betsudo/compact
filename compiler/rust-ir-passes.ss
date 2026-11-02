@@ -1801,7 +1801,12 @@
            ;; The checked aggregate coercion owner binds the reached tuple
            ;; once and converts its components in order.
            (object (cons "kind" "coerce") (cons "value" value)
-                   (cons "ty" (type-ir target src)))]))
+                   (cons "ty" (type-ir target src)))]
+          [(tvector ,src ,len ,type)
+           (object (cons "kind" "coerce") (cons "value" value)
+                   (cons "ty" (type-ir target src)))]
+          [(talias ,src ,nominal? ,type-name ,type)
+           (return-widening-ir type value)]))
 
       ;; Preserve a terminal conditional and its selected storage mutations in
       ;; one ordered return body. Re-evaluating its condition after a mutation
@@ -1841,6 +1846,24 @@
           [(talias ,src ,nominal? ,type-name ,type)
            (unit-return-type? type)]
           [else #f]))
+
+      ;; This selects the existing ordered return owner, not recording
+      ;; admission. Keep the declared Vector context on actual literal tails;
+      ;; helper calls retain their existing action/return representation.
+      (define (stateful-vector-literal-return? expr result-type)
+        (and
+          (nanopass-case (Lnodisclose Type) (vector-carrier-type result-type)
+            [(tvector ,src ,len ,type) #t]
+            [else #f])
+          (let loop ([expr expr])
+            (nanopass-case (Lnodisclose Expression) expr
+              [(return ,src ,expr) (loop expr)]
+              [(safe-cast ,src ,type ,type^ ,expr) (loop expr)]
+              [(let* ,src ([,local* ,expr*] ...) ,expr) (loop expr)]
+              [(seq ,src ,expr* ... ,expr) (loop expr)]
+              [(if ,src ,expr0 ,expr1 ,expr2) (or (loop expr1) (loop expr2))]
+              [(tuple ,src ,tuple-arg* ...) #t]
+              [else #f]))))
 
       ;; A Unit binding has one possible value, but its initializer may still
       ;; select and execute storage effects. Preserve those effects before the
@@ -1908,9 +1931,11 @@
       (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids finish)
         (nanopass-case (Lnodisclose Expression) expr
           [(safe-cast ,src ,type ,type^ ,expr^)
-           (if (return-value-widening? type type^)
-               ;; Carry the conversion as a continuation, rather than moving
-               ;; it ahead of actions or evaluating the condition twice.
+           (if (or (return-value-widening? type type^)
+                   (stateful-vector-literal-return? expr^ type))
+               ;; Reach the original source value after its actions, then
+               ;; apply the existing checked conversion exactly once. The
+               ;; supplied source type retains intermediate casts and guards.
                (stateful-return-plan-ir expr^ type^ src environment witness-ids
                  (lambda (value)
                    (finish (return-widening-ir type value))))
@@ -2659,7 +2684,9 @@
                                  [(,var-name ,type)
                                   (cons var-name (object (cons "kind" "parameter")
                                                         (cons "name" (rust-var-name var-name))))])) arg*)]
-                      [effectful-return? (or (has-unit-mutation-initializer? expr)
+                      [vector-literal-return? (stateful-vector-literal-return? expr type)]
+                      [effectful-return? (or vector-literal-return?
+                                             (has-unit-mutation-initializer? expr)
                                              (and (not (unit-return-type? type))
                                                   (or (terminal-storage-mutation-conditional? expr)
                                                       (lexical-storage-mutation-return? expr))))]
@@ -2678,7 +2705,8 @@
                                           (if effectful-return?
                                               (object (cons "kind" "effectful")
                                                       (cons "body"
-                                                            (stateful-return-plan-ir expr type src
+                                                            (stateful-return-plan-ir expr
+                                                              (if vector-literal-return? (vector-carrier-type type) type) src
                                                               (map (lambda (arg)
                                                                      (nanopass-case (Lnodisclose Argument) arg
                                                                        [(,var-name ,type)
