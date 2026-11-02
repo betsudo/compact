@@ -16,9 +16,36 @@ Compiler178 extends only this existing function/method-scoped style matcher.
 It preserves the complete carrier, signature, body and once-only effects; no
 module/crate allowance, alias erasure or semantic admission change is introduced.
 Focused controls check ordinary functions, Program methods and witness methods,
-the previous supported shapes and unrelated/simple carriers. Full newly emitted
-SDK-root strict validation is required before claiming this baseline repaired.
-Original failures and V's literal execution/proof epochs remain preserved.
+the previous supported shapes and unrelated/simple carriers. At signed
+`b006f92313a821283c9609c032045403b575b84e`, both focused tests and strict
+all-target/all-feature backend Clippy pass. Original compiler178 builds through
+the unchanged Nix recipe. All three newly emitted, complete unedited control SDK
+roots pass strict all-target/all-feature Clippy. Their complete IR, raw origins
+and checked Programs are byte-identical to their compiler177 counterparts;
+generated Rust differs only by the exact reasoned signature attributes (one on
+the pure control, nine on stateful identity, zero on the prior V control).
+Only the separate Cargo.lock is resolved after generation. This repairs the
+observed strict-compilation baseline; it is not new SDK route execution or proof
+acceptance. Actual Claude CLI source review reports no P1/P2. Original failures
+and V's literal execution/proof epochs remain preserved.
+
+Local receipts are retained under
+`rust-ast-vector-product-elements-20261102`: `baseline-identity-v1.json`,
+`original-native-v1/receipt.json`, `signed-source-tests-v1.json`,
+`focused-checks-v1.json`, `fresh-control-roots-v1/receipt.json` and
+`local-claude-source-review-v1.json`. Broader fixture and separate receipt-review
+results remain separate gates with their own recorded outcomes.
+
+### Next semantic owner
+
+Read-only inspection confirms that `vector-value-widening?` checks product
+components with `scalar-widening?`, excluding a fixed-Vector component. The same
+relation selects ordered local binding and returned-value evaluation. Extend
+this existing relation only for characterized Vector components after tracing
+the actual supplied casts. Check whether selecting the existing ordered owner
+also resolves the two legacy plain witness-call failures before adding a dispatch
+rule. Preserve original child bounds, exact dimensions, single evaluation and
+witness identities; arbitrary tuple/nominal support remains excluded.
 
 ## Actual gap and baseline
 
