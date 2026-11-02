@@ -133,7 +133,7 @@ stateful_case!(
     state_condition,
     state_condition,
     run,
-    [],
+    [Field::from(0_u64)],
     [FixedVector::new([u(0), u(255)])]
 );
 stateful_case!(
@@ -405,7 +405,7 @@ stateful_case!(
     nonmutating,
     nonmutating,
     run,
-    [],
+    [Field::from(0_u64)],
     [FixedVector::new([u(0), u(255)])]
 );
 
@@ -483,3 +483,61 @@ fn witness_literal() {
         }
     }
 }
+
+stateful_case!(
+    nonmutating_else,
+    nonmutating,
+    run,
+    [Field::from(1_u64)],
+    [FixedVector::new([u(0), u(255)])]
+);
+stateful_case!(
+    state_condition_else,
+    state_condition,
+    run,
+    [Field::from(1_u64)],
+    [FixedVector::new([u(0), u(255)])]
+);
+stateful_case!(
+    mixed_helper_true,
+    mixed_helper,
+    run,
+    [],
+    [true, FixedVector::new([u(0), u(255)])]
+);
+stateful_case!(
+    mixed_helper_false,
+    mixed_helper,
+    run,
+    [],
+    [false, FixedVector::new([u(0), u(255)])]
+);
+stateful_case!(
+    mixed_parameter_true,
+    mixed_parameter,
+    run,
+    [],
+    [
+        true,
+        FixedVector::new([u(7), u(60000)]),
+        FixedVector::new([u(0), u(255)])
+    ]
+);
+stateful_case!(
+    mixed_parameter_false,
+    mixed_parameter,
+    run,
+    [],
+    [
+        false,
+        FixedVector::new([u(7), u(60000)]),
+        FixedVector::new([u(0), u(255)])
+    ]
+);
+stateful_case!(
+    ledger_read_literal,
+    ledger_read_literal,
+    run,
+    [Field::from(5_u64)],
+    []
+);

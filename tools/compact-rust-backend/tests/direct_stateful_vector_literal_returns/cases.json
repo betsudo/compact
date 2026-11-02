@@ -124,7 +124,9 @@
       ]
     ],
     "initialSeen": "0",
-    "constructor": [],
+    "constructor": [
+      "0"
+    ],
     "expected": [
       "255",
       "0"
@@ -796,7 +798,9 @@
       ]
     ],
     "initialSeen": "0",
-    "constructor": [],
+    "constructor": [
+      "0"
+    ],
     "expected": [
       "255",
       "0"
@@ -820,5 +824,144 @@
       "3",
       "4"
     ]
+  },
+  {
+    "id": "nonmutating_else",
+    "source": "nonmutating",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "1",
+    "constructor": [
+      "1"
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "state_condition_else",
+    "source": "state_condition",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "1",
+    "constructor": [
+      "1"
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "2"
+  },
+  {
+    "id": "mixed_helper_true",
+    "source": "mixed_helper",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "mixed_helper_false",
+    "source": "mixed_helper",
+    "entry": "run",
+    "args": [
+      false,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "2"
+  },
+  {
+    "id": "mixed_parameter_true",
+    "source": "mixed_parameter",
+    "entry": "run",
+    "args": [
+      true,
+      [
+        "7",
+        "60000"
+      ],
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "1"
+  },
+  {
+    "id": "mixed_parameter_false",
+    "source": "mixed_parameter",
+    "entry": "run",
+    "args": [
+      false,
+      [
+        "7",
+        "60000"
+      ],
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "initialSeen": "0",
+    "constructor": [],
+    "expected": [
+      "7",
+      "60000"
+    ],
+    "seen": "2"
+  },
+  {
+    "id": "ledger_read_literal",
+    "source": "ledger_read_literal",
+    "entry": "run",
+    "args": [],
+    "initialSeen": "5",
+    "constructor": [
+      "5"
+    ],
+    "expected": [
+      "5",
+      "5"
+    ],
+    "seen": "5"
   }
 ]

@@ -133,7 +133,7 @@ explicit constructor state so both branch outcomes can be qualified.
 
 Compiler 168 selects the existing ordered return plan for Vector-result literal
 tails. Actual literal syntax is inspected only for frontend routing; native and
-recording admission remain independent. Helper calls retain their old route.
+recording admission remain independent. Helper-only roots retain their old route; mixed conditionals use one ordered body.
 The supplied source type is carried through aggregate casts as the expected
 source value; the existing checked coercion is applied as a continuation after
 actions. This retains intermediate casts and evaluates conditions once. Identity
@@ -148,8 +148,8 @@ acceptance are still open.
 ## Maintained qualification corpus
 
 `tools/compact-rust-backend/check_direct_stateful_vector_literal_returns.py`
-binds 28 complete stateful/impure sources, their independent and golden full IR, all
-checked Programs and unedited SDKs. The 43 declared cases use an independently
+binds 31 complete stateful/impure sources, their independent and golden full IR, all
+checked Programs and unedited SDKs. The 50 declared cases use an independently
 executed TypeScript oracle and ordinary, recorded, functional native and
 functional recorded Rust APIs. Success checks include typed alignment/results,
 Cell state, private state/output, cross-route effects/gas and recorded replay.
@@ -169,7 +169,7 @@ immutable verifier/corruption/binding/same-geometry typed-result controls and
 exact replay refusal. Constructor execution and unselected exports are unproved;
 the complete required integration gates and original N k=9 obligation stay open.
 
-Initial development execution passes all 41 storage cases and seven malformed-IR refusals. These
+The initial 168 development epoch passed all 41 then-declared storage cases and seven malformed-IR refusals. These
 are development observations, not clean-head qualification or proof acceptance.
 Run the maintained gates using a new output directory and a default current-head
 original compiler receipt. No generated SDK rewriting or source trimming is
@@ -220,6 +220,18 @@ The expanded clean gate correctly exposed an overly broad proof assumption in
 the harness: the witness-only export is recorded/observed but has explicit
 `proof_required:false`, `recording_status:not_applicable` and no ZKIR. Preserve
 that established distinction. Definitions now pin proof applicability explicitly;
-all31exports are inventoried, with30actual models and one explicit non-applicable
+all34exports are inventoried, with33actual models and one explicit non-applicable
 row. The selected direct proofsource still has2requiredexports/3scenarios, and
-28requiredexports remain unproved. No witness-only proof obligation is invented.
+31requiredexports remain unproved. No witness-only proof obligation is invented.
+
+
+Fresh Claude v2 source review confirmed the native/frontend repair and identified
+finite missing controls. The corpus now includes literal/helper and
+literal/parameter mixed returns on both branches, public-read Vector children,
+and constructor-controlled else outcomes for the no-write and state-condition
+sources. Only helper-only roots preserve their legacy route; mixed bodies use a
+single ordered owner. Complete current tests/proofs and final review are pending.
+The failed inferred-pure source is external retained evidence at
+`/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-vector-literal-returns-20261102/development-api-v2/nonmutating-failed-source.compact`.
+
+Current170 expanded development executes all50cases/200routes and real TS outcomes, including all fresh review controls. The complete31sources have34exports:33required models and one explicitly non-applicable witness-only export. Selected proof coverage remains two direct exports with three scenarios;31requiredexports are unproved. Clean gate/proofs/current review are pending.

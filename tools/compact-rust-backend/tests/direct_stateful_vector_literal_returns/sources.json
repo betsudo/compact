@@ -127,7 +127,40 @@
     "proof_required": true
   },
   {
+    "source": "ledger_read_literal",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "field_vector"
+    },
+    "proof_required": true
+  },
+  {
     "source": "local",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "mixed_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": {
+      "run": "u16_vector"
+    },
+    "proof_required": true
+  },
+  {
+    "source": "mixed_parameter",
     "stateful": true,
     "entries": [
       "run"

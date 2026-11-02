@@ -150,9 +150,35 @@
       ],
       "source": {
         "file": "nonmutating.compact",
-        "line": 6,
+        "line": 7,
         "column": 1
       }
     }
-  ]
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "initialSeen",
+        "ty": {
+          "kind": "field"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "cell_write",
+        "field": "seen",
+        "index": 0,
+        "value": {
+          "kind": "parameter",
+          "name": "initialSeen"
+        }
+      }
+    ],
+    "source": {
+      "file": "nonmutating.compact",
+      "line": 6,
+      "column": 1
+    }
+  }
 }

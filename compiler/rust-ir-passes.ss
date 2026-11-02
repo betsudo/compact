@@ -1849,7 +1849,8 @@
 
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
-      ;; helper calls retain their existing action/return representation.
+      ;; helper-only roots retain their existing action/return representation.
+      ;; A mixed conditional is one ordered body, including its helper branch.
       (define (stateful-vector-literal-return? expr result-type)
         (and
           (nanopass-case (Lnodisclose Type) (vector-carrier-type result-type)

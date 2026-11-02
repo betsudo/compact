@@ -174,10 +174,10 @@ def main():
 
     try:
         definitions = json.loads((FIXTURES / "sources.json").read_text())
-        require(len(definitions) == 28 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
+        require(len(definitions) == 31 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
         cases = json.loads((FIXTURES / "cases.json").read_text())
         case_count = len(cases)
-        require(case_count == 43 and len({r["id"] for r in cases}) == case_count, "case roster differs")
+        require(case_count == 50 and len({r["id"] for r in cases}) == case_count, "case roster differs")
         stateful_sources = {r["source"] for r in definitions if r["stateful"]}
         require({r["source"] for r in cases} == {r["source"] for r in definitions}, "a complete source has no consumer")
         stateful_cases = sum(r["source"] in stateful_sources for r in cases)
@@ -289,7 +289,7 @@ def main():
         env["COMPACT_DIRECT_STATEFUL_VECTOR_TS"] = str(ts)
         report["source_mutations"] = {}
         for name, old, new, test in [
-                ("vector_unsigned", "return [input.right,input.left];", "return [input.left,input.right];", "vector_unsigned"),
+                ("vector_unsigned", "return [input[1],input[0]];", "return [input[0],input[1]];", "vector_unsigned"),
                 ("source_checked", 'assert(ok,"first denied");', '', "both_denied")]:
             # Mutate a complete producer, then regenerate it. No generated Rust
             # or expected results are edited. The second producer intentionally
