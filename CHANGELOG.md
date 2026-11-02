@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.165, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve checked widening when a pure Vector source is typed through an alias,
+  including alias chains and explicit frontend-approved casts. Reuse existing
+  Coerce validation and Rust AST emission; preserve identity-alias output and
+  nominal frontend refusals without changing other alias families or stateful
+  expected-type ingress.
+
 ## [Toolchain 0.31.164, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

@@ -86,3 +86,24 @@ new proof framework, refactoring, CI optimization, Forge and publication.
    and receipt review; verified Obsidian process updates and checkpoint CAS.
    Focused local validation during iteration; all required arm64/Linux CI and
    reviewed integration stay required for later integration.
+
+
+## Baseline, characterization and implementation boundary
+
+At signed plan cf388f8b2 the focused20 coercion/Fold/historical Vector checks
+pass. Actual pure variable ingress is byte-identical across canonical, held
+scalar/aggregate, M, N and O owners: it has no actual-source Vector alias case.
+The corrected22-source/66-command original164 characterization has18TS-valid
+sources:13Rust mismatches and5 accepted controls, plus4frontend refusals in all
+three lanes. The initial run applied functional flags to pure-only sources;
+its extra boundary refusals remain diagnostic evidence, not semantic failures.
+
+The change adds only the missing alias case under the existing pure expected
+Vector variable owner. It resolves the source's Vector carrier and delegates
+conversion to existing Coerce. If alias-erased actual and target types already
+match, it returns the original expression so accepted identity outputs remain
+unchanged. NonVector aliases retain their old owner. The shared frontend still
+checks nominal legality before this phase; explicit nominal casts are covered,
+illegal implicit nominal conversion remains a required refusal. Scalar, tuple
+and stateful expected ingress are unchanged. Compiler165 metadata identifies
+this source; no runtime ABI, IR schema, dependency or executor is added.

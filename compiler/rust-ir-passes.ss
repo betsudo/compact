@@ -941,6 +941,19 @@
                       [else (expression-ir expr owner-src)])]
                    [(tvector ,src^ ,len ,type)
                     (nanopass-case (Lnodisclose Type) actual-type
+                      [(talias ,src1 ,nominal? ,type-name ,type1)
+                       ;; Frontend typing retains nominal/implicit-cast authority.
+                       ;; Only a Vector source carrier needs the existing Coerce;
+                       ;; retain the original identity-alias IR unchanged.
+                       (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
+                         [(tvector ,src2 ,len2 ,type2)
+                          (if (equal? (type-ir actual-type src)
+                                      (type-ir expected-type src))
+                              (expression-ir expr owner-src)
+                              (object (cons "kind" "coerce")
+                                      (cons "value" (expression-ir expr src))
+                                      (cons "ty" (type-ir expected-type src))))]
+                         [else (expression-ir expr owner-src)])]
                       [(tvector ,src1 ,len1 ,type1)
                        (object (cons "kind" "coerce")
                                (cons "value" (expression-ir expr src))
