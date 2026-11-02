@@ -1,4 +1,4 @@
-# Next proposal: typed Vector widening in stateful local bindings
+# Typed Vector widening in stateful local bindings
 
 ## Concrete gap and accepted boundaries
 
@@ -83,3 +83,13 @@ source extraction, generated-code editing or proof/verdict caching. Constructor,
 all-input and unselected proof coverage remains explicit. No Forge work,
 publication or cleanup is authorized by this local proposal. The broad Rust AST
 goal remains incomplete; no implementation has started on this next slice.
+
+
+## Admission
+
+U is admitted separately on `codex/rust-ast-stateful-local-vector-widening`
+from reviewed T documentation `573ce6d2edfea6e59e7f7d816e2f97c7ba148a7e`.
+The exact current checkpoint, refs/worktrees, clean canonical and clean T
+predecessor were inspected first. All predecessor branches and evidence remain
+untouched. Focused clean baseline and actual binding/cast owner tracing are next;
+no U implementation, current compiler, API, model or proof acceptance is claimed.
