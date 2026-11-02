@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.164, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Apply the existing checked Vector conversion after a complete named pure
+  Fold when its enclosing declaration requires a wider numeric Vector result.
+  Preserve the original accumulator/reducer bounds and legacy operand order.
+- Resolve Vector alias carriers at expected-type and pure cast ingress,
+  including reducer Vector literals; unrelated alias families keep their owners.
+
 ## [Toolchain 0.31.144, language 0.23.105, runtime 0.16.102]
 
 ### Added

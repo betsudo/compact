@@ -434,6 +434,16 @@
                 `(tunsigned ,(type-origin type) ,maximum))
               type)))
 
+      ;; type-ir erases aliases to their Vector carrier. Use that carrier
+      ;; for expected Vector context and cast dispatch, including reducer
+      ;; Vector literals. Other alias families retain their current owners.
+      (define (vector-carrier-type type)
+        (let loop ([value type])
+          (nanopass-case (Lnodisclose Type) value
+            [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+            [(tvector ,src ,len ,type^) value]
+            [else type])))
+
       ;; arithmetic-binop annotates both operands with the result bound.
       ;; For multiplication by zero that bound is smaller than an operand's;
       ;; this safe-cast is erased by the circuit pipeline, not a checked
@@ -590,7 +600,7 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
+           (nanopass-case (Lnodisclose Type) (vector-carrier-type (unsigned-canonical-type type))
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
                 (if value
@@ -883,13 +893,32 @@
                        (cons "right" (field-argument-ir expr2 src))))]
           [else (source-errorf owner-src "Rust backend does not yet support this circuit expression")]))
 
+      ;; Conditional arms already supply an outer Coerce. Keep a Fold's
+      ;; original accumulator there instead of adding a redundant wrapper.
+      (define (typed-coercion-value-ir expr expected-type owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (expression-ir expr owner-src)]
+          [else (typed-expression-ir expr expected-type owner-src)]))
+
       (define (typed-expression-ir expr expected-type owner-src)
         (call-with-rust-origin "expression" (expression-origin expr) #t
-          (lambda () (typed-expression-ir-value expr (unsigned-canonical-type expected-type) owner-src)) (expression-operation-origin expr)))
+          (lambda () (typed-expression-ir-value expr (vector-carrier-type (unsigned-canonical-type expected-type)) owner-src)) (expression-operation-origin expr)))
 
       (define (typed-expression-ir-value expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src)]
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           ;; Lower the complete Fold at its supplied accumulator type first.
+           ;; Its reducer and guards retain that type; independent existing
+           ;; Coerce owners validate any declared Vector result conversion.
+           (let* ([value (expression-ir expr owner-src)]
+                  [actual (type-ir type0 src)]
+                  [target (type-ir expected-type src)])
+             (if (and (equal? (cdr (assoc "kind" target)) "vector")
+                      (not (equal? actual target)))
+                 (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
+                 value))]
           [(var-ref ,src ,var-name)
            (let ([actual-type (and (current-variable-types)
                                    (eq-hashtable-ref (current-variable-types) var-name #f))])
@@ -972,10 +1001,10 @@
            (object (cons "kind" "if")
                    (cons "condition" (expression-ir expr0 src))
                    (cons "then" (object (cons "kind" "coerce")
-                                        (cons "value" (typed-expression-ir expr1 expected-type src))
+                                        (cons "value" (typed-coercion-value-ir expr1 expected-type src))
                                         (cons "ty" (type-ir expected-type src))))
                    (cons "otherwise" (object (cons "kind" "coerce")
-                                             (cons "value" (typed-expression-ir expr2 expected-type src))
+                                             (cons "value" (typed-coercion-value-ir expr2 expected-type src))
                                              (cons "ty" (type-ir expected-type src)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
