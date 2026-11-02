@@ -108,6 +108,27 @@ pub use aggregate_literal_projection_fixture::{ledger_contract, ledger_slots, pu
 ))]
 mod aggregate_literal_projection_widening;
 
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+pub mod struct_member_literal_fixture {
+    include!(concat!(
+        env!("COMPACT_STRUCT_MEMBER_LITERAL_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+pub use struct_member_literal_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime, types};
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+mod struct_member_literal_widening;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

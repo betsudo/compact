@@ -93,6 +93,20 @@ pub(super) fn try_run(
         ("--aggregate-literal-projection-widening-models", _) => Some(
             collections::aggregate_literal_projection_widening(arguments, true),
         ),
+        #[cfg(all(
+            feature = "struct-member-literal-widening",
+            compact_struct_member_literal_generated
+        ))]
+        ("--struct-member-literal-widening", _) => Some(
+            collections::struct_member_literal_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "struct-member-literal-widening",
+            compact_struct_member_literal_generated
+        ))]
+        ("--struct-member-literal-widening-models", _) => {
+            Some(collections::struct_member_literal_widening(arguments, true))
+        }
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

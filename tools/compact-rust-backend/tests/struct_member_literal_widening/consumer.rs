@@ -44,7 +44,7 @@ fn check<T: Into<r::fab::AlignedValue>>(result: Result<T, r::CompactError>, row:
 fn u<const M: u128>(value: u128) -> BoundedUint<M> {
     BoundedUint::new(value).unwrap()
 }
-fn wide(low: u128, high: u8) -> WideUint<1, { u128::MAX }> {
+fn wide_value(low: u128, high: u8) -> WideUint<1, { u128::MAX }> {
     let mut bytes = low.to_le_bytes().to_vec();
     bytes.push(high);
     WideUint::from_le_bytes(&bytes).unwrap()
@@ -77,8 +77,8 @@ pure_case!(
     wide,
     wide,
     [wide::types::Input {
-        left: wide(0, 1),
-        right: wide(u128::MAX, 1)
+        left: wide_value(0, 1),
+        right: wide_value(u128::MAX, 1)
     }]
 );
 pure_case!(product, product, [input!(product, 0, 255)]);

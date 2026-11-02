@@ -75,3 +75,28 @@ TS descriptors include actual struct output field order and Uint/Field carriers.
 Five marked Rust refusals,5frontend refusals,6native malformed controls, complete
 producer mutations, strict SDK roots and Cargo config identity are required.
 Development36-command generation alone is not clean-head API/proof acceptance.
+
+
+## Retained fixture repair and complete struct SDK proof preparation
+
+The first current source/API execution atc198 retains its failure: the test
+wide and a local wide() constructor helper collide. Renaming only that helper
+to wide_value makes all28consumer tests and strict consumer Clippy pass in an
+external development copy; complete emitted SDK bytes remain unchanged. This
+is not clean-head API acceptance. The maintained harness carries the same fix.
+All6malformed nativeIR controls independently reject at the exact existing
+field/index/type/conversion/geometry owners, including an unselected true branch.
+The historical283fixture freshness,1830backend tests(7pre-existing ignored) and
+strict backend Clippy pass atc198.
+
+The separate opt-in struct-member-literal-widening proof runner includes the
+whole unmodified generated helper SDK and both Programs. It exposes the actual
+generated types module at the include root, preserving types::Input and its
+narrow fields. Each native/recorded/functional route reconstructs that declared
+Input struct; no vector substitution or generated-code editing is used. Both
+result carriers remain Uint16/Field, with same-geometry real-carrier result
+negatives, immutable verifier and independently proved funded default-strict
+transactions/replay controls. Full exact-head current source/API, SDK and runner
+checks, allmodels, locked material before freshkeys and authentic source/receipt
+reviews remain required. A distinct full Fold k9 diagnostic is only a pre-key
+cap refusal; no admitted source or older k9 requirement is substituted.
