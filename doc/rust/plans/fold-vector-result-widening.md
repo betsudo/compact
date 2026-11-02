@@ -13,6 +13,10 @@ compiled Vector coercion controls, two call/Fold signature/order controls and
 five historical Vector-widen consumer tests. No baseline regression was found.
 This is focused local evidence, not a full CI or proof qualification.
 
+Current local status: bounded source/API and both selected helper proof/application
+checks pass at literal f75de428d; see the dated closeout below. Full CI and
+integration remain open. Earlier execution sections retain their own epochs.
+
 ## Concrete gap and accepted controls
 
 The prior candidate's `next-fold-result-characterization-v2/receipt.json` contains six complete sources and 36 original compiler commands: TypeScript, Rust and independent Scheme IR for each source under original compiler 0.31.144 and current 0.31.163. All six sources are accepted by TS. Named scalar Fold results already widen to Uint and Field, including zero iterations and local/conditional controls. Do not reopen those accepted capabilities or historical Fold input widening.
@@ -53,7 +57,7 @@ The held aggregate-return candidate changes stateful whole-body return context,
 while this gap is the pure expected-result ingress before it. Existing ADR0330
 owns fallible Vector conversion rendering, source-once evaluation, first failure
 and bounded output size; reuse those owners and historical tests unchanged.
-Any transparent Vector alias cast-dispatch repair must be scoped and tested at
+Any Vector alias carrier cast-dispatch repair must be scoped and tested at
 this same ingress; it must not broaden unrelated casts.
 
 ## Execution plan
@@ -126,7 +130,10 @@ The opt-in proof gate is
 `tools/compact-rust-backend/check_fold_vector_result_widening_proof.py`:
 
 ```sh
-python3 tools/compact-rust-backend/check_fold_vector_result_widening_proof.py   --compiler-receipt /absolute/original-native/receipt.json   --ts-runtime /absolute/node_modules/@midnight-ntwrk/compact-runtime   --zkir /absolute/bin/zkir --output /absolute/new-proof-evidence
+python3 tools/compact-rust-backend/check_fold_vector_result_widening_proof.py \
+  --compiler-receipt /absolute/original-native/receipt.json \
+  --ts-runtime /absolute/node_modules/@midnight-ntwrk/compact-runtime \
+  --zkir /absolute/bin/zkir --output /absolute/new-proof-evidence
 ```
 
 Use Rust 1.99.0 and an absolute `MIDNIGHT_PP` containing the locked upstream
@@ -147,3 +154,71 @@ proved funded default-strict transactions and unchanged-ledger replay refusal.
 Both helper exports are selected; constructor execution is not proved. Proof
 machinery compilation alone is not this acceptance. Full required arm64/Linux
 CI, reviewed integration and the broader Rust AST goal remain open.
+
+
+## Bounded local qualification — 2 November 2026
+
+Literal execution source: signed `f75de428d3dad8664aa67f644aeef9717318f7cd`,
+tree `2354d439e5c51d09f884fc1a5ddb36a2fd7bb4f1`. Original native compiler164
+is the default Nix package in `original-native-v4/receipt.json`; no old Scheme
+or backend substitution was used. Any later Markdown-only head is a documented
+source-preserving successor, not a relabeling of compiler or proof artifacts.
+
+| Gate | Actual local scope |
+| --- | --- |
+| Complete source/API | `proof-v1/protocol/receipt.json`:95 commands;18 complete positive sources;33 independently specified TS/Rust cases,28 pure calls and20 stateful route executions;18 actual strict root SDK Clippy checks. |
+| Refusal and consumer controls | Four intended Rust compile failures, five source refusals, three native malformed-IR refusals including zero-iteration reducer typing; same-geometry changed expectation and two fully regenerated producer mutations fail actual consumers. |
+| Build/tool boundaries | Default and all-features runner checks need no SDK; opt-in runner includes the whole current SDK and both Programs with actual depfile checks. Twelve inherited compiler/wrapper substitutions refuse before output. |
+| Genuine proof | Both helper exports: `run` k8/123 rows and `run_checked` k8/141 rows. Locked material was verified before fresh direct keys. Two fresh2912-byte proofs verify under their immutable verifier. |
+| Proof negatives | Actual corrupted proof, changed public binding, changed same-geometry result through the real communication commitment and preimage, and different immutable verifier are rejected. |
+| Separate application | Independently proved funded transactions6555/6563 bytes pass default-strict validation and apply to the exact expected state. Replaying each returns IntentAlreadyExists and leaves the entire ledger unchanged. |
+| Pre-key guards | Changed complete IR/Program/membership refuse before keys or state. A separate complete length8 diagnostic produces a genuine selected k9 refusal before keys, without altering the admitted source or raising k<=8. |
+| Historical regression | Literal610 execution:283 fresh fixtures;1830 backend library passes,7 existing ignored cases;strict Clippy. The relevant five frontend/backend/runtime/fixture source owners are byte-unchanged through f75. This is unchanged-premise reuse, not a new execution at a docs successor. |
+
+Constructor execution is not proved; these two helper scenarios do not prove
+all eighteen sources or all input values. Two inherited native source-first
+versus TS seed-first failures remain explicit source-bound compatibility debt.
+They are not universal TS parity and have not weakened complete source, IR or
+Program binding. Full required arm64/Linux CI, reviewed integration and the
+broader backend goal remain open. This branch and all earlier candidates stay
+local. Forge is deliberately deferred and incomplete.
+
+### Review and remaining scope limits
+
+Authentic Claude CLI source reviews v1 and v2 report no introduced actionable
+P1/P2 defect. They are static source reviews, separate from the actual source,
+proof and application executions. Independent receipt review is recorded in
+the final external qualification summary; no review status is inferred from a
+running process or its exit code alone.
+
+The Vector carrier helper also erases frontend-approved nominal Vector aliases,
+matching existing IR representation erasure. Its original description as only
+transparent was incomplete. A separate24-command original144/current164
+characterization shows an explicit nominal cast accepted by TS and now emitted
+by current Rust/IR, while illegal implicit nominal conversion still receives
+the same frontend refusal in all lanes. This is emission/refusal evidence,
+not additional native/API/proof coverage of nominal aliases. NonVector aliases
+and stateful expected-type ingress remain unchanged.
+
+Other disclosed review limits remain outside this finite population: alias
+source variables flowing to a wider Vector still fail, generalized tuple or
+stateful return normalization is excluded, and the gate's route totals/default
+TS descriptor are maintained constants checked by the present case roster.
+The over-cap diagnostic compiler is used after the source/API protocol's
+compiler hash guards; its diagnostic does not admit proof source. No stronger
+trust or language-coverage claim follows.
+
+The next proposal is a separately scoped Vector alias-source widening repair.
+Its independent original144/current164 characterization is retained; neither
+that proposal nor this local result establishes canonical integration.
+
+Independent authentic Claude receipt review v1 accepts the stated bounded
+result after recomputing all3884 listed pin records/3491 distinct paths,
+checking actual logs and matching source/clone Git blobs. Its raw result is
+retained unchanged. One factual statement was adjudicated: the actual TS
+oracle does record219 runtime-file and20 Node shared-library SHA256 entries;
+all239 match at closeout. This does not qualify host OS/kernel bytes. API and
+historical regression logs were reviewed but not hash-pinned at execution;
+helper ZKIR is current compiler output rather than an independent golden.
+Retained receipt hashes were observed at the later auxiliary audit. Those
+limits do not become stronger retrospective attestations.
