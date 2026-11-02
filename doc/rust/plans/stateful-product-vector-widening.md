@@ -1,4 +1,4 @@
-# Next proposal: stateful product-Vector widening
+# Stateful widening of Vectors of scalar products
 
 ## Concrete gap and source authority
 
@@ -77,3 +77,14 @@ backend refactor or CI optimization. Preserve original full source and output
 geometry; no generated-code editing, source extraction or proof/verdict cache.
 No Forge work, publication, shared install or cleanup. This remains a proposal;
 implementation has not started.
+
+
+## Admission
+
+V is separately admitted on `codex/rust-ast-stateful-product-vector-widening`
+from reviewed U docs `f10393353065c8d9af142594181ed5b1b0802368`. Exact current
+checkpoint, refs/worktrees and clean canonical/U states were inspected first.
+All predecessor work and evidence are preserved. Focused baseline and actual
+product-cast traces precede implementation; no V compiler/API/model/proof
+acceptance is claimed. Existing pure coercion, typed native/recording validators,
+AST owners and original retirement/crosswalk authorities stay intact.
