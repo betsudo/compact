@@ -127,3 +127,29 @@ The [local closure report](../recording-effect-algebra/closure-report.md) binds 
 The independent validator checks the plan's scopes, types, signatures and budgets. It does not prove that lowering preserves the Compact source program. A same-type operand swap, a write to another Cell of the same type, or a dropped effect can still be well typed. Semantic preservation therefore also depends on the lowering rules, independent expected observations, native/recorded/TypeScript comparisons and the proof/application cases that actually run. A successful type check is not a semantic-equivalence certificate.
 
 Retired whole-body recognizers remain test references. The [retired recording-oracle milestone](../plans/retired-recording-oracles.md) defines family-by-family replacement, preservation of negative controls and historical authorities, and explicit removal criteria.
+
+
+## Stateful Vector return conversion qualification
+
+The [stateful Vector value slice](../plans/stateful-vector-value-widening.md)
+selects the existing ordered return owner for supplied monotone Vector casts
+along returned-value flow. It reaches the original helper/parameter/query/
+witness value and its actions before applying the existing checked Coerce.
+Matching dimensions, recursive Vector shape and Uint/Field leaves classify
+this route; classification does not certify recording or bypass native type,
+layout, resource or source checks. No IR/runtime ABI or validator change is made.
+
+Original compiler 172 local qualification binds complete source, IR, Programs
+and whole unedited SDKs. The witness explicitly observes the preceding write;
+reordering that full producer is detected. Type misuse refuses at marked API
+calls and independent correct-type twins compile. Selected keep/flip Uint and
+Field calls have fresh proofs and separate funded default-strict applications,
+with immutable negative and replay controls. All other exports and constructor
+proofs retain their explicit unproved status. Complete required CI/integration
+remains separate from this bounded local result.
+
+A declared wider Vector local is a separate source gap, documented in the
+[next local-binding plan](../plans/stateful-local-vector-widening.md). The native
+checker currently refuses its missing initializer conversion. That correct
+refusal must remain while frontend lowering is repaired; the accepted return
+conversion and checked-recording ownership are not reopened.

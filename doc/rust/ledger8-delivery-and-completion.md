@@ -488,13 +488,25 @@ fixtures are freshly identical. Two unselected wide-input models are k9 and rema
 unproved;31required exports beyond the selected two and all unenumerated inputs
 remain outside proof acceptance. Constructor execution is unproved.
 
-The next [stateful Vector value-widening proposal](plans/stateful-vector-value-widening.md)
-retains eight complete sources/24current170 commands. All five Vector-valued
-helper/parameter/projection widening forms pass TS and fail Rust/independentIR
-on a nested Cell.write; identity-helper, pure-parameter and direct-literal
-controls pass. This is a source-only next-slice proposal, with no new feature or
-proof acceptance. Accepted Fold/Map/projection and prior return work remain
-accepted within their recorded scopes.
+The [stateful Vector value-widening slice](plans/stateful-vector-value-widening.md)
+now has reviewed bounded compiler 172 qualification at execution `eaefb3752`:
+23 complete sources, 37 cases / 144 stateful Rust routes plus one pure route,
+136 API commands and 23 strict unedited SDK roots. It preserves original source
+values before the existing checked Vector conversion, including helpers,
+parameters, aliases, queries and once-only witnesses. Eight misuse/twin pairs,
+seven frontend refusals, seven malformed-IR refusals and three real producer
+controls pass their intended outcomes. Three fresh proofs and separate funded
+default-strict applications cover both helper branch states and the Field export.
+All 283 retained compiler fixtures and the predecessor S API gate (155 commands,
+50 cases / 200 Rust routes) freshly pass. The other 21 required T exports remain
+unproved, including the intact k=9 wide input; constructor execution is unproved.
+
+The next [stateful local Vector proposal](plans/stateful-local-vector-widening.md)
+retains eight valid stateful binding forms that pass TS / IR but fail native
+checking because their declared wider local type lacks a corresponding Vector
+conversion. Pure-local and direct-return controls pass. It is a source-only
+proposal with no new implementation, model or proof acceptance. Accepted
+Fold/Map/projection and previous return work keep their recorded scopes.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before

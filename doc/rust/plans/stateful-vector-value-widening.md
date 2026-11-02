@@ -1,12 +1,12 @@
-# Next proposal: stateful Vector value widening
+# Stateful Vector value widening
 
 ## Status and baseline
 
-T is admitted on `codex/rust-ast-stateful-vector-value-widening` from reviewed S docs `cf02d5693b1680823a25cb719c23c836db1ce5bd`, after inspected current refs/worktrees and clean canonical/predecessor states. Implementation and current qualification remain pending. Prior reviewed local S execution
+T is admitted on `codex/rust-ast-stateful-vector-value-widening` from reviewed S docs `cf02d5693b1680823a25cb719c23c836db1ce5bd`, after inspected current refs/worktrees and clean canonical/predecessor states. Bounded local compiler/source/API and selected proof/default-strict application qualification is complete at execution `eaefb375285b2f7b2185ac63111887bd45a75e41`, with actual independent CLI review. Full CI and integration remain open. Prior reviewed local S execution
 `7ab60b62061a728b3e81f34ae31e9693b1063d41` (compiler170). Canonical
 `codex/rust-backend-ast` remains clean at1bdf185ea. The explicit local candidate
 stack is not integrated canonical. Inspect the exact checkpoint/refs/worktrees
-and admit a clean successor separately before implementation. Preserve every
+before admitting a clean successor separately. Preserve every
 predecessor and all evidence; no Forge, publication or cleanup work.
 
 ## Concrete missing capability
@@ -146,3 +146,83 @@ physical generated and embedded-golden include. All models/applicability,
 verified material, immutable keys/verifiers, strict funded application and replay
 controls remain required. Compiler/native/runtime ownership and ABI stay as in
 the reviewed S baseline except the stated frontend conversion/context change.
+
+
+## Original compiler 172 local qualification
+
+Execution commit `eaefb375285b2f7b2185ac63111887bd45a75e41` is the clean
+source authority for the maintained T qualification. The original Nix recipe
+produced `/nix/store/q4bg0cfmlp1bcxnikxjbcc9xg5b0h0iv-compactc`; the default
+packaged compiler reports 0.31.172. No alternate Scheme/backend or generated-code
+editing is used. Documentation successors preserve this execution identity.
+
+The complete 23-source corpus passes 136 maintained commands and 37 actual consumer
+cases: 144 ordinary/recorded/functional stateful executions and 1 pure execution,
+alongside independent TS. All 23 unedited generated SDK roots pass strict checks;
+eight marked Rust misuse cases fail and their separately compiled correct-type
+twins pass. Seven frontend refusals, seven malformed-IR refusals, three changed
+producer consumers (including witness-before-write) and the changed result oracle
+fail as intended.
+Read-only state, both conditional helper outcomes, checked helper first-error
+order and the once-only Vector-valued witness/private-state transcript remain
+explicitly checked. The 35 focused native/history regressions pass at `7a9234bef`,
+with an exact unchanged owner-source bridge to this head. All 283 retained
+fixtures are freshly identical without update. Native/recording validators,
+runtime, ABI and historical fixture owners are unchanged from S. The S
+predecessor source/API gate also freshly passes 155 commands, 50 cases / 200 Rust
+routes and 31 strict SDK roots at this head. S's full 1833 native / 7 ignored and
+strict native Clippy receipts retain their S head.
+They are not relabeled as fresh T full-CI results.
+
+All 24 exports are inventoried: 23 proof-required and 1 pure/nonproof. Selected `run`
+uses k=8 / 130 rows and `run_field` k=7 / 85 rows. Locked upstream material is verified
+before two fresh native key generations. Three fresh 2912-byte standalone proofs
+cover keep/flip Uint branches and the Field export. Three independently proved
+funded transactions of 6605 / 6605 / 6561 bytes apply with default strict validation.
+Corrupt proof, changed binding, changed real same-geometry typed result, immutable
+wrong verifier and replay refusal controls pass; replay leaves the applied state
+unchanged. Full source/IR/Programs, complete unedited SDK, raw Cargo dependency
+file and physical generated/embedded-golden includes remain bound to the run.
+
+The other 21 required exports are not proved; `wide_parameter` is k=9 and remains
+unproved under the unchanged automatic k<=8 cap. Constructor execution, unenumerated
+inputs, prior N/S wide model proof obligations, complete required arm64/Linux CI,
+reviewed integration and the broad Rust AST goal remain open. Local qualification
+does not authorize publication or cleanup. Forge remains deliberately deferred.
+
+Evidence root: `/Users/ysh/.codex/local-evidence/rust-ast-stateful-vector-value-widening-20261102`.
+Original compiler `original-native-v5/receipt.json`, API `proof-v2/protocol/receipt.json`,
+proof/application `proof-v2/receipt.json`, retained fixture check
+`retained-fixture-freshness-v2/receipt.json`, and `regressions-v1/receipt.json`
+have distinct scopes. Independent review and receipt audit authorities are added
+only after their actual terminal results are inspected.
+
+
+## Independent review and continuation
+
+Actual Claude source review found two P2 acceptance gaps. The source now checks
+that the witness observes the preceding write and verifies a real reordered
+producer failure; input-bound/input-length refusals and separately compiled
+correct-type twins complete the eight-case misuse roster. The second source
+review and exact execution-head receipt/current-delta inspections found no
+remaining P1/P2 issues. Receipt inspection rehashed all 6679 original pin records
+across 4704 distinct paths, then independently checked embedded golden depfile
+membership, all eight twin logs, all 31 predecessor IRs / 34 Programs and the
+35-test unchanged owner bridge. This is inspection, not crypto reexecution,
+full CI or a human security audit.
+
+`review-adjudication-v1.json` preserves the review limits and corrects a reviewer
+summary count: the current S gate has 23 expected nonzero exits, not five.
+`physical-dependency-reconciliation-v1.json` records all 860 physical worktree
+inputs against clean Git HEAD; 68 historical embedded IR fixtures previously
+had only the immutable-head binding outside the combined hash maps. The final
+`receipt-audit-v3.json` adds explicit post-run closure hashes and review evidence:
+7548 pin records / 4781 distinct paths. These added hashes are not retrospective
+execution-time attestations. The disclosed reviewer scratch diff is retained
+separately; source and qualification evidence were not modified by the review.
+
+The next bounded [stateful local Vector proposal](stateful-local-vector-widening.md)
+is source-only. It addresses explicit widened local bindings whose narrow
+initializer currently fails independent native type checking. No implementation,
+model, proof or acceptance is inferred for it. This T closeout does not complete
+the primary goal or the deliberately deferred Forge experiment.
