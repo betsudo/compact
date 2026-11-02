@@ -6,6 +6,11 @@ local shallow-stack dependency on O's Vector carrier helper, not integrated
 canonical work. No implementation is accepted yet. Primary goal remains
 ACTIVE / INCOMPLETE and LOCAL ONLY. Forge remains deferred.
 
+Current status: **bounded local qualification accepted** at literal source
+`3cd358a9370f0aa7153682f2293ec9e6e4e53fa1`. See the dated closeout below.
+The earlier sections retain their own execution epochs. Complete required CI
+and reviewed integration remain open.
+
 ## Established gap
 
 The complete four-source,24-command original144/current164 comparison is
@@ -207,3 +212,66 @@ fresh proofs with immutable verification and binding/result/corruption/different
 verifier controls, plus independently proved funded default-strict transactions
 and unchanged-ledger replay refusal. Constructor proof, full required CI and
 integration are not claimed by compilation or selected-helper qualification.
+
+
+## Bounded local qualification — 2 November 2026
+
+Literal execution source: signed `3cd358a9370f0aa7153682f2293ec9e6e4e53fa1`,
+tree `c159135632c1b598c51ac3bed0fa1f3cd2e7cd58`. Original native165 is the default
+package admitted by original-native-v6/receipt.json. Its actual package and
+both executable hashes equal the earlier192/a6 native package; no substituted
+Scheme or backend is used. Any later Markdown-only successor preserves this
+literal execution identity instead of relabeling compiler/proof receipts.
+
+| Gate | Actual local finite scope |
+| --- | --- |
+| Source/API | proof-v1/protocol/receipt.json PASS: 103 commands; 20 complete sources; 26 independent TS/Rust cases, 24 pure calls and 8 stateful route executions; 20 actual strict SDK root Clippy checks. |
+| Refusals | 4 marked ordinary Rust failures, 5 frontend source refusals including both nominal directions, and 3 native malformed IR refusals including zero-length element validation. Changed expected output and2 complete regenerated producers fail actual consumers. |
+| Accepted controls | Complete original165 characterization passes 18 TS-valid emissions plus 4 frontend refusals; all 20 original IR/raw/Rust/capability assets across 5 sources are byte-identical to original 164. Separate matching nominal-source refusal is independently confirmed in all 3 lanes. |
+| Tool/build boundaries | 12 inherited compiler/wrapper substitutions refuse before output. Default/all-features runner checks work without SDK;actual opt-in runner includes the whole unedited current SDK and both Programs with depfile checks and strict Clippy. |
+| Genuine proof | Both helper exports run/run_reverse use full admitted source: k=7 / 85 rows each. Locked upstream material verified before fresh direct keys. Two fresh 2,912-byte standalone proofs verify under immutable source-bound verifiers. |
+| Proof controls | Actual corrupted proof, changed binding, same-geometry result through real communication commitment/preimage, and different immutable verifier all reject. Changed fullIR/Program/membership refuse before keys/state. |
+| Separate application | Independently proved funded transactions6554/6563bytes pass default-strict validation and apply to exact expected states. Each replay returns IntentAlreadyExists and leaves the whole ledger unchanged. |
+| Cap control | A separate complete retained Fold length 8 diagnostic produces actual k=9 refusal before keys. It cannot replace or trim admitted alias-source IR/Programs or raise automatic k<=8. |
+| Historical regression | Literal 192: 283 fresh fixtures, 1,830 backend passes / 7 existing ignored, and strict Clippy. Five relevant compiler/backend/runtime/fixture owners are unchanged through 3cd;source-premise reuse, not fresh current full CI. |
+
+Authentic Claude review attempt returned an explicit session-limit error and
+is retained as unavailable. Authorized Codex CLI fallback source reviews v2
+and finalv3 report no introduced P1/P2 after full diff, nativeCoerce and shared
+proof-owner inspection. Those static reviews are separate from actual source,
+proof and application execution. The independent receipt audit records its own
+hash/premise scope; no review is inferred from a running handle or exit alone.
+
+Constructor execution and proof coverage for all 20 sources / all inputs are not
+claimed. Required complete arm64/Linux CI, reviewed integration, the earlier
+N original k=9 branch-proof criterion and the broader goal remain open. P has an
+explicit local shallow-stack on O; canonical 1bdf and all earlier branches,
+stores, snapshots and failure evidence are preserved. Forge remains deliberately
+deferred and incomplete. No publication, hosted trials or cleanup occurred.
+
+Next proposal is numeric projection elements in typed aggregate literals.
+Complete source-first diagnostics confirm scalar projection returns already
+work; they are accepted controls and must not be reopened. Only the four
+wider aggregate literal cases are confirmed missing under both144 and165.
+No next implementation is included in this qualification.
+
+Independent authentic Codex receipt review v1 accepts the stated finite scope:
+it recomputed all **4,369 hash records across 3,965 distinct paths**, checked
+103 command records and 206 API stdout/stderr files, and matched 3,223 pinned
+repository files to Git blobs and the frozen clone. It independently compared
+all 20 complete IR outputs, both Programs, manifests, retained strict-root files,
+219 TS runtime-file hashes and 20 Node shared-library hashes. All recorded proof,
+transaction and state sizes/hashes agree with the result and logs. This is an
+independent read-only hash/premise audit, not cryptographic reexecution.
+
+API-log and retained-receipt hashes were observed at auxiliary closeout; they
+are not retrospective execution-time attestations. Fixed fixture RNG seeds
+mean fresh execution rests on the new output directory, exclusive result-file
+creation and actual logs, rather than differing output bytes. No stronger
+system/kernel, universal parity or language-coverage claim is made.
+
+Local evidence root:
+`/Users/ysh/.codex/local-evidence/rust-ast-vector-alias-source-widening-20261102`.
+`qualification-summary-v1.json`, `docs-source-bridge-v1.json` and
+`RESTART-HANDOFF-20261102.md` preserve the literal execution and successor scope.
+The next proposal remains outside this slice's implementation.
