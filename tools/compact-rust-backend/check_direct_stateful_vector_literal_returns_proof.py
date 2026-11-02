@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import tomllib
@@ -129,9 +130,13 @@ def run(args):
         runner = components["runner"]["snapshot"]
         depfile = built.with_suffix(".d")
         dependencies = depfile.read_text()
+        # Cargo preserves lexical ../ components for relative include_bytes!, and
+        # escapes spaces in Make paths. Resolve parsed paths to physical files;
+        # retain the raw depfile bytes/hash and exact include membership checks.
+        tracked = {str((ROOT / path).resolve()) for path in shlex.split(dependencies.replace("\\\n", ""))}
         for path in [main_gate.FIXTURES / "sources.json", generated / "contract/lib.rs", *sorted((generated / "contract/checked-programs").glob("*.json"))]:
-            # Cargo's Make depfile escapes spaces; it must track every included file.
-            require(str(path).replace(" ", "\\ ") in dependencies, "runner omitted an actual generated SDK/Program dependency")
+            require(str(path.resolve(strict=True)) in tracked,
+                    "runner omitted an actual generated SDK/Program dependency")
         report["runner_depfile"] = {"path": str(depfile), "sha256": digest(depfile), "all_generated_includes": True}
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "direct-stateful-vector-literal-returns", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])

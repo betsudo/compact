@@ -43,13 +43,12 @@ def inventory(root):
     return {str(p.relative_to(root)): digest(p) for p in sorted(root.rglob("*")) if p.is_file()}
 
 
-def source_manifest_snapshot(output, stateful):
-    if stateful:
+def source_manifest_snapshot(output, proof_required):
+    if proof_required:
         return generated_manifest_snapshot(output)
     # Witness-only stateful execution has no public ledger proof obligation.
-    # Authenticate every declared
-    # asset through the established manifest checker without inventing a proof
-    # obligation; stateful helper manifests use the unchanged full checker.
+    # Authenticate every declared asset through the existing manifest checker;
+    # proof-required manifests use the unchanged full checker above.
     require(__debug__, "manifest qualification requires Python without -O/-OO")
     check_manifest(output, require_zkir=False)
     path = output / "compiler/contract-manifest.json"
@@ -213,7 +212,7 @@ def main():
                     raise ValueError("return conversion relabeled as supplied")
             programs = inventory(target / "contract/checked-programs")
             require(programs == inventory(FIXTURES / "goldens" / name / "checked-programs"), "complete Program roster differs: " + name)
-            require(len(programs) == len(spec["entries"]), "unexpected proof applicability: " + name)
+            require(len(programs) == len(spec["entries"]), "complete checked Program count differs: " + name)
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
                 require({c["name"] for c in caps} == set(spec["entries"])

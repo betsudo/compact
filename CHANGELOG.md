@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Toolchain 0.31.170, language 0.23.105, runtime 0.16.102]
 
+### Fixed
+
 - Lower effectful Vector children in the existing native stateful aggregate owner,
   preserving successful pure Vector AST output, child evaluation order and exact
   element types. Uniform ordered-return source carriers retain their original
   checked bound before widening. No validator, runtime or ABI change.
-
-### Fixed
 
 - Retain the declared Vector context for direct stateful literal returns. Use
   existing ordered return plans for the complete action sequence and apply

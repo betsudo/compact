@@ -235,3 +235,15 @@ The failed inferred-pure source is external retained evidence at
 `/Users/ysh/.codex/local-evidence/rust-ast-direct-stateful-vector-literal-returns-20261102/development-api-v2/nonmutating-failed-source.compact`.
 
 Current170 expanded development executes all50cases/200routes and real TS outcomes, including all fresh review controls. The complete31sources have34exports:33required models and one explicitly non-applicable witness-only export. Selected proof coverage remains two direct exports with three scenarios;31requiredexports are unproved. Clean gate/proofs/current review are pending.
+
+
+The exact242 clean source/API gate passes all155commands,50tests/200routes and
+31strict unedited roots, including every refusal and mutation control. Fresh
+Claude v3 reports no correctness/routing/coercion/effect/binding defect; its two
+low clarity findings are fixed (changelog subsection and proof applicability
+naming). The full proof gate then correctly stopped before models/keys because
+Cargo records the embedded source roster with lexical `src/../../` components.
+Parse the actual Make dependency paths and resolve them before membership checks;
+retain raw depfile hashes and require every physical SDK/Program/roster include.
+This changes no IR/Program/source normalization or proof binding. Renew the exact
+clean gate before any fresh proof acceptance. All failed bytes remain retained.
