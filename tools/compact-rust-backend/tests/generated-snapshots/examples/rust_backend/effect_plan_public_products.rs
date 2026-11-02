@@ -319,6 +319,10 @@ pub mod ledger_contract {
             private_transcript_outputs,
         })
     }
+    #[allow(
+        clippy::type_complexity,
+        reason = "preserves Compact Vector/product carriers in this signature"
+    )]
     pub fn vector9<Private>(
         context: runtime::context::CircuitContext<Private>,
         __compact_param_0: runtime::FixedVector<
@@ -500,6 +504,10 @@ pub mod ledger_contract {
             };
             Ok(frame.finish((__compact_effect_4).clone()))
         }
+        #[allow(
+            clippy::type_complexity,
+            reason = "preserves Compact Vector/product carriers in this signature"
+        )]
         pub fn vector9<Private>(
             context: runtime::context::CircuitContext<Private>,
             __compact_param_0: runtime::FixedVector<
@@ -629,6 +637,10 @@ pub mod ledger_contract {
                     observed, recorded, "tuple11", input,
                 ))
             }
+            #[allow(
+                clippy::type_complexity,
+                reason = "preserves Compact Vector/product carriers in this signature"
+            )]
             pub fn vector9<Private>(
                 &self,
                 context: runtime::context::CircuitContext<Private>,
@@ -653,6 +665,10 @@ pub mod ledger_contract {
                 crate::ledger_contract::recorded::vector9(context, __compact_param_0)
             }
             #[cfg(feature = "ledger-transaction")]
+            #[allow(
+                clippy::type_complexity,
+                reason = "preserves Compact Vector/product carriers in this signature"
+            )]
             pub fn vector9_call<'observed, Private>(
                 &self,
                 observed: &'observed runtime::transaction::ObservedContractState,
@@ -849,6 +865,10 @@ pub mod ledger_contract {
                     observed, recorded, "tuple11", input,
                 ))
             }
+            #[allow(
+                clippy::type_complexity,
+                reason = "preserves Compact Vector/product carriers in this signature"
+            )]
             pub fn vector9<Private>(
                 &self,
                 context: runtime::context::CircuitContext<Private>,
@@ -873,6 +893,10 @@ pub mod ledger_contract {
                 vector9(context, __compact_param_0)
             }
             #[cfg(feature = "ledger-transaction")]
+            #[allow(
+                clippy::type_complexity,
+                reason = "preserves Compact Vector/product carriers in this signature"
+            )]
             pub fn vector9_call<'observed, Private>(
                 &self,
                 observed: &'observed runtime::transaction::ObservedContractState,
@@ -1001,6 +1025,10 @@ pub mod ledger_contract {
         > {
             crate::ledger_contract::tuple11(context, __compact_param_0)
         }
+        #[allow(
+            clippy::type_complexity,
+            reason = "preserves Compact Vector/product carriers in this signature"
+        )]
         pub fn vector9<Private>(
             &self,
             context: runtime::context::CircuitContext<Private>,

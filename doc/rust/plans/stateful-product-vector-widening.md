@@ -213,3 +213,26 @@ body, source/IR/Program normalization is introduced. The complete triple source
 is retained and must pass strict root Clippy; it is not replaced by a simpler
 source. Current177 clean-head source/API and fresh source-delta review remain
 required. Earlier compiler/native/SDK/review outcomes keep their own epochs.
+
+## Current exact diagnostic and snapshot repair
+
+The 177 source/API gate v4 passes all 25 strict complete SDK roots, all 32
+consumers and all ten marked compile refusals with independent positive twins.
+It then stops at command125 because the new wrong-length oracle expected
+"actual type" whereas the frontend correctly reports "actual return type".
+The compiler/source refusal is correct; that failed gate remains retained.
+All seven complete original177 refusal sources were independently characterized
+before updating this new oracle. `frontend-refusals.json` now binds each exact
+source SHA, nonzero exit and complete stdout/stderr bytes, including both private
+condition disclosure paths. No substring relaxation or diagnostic normalization.
+All nine independent malformed controls also reproduce the intended native
+refusals, including an unreachable bad branch and zero-length Vector element.
+
+Current retained-fixture check actually checked283, with one stale snapshot and
+zero generation failures. The sole current effect_plan_public_products snapshot
+requires seven function-scoped type-complexity attributes; its historical full
+bytes are preserved in Git and an external evidence copy before a targeted
+official --only/--update. Removing exactly those seven full attribute blocks
+restores the complete old bytes. No source, body, signature, IR, Program or
+historical compatibility test changes. Current no-update283fixture verification
+and the complete current V gate still require passing successor receipts.

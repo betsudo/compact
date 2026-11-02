@@ -301,11 +301,17 @@ def main():
             rejected = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest, "--bin", name, "--message-format=json"], success=False)
             report["compile_fail"][name] = compile_failure(rejected, name, code, source)
         report["source_refusals"] = {}
-        for name, message in [("wrong_length", "mismatch between actual type"), ("boolean_numeric", "mismatch between actual type"), ("refused_narrow", "mismatch between actual type"), ("refused_wrong_arity", "mismatch between actual type"), ("nominal_implicit", "mismatch between actual type"), ("private_condition", "potential witness-value disclosure"), ("explicit_narrow", "cannot cast")]:
+        refusals = json.loads((FIXTURES / "frontend-refusals.json").read_text())
+        require(set(refusals) == {"wrong_length", "boolean_numeric", "refused_narrow", "refused_wrong_arity", "nominal_implicit", "private_condition", "explicit_narrow"}, "frontend refusal roster differs")
+        require({p.stem for p in (FIXTURES / "negative").glob("*.compact")} == set(refusals), "frontend source membership differs")
+        for name, expected in refusals.items():
+            source = FIXTURES / "negative" / (name + ".compact")
+            require(digest(source) == expected["source_sha256"], "frontend refusal source bytes differ: " + name)
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
-                FIXTURES / "negative" / (name + ".compact"), output / ("refused-" + name)], success=False)
-            require(rejected.returncode and message.lower() in rejected.stderr.lower(), "source refusal changed: " + name)
-            report["source_refusals"][name] = message
+                source, output / ("refused-" + name)], success=False)
+            require(rejected.returncode == expected["exit"] != 0 and rejected.stderr == expected["stderr"]
+                    and rejected.stdout == expected["stdout"], "complete frontend refusal diagnostic differs: " + name)
+            report["source_refusals"][name] = expected
         wrong = copy.deepcopy(reference)
         next(row for row in wrong["rows"] if row["id"] == "parameter")["result"]["valueAtoms"][0][0] ^= 1
         wrong_path = output / "changed-result.json"
