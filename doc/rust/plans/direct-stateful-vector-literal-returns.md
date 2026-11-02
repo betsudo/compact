@@ -193,3 +193,19 @@ sequential witness sources. The latter must check TS-aligned two calls in source
 order, evolving private state and both private transcript outputs exactly once
 across all four APIs. These are API coverage, not a witness proof claim. Current
 compiler 169, expanded protocol and final source/receipt review remain pending.
+
+
+The witness source exposed an ordinary native emission gap: Vector constructors
+were delegated entirely to pure expression lowering. The same stateful aggregate
+owner now handles the pure owner's explicit effect refusal by evaluating Vector
+children once in order and checking each against the declared element carrier.
+Successful pure Vector AST emission stays byte-identical, with other errors
+retaining their observed diagnostic owner. Recording certification, validators,
+runtime and ABI are unchanged. Two focused native tests check witness child
+ordering and element mismatch; a third preserves pure Vector AST output.
+Compiler metadata is 170. All expanded qualification remains pending.
+
+The first non-mutating fixture was inferred pure by the compiler and correctly
+refused functional-stateful emission. Its complete failed source is retained.
+The actual impure positive reads the public Cell in a condition without writing
+it; it has a genuine existing stateful API obligation.

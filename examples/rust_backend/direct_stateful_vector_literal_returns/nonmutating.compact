@@ -3,4 +3,4 @@
 // SPDX-License-Identifier: Apache-2.0
 import CompactStandardLibrary;
 export ledger seen:Field;
-export circuit run(input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{return [input[1],input[0]];}
+export circuit run(input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{if(seen==0){return [input[1],input[0]];}else{return [input[0],input[1]];}}

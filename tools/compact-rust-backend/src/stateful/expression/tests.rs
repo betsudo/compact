@@ -748,3 +748,80 @@ fn aggregate_construction_and_tuple_access_report_the_original_domain_error() {
 mod collection_queries;
 
 mod effect_domains;
+
+#[test]
+fn vector_witness_children_use_ordered_stateful_evaluation() {
+    let declarations = Declarations {
+        witnesses: vec![WitnessDeclaration {
+            name: "next".into(),
+            parameters: vec![],
+            result: uint("255"),
+            source: None,
+        }],
+        ..Default::default()
+    };
+    let expression = Expr::Vector {
+        element: uint("255"),
+        elements: (0..2)
+            .map(|_| Expr::WitnessCall {
+                name: "next".into(),
+                arguments: vec![],
+            })
+            .collect(),
+    };
+    let lowered = declarations.lower(expression);
+    let statements = &lowered.statements;
+    let code = quote::quote!(#(#statements)*).to_string();
+    assert_eq!(code.matches("witnesses . next").count(), 2);
+    lowered.accepted(
+        Type::Vector {
+            element: Box::new(uint("255")),
+            length: 2,
+        },
+        true,
+        false,
+    );
+}
+#[test]
+fn vector_witness_child_must_match_declared_element() {
+    let declarations = Declarations {
+        witnesses: vec![WitnessDeclaration {
+            name: "next".into(),
+            parameters: vec![],
+            result: uint("255"),
+            source: None,
+        }],
+        ..Default::default()
+    };
+    declarations
+        .lower(Expr::Vector {
+            element: Type::Boolean,
+            elements: vec![Expr::WitnessCall {
+                name: "next".into(),
+                arguments: vec![],
+            }],
+        })
+        .refused(mismatch(Type::Boolean, uint("255")));
+}
+#[test]
+fn pure_vector_keeps_existing_native_ast_without_statements() {
+    for length in [0, 2, 13] {
+        let value = Expr::Vector {
+            element: Type::Field,
+            elements: (0..length)
+                .map(|_| Expr::FieldLiteral { value: "3".into() })
+                .collect(),
+        };
+        let (expected, ty) =
+            expression_with_calls(&value, &HashMap::new(), &HashMap::new()).unwrap();
+        let lowered = Declarations::default().lower(value);
+        assert!(lowered.statements.is_empty());
+        let (actual, actual_ty, effect) = lowered.result.unwrap();
+        assert_eq!(
+            quote::quote!(#actual).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+        assert_eq!(actual_ty, ty);
+        assert!(!effect);
+    }
+}
