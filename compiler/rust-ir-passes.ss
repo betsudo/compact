@@ -1871,7 +1871,7 @@
 
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
-      ;; helper-only roots retain their existing action/return representation.
+      ;; nonliteral conversions select this owner through the value predicate.
       ;; A mixed conditional is one ordered body, including its helper branch.
       (define (stateful-vector-literal-return? expr result-type)
         (and

@@ -269,8 +269,16 @@ def main():
             require(all(digest(target / path) == sha for path, sha in before.items()), "root Clippy changed an emitted source")
             report["strict_sdk_roots"][name] = {"unchanged_emitted_files": before, "lock_sha256": digest(target / "Cargo.lock")}
         report["compile_fail"] = {}
-        for name, code in [("wrong_length", "E0308"), ("wrong_element", "E0308"), ("wrong_result_max", "E0308"), ("field_result", "E0308"), ("program_reuse", "E0382"), ("context_reuse", "E0382")]:
+        for name, code in [("wrong_input_bound", "E0308"), ("wrong_input_length", "E0308"), ("wrong_length", "E0308"), ("wrong_element", "E0308"), ("wrong_result_max", "E0308"), ("field_result", "E0308"), ("program_reuse", "E0382"), ("context_reuse", "E0382")]:
             source = (FIXTURES / (name + ".rs")).read_text()
+            # Execute an independent compilation with only the intended misuse
+            # removed. Value/shape controls retain a real correctly typed call;
+            # ownership controls already contain their first valid execution.
+            if name not in {"program_reuse", "context_reuse"}:
+                source = source.replace("fn main() {", "fn main() {\n    let _: r::FixedVector<r::BoundedUint<65535>, 2> = c::run(context(), input()).unwrap().result;")
+            twin = "\n".join(line for line in source.splitlines() if "// expected-error" not in line) + "\n"
+            (consumer / "src/bin" / (name + "_twin.rs")).write_text(twin)
+            run(name + "-correct-twin", ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest, "--bin", name + "_twin"])
             (consumer / "src/bin" / (name + ".rs")).write_text(source)
             rejected = run(name, ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest, "--bin", name, "--message-format=json"], success=False)
             report["compile_fail"][name] = compile_failure(rejected, name, code, source)
@@ -293,10 +301,11 @@ def main():
         report["source_mutations"] = {}
         for name, old, new, test in [
                 ("helper_unsigned", "return input;", "return [input[1],input[0]];", "helper_unsigned"),
-                ("ordered_guards", 'assert(a,"first denied");', '', "both_denied")]:
+                ("ordered_guards", 'assert(a,"first denied");', '', "both_denied"),
+                ("witness_value", "seen=1;return disclose(vector_value());", "const value=disclose(vector_value());seen=1;return value;", "witness_value")]:
             # Mutate a complete producer, then regenerate it. No generated Rust
-            # or expected results are edited. The second producer intentionally
-            # lets the later assertion win instead of the input assertion.
+            # or expected results are edited. The assertion producer changes
+            # first-error order; the witness producer moves its call before the write.
             text = (SOURCES / (name + ".compact")).read_text()
             require(text.count(old) == 1, "producer mutation premise changed: " + name)
             mutant = output / (name + "-producer-mutant")
@@ -314,7 +323,7 @@ def main():
             rejected = run(name + "-producer-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", mutant_consumer / "Cargo.toml", "--lib", test, "--", "--exact"], success=False)
             require(rejected.returncode and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
                     and "assertion `left == right` failed" in rejected.stdout, "changed complete source did not fail actual consumer: " + name)
-            report["source_mutations"][name] = {"sha256": digest(source), "consumer_test": test, "scope": "same-type projection order / first-before-second-source assertion change"}
+            report["source_mutations"][name] = {"sha256": digest(source), "consumer_test": test, "scope": "same-type projection / first-error / write-before-witness ordering change"}
         report["malformed_ir_refusals"] = {}
         for name in ["wrong_dimension", "wrong_element", "wrong_field", "wrong_index", "wrong_input_type", "dead_branch", "misplaced_action"]:
             malformed = copy.deepcopy(irs["proofs" if name == "dead_branch" else "struct_projection"])

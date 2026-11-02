@@ -86,7 +86,7 @@ for(const spec of specs){
  if(!modules.has(source))modules.set(source,await import(path));const m=modules.get(source);
  let out,value,error;const observed=[];const stateful=bySource.get(source).stateful;
  if(stateful){
-  const c=new m.Contract(source==='witness_value'?{vector_value:({privateState})=>{const value=[BigInt(privateState-4),BigInt(privateState-3)];observed.push({privateState,value:value.map(String)});return [privateState+1,value];}}:{});
+  const c=new m.Contract(source==='witness_value'?{vector_value:({privateState,ledger})=>{assert.equal(ledger.seen,1n,'write must precede witness');const value=[BigInt(privateState-4),BigInt(privateState-3)];observed.push({privateState,value:value.map(String),seen:encode({value:r.CompactTypeField.toValue(ledger.seen),alignment:r.CompactTypeField.alignment()})});return [privateState+1,value];}}:{});
   const init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)},...spec.constructor.map(convert));
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
   try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
@@ -108,7 +108,7 @@ for(const spec of specs){
   assert.equal(out.context.currentPrivateState,spec.privateState??7,spec.id);
   const privateValues=(spec.witnessValues??[]).map(value=>encode({value:vector(2,u8).toValue(convert(value)),alignment:vector(2,u8).alignment()}));
   assert.deepEqual(out.proofData.privateTranscriptOutputs.map(encode),privateValues,spec.id);
-  assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value})),spec.id);
+  assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.seen)),alignment:r.CompactTypeField.alignment()})})),spec.id);
   assert.deepEqual(encode(out.proofData.output),encoded,spec.id);
  }
  rows.push({...spec,result:encoded,privateState:stateful?(spec.privateState??7):null,privateOutputs:stateful?out.proofData.privateTranscriptOutputs.map(encode):[],observedWitnesses:observed});

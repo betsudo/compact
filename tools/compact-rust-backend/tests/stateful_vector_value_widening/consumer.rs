@@ -361,15 +361,17 @@ stateful_case!(
     [true, FixedVector::new([u(400), u(300)])]
 );
 #[derive(Default)]
-struct VectorWitness(std::cell::RefCell<Vec<(u64, Vec<u128>)>>);
+struct VectorWitness(std::cell::RefCell<Vec<(u64, Vec<u128>, Value)>>);
 impl witness_value::ledger_contract::Witnesses<u64> for VectorWitness {
     fn vector_value(
         &self,
         ctx: r::context::WitnessContext<'_, u64, witness_value::ledger_contract::LedgerView<'_>>,
     ) -> (u64, FixedVector<BoundedUint<255>, 2>) {
+        let seen = ctx.ledger.seen().unwrap();
+        assert_eq!(seen, Field::from(1_u64), "write must precede witness");
         let before = *ctx.private_state;
         let values = [u128::from(before - 4), u128::from(before - 3)];
-        self.0.borrow_mut().push((before, values.to_vec()));
+        self.0.borrow_mut().push((before, values.to_vec(), encode(seen.into())));
         (before + 1, FixedVector::new(values.map(u)))
     }
 }
@@ -403,7 +405,7 @@ fn witness_value() {
                 .collect::<Vec<_>>(),
             row["privateOutputs"].as_array().unwrap().clone()
         );
-        assert_eq!(witness.0.borrow().iter().map(|(state,value)|json!({"privateState":state,"value":value.iter().map(|x|x.to_string()).collect::<Vec<_>>()})).collect::<Vec<_>>(),row["observedWitnesses"].as_array().unwrap().clone());
+        assert_eq!(witness.0.borrow().iter().map(|(state,value,seen)|json!({"privateState":state,"value":value.iter().map(|x|x.to_string()).collect::<Vec<_>>(),"seen":seen})).collect::<Vec<_>>(),row["observedWitnesses"].as_array().unwrap().clone());
         assert_eq!(
             witness_value::ledger_slots::seen
                 .inspect(out.context.query.state.get_ref())
