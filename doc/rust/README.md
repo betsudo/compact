@@ -10,7 +10,7 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Delivered features, architecture, examples, qualification and completion checklist](ledger8-delivery-and-completion.md): dated 18 October 2026; separates bounded local implementation from supported-profile release readiness and full language parity.
 - [Keccak capability and proof-profile audit record](audit/2026-10-18-keccak-profile-boundary.md): native/ordinary checked support, the ZKIRv2 exclusion, observed target selection and the qualification needed for an extension.
-- [Stateful product Vector widening](plans/stateful-product-vector-widening.md): bounded local compiler177 source/API stage; genuine proof/application qualification and integration remain open.
+- [Stateful product Vector widening](plans/stateful-product-vector-widening.md): reviewed bounded local compiler177 source/API and selected genuine proof/default-strict application qualification; full coverage and integration remain open.
 
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 

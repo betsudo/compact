@@ -1,8 +1,15 @@
 # Stateful widening of Vectors of scalar products
 
-## Concrete gap and source authority
+Status: reviewed bounded local compiler177 qualification at execution
+`438bf21c9f64b133970f8dadb212c24e54a2873d`. Source/API and selected genuine
+proof/default-strict application gates pass; independent source and separate
+receipt reviews find no P1/P2 within their declared scopes. Unselected/constructor/
+all-input, full CI/Linux/integration and the broader goal remain open. Forge is
+deferred. Documentation successors do not create fresh execution or proof epochs.
 
-Current original compiler 173, U execution `408dd00ee8c35b050ed6f307be0bf89edd839984`,
+## Original gap and source authority
+
+At proposal time, original compiler 173 at U execution `408dd00ee8c35b050ed6f307be0bf89edd839984`,
 accepts the pure product-Vector coercion, same-type stateful product return and
 newly accepted scalar-Vector local conversion controls. Stateful widening of
 Vector elements that are scalar products is still a real source gap.
@@ -277,10 +284,10 @@ Evidence root: `rust-ast-stateful-product-vector-widening-20261102` with
 `current-snapshot-repair-v1/receipt.json`, actual source reviews and all earlier
 failures. Original compiler/model/proof receipts must retain their own heads.
 
-## Remaining current-slice work
+## Remaining work at the source/API checkpoint
 
-No V model inventory, keys, proofs or ledger application has run. Continue this
-slice before dependent features:
+At that source/API checkpoint no V model inventory, keys, proofs or ledger
+application had run. Its preserved qualification plan was:
 
 1. Add the bounded opt-in proof adapter at
    `tools/compact-rust-backend/check_stateful_product_vector_widening_proof.py`
@@ -328,3 +335,76 @@ unchanged automatic k<=8 admission. No model size or actual proof acceptance is
 claimed from this implementation or its commit. Fresh original177 build,
 source/API/runner qualification, model observation, material checks and actual
 proof/application execution remain required.
+
+## Reviewed bounded local qualification — execution438bf
+
+The actual original177 Nix recipe was realized at this execution head using the
+exact retained default package `ns8yq0izaz811mj0vjqpypym5p92ccbj`. This is a
+cached realization, not a claim of a fresh compiler rebuild. The whole current
+source/API gate freshly passes at438bf; old predecessor observations keep their
+actual heads.
+
+| Gate / scope | Actual outcome |
+| --- | --- |
+| Current complete source/API | 153 commands;25 complete unedited SDK roots;32 TS/Rust cases,124 stateful routes plus one pure; all misuse/twin, exact frontend, malformed and complete-producer/result controls pass |
+| Outer qualification | 14 zero-exit commands, including that153-command protocol; default runner and all-feature Clippy without SDK configuration plus complete selected-SDK build/Clippy pass |
+| Full model observation | 26 exports:25 proof-required plus one pure, observed before selection |
+| Selected original source models | proofs.run k8/212 keygen rows; run_field k8/161 keygen rows |
+| Proving material / keys | Locked material verified first, then two fresh direct native key generations |
+| Genuine standalone proof/verify | Three fresh2,912-byte proofs: Uint keep/flip branches and Field product |
+| Separate funded strict applications | Independently proved6,604/6,605/6,561-byte transactions pass default-strict validation/application |
+| Immutable negative controls | Different real verifier, corruption, changed binding, genuinely typed same-geometry output commitment/preimage, replay IntentAlreadyExists with unchanged state |
+| Build source identity | Every1,662 admitted protocol input carries into the4,439-entry prebuild map; all860 physical worktree depfile inputs match; raw depfile retained before target reuse |
+
+The other23 required exports remain unproved. In particular checked_helper,
+nested_product and wide_local are intact k9 models; automatic k<=8 is unchanged.
+No source was trimmed or substituted to obtain passing selected proofs.
+Constructor/deployment execution, unenumerated inputs, all-export coverage and
+required arm64/Linux CI/integration are not proved by this local result.
+
+Actual independent Codex CLI source review v6 finds no P1/P2 in the complete
+proof adapter/dispatch/identity/control source. The separate receipt review uses
+its own read-only standard-library Python and Git inspection: all10,980 indexed
+records/6,552 paths match;42 absence observations/14 configuration paths hold;
+all4,463 mapped worktree files match the frozen source;11,165 overlapping primary
+receipt references independently reconcile. It checks the950 depfile dependencies
+and exact860 physical worktree inputs, whole SDKs/IR/Programs,219-file/five-package
+Node production closure and20 external libraries, command/control outcomes,
+model/material/key order and real proof/application premises. It reports bounded
+acceptance/no P1/P2. Host OS library bytes remain unqualified. This is inspection,
+not cryptographic re-execution, a global supply-chain audit or a human security
+audit. Actual preceding Claude429/reset-window evidence supports the authorized
+Codex fallback; no new Claude review is claimed.
+
+The original receipt index remains unchanged. A supplemental author index adds
+two diagnostic source-file paths and one diagnostic ZKIR path already declared
+in primary receipts; it has10,983 records/6,555 paths. Original review counts
+refer to the original index, not a rerun of that supplemental indexing step.
+Closeout log hashes are labeled observations at audit, not retrospective
+execution-time remote attestations.
+
+U's144-command/34-case/24-root API and283-fixture passes remain at2da9, with
+unchanged owner/source/recipe/compiler identity reuse checked by the independent
+review; they are not relabeled fresh438bf executions. Earlier1,833 tests/seven
+ignored remain at1c062. All failures and the real P2 discovery/fix stay retained.
+
+At closeout, two original app-namespace turn-diff ref names were observed absent;
+the actor/cause was not observed. Their common original tree was still present
+and is preserved by a task-owned local-evidence ref, without recreating managed
+names. The other655 original refs, including all source branches/tags, remain
+exact. Earlier657-exact audits retain their original observation scope. No source
+worktree, proof artifact, store, container, snapshot or cache was deleted.
+
+Evidence: `proof-v1/receipt.json`, its complete `protocol/receipt.json`,
+`local-codex-code-review-v6-result.json`,
+`local-codex-receipt-review-v1-result.json`, `receipt-audit-v1.json`,
+`receipt-audit-v2.json`, `review-adjudication-v2.json`,
+`ref-preservation-transient-exception-v1.json`, `qualification-summary-v1.json`
+in the V evidence root. Keep exact source epochs and bounded scope.
+
+The next [Vector-containing product proposal](stateful-vector-product-elements.md)
+is source-only. It first requires repairing its independently observed strict
+identity-control baseline, then tracing the aggregate-cast/evaluation gap. No next
+feature implementation or model/proof feasibility follows from that proposal.
+No publication, hosted trial, shared installation, merge or cleanup occurred;
+local V qualification does not complete the broad goal or deferred Forge.

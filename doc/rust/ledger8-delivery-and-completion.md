@@ -539,6 +539,25 @@ run; compiler-emitted ZKIR assets do not establish model sizing or proof
 acceptance. That qualification, independent receipt review and the full slice
 remain open. Existing predecessor proofs retain their own source epochs.
 
+The V successor at438bf now has reviewed bounded local compiler177 qualification:
+the current153-command/25-root/32-case protocol passes, all26export models are
+observed, both selected exports are k8 (run212rows, run_field161), and locked
+material precedes two fresh keys. Three2,912-byte standalone proofs and three
+separately proved funded default-strict6,604/6,605/6,561-byte applications pass
+with immutable verifier/binding/result/corruption and unchanged replay controls.
+Independent source and separate receipt/hash/premise reviews report no P1/P2
+within their scopes. All860physical worktree inputs are prebuild-pinned in the
+actual4,439-source map; the raw depfile is retained. The other23required exports,
+including three intact k9 models, remain unproved; constructor/all-input and CI/
+integration coverage stays open. U/fixture/old full-test reuse keeps exact epochs;
+no fresh compiler rebuild or cryptographic reexecution by reviewers is claimed.
+
+A separate [Vector-containing product plan](plans/stateful-vector-product-elements.md)
+retains15complete probes/45original177commands and a concrete strict identity-SDK
+signature baseline failure. It proposes closing that baseline first, then the
+observed aggregate-cast/local/witness dispatch gap. No implementation or proof
+feasibility has been inferred.
+
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before
 verified GitHub merge.

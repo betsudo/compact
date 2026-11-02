@@ -1,0 +1,98 @@
+# Stateful Vector products with Vector elements
+
+Status: source-only proposal after V. No next implementation, SDK execution,
+model/key/proof feasibility or integration acceptance is claimed.
+
+## Actual gap and baseline
+
+Original compiler177 at `438bf21c9f64b133970f8dadb212c24e54a2873d` retains
+15 complete sources / 45 commands in `next-vector-product-elements-v1/receipt.json`.
+Thirteen sources pass TS. Six valid parameter/helper/Field/nested/Boolean/full
+branch-candidate forms fail Rust and independent IR on nested Cell.write.
+Local and transparent-alias variants emit IR then fail native source/target
+Vector type checking. Two witness variants emit a declared witness but a plain
+call in a legacy expression binding; Rust then reports unknown circuit
+vector_value. Trace the actual supplied casts and evaluation owner before fixing.
+
+Pure nested coercion, same-type stateful return and the accepted V scalar-product
+control emit successfully in all three lanes. Two narrowing/inner-dimension
+frontend refusals remain intact. They establish emission/native-checking controls,
+not complete current SDK execution or proof acceptance.
+
+A focused whole unedited SDK-root probe (`next-control-roots-v1/receipt.json`)
+passes strict Clippy for the pure and accepted V controls. The same-type stateful
+control fails eight type_complexity style diagnostics in complete signatures.
+**Close this concrete baseline issue first**, using the existing signature AST
+owner and narrow macro style allowlist as required. Do not suppress other lints,
+change carriers or begin coercion features while that focused baseline is red.
+
+## Owners and intended public API
+
+- `compiler/rust-ir-passes.ss`: supplied aggregate-cast relation, existing ordered
+  return/local binding evaluation and typed witness dispatch. Preserve the
+  original child type/value before checked target conversion and single evaluation.
+- Existing shared native/recording Coerce rules and structured tuple/Vector AST
+  emission remain semantic authorities. Reuse their bounded shape, leaf, layout,
+  work/resource and both-static-branch checks; add no parallel evaluator.
+- `CompactSignatureLint` and the existing witness bridge own generated signature
+  metadata. A style repair must remain function scoped, preserve type/body/ABI and
+  keep semantic/conditional/broad attributes rejected.
+
+The public carrier remains the actual complete type, e.g.
+`FixedVector<(FixedVector<BoundedUint<255>,2>,BoundedUint<65535>),2>` to
+`FixedVector<(FixedVector<BoundedUint<65535>,2>,BoundedUint<4294967295>),2>` or
+`FixedVector<(FixedVector<Field,2>,Field),2>`. Preserve ordinary, recorded and
+consuming functional Program/context APIs. No new compiler flag, dependency,
+IR primitive, runtime unchecked conversion or public type erasure.
+
+## Scope and exclusions
+
+Bounded structural widening through product components that are fixed Vectors,
+with exact Vector dimensions/product arities, monotone numeric leaves and observed
+Boolean identity. Characterize additional tuple nesting, aliases, checked helpers,
+stateful helpers, queries and witness/error order before admitting them. Do not
+infer arbitrary identity/nominal support from structural shape alone.
+
+No Struct/nominal redesign, narrowing relaxation, general effect framework,
+backend refactor, broad alias project or CI optimization. No source extraction,
+geometry normalization, proof/verdict cache, cap increase or smaller substitute
+contract to make a selected proof pass. Retain all complete probes and failures.
+
+## Acceptance and order
+
+1. After V's actual receipt findings settle, preserve its reviewed signed
+   documentation/evidence. Inspect exact checkpoint/refs/worktrees before a new
+   isolated successor; use the actual reviewed V head, never a guessed old
+   rust-ast checkout. Run focused baseline and strict complete control roots;
+   close the observed signature regression before new semantic code.
+2. Trace current original frontend cast/source/target/effect owners. Fix the
+   observed return/local/witness cases at those owners, retaining original bounds,
+   declaration/callback/effect order, checked intermediate casts and first errors.
+   Preserve accepted pure and V controls with complete source/IR/Programs and
+   correct physical source paths; no JSON/label normalization.
+3. Execute independent TS and complete unedited Rust SDK ordinary/recorded/
+   functional routes at the real nested types. Use asymmetric outer/inner values,
+   both branches and observable helper/witness/private-state effects; preserve
+   transcript geometry, public replay and precise Rust-route gas agreement.
+   Test checked helper narrowing/guards and both witness positions before claiming
+   their support. Run strict full SDK roots, including control cases.
+4. Include marked wrong inner bound/type/dimension/product arity/result carrier
+   and consuming Program/context misuse, each with an independent correct-type
+   twin. Preserve source refusal bytes and untrusted malformed Coerce/binding/
+   dead-branch/static-empty validation; regenerate complete producer mutations and
+   consume a real typed changed-result oracle.
+5. Bind exact original source/compiler/backend/recipe/tools/config/serialization/
+   generated physical inputs before build and retain the actual depfile before
+   target reuse. Inventory every current export/model before any proof selection.
+   No model size or key/proof feasibility follows from this proposal's complete
+   two-export branch/Field candidate. Verify locked material before fresh keys;
+   use actual tiny-admitted full-source proofs and separate funded default-strict
+   applications with immutable verifier/binding/corruption/real same-geometry
+   output/replay controls. If a complete selected model exceeds automatic k<=8,
+   retain it and the actual refusal; do not trim, raise the cap or redefine success.
+   Keep constructor/unselected/all-input obligations explicit.
+6. Actual Claude-first source and separate receipt review (authorized Codex fallback
+   only on actual limits), signed Conventional DCO/Assisted-by commits, verified
+   Obsidian process/CAS. Focused local arm64 iteration retains full required CI,
+   Linux/proof/integration gates. Current goal stays local only; no Forge,
+   publication, shared install or cleanup. Broad goal remains incomplete.
