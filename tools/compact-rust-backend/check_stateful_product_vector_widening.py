@@ -194,10 +194,10 @@ def main():
 
     try:
         definitions = json.loads((FIXTURES / "sources.json").read_text())
-        require(len(definitions) == 23 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
+        require(len(definitions) == 25 and {s["source"] for s in definitions} == {p.stem for p in SOURCES.glob("*.compact")}, "source roster differs")
         cases = json.loads((FIXTURES / "cases.json").read_text())
         case_count = len(cases)
-        require(case_count == 30 and len({r["id"] for r in cases}) == case_count, "case roster differs")
+        require(case_count == 32 and len({r["id"] for r in cases}) == case_count, "case roster differs")
         stateful_sources = {r["source"] for r in definitions if r["stateful"]}
         require({r["source"] for r in cases} == {r["source"] for r in definitions}, "a complete source has no consumer")
         stateful_cases = sum(r["source"] in stateful_sources for r in cases)

@@ -384,3 +384,116 @@ macro_rules! witness_case {
 }
 witness_case!(witness_before);
 witness_case!(witness_after);
+
+// Combined witness/nested-product regression: these complete SDK traits must
+// survive macro expansion and strict Clippy, with original callback geometry.
+type NarrowProduct = (BoundedUint<255>, BoundedUint<65535>);
+type NestedNarrowProducts = FixedVector<FixedVector<NarrowProduct, 2>, 2>;
+type NestedWideProducts =
+    FixedVector<FixedVector<(BoundedUint<65535>, BoundedUint<4294967295>), 2>, 2>;
+struct NestedVectorWitness {
+    expected_seen: u64,
+    calls: std::cell::RefCell<Vec<Value>>,
+}
+impl NestedVectorWitness {
+    fn record(&self, before: u64, seen: Field) -> (u64, NestedNarrowProducts) {
+        assert_eq!(
+            seen,
+            Field::from(self.expected_seen),
+            "nested witness order"
+        );
+        let values = vec![
+            vec![
+                vec![(before - 4).to_string(), "31".into()],
+                vec![(before - 3).to_string(), "41".into()],
+            ],
+            vec![vec!["5".into(), "51".into()], vec!["6".into(), "61".into()]],
+        ];
+        self.calls
+            .borrow_mut()
+            .push(json!({"privateState":before,"value":values,"seen":encode(seen.into())}));
+        (
+            before + 1,
+            FixedVector::new([
+                FixedVector::new([
+                    (u(u128::from(before - 4)), u(31)),
+                    (u(u128::from(before - 3)), u(41)),
+                ]),
+                FixedVector::new([(u(5), u(51)), (u(6), u(61))]),
+            ]),
+        )
+    }
+}
+macro_rules! nested_vector_witness {
+    ($module:ident) => {
+        impl $module::ledger_contract::Witnesses<u64> for NestedVectorWitness {
+            fn vector_value(
+                &self,
+                ctx: r::context::WitnessContext<'_, u64, $module::ledger_contract::LedgerView<'_>>,
+            ) -> (u64, NestedNarrowProducts) {
+                self.record(*ctx.private_state, ctx.ledger.seen().unwrap())
+            }
+        }
+        #[test]
+        fn $module() {
+            use $module::ledger_contract as api;
+            let row = row(stringify!($module));
+            let mut observed = None;
+            for lane in 0..4 {
+                let witness = NestedVectorWitness {
+                    expected_seen: row["witnessSeen"].as_str().unwrap().parse().unwrap(),
+                    calls: Default::default(),
+                };
+                let ctx = api::initial_state(r::context::ConstructorContext::new(7_u64))
+                    .unwrap()
+                    .into_circuit_context(Default::default());
+                let held = ctx.query.state.clone();
+                let out = match lane {
+                    0 => api::run(ctx, &witness),
+                    1 => api::recorded::run(ctx, &witness).map(replay),
+                    2 => api::functional::run::Program::new().execute_native(ctx, &witness),
+                    3 => api::functional::run::Program::new()
+                        .execute_recorded(ctx, &witness)
+                        .map(replay),
+                    _ => unreachable!(),
+                }
+                .unwrap();
+                check::<NestedWideProducts>(Ok(out.result), &row);
+                assert_eq!(out.context.private_state, 8);
+                assert_eq!(
+                    out.private_transcript_outputs
+                        .into_iter()
+                        .map(encode)
+                        .collect::<Vec<_>>(),
+                    row["privateOutputs"].as_array().unwrap().clone()
+                );
+                assert_eq!(
+                    *witness.calls.borrow(),
+                    row["observedWitnesses"].as_array().unwrap().clone()
+                );
+                assert_eq!(
+                    $module::ledger_slots::seen
+                        .inspect(out.context.query.state.get_ref())
+                        .unwrap(),
+                    Field::from(1_u64)
+                );
+                assert_eq!(
+                    $module::ledger_slots::seen.inspect(held.get_ref()).unwrap(),
+                    Field::from(0_u64)
+                );
+                let state = (
+                    out.context.query.state,
+                    out.context.query.effects,
+                    out.gas_cost,
+                );
+                if let Some(before) = &observed {
+                    assert_eq!(&state, before);
+                } else {
+                    observed = Some(state);
+                }
+            }
+        }
+    };
+}
+nested_vector_witness!(witness_nested_before);
+nested_vector_witness!(witness_nested_after);

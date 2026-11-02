@@ -232,5 +232,25 @@
     "descriptor": "u16_product_vector",
     "proof_required": true,
     "local_conversions": 1
+  },
+  {
+    "source": "witness_nested_after",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "nested_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
+  },
+  {
+    "source": "witness_nested_before",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "nested_product_vector",
+    "proof_required": true,
+    "local_conversions": 1
   }
 ]

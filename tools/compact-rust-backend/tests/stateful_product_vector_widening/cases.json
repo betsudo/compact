@@ -924,5 +924,119 @@
       "value": "100000",
       "max": "65535"
     }
+  },
+  {
+    "id": "witness_nested_before",
+    "source": "witness_nested_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ],
+      [
+        [
+          "5",
+          "51"
+        ],
+        [
+          "6",
+          "61"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "privateState": 8,
+    "witnessSeen": "0",
+    "witnessValues": [
+      [
+        [
+          [
+            "3",
+            "31"
+          ],
+          [
+            "4",
+            "41"
+          ]
+        ],
+        [
+          [
+            "5",
+            "51"
+          ],
+          [
+            "6",
+            "61"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "witness_nested_after",
+    "source": "witness_nested_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ],
+      [
+        [
+          "5",
+          "51"
+        ],
+        [
+          "6",
+          "61"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "privateState": 8,
+    "witnessSeen": "1",
+    "witnessValues": [
+      [
+        [
+          [
+            "3",
+            "31"
+          ],
+          [
+            "4",
+            "41"
+          ]
+        ],
+        [
+          [
+            "5",
+            "51"
+          ],
+          [
+            "6",
+            "61"
+          ]
+        ]
+      ]
+    ]
   }
 ]

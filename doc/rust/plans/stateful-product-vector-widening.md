@@ -166,3 +166,32 @@ active. Broad alias/API redesign is outside this repair. Semantic validators,
 conversion AST bodies, original source/IR/Programs and ABI remain unchanged;
 the generated signature attributes are an explicit metadata change. Current
 175 clean-head validation and independent review must cover this successor.
+
+## Independent witness interaction finding
+
+Actual read-only Codex source review v1 found no P1/P2 at `0821e88fa`.
+The separate successor review v2 found a real P2 at `1c0623fd4`: nested-product
+Witnesses methods acquire the scoped style attribute, but compact_witness_bridge
+previously accepted only doc attributes. A complete real compiler175 nested
+witness SDK reproduces ordinary compilation failure in
+`witness-style-regression-v1/receipt.json`. Emission and 1,833 backend unit passes
+(seven existing ignored) plus strict backend Clippy did not cover this interaction.
+Those successful receipts retain their original head; the failing SDK is retained.
+
+Compiler176 coordinates the existing witness bridge with the signature owner.
+The bridge permits only the two generated signature style lint names
+(type_complexity/too_many_arguments), with an optional string reason. It still
+rejects cfg/expect/semantic attributes, other lint names/groups, empty allowances,
+malformed or duplicate reasons. The same allowed style attributes propagate to
+the ordinary trait, fallible trait and adapter implementation; docs retain their
+original two public-trait surfaces. Signature/body/parameter validation is intact.
+
+Two complete combined witness/nested-product contracts now exercise before- and
+after-write callbacks, original narrow nested private transcript geometry and
+all four Rust routes against independent TS execution. The maintained roster is
+25 sources / 32 cases (124 stateful route executions plus one pure). Counts are
+expectations until its actual current gate passes. The gate retains its complete
+SDK-root, marked refusal/twin, source/malformed/producer/result controls. Current
+176 build/API, macro parser controls/strict Clippy, fresh independent review and
+selected proof/application qualification remain open; no trimming or disabling
+of the failing combined shape is permitted.

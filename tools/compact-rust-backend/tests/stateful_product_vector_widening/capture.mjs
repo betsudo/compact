@@ -87,7 +87,8 @@ for(const spec of specs){
  if(stateful){
   const c=new m.Contract(source.startsWith('witness_')?{vector_value:({privateState,ledger})=>{
     const seen=ledger.seen;assert.equal(seen,BigInt(spec.witnessSeen),'initializer witness order');
-    const value=[[BigInt(privateState-4),31n],[BigInt(privateState-3),41n]];
+    const first=[[BigInt(privateState-4),31n],[BigInt(privateState-3),41n]];
+    const value=source.startsWith("witness_nested_")?[first,[[5n,51n],[6n,61n]]]:first;
     observed.push({privateState,value:json(value),seen:encode({value:r.CompactTypeField.toValue(seen),alignment:r.CompactTypeField.alignment()})});
     return [privateState+1,value];
   }}:{});
@@ -110,7 +111,8 @@ for(const spec of specs){
   assert.equal(m.ledger(out.context.currentQueryContext.state).seen,BigInt(spec.seen),spec.id);
   if(spec.noMutation&&source==='read_only')assert.deepEqual(m.ledger(out.context.currentQueryContext.state).saved,convert(spec.constructor[0]),spec.id);
   assert.equal(out.context.currentPrivateState,spec.privateState??7,spec.id);
-  const privateValues=(spec.witnessValues??[]).map(value=>encode({value:vector(2,product8).toValue(convert(value)),alignment:vector(2,product8).alignment()}));
+  const privateDescriptor=source.startsWith("witness_nested_")?vector(2,vector(2,product8)):vector(2,product8);
+  const privateValues=(spec.witnessValues??[]).map(value=>encode({value:privateDescriptor.toValue(convert(value)),alignment:privateDescriptor.alignment()}));
   assert.deepEqual(out.proofData.privateTranscriptOutputs.map(encode),privateValues,spec.id);
   assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.witnessSeen)),alignment:r.CompactTypeField.alignment()})})),spec.id);
   assert.deepEqual(encode(out.proofData.output),encoded,spec.id);
