@@ -1783,6 +1783,12 @@
       ;; ordered evaluation; the existing native/recording Coerce owners still
       ;; independently check the reached value and its representation bounds.
       (define (vector-value-widening? target source)
+        ;; Type emission already erases these scalar aliases. Unwrap them only
+        ;; for Vector conversion classification; do not change other owners.
+        (define (leaf-carrier type)
+          (nanopass-case (Lnodisclose Type) type
+            [(talias ,src ,nominal? ,type-name ,type^) (leaf-carrier type^)]
+            [else type]))
         (nanopass-case (Lnodisclose Type) (vector-carrier-type source)
           [(tvector ,src ,len ,type)
            (nanopass-case (Lnodisclose Type) (vector-carrier-type target)
@@ -1790,8 +1796,8 @@
               (and (= len len^)
                    (or (vector-value-widening? type^ type)
                        (return-component-widening?
-                         (vector-carrier-type type^)
-                         (vector-carrier-type type))))]
+                         (leaf-carrier type^)
+                         (leaf-carrier type))))]
              [else #f])]
           [else #f]))
 

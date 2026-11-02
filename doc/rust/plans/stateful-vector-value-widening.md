@@ -106,3 +106,14 @@ Coerce continuation. No native validator, runtime, schema/ABI, dependency or AST
 owner change is proposed. Narrowing and nominal refusals remain authoritative.
 Compiler metadata171 marks this source change; current build/API/proof/review
 acceptance remains pending.
+
+
+Original171 recipe passed. Current29-source characterization retains the first
+attempt: all previously failing non-aliased forms emit, but scalar Uint/Field
+aliases inside Vectors still miss the classifier. The pre-existing Vector carrier
+helper intentionally returns scalar aliases unchanged. Unwrap scalar aliases
+locally in the new Vector conversion leaf classifier, matching existing TypeIR
+erasure without changing other alias owners. Compiler172 identifies this fix.
+The pure control's first current Rust command accidentally requested functional
+stateful emission; retain that refusal and use the correct pure flags in the
+next current characterization. No API/proof acceptance is inferred.
