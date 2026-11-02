@@ -1,5 +1,11 @@
 # Typed Vector widening in stateful local bindings
 
+**Status:** reviewed bounded local compiler 173/source/API and selected proof/default-strict
+application qualification at execution `408dd00ee8c35b050ed6f307be0bf89edd839984`.
+Full CI/integration and the broad goal remain open. The compiler 172 diagnostics
+and intermediate sections below preserve the original proposal and iteration
+history; the reviewed closeout records the current accepted scope.
+
 ## Concrete gap and accepted boundaries
 
 Current compiler 172 at T execution `eaefb375285b2f7b2185ac63111887bd45a75e41`
@@ -85,7 +91,7 @@ publication or cleanup is authorized by this local proposal. The broad Rust AST
 goal remains incomplete; no implementation has started on this next slice.
 
 
-## Admission
+## Historical admission
 
 U is admitted separately on `codex/rust-ast-stateful-local-vector-widening`
 from reviewed T documentation `573ce6d2edfea6e59e7f7d816e2f97c7ba148a7e`.
@@ -95,7 +101,7 @@ untouched. Focused clean baseline and actual binding/cast owner tracing are next
 no U implementation, current compiler, API, model or proof acceptance is claimed.
 
 
-## Baseline and owner trace
+## Baseline and owner trace before qualification
 
 Clean signed admission `6359c1f52` passes all 35 focused coercion, Vector, Fold,
 projection, historical fixture, native Vector-child and return-order tests.
@@ -125,7 +131,7 @@ and ABI remain unchanged. Compiler173 identifies this implementation. Current
 compiler/source/API/proof/review qualification is pending.
 
 
-## Current source and development consumer
+## Source and development consumer before maintained qualification
 
 Original default 173 recipe passes at implementation `c26552fa3`. Current 30 source /
 90 command comparison passes all 23 TS-valid sources in Rust and independent IR,
