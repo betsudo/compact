@@ -111,7 +111,11 @@
               "value": {
                 "kind": "coerce",
                 "value": {
-                  "kind": "tuple",
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
                   "elements": [
                     {
                       "kind": "struct_field",
@@ -177,7 +181,11 @@
               "value": {
                 "kind": "coerce",
                 "value": {
-                  "kind": "tuple",
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
                   "elements": [
                     {
                       "kind": "struct_field",
@@ -289,7 +297,11 @@
             "value": {
               "kind": "coerce",
               "value": {
-                "kind": "tuple",
+                "kind": "vector",
+                "element": {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
                 "elements": [
                   {
                     "kind": "struct_field",

@@ -97,7 +97,11 @@
             "value": {
               "kind": "coerce",
               "value": {
-                "kind": "tuple",
+                "kind": "vector",
+                "element": {
+                  "kind": "unsigned",
+                  "max": "680564733841876926926749214863536422911"
+                },
                 "elements": [
                   {
                     "kind": "struct_field",

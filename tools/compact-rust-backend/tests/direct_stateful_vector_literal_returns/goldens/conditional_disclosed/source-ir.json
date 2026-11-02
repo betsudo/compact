@@ -97,7 +97,11 @@
               "value": {
                 "kind": "coerce",
                 "value": {
-                  "kind": "tuple",
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
                   "elements": [
                     {
                       "kind": "tuple_index",
@@ -161,7 +165,11 @@
               "value": {
                 "kind": "coerce",
                 "value": {
-                  "kind": "tuple",
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
                   "elements": [
                     {
                       "kind": "tuple_index",
