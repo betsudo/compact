@@ -1,0 +1,117 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "literal_control.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "wide",
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              },
+              "value": {
+                "kind": "vector",
+                "element": {
+                  "kind": "unsigned",
+                  "max": "65535"
+                },
+                "elements": [
+                  {
+                    "kind": "unsigned_literal",
+                    "value": "1",
+                    "max": "65535"
+                  },
+                  {
+                    "kind": "unsigned_literal",
+                    "value": "255",
+                    "max": "65535"
+                  }
+                ]
+              }
+            }
+          ],
+          "body": {
+            "kind": "parameter",
+            "name": "wide"
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_0",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "field_literal",
+                "value": "1"
+              }
+            }
+          ],
+          "action": {
+            "kind": "cell_write",
+            "field": "seen",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_0"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "literal_control.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ]
+}

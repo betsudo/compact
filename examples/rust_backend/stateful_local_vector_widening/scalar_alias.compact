@@ -1,0 +1,7 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+export type Small=Uint<8>;export type Large=Uint<16>;
+export circuit run(input:Vector<2,Small>):Vector<2,Large>{seen=1;const wide:Vector<2,Large> = input;return wide;}

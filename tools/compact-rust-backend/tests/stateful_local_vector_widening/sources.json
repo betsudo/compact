@@ -1,0 +1,246 @@
+[
+  {
+    "source": "alias_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "checked_helper_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "discarded_checked",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "empty_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "empty_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "field_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "field_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "helper_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "literal_control",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 0
+  },
+  {
+    "source": "multiple_bindings",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "field_vector",
+    "local_conversions": 2
+  },
+  {
+    "source": "nested_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "nested_u16",
+    "local_conversions": 1
+  },
+  {
+    "source": "proofs",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    },
+    "local_conversions": 1
+  },
+  {
+    "source": "pure_control",
+    "stateful": false,
+    "proof_required": false,
+    "entries": [
+      "value"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 0
+  },
+  {
+    "source": "read_only_value",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "returned_value_control",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 0
+  },
+  {
+    "source": "scalar_alias",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "scalar_result",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_scalar",
+    "local_conversions": 1
+  },
+  {
+    "source": "stateful_helper",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "stateful_helper_value",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "struct_projection",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "unit_result",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "unit",
+    "local_conversions": 1
+  },
+  {
+    "source": "unsigned_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "unsigned_before",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "wide_local",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "witness_after",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  },
+  {
+    "source": "witness_before",
+    "stateful": true,
+    "proof_required": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "u16_vector",
+    "local_conversions": 1
+  }
+]

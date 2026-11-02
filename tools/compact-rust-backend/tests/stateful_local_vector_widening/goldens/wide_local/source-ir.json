@@ -1,0 +1,132 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "wide_local.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "680564733841876926926749214863536422911"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "452312848583266388373324160190187140051835877600158453279131187530910662655"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "wide",
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "452312848583266388373324160190187140051835877600158453279131187530910662655"
+                }
+              },
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "input"
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "452312848583266388373324160190187140051835877600158453279131187530910662655"
+                  }
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_0",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "1"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_0"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "wide_local.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ]
+}

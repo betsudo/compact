@@ -1,0 +1,7 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+witness vector_value():Vector<2,Uint<8>>;
+export circuit run():Vector<2,Uint<16>>{const wide:Vector<2,Uint<16>> = disclose(vector_value());seen=1;return wide;}

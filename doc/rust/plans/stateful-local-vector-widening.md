@@ -123,3 +123,40 @@ unrelated expressions keep their owners. This is routing and source preservation
 not recording admission; native/recording validators, resource rules, AST owners
 and ABI remain unchanged. Compiler173 identifies this implementation. Current
 compiler/source/API/proof/review qualification is pending.
+
+
+## Current source and development consumer
+
+Original default173 recipe passes at implementation `c26552fa3`. Current30source /
+90command comparison passes all23TS-valid sources in Rust and independent IR,
+with all seven frontend refusals unchanged. Three unaffected controls retain all
+14 IR/raw/Rust/capability/Program assets byte-for-byte172/173. The struct local
+projection is already supported but now uses the ordered route; its changed
+artifacts are retained and it receives current execution coverage.
+
+A separate complete stateful-helper variant reverses its returned Vector, making
+actual call execution observable while its ledger assertion rejects reordering
+or repeated execution. It passes TS/IR and fails original172 Rust, then passes
+all three lanes with173. The maintained corpus contains24complete positive
+sources plus7frontend negatives, including scalar/Unit results at the same local
+binding boundary. Development TS and whole unedited SDK execution pass34cases:
+132stateful Rust route executions and one pure execution. Before/after-write
+witnesses each observe the specified ledger value, return one narrow Vector
+private transcript value and evolve private state once. Checked/discarded helper
+initializers preserve guard and first narrowing failure; multiple bindings and
+query/native-state preservation are checked. Development harness v1 retained a
+stale consumer environment/format prefix; v2 ran34passing cases but failed its
+post-run hash bookkeeping before recording Cargo's exit. Corrected v3 retains
+actual terminal Cargo0 plus34passes and unchanged complete SDK/TS inputs. These
+are development results, not maintained clean-head qualification.
+
+The opt-in full-source proof adapter includes both complete current Programs and
+the unedited SDK. Its selected source retains explicit wider locals before and
+after constructor-controlled keep/flip branches and a Field export. The gate
+must inventory all exports/models, verify material before fresh keys and require
+genuine selected proofs and separately proved funded default-strict application
+with immutable negatives/replay. Physical generated/golden includes and every
+worktree dependency in the raw Cargo depfile are pinned before the runner build;
+the depfile itself is privately retained. No model/proof feasibility or maintained
+source/API/proof/review acceptance is claimed yet. All full CI/integration and
+prior wide k=9 obligations remain open.

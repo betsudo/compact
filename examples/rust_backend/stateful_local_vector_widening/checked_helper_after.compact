@@ -1,0 +1,7 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+pure circuit checked(ok:Boolean,input:Vector<2,Uint<16>>):Vector<2,Uint<8>>{assert(ok,"helper denied");return [input[1] as Uint<8>,input[0] as Uint<8>];}
+export circuit run(ok:Boolean,input:Vector<2,Uint<16>>):Vector<2,Uint<16>>{seen=1;const wide:Vector<2,Uint<16>> = checked(ok,input);return wide;}
