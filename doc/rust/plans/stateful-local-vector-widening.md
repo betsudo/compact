@@ -88,7 +88,7 @@ No IR/runtime ABI, resource cap, flag, dependency or ownership redesign. No
 source extraction, generated-code editing or proof/verdict caching. Constructor,
 all-input and unselected proof coverage remains explicit. No Forge work,
 publication or cleanup is authorized by this local proposal. The broad Rust AST
-goal remains incomplete; no implementation has started on this next slice.
+goal remains incomplete. No implementation or qualification was inferred at proposal time.
 
 
 ## Historical admission
