@@ -1,0 +1,126 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "struct",
+            "name": "Input",
+            "fields": [
+              {
+                "name": "left",
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              },
+              {
+                "name": "right",
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "selected",
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            },
+            "value": {
+              "kind": "vector",
+              "element": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "elements": [
+                {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "struct_field",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "field": "right",
+                    "index": 1
+                  },
+                  "ty": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                },
+                {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "struct_field",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "field": "left",
+                    "index": 0
+                  },
+                  "ty": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "selected"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "local.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

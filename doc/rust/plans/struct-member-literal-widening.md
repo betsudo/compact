@@ -56,3 +56,22 @@ literal source context keep original IR. Native field-name/index/type validation
 and ownership remain unchanged. Compiler167 records the source change; no IR,
 runtime ABI, dependency or executor changes. Current compiler/API/proof and
 independent review acceptance remain open.
+
+
+## Original167 and maintained current-source corpus
+
+Original default native167 builds at signedf7c9235f2. All23sources/69commands
+now have the intended outcomes:18TS-valid sources emit Rust and independentIR,
+5frontend refusals retain their original causes. All20full IR/raw/Rust/capability
+assets for5acceptedcontrol sources are byte-identical to166.
+
+The maintained source/API gate is check_struct_member_literal_widening.py.
+Its18complete positive sources have28cases:26pure calls and8stateful route
+executions. Cases retain wide/tuple/nested/alias/local/conditional/empty source,
+ordered distinct source assertions and checked narrowing. Existing generated
+public structs live in types::Input/Envelope; the declared Uint8 fields are
+kept, not replaced by vectors or wider hand-written producers. Independent
+TS descriptors include actual struct output field order and Uint/Field carriers.
+Five marked Rust refusals,5frontend refusals,6native malformed controls, complete
+producer mutations, strict SDK roots and Cargo config identity are required.
+Development36-command generation alone is not clean-head API/proof acceptance.

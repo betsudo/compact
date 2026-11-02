@@ -1,0 +1,520 @@
+[
+  {
+    "id": "small_unsigned",
+    "source": "small_unsigned",
+    "entry": "value",
+    "args": [
+      {
+        "left": "2",
+        "right": "3"
+      }
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "unsigned_bounds",
+    "source": "small_unsigned",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "small_field",
+    "source": "small_field",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "alias",
+    "source": "alias",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "local",
+    "source": "local",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "guarded",
+    "source": "guarded",
+    "entry": "value",
+    "args": [
+      true,
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "explicit_control",
+    "source": "explicit_control",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "wide",
+    "source": "wide",
+    "entry": "value",
+    "args": [
+      {
+        "left": "340282366920938463463374607431768211456",
+        "right": "680564733841876926926749214863536422911"
+      }
+    ],
+    "expected": [
+      "680564733841876926926749214863536422911",
+      "340282366920938463463374607431768211456"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "product",
+    "source": "product",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "nested",
+    "source": "nested",
+    "entry": "value",
+    "args": [
+      {
+        "inner": {
+          "left": "0",
+          "right": "255"
+        }
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "nested_literal",
+    "source": "nested_literal",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      [
+        "255",
+        "0"
+      ],
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "conditional_true",
+    "source": "conditional",
+    "entry": "value",
+    "args": [
+      true,
+      {
+        "left": "0",
+        "right": "255"
+      },
+      {
+        "left": "2",
+        "right": "3"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "conditional_false",
+    "source": "conditional",
+    "entry": "value",
+    "args": [
+      false,
+      {
+        "left": "0",
+        "right": "255"
+      },
+      {
+        "left": "2",
+        "right": "3"
+      }
+    ],
+    "expected": [
+      "2",
+      "3"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "source_ok",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      {
+        "left": "2",
+        "right": "3"
+      },
+      {
+        "left": "4",
+        "right": "5"
+      }
+    ],
+    "expected": [
+      "3",
+      "4"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "first_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      true,
+      {
+        "left": "2",
+        "right": "3"
+      },
+      {
+        "left": "4",
+        "right": "5"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "second_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      false,
+      {
+        "left": "2",
+        "right": "3"
+      },
+      {
+        "left": "4",
+        "right": "5"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "second denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "both_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      false,
+      {
+        "left": "2",
+        "right": "3"
+      },
+      {
+        "left": "4",
+        "right": "5"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "guarded_denied",
+    "source": "guarded",
+    "entry": "value",
+    "args": [
+      false,
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "empty_mixed",
+    "source": "empty_mixed",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      [],
+      "255"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "narrow_checked",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      {
+        "left": "1",
+        "right": "2"
+      }
+    ],
+    "expected": [
+      "2",
+      "1"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "narrow_first",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      {
+        "left": "1",
+        "right": "300"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "narrow_second",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      {
+        "left": "300",
+        "right": "1"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "narrow_both",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      {
+        "left": "400",
+        "right": "300"
+      }
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "scalar_control",
+    "source": "scalar_control",
+    "entry": "value",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": "255",
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "struct_literal_projection",
+    "source": "struct_literal_projection",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": {
+      "left": "255",
+      "right": "0"
+    },
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "struct_literal_variable",
+    "source": "struct_literal_variable",
+    "entry": "value",
+    "args": [
+      "0",
+      "255"
+    ],
+    "expected": {
+      "left": "0",
+      "right": "255"
+    },
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "run",
+    "source": "helper",
+    "entry": "run",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": "1"
+  },
+  {
+    "id": "run_field",
+    "source": "helper",
+    "entry": "run_field",
+    "args": [
+      {
+        "left": "0",
+        "right": "255"
+      }
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": "2"
+  }
+]

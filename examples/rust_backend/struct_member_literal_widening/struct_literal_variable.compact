@@ -1,0 +1,5 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export struct Output { left:Uint<16>; right:Uint<16>; }
+export pure circuit value(left:Uint<8>,right:Uint<8>):Output{return Output{left:left,right:right};}

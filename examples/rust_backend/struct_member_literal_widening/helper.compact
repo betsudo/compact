@@ -1,0 +1,10 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export struct Input { left:Uint<8>; right:Uint<8>; }
+export ledger seen:Field;
+pure circuit widen(input:Input):Vector<2,Uint<16>>{return [input.right,input.left];}
+pure circuit fields(input:Input):Vector<2,Field>{return [input.right,input.left];}
+export circuit run(input:Input):Vector<2,Uint<16>>{seen=1;return widen(input);}
+export circuit run_field(input:Input):Vector<2,Field>{seen=2;return fields(input);}

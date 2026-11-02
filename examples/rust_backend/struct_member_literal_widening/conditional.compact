@@ -1,0 +1,5 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export struct Input { left:Uint<8>; right:Uint<8>; }
+export pure circuit value(ok:Boolean,input:Input,other:Input):Vector<2,Uint<16>>{return ok?[input.right,input.left]:[other.left,other.right];}
