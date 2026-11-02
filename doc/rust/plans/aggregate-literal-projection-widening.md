@@ -174,3 +174,24 @@ SDK strict roots, exact source/independentIR/allPrograms and tool bindings are
 required. Development generation alone is not current clean-head API or proof
 acceptance. All earlier matrices, lexical diagnostics and predecessors remain
 retained. Full CI/integration and the broader goal remain open.
+
+
+## Initial gate and independent review repairs
+
+At signed2f6 the full historical fixture freshness check,1830backend tests
+(7pre-existing ignored) and strict backend Clippy pass. The current source/API
+gate executes all31consumer cases,21strict unedited SDK roots,5Rust refusals,
+4source refusals and complete producer/result mutations, then stops at an
+incorrect new diagnostic assertion. Vector operands correctly report vector
+index2outside length2 and index1outside length0; expecting tuple-index wording
+was a test error. Retain the mutations and require those exact native diagnostics.
+The invalid unselected conditional arm also independently rejects the actual
+Unsigned255-to-Boolean conversion even when the condition is true.
+
+Actual independent Codex CLI review of2f6 (gpt-6-astra/high, after actual
+Claude quota) identifies that diagnostic issue and unrecorded Cargo lint/compiler
+overrides. Reuse the established cargo_configuration admission owner; capture
+and recheck config membership/bytes, reject build/target lint flags, wrappers
+and unchecked profiles. Focused controls exercise suppression, wrappers and a
+new config file. No source/proof binding or native validator is relaxed. The
+failed original run remains evidence; clean successor qualification is required.

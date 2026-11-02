@@ -23,6 +23,7 @@ import tomllib
 from check_constant_vector_projection import compile_failure
 from check_functional_effects import generated_manifest_snapshot
 from check_compactc_target import check_manifest
+from check_functional_source_sdk import cargo_configuration
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "aggregate_literal_projection_widening"
@@ -104,6 +105,7 @@ def reject_compiler_overrides(environment):
              "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", "RUSTC_BOOTSTRAP"]
     require(not any(environment.get(name) for name in names),
             "compiler/backend/unchecked Rust substitutions are not qualified")
+    return cargo_configuration(environment)
 
 
 def main():
@@ -115,7 +117,8 @@ def main():
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "output must be absent")
     env = dict(os.environ)
-    reject_compiler_overrides(env)
+    configuration_environment = dict(env)
+    configuration = reject_compiler_overrides(configuration_environment)
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "use the pinned Rust1.99.0 toolchain")
     git = lambda *a: subprocess.check_output(["git", *a], cwd=ROOT, text=True).strip()
@@ -147,6 +150,7 @@ def main():
     env["RUSTC"] = rust_tools["rustc"]["path"]
     output.mkdir(parents=True)
     report = {"status": "incomplete", "head": head, "tree": tree, "commands": [], "inputs": pins,
+              "cargo_configuration_sha256": configuration,
               "tools": tools, "rust_tools": rust_tools, "environment": {k: env.get(k) for k in
                     ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "MIDNIGHT_PP"]}, "scope": "Focused current complete-source/API/refusal checks; no proofs, Linux or integration"}
     start = time.monotonic()
@@ -325,8 +329,8 @@ def main():
             expected = {
                 "wrong_dimension": ['expression has type Vector', 'length: 2', 'length: 3'],
                 "wrong_element": ['expression has type Unsigned', 'max: "255"', 'expected Boolean'],
-                "wrong_index": ['invalid tuple index 2'],
-                "zero_input": ['invalid tuple index 1'],
+                "wrong_index": ['vector index 2 is outside its length 2'],
+                "zero_input": ['vector index 1 is outside its length 0'],
                 "dead_branch": ['expression has type Unsigned', 'max: "255"', 'expected Boolean'],
             }[name]
             require(rejected.returncode and all(message in rejected.stderr for message in expected),
@@ -338,6 +342,8 @@ def main():
             require(digest(ROOT / path) == sha, "source changed: " + path)
         for path, sha in tools.items():
             require(digest(path) == sha, "tool/compiler receipt changed: " + path)
+        require(reject_compiler_overrides(configuration_environment) == configuration,
+                "Cargo configuration membership or bytes changed during qualification")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "clean HEAD changed during qualification")
         report.update(status="passed", rust_tests=case_count, pure_routes=pure_routes, stateful_routes=stateful_routes, generated_hashes=snapshots)
     except Exception as e:
