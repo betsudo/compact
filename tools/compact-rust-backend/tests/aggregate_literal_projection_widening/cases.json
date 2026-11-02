@@ -1,0 +1,601 @@
+[
+  {
+    "id": "alias",
+    "source": "alias",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "explicit_control",
+    "source": "explicit_control",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "identity_control",
+    "source": "identity_control",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "local",
+    "source": "local",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "vector_unsigned",
+    "source": "vector_unsigned",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "unsigned_bounds",
+    "source": "vector_unsigned",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "vector_field",
+    "source": "vector_field",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "vector_wide",
+    "source": "vector_wide",
+    "entry": "value",
+    "args": [
+      [
+        "340282366920938463463374607431768211456",
+        "680564733841876926926749214863536422911"
+      ]
+    ],
+    "expected": [
+      "680564733841876926926749214863536422911",
+      "340282366920938463463374607431768211456"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "product",
+    "source": "product",
+    "entry": "value",
+    "args": [
+      [
+        "255",
+        "65535"
+      ]
+    ],
+    "expected": [
+      "255",
+      "65535"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "variable_control",
+    "source": "variable_control",
+    "entry": "value",
+    "args": [
+      "0",
+      "255"
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "scalar_control",
+    "source": "scalar_control",
+    "entry": "value",
+    "args": [
+      [
+        "255",
+        "0"
+      ]
+    ],
+    "expected": "255",
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "nested_identity_control",
+    "source": "nested_identity_control",
+    "entry": "value",
+    "args": [
+      [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "3",
+          "4"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "2",
+        "1"
+      ]
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "nested_literal",
+    "source": "nested_literal",
+    "entry": "value",
+    "args": [
+      [
+        [
+          "0",
+          "255"
+        ],
+        [
+          "1",
+          "254"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "1",
+        "254"
+      ],
+      [
+        "255",
+        "0"
+      ]
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "nested_projection",
+    "source": "nested_projection",
+    "entry": "value",
+    "args": [
+      [
+        [
+          "0",
+          "255"
+        ],
+        [
+          "1",
+          "254"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "1",
+        "254"
+      ],
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "guarded",
+    "source": "guarded",
+    "entry": "value",
+    "args": [
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "guarded_denied",
+    "source": "guarded",
+    "entry": "value",
+    "args": [
+      false,
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "source denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "conditional_true",
+    "source": "conditional",
+    "entry": "value",
+    "args": [
+      true,
+      [
+        "0",
+        "255"
+      ],
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "conditional_false",
+    "source": "conditional",
+    "entry": "value",
+    "args": [
+      false,
+      [
+        "0",
+        "255"
+      ],
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "mixed",
+    "source": "mixed",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ],
+      "12"
+    ],
+    "expected": [
+      "255",
+      "12",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "intermediate_cast",
+    "source": "intermediate_cast",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "narrow_checked",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      [
+        "1",
+        "2"
+      ]
+    ],
+    "expected": [
+      "2",
+      "1"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "narrow_first",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      [
+        "1",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "narrow_second",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      [
+        "300",
+        "1"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "narrow_both",
+    "source": "narrow_checked",
+    "entry": "value",
+    "args": [
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "seen": null
+  },
+  {
+    "id": "source_ok",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "4",
+        "5"
+      ]
+    ],
+    "expected": [
+      "2",
+      "5"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "first_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      true,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "4",
+        "5"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "second_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      false,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "4",
+        "5"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "second denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "both_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      false,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "4",
+        "5"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "first denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "empty_mixed",
+    "source": "empty_mixed",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      [],
+      "0"
+    ],
+    "error": null,
+    "seen": null
+  },
+  {
+    "id": "run",
+    "source": "helper",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": "1"
+  },
+  {
+    "id": "run_field",
+    "source": "helper",
+    "entry": "run_field",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "seen": "2"
+  }
+]

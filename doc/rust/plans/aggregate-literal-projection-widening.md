@@ -142,3 +142,35 @@ original explicit narrowing guards, complete source calls and empty/nested
 literal construction stay intact. Compiler166 metadata identifies this source;
 no ABI/IR/dependency/runtime/executor change is added. Actual current compiler,
 source/API, proof and review acceptance remain open.
+
+
+## First current compiler and maintained corpus
+
+Default original166 at clean signed2ffa957f8 builds without substitutions.
+All25-source/75-command characterization outcomes now match intent:21TS-valid
+sources emit Rust and independentIR;4frontend refusals remain. All20original
+IR/raw/Rust/capability control assets across5sources are byte-identical to165,
+including standalone scalar, explicit, variable-element and nested identity
+controls. Empty mixed literals and intermediate/checked narrowing casts emit
+without adding a Unit-to-Vector conversion relation.
+
+The maintained gate is
+`tools/compact-rust-backend/check_aggregate_literal_projection_widening.py`.
+Its21complete repository sources and31independent cases exercise29pure calls
+and8stateful route executions. Distinct first/second source helpers expose
+first-error order; narrowing controls distinguish the original checked Uint8
+bound and actual projection order. Source/entry-specific TS descriptors cover
+Uint16/Uint32/Field/wide/nested/product/scalar and empty-mixed output geometry.
+Two helper exports return different genuine carriers: Vector<2,Uint16> and
+Vector<2,Field>; qualification must not normalize or conflate them.
+
+Five ordinary Rust refusals include a Field-result assignment mismatch beside
+length/element/maximum/Program-reuse controls. Four frontend refusals retain
+length/kind/implicit narrowing/zero-index causes. Five malformed nativeIR
+controls include wrong geometry/conversion/index, zero-sized input projection,
+and an invalid unselected branch under a true condition. Complete producer
+mutations and same-geometry expected changes must fail actual consumers. Full
+SDK strict roots, exact source/independentIR/allPrograms and tool bindings are
+required. Development generation alone is not current clean-head API or proof
+acceptance. All earlier matrices, lexical diagnostics and predecessors remain
+retained. Full CI/integration and the broader goal remain open.

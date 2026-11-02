@@ -933,23 +933,23 @@
            (typed-coercion-value-ir expr expected-type owner-src #f)]
           [(expr expected-type owner-src source-type)
            (nanopass-case (Lnodisclose Expression) expr
-          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
-           (expression-ir expr owner-src)]
-          [(safe-cast ,src ,type ,type^ ,expr^)
-           (expression-ir expr owner-src)]
-          [(var-ref ,src ,var-name)
-           (let ([actual-type (and (current-variable-types)
-                                   (eq-hashtable-ref (current-variable-types) var-name #f))])
-             (if (and actual-type
-                      (nanopass-case (Lnodisclose Type) actual-type
-                        [(talias ,src1 ,nominal? ,type-name ,type1)
-                         (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
-                           [(tvector ,src2 ,len2 ,type2) #t]
-                           [else #f])]
-                        [else #f]))
-                 (expression-ir expr owner-src)
-                 (typed-expression-ir expr expected-type owner-src source-type)))]
-          [else (typed-expression-ir expr expected-type owner-src source-type)])]))
+              [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+               (expression-ir expr owner-src)]
+              [(safe-cast ,src ,type ,type^ ,expr^)
+               (expression-ir expr owner-src)]
+              [(var-ref ,src ,var-name)
+               (let ([actual-type (and (current-variable-types)
+                                       (eq-hashtable-ref (current-variable-types) var-name #f))])
+                 (if (and actual-type
+                          (nanopass-case (Lnodisclose Type) actual-type
+                            [(talias ,src1 ,nominal? ,type-name ,type1)
+                             (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
+                               [(tvector ,src2 ,len2 ,type2) #t]
+                               [else #f])]
+                            [else #f]))
+                     (expression-ir expr owner-src)
+                     (typed-expression-ir expr expected-type owner-src source-type)))]
+              [else (typed-expression-ir expr expected-type owner-src source-type)])]))
 
       (define typed-expression-ir
         (case-lambda

@@ -1,0 +1,87 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "unsigned",
+                "max": "255"
+              },
+              {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "unsigned",
+            "max": "65535"
+          },
+          {
+            "kind": "unsigned",
+            "max": "4294967295"
+          }
+        ]
+      },
+      "body": {
+        "kind": "tuple",
+        "elements": [
+          {
+            "kind": "coerce",
+            "value": {
+              "kind": "tuple_index",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "index": 0
+            },
+            "ty": {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          },
+          {
+            "kind": "coerce",
+            "value": {
+              "kind": "tuple_index",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "index": 1
+            },
+            "ty": {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          }
+        ]
+      },
+      "source": {
+        "file": "product.compact",
+        "line": 4,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

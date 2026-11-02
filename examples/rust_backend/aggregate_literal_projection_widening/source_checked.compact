@@ -1,0 +1,6 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+pure circuit first_source(ok:Boolean,input:Vector<2,Uint<8>>):Vector<2,Uint<8>>{assert(ok,"first denied");return input;}
+pure circuit second_source(ok:Boolean,input:Vector<2,Uint<8>>):Vector<2,Uint<8>>{assert(ok,"second denied");return input;}
+export pure circuit value(first:Boolean,second:Boolean,input:Vector<2,Uint<8>>,other:Vector<2,Uint<8>>):Vector<2,Uint<16>>{return [first_source(first,input)[0],second_source(second,other)[1]];}

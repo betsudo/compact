@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export pure circuit value(ok:Boolean,input:Vector<2,Uint<8>>):Vector<2,Uint<16>>{assert(ok,"source denied");return [input[1],input[0]];}

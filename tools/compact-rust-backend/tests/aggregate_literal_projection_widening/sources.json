@@ -1,0 +1,110 @@
+[
+  {
+    "source": "alias",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "conditional",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "empty_mixed",
+    "stateful": false,
+    "descriptor": "empty_product"
+  },
+  {
+    "source": "explicit_control",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "guarded",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "helper",
+    "stateful": true,
+    "descriptor": {
+      "run": "u16_vector",
+      "run_field": "field_vector"
+    }
+  },
+  {
+    "source": "identity_control",
+    "stateful": false,
+    "descriptor": "u8_vector"
+  },
+  {
+    "source": "intermediate_cast",
+    "stateful": false,
+    "descriptor": "u32_vector"
+  },
+  {
+    "source": "local",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "mixed",
+    "stateful": false,
+    "descriptor": "u16_three"
+  },
+  {
+    "source": "narrow_checked",
+    "stateful": false,
+    "descriptor": "u32_vector"
+  },
+  {
+    "source": "nested_identity_control",
+    "stateful": false,
+    "descriptor": "nested_u8"
+  },
+  {
+    "source": "nested_literal",
+    "stateful": false,
+    "descriptor": "nested_u16"
+  },
+  {
+    "source": "nested_projection",
+    "stateful": false,
+    "descriptor": "nested_u16"
+  },
+  {
+    "source": "product",
+    "stateful": false,
+    "descriptor": "product"
+  },
+  {
+    "source": "scalar_control",
+    "stateful": false,
+    "descriptor": "u16_scalar"
+  },
+  {
+    "source": "source_checked",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "variable_control",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "vector_field",
+    "stateful": false,
+    "descriptor": "field_vector"
+  },
+  {
+    "source": "vector_unsigned",
+    "stateful": false,
+    "descriptor": "u16_vector"
+  },
+  {
+    "source": "vector_wide",
+    "stateful": false,
+    "descriptor": "wide_vector"
+  }
+]

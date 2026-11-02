@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export pure circuit value(flag:Boolean,input:Vector<2,Uint<8>>,other:Vector<2,Uint<8>>):Vector<2,Uint<16>>{return flag?[input[0],input[1]]:[other[1],other[0]];}

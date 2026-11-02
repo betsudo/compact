@@ -1,0 +1,4 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+export pure circuit value(input:[Uint<8>,Uint<16>]):[Uint<16>,Uint<32>]{return [input[0],input[1]];}
