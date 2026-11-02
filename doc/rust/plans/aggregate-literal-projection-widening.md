@@ -2,7 +2,9 @@
 
 Candidate Q is admitted on `codex/rust-ast-aggregate-literal-projection-widening`
 from the exact clean P docs head `3d94b719635df5424e065d8593d38395eecb8180`.
-No implementation is accepted yet. Primary Rust AST
+Bounded local compiler/source/API and selected two helper proof/application
+qualification is reviewed at execution head `e8d9293ba2729fdd8ba000e252f66eab5f3c5c1d`.
+Complete required CI and reviewed integration remain open. Primary Rust AST
 goal ACTIVE / INCOMPLETE, LOCAL ONLY; Forge deferred/incomplete.
 
 ## Actual gap and accepted behavior
@@ -220,3 +222,51 @@ Proof machinery source preparation and development compilation do not imply
 proof acceptance. Exact clean-head original native compiler, complete source/API
 regeneration, default/all-features and opt-in runner checks, authentic fresh
 source review and actual proof/application receipts are required next.
+
+
+## Reviewed bounded local qualification — 2026-11-02
+
+Literal executione8d9293ba2729fdd8ba000e252f66eab5f3c5c1d uses original default
+native166. The proof gate regenerates every source/API artifact at that exact
+clean head:109commands,21complete sources,31cases(29pure+8stateful routes),
+21strict unedited SDK roots,5marked Rust refusals,4frontend refusals and5native
+malformedIR refusals. Both complete producer changes and same-geometry expected
+changes fail their actual consumers. Config admission/membership/bytes stay
+checked. All Programs and current independent/golden IR remain bound.
+
+The full helper has2exports, both k7/85rows. Locked material is verified before
+fresh direct native keys. Both selected proofs are2912bytes and verify with
+their immutable verifiers. Separately independently proved funded transactions
+are6554/6559bytes and pass default-strict application; exact replay refuses
+IntentAlreadyExists without changing the ledger. Actual carriers remain
+Vector2Uint16 and Vector2Field. Corruption, changed binding, changed result with
+the real carrier/unchanged geometry and the other verifier all refuse. Full
+IR/Program/membership controls refuse before keys. A separate complete retained
+Fold model diagnostic reaches k9 and refuses before keys; it does not replace
+source/proof admission or close the older N originalk9 requirement.
+
+Actual independent source/API/proof-source and receipt CLI reviews use
+gpt-6-astra/high after actual Claude quota. Source review finds no introduced
+P1/P2 after the two initialP2 corrections. Independent receipt review reports
+4663hash comparisons and3229frozen source Git-blob matches with no missing or
+mismatched records;219TSruntime files and20loaded-library entries match. The
+own closeout audit checks4399binding records/3995paths; these are different
+finite audit scopes, not disjoint totals. API/retained log hashes observed at
+closeout do not establish retrospective hostile-host trust.
+
+Historical283-fixture freshness,1830backend tests(7pre-existing ignored) and
+strict backend Clippy pass at2f6; all5relevant source owner directories remain
+unchanged through executione8d. This is not current whole-CI acceptance. The
+docs-only successor must recheck exact source/evidence and signed history before
+bridging these literal receipts.
+
+Local evidence: aggregate-literal-projection-widening-20261102/original-native-v4,
+proof-v1/protocol/receipt.json, proof-v1/receipt.json, receipt-audit-v1.json,
+code-review-v2/codex/final.txt, receipt-review-v1/codex/final.txt and
+qualification-summary-v1.json. All failed/earlier epochs remain retained.
+No constructor execution proof, all21source/allinput proof, universal-language,
+full Linux/arm64 CI, reviewed integration, publication or broader-goal completion
+is claimed. No cleanup: this local candidate is not merged in GitHub.
+
+[Next bounded struct-member proposal](struct-member-literal-widening.md) is
+source-characterized separately, not an accepted implementation.

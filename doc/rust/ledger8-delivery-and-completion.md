@@ -455,3 +455,21 @@ at literal `cf7a2fa2c`, after review-control fixes. The earlier all284 emission
 and selected DID receipts retain `83d967324` and their unchanged compiler/runtime/
 fixture inputs. No documentation successor renews a proof receipt. PR #696's
 final exact-head review and full required CI remain mandatory.
+
+
+## Local source-semantics qualification — 2026-11-02
+
+Canonical codex/rust-backend-ast remains at1bdf185ea35929292a79d35946d4a98fb344d11c.
+The explicit local candidate stack is not integrated canonical. The
+[aggregate literal projection slice](plans/aggregate-literal-projection-widening.md)
+has reviewed bounded compiler166/source/API and two selected genuine
+proof/default-strict application receipts at executione8d9293ba. Existing native
+Coerce/typed validation/AST ownership is reused; no IR/runtime ABI change is made.
+All earlier branch/evidence authorities remain distinct. Full required arm64/Linux
+CI and reviewed integration remain open; the broader goal remains incomplete.
+
+The [next struct-member literal proposal](plans/struct-member-literal-widening.md)
+addresses2existing source mismatches while preserving4alreadyaccepted source
+controls. It is a concrete source-characterized proposal, not another framework
+or completed feature. Backend progress stays independent of the deferred Forge
+experiment. No local candidate cleanup is due before verified GitHub merge.
