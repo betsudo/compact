@@ -645,3 +645,23 @@ pub(super) fn stateful_local_vector_widening(
         crate::stateful_local_vector_widening::run(Path::new(&root))
     }
 }
+
+#[cfg(all(
+    feature = "stateful-product-vector-widening",
+    compact_stateful_product_vector_generated
+))]
+pub(super) fn stateful_product_vector_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --stateful-product-vector-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::stateful_product_vector_widening::models(Path::new(&root))
+    } else {
+        crate::stateful_product_vector_widening::run(Path::new(&root))
+    }
+}

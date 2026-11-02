@@ -305,3 +305,26 @@ slice before dependent features:
    completed epoch, then update signed docs, verified Obsidian process and CAS.
    Complete required CI/Linux/integration remains a later authorized gate.
    No Forge, publication or cleanup is admitted by this local stage.
+
+## Full-source proof adapter implementation
+
+The opt-in `stateful-product-vector-widening` runner includes the complete
+selected SDK, both complete Program files, full IR and full corpus definitions.
+Its typed inputs are `FixedVector<(BoundedUint<255>,BoundedUint<65535>),2>`;
+results are the actual widened Uint pair or Field pair Vector. Three scenarios
+use asymmetric rows/components and both branch states. Result corruption uses
+real values within the actual widened types and keeps public output geometry.
+The inherited official proof/independently-proved funded strict application and
+immutable verifier/binding/corruption/replay controls remain separate.
+
+The maintained proof gate first runs the complete current source/API gate. Its
+prebuild map additionally carries every admitted original compiler/API/source
+input (including Compact examples) through the proof epoch. Generated physical
+includes and golden membership are checked in the actual depfile, retained
+before target reuse. Default/all-feature checks without SDK configuration remain
+mandatory. Model-only outputs explicitly say proof_execution=false; selecting
+an export is not a completed proof. All26exports/models precede selection and
+unchanged automatic k<=8 admission. No model size or actual proof acceptance is
+claimed from this implementation or its commit. Fresh original177 build,
+source/API/runner qualification, model observation, material checks and actual
+proof/application execution remain required.
