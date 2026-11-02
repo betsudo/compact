@@ -2,8 +2,9 @@
 
 ## Status and baseline
 
-Proposal only. Finish the reviewed R documentation/checkpoint closeout before
-admitting a separate implementation branch. The primary Rust AST goal remains
+S is admitted on `codex/rust-ast-direct-stateful-vector-literal-returns` from
+reviewed R documentation head `c0b294d3b4dc6372591e38b3d6a28dba8064e6b5`.
+No S implementation is accepted yet. The primary Rust AST goal remains
 active and incomplete, with local work only. Preserve canonical and every
 R/Q/P/O/N/M predecessor. Forge, publication and cleanup remain excluded.
 
@@ -101,3 +102,19 @@ gates. No CI optimization or Forge work.
    Full required arm64/Linux CI and reviewed integration remain open until
    actually executed. Cleanup follows verified GitHub merge of completed owned
    work.
+
+
+## Admission and owner reconciliation
+
+The current checkpoint and actual refs/worktrees were inspected before creating
+the separate branch. Relevant stateful and native/runtime owner blocks are
+identical to canonical `1bdf185ea`; the retained accepted helper control depends
+on Q's pure projection fix. Use the explicit R stack to retain that behavior
+without duplicating owners or inventing an integrated baseline.
+
+The legacy return path emits the literal Tuple without its Vector context. The
+existing ordered return plan already preserves actions and conversions as
+continuations. The native planner already supports bounded, nonempty
+Tuple-to-Vector coercion. Investigate reuse of that relation after source actions;
+no new conversion relation is needed. Empty literals and explicit checked casts
+require actual characterization before selecting their construction path.
