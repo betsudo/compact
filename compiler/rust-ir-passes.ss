@@ -313,27 +313,31 @@
                (source-errorf src "Rust backend Field literal must be nonnegative"))]
           [else (expression-ir expr owner-src)]))
 
-      (define (let-expression-ir local* expr* body expected-type src)
-        (when (current-variable-types)
-          (for-each (lambda (local)
-                      (nanopass-case (Lnodisclose Argument) local
-                        [(,var-name ,type)
-                         (eq-hashtable-set! (current-variable-types) var-name type)]))
-                    local*))
-        (object (cons "kind" "let")
-                (cons "bindings"
-                      (list->vector
-                        (map (lambda (local value)
-                               (nanopass-case (Lnodisclose Argument) local
-                                 [(,var-name ,type)
-                                  (object (cons "name" (sourced-rust-var-name var-name))
-                                          (cons "ty" (type-ir type src))
-                                          (cons "value" (typed-expression-ir value type src)))]))
-                             local* expr*)))
-                (cons "body"
-                      (if expected-type
-                          (typed-expression-ir body expected-type src)
-                          (expression-ir body src)))))
+      (define let-expression-ir
+        (case-lambda
+          [(local* expr* body expected-type src)
+           (let-expression-ir local* expr* body expected-type src #f)]
+          [(local* expr* body expected-type src source-type)
+           (when (current-variable-types)
+             (for-each (lambda (local)
+                         (nanopass-case (Lnodisclose Argument) local
+                           [(,var-name ,type)
+                            (eq-hashtable-set! (current-variable-types) var-name type)]))
+                       local*))
+           (object (cons "kind" "let")
+                   (cons "bindings"
+                         (list->vector
+                           (map (lambda (local value)
+                                  (nanopass-case (Lnodisclose Argument) local
+                                    [(,var-name ,type)
+                                     (object (cons "name" (sourced-rust-var-name var-name))
+                                             (cons "ty" (type-ir type src))
+                                             (cons "value" (typed-expression-ir value type src)))]))
+                                local* expr*)))
+                   (cons "body"
+                         (if expected-type
+                             (typed-expression-ir body expected-type src source-type)
+                             (expression-ir body src))))]))
 
       ;; Analysis inserts this guard for Uint subtraction. The native checked
       ;; subtraction performs the same comparison, so only this exact guard
@@ -623,10 +627,10 @@
                     (object (cons "kind" "unsigned_cast")
                             (cons "max" (number->string nat))
                             (cons "value" (typed-expression-ir expr type^ src)))))]
-             [(tvector ,src^ ,len ,type^)
-              (typed-expression-ir expr type src)]
+             [(tvector ,src^ ,len ,type1)
+              (typed-expression-ir expr type src type^)]
              [(ttuple ,src^ ,type* ...)
-              (typed-expression-ir expr type src)]
+              (typed-expression-ir expr type src type^)]
              [else (source-errorf src "Rust backend does not yet support this cast")])]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
@@ -893,10 +897,42 @@
                        (cons "right" (field-argument-ir expr2 src))))]
           [else (source-errorf owner-src "Rust backend does not yet support this circuit expression")]))
 
+      ;; Only literal elements are expanded: never unroll a declared Vector
+      ;; length independently of the actual source syntax. Cast analysis owns
+      ;; these source types; desired target types do not infer actual bounds.
+      (define (literal-source-types source-type count owner-src)
+        (nanopass-case (Lnodisclose Type) source-type
+          [(talias ,src ,nominal? ,type-name ,type)
+           (literal-source-types type count owner-src)]
+          [(ttuple ,src ,type* ...)
+           (unless (= (length type*) count)
+             (source-errorf owner-src "Rust literal source type arity differs"))
+           type*]
+          [(tvector ,src ,len ,type)
+           (unless (= len count)
+             (source-errorf owner-src "Rust literal source Vector length differs"))
+           (make-list count type)]
+          [else (source-errorf owner-src "Rust literal lacks an aggregate source type")]))
+
+      (define (typed-projection-value-ir expr expected-type source-type owner-src)
+        (let ([value (expression-ir expr owner-src)])
+          (if source-type
+              (let ([actual (type-ir source-type owner-src)]
+                    [target (type-ir expected-type owner-src)])
+                (if (equal? actual target)
+                    value
+                    (object (cons "kind" "coerce")
+                            (cons "value" value) (cons "ty" target))))
+              value)))
+
       ;; Conditional arms already supply an outer Coerce. Preserve the original
       ;; Fold accumulator, source alias or nested cast without a new wrapper.
-      (define (typed-coercion-value-ir expr expected-type owner-src)
-        (nanopass-case (Lnodisclose Expression) expr
+      (define typed-coercion-value-ir
+        (case-lambda
+          [(expr expected-type owner-src)
+           (typed-coercion-value-ir expr expected-type owner-src #f)]
+          [(expr expected-type owner-src source-type)
+           (nanopass-case (Lnodisclose Expression) expr
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (expression-ir expr owner-src)]
           [(safe-cast ,src ,type ,type^ ,expr^)
@@ -912,16 +948,30 @@
                            [else #f])]
                         [else #f]))
                  (expression-ir expr owner-src)
-                 (typed-expression-ir expr expected-type owner-src)))]
-          [else (typed-expression-ir expr expected-type owner-src)]))
+                 (typed-expression-ir expr expected-type owner-src source-type)))]
+          [else (typed-expression-ir expr expected-type owner-src source-type)])]))
 
-      (define (typed-expression-ir expr expected-type owner-src)
-        (call-with-rust-origin "expression" (expression-origin expr) #t
-          (lambda () (typed-expression-ir-value expr (vector-carrier-type (unsigned-canonical-type expected-type)) owner-src)) (expression-operation-origin expr)))
+      (define typed-expression-ir
+        (case-lambda
+          [(expr expected-type owner-src)
+           (typed-expression-ir expr expected-type owner-src #f)]
+          [(expr expected-type owner-src source-type)
+           (call-with-rust-origin "expression" (expression-origin expr) #t
+             (lambda ()
+               (typed-expression-ir-value expr
+                 (vector-carrier-type (unsigned-canonical-type expected-type))
+                 owner-src source-type))
+             (expression-operation-origin expr))]))
 
-      (define (typed-expression-ir-value expr expected-type owner-src)
+      (define (typed-expression-ir-value expr expected-type owner-src source-type)
         (nanopass-case (Lnodisclose Expression) expr
-          [(return ,src ,expr) (typed-expression-ir expr expected-type src)]
+          [(return ,src ,expr) (typed-expression-ir expr expected-type src source-type)]
+          [(tuple-ref ,src ,expr^ ,kindex)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(vector-ref ,src ,type ,expr^ ,index)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(downcast-unsigned ,src ,nat? ,nat ,expr^)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
           [(safe-cast ,src ,type ,type^ ,expr^)
            ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
            ;; Lower that complete cast first, then preserve its wider Vector
@@ -929,8 +979,9 @@
            (let* ([value (expression-ir expr owner-src)]
                   [actual (type-ir type src)]
                   [target (type-ir expected-type src)])
-             (if (and (equal? (cdr (assoc "kind" actual)) "vector")
-                      (equal? (cdr (assoc "kind" target)) "vector")
+             (if (and (or source-type
+                          (and (equal? (cdr (assoc "kind" actual)) "vector")
+                               (equal? (cdr (assoc "kind" target)) "vector")))
                       (not (equal? actual target)))
                  (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
                  value))]
@@ -1003,54 +1054,57 @@
                    [else (expression-ir expr owner-src)])
                  (expression-ir expr owner-src)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let-expression-ir local* expr* expr expected-type src)]
+           (let-expression-ir local* expr* expr expected-type src source-type)]
           [(tuple ,src ,tuple-arg* ...)
-           (nanopass-case (Lnodisclose Type) expected-type
-             [(tvector ,src^ ,len ,type)
-              (reject-spreads tuple-arg* "vector")
-              (unless (= (length tuple-arg*) len)
-                (source-errorf src "Rust vector literal length does not match its type"))
-              (object (cons "kind" "vector")
-                      (cons "element" (type-ir type src))
-                      (cons "elements"
-                            (list->vector
-                              (map (lambda (arg)
-                                     (nanopass-case (Lnodisclose Tuple-Argument) arg
-                                       [(single ,src1 ,expr)
-                                        (typed-expression-ir expr type src1)]
-                                       [else (source-errorf src "Rust backend does not yet support vector spreads")]))
-                                   tuple-arg*))))]
-             [(ttuple ,src^ ,type* ...)
-              (reject-spreads tuple-arg* "tuple")
-              (unless (= (length tuple-arg*) (length type*))
-                (source-errorf src "Rust tuple literal length does not match its type"))
-              (if (null? type*)
-                  (kind "unit")
-                  (object (cons "kind" "tuple")
-                          (cons "elements"
-                                (list->vector
-                                  (map (lambda (arg ty)
-                                         (nanopass-case (Lnodisclose Tuple-Argument) arg
-                                           [(single ,src1 ,expr)
-                                            (typed-expression-ir expr ty src1)]
-                                           [else (source-errorf src "Rust backend does not yet support tuple spreads")]))
-                                       tuple-arg* type*)))))]
-             [else (expression-ir expr owner-src)])]
+           (let ([source-type* (if source-type
+                                   (literal-source-types source-type (length tuple-arg*) src)
+                                   (make-list (length tuple-arg*) #f))])
+             (nanopass-case (Lnodisclose Type) expected-type
+               [(tvector ,src^ ,len ,type)
+                (reject-spreads tuple-arg* "vector")
+                (unless (= (length tuple-arg*) len)
+                  (source-errorf src "Rust vector literal length does not match its type"))
+                (object (cons "kind" "vector")
+                        (cons "element" (type-ir type src))
+                        (cons "elements"
+                              (list->vector
+                                (map (lambda (arg source-type)
+                                       (nanopass-case (Lnodisclose Tuple-Argument) arg
+                                         [(single ,src1 ,expr)
+                                          (typed-expression-ir expr type src1 source-type)]
+                                         [else (source-errorf src "Rust backend does not yet support vector spreads")]))
+                                     tuple-arg* source-type*))))]
+               [(ttuple ,src^ ,type* ...)
+                (reject-spreads tuple-arg* "tuple")
+                (unless (= (length tuple-arg*) (length type*))
+                  (source-errorf src "Rust tuple literal length does not match its type"))
+                (if (null? type*)
+                    (kind "unit")
+                    (object (cons "kind" "tuple")
+                            (cons "elements"
+                                  (list->vector
+                                    (map (lambda (arg ty source-type)
+                                           (nanopass-case (Lnodisclose Tuple-Argument) arg
+                                             [(single ,src1 ,expr)
+                                              (typed-expression-ir expr ty src1 source-type)]
+                                             [else (source-errorf src "Rust backend does not yet support tuple spreads")]))
+                                         tuple-arg* type* source-type*)))))]
+               [else (expression-ir expr owner-src)]))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "if")
                    (cons "condition" (expression-ir expr0 src))
                    (cons "then" (object (cons "kind" "coerce")
-                                        (cons "value" (typed-coercion-value-ir expr1 expected-type src))
+                                        (cons "value" (typed-coercion-value-ir expr1 expected-type src source-type))
                                         (cons "ty" (type-ir expected-type src))))
                    (cons "otherwise" (object (cons "kind" "coerce")
-                                             (cons "value" (typed-coercion-value-ir expr2 expected-type src))
+                                             (cons "value" (typed-coercion-value-ir expr2 expected-type src source-type))
                                              (cons "ty" (type-ir expected-type src)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
-               (typed-expression-ir expr expected-type src)
+               (typed-expression-ir expr expected-type src source-type)
                (object (cons "kind" "sequence")
                        (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
-                       (cons "value" (typed-expression-ir expr expected-type src))))]
+                       (cons "value" (typed-expression-ir expr expected-type src source-type))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (if mbits
                (nanopass-case (Lnodisclose Type) expected-type

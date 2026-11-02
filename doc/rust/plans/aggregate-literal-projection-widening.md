@@ -114,3 +114,31 @@ First establish a focused clean baseline and reconcile actual literal-cast
 owner metadata before implementation. In particular, retain the actual source
 type supplied by frontend cast analysis rather than guessing projection types
 from their desired target. Standalone scalar projections are accepted controls.
+
+
+## Baseline and authoritative source-type decision
+
+At signed plan44d972b46 the focused20 coercion/Fold/historical Vector checks
+pass. Actual --trace-passes output under original165 proves infer-types retains
+`safe-cast(target Vector2Uint16, source Tuple<Uint8,Uint8>, literal projections)`
+through emit-rust-ir. The source element types already exist; no inferred-type
+registry, target-derived bounds or new conversion relation is needed.
+
+Expanded25-source/75-command original165 characterization distinguishes21
+TS-valid sources (16Rust mismatches and5acceptedcontrols) from4frontend refusals.
+The first lexical local declaration used `>>=input`, parsed as >=; its failed
+receipt is retained and v2 corrects only whitespace. Empty mixed literals are
+included to preserve existing Unit/empty-Vector construction without inventing
+a Unit-to-Vector Coerce relation. Standalone scalar projections remain controls.
+
+The implementation carries an optional actual source type from existing pure
+Vector/Tuple safe casts through the existing typed literal/lexical/conditional
+owners. Each actual literal argument receives its exact inferred source type;
+only actual source syntax is expanded, never a declared Vector length product.
+Projected values and complete explicit/intermediate checked casts use existing
+Coerce when source and target differ. Identity contexts return original IR;
+other operation families retain their existing owners. Conditional outer Coerce,
+original explicit narrowing guards, complete source calls and empty/nested
+literal construction stay intact. Compiler166 metadata identifies this source;
+no ABI/IR/dependency/runtime/executor change is added. Actual current compiler,
+source/API, proof and review acceptance remain open.

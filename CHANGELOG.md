@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.166, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Retain frontend-inferred literal source element types through pure aggregate
+  cast lowering. Apply existing checked Coerce to projected numeric values and
+  complete checked casts in their declared element context, preserving source
+  bounds, evaluation order and accepted scalar/identity behavior. Keep existing
+  literal construction for empty and nested carriers; no new conversion relation,
+  runtime ABI, IR variant or executor is introduced.
+
 ## [Toolchain 0.31.165, language 0.23.105, runtime 0.16.102]
 
 ### Fixed
