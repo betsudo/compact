@@ -2,13 +2,13 @@
 
 ## Concrete gap and source authority
 
-Current original compiler173, U execution `408dd00ee8c35b050ed6f307be0bf89edd839984`,
+Current original compiler 173, U execution `408dd00ee8c35b050ed6f307be0bf89edd839984`,
 accepts the pure product-Vector coercion, same-type stateful product return and
 newly accepted scalar-Vector local conversion controls. Stateful widening of
 Vector elements that are scalar products is still a real source gap.
 
 U evidence `next-stateful-product-vector-characterization-v1/receipt.json`
-retains13complete sources/39commands. Eleven sources pass TS. Seven fail both
+retains 13 complete sources / 39 commands. Eleven sources pass TS. Seven fail both
 Rust and independent IR on a nested Cell.write: parameter/helper results,
 Uint-to-Field products, nested Vectors, an unchanged Boolean component, empty
 product Vectors and the complete two-export helper/branch proof candidate.

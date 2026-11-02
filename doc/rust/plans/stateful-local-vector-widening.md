@@ -99,7 +99,7 @@ no U implementation, current compiler, API, model or proof acceptance is claimed
 
 Clean signed admission `6359c1f52` passes all 35 focused coercion, Vector, Fold,
 projection, historical fixture, native Vector-child and return-order tests.
-Original default172 Nix recipe passes at that head. Expanded original evidence
+Original default 172 Nix recipe passes at that head. Expanded original evidence
 retains 28 complete sources / 84 commands: 21 pass TS/IR, 17 fail Rust at the
 missing local conversion, and four controls already pass. All seven frontend
 refusals remain. Two additional complete scalar/Unit result sources pass TS/IR
@@ -127,8 +127,8 @@ compiler/source/API/proof/review qualification is pending.
 
 ## Current source and development consumer
 
-Original default173 recipe passes at implementation `c26552fa3`. Current30source /
-90command comparison passes all23TS-valid sources in Rust and independent IR,
+Original default 173 recipe passes at implementation `c26552fa3`. Current 30 source /
+90 command comparison passes all 23 TS-valid sources in Rust and independent IR,
 with all seven frontend refusals unchanged. Three unaffected controls retain all
 14 IR/raw/Rust/capability/Program assets byte-for-byte172/173. The struct local
 projection is already supported but now uses the ordered route; its changed
@@ -137,17 +137,17 @@ artifacts are retained and it receives current execution coverage.
 A separate complete stateful-helper variant reverses its returned Vector, making
 actual call execution observable while its ledger assertion rejects reordering
 or repeated execution. It passes TS/IR and fails original172 Rust, then passes
-all three lanes with173. The maintained corpus contains24complete positive
-sources plus7frontend negatives, including scalar/Unit results at the same local
-binding boundary. Development TS and whole unedited SDK execution pass34cases:
-132stateful Rust route executions and one pure execution. Before/after-write
+all three lanes with173. The maintained corpus contains24 complete positive
+sources plus7 frontend negatives, including scalar/Unit results at the same local
+binding boundary. Development TS and whole unedited SDK execution pass34 cases:
+132 stateful Rust route executions and one pure execution. Before/after-write
 witnesses each observe the specified ledger value, return one narrow Vector
 private transcript value and evolve private state once. Checked/discarded helper
 initializers preserve guard and first narrowing failure; multiple bindings and
 query/native-state preservation are checked. Development harness v1 retained a
-stale consumer environment/format prefix; v2 ran34passing cases but failed its
+stale consumer environment/format prefix; v2 ran 34 passing cases but failed its
 post-run hash bookkeeping before recording Cargo's exit. Corrected v3 retains
-actual terminal Cargo0 plus34passes and unchanged complete SDK/TS inputs. These
+actual terminal Cargo 0 plus 34 passes and unchanged complete SDK/TS inputs. These
 are development results, not maintained clean-head qualification.
 
 The opt-in full-source proof adapter includes both complete current Programs and
@@ -162,16 +162,16 @@ source/API/proof/review acceptance is claimed yet. All full CI/integration and
 prior wide k=9 obligations remain open.
 
 
-## Reviewed original compiler173 local qualification
+## Reviewed original compiler 173 local qualification
 
 Execution `408dd00ee8c35b050ed6f307be0bf89edd839984` is the maintained source
 and proof authority. The exact original Nix recipe passes and supplies default
 `compactc`/Scheme from `/nix/store/m798iqfhmg8wcnxlw1p584mihn7r2kd6-compactc`.
 No alternate compiler, backend or generated-code edits are used.
 
-The maintained gate passes144commands,24complete SDK roots and34actual TS/Rust
-cases:132stateful ordinary/recorded/functional Rust executions and one pure route.
-All8marked API misuse cases refuse at intended spans and all8independent
+The maintained gate passes144commands,24 complete SDK roots and34actual TS/Rust
+cases:132 stateful ordinary/recorded/functional Rust executions and one pure route.
+All 8 marked API misuse cases refuse at intended spans and all 8 independent
 correct-type twins compile. Seven frontend refusals, eight malformed IR controls
 (including a wrong declared local type and a dead branch), four complete producer
 negatives and the wrong result oracle behave as intended. Both witness-order
@@ -180,28 +180,28 @@ initializer guards, helper return values, scalar/Unit results and source bounds
 remain observable. All actual generated IR and Programs match their complete
 independent/golden assets.
 
-The first maintained attempt correctly refused bad test metadata after20commands:
+The first maintained attempt correctly refused bad test metadata after 20 commands:
 `proofs` had one declared local conversion but two branches plus its Field export
 contain three. Signed `408dd00` changes only that count and retains exact checking;
 failed `proof-v1` receipts reached no keys or proofs. Current `proof-v2` is the
 accepted execution epoch.
 
-All25exports/models are inventoried:24proof-required and one pure/nonproof. Only
-`proofs.run` (k8/130rows) and `run_field` (k7/85rows) are selected. Material is
-verified before two fresh direct native key generations. Three fresh2912-byte
+All 25 exports/models are inventoried:24 proof-required and one pure/nonproof. Only
+`proofs.run` (k=8 / 130 rows) and `run_field` (k=7 / 85 rows) are selected. Material is
+verified before two fresh direct native key generations. Three fresh 2912-byte
 standalone proofs cover both local-binding branch states and Field. Three
-independently proved funded transactions6605/6605/6561bytes verify and apply with
+independently proved funded transactions of 6605 / 6605 / 6561 bytes verify and apply with
 default strict validation. Corruption, changed binding, changed actual typed
 same-geometry result, immutable wrong verifier and unchanged-state replay refusal
-controls pass. Constructors, all unenumerated inputs and the other22required
-exports are not proved. Intact `wide_local` is k9 and remains unproved under the
-unchanged automatic k<=8cap.
+controls pass. Constructors, all unenumerated inputs and the other 22 required
+exports are not proved. Intact `wide_local` is k=9 and remains unproved under the
+unchanged automatic k<=8 cap.
 
-Current T predecessor qualification freshly passes136commands/37cases,144stateful
-Rust routes plus one pure route and23SDK roots at the execution head; full IR and
-Program membership/bytes match the retained T assets. The35focused baseline tests
+Current T predecessor qualification freshly passes 136 commands / 37 cases, 144 stateful
+Rust routes plus one pure route and 23 SDK roots at the execution head; full IR and
+Program membership/bytes match the retained T assets. The 35 focused baseline tests
 retain `6359c1f52` with an exact unchanged native/runtime/macros/history/Cargo owner
-bridge. All283retained fixtures freshly passed at `3a155bcd3`; the sole U metadata
+bridge. All 283 retained fixtures freshly passed at `3a155bcd3`; the sole U metadata
 count correction preserves the same exact compiler/package and fixture inputs.
 `fixture-metadata-successor-bridge-v1.json` records that reuse without relabeling
 it as a new current-head execution. Older T/S full native, CI and proof receipts
@@ -210,12 +210,13 @@ keep their original source epochs.
 Actual Claude review reached usage_limit_reached429, so it is retained as
 incomplete. Actual user-authorized Codex CLI gpt-6-astra/high source review and a
 separate receipt/hash/premise review report no actionable P1/P2. The latter
-independently rehashed10292pinrecords/5949distinctpaths, checked all8twins and
+independently rehashed 10292 pin records / 5949 distinct paths, checked all 8 twins and
 negative outcomes, every preceding T IR/Program and both source/fixture bridges.
-The raw depfile is privately retained during the gate; all860physical worktree
-dependencies, including generated and embedded-golden include membership, are
-directly covered by prebuild source pins. No post-run closure gap is presented as
-an execution-time pin. The proof source map contains4286files. This is coding-agent
+The raw depfile is privately retained during the gate. All 860 physical worktree
+dependencies are directly covered by prebuild source pins. Generated SDK and
+embedded golden include membership are checked separately; the generated files
+also retain their complete prebuild SDK hash map. No post-run closure gap is
+presented as an execution-time pin. The proof source map contains 4286 files. This is coding-agent
 inspection, not crypto reexecution, global supply-chain acceptance or a human
 security audit.
 
@@ -226,5 +227,5 @@ Evidence root:
 and the actual source/receipt Codex review outputs retain their separate scopes.
 The next [stateful product-Vector proposal](stateful-product-vector-widening.md)
 is source-only. Full required arm64/Linux CI, reviewed integration, prior N/S/T
-wide-k9 obligations and the broad Rust AST goal remain open. No publication or
+wide k=9 obligations and the broad Rust AST goal remain open. No publication or
 cleanup is implied. Forge remains deliberately deferred.
