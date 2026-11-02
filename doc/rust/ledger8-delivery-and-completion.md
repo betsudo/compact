@@ -534,9 +534,10 @@ metadata regression; its fix and all failures are retained. Current U API
 regression (144commands/34cases/24roots) and all283current fixtures pass.
 The sole refreshed snapshot adds seven scoped signature style attributes;
 historical complete bytes and compatibility tests remain preserved. Source
-reviews cover their exact epochs. No V models, keys, proofs or application have
-run; that qualification, independent receipt review and the full slice remain
-open. Existing predecessor proofs retain their own source epochs.
+reviews cover their exact epochs. No V model inventory, key generation, genuine proof or application gate has
+run; compiler-emitted ZKIR assets do not establish model sizing or proof
+acceptance. That qualification, independent receipt review and the full slice
+remain open. Existing predecessor proofs retain their own source epochs.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before
