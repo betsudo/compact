@@ -93,3 +93,33 @@ The exact current checkpoint, refs/worktrees, clean canonical and clean T
 predecessor were inspected first. All predecessor branches and evidence remain
 untouched. Focused clean baseline and actual binding/cast owner tracing are next;
 no U implementation, current compiler, API, model or proof acceptance is claimed.
+
+
+## Baseline and owner trace
+
+Clean signed admission `6359c1f52` passes all 35 focused coercion, Vector, Fold,
+projection, historical fixture, native Vector-child and return-order tests.
+Original default172 Nix recipe passes at that head. Expanded original evidence
+retains 28 complete sources / 84 commands: 21 pass TS/IR, 17 fail Rust at the
+missing local conversion, and four controls already pass. All seven frontend
+refusals remain. Two additional complete scalar/Unit result sources pass TS/IR
+and fail Rust at the same local boundary; the conversion belongs to the binding,
+not just a Vector-valued return.
+
+Three complete original frontend traces retain the actual supplied safe-casts,
+local target/source types and witness/binding order. `stateful-bindings-ir`
+already passes the declared local type to `stateful-typed-expression-ir`; its
+Vector safe-cast fallback loses the source/target conversion because stateful
+roots do not use the pure variable-type table. The legacy action/return split
+can also repeat an effectful initializer. Therefore a cast-only patch is
+insufficient.
+
+Classify supplied nonidentity monotone Vector casts using the existing T type
+rules. At typed stateful casts, lower the original value at the supplied source
+type, then emit the existing Coerce to the supplied target. Bodies containing
+such local initializers select the existing ordered return owner so each binding
+and its surrounding actions execute once in source order. Identity casts and
+unrelated expressions keep their owners. This is routing and source preservation,
+not recording admission; native/recording validators, resource rules, AST owners
+and ABI remain unchanged. Compiler173 identifies this implementation. Current
+compiler/source/API/proof/review qualification is pending.

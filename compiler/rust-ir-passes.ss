@@ -1801,6 +1801,33 @@
              [else #f])]
           [else #f]))
 
+      ;; Preserve a supplied local Vector conversion at its original source
+      ;; value. Identity casts keep their current IR and evaluation owner.
+      (define (nonidentity-vector-widening-cast? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src ,type ,type^ ,expr^)
+           (and (vector-value-widening? type type^)
+                (not (equal? (type-ir type src) (type-ir type^ src))))]
+          [else #f]))
+
+      ;; A local initializer can call a witness or a stateful helper even when
+      ;; the returned value is only a variable. Keep its binding and surrounding
+      ;; actions in one ordered body instead of evaluating it in both halves of
+      ;; the legacy action/return split. This selects an owner, not admission.
+      (define (stateful-local-vector-widening? expr)
+        (let loop ([expr expr])
+          (nanopass-case (Lnodisclose Expression) expr
+            [(let* ,src ([,local* ,expr*] ...) ,expr^)
+             (or (exists nonidentity-vector-widening-cast? expr*)
+                 (exists loop expr*) (loop expr^))]
+            [(safe-cast ,src ,type ,type^ ,expr^) (loop expr^)]
+            [(return ,src ,expr^) (loop expr^)]
+            [(seq ,src ,expr* ... ,expr^)
+             (or (exists loop expr*) (loop expr^))]
+            [(if ,src ,expr0 ,expr1 ,expr2)
+             (or (loop expr0) (loop expr1) (loop expr2))]
+            [else #f])))
+
       (define (return-value-widening? target source)
         (nanopass-case (Lnodisclose Type) source
           [(tunsigned ,src ,nat) (return-component-widening? target source)]
@@ -2191,7 +2218,11 @@
           [(quote ,src ,datum)
            (typed-expression-ir value-expr expected-type src)]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
+           (if (nonidentity-vector-widening-cast? value-expr)
+               (object (cons "kind" "coerce")
+                       (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids))
+                       (cons "ty" (type-ir type src)))
+               (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
@@ -2213,7 +2244,7 @@
                     (object (cons "kind" "unsigned_cast")
                             (cons "max" (number->string nat))
                             (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))))]
-             [else (stateful-expression-ir value-expr owner-src witness-ids)])]
+             [else (stateful-expression-ir value-expr owner-src witness-ids)]))]
           [else (stateful-expression-ir value-expr owner-src witness-ids)]))
 
       (define (stateful-expression-ir value-expr owner-src witness-ids)
@@ -2751,7 +2782,8 @@
                                                         (cons "name" (rust-var-name var-name))))])) arg*)]
                       [vector-literal-return? (stateful-vector-literal-return? expr type)]
                       [vector-value-return? (stateful-vector-value-widening-return? expr type)]
-                      [effectful-return? (or vector-literal-return? vector-value-return?
+                      [local-vector-widening? (stateful-local-vector-widening? expr)]
+                      [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
                                              (has-unit-mutation-initializer? expr)
                                              (and (not (unit-return-type? type))
                                                   (or (terminal-storage-mutation-conditional? expr)
@@ -2772,7 +2804,7 @@
                                               (object (cons "kind" "effectful")
                                                       (cons "body"
                                                             (stateful-return-plan-ir expr
-                                                              (if (or vector-literal-return? vector-value-return?) (vector-carrier-type type) type) src
+                                                              (if (or vector-literal-return? vector-value-return? local-vector-widening?) (vector-carrier-type type) type) src
                                                               (map (lambda (arg)
                                                                      (nanopass-case (Lnodisclose Argument) arg
                                                                        [(,var-name ,type)

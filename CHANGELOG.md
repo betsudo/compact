@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.173, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve supplied Vector conversions in stateful local initializers. Evaluate
+  each original source value before conversion and retain local bindings with
+  their surrounding actions in the existing ordered body. Native/recording
+  validation, source bounds and runtime ABI are unchanged.
+
 ## [Toolchain 0.31.172, language 0.23.105, runtime 0.16.102]
 
 ### Fixed
