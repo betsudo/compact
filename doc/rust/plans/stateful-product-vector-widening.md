@@ -146,3 +146,23 @@ original source paths produces byte-identical complete IR and Program membership
 for all three controls (five files), retained in
 `accepted-control-comparison-v2/receipt.json`. The failed comparison/diffs remain.
 No proof/application or integration result follows from these API controls.
+
+## Nested public signature lint boundary
+
+The maintained 174 gate at `30f8f1c4a` passed all 30 consumers and the first
+11 strict SDK roots, then failed nested_product's strict root on eight
+`clippy::type_complexity` diagnostics. The generated complete nested product
+signatures are required carriers, not a runtime/type error. The failed receipt
+`source-api-v2/receipt.json` is retained and does not qualify the full gate.
+
+Compiler 175 extends the existing `CompactSignatureLint` AST owner, which already
+scopes the positional-argument style exception to affected functions. It marks
+only individual signatures containing a runtime FixedVector of FixedVector of a
+nontrivial product, including wrapped outcomes, with a reasoned type-complexity
+style exception. It adds no crate/module-wide suppression, type erasure, runtime
+rule, new API alias, dependency, generated-code edit or admission fallback.
+All other strict lint checks and ordinary Rust type/ownership errors remain
+active. Broad alias/API redesign is outside this repair. Semantic validators,
+conversion AST bodies, original source/IR/Programs and ABI remain unchanged;
+the generated signature attributes are an explicit metadata change. Current
+175 clean-head validation and independent review must cover this successor.

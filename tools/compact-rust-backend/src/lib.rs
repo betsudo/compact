@@ -1019,16 +1019,87 @@ fn collect_return_plan_types<'ir>(
 }
 
 /// A Compact circuit's positional signature is part of the generated Rust API.
-/// Scope the Clippy exception to functions that cross its seven-input limit.
+/// Scope style exceptions to the individual generated signatures that need them.
 struct CompactSignatureLint;
 
 impl CompactSignatureLint {
+    fn vector_element(ty: &syn::Type) -> Option<&syn::Type> {
+        let syn::Type::Path(path) = ty else {
+            return None;
+        };
+        let names = path
+            .path
+            .segments
+            .iter()
+            .map(|segment| segment.ident.to_string())
+            .collect::<Vec<_>>();
+        if names != ["runtime", "FixedVector"] && names != ["crate", "runtime", "FixedVector"] {
+            return None;
+        }
+        let syn::PathArguments::AngleBracketed(arguments) = &path.path.segments.last()?.arguments
+        else {
+            return None;
+        };
+        match arguments.args.first()? {
+            syn::GenericArgument::Type(element) => Some(element),
+            _ => None,
+        }
+    }
+
+    fn has_nested_product_vector(signature: &syn::Signature) -> bool {
+        let mut pending = signature
+            .inputs
+            .iter()
+            .filter_map(|argument| match argument {
+                syn::FnArg::Typed(argument) => Some(argument.ty.as_ref()),
+                syn::FnArg::Receiver(_) => None,
+            })
+            .collect::<Vec<_>>();
+        if let syn::ReturnType::Type(_, ty) = &signature.output {
+            pending.push(ty);
+        }
+        while let Some(ty) = pending.pop() {
+            if Self::vector_element(ty).and_then(Self::vector_element)
+                .is_some_and(|element| matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2)) {
+                return true;
+            }
+            match ty {
+                syn::Type::Path(path) => {
+                    for segment in &path.path.segments {
+                        if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                            pending.extend(arguments.args.iter().filter_map(|argument| {
+                                match argument {
+                                    syn::GenericArgument::Type(ty) => Some(ty),
+                                    _ => None,
+                                }
+                            }));
+                        }
+                    }
+                }
+                syn::Type::Tuple(tuple) => pending.extend(&tuple.elems),
+                syn::Type::Reference(reference) => pending.push(&reference.elem),
+                syn::Type::Paren(paren) => pending.push(&paren.elem),
+                syn::Type::Group(group) => pending.push(&group.elem),
+                _ => {}
+            }
+        }
+        false
+    }
+
     fn mark(attrs: &mut Vec<syn::Attribute>, signature: &syn::Signature) {
         if signature.inputs.len() > 7 {
             attrs.push(syn::parse_quote!(
                 #[allow(
                     clippy::too_many_arguments,
                     reason = "preserves the declared Compact circuit signature"
+                )]
+            ));
+        }
+        if Self::has_nested_product_vector(signature) {
+            attrs.push(syn::parse_quote!(
+                #[allow(
+                    clippy::type_complexity,
+                    reason = "preserves nested Compact Vector/product carriers in this signature"
                 )]
             ));
         }
