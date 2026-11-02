@@ -76,3 +76,31 @@ Evidence root:
 `/Users/ysh/.codex/local-evidence/rust-ast-fold-vector-result-widening-20261102`.
 Implementation, current compiler/API/proof qualification and complete required CI
 are not yet accepted. The broader goal remains active and incomplete.
+
+
+## Implementation and first current-source checks
+
+Compiler0.31.164 at `770a7c56f` builds with the default original native recipe.
+The complete20-source/60-command characterization passes:17TS-valid sources
+emit Rust and independent equal IR, and three frontend refusals remain. The
+local, conditional, scalar and original order-control sources retain all16
+original IR/raw-origin/Rust/capability assets byte-for-byte. Vector alias target
+normalization also resolves the reducer's previously invalid Vector literal
+carrier; unrelated aliases retain their owner.
+
+A development corpus now contains17complete positive sources, including the
+unchanged accepted controls, plus the existing narrow-accumulator guard family
+through a second stateful helper export. Thirty-two independent TS/Rust cases
+pass:27pure calls and20stateful route executions. Both-operand-failure controls
+retain the explicit original144 native/TS difference, bound to the complete
+original control source and actual six-case observations. They are not labeled
+parity or used to bypass source/IR/Program identity checks. Current fixed-source
+acceptance, strict SDK roots, ordinary/untrusted refusals, independent review and
+applicable real proofs remain pending.
+
+The maintained gate is `tools/compact-rust-backend/check_fold_vector_result_widening.py`.
+It requires a clean original compiler receipt at its exact HEAD, complete source
+IR/Program goldens, an explicit TS runtime and pinned Rust tools with inherited
+compiler/wrapper substitutions refused. Consumers and strict root SDK copies
+are external to the unedited generated bundle. Changed outputs/producers must
+fail actual consumers; the zero-length reducer retains static signature checks.

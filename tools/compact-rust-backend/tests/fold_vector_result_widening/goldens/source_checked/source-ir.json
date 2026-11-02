@@ -1,0 +1,350 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "initial",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "seed denied"
+          }
+        ],
+        "value": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "seed"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 17,
+        "column": 1
+      }
+    },
+    {
+      "name": "items",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "items denied"
+          }
+        ],
+        "value": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "input"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 18,
+        "column": 1
+      }
+    },
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "not_equal",
+              "left": {
+                "kind": "parameter",
+                "name": "item"
+              },
+              "right": {
+                "kind": "unsigned_literal",
+                "value": "7",
+                "max": "255"
+              }
+            },
+            "message": "item denied"
+          }
+        ],
+        "value": {
+          "kind": "vector",
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          },
+          "elements": [
+            {
+              "kind": "parameter",
+              "name": "item"
+            },
+            {
+              "kind": "tuple_index",
+              "value": {
+                "kind": "parameter",
+                "name": "acc"
+              },
+              "index": 0
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "seed_ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "items_ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        },
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "vector_fold_call",
+          "name": "step",
+          "initial": {
+            "kind": "call",
+            "name": "initial",
+            "arguments": [
+              {
+                "kind": "parameter",
+                "name": "seed_ok"
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "seed"
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                }
+              }
+            ]
+          },
+          "source": {
+            "kind": "call",
+            "name": "items",
+            "arguments": [
+              {
+                "kind": "parameter",
+                "name": "items_ok"
+              },
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "input"
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                }
+              }
+            ]
+          },
+          "accumulator": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          },
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          },
+          "length": 2
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "65535"
+          }
+        }
+      },
+      "source": {
+        "file": "source_checked.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}
