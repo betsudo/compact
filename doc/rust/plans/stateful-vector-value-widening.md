@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-Proposal only, after reviewed local S execution
+T is admitted on `codex/rust-ast-stateful-vector-value-widening` from reviewed S docs `cf02d5693b1680823a25cb719c23c836db1ce5bd`, after inspected current refs/worktrees and clean canonical/predecessor states. Implementation and current qualification remain pending. Prior reviewed local S execution
 `7ab60b62061a728b3e81f34ae31e9693b1063d41` (compiler170). Canonical
 `codex/rust-backend-ast` remains clean at1bdf185ea. The explicit local candidate
 stack is not integrated canonical. Inspect the exact checkpoint/refs/worktrees
