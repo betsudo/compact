@@ -37,3 +37,22 @@ shallow-stack on Q: the exact authoritative literal-source context helper is
 already present there. Reusing it avoids duplicate owner logic; no candidate
 is called integrated canonical. Focused current clean baseline is required
 before the one cohesive elt-ref typed-projection extension.
+
+
+## Focused baseline and implementation decision
+
+At signed5273136e2 the focused22coercion/projection/order/historical tests pass.
+Expanded23-source/69-command original166 characterization identifies18TS-valid
+sources:13Rust mismatches and5acceptedcontrols. Five genuine frontend refusals
+retain length/kind/missing-field/implicit-narrowing/nominal causes in every lane.
+The complete cases include wide,tuple,nested member/literal,alias,local,conditional,
+source assertion,empty-mixed and checked-narrowing contexts.
+
+Existing frontend/native owners match the reviewed Q source. The change adds
+one typed elt-ref arm through the existing source-type projection helper. That
+helper lowers the complete original member/base expression first, then uses
+authoritative source and target types for existing Coerce. Identity and absent
+literal source context keep original IR. Native field-name/index/type validation
+and ownership remain unchanged. Compiler167 records the source change; no IR,
+runtime ABI, dependency or executor changes. Current compiler/API/proof and
+independent review acceptance remain open.

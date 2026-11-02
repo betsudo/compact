@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.167, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve frontend-supplied source types for struct member projections in wider
+  aggregate literals. Reuse existing checked coercion and struct-field ownership,
+  retaining the complete base expression, field bounds and evaluation order.
+  Standalone field and struct literal behavior remains unchanged; no runtime ABI
+  or IR schema change is introduced.
+
 ## [Toolchain 0.31.166, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

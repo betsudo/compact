@@ -966,6 +966,8 @@
       (define (typed-expression-ir-value expr expected-type owner-src source-type)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src source-type)]
+          [(elt-ref ,src ,expr^ ,elt-name ,nat)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
           [(tuple-ref ,src ,expr^ ,kindex)
            (typed-projection-value-ir expr expected-type source-type owner-src)]
           [(vector-ref ,src ,type ,expr^ ,index)
