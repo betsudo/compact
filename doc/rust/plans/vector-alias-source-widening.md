@@ -150,3 +150,20 @@ controls include validating impossible element conversion even for zero
 length. ActualSDKroots remain strict, unedited compile inputs. Full current
 clean-head source/API execution, fresh selected proofs/applications and
 independent review remain required; generation alone is not acceptance.
+
+
+The first maintained clean-head API run at192 executed all26 consumer cases,
+20 strict roots,4 ordinary Rust and4 source refusals, and the changed-result
+control successfully. It then stopped because the changed small producer
+placed indexed narrow scalars directly in a wider Vector, exercising a distinct
+indexed-scalar expected-context gap instead of this source-alias conversion.
+The repaired full producer reverses into its original Input type and then
+returns that alias to the wider result, matching the actually repaired owner.
+Its emission succeeds; the new full run must still demonstrate actual consumer
+failure. The earlier failed gate remains failed evidence; no case was deleted.
+
+Literal192 regression passes all283 historical fixture freshness checks,
+1830 backend tests with7 existing ignored, and strict backend Clippy. Claude
+review was actually unavailable with an explicit session-limit response;
+independent review uses the authorized Codex CLI fallback and a complexity-
+appropriate different model. No successful review result is inferred.

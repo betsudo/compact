@@ -281,7 +281,7 @@ def main():
         env["COMPACT_VECTOR_ALIAS_SOURCE_TS"] = str(ts)
         report["source_mutations"] = {}
         for name, old, new, test in [
-                ("small", "return input;", "return [input[1],input[0]];", "small"),
+                ("small", "return input;", "const changed:Input=[input[1],input[0]];return changed;", "small"),
                 ("source_checked", 'assert(ok,"input denied");', '', "both_denied")]:
             # Mutate a complete producer, then regenerate it. No generated Rust
             # or expected results are edited. The second producer intentionally

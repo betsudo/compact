@@ -119,5 +119,5 @@ writeFileSync(options.output,JSON.stringify({status:'passed',format:'vector-alia
   node:{...nodeIdentity,sharedLibraries:Object.fromEntries(external.map(path=>[path,hash(path)])),
     systemLibraries:system,kernelVirtualLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'},
   wrappers,inputs,capture:{path:realpathSync(process.argv[1]),sha256:selfHash},
-  scope:'actual complete wrappers and independent expected values, accumulator failures/state/private checks; declared historical native/TS operand-order differences are not parity claims; no proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
+  scope:'actual complete wrappers and independent expected values, ordered assertion refusals and state/private checks; no native error substitutions, proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({cases:rows.length,success:rows.filter(row=>!row.error).length,failures:rows.filter(row=>row.error).length,output:options.output}));
