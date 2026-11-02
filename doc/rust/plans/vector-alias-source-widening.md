@@ -107,3 +107,15 @@ checks nominal legality before this phase; explicit nominal casts are covered,
 illegal implicit nominal conversion remains a required refusal. Scalar, tuple
 and stateful expected ingress are unchanged. Compiler165 metadata identifies
 this source; no runtime ABI, IR schema, dependency or executor is added.
+
+
+The first clean165 source characterization fixed17/18 TS-valid emissions but
+retained one failure: nominal-source explicit casts contain an inner frontend
+alias-unwrapping cast that discarded the wider expected context. Preserve
+that complete cast at its original type, then apply existing Coerce in its
+Vector context. Conditional arms already supply their own outer Coerce; keep
+raw alias variables and casts there, preserving original accepted conditional
+IR/origins rather than adding redundant wrappers. Four other control sources
+retained all16 original IR/raw/Rust/capability bytes in that partial run; all
+five controls must be freshly compared after this correction. Failed/partial
+receipts remain evidence; the nominal case is not removed from acceptance.

@@ -893,12 +893,26 @@
                        (cons "right" (field-argument-ir expr2 src))))]
           [else (source-errorf owner-src "Rust backend does not yet support this circuit expression")]))
 
-      ;; Conditional arms already supply an outer Coerce. Keep a Fold's
-      ;; original accumulator there instead of adding a redundant wrapper.
+      ;; Conditional arms already supply an outer Coerce. Preserve the original
+      ;; Fold accumulator, source alias or nested cast without a new wrapper.
       (define (typed-coercion-value-ir expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (expression-ir expr owner-src)]
+          [(safe-cast ,src ,type ,type^ ,value)
+           (expression-ir expr owner-src)]
+          [(var-ref ,src ,var-name)
+           (let ([actual-type (and (current-variable-types)
+                                   (eq-hashtable-ref (current-variable-types) var-name #f))])
+             (if (and actual-type
+                      (nanopass-case (Lnodisclose Type) actual-type
+                        [(talias ,src1 ,nominal? ,type-name ,type1)
+                         (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
+                           [(tvector ,src2 ,len2 ,type2) #t]
+                           [else #f])]
+                        [else #f]))
+                 (expression-ir expr owner-src)
+                 (typed-expression-ir expr expected-type owner-src)))]
           [else (typed-expression-ir expr expected-type owner-src)]))
 
       (define (typed-expression-ir expr expected-type owner-src)
@@ -908,6 +922,18 @@
       (define (typed-expression-ir-value expr expected-type owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src)]
+          [(safe-cast ,src ,type ,type^ ,value-expr)
+           ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
+           ;; Lower that complete cast first, then preserve its wider Vector
+           ;; context instead of losing it while unwrapping the source alias.
+           (let* ([value (expression-ir expr owner-src)]
+                  [actual (type-ir type src)]
+                  [target (type-ir expected-type src)])
+             (if (and (equal? (cdr (assoc "kind" actual)) "vector")
+                      (equal? (cdr (assoc "kind" target)) "vector")
+                      (not (equal? actual target)))
+                 (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
+                 value))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            ;; Lower the complete Fold at its supplied accumulator type first.
            ;; Its reducer and guards retain that type; independent existing
