@@ -1779,6 +1779,22 @@
              [else #f])]
           [else #f]))
 
+      ;; Classify only frontend-supplied Vector value conversions. This chooses
+      ;; ordered evaluation; the existing native/recording Coerce owners still
+      ;; independently check the reached value and its representation bounds.
+      (define (vector-value-widening? target source)
+        (nanopass-case (Lnodisclose Type) (vector-carrier-type source)
+          [(tvector ,src ,len ,type)
+           (nanopass-case (Lnodisclose Type) (vector-carrier-type target)
+             [(tvector ,src^ ,len^ ,type^)
+              (and (= len len^)
+                   (or (vector-value-widening? type^ type)
+                       (return-component-widening?
+                         (vector-carrier-type type^)
+                         (vector-carrier-type type))))]
+             [else #f])]
+          [else #f]))
+
       (define (return-value-widening? target source)
         (nanopass-case (Lnodisclose Type) source
           [(tunsigned ,src ,nat) (return-component-widening? target source)]
@@ -1866,6 +1882,25 @@
               [(tuple ,src ,tuple-arg* ...) #t]
               [else #f]))))
 
+      ;; A Vector-valued helper, parameter, query or witness need not end in a
+      ;; literal. Keep its declared conversion in the same ordered return body.
+      ;; Look only along the returned value flow; unrelated call arguments and
+      ;; discarded expressions retain their existing owners.
+      (define (stateful-vector-value-widening-return? expr result-type)
+        (and
+          (nanopass-case (Lnodisclose Type) (vector-carrier-type result-type)
+            [(tvector ,src ,len ,type) #t]
+            [else #f])
+          (let loop ([expr expr])
+            (nanopass-case (Lnodisclose Expression) expr
+              [(safe-cast ,src ,type ,type^ ,expr^)
+               (or (vector-value-widening? type type^) (loop expr^))]
+              [(return ,src ,expr^) (loop expr^)]
+              [(let* ,src ([,local* ,expr*] ...) ,expr^) (loop expr^)]
+              [(seq ,src ,expr* ... ,expr^) (loop expr^)]
+              [(if ,src ,expr0 ,expr1 ,expr2) (or (loop expr1) (loop expr2))]
+              [else #f]))))
+
       ;; A Unit binding has one possible value, but its initializer may still
       ;; select and execute storage effects. Preserve those effects before the
       ;; lexical binding using the existing ordered return/action forms.
@@ -1951,6 +1986,7 @@
         (nanopass-case (Lnodisclose Expression) expr
           [(safe-cast ,src ,type ,type^ ,expr^)
            (if (or (return-value-widening? type type^)
+                   (vector-value-widening? type type^)
                    (stateful-vector-literal-return? expr^ type))
                ;; Reach the original source value after its actions, then
                ;; apply the existing checked conversion exactly once. The
@@ -2708,7 +2744,8 @@
                                   (cons var-name (object (cons "kind" "parameter")
                                                         (cons "name" (rust-var-name var-name))))])) arg*)]
                       [vector-literal-return? (stateful-vector-literal-return? expr type)]
-                      [effectful-return? (or vector-literal-return?
+                      [vector-value-return? (stateful-vector-value-widening-return? expr type)]
+                      [effectful-return? (or vector-literal-return? vector-value-return?
                                              (has-unit-mutation-initializer? expr)
                                              (and (not (unit-return-type? type))
                                                   (or (terminal-storage-mutation-conditional? expr)
@@ -2729,7 +2766,7 @@
                                               (object (cons "kind" "effectful")
                                                       (cons "body"
                                                             (stateful-return-plan-ir expr
-                                                              (if vector-literal-return? (vector-carrier-type type) type) src
+                                                              (if (or vector-literal-return? vector-value-return?) (vector-carrier-type type) type) src
                                                               (map (lambda (arg)
                                                                      (nanopass-case (Lnodisclose Argument) arg
                                                                        [(,var-name ,type)

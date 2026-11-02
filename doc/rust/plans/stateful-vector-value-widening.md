@@ -83,3 +83,26 @@ Automatic proof k<=8 stays; preserve full sources and record every over-cap mode
 
 No implementation, API execution, model feasibility or proof acceptance follows
 from the source-only characterization above.
+
+
+## Clean baseline, expanded evidence and owner decision
+
+Signed clean652691a6 baseline passes35 focused coercion/projection/Fold/history/
+stateful-return/native-Vector checks. Original170 characterization retains29full
+sources/87commands:22TS-valid sources and7frontend refusals. Sixteen valid forms
+fail before IR on nested storage/witness expression lowering; query-Vector and
+stateful-helper values emit narrow IR and then fail Rust type equality. The four
+passing controls include read-only conditional helper widening. Empty/nested/wide,
+transparent scalar/Vector aliases, checked helper casts, guard order, stateful
+callee and witnessed Vector source values are explicitly retained.
+
+The existing literal predicate selects S's ordered return plan, while nonliteral
+Vector casts use the legacy split or generic expression lowering. Add a bounded
+Vector-to-Vector monotone conversion classifier (matching dimensions, recursive
+Vector shape and existing Uint/Field widening leaves) along returned value flow.
+Select the same ordered owner for helper/parameter/query/witness conversions.
+Reach the original source type and actions first, then apply the existing checked
+Coerce continuation. No native validator, runtime, schema/ABI, dependency or AST
+owner change is proposed. Narrowing and nominal refusals remain authoritative.
+Compiler metadata171 marks this source change; current build/API/proof/review
+acceptance remains pending.
