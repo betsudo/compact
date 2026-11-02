@@ -18,4 +18,17 @@ fn main() {
         );
         println!("cargo::rustc-cfg=compact_fold_vector_result_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_vector_alias_source_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_ALIAS_SOURCE_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_VECTOR_ALIAS_SOURCE_WIDENING").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_VECTOR_ALIAS_SOURCE_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute() && root.join("contract/lib.rs").is_file(),
+            "COMPACT_VECTOR_ALIAS_SOURCE_GENERATED must name the complete generated SDK"
+        );
+        println!("cargo::rustc-cfg=compact_vector_alias_source_generated");
+    }
 }

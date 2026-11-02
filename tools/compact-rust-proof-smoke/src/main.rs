@@ -66,6 +66,27 @@ pub use fold_vector_result_fixture::{ledger_contract, ledger_slots, pure_circuit
 ))]
 mod fold_vector_result_widening;
 
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+pub mod vector_alias_source_fixture {
+    include!(concat!(
+        env!("COMPACT_VECTOR_ALIAS_SOURCE_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+pub use vector_alias_source_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+mod vector_alias_source_widening;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

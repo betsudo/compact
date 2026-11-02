@@ -24,6 +24,7 @@ description = "Ledger-8 proof compatibility gate for Rust Compact output"
 [features]
 default = []
 fold-vector-result-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
+vector-alias-source-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 

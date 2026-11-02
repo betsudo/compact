@@ -265,7 +265,7 @@ def main():
             report["compile_fail"][name] = compile_failure(rejected, name, code, source)
         report["source_refusals"] = {}
         for name, message in [("wrong_length", "mismatch between actual return type"), ("wrong_element", "mismatch between actual return type"),
-                ("narrow_return", "mismatch between actual return type"), ("nominal_implicit", "mismatch between actual return type")]:
+                ("narrow_return", "mismatch between actual return type"), ("nominal_implicit", "mismatch between actual return type"), ("nominal_source_implicit", "mismatch between actual return type")]:
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
                 FIXTURES / (name + ".compact"), output / ("refused-" + name)], success=False)
             require(rejected.returncode and message.lower() in rejected.stderr.lower(), "source refusal changed: " + name)

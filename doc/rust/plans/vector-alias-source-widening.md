@@ -167,3 +167,43 @@ Literal192 regression passes all283 historical fixture freshness checks,
 review was actually unavailable with an explicit session-limit response;
 independent review uses the authorized Codex CLI fallback and a complexity-
 appropriate different model. No successful review result is inferred.
+
+
+## Source/API acceptance and proof preparation
+
+At clean signeda6cfd854c, original native165 and the complete maintained gate
+pass:102 commands,20 complete sources,26 TS/Rust cases (24pure and8stateful
+routes),20 strict SDK roots,4typed/4source/3nativeIR refusals and the actual
+changed expectation/two complete changed-producer consumer failures. No source
+or negative control was omitted to obtain this result. Historical regression
+retains its literal192 epoch; compiler/native/runtime owners are unchanged.
+
+Authentic Codex CLI fallback review (gpt-6-astra, high) reports no introduced
+P1/P2 in the complete diff and actual shared coercion/certification owners.
+Claude's explicit session-limit result is retained as unavailable, not review
+acceptance. The suggested matching nominal-source implicit-unwrapping refusal
+is now added: current165 independently refuses it in TS, Rust and Scheme IR.
+The next full gate must execute all5 source refusals.
+
+The proof gate is
+`tools/compact-rust-backend/check_vector_alias_source_widening_proof.py` with
+explicit `--compiler-receipt`, `--ts-runtime`, `--zkir` and a new `--output`.
+Rust1.99.0 and absolute `MIDNIGHT_PP` with locked upstream material are required.
+`--prepare-only` performs no key generation, proofs or applications. The opt-in
+Cargo feature includes the complete current unedited helper SDK and both full
+Programs. Its host module is public so all generated exported alias types
+remain reachable under strict lint; generated files are not patched. Actual
+development opt-in compilation and strict Clippy pass.
+
+The gate redoes the full current source/API check, checks default/all-features
+without a generated SDK and actual included dependencies, refuses changed IR
+and Program bytes/membership before keys or state, and inspects both helper
+models under unchanged automatic k<=8. A separate complete retained Fold
+source supplies a real larger diagnostic only for the pre-key cap refusal;
+it does not replace, trim or admit the alias helper source. Compiler/tool hashes
+are rechecked before that diagnostic and after proof execution. Verified locked
+material must precede fresh direct keys. Acceptance requires both selected
+fresh proofs with immutable verification and binding/result/corruption/different-
+verifier controls, plus independently proved funded default-strict transactions
+and unchanged-ledger replay refusal. Constructor proof, full required CI and
+integration are not claimed by compilation or selected-helper qualification.

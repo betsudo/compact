@@ -65,6 +65,20 @@ pub(super) fn try_run(
         ("--fold-vector-result-widening-models", _) => {
             Some(collections::fold_vector_result_widening(arguments, true))
         }
+        #[cfg(all(
+            feature = "vector-alias-source-widening",
+            compact_vector_alias_source_generated
+        ))]
+        ("--vector-alias-source-widening", _) => {
+            Some(collections::vector_alias_source_widening(arguments, false))
+        }
+        #[cfg(all(
+            feature = "vector-alias-source-widening",
+            compact_vector_alias_source_generated
+        ))]
+        ("--vector-alias-source-widening-models", _) => {
+            Some(collections::vector_alias_source_widening(arguments, true))
+        }
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
