@@ -101,7 +101,7 @@
       "run": "u16_vector",
       "run_field": "field_vector"
     },
-    "local_conversions": 1
+    "local_conversions": 3
   },
   {
     "source": "pure_control",
