@@ -16,6 +16,8 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Products below Vector components](plans/vector-component-products.md): reviewed bounded compiler183 source/API/static/ingress/producer qualification, 24 complete SDKs and 35 cases. Three existing complete sources now have reviewed fresh proofs and separately proved funded default-strict applications. Twenty-one required exports remain unproved, including all eighteen over-limit models. The complete cohort is wired into the required Linux compiler workflow and locally requalified in the arm64 Nix shell; hosted CI and full integration remain open.
 
+- [Current-candidate isolated witnessed SDK handoff](plans/current-profile-sdk-handoff.md): bounded planned compiler183 requalification of the existing documented consumer; accepted compiler143 integration remains separate. No new result or API change is claimed.
+
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 
 ## Checked recording checkpoint
