@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use candidate::{ledger_contract as api, runtime as r};
+#[cfg(test)]
+use candidate::ledger_contract as api;
+use candidate::runtime as r;
 use r::{BoundedUint, FixedVector};
 
 pub type U = BoundedUint<255>;
@@ -33,6 +35,7 @@ pub fn input() -> Input {
         ),
     ])
 }
+#[cfg(test)]
 fn replay(
     out: r::recording::RecordedCircuitResult<u64, Input>,
 ) -> r::context::CircuitResult<u64, Input> {
