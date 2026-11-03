@@ -1,11 +1,13 @@
 # Nested scalar products below Vector components
 
-Status: bounded local source/API/static/ingress/producer/refusal stage passes at
-`b655df966` (73commands), with actual Claude source/correction and separate
-receipt reviews finding no remaining P1/P2. All14models are observed. Fresh
-selected proofs, separate strict applications, final proof reviews and full
-integration remain open. Based on reviewed request-field baseline
-`d9e9cb2cb`; the primary Rust AST goal is incomplete.
+Status: bounded local source/API/static/ingress/producer/refusal and selected
+proof/application stages pass at `660e3937b`. Actual independent Claude source
+and receipt reviews find no P1/P2 for that scope. Both maintained predecessor
+API suites also pass (147 and 170 commands). Four of fourteen intact exports
+have fresh proof/verification and separate DEFAULT-strict application coverage;
+ten remain unproved, including three k9 exports. Full CI/Linux/integration and
+the primary Rust AST goal remain incomplete. Based on reviewed request-field
+baseline `d9e9cb2cb`; subsequent parent ancestry reconciliation remains open.
 
 ## Gap and owners
 
@@ -393,3 +395,52 @@ additional after-command hash field. Source/receipt reviews and raw logs support
 those selected executions; the summary JSON alone is not the proof of them.
 Full CI/Linux/integration, constructor/callback implementation and all-input
 coverage remain open. Preserve the entire first run and its review artifacts.
+
+
+## Guard-corrected local proof stage accepted — 2026-11-03
+
+At clean signed `660e3937bcbe82f91ec5eaa549c140b2aba5d912`, the existing-only
+original compiler185 recipe resolves its exact immutable package in1.19s.
+The fresh v4 proof gate passes17commands in229.33s, including a new complete
+73command native protocol execution. All16raw identity refusals, all14models,
+the intact k9 donor refusal, locked parameter verification before keys,
+945physical prerequisites,13SDK Program includes and immediate per-pair key
+pins pass. Each selected export has a freshly executed standalone proof and
+independent verification, and a separately proved funded DEFAULT-strict
+transaction with successful application and unchanged-state replay refusal.
+
+Actual fresh Claude source correction review (42.98s) closes all four preceding
+guard follow-ups. The separate actual receipt review (148.14s) independently
+rehashes current v4 inputs, logs, prerequisites and results and finds no P1/P2,
+accepting this bounded local stage. Fixed proof seeds make the new proof/key
+bytes equal to the retained first run; freshly executed does not mean unique
+bytes. New absent output directories and actual keygen/prover commands, rather
+than byte inequality, establish execution. Transaction bytes differ. Preserve
+both successful epochs and both intervening pre-key/pre-protocol controller
+path failures; neither failed epoch generated a new proof.
+
+The receipt reviewer retains one optional guard hardening: after immediate
+per-keygen pins, the summary maps are recomputed rather than explicitly compared.
+No external command runs in that interval. Existing fail-closed checks still
+surround every later command. The literal summary flags, Debug parity and
+non-atomic attestation limits documented above continue to apply. No additional
+constructor, callback implementation, universal-input or whole-application
+proof coverage is inferred.
+
+After acceptance, the first complete current compiler185 executions of both
+maintained predecessor API consumers pass: vector-product elements147commands
+and Vector component products170commands. These are affected-source regression
+checks, not new predecessor proofs or profiling repeats. The source remains clean.
+
+Current evidence under the declared root: `proof-controller-v4.json`,
+`proof-existing-recipe-v4/receipt.json`, `paired-proof-v4/receipt.json`,
+`paired-proof-v4/protocol/receipt.json`,
+`local-claude-proof-source-review-v2.json`,
+`local-claude-proof-receipt-review-v2.json` and
+`predecessor-source-regressions-v1/receipt.json`.
+
+Next close the parent-owned maintained whole-example consumer gap, then prepare
+local stack reconciliation without merging branches or rewriting preserved
+history. All required CI/Linux/integration gates remain required and unexecuted
+for this current stack; Forge remains deliberately deferred. This documentation
+successor changes no compiler, contract, SDK, runtime, proof consumer or recipe.
