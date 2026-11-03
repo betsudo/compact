@@ -21,10 +21,13 @@ mod input;
 #[path = "../bin_support/staged_output.rs"]
 mod staged_output;
 use staged_output::StagedOutput;
+#[path = "../bin_support/output_manifest.rs"]
+mod output_manifest;
 #[path = "../bin_support/source_diagnostic.rs"]
 mod source_diagnostic;
 #[path = "../bin_support/source_maps.rs"]
 mod source_maps;
+use output_manifest::refresh_manifest;
 
 use std::collections::BTreeMap;
 use std::env;
@@ -38,8 +41,7 @@ use std::process::{self, Command};
 use compact_rust_backend::{
     ConfiguredFrontend, FrontendError, FrontendRequest, RenderOptions, compatibility, ir::Contract,
 };
-use serde_json::{Map, Value};
-use sha2::{Digest, Sha256};
+use serde_json::Value;
 use toml_edit::{Array, DocumentMut, InlineTable, Item, Table, Value as TomlValue, value};
 
 const TARGET_HELP: &str = "\n  --target <ts|rust> selects contract code. Repeat to emit both.\n    With no --target, TypeScript remains the default. Rust emits a standalone\n    contract/Cargo.toml, source, capability report, and matching runtime crates.\n    ZKIR and keys are independent.\n  --rust-require-recording rejects proof-required exported circuits without both\n    replayable recording and typed observed-call APIs.\n  --rust-runtime-root <path> uses one shared runtime source root for generated\n    Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.\n  --rust-runtime-registry pins the compiler's matching runtime package version\n    without copying runtime sources. That version must be published to build.\n";
@@ -411,62 +413,6 @@ fn copy_runtime_sources(root: &Path, contract_dir: &Path) -> Result<(), Box<dyn 
         }
         copy_source_tree(&source.join("src"), &destination.join("src"))?;
     }
-    Ok(())
-}
-
-fn manifest_tree(path: &Path, is_root: bool) -> Result<Value, Box<dyn Error>> {
-    let mut entries = Map::new();
-    entries.insert("type".into(), Value::String("directory".into()));
-    let mut children = fs::read_dir(path)?.collect::<Result<Vec<_>, _>>()?;
-    children.sort_by_key(|entry| entry.file_name());
-    for entry in children {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if is_root && name == "contract-manifest.json" {
-            continue;
-        }
-        let path = entry.path();
-        let kind = entry.file_type()?;
-        let value = if kind.is_dir() {
-            manifest_tree(&path, false)?
-        } else if kind.is_file() {
-            let bytes = fs::read(&path)?;
-            let mut properties = Map::new();
-            properties.insert("type".into(), Value::String("file".into()));
-            properties.insert("size".into(), Value::from(bytes.len() as u64));
-            properties.insert(
-                "hash".into(),
-                Value::String(format!("{:x}", Sha256::digest(bytes))),
-            );
-            Value::Object(properties)
-        } else {
-            return Err(format!("unsupported generated output entry: {}", path.display()).into());
-        };
-        entries.insert(name, value);
-    }
-    Ok(Value::Object(entries))
-}
-
-fn refresh_manifest(output: &Path) -> Result<(), Box<dyn Error>> {
-    let path = output.join("compiler/contract-manifest.json");
-    let mut manifest: Value = serde_json::from_slice(&fs::read(&path)?)?;
-    let fields = manifest
-        .as_object_mut()
-        .ok_or("invalid contract manifest")?;
-    for directory in ["compiler", "contract", "zkir", "keys"] {
-        let path = output.join(directory);
-        if path.is_dir() {
-            fields.insert(
-                directory.into(),
-                manifest_tree(&path, directory == "compiler")?,
-            );
-        } else {
-            fields.remove(directory);
-        }
-    }
-    fs::write(
-        output.join("compiler/contract-manifest.json"),
-        serde_json::to_vec_pretty(&manifest)?,
-    )?;
     Ok(())
 }
 

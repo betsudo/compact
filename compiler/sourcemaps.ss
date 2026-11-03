@@ -21,6 +21,7 @@
           display-sourcemap)
   (import (chezscheme)
           (vlq)
+          (only (json) print-json-compact)
           (only (utils)
                 compact-input-transcoder
                 registered-source-root
@@ -211,6 +212,16 @@
   ; components.  The source pathnames with no root in common with the target
   ; pathname are left without replacement source paths.
   (define (compute-source-root)
+    ;; A failed relative-path heuristic must retain the invocation base, not
+    ;; anchor relative source names to a temporary output map directory.
+    (define (invocation-source-root)
+      (for-each
+        (lambda (path) (replace-source-path! path path))
+        (registered-source-pathnames))
+      (let ([cwd (current-directory)])
+        (if (char=? (string-ref cwd (- (string-length cwd) 1)) #\/)
+            cwd
+            (format "~a/" cwd))))
     (define (maybe-add-dot path)
       (if (or (path-absolute? path)
               (string=? (path-first path) "."))
@@ -237,17 +248,13 @@
            [source-pathname* (map car p*)]
            [source* (map cdr p*)])
       (if (null? source*)
-          ""
+          (invocation-source-root)
           (let loop ([target target] [source* source*])
             (let ([target (cdr target)] [source* (map cdr source*)])
               (if (andmap (common-head? target) source*)
                   (loop target source*)
                   (if (member ".." target)
-                      ; punt in cases where any of the remaining target components is "..",
-                      ; we could handle them by getting and using real paths, when possible,
-                      ; via realpath(3) on Unix-based systems and GetFullPathName()
-                      ; on Windows.
-                      ""
+                      (invocation-source-root)
                       (let loop ([source* source*] [component* '()])
                         (if (andmap (common-head? (car source*)) source*)
                             (loop (map cdr source*) (cons (caar source*) component*))
@@ -376,6 +383,12 @@
   
     (define (display-sourcemap tracker map-port)
       (define who 'display-sourcemap)
+      (define (json-path-text path)
+        (let-values ([(port get) (open-string-output-port)])
+          (print-json-compact port path)
+          ;; The existing JSON writer appends one output newline.
+          (let ([text (get)])
+            (substring text 0 (- (string-length text) 1)))))
       (unless (sourcemap-tracker? tracker) (errorf who "~s is not a sourcemap tracker" tracker))
       (unless (and (output-port? map-port) (textual-port? map-port)) (errorf who "~s is not a textual output port" map-port))
       (let ([segment* (reverse (sourcemap-tracker-rsegment* tracker))]
@@ -387,8 +400,9 @@
             (fprintf map-port "{\n")
             (fprintf map-port "  \"version\": 3,\n")
             (fprintf map-port "  \"file\": \"index.js\",\n")
-            (fprintf map-port "  \"sourceRoot\": \"~a\",\n" source-root)
-            (fprintf map-port "  \"sources\": [~{\"~a\"~^, ~}],\n" (map replacement-source-path srcpath*))
+            (fprintf map-port "  \"sourceRoot\": ~a,\n" (json-path-text source-root))
+            (fprintf map-port "  \"sources\": [~{~a~^, ~}],\n"
+              (map (lambda (path) (json-path-text (replacement-source-path path))) srcpath*))
             ; some tools don't like having sourcesContent, and it should be unnecessary
             ; (fprintf map-port "  \"sourcesContent\": [~{~a~^, ~}],\n" (map (lambda (x) "null") srcpath*))
             (fprintf map-port "  \"names\": [],\n")

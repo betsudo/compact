@@ -21,6 +21,8 @@
 // Retain the original binary input-reader tests; production ingress is issued.
 #[path = "../bin_support/input.rs"]
 mod input;
+#[path = "../bin_support/output_manifest.rs"]
+mod output_manifest;
 #[path = "../bin_support/source_diagnostic.rs"]
 mod source_diagnostic;
 #[path = "../bin_support/source_maps.rs"]
@@ -83,6 +85,14 @@ fn run() -> Result<(), Box<dyn Error>> {
         staging.path().join("contract/lib.rs"),
         &issued.rendered().source,
     )?;
+    // Keep an existing frontend manifest accurate after map/library changes.
+    // A frontend that supplied no manifest retains the existing optional policy.
+    match fs::symlink_metadata(staging.path().join("compiler/contract-manifest.json")) {
+        Ok(metadata) if metadata.is_file() => output_manifest::refresh_manifest(staging.path())?,
+        Ok(_) => return Err("retained contract manifest is not a regular file".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
     staging.publish(&output)?;
     Ok(())
 }

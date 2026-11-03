@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.191, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Retain the invocation directory for default source-map path fallbacks and
+  serialize path strings as valid JSON, preserving source operands, mappings
+  and explicit sourceRoot overrides through staged publication.
+- Refresh an existing standalone Rust frontend manifest after map relocation
+  and Rust library emission, using the main compiler's unchanged manifest hasher.
+  Missing frontend manifests remain optional; no metadata is synthesized.
+
 ## [Toolchain 0.31.190, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
