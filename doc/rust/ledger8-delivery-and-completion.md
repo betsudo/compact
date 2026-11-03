@@ -661,3 +661,23 @@ compiler180 proof is relabeled as this result. Full required CI/Linux, reviewed
 integration, remaining application scenarios, isolated distribution and finite
 capability/evidence handoff remain open. The broader goal is incomplete and
 independent of deferred Forge work.
+
+
+## Bounded products below Vector components — local proof checkpoint
+
+The [nested-product slice](plans/vector-component-products.md#reviewed-selected-proofapplication-result--2026-11-03)
+retains reviewed compiler183 source/API/static/ingress/producer acceptance. At
+signed source `6b45a4051`, three existing complete sources (witness-before,
+witness-after and single-element inner product) each produce a fresh verified
+2,912-byte proof and a separately proved funded default-strict transaction, with
+changed-result/binding/preimage, corruption, wrong-verifier and unchanged replay
+refusals. Actual independent source, preparation and crypto-receipt reviews report
+no current P1/P2. All source identities, historical failures and receipt limits are
+retained in the slice plan.
+
+This proves three selected exports, not the whole corpus: 21 other required
+exports remain unproved, including 18 over-limit models; the pure export is N/A.
+Callback implementation, constructor execution and full-export deployment are not
+proved. Full CI/Linux/integration, final application/standalone-SDK acceptance and
+capability handoff remain open. Accepted historical crosswalk and algebra work is
+not reopened, and the broad goal stays incomplete. Forge stays deferred.

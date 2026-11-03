@@ -1,7 +1,8 @@
 # Products below fixed Vector components
 
-Status: reviewed bounded local source/API/static/ingress/producer qualification;
-model/input, genuine proof/application and integration acceptance remain open.
+Status: reviewed bounded local source/API/static/ingress/producer qualification
+and three selected native proof/default-strict application cases. Other required
+exports and full CI/Linux/integration acceptance remain open.
 Base is signed
 `a20cacc53771fada330a863c200b0aad98aaf863`, the reviewed Vector-component successor;
 canonical `codex/rust-backend-ast` and the Forge experiment remain preserved.
@@ -358,3 +359,65 @@ all 24 currently unproved exports; only successful actual proof execution can mo
 the three selected exports out of its unproved list. The old preparation field
 listed 21 planned residuals despite proof_execution=false; retain that literal
 receipt without treating selection as completion.
+
+
+## Reviewed selected proof/application result — 2026-11-03
+
+Signed execution `6b45a4051dba1aeb1fd75cd285cb3a1fffff2f42` passes the maintained
+full proof gate: 16 outer commands and a fresh 170-command SDK protocol. The
+original compiler183 recipe realizes the same immutable package in 6.92 seconds;
+this is a cached realization, not another compiler rebuild. The six physical-input
+regression controls also pass at this clean signed source. The earlier source/API
+execution and 283-fixture comparison retain their literal cb38c00 epoch; focused
+field/signature/strict source checks retain b9b8c5f8b.
+
+| Complete existing source/export | k / rows | Fresh standalone proof | Separately proved funded transaction |
+| --- | --- | --- | --- |
+| witness_before.run | 8 / 240 | 2,912 bytes; verified | 6,555 bytes; default-strict applied |
+| witness_after.run | 8 / 240 | 2,912 bytes; verified | 6,554 bytes; default-strict applied |
+| inner_product_single.run | 8 / 206 | 2,912 bytes; verified | 6,555 bytes; default-strict applied |
+
+Each source receives direct fresh keys. Four actual typed Rust routes and ordinary
+observed-call/preparation agreement execute before proving. The witnessed cases
+retain one callback per lane, before/after seen values 0/1 and private state 7→8;
+the single-product case retains its public narrow input, exact wide output and
+private state 7. All reach seen 1. Each standalone proof verifies with its immutable
+source-specific verifier. Corrupt bytes, changed binding/communication commitment,
+a genuinely typed same-geometry changed output, changed IR preimage and wrong
+immutable verifier controls reject. The single-product verifier is distinct from
+each witnessed verifier. The before/after verifier bytes are identical; no
+inequivalence or rejection between them is claimed.
+Each separately proved funded transaction uses default strictness, reaches the
+expected state, then refuses IntentAlreadyExists replay without changing state.
+
+Actual Claude quota is retained, not an approval. Separate authentic Codex CLI
+source v2, preparation-receipt v2 and actual crypto/application-receipt v1 reviews
+report no current P1/P2. Requested model is gpt-6-astra/high; this records the CLI
+request, not independent knowledge of the serving model. The first source P2,
+fixture feature failure, original external-target preparation and its wrapper
+metadata erratum remain retained. The successor classifies all 937 actual runner
+and three own-crate SDK prerequisites by consistent prebound inventory roles,
+including generated inputs below the checkout; no target-name or missing-file
+exclusions are introduced. Its six location controls are not an actual default-
+target Cargo run. Source review, input/material acceptance and actual cryptographic
+execution remain different stages.
+
+Evidence is maintainer-local under the retained slice root: `paired-proof-v1/receipt.json`,
+`proof-preparation-v2/receipt.json`, `physical-input-regression-v2/receipt.json`,
+`local-codex-proof-source-review-v2.json`, `local-codex-proof-receipt-review-v2.json`
+and `local-codex-proof-crypto-review-v1.json`. All source epochs, raw logs, keys,
+proofs, transactions and failure artifacts remain preserved. Outer command logs
+are hash-bound; raw nested API and private binding-negative logs retain their
+weaker historical binding. Program JSON binds review/fixture identity rather than
+independently validating the executable proof relation. Consumed-source identity,
+continuous/atomic invariance and exhaustive system-library coverage are not claimed.
+
+Only these three exports are proved here. **Twenty-one other required exports
+remain unproved**, including all eighteen intact over-limit models. The one pure
+export remains proof-not-applicable. No source was trimmed, replaced or normalized;
+no policy limit increased. These proofs bind accepted witness values and public
+effects, not the external callback implementation or host ledger-view assertion.
+Constructor execution and complete-export deployment are not proved; each selected
+entry has its own deployment fixture. Full CI/Linux/logical integration, remaining
+application/distribution acceptance and the finite capability/release handoff stay
+open. This local result does not complete the broad Rust AST goal or deferred Forge.
