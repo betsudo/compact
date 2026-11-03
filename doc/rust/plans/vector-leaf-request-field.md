@@ -1,9 +1,10 @@
 # Vector leaves in private request fields: baseline repair
 
-Status: development implementation only. Original compiler185 generated both
-complete same-type sources, but strict all-target/all-feature Clippy rejects
-their immutable Program input fields. Both pure controls pass. Fix this actual
-baseline before the separate component-product Vector-leaf widening feature.
+Status: bounded local baseline repair accepted at `9f630221a`. Original compiler186,
+owner-generated docs/version gate, complete maintained three-source SDK/API/static
+checks and separate independent Codex source/receipt reviews pass within their
+stated scope. Full CI/Linux/MSRV/integration and the broader goal remain OPEN.
+The separate component-product Vector-leaf widening feature is not implemented.
 
 ## Owners and public API
 
@@ -100,3 +101,51 @@ Constructor positives repeat one distinct signature per source; consuming-once
 positives cover the two new carrier types. This is prospective maintained-gate
 scope until a clean current original recipe and the whole gate execute. No
 three-source runtime acceptance or new widening admission is inferred yet.
+
+## Reviewed bounded baseline closeout
+
+At clean signed `9f630221ae013afc89e150cdc464779d76d3d9b1`, the exact current
+existing-only original186 recipe passes in 8.11s and selects the same immutable
+package as the frozen75 build. The complete maintained gate executes all 47
+commands in 42.04s. Its three whole SDKs and actual consumer test code pass strict
+lint. Three methods execute twelve typed routes and six VM replays; thirteen
+marked E0308/E0382 refusals and thirteen matching positive runs pass. Positive
+constructor commands repeat one signature per source, with separate consuming-
+once controls for the two new types. Headline route counts are source-derived
+after actual assertion checks, not separately emitted measurements.
+All fourteen workflow and 31 source-registry methods pass.
+
+Actual independent Codex CLI source review (gpt-6.1-sol, medium, 119.94s) finds
+no actionable findings. Separate actual receipt review (medium, 210.01s) finds
+no P1/P2 and accepts this bounded execution evidence. Both use the retained
+authentic Claude session-limit evidence; no repeated Claude attempt or fabricated
+Claude review is claimed. The receipt reviewer notes an ambiguous hash label in
+the old failed documentation paper: its script_sha256 binds the Python controller,
+not the Scheme generate.ss input. An appended provenance clarification names
+both retained files and recomputes their hashes; the original paper and files
+remain unchanged. The Scheme hash recorded now does not retroactively create
+a pre-execution pin for the timed-out attempt or qualify that failed epoch.
+
+A separate first compiler186 check preserves all three complete historical
+source-scope sentinels: nine TS/Rust/IR invocations retain expected 0/255/255
+exits and byte-identical previous185 diagnostics on the same physical source/
+runtime-root operands. Current checked-in copies have matching source hashes.
+This extra guard checks exits/diagnostic bytes; it makes no additional output-
+absence, proof or independently reviewed receipt claim. Its first adapter attempt
+failed before any compiler command due to a receipt-key assumption and is kept
+separately from the corrected run.
+
+Current evidence under the declared root: `maintained-qualification-v1/`,
+`compiler186-controls-v1/`, `focused-development-v1/`,
+`focused-signature-correction-v1/`, `original-build-v1/`,
+`ledger-doc-regeneration-v2/`, `local-codex-source-review-v1.json`,
+`local-codex-receipt-review-v1.json`,
+`ledger-doc-regeneration-v1/provenance-clarification-v1.json` and
+`preserved-refusals-v2/`. Keep all failed/development epochs.
+
+No new semantic admission, runtime ABI change, TS parity, keys or proofs is
+claimed. Raw proof inputs remain unchanged; earlier proof receipts retain their
+own exact compiler/source epochs. The baseline prerequisite is closed locally;
+proceed with the separately planned Vector-leaf widening. Required full CI,
+Linux/MSRV/integration and the broad Rust AST goal remain incomplete. No push,
+merge, release, hosted run, shared installation, Forge work or cleanup occurred.

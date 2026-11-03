@@ -118,3 +118,20 @@ Compare raw whole IR/Program/ZKIR and SDK AST to compiler185, allowing only the
 declared field attribute and compiler metadata differences. No normalization,
 new proof substitution or wider language admission. Preserve both original
 widening refusals until a separate semantic change qualifies them.
+
+## Baseline prerequisite accepted — 2026-11-03
+
+The [private request-field baseline repair](vector-leaf-request-field.md) now has
+bounded local acceptance at `9f630221a` with original compiler186, exact raw
+input comparisons, maintained three-source API/static execution and independent
+source/receipt review. Its two actual same-type lint failures, zero-selected
+signature attempt and documentation precursor timeout remain preserved. No
+widening classifier has changed yet.
+
+The original complete direct Vector and singleton-wrapped Vector counterexamples
+still pass TS and refuse Rust/independent IR under compiler186, with exact
+previous185 diagnostic bytes on the same physical inputs. Begin the semantic
+slice from this repaired baseline, retain both whole original sources and all
+unrelated refusals, and use the existing bounded checked coercion/render/validator
+owners. Do not trim a source or reinterpret baseline lint acceptance as proof
+or new language support. Full CI/Linux/integration and the broad goal remain open.
