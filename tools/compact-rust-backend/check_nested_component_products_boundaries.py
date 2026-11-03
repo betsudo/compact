@@ -34,7 +34,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def malformed_ir_controls(original):
     checks = {
         "outer_dimension": ["expression has type Vector", "length: 1", "length: 2"],
-        "inner_dimension": ["expression has type Vector", "length: 1", "length: 2"],
+        "inner_dimension": ["expression has type Vector { element: Tuple { elements: [Tuple",
+                            "expected Vector { element: Tuple { elements: [Tuple", "length: 1", "length: 2"],
         "nested_arity": ["expression has type Tuple", "expected Tuple", 'max: "65535"'],
         "tuple_to_scalar": ["expression has type Tuple", 'expected Unsigned { max: "65535" }'],
         "first_narrowing": ['expression has type Unsigned { max: "255" }', 'expected Unsigned { max: "1" }'],
@@ -159,7 +160,36 @@ def qualify(output, fixtures, compiler, environment, run, lock, bind, digest, re
                 require(not stdout and all(part in stderr for part in expected), "wrong native IR refusal: " + name)
                 result["native_ingress"][name] = dict(positive_sha256=digest(ir_folder / (name + "-positive.json")),
                     malformed_sha256=digest(path), stderr=stderr,
-                    scope="whole private13export IR; intended child/owner/schema refusal, no emitted Rust; not source/proof acceptance")
+                    scope=("whole private13export IR; schema decoding refusal only, no emitted Rust"
+                           if name == "misplaced_action" else
+                           "whole private13export IR; intended child/type/owner refusal, no emitted Rust; not source/proof acceptance"))
+
+    # Preserve the refused side of both recursion boundaries in the maintained
+    # current-head compiler gate, rather than merely hash-pinning unused sources.
+    result["source_refusals"] = {}
+    table = json.loads((fixtures / "scope-controls.json").read_text())
+    require(set(table) == {"top_level_nested_tuple", "vector_inside_nested_product"}, "source refusal roster differs")
+    historical = ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements"
+    legacy = json.loads((historical / "scope-controls.json").read_text())["vector_inside_component_product"]
+    controls = [(name, fixtures / "unsupported" / (name + ".compact"), spec) for name, spec in table.items()]
+    controls.append(("vector_inside_component_product", historical / "unsupported/vector_inside_component_product.compact", legacy))
+    for name, source, spec in controls:
+        require(digest(source) == spec["source_sha256"], "complete refused source identity differs")
+        for lane in ["ts", "rust", "ir"]:
+            folder = output / "source-refusals" / (name + "-" + lane)
+            command = ([compiler.with_name("compactc-scheme"), "--emit-rust-ir", "--skip-ts", "--skip-zk"]
+                       if lane == "ir" else [compiler, "--target", lane, "--skip-zk"] +
+                       (["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"] if lane == "rust" else []))
+            label = name + "-" + lane + "-scope"
+            expected = spec["lanes"][lane]
+            stdout = run(label, [*command, source, folder], expected_exit=expected["exit"])
+            if lane != "ts":
+                require(stdout == expected["stdout"] and (output / (label + ".stderr")).read_text() == expected["stderr"],
+                        "source refusal diagnostic differs: " + label)
+                require(not (folder / "contract/lib.rs").exists() and not (folder / "contract/compact-rust-ir.json").exists(),
+                        "refused source published Rust/IR")
+        result["source_refusals"][name] = dict(source_sha256=digest(source), lanes=spec["lanes"],
+            scope="complete TS-positive/Rust-and-independent-IR refused source; exact current diagnostic, not proof execution")
 
     family_source = ROOT / "examples/rust_backend/nested_component_products/nested_component_products.compact"
     source_text = family_source.read_text()

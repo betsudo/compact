@@ -220,3 +220,65 @@ have separate whole-source SDK/consumer roots. The unchanged typed consumer must
 fail through a real executed assertion, not an unrelated compiler error. The
 new maintained stage must execute before acceptance; no model/proof verdict or
 whole-CI result is inferred from the earlier development commands.
+
+At clean `2b9b18a4d`, that maintained stage passes all64commands (72.57s total
+gate wall time), including actual runtime rejection of all three complete
+producer mutations and the corrupted expected-result table. The current original
+recipe resolves the unchanged C3 package in8.83s. No proof ran.
+
+Fresh Claude source review (177.58s, frozen clean `2b9b18a4d`) finds no production
+compiler defect, but a P2 coverage hole: the top-level nested-tuple refusal had
+only run in a one-off matrix, and the Vector-inside-new-nested-product boundary
+had no genuine source sentinel. The maintained successor executes both complete
+sources and the retained earlier Vector-inside-component-product refusal in TS,
+Rust and independent IR, using a source-hashed table and exact refusal stderr.
+The inner-dimension check now distinguishes its inner Tuple element from an
+outer Vector element; misplaced-action metadata explicitly says schema decoding
+only. These review corrections require their own actual maintained execution.
+
+The review also notes a nonblocking parent-owned fixture gap: relocating the
+request-field example removes the root-inventory error but does not register an
+in-tree whole-example consumer. The independent maintained request-field AST
+regression still runs; the parent's actual local SDK receipts remain valid in
+their stated scope. Do not relabel them as maintained full-CI fixture coverage.
+
+## Observed models and next proof stage
+
+All14intact exports are observed from the passed current64command gate's whole
+raw ZKIR using immutable official `zkir2.1.1` (`mock-compile` calls `model()`;
+it generates no keys or proofs). Generated SDK inputs are unchanged before/after.
+
+| Source/export | k | Rows |
+| --- | ---: | ---: |
+| Original regression/run | 9 | 447 |
+| Family/parameter, helper, local, tuple_single | 8 | 161 each |
+| Family/checked_helper | 9 | 260 |
+| Family/witness_before, witness_after | 7 | 120 each |
+| Family/branch | 9 | 307 |
+| Family/deep | 8 | 191 |
+| Family/boolean_field | 8 | 131 |
+| Family/empty | 5 | 24 |
+| Family/tuple_empty | 7 | 93 |
+| Family/field_identity | 8 | 145 |
+
+Select the existing complete family's `helper`, `witness_before`, `witness_after`
+and `field_identity` for the next bounded proof stage, covering helper consumption,
+both witness orders/private output and high Field identity. Keep all13family
+exports, private helpers, constructor and witness in the generated SDK and raw
+IR; compile that complete SDK at its own crate root. Pin all13checked Programs,
+complete source/IR/compiler recipe/tool/dependency/build-input identities and
+verified parameters before keys. Reuse the established proof-checks profile,
+immutable executable/verifier snapshots and source-binding controls. Require
+fresh standalone proof plus independent verification, changed public binding,
+changed typed result with equal geometry, changed preimage, corrupt proof and
+different immutable verifier negatives for every selected export. Separately
+prove and apply each funded DEFAULT-strict transaction; verify expected state
+and replay refusal without ledger mutation. Witness callbacks must remain once
+per actual route, source-typed and checked at seen0/seen6 respectively.
+
+The original regression, checked_helper and branch remain over the automatic
+k<=8limit; preserve them unchanged and unproved. All14exports are currently
+unproved, and selecting four does not prove the other ten or the constructor,
+callbacks, all inputs, wallet deployment or whole application. No geometry
+normalization, trimming, cap increase or cached proof/verdict is admitted.
+Required CI/Linux/integration and the broader backend goal remain open.

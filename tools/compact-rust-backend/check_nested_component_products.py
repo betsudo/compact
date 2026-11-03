@@ -81,6 +81,9 @@ def main():
     pins = {str(p): sha(p) for p in [C, S, NODE, rustup, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
     pins.update({str(p): sha(p) for p in Path(__file__).parent.glob('*.py')})
     pins.update({str(p): sha(p) for p in F.rglob('*') if p.is_file()})
+    historical = W / 'tools/compact-rust-backend/tests/stateful_vector_product_elements'
+    pins.update({str(p): sha(p) for p in [historical / 'scope-controls.json',
+        historical / 'unsupported/vector_inside_component_product.compact']})
     for folder in ['compiler', 'runtime-rs', 'runtime-rs-macros', 'tools/compact-rust-backend/src']:
         for p in (W / folder).rglob('*'):
             if p.is_file() and p.suffix in ['.rs', '.ss', '.toml', '.json']:
