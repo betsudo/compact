@@ -169,3 +169,25 @@ passed in12.09s. The earlier transient version mismatch is resolved by this
 owner output, without manual generated-document editing. Complete generated SDK
 lint, same-physical-source raw/attribute continuity, typed/runtime/static checks,
 maintained regression wiring and independent receipt review remain open.
+
+## Compiler188 complete baseline continuity and maintained gate
+
+The exact same physical four-source controls pass under original compiler188
+at clean3098177ae. The original widening remains TS-positive/Rust-and-IR-refused.
+All three admitted complete SDKs pass strict own-root Clippy. Both pure SDK Rust
+outputs are byte-identical to187; the same-type stateful Rust delta consists only
+of eight inserted reasoned method attributes. Whole raw IR, checked Programs,
+capability geometry, Cargo and ZKIR bytes/membership remain identical. Only
+declared compiler-version metadata and consequent manifest hashes differ. The
+25.76s receipt retains all actual inputs, output comparisons and diagnostics.
+These observations do not establish runtime or proof acceptance.
+
+Extend the existing required nested-product request-field gate with this complete
+same-type stateful source. Retain every previous fixture byte and all prior checks.
+The fourth typed consumer uses nonuniform/boundary values, exercises all four
+ordinary/recorded/functional routes, compares result/private state/public writes/
+effects/gas and executes both VM replays. Five marked refusals cover nested leaf
+bounds, tuple arity, outer dimension, tuple-versus-Vector kind and consumed Program
+reuse, with matching valid twins. The planned complete gate has64 commands, four
+consumer methods,16 routes and8 VM replays. This metadata prerequisite gate makes
+no new TS-runtime, proof, semantic widening or full integration claim.

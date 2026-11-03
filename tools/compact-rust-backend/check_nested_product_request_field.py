@@ -16,10 +16,10 @@
 
 """Maintain the complete same-type nested request-field regression.
 
-Strictly lint three complete unedited SDKs and their actual consumer test code.
+Strictly lint four complete unedited SDKs and their actual consumer test code.
 Execute four typed routes and two VM replays per source. Retain the original
-three marked type errors; both Vector-leaf fixtures also check inner dimension
-and consumed-Program refusal, with matching positive controls.
+three-source checks. The outer-product signature fixture also checks nested leaf bounds, tuple arity, outer dimension, tuple/Vector kind
+and consumed-Program refusal, each with a matching positive control.
 This metadata-only prerequisite has no new proof or TS execution claim.
 """
 import argparse
@@ -43,6 +43,7 @@ SOURCES = ROOT / "examples/rust_backend/nested_product_request_field"
 SOURCE = SOURCES / "nested_product_request_field.compact"
 SOURCE_SHA256 = "21dcb591417df0414440f9c8f94b6369c62ff41a580ad5bea9ddbbccaa58f367"
 LEAF_SOURCES = ROOT / "examples/rust_backend/vector_leaf_request_field"
+OUTER_SOURCES = ROOT / "tools/compact-rust-backend/tests/outer_vector_product_widening"
 COHORT = [
     dict(name="original", source=SOURCE, sha256=SOURCE_SHA256, fixtures=FIXTURES,
          static=("bound", "arity", "dimension")),
@@ -59,6 +60,13 @@ COHORT = [
         sha256="5fc3805aef9edeea3c3d572b2b60e836f76ed9e64e4942d117d3ecc7d1f859b9",
         fixtures=FIXTURES / "nested_vector_leaf",
         static=("bound", "arity", "dimension", "inner_dimension", "double_execute"),
+    ),
+    dict(
+        name="outer_product",
+        source=OUTER_SOURCES / "same_type_stateful.compact",
+        sha256="1b878fee6d470255294371c7c85dc16a0d81871cdb13ea991e30be6140046a3b",
+        fixtures=FIXTURES / "outer_product",
+        static=("bound", "arity", "dimension", "inner_shape", "double_execute"),
     ),
 ]
 
@@ -93,13 +101,14 @@ def main():
     for key, path in (("compactc", compiler), ("compactc-scheme", scheme)):
         require(digest(path) == build[key]["sha256"], "original compiler changed")
     require(set(SOURCES.glob("*.compact")) == {SOURCE}
-            and set(LEAF_SOURCES.glob("*.compact")) == {spec["source"] for spec in COHORT[1:]},
+            and set(LEAF_SOURCES.glob("*.compact")) == {spec["source"] for spec in COHORT[1:3]}
+            and set(OUTER_SOURCES.glob("*.compact")) == {OUTER_SOURCES / name for name in ("same_type_stateful.compact", "pure_same_type.compact", "pure_widening.compact")},
             "complete declared source cohort changed")
     require(all(digest(spec["source"]) == spec["sha256"] for spec in COHORT),
             "complete declared source bytes changed")
     inputs = [ROOT / name for name in ("Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock")]
     for directory in (ROOT / "compiler", ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
-                      ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES, LEAF_SOURCES):
+                      ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES, LEAF_SOURCES, OUTER_SOURCES):
         inputs.extend(p for p in directory.rglob("*") if p.suffix in (".ss", ".rs", ".json", ".toml", ".compact"))
     inputs.extend(Path(__file__).parent.glob("*.py"))
     pins = {str(p): digest(p) for p in inputs}
@@ -234,10 +243,10 @@ def main():
         report["cases"] = {}
         for spec in COHORT:
             qualify(spec)
-        require(len(report["commands"]) == 47, "complete three-source gate command count changed")
+        require(len(report["commands"]) == 64, "complete four-source gate command count changed")
         for key in ("generated_manifest", "generated_before_cargo", "typed_refusals"):
             report[key] = report["cases"]["original"][key]
-        report.update(status="passed", rust_methods=3, rust_routes=12, recorded_replays=6,
+        report.update(status="passed", rust_methods=4, rust_routes=16, recorded_replays=8,
                       proof_execution=False, full_integration_acceptance="OPEN")
     except BaseException as error:
         report.update(status="failed", error=repr(error))
