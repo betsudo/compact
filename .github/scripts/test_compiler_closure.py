@@ -256,6 +256,25 @@ class CompilerFanoutTests(unittest.TestCase):
 
 
 class NestedProductWiringTests(unittest.TestCase):
+    def test_component_vector_gate_requires_all_fourteen_proofs_and_parameters(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        linux = workflow.split('  build:\n', 1)[1]
+        before, step = linux.split('      - name: Qualify component-product Vector APIs and fourteen selected proofs\n', 1)
+        step = step.split('      - name: Retain failed component-product Vector diagnostics', 1)[0]
+        material = before.split('      - name: Prepare verified built-in proof material\n', 1)[1].split('      - name:', 1)[0]
+        for k in (5, 6, 7, 8):
+            self.assertIn('--parameter-k ' + str(k), material)
+        self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"', step)
+        self.assertIn('check_component_product_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json"', step)
+        self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', step)
+        self.assertIn('shutil.which("zkir")', step)
+        self.assertLess(before.index('Import authenticated same-run compiler closure'), before.index('Prepare verified built-in proof material'))
+        for weakened in ('--prepare-only', 'continue-on-error', 'if:', '/lib/zkir'):
+            self.assertNotIn(weakened, step)
+        self.assertIn("steps.component_product_vector.outcome == 'failure'", linux)
+        for role in ('recipe', 'proof'):
+            self.assertEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
+
     def test_nested_component_gate_keeps_required_material_and_fresh_proof_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]

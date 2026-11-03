@@ -139,3 +139,25 @@ new_cell constructor; the fix uses the upstream AlignedValue conversion followed
 by try_into_checked. The next strict development Clippy run passed (4.07s).
 Both epochs are retained. This is compile evidence only; the structured control
 still requires actual execution in the fresh proof gate.
+
+## Actual local proof execution and required integration wiring
+
+At signed ef4d6ea83, the current original compiler187 recipe check passed in
+8.34s. The separate fresh full qualification passed in 284.94s, including all88
+native/API commands, complete SDK/dependency/raw identity controls, all16 models,
+all14 selected fresh source keys, verified k5/7/8 parameters, fourteen actual
+standalone proofs with independent verification and applicable negative controls,
+and fourteen separately proved funded DEFAULT-strict applications with exact
+state and unchanged-ledger replay refusals. Every standalone proof is2912bytes.
+The structured source-write preimage negative executed and refused for all14.
+The unique empty result records its same-geometry result mutation as inapplicable;
+all its other controls, proof and strict application executed successfully.
+
+The required Linux workflow now invokes this complete gate with the authenticated
+same-run compiler, explicit native ZKIR and current TS runtime, prepares k5 alongside
+the existing k6/7/8 parameters, and retains success/failure diagnostics. Its source
+regression test prohibits prepare-only, optional or continue-on-error execution.
+This is local workflow source wiring only: no hosted run, publication or merge.
+Independent proof-source and receipt reviews remain required before acceptance.
+Both k9 exports, constructor/deployment/wallet/all-input claims and native Linux/
+complete CI/integration acceptance remain open. The broader goal is incomplete.

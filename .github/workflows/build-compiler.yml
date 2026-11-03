@@ -529,7 +529,7 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Qualify isolated witnessed functional SDK
@@ -657,6 +657,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Qualify component-product Vector APIs and fourteen selected proofs
+        id: component_product_vector
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_component_product_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-component-product-vector-proof"
+
+      - name: Retain failed component-product Vector diagnostics
+        if: failure() && steps.component_product_vector.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: component-product-vector-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-component-product-vector-recipe/
+            ${{ runner.temp }}/compact-component-product-vector-proof/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Rehearse Rust runtime packages
         id: runtime-packages
         run: |
@@ -676,6 +695,8 @@ jobs:
             target/rust-runtime-release.json
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
+            ${{ runner.temp }}/compact-component-product-vector-recipe/
+            ${{ runner.temp }}/compact-component-product-vector-proof/
             ${{ runner.temp }}/compact-vector-component-products-recipe/
             ${{ runner.temp }}/compact-vector-component-products-proof/
             ${{ runner.temp }}/compact-functional-source-sdk/
