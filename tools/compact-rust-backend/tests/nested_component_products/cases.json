@@ -1,0 +1,866 @@
+[
+  {
+    "id": "original",
+    "source": "original",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "17"
+              ],
+              "31"
+            ],
+            [
+              [
+                "255",
+                "0"
+              ],
+              "128"
+            ]
+          ],
+          "67"
+        ],
+        [
+          [
+            [
+              [
+                "13",
+                "254"
+              ],
+              "5"
+            ],
+            [
+              [
+                "1",
+                "219"
+              ],
+              "42"
+            ]
+          ],
+          "9"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "17"
+            ],
+            "31"
+          ],
+          [
+            [
+              "255",
+              "0"
+            ],
+            "128"
+          ]
+        ],
+        "67"
+      ],
+      [
+        [
+          [
+            [
+              "13",
+              "254"
+            ],
+            "5"
+          ],
+          [
+            [
+              "1",
+              "219"
+            ],
+            "42"
+          ]
+        ],
+        "9"
+      ]
+    ]
+  },
+  {
+    "id": "parameter",
+    "source": "family",
+    "entry": "parameter",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "parameter_boundaries",
+    "source": "family",
+    "entry": "parameter",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "0",
+                "65535"
+              ],
+              "255"
+            ]
+          ],
+          "0"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          [
+            [
+              "0",
+              "65535"
+            ],
+            "255"
+          ]
+        ],
+        "0"
+      ]
+    ]
+  },
+  {
+    "id": "helper",
+    "source": "family",
+    "entry": "helper",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "local",
+    "source": "family",
+    "entry": "local",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "3",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "checked_valid",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "checked_assert_first",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          [
+            [
+              [
+                "256",
+                "65536"
+              ],
+              "256"
+            ]
+          ],
+          "65536"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "assert",
+      "message": "nested helper denied",
+      "tsMessage": "failed assert: nested helper denied"
+    }
+  },
+  {
+    "id": "checked_first_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "256",
+                "65536"
+              ],
+              "256"
+            ]
+          ],
+          "65536"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255",
+      "tsMessage": "nested_component_products.compact line 22 char 15: cast from Field or Uint value to smaller Uint value failed: 256 is greater than 255"
+    }
+  },
+  {
+    "id": "checked_second_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "65536"
+              ],
+              "256"
+            ]
+          ],
+          "65536"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "65536",
+      "max": "65535",
+      "tsMessage": "nested_component_products.compact line 22 char 48: cast from Field or Uint value to smaller Uint value failed: 65536 is greater than 65535"
+    }
+  },
+  {
+    "id": "checked_outer",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65536"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "65536",
+      "max": "65535",
+      "tsMessage": "nested_component_products.compact line 22 char 115: cast from Field or Uint value to smaller Uint value failed: 65536 is greater than 65535"
+    }
+  },
+  {
+    "id": "witness_before",
+    "source": "family",
+    "entry": "witness_before",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "5",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ],
+    "witnessSeen": "0",
+    "witnessValues": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "privateState": 8
+  },
+  {
+    "id": "witness_before_error",
+    "source": "family",
+    "entry": "witness_before",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "5",
+    "witnessSeen": "0",
+    "error": {
+      "kind": "witness",
+      "message": "nested witness denied"
+    }
+  },
+  {
+    "id": "witness_after",
+    "source": "family",
+    "entry": "witness_after",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "6",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ],
+    "witnessSeen": "6",
+    "witnessValues": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "privateState": 8
+  },
+  {
+    "id": "witness_after_error",
+    "source": "family",
+    "entry": "witness_after",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "6",
+    "witnessSeen": "6",
+    "error": {
+      "kind": "witness",
+      "message": "nested witness denied"
+    }
+  },
+  {
+    "id": "branch_left",
+    "source": "family",
+    "entry": "branch",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ],
+      [
+        [
+          [
+            [
+              [
+                "17",
+                "65535"
+              ],
+              "0"
+            ]
+          ],
+          "65534"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "7",
+    "expected": [
+      [
+        [
+          [
+            [
+              "3",
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "branch_right",
+    "source": "family",
+    "entry": "branch",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ],
+      [
+        [
+          [
+            [
+              [
+                "17",
+                "65535"
+              ],
+              "0"
+            ]
+          ],
+          "65534"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "8",
+    "expected": [
+      [
+        [
+          [
+            [
+              "17",
+              "65535"
+            ],
+            "0"
+          ]
+        ],
+        "65534"
+      ]
+    ]
+  },
+  {
+    "id": "deep",
+    "source": "family",
+    "entry": "deep",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                [
+                  "3",
+                  "60000"
+                ],
+                "255"
+              ],
+              "65535"
+            ]
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "9",
+    "expected": [
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "255"
+            ],
+            "65535"
+          ]
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "boolean_field",
+    "source": "family",
+    "entry": "boolean_field",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                true,
+                "255"
+              ],
+              "0"
+            ]
+          ],
+          false
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "10",
+    "expected": [
+      [
+        [
+          [
+            [
+              true,
+              "255"
+            ],
+            "0"
+          ]
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "boolean_field_other",
+    "source": "family",
+    "entry": "boolean_field",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                false,
+                "1"
+              ],
+              "254"
+            ]
+          ],
+          true
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "10",
+    "expected": [
+      [
+        [
+          [
+            [
+              false,
+              "1"
+            ],
+            "254"
+          ]
+        ],
+        true
+      ]
+    ]
+  },
+  {
+    "id": "empty",
+    "source": "family",
+    "entry": "empty",
+    "constructor": [],
+    "args": [
+      []
+    ],
+    "initialSeen": "0",
+    "seen": "11",
+    "expected": []
+  },
+  {
+    "id": "tuple_empty",
+    "source": "family",
+    "entry": "tuple_empty",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "12",
+    "expected": [
+      [
+        [
+          [
+            [],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "tuple_single",
+    "source": "family",
+    "entry": "tuple_single",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                [
+                  "3"
+                ],
+                "60000"
+              ],
+              "255"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "13",
+    "expected": [
+      [
+        [
+          [
+            [
+              [
+                "3"
+              ],
+              "60000"
+            ],
+            "255"
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "field_identity",
+    "source": "family",
+    "entry": "field_identity",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                "1361129467683753853853498429727072845845",
+                "255"
+              ],
+              "17"
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            [
+              "1361129467683753853853498429727072845845",
+              "255"
+            ],
+            "17"
+          ]
+        ],
+        "65535"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "14"
+  }
+]
