@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.186, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve exact nested Vector/product request carriers under strict generated
+  SDK Clippy when a component product contains a fixed Vector, directly or in a
+  singleton tuple. Attach only the existing reasoned private-field metadata;
+  public types, ownership, execution and widening admission are unchanged.
+
 ## [Toolchain 0.31.185, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.

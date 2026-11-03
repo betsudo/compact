@@ -60,7 +60,11 @@ fn request_field(name: &syn::Ident, ty: &syn::Type) -> syn::Field {
                     && (dimensions + component_dimensions >= 3
                         || product.elems.len() >= 3
                         || product.elems.iter().any(|child|
-                            matches!(child, syn::Type::Tuple(nested) if nested.elems.len() >= 2))))
+                            vector_element(child).is_some()
+                                || matches!(child, syn::Type::Tuple(nested)
+                                    if nested.elems.len() >= 2
+                                        || nested.elems.iter().any(|child|
+                                            vector_element(child).is_some())))))
     }));
     let attribute: Option<syn::Attribute> =
         (dimensions > 0 && nested_component_product).then(|| {
