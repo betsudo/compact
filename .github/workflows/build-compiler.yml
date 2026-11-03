@@ -578,6 +578,26 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-did-functional-proof"
 
+      - name: Qualify original DID zero timestamp proof
+        id: did_zero_timestamp_proof
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle_proof.py --compiler "$COMPACTC" --case did/timestamp-zero --output "$RUNNER_TEMP/compact-did-zero-timestamp-proof"
+
+      - name: Retain failed DID zero timestamp proof diagnostics
+        if: failure() && steps.did_zero_timestamp_proof.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: did-zero-timestamp-proof-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/receipt.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/logs/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stdout
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Qualify selected Unit mutation initializer proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
@@ -631,6 +651,12 @@ jobs:
             ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
             ${{ runner.temp }}/compact-did-functional-proof/receipt.json
             ${{ runner.temp }}/compact-did-functional-proof/generated/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/receipt.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/logs/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stdout
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-constant-valued-vector.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json
