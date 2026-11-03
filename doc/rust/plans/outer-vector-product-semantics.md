@@ -137,3 +137,17 @@ constructor signatures, first/last component positions and foreign/scalar/empty
 controls. No carrier/body/lowering/runtime/admission change. Compiler190 requires
 a fresh original build and owner documentation before complete SDK continuity/
 strict lint can close this regression; doc189 is temporarily unqualified.
+
+## Original compiler190 and corrected metadata source review
+
+The original maintained compiler190 recipe passed from frozen signed230c04e21
+in250.15s. A fresh independent Codex medium source review (128.10s) found no
+actionable issues in the full selector and metadata change, verified both old
+test-body prefixes and retained the failed189 SDK epoch. This is source-only
+review, not generated/native/proof acceptance.
+
+The full ledger.ss owner regenerated the version document in29.24s, with
+only the189-to190 compiler sentence changed; the literal document version gate
+passed13.55s. The temporary mismatch is resolved. Complete190 SDK qualification,
+exact189 output continuity, currentTS/native/static/IR/recorded/model/proof and
+strict application gates remain open.
