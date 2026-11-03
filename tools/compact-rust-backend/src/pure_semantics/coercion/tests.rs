@@ -381,7 +381,10 @@ fn outer_vector_product_relation_already_supports_exact_nested_products() {
             length,
         );
         let plan = plan_coercion(&source, &target).unwrap();
-        assert!(!plan.may_fail());
+        // The existing checked cast construction remains fallible even when
+        // these declared bounds make widening total on valid source values.
+        assert!(plan.may_fail());
+        assert_old_output(&source, &target, 0);
         assert!(matches!(plan.kind(), CoercionKind::Vector { length: n, .. } if *n == length));
         assert!(plan_coercion(&target, &source).is_err());
         let wrong_dimension = vector(
@@ -402,7 +405,9 @@ fn outer_vector_product_empty_children_keep_static_obligations() {
         tuple(vec![vector(tuple(vec![uint("65535")]), 0), uint("65535")]),
         1,
     );
-    assert!(!plan_coercion(&source, &target).unwrap().may_fail());
+    // Empty iteration keeps the child plan and its construction obligations.
+    assert!(plan_coercion(&source, &target).unwrap().may_fail());
+    assert_old_output(&source, &target, 0);
     let malformed = vector(
         tuple(vec![vector(tuple(vec![uint("00")]), 0), uint("65535")]),
         1,

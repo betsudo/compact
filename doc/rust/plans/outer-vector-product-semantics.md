@@ -62,3 +62,14 @@ Before the selector change, characterize the existing checked relation for the
 original shape and empty nested children, preserving actual narrowing, dimension
 and malformed-child refusals. Native/TS/static/IR/recorded/model/proof/application
 qualification and fresh independent reviews remain required after implementation.
+
+## Checked-relation characterization correction
+
+The first two new tests compiled but failed their asserted infallibility at
+bcc7ed934. The existing owner deliberately marks checked Uint cast construction
+fallible, even for legal monotone widening and static-empty Vector child plans.
+This was a test assumption error, not an observed production regression. Preserve
+that failed37.62s receipt. Correct the new assertions to require the existing
+fallibility, additionally compare exact AST/fallibility against the frozen old
+owner, and retain all dimension, narrowing and malformed-empty-child refusals.
+Every prior test body remains byte-identical and production coercion is unchanged.
