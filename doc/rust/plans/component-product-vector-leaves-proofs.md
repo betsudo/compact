@@ -161,3 +161,29 @@ This is local workflow source wiring only: no hosted run, publication or merge.
 Independent proof-source and receipt reviews remain required before acceptance.
 Both k9 exports, constructor/deployment/wallet/all-input claims and native Linux/
 complete CI/integration acceptance remain open. The broader goal is incomplete.
+
+## Receipt review correction (supersedes the first-run reporting claim)
+
+The independent post-reset Claude receipt review reconciled the retained first
+run and CI-only successor but found a P2 reporting error: the generic
+changed_preimage_rejected field meant the changed-result preimage check and
+was true even for the unique empty result, where that check did not execute.
+Its applicable count is thirteen, separate from fourteen actual CellWrite
+preimage refusals. Both result-mutation fields and the result-preimage field
+must be null for the empty carrier; its CellWrite control remains mandatory.
+The first-run receipts and artifacts are retained unchanged and are not accepted
+as a corrected current report. Fresh qualification and reviews are required.
+
+The correction also binds actual proof execution private state/outputs, public
+transcripts, initial/final seen values and witness observations directly to the
+independent TS rows, in addition to the existing typed/four-route checks. Each
+raw-binding and over-cap refusal records its argv, immutable runner hash,
+stdout/stderr hashes and monotonic interval; all twenty-one invocations must end
+before the first fresh key command starts. Existing limits remain unchanged.
+
+The optional artifact-size suggestion is declined here: retaining immutable
+executables alongside their hashes supports independent evidence inspection.
+No CI optimization or artifact deletion is introduced. The first actual source
+review found no actionable issues; it did not catch the reporting error, which
+was found by the separate receipt review. Neither review is relabeled acceptance
+of the corrected source.

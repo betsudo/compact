@@ -22,6 +22,7 @@ source/API/binding/parameter premises but generates no keys or proofs. Full CI,
 all-export proof coverage and integration acceptance remain separate.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -64,10 +65,10 @@ def run_logged(command, label, directory, receipt, *, env=None, stdout_path=None
         log.write_text((error.stderr or "") if isinstance(error.stderr, str) else (error.stderr or b"").decode(errors="replace"))
         if stdout_path:
             stdout_path.write_bytes(error.stdout if isinstance(error.stdout, bytes) else (error.stdout or "").encode())
-        receipt["commands"].append(dict(label=label, argv=command, timeout=True, seconds=time.monotonic()-began, log=str(log), log_sha256=digest(log)))
+        receipt["commands"].append(dict(label=label, argv=command, timeout=True, started_monotonic=began, ended_monotonic=time.monotonic(), seconds=time.monotonic()-began, log=str(log), log_sha256=digest(log)))
         raise
     log.write_text(result.stderr if stdout_path else result.stdout + result.stderr)
-    row=dict(label=label, argv=command, exit_code=result.returncode, seconds=round(time.monotonic()-began,3), log=str(log), log_sha256=digest(log))
+    row=dict(label=label, argv=command, exit_code=result.returncode, started_monotonic=began, ended_monotonic=time.monotonic(), seconds=round(time.monotonic()-began,3), log=str(log), log_sha256=digest(log))
     if stdout_path:
         stdout_path.write_text(result.stdout)
         row["stdout"]={"path":str(stdout_path),"sha256":digest(stdout_path)}
@@ -75,6 +76,25 @@ def run_logged(command, label, directory, receipt, *, env=None, stdout_path=None
     if result.returncode:
         raise ValueError(f"{label} failed ({result.returncode}): {log}")
 
+
+
+def run_refusal(command, label, receipt, env):
+    argv = list(map(str, command))
+    row = dict(label=label, argv=argv, runner_sha256=digest(argv[0]),
+               started_monotonic=time.monotonic(), started_unix_ns=time.time_ns())
+    receipt.setdefault("refusal_invocations", []).append(row)
+    try:
+        result = bounded_command(argv, env)
+        row.update(exit=result.returncode,
+                   stdout_sha256=hashlib.sha256(result.stdout.encode()).hexdigest(),
+                   stderr_sha256=hashlib.sha256(result.stderr.encode()).hexdigest())
+        return result, row
+    except BaseException as error:
+        row["error"] = repr(error)
+        raise
+    finally:
+        row["ended_monotonic"] = time.monotonic()
+        row["seconds"] = row["ended_monotonic"] - row["started_monotonic"]
 
 
 def depfile_prerequisites(raw, base=ROOT):
@@ -132,13 +152,15 @@ def validate_summary(summary, generated):
                 and row["applied_transaction"] == f"{source}/component-product-vector-{index}-transaction.bin"
                 and row["transaction_proof_relationship"] == "independently proved"
                 and row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists", "proof/application identity differs")
-        require(all(row[k] is True for k in ["corrupt_proof_rejected","changed_binding_rejected","changed_cell_write_preimage_rejected","changed_preimage_rejected","wrong_verifier_rejected","replay_unchanged"]), "verification control missing")
+        require(all(row[k] is True for k in ["corrupt_proof_rejected","changed_binding_rejected","changed_cell_write_preimage_rejected","wrong_verifier_rejected","replay_unchanged"]), "verification control missing")
         if name == "empty":
             require(result_type["kind"] == "vector" and result_type["length"] == 0
+                    and row["changed_preimage_rejected"] is None
                     and row["changed_result_rejected"] is None and row["changed_result_same_geometry"] is None
                     and row["result_negative_applicability"] == "inapplicable_unique_empty_carrier", "unique-empty result control fabricated")
         else:
-            require(row["changed_result_rejected"] is True and row["changed_result_same_geometry"] is True
+            require(row["changed_preimage_rejected"] is True
+                    and row["changed_result_rejected"] is True and row["changed_result_same_geometry"] is True
                     and row["result_negative_applicability"] == "applicable_nonempty_result", "same-geometry result refusal missing")
         require(all((root / f"component-product-vector-{index}{suffix}").stat().st_size > 0 for suffix in [".preimage","-state.bin"]), "preimage/state missing")
 
@@ -418,12 +440,12 @@ def run(args):
                         if kind=="missing-program": path.unlink() # Only this private malformed copy.
                         else: path.write_bytes(path.read_bytes()+b" ")
                     control_inputs=hashes([p for p in negative.rglob("*") if p.is_file()])
-                    check_premises(); result=bounded_command([runner,"--component-product-vector-models",str(negative)],env); check_premises()
+                    check_premises(); result, invocation=run_refusal([runner,"--component-product-vector-models",str(negative)],label,report,env); check_premises()
                     (negative / "stdout").write_text(result.stdout);(negative / "stderr").write_text(result.stderr)
                     require(result.returncode!=0 and not result.stdout and "component-product-vector "+source+" "+message in result.stderr, "wrong raw identity refusal: "+label)
                     require(not any((negative / n / "keys").exists() for n in SELECTED_SOURCES) and not list(negative.rglob("*.proof")), "pre-key refusal produced keys/proofs")
                     unchanged(control_inputs)
-                    report["raw_binding_refusals"].append(dict(label=label,exit=result.returncode,input_hashes_before=control_inputs,stderr=result.stderr,before_keys_or_state=True,scope="whole private raw IR/Program bytes or membership control, not new compiler output or execution metadata authority"))
+                    report["raw_binding_refusals"].append(dict(label=label,invocation=invocation,exit=result.returncode,input_hashes_before=control_inputs,stderr=result.stderr,before_keys_or_state=True,scope="whole private raw IR/Program bytes or membership control, not new compiler output or execution metadata authority"))
         full_generated = output / "protocol/generated"
         full_before = inventory(full_generated)
         execute("all-source-models", [runner, "--component-product-vector-inventory", full_generated], output / "all-source-models.json")
@@ -468,7 +490,7 @@ def run(args):
         shutil.copyfile(donor, excessive / "original_nested/zkir/run.zkir")
         control_inputs = hashes([p for p in excessive.rglob("*") if p.is_file()])
         check_premises()
-        refused = bounded_command([runner,"--component-product-vector-models",str(excessive)], env)
+        refused, invocation = run_refusal([runner,"--component-product-vector-models",str(excessive)], "selected-model-over-cap", report, env)
         check_premises()
         (excessive / "stdout").write_text(refused.stdout); (excessive / "stderr").write_text(refused.stderr)
         require(refused.returncode != 0 and "model exceeds tiny automatic k<=8" in refused.stderr, "over-cap guard did not refuse")
@@ -476,7 +498,7 @@ def run(args):
         require(refused_models["circuits"][0]["k"] > 8 and refused_models["circuits"][1:] == selected_models[1:]
                 and not list(excessive.rglob("*.proof")) and not any((excessive / n / "keys").exists() for n in SELECTED_SOURCES), "over-cap refusal scope differs")
         unchanged(control_inputs)
-        report["selected_model_over_cap_refusal"] = {"exit":refused.returncode,"models":refused_models,"input_hashes_before":control_inputs,
+        report["selected_model_over_cap_refusal"] = {"invocation":invocation,"exit":refused.returncode,"models":refused_models,"input_hashes_before":control_inputs,
             "donor_sha256":digest(donor),"before_keys_or_proofs":True,"scope":"private intact existing original k9 ZKIR diagnostic, not admitted selected SDK semantics"}
         material = output / "proof-material.json"
         execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
@@ -508,6 +530,10 @@ def run(args):
                 report["key_hashes"].update(hashes([source_root / f"keys/{circuit}.{ext}" for ext in ["prover", "verifier"]]))
                 report["binary_ir_hashes"].update(hashes([source_root / f"zkir/{circuit}.bzkir"]))
                 report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
+            first_key = next(c["started_monotonic"] for c in report["commands"] if c["label"].startswith("keygen-"))
+            require(len(report["refusal_invocations"]) == 21
+                    and all(r["ended_monotonic"] <= first_key and r["runner_sha256"] == components["runner"]["sha256"]
+                            for r in report["refusal_invocations"]), "refusal invocations did not precede fresh keys with the same immutable runner")
             require(all(not (generated / name / "keys").exists() for name in by_source if name not in SELECTED_SOURCES), "unselected source acquired keys")
             for source in SELECTED_SOURCES:
                 require({p.name for p in (generated / source / "keys").iterdir()} == {f"{c}.{ext}" for s,c in SELECTED if s == source for ext in ["prover","verifier"]}, "selected source key membership differs: " + source)

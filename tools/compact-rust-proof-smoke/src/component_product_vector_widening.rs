@@ -342,6 +342,53 @@ fn check_ts(
     }
     Ok(())
 }
+fn ts_seen(row: &serde_json::Value, field: &str) -> Result<u64, Box<dyn Error>> {
+    let text = row[field].as_str().ok_or("missing TS field value")?;
+    let value: u64 = text.parse()?;
+    if text != value.to_string() {
+        return Err("TS field value is not canonical decimal".into());
+    }
+    Ok(value)
+}
+fn check_ts_execution<T>(
+    row: &serde_json::Value,
+    out: &midnight_compact_runtime::context::CircuitResult<u64, T>,
+    transcript: impl serde::Serialize,
+) -> Result<(), Box<dyn Error>> {
+    if row["privateState"] != serde_json::json!(out.context.private_state)
+        || row["privateOutputs"]
+            != serde_json::json!(
+                out.private_transcript_outputs
+                    .iter()
+                    .cloned()
+                    .map(encode)
+                    .collect::<Vec<_>>()
+            )
+        || row["publicTranscript"] != serde_json::to_value(transcript)?
+    {
+        return Err(
+            "proof execution private outputs/state or public transcript differ from TS".into(),
+        );
+    }
+    Ok(())
+}
+fn check_ts_witness(row: &serde_json::Value, calls: &[(u64, Field)]) -> Result<(), Box<dyn Error>> {
+    let observed = row["observedWitnesses"]
+        .as_array()
+        .ok_or("missing TS witness observations")?;
+    if calls.len() != observed.len() {
+        return Err("proof witness count differs from TS".into());
+    }
+    for ((private, seen), capture) in calls.iter().zip(observed) {
+        if capture["privateState"] != serde_json::json!(private)
+            || capture["seen"] != encode((*seen).into())
+            || *seen != Field::from(ts_seen(row, "witnessSeen")?)
+        {
+            return Err("proof witness order/state differs from TS".into());
+        }
+    }
+    Ok(())
+}
 struct Witness {
     expected_seen: u64,
     calls: std::rc::Rc<std::cell::RefCell<Vec<(u64, Field)>>>,
@@ -422,6 +469,9 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
             .iter()
             .find(|r| r["source"] == source && r["entry"] == name && r["id"] == row_id)
             .ok_or("missing actual current TS proof case")?;
+        if ts_seen(row, "initialSeen")? != 0 || ts_seen(row, "seen")? != seen {
+            return Err("proof source initial/final Cell expectations differ from TS".into());
+        }
         let mut rng = StdRng::seed_from_u64(0x0187_0000 + index as u64);
         let initial = if source == "original_nested" {
             original::ledger_contract::initial_state(ConstructorContext::new(7_u64))?
@@ -465,6 +515,8 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
     let fnative=api::functional::$entry::Program::new($($arg),*).execute_native(observed.circuit_context(7))?;
     let frecorded=api::functional::$entry::Program::new($($arg),*).execute_recorded(observed.circuit_context(7))?;
     check_routes(&native,&recorded,&fnative,&frecorded,&expected,7,&[])?;
+    check_ts_execution(row,&native,recorded.public.verify_ops())?;
+    check_ts_witness(row,&[])?;
     let actual_seen=$module::ledger_slots::seen.inspect(native.context.query.state.get_ref())?;
     if actual_seen!=Field::from(seen){return Err("selected source Cell mismatch".into());}
     let state=native.context.query.state.get_ref().clone();
@@ -498,8 +550,10 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
                     8,
                     &[narrow(3, 128, 255, 65535).into()],
                 )?;
+                check_ts_execution(row, &native, recorded.public.verify_ops())?;
                 for w in [&wn, &wr, &wfn, &wfr] {
                     w.check();
+                    check_ts_witness(row, &w.calls.borrow())?;
                 }
                 if family::ledger_slots::seen.inspect(native.context.query.state.get_ref())?
                     != Field::from(seen)
@@ -520,6 +574,7 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
                 {
                     return Err("ordinary/functional observed witness preparation differs".into());
                 }
+                check_ts_witness(row, &journal.borrow())?;
                 (prepared, state)
             }};
         }
@@ -643,7 +698,7 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
             .clone();
         let result_applicable = name != "empty";
         rows.push(serde_json::json!({"source":source,"circuit":name,"initial_seen":0,"seen":seen,"private_state":if witnessed{8}else{7},"witness_count":if witnessed{1}else{0},"witness_seen":if name=="witness_before"{Some(0)}else if name=="witness_after"{Some(6)}else{None},"result_type":result_type,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
-   "standalone_proof":format!("{source}/component-product-vector-{index}.proof"),"applied_transaction":format!("{source}/component-product-vector-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,"changed_result_rejected":if result_applicable{Some(true)}else{None},"changed_result_same_geometry":if result_applicable{Some(true)}else{None},"result_negative_applicability":if result_applicable{"applicable_nonempty_result"}else{"inapplicable_unique_empty_carrier"},"changed_cell_write_preimage_rejected":true,"changed_preimage_rejected":true,"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
+   "standalone_proof":format!("{source}/component-product-vector-{index}.proof"),"applied_transaction":format!("{source}/component-product-vector-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,"changed_result_rejected":if result_applicable{Some(true)}else{None},"changed_result_same_geometry":if result_applicable{Some(true)}else{None},"result_negative_applicability":if result_applicable{"applicable_nonempty_result"}else{"inapplicable_unique_empty_carrier"},"changed_cell_write_preimage_rejected":true,"changed_preimage_rejected":if result_applicable{Some(true)}else{None},"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
     let result = serde_json::json!({"format":"compact-component-product-vector-proof/v1","status":"passed","scope":"all14in-cap exports of the complete16export corpus, one typed call each;2k9exports/constructor/callbackdeployment/wallet/allinputs unproved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":SELECTED.iter().map(|(s,n,_,_)|[s,n]).collect::<Vec<_>>(),"unproved_selected_source_exports":[],"calls":rows});
     write_new(
