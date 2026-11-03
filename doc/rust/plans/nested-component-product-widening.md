@@ -356,3 +356,40 @@ corrected opt-in whole-SDK consumer passes actual Cargo check in3.93s. That is
 development compilation only: the maintained clean-source gate, actual models,
 raw binding refusals, parameter verification, fresh keys/proofs/applications,
 strict lints and independent proof-stage reviews still have to execute.
+
+## First actual four-export proof result and guard follow-up
+
+At clean `182b4eb1a`, the original existing-only compiler185 recipe passes11.09s;
+the complete proof gate passes277.66s, including the fresh73command native
+protocol,17preparation/proof commands,16raw identity refusals, the intact k9
+donor refusal, all14models and locked-hash parameter verification before keys.
+The runner and own-root SDK have945prebound physical prerequisite identities;
+the SDK depfile includes its own root, the unedited generated root and13Programs.
+
+All four selected exports generate fresh2912byte standalone proofs and pass
+independent verifier/binding/result/preimage/corruption/wrong-verifier controls.
+Four separately proved funded DEFAULT-strict transactions (6558/6565/6565/6566B)
+apply with expected state; replay is refused without ledger mutation. The helper,
+witness-before, witness-after and Field-identity end at seen2/5/6/14. Witnesses
+observe seen0/6 respectively, run once per route and alone change private7to8.
+Compiled Cargo output and verified parameters are reused; keys, proofs and
+verdicts are generated in this run. Ten other exports remain unproved.
+
+Actual independent Claude source review (321.25s) and separate receipt review
+(186.50s) find no P1/P2, accepting only that bounded local stage. Source review
+identifies four small guard follow-ups: check frozen premises around raw/over-cap
+negative runner calls; pin each generated key pair immediately before the next
+keygen; assert the one-byte IR mutation is well-formed JSON; assert13physical SDK
+Program includes. The successor fixes those guards without changing compiler,
+contract, typed proof consumer, raw goldens, runtime or geometry, and requires
+its own fresh clean proof gate and review.
+
+Keep receipt-review limits: result/control flags are literals reached only after
+actual fail-closed code checks; prepared-call parity uses the established full
+Debug representation, not serialized bytes. The high Field value and route
+parity are checked by executed source assertions, not separate measured result
+fields. The first protocol command has its log hash but not the later commands'
+additional after-command hash field. Source/receipt reviews and raw logs support
+those selected executions; the summary JSON alone is not the proof of them.
+Full CI/Linux/integration, constructor/callback implementation and all-input
+coverage remain open. Preserve the entire first run and its review artifacts.
