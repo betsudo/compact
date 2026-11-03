@@ -1,9 +1,12 @@
 # Component-product Vector leaves: next proof phase
 
-Status: planned after actual complete model observation at clean005a and accepted
-independent native/model receipt review. No keys, proofs or strict applications
-have run. This is continuation of the existing semantic slice, not a new
-language feature or acceptance of unproved cases.
+Status: corrected local proof stage accepted at signed f2fef3e7a after a fresh
+original compiler187 recipe, fourteen genuine standalone proofs with independent
+verification and fourteen separately proved funded DEFAULT-strict applications
+with replay refusal. Fresh source and separate receipt reviews found no actionable
+findings. The chronological proposal and failed first-report history below are
+retained. The two k9 exports and full Linux/CI/integration acceptance remain open;
+the broader goal is incomplete.
 
 ## Gap and owners
 
@@ -187,3 +190,30 @@ No CI optimization or artifact deletion is introduced. The first actual source
 review found no actionable issues; it did not catch the reporting error, which
 was found by the separate receipt review. Neither review is relabeled acceptance
 of the corrected source.
+
+## Corrected current execution and independent closeout
+
+At signed f2fef3e7a, the current original compiler187 recipe passed in7.75s and
+the separate full gate passed in290.55s. All88 native/API commands repeated.
+Fresh direct selected keys, fourteen2912-byte proofs, fourteen independently
+proved funded DEFAULT-strict applications and replay refusals completed with
+all56 progress events and exact artifact identities. Thirteen applicable result
+commitment/preimage negatives and fourteen CellWrite preimage negatives are
+recorded; the unique-empty result has all three result-control fields null.
+All21 refusal invocations reconcile to the same immutable runner and finish
+before first key generation. Direct current TS runtime observations now agree.
+
+Authentic Claude source review105.44s found no actionable P1/P2/P3 findings.
+The separate Claude receipt attempt hit its actual weekly limit and supplied no
+verdict. The authorized Codex CLI high fallback334.09s found no actionable
+findings and accepted only this bounded local evidence: all146 packet entries,
+38,179 recorded physical paths, complete own-crate SDK/depfile/build identities,
+all27 gate-command logs and176 protocol stdout/stderr files reconciled. It did
+not reproduce builds, decode serialized states/preimages, independently
+cryptographically re-verify artifacts or authenticate a universal supply chain.
+Those limits and the original first-report error remain part of the evidence.
+
+External closeout: local-proof-stage-closeout-v2.json under the evidence root.
+No new proof execution is claimed by this documentation successor. Native Linux,
+hosted CI, full integration, constructors/deployment/wallet/all-input and the two
+intact k9 exports remain unverified. The broad goal remains active/incomplete.

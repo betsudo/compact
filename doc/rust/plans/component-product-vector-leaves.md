@@ -1,10 +1,12 @@
 # Fixed Vector leaves below component products: next bounded source gap
 
-Status (2026-11-03): the compiler187 native/model stage is locally accepted at
-`005a10603` after its original recipe, complete 88-command gate, all-export model
-observation and separate independent source/receipt reviews. Fresh proofs and
-strict applications remain open; this is not full slice or integration acceptance.
-The broader Rust AST goal remains incomplete.
+Status (2026-11-03): the corrected compiler187 local stage is accepted at
+`f2fef3e7a`: all 88 native/API commands, all sixteen export models, fourteen fresh
+in-cap proofs with independent verification, and fourteen separately proved
+funded DEFAULT-strict applications with unchanged-state replay refusal. Fresh
+source and separate receipt reviews found no actionable findings. Native Linux,
+hosted CI and full integration acceptance remain open. The two intact k9 exports
+remain unproved. The broader Rust AST goal remains incomplete.
 
 ## Historical admission baseline
 
@@ -304,3 +306,34 @@ no publication, branch merge, shared installation or cleanup is performed.
 
 External execution/review evidence:
 `/Users/ysh/.codex/local-evidence/rust-ast-component-product-vector-widening-20261103/native-model-stage-closeout-v1.json`.
+
+
+## Corrected local proof-stage acceptance — 2026-11-03
+
+The [proof-phase record](component-product-vector-leaves-proofs.md) supersedes the
+historical pending-proof statement above. Signed f2fef3e7a has a fresh original
+compiler187 recipe check (7.75s) and complete qualification (290.55s), including
+all fourteen applicable standalone proofs and independently proved funded
+DEFAULT-strict applications, current TS/four-route/VM checks and exact source,
+SDK, dependency, material and immutable verifier bindings.
+
+Separate authentic Claude source review (105.44s) and Codex CLI high receipt
+review (334.09s, after an authentic Claude weekly quota) found no actionable
+P1/P2/P3 issues. The receipt reviewer recomputed all146 packet entries and38,179
+recorded physical paths and reconciled the actual execution/artifact chain.
+These are bounded local results, not build reproduction or universal supply-chain
+or cryptographic re-verification claims. Explicit review limits remain retained.
+
+The prior first-run reporting error is retained: empty had a falsely true generic
+changed-result-preimage flag. The corrected run records thirteen applicable
+result-preimage refusals, fourteen CellWrite preimage refusals, and null for the
+unique-empty result controls. No earlier receipt was rewritten or relabeled.
+All twenty-one pre-key refusal invocations carry actual provenance and ordering.
+The required Linux workflow gate is wired locally; its 15+15+31 source checks
+retain their own signed1bdf871 epoch. No hosted execution or publication occurred.
+
+Accepted local-stage evidence:
+`/Users/ysh/.codex/local-evidence/rust-ast-component-product-vector-widening-20261103/local-proof-stage-closeout-v2.json`.
+The two k9 exports, constructor/deployment/wallet/all-input claims, Linux/CI/full
+integration and broader goal remain outside this local acceptance. Forge and all
+predecessor evidence remain preserved.
