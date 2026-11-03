@@ -1,6 +1,7 @@
 # Current-candidate isolated witnessed SDK handoff
 
-Status: planned local qualification; no current-candidate SDK result yet.
+Status: initial current183 proof/application run passes, but fresh review finds
+an inherited strict-Clippy gate defect. Repair qualification remains pending.
 Parent: signed `b09c29778556b8c9df37fc064212cc50cd88685f` (compiler 0.31.183).
 Branch: `codex/rust-ast-current-profile-sdk-handoff`.
 
@@ -58,7 +59,8 @@ identity, IR/ABI or registry availability is proposed.
    Malformed recording/preparation must refuse before proving/application;
    dependency or build errors never count as successful refusal controls.
 5. Require fresh direct k6 keys, a genuine standalone proof/immutable verification,
-   changed output/binding/verifier controls and a separately proved funded default-
+   changed output/binding/private-value/corrupt-proof controls, immutable verifier
+   and loader refusals, and a separately proved funded default-
    strict transaction with unchanged-state replay refusal. Keep existing exact
    source/IR/Program/material/verifier identities; no cached proofs or verdicts.
 6. Inspect actual receipts and obtain fresh Claude CLI review, with Codex CLI
@@ -88,3 +90,34 @@ Initial inventory: `current-profile-sdk-owner-inventory-v1.json` in that evidenc
 After this bounded handoff, reconcile the existing application and capability
 records for the selected candidate. Select another feature only for a concrete
 remaining semantic/API gap; do not infer one from an old historical status paragraph.
+
+
+## Actual baseline review and lint repair
+
+At clean `60b4eeb76`, the unchanged gate completes 28 commands, selected genuine
+k6 proof and separate funded strict application. Fresh Claude receipt review finds
+a P2: `cargo clippy --package` from the consumer workspace does not lint the raw
+SDK or copied testkit, which are external dependencies rather than members. Their
+success exits cannot establish lint acceptance. No SDK qualification is accepted
+on those exits; the actual proof/application evidence keeps its original scope.
+
+A tiny real dependency fixture confirms this after warm plain `cargo check`:
+the old command accepts a deliberate `clippy::len_zero` error. Direct pinned
+`clippy-driver` selection via `cargo rustc` rejects that exact error; the corrected
+positive source compiles. Failed double-wrapper setup probes remain retained and
+do not count as intended lint refusals.
+
+The repair keeps complete manifests, source package geometry and dependency graph.
+Only each explicit library lint command selects the hash-bound Clippy driver as
+its compiler. It never changes the execution/proof compiler, global environment
+or Cargo configuration, and inherited compiler/wrapper/Clippy-argument overrides
+still refuse. All three selected libraries must emit an actual nonfresh JSON
+artifact at their exact metadata-owned library source, with their required proof
+feature. Existing consumer all-target proof Clippy remains required. Maintained
+warm-check/negative/positive, wrong-owner/missing/duplicate/fresh-artifact and
+missing-feature controls guard the boundary. Fresh clean full qualification and
+repeat actual review are required before accepting the repair.
+
+Verifier wording is explicit: immutable verification and missing/oversize loader
+refusals are tested; this fixture has no distinct valid wrong-key proof control.
+No original assertion was removed, and no nested-product proof scope is earned.

@@ -19,6 +19,7 @@ import copy
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,76 @@ import check_functional_source_sdk as gate
 
 
 class IsolatedSdkControls(unittest.TestCase):
+    def test_clippy_library_requires_exact_nonfresh_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "lib.rs"
+            source.write_text("pub fn correct() {}\n")
+            target = {"kind": ["lib"], "src_path": str(source)}
+            metadata = {"packages": [{"name": "selected", "id": "selected-id", "targets": [target]}]}
+            artifact = {"reason": "compiler-artifact", "package_id": "selected-id",
+                        "target": target, "fresh": False}
+            result = gate.clippy_library_artifact(json.dumps(artifact), metadata, "selected")
+            self.assertEqual(result["source"], str(source.resolve()))
+            with self.assertRaisesRegex(ValueError, "required proof feature"):
+                gate.clippy_library_artifact(json.dumps(artifact), metadata, "selected", required_feature="proof")
+            gate.clippy_library_artifact(json.dumps(dict(artifact, features=["proof"])), metadata,
+                                        "selected", required_feature="proof")
+            for invalid in (dict(artifact, fresh=True), dict(artifact, package_id="dependency-id"),
+                            dict(artifact, target={"kind": ["bin"], "src_path": str(source)})):
+                with self.assertRaisesRegex(ValueError, "actually compile"):
+                    gate.clippy_library_artifact(json.dumps(invalid), metadata, "selected")
+            with self.assertRaisesRegex(ValueError, "actually compile"):
+                gate.clippy_library_artifact("", metadata, "selected")
+            with self.assertRaisesRegex(ValueError, "actually compile"):
+                gate.clippy_library_artifact(json.dumps(artifact)+"\n"+json.dumps(artifact), metadata, "selected")
+
+    def test_external_library_clippy_detects_lint_after_warm_plain_check(self):
+        rustup = shutil.which("rustup")
+        if rustup is None:
+            self.skipTest("Rustup and pinned Rust1.99 Clippy required for actual lint regression")
+        selected = subprocess.run([rustup, "which", "--toolchain", "1.99.0", "clippy-driver"],
+                                  capture_output=True, text=True)
+        if selected.returncode:
+            self.skipTest("Pinned Rust1.99 Clippy unavailable; synthetic artifact controls still run")
+        driver = Path(selected.stdout.strip()).resolve(strict=True)
+        cargo = driver.with_name("cargo")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer, dependency = root / "consumer", root / "dependency"
+            for folder in (consumer, dependency):
+                (folder / "src").mkdir(parents=True)
+            manifest = consumer / "Cargo.toml"
+            manifest.write_text('[workspace]\n[package]\nname="lint-consumer"\nversion="0.0.0"\n'
+                                'edition="2024"\n[dependencies]\nlint-dependency={path="../dependency"}\n')
+            (consumer / "src/lib.rs").write_text("pub fn call() -> bool { lint_dependency::call(&[]) }\n")
+            (dependency / "Cargo.toml").write_text('[package]\nname="lint-dependency"\nversion="0.0.0"\nedition="2024"\n')
+            source = dependency / "src/lib.rs"
+            source.write_text('#![deny(clippy::len_zero)]\npub fn call(xs: &[u8]) -> bool { xs.len() == 0 }\n')
+            env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_TARGET_DIR=str(root / "target"))
+            gate.cargo_configuration(env)
+            warm = subprocess.run([cargo, "check", "--offline", "--manifest-path", manifest],
+                                  env=env, capture_output=True, text=True, timeout=60)
+            self.assertEqual(warm.returncode, 0, warm.stderr)
+            command = gate.clippy_library_command(cargo, manifest, "lint-dependency")
+            lint_env = dict(env, RUSTC=str(driver))
+            refused = subprocess.run(command, env=lint_env, capture_output=True, text=True, timeout=60)
+            diagnostics = [json.loads(line) for line in refused.stdout.splitlines()]
+            self.assertNotEqual(refused.returncode, 0, refused.stderr)
+            errors = [r["message"] for r in diagnostics if r.get("reason") == "compiler-message"
+                      and r["message"]["level"] == "error"]
+            self.assertEqual([r["code"]["code"] for r in errors], ["clippy::len_zero"])
+            self.assertTrue(any(Path(s["file_name"]).resolve() == source.resolve()
+                                for s in errors[0]["spans"] if s["is_primary"]))
+            source.write_text('pub fn call(xs: &[u8]) -> bool { xs.is_empty() }\n')
+            correct = subprocess.run(command, env=lint_env, capture_output=True, text=True, timeout=60)
+            self.assertEqual(correct.returncode, 0, correct.stderr)
+            metadata = subprocess.run([cargo, "metadata", "--locked", "--offline", "--format-version", "1",
+                                       "--manifest-path", manifest], env=env, capture_output=True, text=True,
+                                      check=True, timeout=60)
+            result = gate.clippy_library_artifact(correct.stdout, json.loads(metadata.stdout), "lint-dependency")
+            self.assertFalse(result["fresh"])
+            gate.cargo_configuration(env)
+
     def test_ignored_build_output_and_lock_refuse_tracked_source_admission(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -226,7 +297,7 @@ class IsolatedSdkControls(unittest.TestCase):
 
     def test_selected_config_refuses_compiler_substitution_and_unchecked_profiles(self):
         for key in ("RUSTC_WRAPPER", "RUSTC_BOOTSTRAP", "CARGO_PROFILE_PROOF_CHECKS_DEBUG_ASSERTIONS",
-                    "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS"):
+                    "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS", "CLIPPY_ARGS"):
             with self.assertRaisesRegex(ValueError, "override"):
                 gate.cargo_configuration({key: "false"})
         with tempfile.TemporaryDirectory() as directory:
