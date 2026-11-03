@@ -176,4 +176,25 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_vector_component_products_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_nested_component_products_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_NESTED_COMPONENT_PRODUCTS_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_NESTED_COMPONENT_PRODUCTS").is_some()
+        && let Some(pool) = std::env::var_os("COMPACT_NESTED_COMPONENT_PRODUCTS_GENERATED")
+        && !pool.is_empty()
+    {
+        let pool = std::path::PathBuf::from(pool);
+        assert!(pool.is_absolute(), "absolute complete SDK pool required");
+        let root = pool.join("family/contract");
+        for relative in ["lib.rs", "compact-rust-ir.json", "rust-capabilities.json"] {
+            let path = root.join(relative);
+            assert!(path.is_file(), "complete family SDK member required");
+            println!("cargo::rerun-if-changed={}", path.display());
+        }
+        for index in 0..13 {
+            let path = root.join(format!("checked-programs/program-{index}.json"));
+            assert!(path.is_file(), "complete family Program member required");
+            println!("cargo::rerun-if-changed={}", path.display());
+        }
+        println!("cargo::rustc-cfg=compact_nested_component_products_generated");
+    }
 }

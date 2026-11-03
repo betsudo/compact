@@ -2702,6 +2702,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-nested-component-products-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-nested-map-oracle-fixture"
 version = "0.1.0"
 dependencies = [
@@ -3015,6 +3022,7 @@ dependencies = [
  "compact-rust-merkle-tree-oracle-fixture",
  "compact-rust-mixed-width-operand-oracle-fixture",
  "compact-rust-native-zswap-intents-oracle-fixture",
+ "compact-rust-nested-component-products-sdk",
  "compact-rust-nested-map-shape-fixture",
  "compact-rust-nested-stateful-ternary-fixture",
  "compact-rust-nested-witness-call-oracle-fixture",

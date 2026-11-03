@@ -244,6 +244,11 @@ pub use vector_product_elements_fixture::{ledger_contract, ledger_slots, pure_ci
 mod vector_product_elements;
 
 #[cfg(all(
+    feature = "nested-component-products",
+    compact_nested_component_products_generated
+))]
+mod nested_component_products;
+#[cfg(all(
     feature = "vector-component-products",
     compact_vector_component_products_generated
 ))]

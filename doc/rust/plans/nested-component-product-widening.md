@@ -328,3 +328,31 @@ Evidence: `boundary-gate-controller-v2.json`, `boundary-gate-v2/receipt.json`,
 `model-current-identity-bridge-v1.json`, its separately generatedv2 successor,
 `zkir-version-v1/receipt.json` and `next-proof-stage-v1.json` under the declared
 external evidence root. Preserve every failed/development/predecessor epoch.
+
+## Four-export proof harness development
+
+The opt-in `nested-component-products` proof-runner feature compiles the complete
+13export family SDK in one dedicated crate. Its raw golden contains the whole
+unchanged IR and all13Programs; model/key admission compares exact bytes and
+membership. The source remains unchanged. The root lock delta adds only the
+local SDK package and that package's proof-runner dependency; all prior packages,
+registry checksums and Git revisions are preserved.
+
+The consumer uses typed native/recorded/functional routes, actual observed call
+constructors, once-only witness journals at seen0/seen6, full result/state/effect/
+gas/private-output comparisons and the original high Field value. The maintained
+proof gate retains the established physical prerequisite/build-script input
+qualification and immutable executable/verifier owners. It refuses changes to
+any of the13Programs before state/keys, measures all14models, enforces the selected
+k<=8guard (including an intact private k9 donor control), and verifies parameters
+against locked upstream hashes before direct native key generation. Each
+selected call has a fresh standalone proof/independent verification with negative
+controls, and a separately proved funded DEFAULT-strict transaction/application
+with replay refusal. These are intended gates, not executed results yet.
+
+Two development compile failures (a JSON macro expression and a missing imported
+upstream proving trait) are retained with their full failed module/logs. The
+corrected opt-in whole-SDK consumer passes actual Cargo check in3.93s. That is
+development compilation only: the maintained clean-source gate, actual models,
+raw binding refusals, parameter verification, fresh keys/proofs/applications,
+strict lints and independent proof-stage reviews still have to execute.

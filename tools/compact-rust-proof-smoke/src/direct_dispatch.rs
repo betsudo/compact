@@ -273,6 +273,33 @@ pub(super) fn try_run(
             }
         })(
         )),
+        #[cfg(all(
+            feature = "nested-component-products",
+            compact_nested_component_products_generated
+        ))]
+        (
+            "--nested-component-products"
+            | "--nested-component-products-models"
+            | "--nested-component-products-inventory",
+            _,
+        ) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("nested product command requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected nested product argument".into());
+            }
+            let root = std::path::Path::new(&root);
+            match selector {
+                "--nested-component-products-inventory" => {
+                    crate::nested_component_products::inventory(root)
+                }
+                "--nested-component-products-models" => {
+                    crate::nested_component_products::models(root)
+                }
+                _ => crate::nested_component_products::run(root),
+            }
+        })()),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
