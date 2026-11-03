@@ -109,3 +109,22 @@ new declared source paths; original path/refusal authority remains retained.
 Fresh original-recipe build, current-source emission/execution, static/ingress,
 model/proof and independent reviews are pending. No acceptance is inferred from
 the implementation or from earlier source receipts.
+
+## First original181 result and API gate
+
+At `a5a868639`, the actual original Nix recipe builds compiler181 in53.81seconds.
+All57current emission commands pass for19complete sources, including the exact
+original regression at its declared new physical path. Additional original180
+TS-positive nested-outer baseline still refuses Rust/IR. Current181 TS-positive
+controls for a second product level and a Vector inside the inner product remain
+refused before IR. These are emission results, not execution/proof acceptance.
+
+The initial maintained API gate now declares20whole roots and28TS/Rust cases,
+including the original regression, nested outer/inner dimensions, Boolean/Field/
+alias/empty forms and checked-helper/witness first errors. It checks unedited
+SDKs, exact transcripts, four typed Rust routes and strict full roots. Static/
+ingress/producer-mutation and model/proof gates remain separate pending work.
+The original compiler180 scope/refusal table is preserved byte-for-byte as
+`scope-controls-compiler180.json`; the current table explicitly reclassifies the
+now-supported original and adds both genuine outside-scope refusals. The complete
+original source remains unchanged. Fresh expanded execution and reviews pending.

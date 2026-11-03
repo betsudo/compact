@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Focused complete nested-product SDK API execution. Proof/static gates are separate.
+
+Requires a clean source and its original compiler recipe receipt. Every run writes
+an absent evidence directory. Never edits a generated SDK or normalizes its IR.
+"""
+import argparse
+import copy
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import time
+import tomllib
+
+from check_stateful_product_vector_widening import (
+    digest, inventory, reject_compiler_overrides, source_manifest_snapshot, first_local_binding,
+)
+from check_constant_vector_projection import compile_failure
+
+ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = Path(__file__).with_name("tests") / "vector_component_products"
+SOURCES = ROOT / "examples/rust_backend/vector_component_products"
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--compiler-receipt", type=Path, required=True)
+    parser.add_argument("--ts-runtime", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    output = args.output.absolute()
+    require(not output.exists() and not output.is_symlink(), "output must be absent")
+    env = dict(os.environ)
+    configuration_environment = dict(env)
+    configuration = reject_compiler_overrides(configuration_environment)
+    env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
+    require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "use Rust1.99.0")
+    git = lambda *a: subprocess.check_output(["git", *a], cwd=ROOT, text=True).strip()
+    head, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
+    require(not git("status", "--porcelain"), "clean source required")
+    build = json.loads(args.compiler_receipt.read_text())
+    require(build["status"] == "passed" and build["head"] == head and build["tree"] == tree,
+            "original recipe receipt must bind current clean HEAD/tree")
+    compiler, scheme = [Path(build[k]["path"]).resolve(strict=True) for k in ["compactc", "compactc-scheme"]]
+    require(compiler.parent == scheme.parent, "one original compiler package required")
+    runtime = args.ts_runtime.resolve(strict=True)
+    paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "flake.nix", ROOT / "flake.lock"]
+    for directory in [ROOT / "compiler", ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
+                      ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
+        paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
+    paths.extend(Path(__file__).parent.glob("*.py"))
+    pins = {str(p.relative_to(ROOT)): digest(p) for p in paths}
+    tools = {str(p): digest(p) for p in [compiler, scheme, args.compiler_receipt.resolve(), Path(shutil.which("node")).resolve()]}
+    for key, path in [("compactc", compiler), ("compactc-scheme", scheme)]:
+        require(digest(path) == build[key]["sha256"], "compiler changed")
+    rustup = Path(shutil.which("rustup")).resolve(strict=True)
+    rust_tools = {}
+    for name in ["cargo", "rustc", "rustfmt", "clippy-driver", "cargo-clippy"]:
+        path = Path(subprocess.check_output([str(rustup), "which", "--toolchain", "1.99.0", name], text=True).strip()).resolve(strict=True)
+        rust_tools[name] = {"path": str(path), "sha256": digest(path)}
+        tools[str(path)] = digest(path)
+    tools[str(rustup)] = digest(rustup)
+    env["PATH"] = str(Path(rust_tools["cargo"]["path"]).parent) + os.pathsep + env["PATH"]
+    env["RUSTC"] = rust_tools["rustc"]["path"]
+    output.mkdir(parents=True)
+    report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
+                  rust_tools=rust_tools, cargo_configuration_sha256=configuration,
+                  environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
+                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Static/ingress/mutation/refusal/model/proof/Linux/integration gates remain open.")
+    report["build_inputs_before_use"] = {}
+    report["resolved_locks"] = {}
+    root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+    root_versions = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in root_packages}
+    allowed_local_packages = {("vector-component-products-consumer", "0.1.0")}
+
+    def bind_build_inputs(paths):
+        for path in paths:
+            key = str(path)
+            sha = digest(path)
+            require(key not in report["build_inputs_before_use"] or report["build_inputs_before_use"][key] == sha,
+                    "build input changed before reuse: " + key)
+            report["build_inputs_before_use"][key] = sha
+
+    def bind_lock(path):
+        packages = tomllib.loads(path.read_text())["package"]
+        for package in packages:
+            key = (package["name"], package["version"], package.get("source"))
+            if package.get("source") is not None:
+                require(key in root_versions and package.get("checksum") == root_versions[key],
+                        "resolved registry/Git package differs from original root lock")
+            else:
+                require(key in root_versions or key[:2] in allowed_local_packages,
+                        "unexpected resolved local package")
+        bind_build_inputs([path])
+        report["resolved_locks"][str(path)] = {"sha256": digest(path), "packages": packages}
+
+    def check_bound_inputs():
+        for path, sha in report["build_inputs_before_use"].items():
+            require(digest(path) == sha, "bound build input changed before Cargo use: " + path)
+    start = time.monotonic()
+
+    def run(label, command, *, success=True, stdin=None):
+        command = list(map(str, command))
+        if command[0] == "cargo":
+            check_bound_inputs()
+        began = time.monotonic()
+        try:
+            p = subprocess.run(command, cwd=ROOT, env=env, input=stdin, capture_output=True, text=True, timeout=300)
+        except subprocess.TimeoutExpired as error:
+            for suffix, value in [("stdout", error.stdout), ("stderr", error.stderr)]:
+                (output / f"{label}.{suffix}").write_bytes(
+                    value if isinstance(value, bytes) else (value or "").encode())
+            report["commands"].append(dict(label=label, command=command, timeout=True))
+            raise
+        for suffix in ["stdout", "stderr"]:
+            (output / f"{label}.{suffix}").write_text(getattr(p, suffix))
+        report["commands"].append(dict(label=label, command=command, exit=p.returncode, seconds=time.monotonic() - began))
+        require(not success or p.returncode == 0, label + " failed: retained diagnostics")
+        return p
+
+    try:
+        definitions = json.loads((FIXTURES / "sources.json").read_text())
+        cases = json.loads((FIXTURES / "cases.json").read_text())
+        refusals = {}
+        names = {s["source"] for s in definitions}
+        require(len(names) == len(definitions) == 20 and names.isdisjoint(refusals)
+                and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
+        require(len(cases) == len({r["id"] for r in cases}) == 28
+                and {r["source"] for r in cases} == names, "case roster differs")
+        for spec in definitions:
+            require({r["entry"] for r in cases if r["source"] == spec["source"]}
+                    == set(spec["entries"]), "an export has no declared execution case")
+        generated = output / "generated"
+        snapshots = {}
+        irs = {}
+        report["sources"] = {}
+        for spec in definitions:
+            name = spec["source"]
+            target = generated / name
+            source = (SOURCES / (name + ".compact")).relative_to(ROOT)
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
+                *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []), source, target])
+            run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, output / "independent" / name])
+            require((target / "contract/compact-rust-ir.json").read_bytes() ==
+                    (output / "independent" / name / "contract/compact-rust-ir.json").read_bytes(), "independent IR differs: " + name)
+            irs[name] = json.loads((target / "contract/compact-rust-ir.json").read_text())
+            programs = inventory(target / "contract/checked-programs")
+            require(len(programs) == (len(spec["entries"]) if spec["stateful"] else 0), "Program count differs")
+            caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
+            if spec["stateful"]:
+                require({c["name"] for c in caps} == set(spec["entries"]) and
+                        all(c["recorded"] and c["observed_call"] and c["proof_required"] is True for c in caps), "required APIs missing")
+            else:
+                require(not caps, "pure source acquired proof APIs")
+            report["sources"][name] = dict(source_sha256=digest(ROOT / source), manifest=source_manifest_snapshot(target, spec["stateful"]), programs=programs)
+            snapshots[name] = inventory(target)
+        modules = output / "node_modules/@midnight-ntwrk"
+        modules.mkdir(parents=True)
+        (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
+        (output / "package.json").write_text('{"type":"module"}\n')
+        ts = output / "ts-results.json"
+        run("ts", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
+                   "--version", "0.16.102", "--output", ts])
+        reference = json.loads(ts.read_text())
+        require(reference["status"] == "passed" and len(reference["rows"]) == len(cases), "TS case count differs")
+        consumer = output / "consumer"
+        consumer.mkdir()
+        shutil.copyfile(FIXTURES / "consumer.rs", consumer / "consumer.rs")
+        shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
+        dependencies = []
+        for spec in definitions:
+            name = spec["source"]
+            path = generated / name / "contract"
+            package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
+            allowed_local_packages.add((package, "0.1.0"))
+            dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
+        manifest = consumer / "Cargo.toml"
+        manifest.write_text('[workspace]\n[package]\nname="vector-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
+        env["COMPACT_VECTOR_COMPONENT_PRODUCTS_TS"] = str(ts)
+        report["generated_inputs_before_build"] = {name: inventory(generated / name) for name in names}
+        bind_build_inputs([manifest, consumer / "consumer.rs", ts])
+        run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
+        bind_lock(consumer / "Cargo.lock")
+        result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
+        require(f"test result: ok. {len(cases)} passed; 0 failed; 0 ignored;" in result.stdout, "all Rust cases must execute")
+        run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest, "--lib", "--tests", "--", "-D", "warnings"])
+        report["strict_sdk_roots"] = {}
+        for spec in definitions:
+            name = spec["source"]
+            target = output / "strict-sdk-roots" / name
+            shutil.copytree(generated / name / "contract", target)
+            before = inventory(target)
+            shutil.copyfile(consumer / "Cargo.lock", target / "Cargo.lock")
+            bind_build_inputs([target / "Cargo.toml"])
+            run(name + "-root-resolve", ["cargo", "metadata", "--offline", "--manifest-path", target / "Cargo.toml", "--format-version", "1"])
+            bind_lock(target / "Cargo.lock")
+            bind_build_inputs([target / "Cargo.toml"])
+            run(name + "-root-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", target / "Cargo.toml", "--all-targets", "--all-features", "--", "-D", "warnings"])
+            require(all(digest(target / path) == sha for path, sha in before.items()), "root Clippy edited emitted files")
+            report["strict_sdk_roots"][name] = before
+        for name, before in snapshots.items():
+            require(inventory(generated / name) == before, "generated artifact changed: " + name)
+        for path, sha in pins.items():
+            require(digest(ROOT / path) == sha, "source changed: " + path)
+        for path, sha in tools.items():
+            require(digest(path) == sha, "tool changed: " + path)
+        for path, sha in report["build_inputs_before_use"].items():
+            require(digest(path) == sha, "resolved build input changed: " + path)
+        require(reject_compiler_overrides(configuration_environment) == configuration, "Cargo configuration changed")
+        require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
+        pure_routes = sum(not next(s["stateful"] for s in definitions if s["source"] == row["source"]) for row in cases)
+        error_cases = sum("error" in row for row in cases)
+        report.update(status="passed", rust_tests=len(cases), stateful_routes=4*(len(cases)-pure_routes),
+                      successful_stateful_routes=4*(len(cases)-pure_routes-error_cases),
+                      expected_error_routes=4*error_cases, public_transcript_comparisons=2*(len(cases)-pure_routes-error_cases),
+                      pure_routes=pure_routes, generated_hashes=snapshots)
+    except Exception as error:
+        report.update(status="failed", error=str(error))
+        raise
+    finally:
+        report["seconds"] = time.monotonic() - start
+        (output / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
+        print(json.dumps(dict(status=report["status"], head=head, commands=len(report["commands"]), error=report.get("error"))))
+
+
+if __name__ == "__main__":
+    main()
