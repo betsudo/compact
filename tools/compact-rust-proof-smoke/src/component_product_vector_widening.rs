@@ -669,6 +669,23 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
     transient_commit(&fields[..], call.communication_commitment_rand)
 }
 
+fn progress_event(
+    root: &Path,
+    source: &str,
+    name: &str,
+    index: usize,
+    stage: &str,
+    bytes: usize,
+) -> Result<(), Box<dyn Error>> {
+    write_new(
+        root.join(format!("component-product-vector-{index}-{stage}.json")),
+        &serde_json::to_vec_pretty(
+            &serde_json::json!({"format":"compact-component-product-vector-progress/v1","source":source,"circuit":name,"index":index,"stage":stage,"bytes":bytes}),
+        )?,
+    )?;
+    Ok(())
+}
+
 fn prove(
     root: &Path,
     pool: &Path,
@@ -708,6 +725,7 @@ fn prove(
     }
 
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
+    progress_event(root, source, name, index, "proof-started", 0)?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
         ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
         &params,
@@ -773,6 +791,13 @@ fn prove(
         changed_call.output = output;
         if changed_call.output.alignment != call.output.alignment
             || changed_call.output.value.0.len() != call.output.value.0.len()
+            || changed_call
+                .output
+                .value
+                .0
+                .iter()
+                .zip(&call.output.value.0)
+                .any(|(left, right)| left.0.len() != right.0.len())
         {
             return Err("changed component-product-vector result geometry differs".into());
         }
@@ -811,9 +836,15 @@ fn prove(
         root.join(format!("component-product-vector-{index}.preimage")),
         &bytes,
     )?;
+    progress_event(root, source, name, index, "proof-verified", proof.0.len())?;
     println!(
-        "component-product-vector {index}: {}-byte proof verified; changed binding/result refused",
-        proof.0.len()
+        "component-product-vector {index}: {}-byte proof verified; changed binding and CellWrite preimage refused; result control {}",
+        proof.0.len(),
+        if name == "empty" {
+            "inapplicable (unique empty carrier)"
+        } else {
+            "refused at identical geometry"
+        }
     );
     Ok(proof.0.len())
 }
@@ -841,6 +872,11 @@ fn apply(
         resolver: &resolver,
         params: &params,
     };
+    let source = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or("source root name is not UTF8")?;
+    progress_event(root, source, name, index, "application-started", 0)?;
     let proven = futures_executor::block_on(
         tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
     )?;
@@ -899,6 +935,14 @@ fn apply(
     write_new(
         root.join(format!("component-product-vector-{index}-state.bin")),
         &bytes,
+    )?;
+    progress_event(
+        root,
+        source,
+        name,
+        index,
+        "application-applied",
+        transaction_bytes.len(),
     )?;
     println!(
         "component-product-vector {index}: funded default-strict apply; replay refused without mutation"

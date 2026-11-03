@@ -543,12 +543,43 @@ def run(args):
             actual_root = Path(report["generated_sdk"])
             actual_proofs = list(actual_root.rglob("component-product-vector-*.proof"))
             actual_transactions = list(actual_root.rglob("component-product-vector-*-transaction.bin"))
-            report["standalone_proofs_completed"] = len(actual_proofs)
-            report["strict_applications_completed"] = len(actual_transactions)
-            report["completed_proof_artifact_hashes"] = hashes(actual_proofs + actual_transactions)
-            report["proof_execution"] = bool(actual_proofs) or report.get("proof_execution", False)
+            reports = {stage:[] for stage in ["proof-started", "proof-verified", "application-started", "application-applied"]}
+            invalid = []
+            paths = []
+            for index,(source,name) in enumerate(SELECTED):
+                root = actual_root / source
+                for stage in reports:
+                    path = root / f"component-product-vector-{index}-{stage}.json"
+                    if not path.exists(): continue
+                    paths.append(path)
+                    try:
+                        row = json.loads(path.read_text())
+                        require(row["format"] == "compact-component-product-vector-progress/v1"
+                                and row["source"] == source and row["circuit"] == name
+                                and row["index"] == index and row["stage"] == stage
+                                and type(row["bytes"]) is int and row["bytes"] >= 0, "runtime progress identity differs")
+                        if stage in {"proof-verified", "application-applied"}:
+                            suffix = ".proof" if stage == "proof-verified" else "-transaction.bin"
+                            other = ".preimage" if stage == "proof-verified" else "-state.bin"
+                            require(row["bytes"] > 0 and (root / f"component-product-vector-{index}{suffix}").stat().st_size == row["bytes"]
+                                    and (root / f"component-product-vector-{index}{other}").stat().st_size > 0, "completed runtime artifact missing or partial")
+                        reports[stage].append(row)
+                    except Exception as error:
+                        invalid.append(dict(path=str(path),error=repr(error)))
+            report["runtime_progress"] = reports
+            report["invalid_runtime_progress"] = invalid
+            report["standalone_proofs_completed"] = len(reports["proof-verified"])
+            report["strict_applications_completed"] = len(reports["application-applied"])
+            report["proof_artifacts_present"] = len(actual_proofs)
+            report["transaction_artifacts_present"] = len(actual_transactions)
+            report["completed_proof_artifact_hashes"] = hashes(actual_proofs + actual_transactions + paths)
+            report["proof_execution"] = bool(reports["proof-started"]) or report.get("proof_execution", False)
+            if report.get("status") == "passed" and (invalid or any(len(rows) != 14 for rows in reports.values())):
+                report["status"] = "failed"
+                report["error"] = "full result lacks completed actual runtime stages"
         (output / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({"status": report["status"], "receipt": str(output / "receipt.json")}))
+    require(report["status"] in {"prepared", "passed"}, "proof gate failed runtime-stage validation")
 
 
 if __name__ == "__main__":

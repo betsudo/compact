@@ -100,3 +100,25 @@ under an immutable hash-checked executable snapshot. Prior native/model receipts
 retain their005a execution epoch. Current original recipe qualification, actual
 proof preparation/execution, independent reviews and required CI wiring still
 remain; source/proof preparation is not proof acceptance.
+
+## Actual preparation and honest partial-run reporting
+
+At signed `b712dc398`, the actual existing-only original compiler187 recipe
+check passed (13.32s) for the same immutable mm2 package. The original recipe
+excludes proof harness files and the workspace root lock, so no alternate recipe
+or unnecessary compiler rebuild was used. The separate preparation-only gate
+passed in 265.35s: fresh full native/API controls, both complete own-crate SDK
+artifacts and dependency files, twenty private raw IR/Program identity refusals,
+complete16/selected14 models, the intact k9 refusal and eighteen verified
+material files. No keys, proofs or strict applications were generated.
+
+Before actual proof execution, reporting is tightened further. The empty export
+logs its same-geometry result negative as inapplicable. Changed nonempty results
+must preserve every atom's byte length as well as alignment and atom count.
+Per-call runtime events record actual proof start/verified and application
+start/applied stages. A failed run counts completed work only from intact,
+identity-matched completion events with matching artifact sizes; merely present
+or partial files are reported separately. These events are execution evidence,
+not cached verdicts, resume authority or substitutes for source/material guards.
+The follow-up strict development compile passes; current clean recipe/full
+proof execution and fresh source/receipt review still remain.
