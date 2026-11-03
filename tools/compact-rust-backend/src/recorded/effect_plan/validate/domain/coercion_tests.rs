@@ -30,6 +30,53 @@ fn named(field: Type) -> Type {
 }
 
 #[test]
+fn nested_component_products_keep_checked_shape_bounds_and_empty_validation() {
+    let nested = |leaf: Type| {
+        vector(
+            tuple(vec![
+                vector(
+                    tuple(vec![tuple(vec![leaf.clone(), uint("65535")]), leaf]),
+                    1,
+                ),
+                uint("65535"),
+            ]),
+            2,
+        )
+    };
+    let narrow = nested(uint("255"));
+    let wide = nested(uint("65535"));
+    assert!(coercible(&narrow, &wide));
+    assert!(coercible(&narrow, &nested(Type::Field)));
+    assert!(coercible(&nested(Type::Boolean), &nested(Type::Boolean)));
+    assert!(!coercible(&wide, &narrow));
+    assert!(!coercible(&nested(Type::Boolean), &wide));
+    assert!(!coercible(&narrow, &nested(Type::OpaqueBytes)));
+
+    let mut wrong_length = wide.clone();
+    let Type::Vector { length, .. } = &mut wrong_length else {
+        unreachable!()
+    };
+    *length = 3;
+    assert!(!coercible(&narrow, &wrong_length));
+
+    let mut wrong_arity = wide.clone();
+    let Type::Vector { element, .. } = &mut wrong_arity else {
+        unreachable!()
+    };
+    let Type::Tuple { elements } = element.as_mut() else {
+        unreachable!()
+    };
+    elements.pop();
+    assert!(!coercible(&narrow, &wrong_arity));
+
+    // Static empty values still validate the entire conversion, not only
+    // iterations reached at runtime. Invalid identity leaves stay invalid too.
+    assert!(!coercible(&vector(wide, 0), &vector(narrow, 0)));
+    let invalid = nested(uint("00"));
+    assert!(!coercible(&invalid, &invalid));
+}
+
+#[test]
 fn recorded_conversion_matches_the_frozen_relation_on_bounded_domains() {
     let mut cases = vec![
         Type::Unit,

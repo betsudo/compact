@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.185, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Classify frontend-supplied scalar tuple subtree widenings below a component
+  Vector in the existing ordered-value owner. Preserve every tuple arity,
+  Vector dimension, original source bound and helper/witness evaluation order;
+  checked coercion, validation, resource limits and runtime semantics are unchanged.
+
 ## [Toolchain 0.31.184, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.

@@ -1800,21 +1800,25 @@
                      [(tboolean ,src^) #t]
                      [else #f])]
                   [else #f]))))
-        ;; One product below a component Vector may widen its scalar leaves.
-        ;; Preserve its arity, including empty and single-element products.
-        ;; Nested products, Vectors inside that product and new identity
-        ;; carriers retain their existing owners; this only selects evaluation.
+        ;; A product below a component Vector may compose scalar/tuple leaves.
+        ;; Preserve every arity, including empty and single-element products.
+        ;; Vectors inside that product and new identity carriers retain their
+        ;; existing owners; checked Coerce still owns conversion and resources.
         (define (scalar-product-widening? target source)
           (nanopass-case (Lnodisclose Type) (leaf-carrier source)
             [(ttuple ,src ,type* ...)
              (nanopass-case (Lnodisclose Type) (leaf-carrier target)
                [(ttuple ,src^ ,type^* ...)
                 (and (= (length type*) (length type^*))
-                     (for-all scalar-widening? type^* type*))]
+                     (for-all
+                       (lambda (target source)
+                         (or (scalar-widening? target source)
+                             (scalar-product-widening? target source)))
+                       type^* type*))]
                [else #f])]
             [else #f]))
         ;; Product components may contain fixed Vector dimensions ending in
-        ;; scalar leaves or one scalar product, with unchanged shape/arity.
+        ;; scalar/tuple leaves, with unchanged dimensions and tuple shape.
         (define (vector-component-widening? target source)
           (nanopass-case (Lnodisclose Type) (leaf-carrier source)
             [(tvector ,src ,len ,type)

@@ -78,3 +78,32 @@ Evidence: `/Users/ysh/.codex/local-evidence/rust-ast-nested-product-widening-202
 Start with `admission-v1.json`; preserve the parent style/SDK branch and all
 canonical/protected/Forge refs. The prior goal turn is progress: it changed
 source, closed a real baseline regression and updated authoritative evidence.
+
+
+## Characterization and development implementation
+
+At clean `29c1658e4`, twelve original184 emission commands pass their expected
+outcomes: the complete original and new twelve-export family are TS-positive
+and Rust/independent-IR refused, while separately declared pure and same-type
+controls pass all three lanes. Both complete control SDKs pass strict all-target/
+all-feature Clippy after root-lock resolution. The first family prototype correctly
+failed TS privacy checking because its branch selector was not disclosed before
+branch-dependent ledger writes; the successor uses explicit disclose(pick),
+retaining that failed epoch and every branch.
+
+The pure control's actual IR contains the expected complete recursive Coerce.
+The existing bounded native plan and independent recorded-domain owner already
+check tuple subtrees. The development compiler185 source adds only recursive
+scalar-product composition at the existing ordered selector; no renderer,
+validator, runtime, schema or ABI implementation is changed. Four affected
+recorded coercion-domain methods pass, including the new nested bound/shape,
+invalid identity and static-empty checks. These are development source results,
+not current185 whole-source/API/proof acceptance.
+
+Compiler185 documentation is being generated through its maintained ledger.ss
+owner before qualification. The compiler Nix development environment itself
+builds the changed CLI prerequisite; retain that actual precursor epoch. The
+original full compiler package must be built from a separate frozen clean source
+checkout, then the current qualification head must resolve the same original
+recipe with builds disabled. Do not infer fresh source acceptance from the new
+relation or from earlier compiler184 results.
