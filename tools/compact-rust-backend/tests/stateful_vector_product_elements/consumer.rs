@@ -182,8 +182,8 @@ impl VectorWitness {
             "initializer witness order"
         );
         let raw = [
-            ([before - 4, before - 2], 31),
-            ([before - 3, before - 1], 41),
+            ([before - 4, before - 2], 31_u64),
+            ([before - 3, before - 1], 41_u64),
         ];
         self.calls.borrow_mut().push(json!({"privateState":before,
             "value":raw.iter().map(|v|json!([[v.0[0].to_string(),v.0[1].to_string()],v.1.to_string()])).collect::<Vec<_>>(),
