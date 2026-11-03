@@ -1,0 +1,39 @@
+[
+  {
+    "source": "original_direct",
+    "path": "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/vector_inside_component_product.compact",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "original_nested",
+    "path": "tools/compact-rust-backend/tests/nested_component_products/unsupported/vector_inside_nested_product.compact",
+    "stateful": true,
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "source": "family",
+    "path": "examples/rust_backend/component_product_vector_widening/component_product_vector_widening.compact",
+    "stateful": true,
+    "entries": [
+      "parameter",
+      "helper",
+      "local",
+      "checked_helper",
+      "witness_before",
+      "witness_after",
+      "branch",
+      "deep",
+      "boolean_field",
+      "empty",
+      "tuple_empty",
+      "tuple_single",
+      "field_identity",
+      "empty_leaf"
+    ]
+  }
+]

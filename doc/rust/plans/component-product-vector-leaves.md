@@ -1,10 +1,11 @@
 # Fixed Vector leaves below component products: next bounded source gap
 
-Status: source-characterized proposal, before implementation. Current combined
-compiler185 matrix at e4acd20a8 accepts both intact sources in TS and refuses Rust
-and independent IR (0/255/255). See next-vector-product-leaves-source-gap-v1.json.
-This does not reopen the accepted scalar/tuple widening, #674 projection,
-checked recording architecture or the deferred Forge experiment.
+Status: source characterization begins from the accepted compiler186 metadata
+baseline at 3ebb20905. Both intact original sources remain TS-positive and
+Rust/independent-IR refused. A complete fourteen-export application is declared
+before implementation; its current186 acceptance/refusal still has to execute.
+No semantic classifier, checked plan, AST renderer, runtime or ABI has changed.
+The broader Rust AST goal remains incomplete.
 
 ## Gap and affected owners
 
@@ -135,3 +136,18 @@ slice from this repaired baseline, retain both whole original sources and all
 unrelated refusals, and use the existing bounded checked coercion/render/validator
 owners. Do not trim a source or reinterpret baseline lint acceptance as proof
 or new language support. Full CI/Linux/integration and the broad goal remain open.
+
+
+## Semantic slice admission
+
+Branch: codex/rust-ast-component-product-vector-widening.
+Worktree: /Users/ysh/.codex/worktrees/rust-ast-component-product-vector-widening/compact.
+Evidence: /Users/ysh/.codex/local-evidence/rust-ast-component-product-vector-widening-20261103.
+The accepted metadata baseline is preserved in its own branch and inert backup
+ref. The source roster has two complete original one-export counterexamples and
+one new complete fourteen-export application (two private helpers, one witness).
+The latter includes direct/helper/local conversions, checked-helper first-error
+order, both witness positions/failure, both branches, deeper alternation,
+Boolean-to-Boolean and Uint-to-Field, Field identity, empty outer/leaf Vectors,
+and empty/single tuples. It is not a smaller replacement for either original.
+Source/model/API/proof acceptance remains open pending actual execution.
