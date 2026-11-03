@@ -19,7 +19,7 @@ leaves to Uint8; its source body and input shape are unchanged. All three
 emission lanes pass. Actual all-target/all-feature generated-crate strict Clippy
 then rejects the immutable Program's private `input` field for type complexity.
 This is an existing baseline defect before widening, so it is repaired first.
-The retained complete control fixture is `examples/rust_backend/nested_product_request_field.compact`.
+The retained complete control fixture is `examples/rust_backend/nested_product_request_field/nested_product_request_field.compact`.
 
 The first external harness attempted locked Cargo before creating its lock;
 that failed before compilation. An offline lock-generation successor exposes
@@ -195,3 +195,14 @@ quota `local-claude-request-field-review-v2.json`,
 `local-codex-request-field-correction-review-v1.json` and
 `correction-focused-v1/receipt.json`. This paragraph is a documentation successor
 to reviewed `c0264f73c`; it creates no new independent execution/review epoch.
+
+
+### Root inventory correction
+
+A later semantic-slice source review found that this unpublished example was
+missing from the top-level fixture registry. Preserve the earlier local source
+and evidence epochs; do not call their full CI green. The example now lives in
+its dedicated cohort directory, with its full bytes and basename unchanged.
+The actual existing fixture_inventory.source_registry() gate is rerun on this
+parent before later integration. No registry authority or old fixture is removed.
+A new exact recipe/consumer validation remains separate from the old184 epoch.
