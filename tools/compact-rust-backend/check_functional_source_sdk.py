@@ -28,6 +28,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import time
 import tomllib
@@ -265,6 +266,20 @@ def clippy_library_artifact(stdout, metadata, package, *, required_feature=None)
     return {"package_id": owner["id"], "source": str(source), "fresh": False, "features": features}
 
 
+def installed_runtime_source_root(compiler):
+    """Admit the installed prefixes used by the CLI, without its checkout fallback."""
+    for prefix in (compiler.parent, compiler.parent.parent):
+        candidate = prefix / "share/compactc"
+        try:
+            mode = candidate.stat().st_mode
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        if not stat.S_ISDIR(mode):
+            raise ValueError("installed runtime source root is not a directory")
+        return candidate.resolve(strict=True)
+    raise ValueError("selected compiler lacks an installed runtime source bundle")
+
+
 def cargo_configuration(environment):
     # This is selected configuration admission, not a hostile-host attestation.
     forbidden = {"RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC", "RUSTC_WRAPPER",
@@ -371,6 +386,10 @@ def main(argv=None):
         receipt["source_dirty"] = common.dirty_paths()
         if receipt["source_dirty"] or env.get("COMPACTC_SCHEME"):
             raise ValueError("clean selected source and original packaged compiler without Scheme override required")
+        # Even an empty variable is an override to the CLI: it selects the cwd.
+        # This gate qualifies installed default selection, not a caller's root.
+        if "COMPACT_RUST_RUNTIME_DIR" in env:
+            raise ValueError("default installed SDK qualification forbids COMPACT_RUST_RUNTIME_DIR")
         # Fail before generation or Cargo work when selected material/static
         # locations or the native ZKIR executable are missing.
         prerequisites = receipt["prerequisites"] = did_proof_gate.prerequisites(env)
@@ -390,6 +409,7 @@ def main(argv=None):
                 raise ValueError(f"missing selected executable: {name}")
             tools[name] = {"path": str(path), "sha256": digest(path)}
         compiler = Path(tools["compiler"]["path"])
+        installed_runtime = installed_runtime_source_root(compiler)
         scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
         tools["scheme"] = {"path": str(scheme), "sha256": digest(scheme)}
         for name in ("cargo", "rustc", "rustfmt", "cargo-clippy", "clippy-driver"):
@@ -407,6 +427,16 @@ def main(argv=None):
         for folder in source_folders:
             paths += tracked_source_files(folder)
         expected_runtime = runtime_files(ROOT)
+        installed_hashes = runtime_files(installed_runtime)
+        if installed_hashes != expected_runtime:
+            raise ValueError("installed runtime source bundle differs from selected source")
+        receipt["runtime_source_selection"] = {
+            "mode": "installed-default", "override_present": False,
+            "root": str(installed_runtime),
+            "basis": "admitted CLI installed prefix and absent override; not a consumed-file syscall trace",
+        }
+        receipt["installed_runtime_hashes"] = {
+            str(installed_runtime / path): value for path, value in installed_hashes.items()}
         paths += [ROOT / p for p in expected_runtime]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths}
         receipt["runtime_bundle_hashes"] = expected_runtime
@@ -519,7 +549,10 @@ def main(argv=None):
             tracked_source_files(folder)
         receipt["consumer_hashes"] = inventory(consumer)
         receipt["testkit_hashes"] = inventory(output / "testkit-rs")
-        for group in (receipt["source_hashes"], receipt["dust_fixture_hashes"], receipt["material_hashes"]):
+        if installed_runtime_source_root(compiler) != installed_runtime:
+            raise ValueError("installed runtime source selection changed")
+        for group in (receipt["source_hashes"], receipt["installed_runtime_hashes"],
+                      receipt["dust_fixture_hashes"], receipt["material_hashes"]):
             for name, expected in group.items():
                 if digest(name) != expected:
                     raise ValueError(f"selected source/material input changed: {name}")

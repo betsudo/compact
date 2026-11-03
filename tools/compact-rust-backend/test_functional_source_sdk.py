@@ -149,6 +149,51 @@ class IsolatedSdkControls(unittest.TestCase):
                     injected.unlink()
                 self.assertEqual(set(gate.tracked_source_files(consumer)), expected)
 
+    def test_runtime_source_override_refuses_before_prerequisites_and_commands(self):
+        for value in (str(gate.ROOT), ""):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "qualification"
+                with patch.dict(os.environ, {"COMPACT_RUST_RUNTIME_DIR": value}, clear=True), \
+                     patch.object(gate.common, "git_head", return_value="selected-source"), \
+                     patch.object(gate.common, "dirty_paths", return_value=[]), \
+                     patch.object(gate.did_proof_gate, "prerequisites") as prerequisites, \
+                     patch.object(gate, "bounded_command") as command:
+                    with self.assertRaisesRegex(ValueError, "forbids COMPACT_RUST_RUNTIME_DIR"):
+                        gate.main(["--compiler", str(Path(directory) / "not-needed"),
+                                   "--material-runner", str(Path(directory) / "not-needed-either"),
+                                   "--output", str(output)])
+                    prerequisites.assert_not_called()
+                    command.assert_not_called()
+                failed = json.loads((output / "receipt.json").read_text())
+                self.assertEqual(failed["status"], "failed")
+                self.assertEqual(failed["commands"], [])
+
+    def test_installed_runtime_selection_matches_cli_prefix_order_and_refuses_fallback(self):
+        for layout in ("flat", "bin", "both", "missing", "first-is-file"):
+            with self.subTest(layout=layout), tempfile.TemporaryDirectory() as directory:
+                package = Path(directory)
+                compiler = package / ("compactc" if layout == "flat" else "bin/compactc")
+                compiler.parent.mkdir(parents=True, exist_ok=True)
+                compiler.write_text("selected compiler fixture")
+                first = compiler.parent / "share/compactc"
+                second = compiler.parent.parent / "share/compactc"
+                if layout == "missing":
+                    with self.assertRaisesRegex(ValueError, "lacks an installed runtime"):
+                        gate.installed_runtime_source_root(compiler)
+                    continue
+                if layout == "first-is-file":
+                    first.parent.mkdir(parents=True)
+                    first.write_text("invalid earlier prefix must not silently fall through")
+                    second.mkdir(parents=True)
+                    with self.assertRaisesRegex(ValueError, "not a directory"):
+                        gate.installed_runtime_source_root(compiler)
+                    continue
+                expected = second if layout == "bin" else first
+                expected.mkdir(parents=True)
+                if layout == "both":
+                    second.mkdir(parents=True)
+                self.assertEqual(gate.installed_runtime_source_root(compiler), expected.resolve())
+
     def test_missing_material_refuses_before_any_external_command(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

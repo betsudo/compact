@@ -66,3 +66,30 @@ hosted run, push, merge, release, shared install or cleanup.
 
 Evidence:
 `/Users/ysh/.codex/local-evidence/rust-ast-current-package-sdk-20261103`.
+
+
+## Baseline and concrete admission repair
+
+At signed `dcb1d3547`, the existing-only recipe and unchanged 29-command gate
+pass, including the new package's native/refusal/lint checks, fresh k6 proof and
+separate funded strict application. Preserve those literal results.
+
+Source inspection then finds a narrower evidence gap: `runtime_source_root`
+prioritizes `COMPACT_RUST_RUNTIME_DIR`, including an empty value selecting cwd,
+while the gate neither refuses nor records it. Real entry probes with a matching
+checkout override and an empty override both reach prerequisites. Those probes
+stop deliberately before compiler/material/Cargo commands; they do not establish
+that the old actual proof run used an override or invalidate its proof results.
+
+The qualification gate now refuses any presence of that override before
+prerequisites, follows the CLI's two installed prefixes in order and refuses the
+checkout fallback. Before generation it records and compares the selected
+installed runtime/macros source hashes with the selected repository sources,
+then rechecks them and the selected prefix at completion. This is trusted loader
+admission, not an OS consumed-file trace or hostile-host attestation.
+
+Keep the fourteen previous unit methods intact, add focused prefix/override
+controls, and run all sixteen at the repaired source. Run real override refusals
+and a copied-package runtime-byte mismatch control before generation, followed
+by the complete positive gate with fresh proof/application outputs. No production
+compiler/runtime, public API, original source, consumer or proof assertion changes.
