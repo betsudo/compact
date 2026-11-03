@@ -293,7 +293,7 @@ diagnostics and without publishing Rust/IR on refusal. Their fallback diagnostic
 names `__compact_Cell.write`, not the rejected type shape; the source sentinels
 and accepted counterpart sources distinguish the boundaries. TS output files
 are present in the retained actual run; that block's maintained TS check is
-exit-based. The actual proof/IR absence check uses the established artifact paths.
+exit-based. The actual Rust/IR absence check uses the established artifact paths.
 
 Actual fresh Claude correction review (81.48s) closes the previous P2 and in-slice
 P3s at source level. A separate fresh Claude receipt review (199.46s) recomputes
