@@ -7,7 +7,8 @@ strict signature baseline. Compiler180 implements the bounded component conversi
 The current stage passes 19 complete SDK roots / 27 TS/Rust cases and 141
 commands, including marked static, private ingress, complete producer and actual
 checked-helper/witness first-error controls. Fresh source and separate receipt
-review report no P1/P2. Model/key/proof qualification and integration remain open. Forge is deferred and does not block this backend work.
+review report no P1/P2. The all-export model/input stage is reviewed; locked material, keys, proofs,
+application and integration qualification remain open. Forge is deferred and does not block this backend work.
 
 ## Strict signature baseline repair
 
@@ -471,3 +472,77 @@ local build-script manifest/rerun source inputs. Claude wrote a separate plan
 file despite the no-write prompt; that observation/copy is retained and the
 review is not described as having made no external writes. Fresh source and
 receipt qualification remains necessary.
+
+## Reviewed model/input observation and retained cap refusal
+
+At signed `6ca41ba55f1e662f017b6fa7638864ed9dfb76cf`, the fresh whole-SDK
+protocol again passes 141 commands, 19 roots and 27 cases. The original compiler
+v14 receipt resolves the same cached compiler180 package; it is not a new
+compiler rebuild. Default runner checks, all-feature Clippy without any SDK,
+the explicit preparatory check, the actual opt-in build and strict Clippy pass.
+Three raw IR/Program/membership controls refuse at their intended binding guard.
+
+The physical prebuild map reconciles all **950 literal / 919 unique** actual
+runner prerequisites: 860 tracked sources, 56 OUT_DIR files and three generated
+SDK files. Preparation authenticates 89 build-script owners, 58 local manifests
+and 63 local rerun inputs. Its 632 prepared pins contain 543 OUT_DIR files and
+89 build-script output logs. All 89 prepared directories also occur in the
+qualifying build's actual Cargo events. These files are pinned before that
+build; most were cached, so they are not freshly re-derived artifacts.
+
+All **20 exports** are observed before selection: 19 proof-required and one
+pure. Fifteen required models fit automatic k<=8 (empty_component is k5, the
+others k8). Four complete models are **k9**: nested_outer.run,
+proof_candidate.run, component_2d.run and checked_helper.run. The planned
+conditional Uint model correctly triggers the unchanged tiny limit. Thus
+`proof-preparation-v3/receipt.json` remains **failed**, with complete model/input
+observation reached and material checks, keys, proofs, funded applications and
+the separate larger-model diagnostic **not reached**. No source was trimmed or
+cap raised. No proving impossibility or full feature acceptance follows.
+
+Actual Claude source review v8 reports no P1/P2 (287.25 seconds). Separate Claude
+receipt review v6 reports no P1/P2 (461.00 seconds) and accepts only this finite
+model/input observation. It independently rechecks all 6,883 tracked files in
+live/frozen trees, 29,524 declared dependency pins, the 632 prepared pins, all
+919 physical prerequisites, 768 locked metadata packages/manifests and actual
+SDK/command/model/binding outcomes. The failed path never ran the final end
+checks; reviewer and author checks now do not retroactively attest that missing
+execution-time boundary. There is no atomic, continuous or global dependency
+attestation. The current author closing check matches 37,446 declared pins.
+
+Retained limits from review: directory-name exclusions omit real dependency
+sources such as cc/src/target; the direct depfile has no registry/Git inputs;
+the generic missing-file filter would skip a missing prerequisite (none are
+missing now); the changed-IR control also reserializes its JSON; and TS source
+maps carry staging nonces, so complete SDKs are not byte-reproducible across
+epochs. Raw outputs and identities are retained without normalization. These
+issues are explicit next-stage hardening, not new proof acceptance. The receipt
+engine automatically spilled one oversized tool result; its copy/observation is
+retained. Reviewers ran no helper/test/build/proof; external-write exceptions
+remain literal. Source v8 and receipt v6 are separate gates.
+
+Evidence under the existing local root: `proof-preparation-v3/receipt.json`,
+`proof-preparation-v3/all-source-models.json`, `proof-preparation-v3/runner.d`,
+`local-claude-source-review-v8.json`, `local-claude-receipt-review-v6.json`,
+`review-adjudication-v4.json`, `model-stage-author-audit-v1.json` and
+`observed-model-selection-v2.json`. Selection v2 separates raw historical planned
+flags from the next proposal; v1's copied labels remain preserved.
+
+### Next bounded proof cohort
+
+The existing complete helper.run Uint path and original complete
+proof_candidate.run_field path are both k8. Qualify both unchanged whole SDKs
+with distinct gated modules and source-scoped identities, exact nested typed
+four-route values/preparation, locked material, fresh keys/standalone proofs,
+immutable wrong-source verifier/corruption/binding/same-geometry typed-output
+negatives, and separately proved funded default-strict transactions/replay.
+Keep both original conditional Uint branches and all four k9 models explicitly
+unproved. If a future exact source/compiler makes the conditional model fit the
+automatic limit, revise selection to add both original branch outcomes.
+
+Before qualification, strengthen dependency source enumeration and missing-path
+refusal, and isolate the intended IR-byte mutation. The full paired-source plan
+is `next-model-proof-qualification-v3.md` in local evidence; it is not adopted
+proof code or execution evidence yet. Constructor, other unselected/all-input,
+full required CI/Linux/integration, application/distribution/capability closure
+and the broader goal remain open. Forge stays deferred; all work remains local.

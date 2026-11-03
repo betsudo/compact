@@ -586,3 +586,23 @@ accepted crosswalk, checked-recording owners and retirement ledger; do not reope
 accepted capabilities or infer universal language parity. Current work remains
 local. Forge is deferred and does not block backend development. No cleanup is
 due before verified merge.
+
+## Component-Vector model boundary — 2026-11-03
+
+The local source `6ca41ba55` passes the current141-command API protocol and
+actual default/opt-in build/strict checks. After fixing two fail-closed
+preparation defects, all919physical runner inputs match prebuild maps. Actual
+Claude source and separate receipt reviews find no P1/P2 within the finite
+model/input observation scope. All20exports are observed before selection:
+19required/onepure;15required fitk<=8 andfourintactk9 models remainunproved.
+The conditional Uint export is k9 and correctly refuses the automatic limit.
+Preparation remains failed at that guard; material, keys, genuine proofs and
+funded transactions were not reached. This is not proof or full integration
+acceptance, and earlier compiler177 proofs are not credited here.
+
+Next qualify the existing complete Uint helper and original complete Field
+export (bothk8), preserving exact sources/SDKs and source-scoped identities.
+Keep the conditional branches and other over-cap/unselected scenarios open.
+See the [model/input boundary and next cohort](plans/stateful-vector-product-elements.md#reviewed-modelinput-observation-and-retained-cap-refusal).
+FullCI/Linux/integration, remaining application/distribution/capability handoff
+and the broader goal remain open. Current work stays local; no Forge or cleanup.
