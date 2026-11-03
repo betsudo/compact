@@ -36,7 +36,7 @@ ContractLab and optional ProofLab. No new facade, flag, IR/ABI or registry claim
 1. Freeze clean source; record the exact supplied original `pbr` compiler package
    through the existing-only recorder. Do not edit the Nix source filter or
    relabel the old `kn9` package. Preserve all previous results and failures.
-2. Run the unchanged complete SDK gate from a new absent external directory,
+2. Run the complete maintained SDK gate from a new absent external directory,
    with default bundled generation and the immutable source-bound material
    runner snapshot from the accepted `51616d5ce` valid proof run. Freshly verify
    selected k6/built-ins. Use bounded Cargo jobs and compilation reuse only.
@@ -105,7 +105,7 @@ outer control attempt stops because its expected-error string is shorter than
 the full emitted refusal; the gate correctly rejects the override with no
 recorded tool commands. Preserve that failed harness, its copied fixture and
 receipts. The corrected external harness changes no product source. Its new
-controller authenticates the two successful same-source recipe/unit phases;
+controller hash-binds the two successful same-source recipe/unit phases;
 it does not relabel the earlier whole controller as passed.
 
 Three real gate invocations then pass their intended refusal controls: matching
@@ -158,3 +158,13 @@ retain their narrower literal epochs. A local Nix-shell probe observes both
 runtime-source and Scheme override variables absent; it is not hosted Linux CI.
 Complete required integration, technical profile freeze and the broader goal
 remain incomplete. Forge stays deferred.
+
+
+Fresh authentic Claude CLI source/receipt/documentation review at `4624a64e2`
+reports no actionable P1/P2 after independent checks of source blobs, tool and
+runtime hashes, staged/generated/material/application membership, snapshots,
+refusal and Clippy records, phase/log bindings and the documentation bridge.
+It takes 210.81 seconds and reruns no cryptography. The author inspection record
+retains its earlier pending-review timestamp; the actual independent verdict is
+`local-claude-sdk-receipt-review-v1.json` in the evidence root. This small wording
+successor does not change the qualified source or renew its proof epoch.
