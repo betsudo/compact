@@ -1837,12 +1837,14 @@
              (nanopass-case (Lnodisclose Type) (leaf-carrier target)
                [(ttuple ,src^ ,type^* ...)
                 (and (= (length type*) (length type^*))
-                     ;; A product component can itself be a fixed Vector.
-                     ;; Reuse the same dimension/leaf relation; do not admit
-                     ;; arbitrary nested products or new identity carriers.
+                     ;; Compose the existing scalar, product and fixed Vector
+                     ;; relations directly below the outer element product.
+                     ;; Preserve every arity/dimension and identity boundary;
+                     ;; checked Coerce still owns conversion and resources.
                      (for-all
                        (lambda (target source)
                          (or (scalar-widening? target source)
+                             (component-product-widening? target source)
                              (vector-component-widening? target source)))
                        type^* type*))]
                [else #f])]

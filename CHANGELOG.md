@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.189, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Compose existing checked product conversions directly below outer Vector
+  product elements. Preserve nested tuple arity, fixed Vector dimensions,
+  original bounds and ordered helper/witness evaluation through the existing
+  checked coercion and structured AST owners. New identity carriers, narrowing,
+  runtime, ABI and resource limits are unchanged.
+
 ## [Toolchain 0.31.188, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.

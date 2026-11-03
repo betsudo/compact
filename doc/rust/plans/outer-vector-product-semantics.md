@@ -92,3 +92,18 @@ a historical188 artifact; update only an actually accepted current row after
 observing its complete TS/Rust/independent-IR results. Retain all unrelated
 refusals and both positive/negative source-binding checks. Generated native,
 static, TS, recorded, model, proof and strict-application gates remain open.
+
+## Narrow selector implementation checkpoint
+
+Add only the existing component-product-widening? alternative for direct tuple
+children in element-widening?. Existing recursive scalar/product/Vector laws keep
+every dimension, arity and identity boundary; the separate bounded Coerce, AST
+renderer, independent validator, runtime and resource owners are unchanged.
+Compiler/flake/changelog advance to189. Owner-generated ledger documentation
+still names188 until the original189 compiler build and owner generation run;
+this temporary mismatch is explicitly unqualified. Preserve the literal preceding
+current scope table as scope-controls-compiler188.json before any current-row
+reclassification; copying this expected table is not a fresh execution claim.
+
+The implementation is not accepted until the original recipe, complete source
+cohort and all applicable semantic/API/proof gates and independent reviews pass.
