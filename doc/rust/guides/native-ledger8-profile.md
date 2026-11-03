@@ -63,6 +63,14 @@ completion percentage. Compiling a whole contract does not prove every export.
 | [Current DID zero timestamp extension](../plans/did-zero-timestamp.md), `4e49b59e5`; documentation successor `90c517f55` | Intact two-file source, complete IR and twelve Programs; twelve live TS rows; seven Rust methods, eight success routes and forty error routes, plus late-witness controls | Two original cases of the same `deactivate` export, timestamp witness 200 and 0: separate fresh k11/1,804-row proof runs and independently proved funded DEFAULT-strict transactions; constructor and all-export proofs unclaimed |
 | [Products below Vector components](../plans/vector-component-products.md), `5ef204e8e`; later documentation-only successors retain their own bridges | 24 complete generated SDKs, 35 sampled cases and typed/static/ingress/ordering controls | Three selected complete sources have fresh proofs and separate funded strict applications; 21 required exports remain unproved, including 18 over-limit models |
 
+A later [package-specific local check](../plans/current-supported-profile-handoff.md#actual-final-package-local-result)
+at `51616d5ce` rebuilds and records the exact README-bound compiler package,
+then passes the DID API gate and both fresh proof/application cases. The zero
+case uses the literal workflow shell locally under Nix; the valid case is a
+separate maintained invocation. Nix and Rustup runner snapshots retain their own
+identities. This does not rerun the SDK, Passport or product rows above; their
+literal execution epochs are not renewed by the package-specific DID check.
+
 The preceding [selected DID epoch](../plans/current-did-handoff.md) at `67cbded3e`
 and accepted compiler138/PR#693 scope are preserved; the later zero extension does
 not rewrite their execution populations. Historical compiler143 SDK and

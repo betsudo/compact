@@ -789,3 +789,13 @@ external-dependency Clippy commands and points to the already repaired maintaine
 proof-feature library gate. Full current hosted CI/Linux and logical integration
 remain open; see the [handoff plan](plans/current-supported-profile-handoff.md)
 for actual local recipe and execution status. Forge remains deferred.
+
+
+At actual `51616d5ce`, the finalized README-bound original compiler package is
+rebuilt and passes its exact existing-only recipe check, affected DID API gate
+and both fresh selected proof/application cases. The zero case executes the
+literal configured CI shell locally under Nix; it is not a hosted result.
+Earlier SDK, Passport and product rows keep their literal tool/source epochs.
+The [local result](plans/current-supported-profile-handoff.md#actual-final-package-local-result)
+records the package identity transition, snapshot/target distinction, controls
+and remaining technical-profile/integration gates.
