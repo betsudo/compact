@@ -121,3 +121,22 @@ repeat actual review are required before accepting the repair.
 Verifier wording is explicit: immutable verification and missing/oversize loader
 refusals are tested; this fixture has no distinct valid wrong-key proof control.
 No original assertion was removed, and no nested-product proof scope is earned.
+
+
+### Proof-feature lint-root correction
+
+The first repaired clean run at `f25873b23` reaches actual consumer proof-feature
+Clippy, then Cargo refuses a feature flag on the raw SDK because it is outside
+the consumer workspace. This remains a failed attempt; it reaches no new keys or
+proof. Fourteen focused controls had passed, but the tiny fixture lacked that
+feature-selection boundary. The expanded actual fixture now includes it.
+
+A private lint-only root depends on the unchanged consumer with its existing
+`proof` feature. It has no execution/proving role. The gate compares every prior
+Cargo package and resolve node, including feature sets, exactly against the
+qualified consumer graph; only this single owned root is additional. The SDK,
+consumer, runtime and copied testkit manifests remain unchanged. All selected
+libraries can then be linted with their actual proof features, without unsupported
+nonmember feature flags. The root manifest/source/lock are inventoried before
+linting and checked again at completion. Dependency identity or feature drift
+refuses. Fresh full qualification and repeat independent review remain pending.

@@ -70,9 +70,11 @@ class IsolatedSdkControls(unittest.TestCase):
                 (folder / "src").mkdir(parents=True)
             manifest = consumer / "Cargo.toml"
             manifest.write_text('[workspace]\n[package]\nname="lint-consumer"\nversion="0.0.0"\n'
-                                'edition="2024"\n[dependencies]\nlint-dependency={path="../dependency"}\n')
+                                'edition="2024"\n[dependencies]\nlint-dependency={path="../dependency"}\n'
+                                '[features]\nproof=["lint-dependency/proof"]\n')
             (consumer / "src/lib.rs").write_text("pub fn call() -> bool { lint_dependency::call(&[]) }\n")
-            (dependency / "Cargo.toml").write_text('[package]\nname="lint-dependency"\nversion="0.0.0"\nedition="2024"\n')
+            (dependency / "Cargo.toml").write_text('[package]\nname="lint-dependency"\nversion="0.0.0"\nedition="2024"\n'
+                                                   '[features]\nproof=[]\n')
             source = dependency / "src/lib.rs"
             source.write_text('#![deny(clippy::len_zero)]\npub fn call(xs: &[u8]) -> bool { xs.len() == 0 }\n')
             env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_TARGET_DIR=str(root / "target"))
@@ -80,7 +82,26 @@ class IsolatedSdkControls(unittest.TestCase):
             warm = subprocess.run([cargo, "check", "--offline", "--manifest-path", manifest],
                                   env=env, capture_output=True, text=True, timeout=60)
             self.assertEqual(warm.returncode, 0, warm.stderr)
-            command = gate.clippy_library_command(cargo, manifest, "lint-dependency")
+            def metadata(selected_manifest, *features):
+                result = subprocess.run([cargo, "metadata", "--offline", "--format-version", "1",
+                                         "--manifest-path", selected_manifest, *features], env=env,
+                                        capture_output=True, text=True, check=True, timeout=60)
+                return json.loads(result.stdout)
+            original = metadata(manifest, "--features", "proof")
+            lint_manifest = gate.library_lint_root(manifest, root / "library-lints")
+            lint_graph = metadata(lint_manifest)
+            gate.check_library_lint_graph(original, lint_graph, lint_manifest)
+            for field in ("packages", "resolve"):
+                changed = copy.deepcopy(lint_graph)
+                if field == "packages":
+                    owner = next(p for p in changed[field] if p["id"] == original["resolve"]["root"])
+                    owner["version"] = "999.0.0"
+                else:
+                    node = next(n for n in changed[field]["nodes"] if n["id"] == original["resolve"]["root"])
+                    node["features"] = []
+                with self.assertRaisesRegex(ValueError, "identities or features"):
+                    gate.check_library_lint_graph(original, changed, lint_manifest)
+            command = gate.clippy_library_command(cargo, lint_manifest, "lint-dependency")
             lint_env = dict(env, RUSTC=str(driver))
             refused = subprocess.run(command, env=lint_env, capture_output=True, text=True, timeout=60)
             diagnostics = [json.loads(line) for line in refused.stdout.splitlines()]
@@ -93,10 +114,7 @@ class IsolatedSdkControls(unittest.TestCase):
             source.write_text('pub fn call(xs: &[u8]) -> bool { xs.is_empty() }\n')
             correct = subprocess.run(command, env=lint_env, capture_output=True, text=True, timeout=60)
             self.assertEqual(correct.returncode, 0, correct.stderr)
-            metadata = subprocess.run([cargo, "metadata", "--locked", "--offline", "--format-version", "1",
-                                       "--manifest-path", manifest], env=env, capture_output=True, text=True,
-                                      check=True, timeout=60)
-            result = gate.clippy_library_artifact(correct.stdout, json.loads(metadata.stdout), "lint-dependency")
+            result = gate.clippy_library_artifact(correct.stdout, original, "lint-dependency", required_feature="proof")
             self.assertFalse(result["fresh"])
             gate.cargo_configuration(env)
 

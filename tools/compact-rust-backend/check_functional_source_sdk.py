@@ -198,15 +198,47 @@ def validate_result(result):
         raise ValueError("applied Cell does not encode the selected Compact Field value 42")
 
 
-def clippy_library_command(cargo, manifest, package, *, features=()):
+def clippy_library_command(cargo, manifest, package):
     # These packages are dependencies outside the consumer workspace. Cargo
     # clippy's workspace wrapper does not lint them, even with --package.
     # The caller selects the pinned clippy-driver as RUSTC for this command only.
-    command = [str(cargo), "rustc", "--locked", "--offline", "--manifest-path", str(manifest),
-               "--package", package, "--lib", "--message-format", "json"]
-    if features:
-        command += ["--features", ",".join(features)]
-    return command + ["--", "-D", "warnings"]
+    return [str(cargo), "rustc", "--locked", "--offline", "--manifest-path", str(manifest),
+            "--package", package, "--lib", "--message-format", "json", "--", "-D", "warnings"]
+
+
+def library_lint_root(consumer_manifest, destination):
+    # Cargo cannot select features for a nonmember with --package. A separate
+    # lint-only root enables the existing consumer's proof feature as a normal
+    # dependency, without editing any qualified manifest or source.
+    destination.mkdir()
+    name = tomllib.loads(consumer_manifest.read_text())["package"]["name"]
+    relative = os.path.relpath(consumer_manifest.parent, destination)
+    manifest = destination / "Cargo.toml"
+    manifest.write_text('[workspace]\n[package]\nname="isolated-sdk-library-lints"\n'
+                        'version="0.0.0"\nedition="2024"\n[lib]\npath="lib.rs"\n'
+                        '[dependencies]\nconsumer={package='+json.dumps(name)+',path='+json.dumps(relative)
+                        +',features=["proof"]}\n')
+    (destination / "lib.rs").write_text("// Private lint root; never a generated contract or execution input.\n")
+    shutil.copyfile(consumer_manifest.with_name("Cargo.lock"), destination / "Cargo.lock")
+    return manifest
+
+
+def check_library_lint_graph(reference, selected, lint_manifest):
+    roots = [p for p in selected["packages"] if Path(p["manifest_path"]) == lint_manifest]
+    if len(roots) != 1 or roots[0]["name"] != "isolated-sdk-library-lints":
+        raise ValueError("one owned library lint root required")
+    root = roots[0]["id"]
+    if selected["workspace_members"] != [root] or selected["resolve"]["root"] != root:
+        raise ValueError("library lint workspace ownership differs")
+    packages = {p["id"]: p for p in selected["packages"] if p["id"] != root}
+    nodes = {n["id"]: n for n in selected["resolve"]["nodes"] if n["id"] != root}
+    if (packages != {p["id"]: p for p in reference["packages"]}
+            or nodes != {n["id"]: n for n in reference["resolve"]["nodes"]}):
+        raise ValueError("library lint dependency identities or features differ from qualified consumer")
+    own = next(n for n in selected["resolve"]["nodes"] if n["id"] == root)
+    if own["dependencies"] != [reference["resolve"]["root"]]:
+        raise ValueError("library lint root must depend only on the qualified consumer")
+    return {"root": root, "unchanged_packages": len(packages), "unchanged_feature_nodes": len(nodes)}
 
 
 def clippy_library_artifact(stdout, metadata, package, *, required_feature=None):
@@ -432,12 +464,16 @@ def main(argv=None):
                     receipt["typed_controls"][name] = typed_refusal(process, code, path, lines[-1])
         # Keep the admitted graph and raw manifests: testkit's repository-only
         # development fixtures must not enter this isolated library package.
+        lint_manifest = library_lint_root(manifest, output / "library-lints")
+        lint_metadata = json.loads(run("library-lint-metadata", [tools["cargo"]["path"], "metadata",
+            "--offline", "--format-version", "1", "--manifest-path", lint_manifest]).stdout)
+        receipt["clippy_graph"] = check_library_lint_graph(metadata, lint_metadata, lint_manifest)
+        receipt["clippy_root_hashes"] = inventory(lint_manifest.parent)
         receipt["clippy_libraries"] = {}
         for name, package, feature in (("consumer", "isolated-functional-sdk-consumer", "proof"),
                                        ("raw-sdk", "compact-contract-field-witness-proof", "ledger-transaction"),
                                        ("testkit", "midnight-compact-testkit", "proof")):
-            lint = run(name+"-clippy", clippy_library_command(tools["cargo"]["path"], manifest, package,
-                                                           features=(feature,)),
+            lint = run(name+"-clippy", clippy_library_command(tools["cargo"]["path"], lint_manifest, package),
                        lint_library=True)
             receipt["clippy_libraries"][name] = clippy_library_artifact(lint.stdout, metadata, package,
                                                                       required_feature=feature)
@@ -478,6 +514,7 @@ def main(argv=None):
                 raise ValueError("copied testkit library source changed")
         equal_inventory(consumer, receipt["staged_consumer_hashes"])
         equal_inventory(output / "testkit-rs", receipt["staged_testkit_hashes"])
+        equal_inventory(output / "library-lints", receipt["clippy_root_hashes"])
         for folder in source_folders:
             tracked_source_files(folder)
         receipt["consumer_hashes"] = inventory(consumer)
