@@ -1,7 +1,9 @@
 # Nested scalar products below Vector components
 
-Status: source characterization, before implementation. Based on reviewed
-request-field baseline `d9e9cb2cb`; the primary Rust AST goal remains incomplete.
+Status: original compiler185 emission and complete native API qualification
+pass at `ebd9c2b52`. Static/ingress/model/proof qualification, independent reviews
+and full integration remain open. Based on reviewed request-field baseline
+`d9e9cb2cb`; the primary Rust AST goal is incomplete.
 
 ## Gap and owners
 
@@ -107,3 +109,55 @@ original full compiler package must be built from a separate frozen clean source
 checkout, then the current qualification head must resolve the same original
 recipe with builds disabled. Do not infer fresh source acceptance from the new
 relation or from earlier compiler184 results.
+
+
+## Current complete native API result
+
+The first frozen original185 package (`c5d8f564e`) and its exact current-head
+existing-only recipe pass. All twelve TS/Rust/independent-IR emission commands
+pass for the original, first twelve-export family and separate pure/same-type
+controls. The initial documentation Nix-shell client hit its 180-second deadline
+while the changed CLI precursor was building; that failed attempt remains. The
+separate full frozen producer completes; only then does a fresh owner-generator
+attempt produce compiler185 docs and pass the literal local version gate. No
+build is restarted merely because its observation times out.
+
+The first complete API attempt executes all22Rust methods across four routes,
+then fails strict consumer lint on a copied unused pure-case macro. The whole
+attempt stays failed. A versioned fixture successor removes that macro and adds
+one complete export for Field identity with input2^130+21 beside widened Uints.
+All previous twelve source-export bodies and the original regression are unchanged.
+Because examples are explicit original Nix inputs, the successor is rebuilt from
+frozen `2dfcbb81f` (69.44 seconds) rather than relabelling the earlier package.
+The actual current-clean original-recipe recorder passes at `ebd9c2b52` in12.19s.
+
+The maintained `check_nested_component_products.py` gate now passes in22.08s:
+two complete sources, fourteen exported stateful APIs,23fresh live-TS cases and
+23typed Rust methods covering92route executions (including24error routes) and
+34successful recorded VM replays. Every declared export has a case. Both complete
+unedited SDK roots pass strict all-target/all-feature Clippy and the consumer's
+actual test code passes all-target strict Clippy. Exact results, full public
+transcripts, state/effects/gas, private outputs/counters, both branch choices,
+helper assertion/cast first errors and before/after witness failure order pass.
+Independent whole IR equals each SDK's raw IR; fourteen checked Program assets
+and complete schema3 capability rows remain source-bound. These counts are not
+language coverage or executed proofs.
+
+The gate pins selected source/artifact/configuration/tool identities and locks;
+it is not complete transitive/physical build attestation or a hostile-host trace.
+It reuses the existing bounded-command and Cargo-target guards, resolves host
+tools without machine-specific paths, and preserves inherited Cargo reuse.
+Marked compile-fail twins, native malformed/dead/empty IR controls, consumed
+producer/result mutations, all-export models, fresh applicable proofs with
+independent verification and separate strict applications, own source/receipt
+reviews and full CI/Linux/integration are still required before slice acceptance.
+The old current scope table still expects the original refusal; archive its
+compiler184 epoch and reclassify only that row after complete positive controls,
+before claiming current parent-gate or integration readiness.
+
+Evidence includes `native-api-controller-v1.json`,
+`current-existing-recipe-v1/receipt.json`, `native-api-v1/receipt.json`,
+`original-build-v1.json`, `original-build-v2.json`, `family-successor-v1.json`,
+`api-prototype-v1/receipt.json` and both raw owner-generator attempts. Source
+review is a separate stage; no review or proof result is inferred from these
+native executions. Forge remains deferred and every predecessor is retained.
