@@ -20,6 +20,8 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Current-candidate Passport consumer handoff](plans/current-passport-handoff.md): reviewed local compiler183 qualification passes for the intact pure application, raw SDK and documented consumer, with independent provenance controls. Historical application/fixture epochs remain separate; full integration is open.
 
+- [Current-candidate DID lifecycle handoff](plans/current-did-handoff.md): planned compiler183 reconciliation of the intact DID source and selected lifecycle. Accepted deactivation and earlier proof epochs remain preserved.
+
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 
 ## Checked recording checkpoint
