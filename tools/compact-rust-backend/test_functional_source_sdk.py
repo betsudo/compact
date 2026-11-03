@@ -76,7 +76,7 @@ class IsolatedSdkControls(unittest.TestCase):
             (dependency / "Cargo.toml").write_text('[package]\nname="lint-dependency"\nversion="0.0.0"\nedition="2024"\n'
                                                    '[features]\nproof=[]\n')
             source = dependency / "src/lib.rs"
-            source.write_text('#![deny(clippy::len_zero)]\npub fn call(xs: &[u8]) -> bool { xs.len() == 0 }\n')
+            source.write_text('pub fn call(xs: &[u8]) -> bool { xs.len() == 0 }\n')
             env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_TARGET_DIR=str(root / "target"))
             gate.cargo_configuration(env)
             warm = subprocess.run([cargo, "check", "--offline", "--manifest-path", manifest],
@@ -103,6 +103,12 @@ class IsolatedSdkControls(unittest.TestCase):
                     gate.check_library_lint_graph(original, changed, lint_manifest)
             command = gate.clippy_library_command(cargo, lint_manifest, "lint-dependency")
             lint_env = dict(env, RUSTC=str(driver))
+            warning = subprocess.run(command[:-2], env=lint_env, capture_output=True, text=True, timeout=60)
+            self.assertEqual(warning.returncode, 0, warning.stderr)
+            warnings = [json.loads(line) for line in warning.stdout.splitlines()]
+            self.assertTrue(any(r.get("reason") == "compiler-message" and r["message"]["level"] == "warning"
+                                and (r["message"].get("code") or {}).get("code") == "clippy::len_zero"
+                                for r in warnings))
             refused = subprocess.run(command, env=lint_env, capture_output=True, text=True, timeout=60)
             diagnostics = [json.loads(line) for line in refused.stdout.splitlines()]
             self.assertNotEqual(refused.returncode, 0, refused.stderr)

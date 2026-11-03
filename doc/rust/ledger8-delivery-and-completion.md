@@ -699,3 +699,27 @@ Linux/CI result**. See the [slice plan](plans/vector-component-products.md#revie
 for exact source/header/proof identity, remaining 21 unproved exports and limits.
 Logical integration and final profile/application/SDK/capability handoff remain
 open; the broad goal and Forge deferral are unchanged.
+
+
+### Current-candidate isolated SDK — repaired local handoff
+
+The [current SDK slice](plans/current-profile-sdk-handoff.md) passes at signed
+compiler 0.31.183 execution `cd3f432c6`: all 29 commands reach intended outcomes, with
+three documented ContractLab methods, correct-type twins and E0053/E0382 misuses,
+actual proof-feature Clippy for all three selected libraries, fresh k6 / 49-row keys,
+a verified 2,912-byte proof and a separately proved funded DEFAULT-strict
+6,607-byte transaction with expected state and unchanged replay refusal.
+Fresh Claude source/receipt review reports no current P1/P2 in this finite scope.
+
+The inherited external-package lint gap is repaired without changing qualified
+SDK/consumer/testkit manifests or public APIs. A private lint root preserves every
+original Cargo package/feature node, and 14 focused controls include actual warm-
+check lint refusal and its corrected positive. The initial false-lint-success and
+failed feature-flag epochs remain retained. Older physical-input/transitive/log
+limits and verifier-loader versus proof controls are explicit in the plan.
+
+Accepted compiler 0.31.143 SDK integration is not relabeled or reopened. This Cell case
+proves no constructor/deployment, wallet lifecycle or unselected nested-product
+export. Full required CI/Linux, logical integration, current application
+reconciliation and finite supported-profile capability handoff remain open;
+the broad goal stays incomplete and Forge remains deferred.
