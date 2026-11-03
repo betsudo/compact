@@ -36,3 +36,4 @@ export circuit boolean_field(input: Vector<1, [Vector<1, [[Boolean, Uint<8>], Ui
 export circuit empty(input: Vector<0, [Vector<1, [[Uint<8>, Uint<16>], Uint<8>]>, Uint<16>]>): Vector<0, [Vector<1, [[Uint<16>, Uint<32>], Uint<16>]>, Uint<32>]> { seen = 11; return input; }
 export circuit tuple_empty(input: Vector<1, [Vector<1, [[], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[], Uint<16>]>, Uint<32>]> { seen = 12; return input; }
 export circuit tuple_single(input: Vector<1, [Vector<1, [[[Uint<8>], Uint<16>], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[[Uint<16>], Uint<32>], Uint<16>]>, Uint<32>]> { seen = 13; return input; }
+export circuit field_identity(input: Vector<1, [Vector<1, [[Field, Uint<8>], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[Field, Uint<16>], Uint<16>]>, Uint<32>]> { seen = 14; return input; }
