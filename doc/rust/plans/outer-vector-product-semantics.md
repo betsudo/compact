@@ -107,3 +107,15 @@ reclassification; copying this expected table is not a fresh execution claim.
 
 The implementation is not accepted until the original recipe, complete source
 cohort and all applicable semantic/API/proof gates and independent reviews pass.
+
+## Original compiler189 and owner documentation
+
+The original maintained .#compactc recipe passed from frozen signed13b94f62a in
+182.41s without source filters or alternate compiler pipeline. Fresh independent
+Codex medium source review (102.53s, authorized fallback after retained Claude
+weekly quota) found no actionable issues; it makes no execution acceptance claim.
+The complete ledger.ss owner regenerated the raw version document in30.99s;
+only the compiler188-to189 sentence changed. The literal existing document
+version gate passed11.26s. This resolves the temporary document mismatch.
+Complete source/SDK, native/static/TS/IR/recorded/model/proof/application gates and
+separate receipt review remain open.
