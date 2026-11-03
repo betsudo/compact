@@ -53,15 +53,21 @@ def main():
     config = reject_compiler_overrides(dict(env))
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "use pinned Rust1.99.0")
+    target = Path(env.get("CARGO_TARGET_DIR", str(output / "cargo-target")))
+    target = (ROOT / target).resolve()
+    require(not target.is_relative_to(output / "generated"), "Cargo target must be outside the immutable generated SDK")
+    env["CARGO_TARGET_DIR"] = str(target)
     git = lambda *a: subprocess.check_output(["git", *a], cwd=ROOT, text=True).strip()
     head, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
     require(not git("status", "--porcelain"), "clean source required")
     build = json.loads(args.compiler_receipt.read_text())
+    require(build.get("format") == "compact-original-existing-compiler-recipe/v1", "original recipe receipt format required")
     require(build["status"] == "passed" and (build["head"], build["tree"]) == (head, tree),
             "original compiler receipt must bind this exact clean HEAD/tree")
     compiler, scheme = [Path(build[key]["path"]).resolve(strict=True)
                         for key in ("compactc", "compactc-scheme")]
     require(compiler.parent == scheme.parent, "one original compiler package required")
+    require(Path(build["store"]).resolve(strict=True) == compiler.parent.parent, "receipt store differs from compiler package")
     for key, path in (("compactc", compiler), ("compactc-scheme", scheme)):
         require(digest(path) == build[key]["sha256"], "original compiler changed")
     require(set(SOURCES.glob("*.compact")) == {SOURCE} and digest(SOURCE) == SOURCE_SHA256,
@@ -85,6 +91,8 @@ def main():
     output.mkdir(parents=True)
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins,
                   cargo_configuration_sha256=config, rust_tools=rust_tools,
+                  environment={k: env.get(k) for k in ("RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_TARGET_DIR",
+                                                       "CARGO_INCREMENTAL", "CARGO_BUILD_JOBS")},
                   scope=__doc__, bound_build_inputs={}, resolved_locks={})
     bound = report["bound_build_inputs"]
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]

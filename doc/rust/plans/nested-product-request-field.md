@@ -230,3 +230,22 @@ identities unchanged. Do not add TS parity or proof claims to this prerequisite.
 The separately qualified nested-widening stage keeps its own compiler185 epoch.
 Current gate execution and independent review are required before closing this
 follow-up; full CI/Linux/integration and local ancestry reconciliation stay open.
+
+
+The first maintained clean-source run at `1dbd53f2c` passes all13commands:
+original184 recipe20.76s and SDK/API/static gate16.77s. Independent actual Claude
+source/receipt review (148.87s) finds no P1/P2 and accepts the maintained consumer
+coverage in source. It independently rehashes1423repository inputs,18build
+inputs, both resolved locks, all13command logs and the unedited10file SDK plus
+its Cargo.lock. Those counts describe the retained first run, not later epochs.
+
+The review identifies a portability follow-up: without CARGO_TARGET_DIR, Cargo
+would create a target inside the generated SDK and violate its immutability
+check. Default to a separate output-local cargo-target, retain explicit shared
+absolute targets, reject targets inside the SDK, and record relevant build
+environment. Also validate the original recipe format and store/package relation.
+The unchanged consumer source fixes its four routes/two replay calls; headline
+counts are source-derived literals, not separately measured output fields.
+The three positive commands remain one distinct signature. No TS/proof/MSRV or
+hosted result is claimed. The guard successor requires its own focused execution
+and correction review; preserve first-run source, logs and review unchanged.
