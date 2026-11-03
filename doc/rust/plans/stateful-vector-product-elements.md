@@ -441,3 +441,11 @@ Original recipe, whole-source/API rerun, physical binding, observed models,
 preparation execution and independent reviews are pending for this source
 successor. The older reviewed141-command result remains its literal e293 epoch;
 this section does not renew it or assert proof feasibility.
+
+The first preparation at `abe9c29f0` passes the fresh141-command API protocol,
+default runner check and all-feature no-SDK Clippy, then fails its actual generated
+include dependency guard. The copied build-script environment predicate retained
+`_WIDENING`, disabling this feature's generated module. No current models, keys
+or proofs were reached. The successor corrects that exact predicate and retains
+the guard; the original failed receipt, binary snapshot and raw depfile remain.
+Fresh opt-in compilation and preparation are required before acceptance.
