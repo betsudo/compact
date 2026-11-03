@@ -1,11 +1,19 @@
 # Fixed Vector leaves below component products: next bounded source gap
 
-Status: source characterization begins from the accepted compiler186 metadata
-baseline at 3ebb20905. Both intact original sources remain TS-positive and
-Rust/independent-IR refused. A complete fourteen-export application is declared
-before implementation; its current186 acceptance/refusal still has to execute.
-No semantic classifier, checked plan, AST renderer, runtime or ABI has changed.
+Status (2026-11-03): the compiler187 native/model stage is locally accepted at
+`005a10603` after its original recipe, complete 88-command gate, all-export model
+observation and separate independent source/receipt reviews. Fresh proofs and
+strict applications remain open; this is not full slice or integration acceptance.
 The broader Rust AST goal remains incomplete.
+
+## Historical admission baseline
+
+Source characterization began from the accepted compiler186 metadata baseline
+at `3ebb20905`. Both intact original sources were TS-positive and Rust/independent
+IR refused. The complete fourteen-export application was declared before the
+classifier change; its current186 acceptance/refusal subsequently executed.
+The characterization head `08ac3bb51` changed no semantic classifier, checked
+plan, AST renderer, runtime or ABI.
 
 ## Gap and affected owners
 
@@ -260,3 +268,39 @@ all sixteen models before deciding the applicable whole-source proof cohort;
 retain any over-limit source intact. This mode is pending actual compilation
 and execution. Raw proof identity, fresh proofs/verification/strict applications,
 final source/receipt reviews and full CI/Linux/integration remain open.
+
+## Bounded native/model closeout — 2026-11-03
+
+Qualified source: `005a10603587e2e751f62be65c7ef72de415c6ae`.
+Current original compiler187 build passed (227.38s), exact current recipe recording
+passed (19.57s), and the whole native/negative/independent-recorded gate passed
+88 commands (103.18s). These are local arm64 results, not hosted/Linux results.
+The sixteen Program rows span two original whole contracts and the full
+fourteen-export family; the raw fourteen family Program fixtures and source IR
+are independently byte-bound. Program metadata remains review-only.
+
+All sixteen intact source/export models were observed separately in 2.27s with
+unchanged producer hashes and no keys, proofs or selection. Exact observed models
+are retained in the fixture's `model-expectations.json`. The direct original and
+family branch both require k9 and remain intact and unproved under the cap8.
+The remaining fourteen exports are in cap: original_nested.run and all thirteen
+other family exports. Observation does not establish proof verification.
+
+Actual independent Codex CLI high source review (204.61s) and separate receipt
+review (238.78s), after the retained authentic Claude session limit, found no
+P1/P2/P3 contradictions. The receipt review recomputed source/artifact/tool hashes
+and accepted only this finite native/model stage. Earlier failed and successful
+epochs retain their original scope; no prior result is relabeled current.
+
+The [next proof phase](component-product-vector-leaves-proofs.md) proposes all
+fourteen in-cap exports, fresh direct keys/proofs/independent verification and
+separately proved funded DEFAULT-strict applications with replay refusal. The
+empty export's output has a unique empty carrier: another same-geometry result
+is inapplicable, not a fabricated passing negative. All its other applicable
+proof controls remain required. No new keys/proofs/transactions have run yet.
+Constructor/all-input/wallet, full required CI/Linux/integration and broad-goal
+acceptance remain open. Forge, canonical/protected refs and evidence stay intact;
+no publication, branch merge, shared installation or cleanup is performed.
+
+External execution/review evidence:
+`/Users/ysh/.codex/local-evidence/rust-ast-component-product-vector-widening-20261103/native-model-stage-closeout-v1.json`.
