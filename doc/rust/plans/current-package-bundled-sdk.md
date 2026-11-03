@@ -141,8 +141,8 @@ constrain a witness to return its argument: a changed input can form another
 valid statement, while the original proof refuses changed communication binding.
 No valid wrong-key proof control is invented from loader or mutation refusals.
 
-The two installed-prefix admission records derive from the trusted CLI loader
-and selected paths/hashes; they are not consumed-file syscall traces or continuous
+Installed-prefix admission derives from the trusted CLI loader and selected
+paths/hashes; they are not consumed-file syscall traces or continuous
 host attestation. The gate's inner stdout/stderr logs have post-inspection hashes,
 not execution-time binding in the SDK receipt. Outer controller logs, source,
 tools, raw/staged/generated assets, proof snapshot and material have their own
