@@ -71,6 +71,10 @@ def main():
     env['RUSTC'] = str(rust['rustc'])
     definitions = json.loads((F / 'sources.json').read_text())
     cases = json.loads((F / 'cases.json').read_text())
+    require(len(definitions) == 2 and {s['source'] for s in definitions} == {'original', 'family'}, 'whole source roster differs')
+    require(definitions[0]['source'] == 'original' and definitions[0]['path'] == 'tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/nested_product_below_component.compact', 'original declared source path changed')
+    require(all(len(s['entries']) == len(set(s['entries'])) for s in definitions), 'duplicate declared export')
+    require(sum(len(s['entries']) for s in definitions) == 14, 'whole export roster differs')
     require(len(cases) == len({c['id'] for c in cases}) == 23, 'qualification invariant failed')
     pins = {str(p): sha(p) for p in [C, S, NODE, rustup, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
     pins.update({str(p): sha(p) for p in Path(__file__).parent.glob('*.py')})
@@ -139,6 +143,7 @@ def main():
             run('independent-' + name, [S, '--emit-rust-ir', '--skip-ts', '--skip-zk', spec['path'], O / 'independent' / name])
             require((root / 'contract/compact-rust-ir.json').read_bytes() == (O / 'independent' / name / 'contract/compact-rust-ir.json').read_bytes(), 'qualification invariant failed')
             caps = json.loads((root / 'contract/rust-capabilities.json').read_text())['circuits']
+            require(len(caps) == len(spec['entries']), 'capability row membership differs')
             require({x['name'] for x in caps} == set(spec['entries']), 'qualification invariant failed')
             require(all((x['recorded'] and x['observed_call'] and (x['proof_required'] is True) for x in caps)), 'qualification invariant failed')
             require(len(list((root / 'contract/checked-programs').glob('*.json'))) == len(spec['entries']), 'qualification invariant failed')
