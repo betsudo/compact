@@ -71,8 +71,19 @@ const json=x=>JSON.parse(JSON.stringify(x,(_,v)=>typeof v==='bigint'?String(v):v
 const convert=x=>Array.isArray(x)?x.map(convert):typeof x==='string'?BigInt(x):
  x!==null&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,convert(v)])):x;
 const uint=(max,width)=>new r.CompactTypeUnsignedInteger(max,width);
-const u16=uint(65535n,2), u32=uint(4294967295n,4), vector=(n,t)=>new r.CompactTypeVector(n,t);
-const tuple=(types)=>({alignment:()=>types.flatMap(t=>t.alignment()),toValue:v=>types.flatMap((t,i)=>t.toValue(v[i]))});
+const u16=uint(65535n,2), u32=uint(4294967295n,4);
+const vector=(n,t)=>{
+ const type=new r.CompactTypeVector(n,t);
+ return {alignment:()=>type.alignment(),toValue:v=>{
+  assert.ok(Array.isArray(v),'declared Vector must be an array');
+  assert.equal(v.length,n,'declared Vector dimension differs');return type.toValue(v);
+ }};
+};
+const tuple=(types)=>({alignment:()=>types.flatMap(t=>t.alignment()),toValue:v=>{
+ assert.ok(Array.isArray(v),'declared tuple must be an array');
+ assert.equal(v.length,types.length,'declared tuple arity differs');
+ return types.flatMap((t,i)=>t.toValue(v[i]));
+}});
 const u8=uint(255n,1);
 const narrowProduct=tuple([vector(1,tuple([vector(2,u8),u8])),u16]);
 const wideProduct=tuple([vector(1,tuple([vector(2,u16),u16])),u32]);

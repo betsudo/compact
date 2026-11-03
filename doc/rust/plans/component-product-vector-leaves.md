@@ -193,3 +193,19 @@ This describes the gate's intended scope, not an executed result. Marked static,
 malformed IR/recording/source/producer controls, all-model inventory, applicable
 fresh proof/verification/strict-transaction gates and independent reviews remain
 required before local slice acceptance. Full CI/Linux/integration remain open.
+
+## First native-stage attempt retained
+
+The first clean `03dd17807` native-stage run accepts all three whole generated
+SDK roots under strict lint and exact independent IR, then stops in fresh TS
+argument encoding at the deeper-alternation case. Its JSON declaration had one
+surplus list below the component product; the unchanged Compact source and
+Rust typed constructor agree. Preserve that failed epoch and repair only the
+explicit test value. The TS descriptor now independently asserts every Vector
+dimension and tuple arity before encoding, retaining full raw FAB/source binding.
+No successful TS/native/proof verdict is inferred from this failed run.
+
+Actual independent Codex CLI source review of production `dbfe7eb5d`, after the
+retained authentic Claude session limit, reports no actionable correctness
+findings. It covers classifier source and existing-owner characterization only;
+it does not accept the new native-stage harness or execution/proof receipts.
