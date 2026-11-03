@@ -1081,6 +1081,19 @@ impl CompactSignatureLint {
         }
     }
 
+    // A tuple wrapper around a component Vector adds the observed complexity
+    // even in the unwrapped Program constructor and private request field.
+    // Recognize only Compact Vector/product carriers; no type is rewritten.
+    fn has_tuple_wrapped_product_vector(ty: &syn::Type) -> bool {
+        matches!(Self::vector_element(ty), Some(syn::Type::Tuple(product))
+            if product.elems.len() >= 2 && product.elems.iter().any(|component|
+                matches!(component, syn::Type::Tuple(wrapper)
+                    if !wrapper.elems.is_empty() && wrapper.elems.iter().any(|child|
+                        matches!(Self::vector_element(child), Some(syn::Type::Tuple(inner))
+                            if inner.elems.len() >= 2 && inner.elems.iter().any(|member|
+                                matches!(member, syn::Type::Tuple(nested) if !nested.elems.is_empty())))))))
+    }
+
     fn has_complex_product_vector(signature: &syn::Signature) -> bool {
         let execution_result = Self::has_execution_result(signature);
         let mut pending = signature
@@ -1108,7 +1121,12 @@ impl CompactSignatureLint {
                 && matches!(element, Some(syn::Type::Tuple(product))
                 if product.elems.len() >= 2
                     && product.elems.iter().any(|ty| matches!(ty, syn::Type::Tuple(nested) if !nested.elems.is_empty())));
-            if wide_product || nested_product || vector_component || product_component {
+            if wide_product
+                || nested_product
+                || vector_component
+                || product_component
+                || Self::has_tuple_wrapped_product_vector(ty)
+            {
                 return true;
             }
             match ty {

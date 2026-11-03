@@ -260,3 +260,47 @@ fn vector_leaf_metadata_does_not_mark_foreign_or_scalar_singleton_children() {
         );
     }
 }
+
+#[test]
+fn tuple_wrapped_product_vector_field_metadata_preserves_private_carriers() {
+    let positives: Vec<syn::Type> = vec![
+        syn::parse_quote!(runtime::FixedVector<((runtime::FixedVector<((u8,), u8), 1>,), u16), 1>),
+        syn::parse_quote!(
+            crate::runtime::FixedVector<(u16, (crate::runtime::FixedVector<(u8, (u8,)), 1>,)), 1>
+        ),
+    ];
+    let negatives: Vec<syn::Type> = vec![
+        syn::parse_quote!(runtime::FixedVector<((u8,), u16), 1>),
+        syn::parse_quote!(other::FixedVector<((runtime::FixedVector<((u8,), u8), 1>,), u16), 1>),
+        syn::parse_quote!(runtime::FixedVector<((other::FixedVector<((u8,), u8), 1>,), u16), 1>),
+        syn::parse_quote!(runtime::FixedVector<((runtime::FixedVector<u8, 1>,), u16), 1>),
+        syn::parse_quote!(runtime::FixedVector<((), u8), 1>),
+    ];
+    for (types, expected) in [(positives, 1), (negatives, 0)] {
+        for ty in types {
+            let name = format_ident!("input");
+            let before = syn::Field::parse_named
+                .parse2(quote::quote!(#name: #ty))
+                .unwrap();
+            let mut actual = request_field(&name, &ty);
+            assert_eq!(actual.attrs.len(), expected, "{}", ty.to_token_stream());
+            if expected == 1 {
+                let attr = actual.attrs.pop().unwrap();
+                assert_eq!(
+                    attr.meta.to_token_stream().to_string(),
+                    quote::quote!(allow(
+                        clippy::type_complexity,
+                        reason =
+                            "preserves the Compact nested Vector/product carrier in this field"
+                    ))
+                    .to_string()
+                );
+            }
+            assert_eq!(
+                actual.to_token_stream().to_string(),
+                before.to_token_stream().to_string()
+            );
+            assert!(matches!(actual.vis, syn::Visibility::Inherited));
+        }
+    }
+}

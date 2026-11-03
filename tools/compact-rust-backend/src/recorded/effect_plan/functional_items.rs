@@ -66,13 +66,15 @@ fn request_field(name: &syn::Ident, ty: &syn::Type) -> syn::Field {
                                         || nested.elems.iter().any(|child|
                                             vector_element(child).is_some())))))
     }));
-    let attribute: Option<syn::Attribute> =
-        (dimensions > 0 && nested_component_product).then(|| {
-            syn::parse_quote!(
-                #[allow(clippy::type_complexity,
-                    reason = "preserves the Compact nested Vector/product carrier in this field")]
-            )
-        });
+    let attribute: Option<syn::Attribute> = (dimensions > 0
+        && (nested_component_product
+            || crate::CompactSignatureLint::has_tuple_wrapped_product_vector(ty)))
+    .then(|| {
+        syn::parse_quote!(
+            #[allow(clippy::type_complexity,
+                reason = "preserves the Compact nested Vector/product carrier in this field")]
+        )
+    });
     syn::Field::parse_named
         .parse2(quote::quote!(#attribute #name: #ty))
         .expect("typed request field")

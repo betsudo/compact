@@ -217,3 +217,58 @@ fn outer_product_signature_metadata_excludes_pure_direct_and_foreign_results() {
         }
     }
 }
+
+#[test]
+fn tuple_wrapped_product_vector_constructor_metadata_preserves_exact_ast() {
+    let left: syn::Type =
+        syn::parse_quote!(runtime::FixedVector<((runtime::FixedVector<((u8,), u8), 1>,), u16), 1>);
+    let right: syn::Type = syn::parse_quote!(
+        crate::runtime::FixedVector<(u16, (crate::runtime::FixedVector<(u8, (u8,)), 1>,)), 1>
+    );
+    let mut file: syn::File = syn::parse_quote! {
+        fn constructor(input: #left) -> Self { Self { input } }
+        struct Program;
+        impl Program { fn new(input: #right) -> Self { Self { input } } }
+        trait Requests { fn from_input(input: #left) -> Self; }
+        fn scalar(input: runtime::FixedVector<((u8,), u8), 1>) -> Self { Self { input } }
+        fn foreign_outer(input: other::FixedVector<((runtime::FixedVector<((u8,), u8), 1>,), u16), 1>) -> Self { Self { input } }
+        fn foreign_inner(input: runtime::FixedVector<((other::FixedVector<((u8,), u8), 1>,), u16), 1>) -> Self { Self { input } }
+        fn scalar_vector(input: runtime::FixedVector<((runtime::FixedVector<u8, 1>,), u16), 1>) -> Self { Self { input } }
+        fn empty_wrapper(input: runtime::FixedVector<((), u8), 1>) -> Self { Self { input } }
+    };
+    let before = file.to_token_stream().to_string();
+    CompactSignatureLint.visit_file_mut(&mut file);
+    let printed = prettyplease::unparse(&file);
+    assert_eq!(printed.matches("clippy::type_complexity").count(), 3);
+    assert!(!printed.contains("#![allow"));
+    let syn::Item::Fn(function) = &mut file.items[0] else {
+        panic!("constructor")
+    };
+    assert_eq!(function.attrs.len(), 1);
+    function.attrs.clear();
+    let syn::Item::Impl(implementation) = &mut file.items[2] else {
+        panic!("impl")
+    };
+    assert!(implementation.attrs.is_empty());
+    let syn::ImplItem::Fn(method) = &mut implementation.items[0] else {
+        panic!("new")
+    };
+    assert_eq!(method.attrs.len(), 1);
+    method.attrs.clear();
+    let syn::Item::Trait(interpreter) = &mut file.items[3] else {
+        panic!("trait")
+    };
+    assert!(interpreter.attrs.is_empty());
+    let syn::TraitItem::Fn(method) = &mut interpreter.items[0] else {
+        panic!("from_input")
+    };
+    assert_eq!(method.attrs.len(), 1);
+    method.attrs.clear();
+    for item in &file.items[4..] {
+        let syn::Item::Fn(function) = item else {
+            panic!("negative")
+        };
+        assert!(function.attrs.is_empty());
+    }
+    assert_eq!(file.to_token_stream().to_string(), before);
+}

@@ -119,3 +119,21 @@ only the compiler188-to189 sentence changed. The literal existing document
 version gate passed11.26s. This resolves the temporary document mismatch.
 Complete source/SDK, native/static/TS/IR/recorded/model/proof/application gates and
 separate receipt review remain open.
+
+## Complete189 SDK observation and metadata repair
+
+At clean c8ebde165 the current original189 recipe and both complete source SDKs
+plus independent IR generation succeed for all16 declared exports. The whole
+original SDK passes strict Clippy. The whole15-export family then fails strict
+lint at precisely two deep input sites: its private Program field and public
+Program::new argument. Both preserve a tuple wrapper around a component Vector
+whose element is a nested product. The failed29.13s receipt and raw SDK remain
+unchanged. No native/API/proof acceptance follows from source generation.
+
+Repair only existing field/method-local type-complexity metadata for this observed
+carrier, retaining every old test body and pure/foreign/simple exclusions. Add
+exact post-attribute-removal AST identity controls for fields and free/impl/trait
+constructor signatures, first/last component positions and foreign/scalar/empty
+controls. No carrier/body/lowering/runtime/admission change. Compiler190 requires
+a fresh original build and owner documentation before complete SDK continuity/
+strict lint can close this regression; doc189 is temporarily unqualified.
