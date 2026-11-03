@@ -1,9 +1,10 @@
 # Nested scalar products below Vector components
 
-Status: corrected original compiler185 and complete24case native API qualification
-pass at `32d7eaa79`;9marked static misuse/twin pairs also pass in the development
-consumer. Maintained boundary/producer controls, models/proofs, final independent
-reviews and full integration remain open. Based on reviewed request-field baseline
+Status: bounded local source/API/static/ingress/producer/refusal stage passes at
+`b655df966` (73commands), with actual Claude source/correction and separate
+receipt reviews finding no remaining P1/P2. All14models are observed. Fresh
+selected proofs, separate strict applications, final proof reviews and full
+integration remain open. Based on reviewed request-field baseline
 `d9e9cb2cb`; the primary Rust AST goal is incomplete.
 
 ## Gap and owners
@@ -282,3 +283,48 @@ unproved, and selecting four does not prove the other ten or the constructor,
 callbacks, all inputs, wallet deployment or whole application. No geometry
 normalization, trimming, cap increase or cached proof/verdict is admitted.
 Required CI/Linux/integration and the broader backend goal remain open.
+
+## Reviewed bounded stage closeout
+
+At clean `b655df966`, the current original existing-only recipe passes in10.22s;
+the complete maintained73command gate passes in79.56s. All three complete
+TS-positive/Rust-and-IR-refused sources execute with their exact current
+diagnostics and without publishing Rust/IR on refusal. Their fallback diagnostic
+names `__compact_Cell.write`, not the rejected type shape; the source sentinels
+and accepted counterpart sources distinguish the boundaries. TS output files
+are present in the retained actual run; that block's maintained TS check is
+exit-based. The actual proof/IR absence check uses the established artifact paths.
+
+Actual fresh Claude correction review (81.48s) closes the previous P2 and in-slice
+P3s at source level. A separate fresh Claude receipt review (199.46s) recomputes
+all73commands/146logs, source pins,24cases/96routes/34replays, marked error spans,
+full SDK membership and all14model-input identities, finding no P1/P2 and accepting
+only this bounded local stage. Both reviews are read-only on frozen `b655df966`.
+This is not proof/application/full-slice/CI/integration or broad-goal acceptance.
+
+Keep these reviewed limits explicit:
+
+- The12valid IR runs contain two distinct positive inputs (the unmodified whole
+  family and the constant-true dead-branch variant), each paired with its own
+  invalid copy. They are not12distinct source-positive behaviors.
+- The separately invoked `compactc-scheme` IR entrypoint is from the same original
+  compiler package. Raw equality across entrypoints is not an independent compiler
+  implementation or equivalence proof.
+- Source/configuration/tool and bound-file checks occur before/after commands;
+  they are not continuous/atomic execution or physical consumption attestation.
+- The TS capture inventories and rechecks its runtime closure itself. The outer
+  gate does not independently prebind that entire runtime closure.
+- Models remain the actual earlier64command epoch. All14whole ZKIR inputs match
+  the fresh73command epoch exactly; the bridge does not relabel model execution.
+  Its original bridge is preserved, and a retained generator produces a separately
+  versioned matching successor. A fresh version check confirms the retained model
+  observer binary reports `midnight-zkir2.1.1` without regenerating any model/key.
+- The parent whole-example consumer gap and logical ancestry reconciliation
+  remain open. All canonical/protected/parent/Forge heads are preserved and clean.
+
+Evidence: `boundary-gate-controller-v2.json`, `boundary-gate-v2/receipt.json`,
+`local-claude-source-review-v2.json`, `local-claude-source-review-v3.json`,
+`local-claude-receipt-review-v1.json`, `all-export-models-v1/receipt.json`,
+`model-current-identity-bridge-v1.json`, its separately generatedv2 successor,
+`zkir-version-v1/receipt.json` and `next-proof-stage-v1.json` under the declared
+external evidence root. Preserve every failed/development/predecessor epoch.
