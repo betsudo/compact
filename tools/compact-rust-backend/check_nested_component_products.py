@@ -69,13 +69,14 @@ def main():
     rust = {name: Path(subprocess.check_output([str(rustup), 'which', '--toolchain', '1.99.0', name], text=True).strip()).resolve(strict=True) for name in ['cargo', 'rustc', 'clippy-driver', 'cargo-clippy']}
     env['PATH'] = str(rust['cargo'].parent) + os.pathsep + env['PATH']
     env['RUSTC'] = str(rust['rustc'])
+    require(sha(W / 'tools/compact-rust-backend/tests/stateful_vector_product_elements/scope-controls-compiler184.json') == 'c495f390d053c4a1e6d8709da3d08a05de5b81b534dfbd2707205a892abb46fc', 'literal compiler184 scope authority changed')
     definitions = json.loads((F / 'sources.json').read_text())
     cases = json.loads((F / 'cases.json').read_text())
     require(len(definitions) == 2 and {s['source'] for s in definitions} == {'original', 'family'}, 'whole source roster differs')
     require(definitions[0]['source'] == 'original' and definitions[0]['path'] == 'tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/nested_product_below_component.compact', 'original declared source path changed')
     require(all(len(s['entries']) == len(set(s['entries'])) for s in definitions), 'duplicate declared export')
     require(sum(len(s['entries']) for s in definitions) == 14, 'whole export roster differs')
-    require(len(cases) == len({c['id'] for c in cases}) == 23, 'qualification invariant failed')
+    require(len(cases) == len({c['id'] for c in cases}) == 24, 'qualification invariant failed')
     pins = {str(p): sha(p) for p in [C, S, NODE, rustup, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
     pins.update({str(p): sha(p) for p in Path(__file__).parent.glob('*.py')})
     for folder in ['compiler', 'runtime-rs', 'runtime-rs-macros', 'tools/compact-rust-backend/src']:
@@ -88,7 +89,7 @@ def main():
         pins[str(p)] = sha(p)
     require(pins[str((W / definitions[0]['path']).resolve())] == '33c091f6cc2907b05c08156a129a067be8ae15ad062c2c61473538e51a8177c7', 'complete original regression changed')
     O.mkdir(parents=True)
-    j = dict(status='running', head=H, inputs=pins, tools={str(p): sha(p) for p in [C, S, NODE, *rust.values()]}, commands=[], sources={}, cargo_configuration_sha256=config, scope='Complete two-source /14export native API cohort with strict roots and23freshTS/four-routeRust cases. Source/artifact/configuration identity pins are not complete physical/transitive build attestation; static/ingress/model/proof/review remain separate.')
+    j = dict(status='running', head=H, inputs=pins, tools={str(p): sha(p) for p in [C, S, NODE, *rust.values()]}, commands=[], sources={}, cargo_configuration_sha256=config, scope='Complete two-source /14export native API cohort with strict roots and24freshTS/four-routeRust cases. Source/artifact/configuration identity pins are not complete physical/transitive build attestation; static/ingress/model/proof/review remain separate.')
     report = O / 'receipt.json'
     root_packages = tomllib.loads((W / 'Cargo.lock').read_text())['package']
     expected = {(p['name'], p['version'], p.get('source')): p.get('checksum') for p in root_packages}
@@ -166,7 +167,7 @@ def main():
         ts = O / 'ts-results.json'
         run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.16.102', '--output', ts])
         r = json.loads(ts.read_text())
-        require(r['status'] == 'passed' and len(r['rows']) == 23, 'qualification invariant failed')
+        require(r['status'] == 'passed' and len(r['rows']) == 24, 'qualification invariant failed')
         bound[str(ts)] = sha(ts)
         U = O / 'consumer'
         U.mkdir()
@@ -179,7 +180,7 @@ def main():
         run('consumer-resolve', ['cargo', 'metadata', '--offline', '--manifest-path', M, '--format-version', '1'])
         lock(U / 'Cargo.lock')
         out = run('consumer', ['cargo', 'test', '--locked', '--offline', '--manifest-path', M, '--lib'])
-        require('test result: ok. 23 passed; 0 failed; 0 ignored;' in out, 'qualification invariant failed')
+        require('test result: ok. 24 passed; 0 failed; 0 ignored;' in out, 'qualification invariant failed')
         run('consumer-strict', ['cargo', 'clippy', '--locked', '--offline', '--manifest-path', M, '--all-targets', '--', '-D', 'warnings'])
         for name, files in raw.items():
             root = O / 'generated' / name

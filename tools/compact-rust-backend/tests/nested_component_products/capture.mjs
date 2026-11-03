@@ -84,10 +84,24 @@ const descriptors={narrow:vector(1,narrowProduct),wide:vector(1,wideProduct),
  empty:vector(0,wideProduct),
  tuple_empty:vector(1,tuple([vector(1,tuple([tuple([]),u16])),u32])),
  tuple_single:vector(1,tuple([vector(1,tuple([tuple([tuple([u16]),u32]),u16])),u32]))};
+const inputDescriptors={
+ original:{run:[vector(2,tuple([vector(2,tuple([tuple([u8,u8]),u8])),u8]))]},
+ family:{parameter:[descriptors.narrow],helper:[descriptors.narrow],local:[descriptors.narrow],
+ checked_helper:[r.CompactTypeBoolean,descriptors.wide],witness_before:[],witness_after:[],
+ branch:[r.CompactTypeBoolean,descriptors.narrow,descriptors.narrow],
+ deep:[vector(1,tuple([vector(1,tuple([tuple([tuple([u8,u16]),u8]),u16])),u8]))],
+ boolean_field:[vector(1,tuple([vector(1,tuple([tuple([r.CompactTypeBoolean,u8]),u8])),r.CompactTypeBoolean]))],
+ field_identity:[vector(1,tuple([vector(1,tuple([tuple([r.CompactTypeField,u8]),u8])),u16]))],
+ empty:[vector(0,narrowProduct)],
+ tuple_empty:[vector(1,tuple([vector(1,tuple([tuple([]),u8])),u16]))],
+ tuple_single:[vector(1,tuple([vector(1,tuple([tuple([tuple([u8]),u16]),u8])),u16]))]}};
 const bySource=new Map(definitions.map(row=>[row.source,row]));
 for(const spec of specs){
  const source=spec.source,path=pathToFileURL(wrappers[source].path);
  if(!modules.has(source))modules.set(source,await import(path));const m=modules.get(source);
+ const args=spec.args.map(convert), inputTypes=inputDescriptors[source]?.[spec.entry];
+ assert.ok(inputTypes,`missing input descriptor ${source}.${spec.entry}`);assert.equal(inputTypes.length,args.length);
+ const argumentValues=args.map((value,i)=>encode({value:inputTypes[i].toValue(value),alignment:inputTypes[i].alignment()}));
  let out,value,error;const observed=[];const stateful=bySource.get(source).stateful;
  if(stateful){
   const c=new m.Contract(source==='family'?{vector_value:({privateState,ledger})=>{
@@ -103,8 +117,8 @@ for(const spec of specs){
   }}:{});
   const init=c.initialState({initialPrivateState:7,initialZswapLocalState:r.emptyZswapLocalState(key)},...spec.constructor.map(convert));
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
-  try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
- }else{try{value=m.pureCircuits[spec.entry](...spec.args.map(convert));}catch(e){error=e;}}
+  try{out=c.circuits[spec.entry](ctx,...args);value=out.result;}catch(e){error=e;}
+ }else{try{value=m.pureCircuits[spec.entry](...args);}catch(e){error=e;}}
  if(spec.error){
   assert.ok(error instanceof Error,spec.id+': must return an actual error');
   assert.equal(out,undefined,spec.id+': error must not return execution/proof data');
@@ -117,7 +131,7 @@ for(const spec of specs){
     assert.equal(error.message,spec.error.tsMessage,spec.id);
     assert.deepEqual(observed,[],spec.id);
   }
-  rows.push({...spec,observedError:error.message,observedWitnesses:observed});continue;
+  rows.push({...spec,argumentValues,observedError:error.message,observedWitnesses:observed});continue;
  }
  assert.ifError(error);assert.deepEqual(value,convert(spec.expected),spec.id);
  const descriptorSpec=bySource.get(source).descriptor;
@@ -133,7 +147,7 @@ for(const spec of specs){
   assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.witnessSeen)),alignment:r.CompactTypeField.alignment()})})),spec.id);
   assert.deepEqual(encode(out.proofData.output),encoded,spec.id);
  }
- rows.push({...spec,result:encoded,privateState:stateful?(spec.privateState??7):null,privateOutputs:stateful?out.proofData.privateTranscriptOutputs.map(encode):[],publicTranscript:stateful?json(out.proofData.publicTranscript):null,observedWitnesses:observed});
+ rows.push({...spec,argumentValues,result:encoded,privateState:stateful?(spec.privateState??7):null,privateOutputs:stateful?out.proofData.privateTranscriptOutputs.map(encode):[],publicTranscript:stateful?json(out.proofData.publicTranscript):null,observedWitnesses:observed});
 }
 assert.deepEqual(inventory(runtime),before,'runtime production closure changed');
 for(const {path,sha256} of Object.values(wrappers)) assert.equal(hash(path),sha256);
@@ -145,7 +159,7 @@ const kernelNames=new Set(['linux-vdso.so.1','linux-gate.so.1']);
 const kernelVirtualLibraries=[...new Set(sharedObjects.filter(path=>kernelNames.has(path)))];
 const external=sharedObjects.filter(path=>!system.includes(path)&&!kernelNames.has(path));
 assert.ok(external.length);
-writeFileSync(options.output,JSON.stringify({status:'passed',format:'nested-component-products-ts/v1',
+writeFileSync(options.output,JSON.stringify({status:'passed',format:'nested-component-products-ts/v2',
   runtime:{path:runtime,version:options.version,files:before},
   node:{...nodeIdentity,sharedLibraries:Object.fromEntries(external.map(path=>[path,hash(path)])),
     systemLibraries:system,kernelVirtualLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'},

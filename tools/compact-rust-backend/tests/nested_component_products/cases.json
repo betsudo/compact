@@ -862,5 +862,36 @@
     ],
     "initialSeen": "0",
     "seen": "14"
+  },
+  {
+    "id": "checked_middle",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            [
+              [
+                "3",
+                "60000"
+              ],
+              "256"
+            ]
+          ],
+          "65536"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255",
+      "tsMessage": "nested_component_products.compact line 22 char 83: cast from Field or Uint value to smaller Uint value failed: 256 is greater than 255"
+    }
   }
 ]

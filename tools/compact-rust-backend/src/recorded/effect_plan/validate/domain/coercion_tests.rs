@@ -69,6 +69,42 @@ fn nested_component_products_keep_checked_shape_bounds_and_empty_validation() {
     elements.pop();
     assert!(!coercible(&narrow, &wrong_arity));
 
+    fn component(ty: &mut Type) -> &mut Type {
+        let Type::Vector { element, .. } = ty else {
+            unreachable!()
+        };
+        let Type::Tuple { elements } = element.as_mut() else {
+            unreachable!()
+        };
+        &mut elements[0]
+    }
+    fn nested_child(ty: &mut Type) -> &mut Type {
+        let Type::Vector { element, .. } = component(ty) else {
+            unreachable!()
+        };
+        let Type::Tuple { elements } = element.as_mut() else {
+            unreachable!()
+        };
+        &mut elements[0]
+    }
+    let mut inner_length = wide.clone();
+    let Type::Vector { length, .. } = component(&mut inner_length) else {
+        unreachable!()
+    };
+    *length = 2;
+    assert!(!coercible(&narrow, &inner_length));
+
+    let mut inner_arity = wide.clone();
+    let Type::Tuple { elements } = nested_child(&mut inner_arity) else {
+        unreachable!()
+    };
+    elements.pop();
+    assert!(!coercible(&narrow, &inner_arity));
+
+    let mut scalar_child = wide.clone();
+    *nested_child(&mut scalar_child) = uint("65535");
+    assert!(!coercible(&narrow, &scalar_child));
+
     // Static empty values still validate the entire conversion, not only
     // iterations reached at runtime. Invalid identity leaves stay invalid too.
     assert!(!coercible(&vector(wide, 0), &vector(narrow, 0)));

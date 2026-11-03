@@ -31,7 +31,7 @@ not an arbitrary new carrier or general aggregate-conversion framework.
 
 The whole new `nested_component_products.compact` has parameter, helper, local,
 checked-helper, witness-before/after, branch, deeper-product, Boolean/Field, empty
-Vector and empty/single tuple exports. It is an independently declared complete
+Vector, empty/single tuple and large Field-identity exports. It is an independently declared complete
 application, not a smaller replacement for the original regression. Any selected
 proof qualifies only its actual export/source; the original's proof scope stays
 separate. No source extraction, normalization, cap increase or proof/result cache.
@@ -102,8 +102,9 @@ recorded coercion-domain methods pass, including the new nested bound/shape,
 invalid identity and static-empty checks. These are development source results,
 not current185 whole-source/API/proof acceptance.
 
-Compiler185 documentation is being generated through its maintained ledger.ss
-owner before qualification. The compiler Nix development environment itself
+At that development checkpoint, compiler185 documentation generation was pending.
+Its maintained ledger.ss owner and literal version-gate successes are recorded
+below; current source retains that full generated document unchanged. The compiler Nix development environment itself
 builds the changed CLI prerequisite; retain that actual precursor epoch. The
 original full compiler package must be built from a separate frozen clean source
 checkout, then the current qualification head must resolve the same original
@@ -161,3 +162,34 @@ Evidence includes `native-api-controller-v1.json`,
 `api-prototype-v1/receipt.json` and both raw owner-generator attempts. Source
 review is a separate stage; no review or proof result is inferred from these
 native executions. Forge remains deferred and every predecessor is retained.
+
+
+## Independent source review corrections in progress
+
+Actual Claude source review at `ebd9c2b52` finds no compiler-correctness defect in
+the bounded relation, but identifies a real P1 inventory failure: both locally
+added root-level examples lacked registrations. Preserve earlier local receipts,
+not a claim that full CI was green. Each example is now in its owned cohort
+directory, with full bytes and basename unchanged. The parent field repair is
+separately corrected on `be4ba31d9` without rewriting or merging branches; actual
+source_registry fails before and passes after, and its fresh parent184 compiler
+recipe/consumer qualification passes. The child existing fixture-inventory suite
+passes all31methods. Older source/receipt paths and parent refs stay retained.
+
+The new coercion test now mutates actual inner Vector length, nested tuple arity
+and nested tuple-versus-scalar in addition to existing bound/outer/static-empty
+checks; all four affected domain methods pass. A third-cast error case is added
+with simultaneous later outer failure to make first-error order observable.
+Oracle formatv2 adds explicitly typed source argument FAB values, and each Rust
+route compares its actual supplied arguments before execution, including errors.
+The clone-only held-state assertion is replaced by an actual pre-call state
+check; no failed-call rollback claim is made. The complete native API must rerun
+with24cases before these corrections are accepted.
+
+The full current compiler184 scope table is archived byte-for-byte and literal
+hash-pinned in both older consumers. Only the supported nested-product row is
+reclassified in place; all3 historical rows/files stay. The own unsupported
+top-level nested-tuple source preserves the intended boundary outside component
+Vectors. Actual source-refusal/static/ingress/producer/model/proof and review
+gates remain open. Parent/child ancestry reconciliation is a future integration
+step; current local authority allows no merge, publication or hosted run.

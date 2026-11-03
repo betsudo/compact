@@ -24,7 +24,7 @@ fn row(id: &str) -> Value {
     )
     .unwrap();
     assert_eq!(ts["status"], "passed");
-    assert_eq!(ts["format"], "nested-component-products-ts/v1");
+    assert_eq!(ts["format"], "nested-component-products-ts/v2");
     ts["rows"]
         .as_array()
         .unwrap()
@@ -90,7 +90,9 @@ macro_rules! stateful_case {
             let mut observed = None;
             for lane in 0..4 {
                 let ctx=api::initial_state(r::context::ConstructorContext::new(7_u64),$($ctor),*).unwrap().into_circuit_context(Default::default());
-                let held=ctx.query.state.clone();
+                assert_eq!($module::ledger_slots::seen.inspect(ctx.query.state.get_ref()).unwrap(),Field::from(row["initialSeen"].as_str().unwrap().parse::<u64>().unwrap()));
+                let supplied:Vec<Value>=vec![$(encode(r::fab::AlignedValue::from($arg))),*];
+                assert_eq!(supplied,row["argumentValues"].as_array().unwrap().clone(),"Rust inputs differ from declared TS arguments");
                 let result: Result<r::context::CircuitResult<u64,$expected>,r::CompactError>=match lane {
                     0=>api::$entry(ctx,$($arg),*),
                     1=>api::recorded::$entry(ctx,$($arg),*).map(|out|replay(out,&row)),
@@ -106,7 +108,6 @@ macro_rules! stateful_case {
                     if let Some(before)=&observed {assert_eq!(&state,before);} else {observed=Some(state);}
                     out.result
                 }),&row);
-                assert_eq!($module::ledger_slots::seen.inspect(held.get_ref()).unwrap(),Field::from(row["initialSeen"].as_str().unwrap().parse::<u64>().unwrap()));
             }
         }
     };
@@ -357,7 +358,13 @@ macro_rules! witness_case {
                 let ctx = api::initial_state(r::context::ConstructorContext::new(7_u64))
                     .unwrap()
                     .into_circuit_context(Default::default());
-                let held = ctx.query.state.clone();
+                assert_eq!(
+                    family::ledger_slots::seen
+                        .inspect(ctx.query.state.get_ref())
+                        .unwrap(),
+                    Field::from(0_u64)
+                );
+                assert_eq!(row["argumentValues"], json!([]));
                 let result: Result<r::context::CircuitResult<u64, Wide>, r::CompactError> =
                     match lane {
                         0 => api::$entry(ctx, &witness),
@@ -405,10 +412,6 @@ macro_rules! witness_case {
                     *witness.calls.borrow(),
                     row["observedWitnesses"].as_array().unwrap().clone()
                 );
-                assert_eq!(
-                    family::ledger_slots::seen.inspect(held.get_ref()).unwrap(),
-                    Field::from(0_u64)
-                );
             }
         }
     };
@@ -431,4 +434,13 @@ stateful_case!(
     [],
     [field_identity_input()],
     FieldIdentityOutput
+);
+
+stateful_case!(
+    checked_middle,
+    family,
+    checked_helper,
+    [],
+    [true, wide(3, 60000, 256, 65536)],
+    Wide
 );

@@ -10,7 +10,7 @@
   },
   {
     "source": "family",
-    "path": "examples/rust_backend/nested_component_products.compact",
+    "path": "examples/rust_backend/nested_component_products/nested_component_products.compact",
     "stateful": true,
     "entries": [
       "parameter",

@@ -490,6 +490,8 @@ def main():
             "scope": "controlled corrupt expected-result table, not a new genuine TS verdict, typed proof result or proof acceptance"}
         env["COMPACT_VECTOR_COMPONENT_PRODUCTS_TS"] = str(ts)
         report["scope_refusals"] = {}
+        require(digest(historical / "scope-controls-compiler184.json") == "c495f390d053c4a1e6d8709da3d08a05de5b81b534dfbd2707205a892abb46fc",
+                "literal compiler184 scope authority changed")
         scope_table = json.loads((historical / "scope-controls.json").read_text())
         for name in ["nested_product_below_component", "vector_inside_component_product"]:
             expected = scope_table[name]

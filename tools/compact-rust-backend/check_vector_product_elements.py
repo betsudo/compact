@@ -403,6 +403,8 @@ def main():
                     and rejected.stderr == expected["stderr"], "exact frontend refusal changed")
             report["frontend_refusals"][name] = expected
         report["scope_controls"] = {}
+        require(digest(FIXTURES / "scope-controls-compiler184.json") == "c495f390d053c4a1e6d8709da3d08a05de5b81b534dfbd2707205a892abb46fc",
+                "literal compiler184 scope authority changed")
         scope_controls = json.loads((FIXTURES / "scope-controls.json").read_text())
         require(set(scope_controls) == {p.stem for p in (FIXTURES / "unsupported").glob("*.compact")},
                 "scope control roster differs")
