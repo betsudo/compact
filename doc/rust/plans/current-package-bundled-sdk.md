@@ -1,6 +1,8 @@
 # Current compiler package: default bundled witnessed SDK
 
-Status: focused local package qualification pending. Parent: signed
+Status: repaired installed-default admission and affected local qualification
+pass at signed `026f1109b`. Independent inspection is recorded separately;
+full technical profile/CI/integration acceptance remains open. Parent: signed
 `6977ef91499b413ec9a78cc9b1e1d2ad42ee5e64`. Branch:
 `codex/rust-ast-current-package-sdk`.
 
@@ -93,3 +95,66 @@ controls, and run all sixteen at the repaired source. Run real override refusals
 and a copied-package runtime-byte mismatch control before generation, followed
 by the complete positive gate with fresh proof/application outputs. No production
 compiler/runtime, public API, original source, consumer or proof assertion changes.
+
+
+## Actual repaired-source result — 2026-11-03
+
+At clean `026f1109b`, the exact `pbr` package's existing-only recipe passes in
+8.70 seconds and all sixteen focused controls pass in 0.76 seconds. The first
+outer control attempt stops because its expected-error string is shorter than
+the full emitted refusal; the gate correctly rejects the override with no
+recorded tool commands. Preserve that failed harness, its copied fixture and
+receipts. The corrected external harness changes no product source. Its new
+controller authenticates the two successful same-source recipe/unit phases;
+it does not relabel the earlier whole controller as passed.
+
+Three real gate invocations then pass their intended refusal controls: matching
+checkout and empty overrides both fail before prerequisites/tool commands; a
+copied compiler/Scheme pair with unchanged executable bytes and one appended
+comment in a copied runtime source fails exact runtime-byte admission. That last
+case runs ten read-only version/path probes, including `cargo --version`, then
+refuses before material verification, generation, Cargo compilation or proving.
+The production package and source are unchanged by the fixture.
+
+The complete positive gate passes all 29 commands in 66.05 seconds. Its receipt
+records `installed-default`, no override, the actual installed prefix and 105
+installed runtime/macros source hashes admitted before generation and rechecked
+at completion. All 331 selected source hashes, 105 generated runtime source
+hashes, 118 raw generated files, 121 files after three expected key/material
+additions, 16 material and seven Dust pins remain exact.
+
+Three ContractLab methods exercise the four generated execution routes and the
+existing state/private/witness/error/replay/snapshot assertions. Three positive
+binaries compile; corresponding misuses produce the intended E0053/E0382/E0382
+errors. Consumer, raw SDK and copied testkit each have actual nonfresh Clippy
+library artifacts with their required proof features. The private lint root
+preserves all 358 qualified package and feature nodes, with only its declared
+root added. This is not a new bundled-runtime library lint claim.
+
+Fresh direct keys retain k6 / 49 rows. A new 2,912-byte standalone proof verifies
+against the immutable verifier and the original mutation controls pass. A
+separately proved 6,607-byte funded DEFAULT-strict transaction applies expected
+Cell 42 and refuses replay as IntentAlreadyExists without state mutation.
+Genuine changed recordings fail ReplayStateMismatch and
+NonCanonicalPrivateOutput(0,0) before proof/application. The source does not
+constrain a witness to return its argument: a changed input can form another
+valid statement, while the original proof refuses changed communication binding.
+No valid wrong-key proof control is invented from loader or mutation refusals.
+
+The two installed-prefix admission records derive from the trusted CLI loader
+and selected paths/hashes; they are not consumed-file syscall traces or continuous
+host attestation. The gate's inner stdout/stderr logs have post-inspection hashes,
+not execution-time binding in the SDK receipt. Outer controller logs, source,
+tools, raw/staged/generated assets, proof snapshot and material have their own
+recorded bindings. Existing physical/transitive/configuration limits remain.
+
+Evidence root is the one above. Actual records: `baseline-controller-v3.json`,
+retained phases in `baseline-controller-v2.json`,
+`original-existing-recipe-v2/receipt.json`, `isolated-sdk-v2/receipt.json`,
+`real-selection-refusals-v2.json`, `real-refusal-scope-clarification-v1.json`,
+`real-selection-harness-failure-v1.json` and `actual-receipt-inspection-v2.json`.
+The raw baseline at `dcb1d3547` and prior SDK acceptance at `cd3f432c6`/`7baa4b774`
+retain their narrower literal epochs. A local Nix-shell probe observes both
+runtime-source and Scheme override variables absent; it is not hosted Linux CI.
+Complete required integration, technical profile freeze and the broader goal
+remain incomplete. Forge stays deferred.

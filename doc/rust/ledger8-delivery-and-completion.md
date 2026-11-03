@@ -799,3 +799,23 @@ Earlier SDK, Passport and product rows keep their literal tool/source epochs.
 The [local result](plans/current-supported-profile-handoff.md#actual-final-package-local-result)
 records the package identity transition, snapshot/target distinction, controls
 and remaining technical-profile/integration gates.
+
+
+### Exact current-package installed-default SDK
+
+The [installed-default SDK slice](plans/current-package-bundled-sdk.md) passes
+at `026f1109b` with the current `pbr` compiler183 package. The complete 29-command
+gate retains all three ContractLab methods, correct-type/misuse controls, three
+actual proof-feature library lints, source/raw-SDK/graph identity and fresh k6 /
+49-row proof with separate funded DEFAULT-strict application and replay refusal.
+
+A concrete qualification gap is repaired: the CLI's runtime-source override can
+bypass installed selection, including when empty. The gate now refuses its
+presence, admits the installed prefixes before generation and checks 105
+installed source hashes against selected sources before and after execution.
+All sixteen focused methods and three real entry/byte-mismatch refusals pass.
+The initial raw baseline and failed outer harness assertion remain preserved;
+no production compiler/runtime or original consumer/proof behavior changed.
+Previous SDK acceptance stays literal; full current CI/Linux, technical profile
+freeze and logical integration remain open. Forge remains deferred and the
+broader Rust AST goal is incomplete.

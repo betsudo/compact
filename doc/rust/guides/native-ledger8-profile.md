@@ -58,18 +58,27 @@ completion percentage. Compiling a whole contract does not prove every export.
 
 | Cohort and literal execution epoch | Local behavior and controls | Genuine proof/application scope |
 | --- | --- | --- |
-| [Current isolated SDK](../plans/current-profile-sdk-handoff.md), `cd3f432c6`; final control/documentation successor `7baa4b774` | Three ContractLab methods, three positive/misuse pairs, actual proof-feature linting of three selected libraries, recording/snapshot and ingress refusals | One witnessed Cell call: fresh k6 proof and independently proved funded DEFAULT-strict application; no constructor or wallet lifecycle |
+| [Exact-package installed-default SDK](../plans/current-package-bundled-sdk.md), `026f1109b`; prior SDK epochs `cd3f432c6` / `7baa4b774` remain separate | Three ContractLab methods, three positive/misuse pairs, three actual proof-feature library lints, installed-prefix/override/byte-identity and recording/snapshot refusals | One witnessed Cell call: fresh k6 proof and independently proved funded DEFAULT-strict application; no constructor or wallet lifecycle |
 | [Current Passport](../plans/current-passport-handoff.md), `9286fe749`; documentation successor `940183cbb` | Intact 17-file source, all 75 pure exports compile, 202 sampled TS rows plus codec comparison, 16 adoption and two guide methods, Clippy and intended refusals | Recording/proof/application **not applicable** to this original pure library |
 | [Current DID zero timestamp extension](../plans/did-zero-timestamp.md), `4e49b59e5`; documentation successor `90c517f55` | Intact two-file source, complete IR and twelve Programs; twelve live TS rows; seven Rust methods, eight success routes and forty error routes, plus late-witness controls | Two original cases of the same `deactivate` export, timestamp witness 200 and 0: separate fresh k11/1,804-row proof runs and independently proved funded DEFAULT-strict transactions; constructor and all-export proofs unclaimed |
 | [Products below Vector components](../plans/vector-component-products.md), `5ef204e8e`; later documentation-only successors retain their own bridges | 24 complete generated SDKs, 35 sampled cases and typed/static/ingress/ordering controls | Three selected complete sources have fresh proofs and separate funded strict applications; 21 required exports remain unproved, including 18 over-limit models |
 
-A later [package-specific local check](../plans/current-supported-profile-handoff.md#actual-final-package-local-result)
+The preceding [DID package-specific check](../plans/current-supported-profile-handoff.md#actual-final-package-local-result)
 at `51616d5ce` rebuilds and records the exact README-bound compiler package,
 then passes the DID API gate and both fresh proof/application cases. The zero
 case uses the literal workflow shell locally under Nix; the valid case is a
 separate maintained invocation. Nix and Rustup runner snapshots retain their own
-identities. This does not rerun the SDK, Passport or product rows above; their
-literal execution epochs are not renewed by the package-specific DID check.
+identities. That DID check did not rerun the SDK, Passport or products. The later
+`026f1109b` SDK row above has its own current-package run; Passport/product rows
+retain their earlier literal epochs.
+
+The current SDK qualification gate refuses `COMPACT_RUST_RUNTIME_DIR`, including
+an empty value. Use an installed package for this gate. It admits the CLI's
+installed prefixes in order, refuses checkout fallback, and compares 105 declared
+installed runtime source hashes with selected sources before generation and at
+completion. This is trusted loader admission, not an OS file-consumption trace.
+Earlier SDK receipts without this admission record retain their narrower scope;
+they cannot establish this newer installed-default qualification.
 
 The preceding [selected DID epoch](../plans/current-did-handoff.md) at `67cbded3e`
 and accepted compiler138/PR#693 scope are preserved; the later zero extension does

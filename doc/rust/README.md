@@ -20,6 +20,8 @@ Start with the [native Ledger8 candidate profile](guides/native-ledger8-profile.
 
 - [Current-candidate isolated witnessed SDK handoff](plans/current-profile-sdk-handoff.md): reviewed repaired compiler 0.31.183 local qualification of the existing documented consumer, actual proof-feature library Clippy, typed refusals, fresh proof and separate funded strict transaction. Accepted compiler143 integration remains separate; full CI and profile handoff stay open.
 
+- [Exact-package default bundled SDK](plans/current-package-bundled-sdk.md): current compiler183 package qualification passes with explicit installed-prefix admission, refusal of runtime overrides (including empty), runtime-byte controls and fresh selected proof/strict application. Prior SDK epochs and full integration remain separate.
+
 - [Current-candidate Passport consumer handoff](plans/current-passport-handoff.md): reviewed local compiler183 qualification passes for the intact pure application, raw SDK and documented consumer, with independent provenance controls. Historical application/fixture epochs remain separate; full integration is open.
 
 - [Current-candidate DID lifecycle handoff](plans/current-did-handoff.md): reviewed local compiler183 API and fresh selected deactivation proof/default-strict application pass with all twelve Programs preserved. Its original selected scope remains distinct from the later zero timestamp extension; full integration stays open.
