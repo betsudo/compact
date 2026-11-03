@@ -1,0 +1,17 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen: Field;
+pure circuit checked(ok: Boolean, input: Vector<2, [Vector<2,[Uint<16>,Uint<16>]>, Uint<32>]>): Vector<2, [Vector<2,[Uint<8>,Uint<8>]>, Uint<16>]> {
+  assert(ok, "helper denied");
+  return [
+    [[[input[1][0][0][0] as Uint<8>, input[1][0][0][1] as Uint<8>], [input[1][0][1][0] as Uint<8>, input[1][0][1][1] as Uint<8>]], input[1][1] as Uint<16>],
+    [[[input[0][0][0][0] as Uint<8>, input[0][0][0][1] as Uint<8>], [input[0][0][1][0] as Uint<8>, input[0][0][1][1] as Uint<8>]], input[0][1] as Uint<16>]
+  ];
+}
+export circuit run(ok: Boolean, input: Vector<2, [Vector<2,[Uint<16>,Uint<16>]>, Uint<32>]>): Vector<2, [Vector<2,[Uint<16>,Uint<16>]>, Uint<32>]> {
+  seen = 1;
+  const wide: Vector<2, [Vector<2,[Uint<16>,Uint<16>]>, Uint<32>]> = checked(ok, input);
+  return wide;
+}

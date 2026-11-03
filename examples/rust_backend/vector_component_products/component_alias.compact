@@ -1,0 +1,8 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+type NarrowPair = Vector<2,[Uint<8>,Uint<8>]>;
+type WidePair = Vector<2,[Uint<16>,Uint<16>]>;
+export circuit run(input:Vector<2,[NarrowPair,Uint<16>]>):Vector<2,[WidePair,Uint<32>]>{seen=1;return input;}

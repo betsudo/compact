@@ -1800,9 +1800,20 @@
                      [(tboolean ,src^) #t]
                      [else #f])]
                   [else #f]))))
-        ;; Product components may contain Vectors of scalar leaves, including
-        ;; further Vector dimensions. A product below that component is a
-        ;; separate, uncharacterized shape and retains its existing owner.
+        ;; One product below a component Vector may widen its scalar leaves.
+        ;; Nested products, Vectors inside that product and new identity
+        ;; carriers retain their existing owners; this only selects evaluation.
+        (define (scalar-product-widening? target source)
+          (nanopass-case (Lnodisclose Type) (leaf-carrier source)
+            [(ttuple ,src ,type* ...)
+             (nanopass-case (Lnodisclose Type) (leaf-carrier target)
+               [(ttuple ,src^ ,type^* ...)
+                (and (= (length type*) (length type^*))
+                     (for-all scalar-widening? type^* type*))]
+               [else #f])]
+            [else #f]))
+        ;; Product components may contain fixed Vector dimensions ending in
+        ;; scalar leaves or one scalar product, with unchanged shape/arity.
         (define (vector-component-widening? target source)
           (nanopass-case (Lnodisclose Type) (leaf-carrier source)
             [(tvector ,src ,len ,type)
@@ -1810,6 +1821,7 @@
                [(tvector ,src^ ,len^ ,type^)
                 (and (= len len^)
                      (or (scalar-widening? type^ type)
+                         (scalar-product-widening? type^ type)
                          (vector-component-widening? type^ type)))]
                [else #f])]
             [else #f]))

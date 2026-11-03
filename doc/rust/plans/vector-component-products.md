@@ -88,3 +88,24 @@ Branch: `codex/rust-ast-vector-component-products`.
 Evidence: `/Users/ysh/.codex/local-evidence/rust-ast-vector-component-products-20261103`.
 The first action after strict baseline is source-owner tracing, not a blanket
 recursive relation or a broad compiler refactor.
+
+## Characterized source family and initial implementation
+
+Original180 characterization runs 54 commands over 18 complete sources. All pass
+TS; fifteen fail Rust. Parameter/helper/Field/Boolean/component forms refuse before
+IR on nested Cell.write; local/alias/checked-helper forms emit IR then fail native
+conversion typing, and both witness positions emit a plain call instead of typed
+witness dispatch. Pure widening, same-type stateful and prior-product controls
+pass all three emission lanes. These are source/emission observations, not SDK
+execution or proof acceptance. Original traces and failures remain retained.
+
+Compiler181 adds a one-level scalar-product relation only below component Vector
+dimensions. Each product child must satisfy the existing scalar widening/Boolean
+identity relation. Nested products, Vectors inside the product and new identity
+carriers retain their previous owners. The existing ordered return/local owner,
+checked Coerce, independent validator and structured AST are unchanged. All 18
+whole probes and the byte-identical original regression are maintained at their
+new declared source paths; original path/refusal authority remains retained.
+Fresh original-recipe build, current-source emission/execution, static/ingress,
+model/proof and independent reviews are pending. No acceptance is inferred from
+the implementation or from earlier source receipts.
