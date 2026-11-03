@@ -5,6 +5,11 @@ acceptance, or a claim that the primary Rust AST goal is complete. Each result
 below retains its literal execution revision. The current local contribution
 train has not been merged into the canonical branch by this handoff.
 
+The compiler183 application and proof epochs below remain literal. A later
+[compiler184 request-field metadata repair](../plans/nested-product-request-field.md)
+has focused local source/SDK qualification only; it does not renew every
+application, proof or supported-profile gate.
+
 ## Versions and hosts
 
 | Identity | Selected value and boundary |

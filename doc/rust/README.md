@@ -32,6 +32,8 @@ Start with the [native Ledger8 candidate profile](guides/native-ledger8-profile.
 
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 
+- [Nested product request-field baseline](plans/nested-product-request-field.md): local compiler184 metadata repair passes strict complete-SDK lint, four typed routes and marked static controls. Nested widening, automatic consumer-driver wiring and full integration remain separate; the compiler183 application/proof epochs are not relabelled.
+
 ## Checked recording checkpoint
 
 The current recording-effect branch is documented in [Checked recording and source diagnostics](guides/checked-recording.md) and the [capability and retirement book](recording-effect-algebra/capability-and-retirement-book.md). The compiler/runtime ABI is **53**, private Rust IR is **20**, finalized capability reports use **3**, and private source-origin transport uses **3**. Package versions remain separate.

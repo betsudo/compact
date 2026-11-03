@@ -1,8 +1,10 @@
 # Nested product request field: baseline repair before widening
 
-Status: current183 baseline defect reproduced; narrow source repair and tests
-in development. No current184 compiler/SDK qualification or independent review
-is claimed yet. The primary Rust AST goal remains incomplete; Forge is deferred.
+Status: current184 focused source/SDK/routes/static qualification passes. The
+first independent review accepted the narrow implementation and found a required
+CI documentation-version correction; owner regeneration and the literal local
+version gate now pass. Fresh correction review remains pending. The primary Rust
+AST goal is incomplete; Forge is deferred.
 
 ## Baseline and concrete gap
 
@@ -17,7 +19,7 @@ leaves to Uint8; its source body and input shape are unchanged. All three
 emission lanes pass. Actual all-target/all-feature generated-crate strict Clippy
 then rejects the immutable Program's private `input` field for type complexity.
 This is an existing baseline defect before widening, so it is repaired first.
-The maintained complete control is `examples/rust_backend/nested_product_request_field.compact`.
+The retained complete control fixture is `examples/rust_backend/nested_product_request_field.compact`.
 
 The first external harness attempted locked Cargo before creating its lock;
 that failed before compilation. An offline lock-generation successor exposes
@@ -51,7 +53,7 @@ ownership and untrusted IR validators remain their current owners.
    then generate the complete control SDK without handwritten output edits.
 4. Run locked all-target/all-feature strict Clippy on that SDK; exercise the
    existing four typed routes with asymmetric values, state and recorded replay.
-   Correct-type twins must compile; wrong leaf bound, arity and dimension must
+   A matching correct-type control must compile for each misuse; wrong leaf bound, arity and dimension must
    independently fail at marked ordinary-use sites.
 5. Source change is metadata/version only: compare generated output against183
    after removing only the declared field attribute and compiler-version metadata;
@@ -93,3 +95,76 @@ retain original183 characterization and both the harness and real lint failure.
 No push, hosted trial, merge, release, shared installation or cleanup is part of
 this local slice. Prior accepted SDK/application receipts are not reopened merely
 because this prerequisite has a new compiler identity.
+
+
+## Actual local compiler184 baseline qualification
+
+The narrow implementation starts at signed `29bbc7be3`. Four request-field AST
+methods (including both nested-child positions) and two existing signature-owner
+methods pass. All three earlier request-field test bodies remain byte unchanged.
+
+The original maintained local compiler build exits successfully in 322.75 seconds.
+Its controller honestly records `same_head: false`: the separately committed
+consumer fixture and its test-only import correction were added during that
+build. Those are the only successor paths and are outside the explicit Nix CLI
+and Scheme source filters. This is not claimed as a frozen whole-source pass.
+Before qualification, the clean `f872753e2` existing-only original recipe passes
+in 10.22 seconds with builds, remote builders and substitution downloads disabled,
+selecting that exact immutable compiler184 package. Both the controller and the
+source/recipe bridge are retained.
+
+At clean `f872753e2`, fourteen focused commands pass their expected outcomes in
+45.03 seconds. The complete unedited generated SDK passes all-target/all-feature
+strict Clippy; the retained in-tree consumer fixture passes strict library Clippy. A separate byte-identical copy of its source, manifest
+and lock (without the deliberately failing binaries) also passes all-target
+strict Clippy in 1.20 seconds, including cfg(test) replay and behavior code. Its actual
+Rust method executes the ordinary native, ordinary recorded, functional native
+and functional recorded routes on asymmetric nested values including 0 and255.
+Both recorded results replay through the VM. Exact typed values, state/effects,
+private state, empty private outputs and gas agree; the retained initial state
+stays unchanged. Three independently marked E0308 refusals cover a wrong inner
+leaf bound, inner tuple arity and outer Vector dimension, with one byte-identical matching positive signature compiled separately for each
+misuse. These are three specific negative controls and one positive signature,
+not three distinct positive behaviors.
+
+A separate same-physical-source comparison uses the same runtime root as the
+183 baseline. Complete IR, raw origins, checked Program, capabilities, ZKIR and
+`contract/Cargo.toml` are byte identical. The generated Rust differs only by the one
+reasoned private-field attribute. Compiler metadata keeps its separate184 epoch;
+no IR/Program normalization or proof substitution is used.
+
+These are focused trusted local results, not complete transitive environment
+attestation, full CI/Linux, MSRV, universal carrier coverage, profile freeze or
+integration acceptance. No new proof was executed for this same-type regression;
+proof applicability is unchanged, and byte equality is not a proof receipt.
+Earlier selected proof/verification/strict-application receipts retain their
+literal source/tool epochs. The separate nested widening still refuses and has
+not been implemented or accepted by this metadata repair.
+
+Actual records: `focused-tests-v1.json`, `original-build-v1.json`,
+`build-test-successor-bridge-v1.json`, `current-sdk-v1/recipe/receipt.json`,
+`current-sdk-v1/receipt.json`, `actual-receipt-inspection-v1.json` and the genuine
+CLI review result under the evidence directory above. The old183 refusal,
+missing-lock attempt, actual lint failure and original full source stay retained.
+
+
+### Independent review correction and integration limits
+
+Authentic Claude review at `f872753e2` (165.59 seconds) independently rehashes
+actual logs, binaries, source and generated identities. It finds no implementation
+blocker, and one P2: the required version check also reads generated ledger docs.
+The maintained `compiler/ledger.ss` documentation macro now regenerates the full
+raw document in an isolated tracked-source copy (28.21 seconds); the only byte
+change is compiler183 to184. The literal existing workflow version step then
+passes locally in the arm64 compiler Nix shell (9.36 seconds). This is not hosted
+CI. Compiler/runtime implementation and all qualified input/source bytes stay
+unchanged. The first review and its required correction remain retained.
+
+The original consumer driver and the type-control bins live in maintainer-local
+evidence. The checked-in example and consumer are retained regression fixtures;
+only the AST test is currently invoked automatically in-tree. A maintained driver
+and integration wiring for this consumer remain open before claiming that CI
+protects its E2E outcome. Extra adjacent empty/one-tuple style controls and a test
+name cleanup are optional hardening, not executed coverage. Existing negative
+carrier controls retain their original bodies. No runtime refusal or new semantic
+admission was added by this metadata-only prerequisite.
