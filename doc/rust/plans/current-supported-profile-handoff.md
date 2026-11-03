@@ -1,6 +1,7 @@
 # Current native Ledger8 supported-profile handoff
 
-Status: next bounded local slice; not accepted handoff or release readiness.
+Status: implementation and candidate profile contract drafted; final local recipe,
+proof-shell qualification and review pending. This is not release readiness.
 Continue from the reviewed [zero timestamp slice](did-zero-timestamp.md), actual
 compiler183 source `4e49b59e5`, preserving its documentation successor separately.
 
@@ -57,3 +58,28 @@ claim, cap increase, source trimming or broad refactor. No Forge, hosted run,
 push, merge, release, shared installation or cleanup under the active local goal.
 Full current CI/Linux and logical integration remain required before integration
 acceptance. This plan neither executes those gates nor completes the broad goal.
+
+
+## Source implementation and recipe boundary — 2026-11-03
+
+At signed `b2e5d3347`, the required compiler workflow gains a separate zero-DID
+proof invocation, distinct output and failure/success diagnostic retention after
+the preserved valid proof step. Fifteen workflow controls, seven proof-protocol
+methods, backend isolation controls and a real Ruby YAML parse pass locally.
+The source SDK guide removes two ineffective external-dependency Clippy commands;
+actual proof-feature library linting remains owned by the previously repaired
+maintained gate. Fresh source Claude review reports no actionable P1/P2.
+
+The first existing-only recipe attempt refuses before tests or proofs: the prior
+zero-slice documentation successor changed the backend README, an explicit Nix
+CLI source input. The Python policy test is excluded by that source filter;
+initial attribution to it is corrected in retained evidence. Prior actual4e49
+proofs stay valid at their literal epoch; matching declared proof-source pins do
+not establish Nix recipe equality. An original maintained local build succeeds
+in 280.29 seconds and is preserved separately. Finalize all README inputs before
+final package recording and proof-shell qualification; never weaken the source
+filter or relabel the old package as the new build.
+
+The candidate guide keeps execution and documentation epochs separate. It is a
+finite supported-profile contract and integration checklist, not new proof
+execution for every cohort or completed Linux/full CI acceptance.

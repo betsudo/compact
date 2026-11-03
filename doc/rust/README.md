@@ -8,6 +8,8 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 ## Current Ledger8 delivery and remaining work
 
+Start with the [native Ledger8 candidate profile](guides/native-ledger8-profile.md): exact versions, usable source SDK, stage-specific evidence, type/runtime boundaries, exclusions and remaining integration gates. It is a local handoff contract, not release or whole-goal completion.
+
 - [Delivered features, architecture, examples, qualification and completion checklist](ledger8-delivery-and-completion.md): dated 18 October 2026; separates bounded local implementation from supported-profile release readiness and full language parity.
 - [Keccak capability and proof-profile audit record](audit/2026-10-18-keccak-profile-boundary.md): native/ordinary checked support, the ZKIRv2 exclusion, observed target selection and the qualification needed for an extension.
 - [Stateful product Vector widening](plans/stateful-product-vector-widening.md): reviewed bounded local compiler177 source/API and selected genuine proof/default-strict application qualification; full coverage and integration remain open.
@@ -22,9 +24,9 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Current-candidate DID lifecycle handoff](plans/current-did-handoff.md): reviewed local compiler183 API and fresh selected deactivation proof/default-strict application pass with all twelve Programs preserved. Its original selected scope remains distinct from the later zero timestamp extension; full integration stays open.
 
-- [Zero timestamp DID witness](plans/did-zero-timestamp.md): reviewed local compiler183 coverage of both original success cases across four routes, case-bound fresh proofs and separate funded strict applications. The zero proof CI invocation and full integration remain open.
+- [Zero timestamp DID witness](plans/did-zero-timestamp.md): reviewed local compiler183 coverage of both original success cases across four routes, case-bound fresh proofs and separate funded strict applications. The zero proof now has explicit local workflow wiring; hosted CI and full integration remain open.
 
-- [Next: finite native supported-profile handoff](plans/current-supported-profile-handoff.md): reconcile current stage-specific capabilities, exceptions, examples and remaining integration gates without reopening accepted work.
+- [Finite native supported-profile handoff](plans/current-supported-profile-handoff.md): reconcile current stage-specific capabilities, exceptions, examples and remaining integration gates without reopening accepted work.
 
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 

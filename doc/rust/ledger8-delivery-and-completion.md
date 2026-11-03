@@ -771,3 +771,21 @@ the handoff. The broad Rust AST goal is incomplete and Forge stays deferred.
 
 
 The next bounded delivery task is the [finite supported-profile handoff](plans/current-supported-profile-handoff.md), joining current application/SDK and product evidence with explicit stage, host and proof limits. It does not reopen accepted historical capabilities or complete the broader goal.
+
+
+### Finite native candidate profile handoff
+
+The [candidate profile contract](guides/native-ledger8-profile.md) joins the
+literal current SDK, Passport, selected DID and nested-product evidence with
+versions, usable examples, type/runtime boundaries and explicit exceptions.
+It preserves the historical crosswalk and retirement authorities. No additive
+coverage percentage, whole-language parity or release completion is claimed.
+
+The local workflow adds the zero timestamp proof case after the unchanged valid
+case, using the authenticated compiler handoff and distinct output directory.
+Focused controls cover ordering, argument/env forwarding, failure propagation
+and retained diagnostics. The source SDK guide now removes the old ineffective
+external-dependency Clippy commands and points to the already repaired maintained
+proof-feature library gate. Full current hosted CI/Linux and logical integration
+remain open; see the [handoff plan](plans/current-supported-profile-handoff.md)
+for actual local recipe and execution status. Forge remains deferred.

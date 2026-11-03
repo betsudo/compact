@@ -1961,6 +1961,9 @@ retained without a case claim; it cannot satisfy current case-bound validation.
 The selected Rust API gate exercises both original successes across all four
 routes, preserving prior failure and compile-time refusal controls. See the
 [bounded local result](../../doc/rust/plans/did-zero-timestamp.md) for actual
-source, receipts and limits. The workflow proof entry still defaults to valid;
-zero-case proof CI wiring and full integration remain pending. No constructor
-or all-export proof claim follows from either case.
+source, receipts and limits at that literal qualification epoch. The subsequent
+[native profile handoff](../../doc/rust/guides/native-ledger8-profile.md) adds a
+separate required workflow invocation for `--case did/timestamp-zero`, preserving
+the valid default, authenticated compiler handoff and failure/success artifacts.
+This is local wiring; hosted zero-case proof acceptance and full integration
+remain pending. No constructor or all-export proof claim follows from either case.

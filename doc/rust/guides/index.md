@@ -1,5 +1,7 @@
 # Compact contracts in Rust
 
+For the current local candidate, use the [native Ledger8 profile and handoff](native-ledger8-profile.md). It separates current source/application/SDK evidence from the historical guide epochs below, with explicit type, host, proof and integration limits.
+
 **Rust backend developer guide — milestone 0.3.0.** Based on the accepted source APIs and scoped receipts of milestone0.3.0. The witnessed-contract tutorial and both DID lifecycle tests now pass in isolated external consumers at source `5efa91c2`, with qualified locks and unedited generated contracts. See [the retained ADR0324 evidence](../evidence/0.3.0/index.md#tutorials-adr0324) for exact receipts. [The snippet matrix](snippet-matrix.md) distinguishes measured examples and their limits. See [candidate qualification](candidate-qualification.md) for the overall validation and documentation status.
 
 The Rust backend uses the ledger8 Compact frontend, a private typed IR and structured Rust AST emission with `syn`, `quote`, `proc-macro2` and `prettyplease`. Generated contracts reuse the pinned Midnight ledger/zk runtime primitives.
