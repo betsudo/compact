@@ -65,3 +65,38 @@ Preserve that failed source/object/log epoch; compiler build completion is unkno
 from it. Build the signed frozen original186 recipe first, then rerun the owner
 generation and version gate. A compiler186/ledger-doc185 mismatch is explicitly
 temporary and unqualified, not a completed release or workflow gate.
+
+## Original186 and same-physical-source control results
+
+At clean signed 75eaa3df6, the original compiler186 recipe passes in 70.90s from
+a frozen tracked-source checkout. No altered compiler pipeline is used. The
+maintained ledger.ss owner then regenerates the complete raw document in a
+separate isolated source/object directory; only its compiler185-to186 version
+sentence changes. The literal existing workflow version step passes in 10.28s.
+The earlier 180-second precursor and all outputs remain preserved separately.
+
+All four complete external controls now pass compiler186 generation and strict
+SDK all-target/all-feature Clippy. They use the same physical source and runtime
+root as their compiler185 predecessors: whole IR, raw origins, capabilities,
+Cargo manifest and applicable full Program/ZKIR bytes compare exactly. Pure
+generated Rust is byte-identical; each same-type Rust root differs only by the
+declared private-field attribute. Compiler contract-manifest version/derived
+hashes remain a distinct epoch and are not claimed equal. These controls add no
+runtime or fresh proof acceptance.
+
+The existing maintained request-field gate now has a literal three-source cohort:
+its original complete fixture/consumer and all three original type misuses stay
+unchanged, alongside both complete Vector-leaf fixtures. Each has an unedited
+whole SDK, its own strict Cargo root/consumer test lint, four typed routes and
+two VM replays. Both new consumers also have marked inner-dimension and consumed-
+Program refusals (E0308/E0382), each with positive controls. All command log labels
+are source-prefixed so one fixture cannot overwrite another's evidence. Target
+containment uses resolved paths for every generated SDK; this also closes the
+previous optional symlink-parent early-refusal gap.
+
+The expected complete gate has 47 actual commands, three source-derived behavior
+methods/twelve routes/six replays and thirteen separately marked misuse runs.
+Constructor positives repeat one distinct signature per source; consuming-once
+positives cover the two new carrier types. This is prospective maintained-gate
+scope until a clean current original recipe and the whole gate execute. No
+three-source runtime acceptance or new widening admission is inferred yet.

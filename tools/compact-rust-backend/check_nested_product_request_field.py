@@ -16,8 +16,10 @@
 
 """Maintain the complete same-type nested request-field regression.
 
-Strictly lint the unedited generated SDK and consumer test code, execute four
-existing typed routes and two VM replays, and refuse three marked API misuses.
+Strictly lint three complete unedited SDKs and their actual consumer test code.
+Execute four typed routes and two VM replays per source. Retain the original
+three marked type errors; both Vector-leaf fixtures also check inner dimension
+and consumed-Program refusal, with matching positive controls.
 This metadata-only prerequisite has no new proof or TS execution claim.
 """
 import argparse
@@ -40,6 +42,25 @@ FIXTURES = ROOT / "tools/compact-rust-backend/tests/nested_product_request_field
 SOURCES = ROOT / "examples/rust_backend/nested_product_request_field"
 SOURCE = SOURCES / "nested_product_request_field.compact"
 SOURCE_SHA256 = "21dcb591417df0414440f9c8f94b6369c62ff41a580ad5bea9ddbbccaa58f367"
+LEAF_SOURCES = ROOT / "examples/rust_backend/vector_leaf_request_field"
+COHORT = [
+    dict(name="original", source=SOURCE, sha256=SOURCE_SHA256, fixtures=FIXTURES,
+         static=("bound", "arity", "dimension")),
+    dict(
+        name="vector_leaf",
+        source=LEAF_SOURCES / "component_vector.compact",
+        sha256="d1dd73a5670d0c1c2e6f90f17223b4cf85905b703663798bb55831ce2c6a36f9",
+        fixtures=FIXTURES / "vector_leaf",
+        static=("bound", "arity", "dimension", "inner_dimension", "double_execute"),
+    ),
+    dict(
+        name="nested_vector_leaf",
+        source=LEAF_SOURCES / "nested_vector.compact",
+        sha256="5fc3805aef9edeea3c3d572b2b60e836f76ed9e64e4942d117d3ecc7d1f859b9",
+        fixtures=FIXTURES / "nested_vector_leaf",
+        static=("bound", "arity", "dimension", "inner_dimension", "double_execute"),
+    ),
+]
 
 
 def main():
@@ -55,7 +76,8 @@ def main():
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "use pinned Rust1.99.0")
     target = Path(env.get("CARGO_TARGET_DIR", str(output / "cargo-target")))
     target = (ROOT / target).resolve()
-    require(not target.is_relative_to(output / "generated"), "Cargo target must be outside the immutable generated SDK")
+    require(all(not target.is_relative_to((output / "cases" / spec["name"] / "generated").resolve())
+                for spec in COHORT), "Cargo target must be outside every immutable generated SDK")
     env["CARGO_TARGET_DIR"] = str(target)
     git = lambda *a: subprocess.check_output(["git", *a], cwd=ROOT, text=True).strip()
     head, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
@@ -70,11 +92,14 @@ def main():
     require(Path(build["store"]).resolve(strict=True) == compiler.parent.parent, "receipt store differs from compiler package")
     for key, path in (("compactc", compiler), ("compactc-scheme", scheme)):
         require(digest(path) == build[key]["sha256"], "original compiler changed")
-    require(set(SOURCES.glob("*.compact")) == {SOURCE} and digest(SOURCE) == SOURCE_SHA256,
+    require(set(SOURCES.glob("*.compact")) == {SOURCE}
+            and set(LEAF_SOURCES.glob("*.compact")) == {spec["source"] for spec in COHORT[1:]},
             "complete declared source cohort changed")
+    require(all(digest(spec["source"]) == spec["sha256"] for spec in COHORT),
+            "complete declared source bytes changed")
     inputs = [ROOT / name for name in ("Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock")]
     for directory in (ROOT / "compiler", ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
-                      ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES):
+                      ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES, LEAF_SOURCES):
         inputs.extend(p for p in directory.rglob("*") if p.suffix in (".ss", ".rs", ".json", ".toml", ".compact"))
     inputs.extend(Path(__file__).parent.glob("*.py"))
     pins = {str(p): digest(p) for p in inputs}
@@ -147,15 +172,19 @@ def main():
         bind([lock])
         report["resolved_locks"][str(lock)] = dict(sha256=digest(lock), packages=packages)
 
-    try:
-        generated = output / "generated"
-        run("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger8",
-            "--rust-require-recording", "--rust-runtime-root", ROOT, SOURCE.relative_to(ROOT), generated])
-        independent = output / "independent"
-        run("independent-ir", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", SOURCE.relative_to(ROOT), independent])
+    def qualify(spec):
+        case = {"source": str(spec["source"].relative_to(ROOT)), "source_sha256": spec["sha256"]}
+        report["cases"][spec["name"]] = case
+        def execute(label, command, expected=0):
+            return run(spec["name"] + "-" + label, command, expected)
+        generated = output / "cases" / spec["name"] / "generated"
+        execute("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger8",
+            "--rust-require-recording", "--rust-runtime-root", ROOT, spec["source"].relative_to(ROOT), generated])
+        independent = output / "cases" / spec["name"] / "independent"
+        execute("independent-ir", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", spec["source"].relative_to(ROOT), independent])
         require((generated / "contract/compact-rust-ir.json").read_bytes()
                 == (independent / "contract/compact-rust-ir.json").read_bytes(), "entrypoint IR differs")
-        report["generated_manifest"] = source_manifest_snapshot(generated, True)
+        case["generated_manifest"] = source_manifest_snapshot(generated, True)
         require(set(inventory(generated / "contract/checked-programs")) == {"program-0.json"}, "expected one complete Program")
         caps = json.loads((generated / "contract/rust-capabilities.json").read_text())
         require(caps["schema_version"] == 3 and len(caps["circuits"]) == 1, "capability roster changed")
@@ -163,39 +192,52 @@ def main():
         require(cap["name"] == "run" and cap["recorded"] is True and cap["observed_call"] is True
                 and cap["proof_required"] is True, "required APIs missing")
         before = inventory(generated)
-        report["generated_before_cargo"] = before
+        case["generated_before_cargo"] = before
         bind(generated / name for name in before)
         manifest = generated / "contract/Cargo.toml"
         package = tomllib.loads(manifest.read_text())["package"]["name"]
         allowed_local.add((package, "0.1.0"))
-        resolve(manifest, "sdk-lock")
-        run("sdk-strict", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
+        resolve(manifest, spec["name"] + "-sdk-lock")
+        execute("sdk-strict", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
                            "--all-targets", "--all-features", "--", "-D", "warnings"])
-        consumer = output / "consumer"
+        consumer = output / "cases" / spec["name"] / "consumer"
         (consumer / "src/bin").mkdir(parents=True)
-        shutil.copyfile(FIXTURES / "consumer.rs", consumer / "consumer.rs")
+        shutil.copyfile(spec["fixtures"] / "consumer.rs", consumer / "consumer.rs")
         cm = consumer / "Cargo.toml"
         cm.write_text('[workspace]\n[package]\nname="nested-product-request-field-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\ncandidate={package=' + json.dumps(package) + ',path=' + json.dumps(str(manifest.parent)) + ',features=["ledger-transaction"]}\n')
         bind(p for p in consumer.rglob("*.rs"))
-        resolve(cm, "consumer-lock")
-        result = run("four-route-test", ["cargo", "test", "--locked", "--offline", "--manifest-path", cm, "--lib"])
+        resolve(cm, spec["name"] + "-consumer-lock")
+        result = execute("four-route-test", ["cargo", "test", "--locked", "--offline", "--manifest-path", cm, "--lib"])
         require("test result: ok. 1 passed; 0 failed; 0 ignored;" in result.stdout, "consumer method did not execute")
-        run("consumer-strict", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", cm,
+        execute("consumer-strict", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", cm,
                                 "--lib", "--tests", "--", "-D", "warnings"])
-        for name in ("bound", "arity", "dimension", "positive"):
-            shutil.copyfile(FIXTURES / (name + ".rs"), consumer / "src/bin" / (name + ".rs"))
+        positives = ("positive", "once") if "double_execute" in spec["static"] else ("positive",)
+        for name in (*spec["static"], *positives):
+            shutil.copyfile(spec["fixtures"] / (name + ".rs"), consumer / "src/bin" / (name + ".rs"))
         bind(p for p in (consumer / "src/bin").glob("*.rs"))
-        report["typed_refusals"] = {}
-        for name in ("bound", "arity", "dimension"):
+        case["typed_refusals"] = {}
+        for name in spec["static"]:
             code = (consumer / "src/bin" / (name + ".rs")).read_text()
-            p = run("wrong-" + name, ["cargo", "check", "--locked", "--offline", "--manifest-path", cm,
+            p = execute("wrong-" + name, ["cargo", "check", "--locked", "--offline", "--manifest-path", cm,
                                      "--bin", name, "--message-format=json"], 101)
-            report["typed_refusals"][name] = compile_failure(p, name, "E0308", code)
-            run("positive-" + name, ["cargo", "check", "--locked", "--offline", "--manifest-path", cm, "--bin", "positive"])
+            error = "E0382" if name == "double_execute" else "E0308"
+            case["typed_refusals"][name] = compile_failure(p, name, error, code)
+            positive = "once" if name == "double_execute" else "positive"
+            execute("positive-" + name, ["cargo", "check", "--locked", "--offline",
+                                        "--manifest-path", cm, "--bin", positive])
         require(inventory(generated) == {**before, "contract/Cargo.lock": digest(manifest.with_name("Cargo.lock"))},
                 "generated SDK changed beyond its own Cargo.lock")
         unchanged()
-        report.update(status="passed", rust_methods=1, rust_routes=4, recorded_replays=2,
+        case.update(rust_methods=1, rust_routes=4, recorded_replays=2)
+
+    try:
+        report["cases"] = {}
+        for spec in COHORT:
+            qualify(spec)
+        require(len(report["commands"]) == 47, "complete three-source gate command count changed")
+        for key in ("generated_manifest", "generated_before_cargo", "typed_refusals"):
+            report[key] = report["cases"]["original"][key]
+        report.update(status="passed", rust_methods=3, rust_routes=12, recorded_replays=6,
                       proof_execution=False, full_integration_acceptance="OPEN")
     except BaseException as error:
         report.update(status="failed", error=repr(error))
