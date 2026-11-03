@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.183, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve checked fixed-Vector/product conversions through ordered stateful
+  values, including a characterized product level below Vector components.
+  Retain original bounds, product arity, once-only evaluation and witness order;
+  unsupported deeper forms continue to receive explicit checked refusals.
+- Preserve complete generated Rust request carriers with reasoned field-local
+  type-complexity annotations where nested inputs require them.
+- Require the maintained current-source API and selected proof/strict-transaction
+  cohort in the existing native CI definition, using the shared compiler package,
+  pinned proof tool/material and exact source/IR/Program/verifier bindings.
+  Other required exports retain their explicit unproved/over-limit status.
+
 ## [Toolchain 0.31.173, language 0.23.105, runtime 0.16.102]
 
 ### Fixed

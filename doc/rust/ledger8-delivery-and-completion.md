@@ -681,3 +681,21 @@ Callback implementation, constructor execution and full-export deployment are no
 proved. Full CI/Linux/integration, final application/standalone-SDK acceptance and
 capability handoff remain open. Accepted historical crosswalk and algebra work is
 not reopened, and the broad goal stays incomplete. Forge stays deferred.
+
+
+### Nested-product required CI wiring — local readiness
+
+At signed source `5ef204e8e`, the existing-only original-recipe recorder and full
+nested-product gate pass in the arm64 Nix environment: 170 API commands, three
+fresh verified proofs and three separately proved funded default-strict
+applications. Current source and separate actual receipt reviews report no
+P1/P2. All prior failed attempts and literal source epochs remain retained.
+
+The required Linux compiler workflow now calls this complete gate using the
+existing authenticated compiler handoff and devShell-resolved ZKIR. It retains
+k6/k8 locked material, all old required checks, failure/success artifacts and
+required header-policy controls. This is checked local wiring, **not a hosted
+Linux/CI result**. See the [slice plan](plans/vector-component-products.md#reviewed-local-ci-readiness-result--2026-11-03)
+for exact source/header/proof identity, remaining 21 unproved exports and limits.
+Logical integration and final profile/application/SDK/capability handoff remain
+open; the broad goal and Forge deferral are unchanged.
