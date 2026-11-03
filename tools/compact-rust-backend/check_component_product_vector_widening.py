@@ -163,9 +163,9 @@ def main():
             require(all((x['recorded'] and x['observed_call'] and (x['proof_required'] is True) for x in caps)), 'qualification invariant failed')
             require(len(list((root / 'contract/checked-programs').glob('*.json'))) == len(spec['entries']), 'qualification invariant failed')
             require({x['entry'] for x in cases if x['source'] == name} == set(spec['entries']), 'qualification invariant failed')
-            if name == 'family':
-                golden = F / 'proof-goldens/family'
-                require((root / 'contract/compact-rust-ir.json').read_bytes() == (golden / 'source-ir.json').read_bytes(), 'whole raw family IR differs from the independently checked fixture')
+            if name in {'family', 'original_nested'}:
+                golden = F / 'proof-goldens' / name
+                require((root / 'contract/compact-rust-ir.json').read_bytes() == (golden / 'source-ir.json').read_bytes(), 'whole raw selected-source IR differs from the independently checked fixture')
                 actual_programs = root / 'contract/checked-programs'
                 expected_programs = golden / 'checked-programs'
                 require({p.name for p in actual_programs.iterdir()} == {p.name for p in expected_programs.iterdir()}, 'whole Program membership differs')

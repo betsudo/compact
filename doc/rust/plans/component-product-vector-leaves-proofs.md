@@ -70,3 +70,33 @@ and the broader backend goal remain open. Preserve all failed and accepted
 predecessors, stores, snapshots, artifacts and exact identities. Verify available
 local storage before new proof effects; do not delete current dependencies or
 historical evidence to make room.
+
+## Source implementation and development compile — 2026-11-03
+
+The proof phase now has two complete opt-in SDK packages at their own crate
+roots (family14 and original_nested1), fourteen typed scenarios, exact current TS
+input/result checks and ordinary/recorded/functional/observed preparation parity.
+Both full IR files and all14/1 Program inventories remain bound as raw bytes and
+membership, never as executable metadata. New workspace dependencies add only
+the two local SDKs; existing versions, sources and checksums are unchanged.
+
+Development strict Clippy passes for all fourteen scenarios and both whole SDKs
+using preserved compiler187 outputs. Two failed epochs remain retained: unsupported
+Fr AddAssign syntax, then a private eight-argument helper lint. The fixes use a
+fixed nonzero source-CellWrite-to-zero negative and group its source/circuit/seen
+identity, without suppressing lint or changing compiler/runtime semantics.
+This is source compilation only; no new key, proof or application has run.
+
+The maintained proof gate adds actual own-crate SDK dependency-file membership,
+complete generated/build/dependency input inventories, private raw IR/Program
+refusals, all16 model observations and a selected guard requiring every in-cap
+export before verified-material admission. The empty-result same-geometry control
+is explicitly inapplicable; the source CellWrite preimage negative remains
+mandatory. Its exact transcript slot is guarded and still awaits real runtime
+qualification. Both k9 sources remain unchanged and unproved.
+
+Before any Cargo binary rebuild, the accepted model-runner bytes were preserved
+under an immutable hash-checked executable snapshot. Prior native/model receipts
+retain their005a execution epoch. Current original recipe qualification, actual
+proof preparation/execution, independent reviews and required CI wiring still
+remain; source/proof preparation is not proof acceptance.

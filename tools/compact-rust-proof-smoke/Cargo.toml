@@ -24,6 +24,7 @@ description = "Ledger-8 proof compatibility gate for Rust Compact output"
 [features]
 default = []
 component-product-vector-models = ["ledger-transaction"]
+component-product-vector-widening = ["component-product-vector-models", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-component-product-vector-family-sdk", "dep:compact-rust-component-product-vector-original-sdk", "compact-rust-component-product-vector-family-sdk/generated-sdk", "compact-rust-component-product-vector-original-sdk/generated-sdk"]
 fold-vector-result-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 vector-alias-source-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 aggregate-literal-projection-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
@@ -39,6 +40,8 @@ ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 
 [dependencies]
+compact-rust-component-product-vector-family-sdk = { path = "component-product-vector-family-sdk", optional = true }
+compact-rust-component-product-vector-original-sdk = { path = "component-product-vector-original-sdk", optional = true }
 compact-rust-nested-component-products-sdk = { path = "nested-component-products-sdk", optional = true }
 compact-rust-vector-component-products-witness-before-sdk = { path = "vector-component-products-witness-before-sdk", optional = true }
 compact-rust-vector-component-products-witness-after-sdk = { path = "vector-component-products-witness-after-sdk", optional = true }

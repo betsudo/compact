@@ -310,6 +310,33 @@ pub(super) fn try_run(
             }
             crate::component_product_vector_models::inventory(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "component-product-vector-widening",
+            compact_component_product_vector_generated
+        ))]
+        ("--component-product-vector" | "--component-product-vector-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("component Vector proof command requires a complete root")?;
+            if selector == "--component-product-vector-models" {
+                if arguments.next().is_some() {
+                    return Err("unexpected selected models argument".into());
+                }
+                crate::component_product_vector_widening::models(std::path::Path::new(&root))
+            } else {
+                let ts = arguments
+                    .next()
+                    .ok_or("current independent TS capture required")?;
+                if arguments.next().is_some() {
+                    return Err("unexpected proof argument".into());
+                }
+                crate::component_product_vector_widening::run(
+                    std::path::Path::new(&root),
+                    std::path::Path::new(&ts),
+                )
+            }
+        })(
+        )),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

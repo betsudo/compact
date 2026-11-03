@@ -44,6 +44,11 @@ mod canonical_output_order;
 mod closed_pure_field;
 #[cfg(feature = "component-product-vector-models")]
 mod component_product_vector_models;
+#[cfg(all(
+    feature = "component-product-vector-widening",
+    compact_component_product_vector_generated
+))]
+mod component_product_vector_widening;
 mod composite_zswap;
 mod constant_valued_vector_indices;
 mod constant_vector_projection;
