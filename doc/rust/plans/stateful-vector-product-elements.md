@@ -587,3 +587,11 @@ Selected models remain unchanged; the intended branch-expansion refusal must
 occur before keys/proofs. This does not change the actual original k9 model.
 The failed paired predecessor, raw depfile and P1/P2 review remain retained.
 New source/preparation/proof evidence is pending.
+
+At `1163119d2`, the paired helper builds as its own crate and the current141 API
+protocol passes, but preparation v5 stops when the executable-only snapshot
+helper is mistakenly used for a Rust rlib. The successor snapshots that actual
+rlib as read-only DATA, requiring source-before/copy/source-after SHA equality.
+The executable snapshot policy is unchanged. Original failed receipt, binary,
+helper rlib and helper depfile remain preserved; no model/material/key/proof
+acceptance follows from this failed preparation. Fresh qualification is pending.

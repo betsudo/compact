@@ -274,7 +274,14 @@ def run(args):
         require(len(helper_libs) == 1 and helper_manifest == ROOT / "tools/compact-rust-proof-smoke/vector-product-elements-helper-sdk/Cargo.toml",
                 "helper SDK must compile at its own declared crate root")
         helper_lib = helper_libs[0]
-        components["helper_sdk_rlib"] = common.stable_copy(helper_lib, output / "bin/helper-sdk.rlib")
+        helper_snapshot = output / "bin/helper-sdk.rlib"
+        require(helper_lib.is_file() and not helper_snapshot.exists(), "helper library snapshot must be a new regular data artifact")
+        library_sha = digest(helper_lib)
+        shutil.copyfile(helper_lib, helper_snapshot)
+        require(digest(helper_snapshot) == library_sha == digest(helper_lib), "helper library changed during data snapshot")
+        helper_snapshot.chmod(0o444)
+        components["helper_sdk_rlib"] = {"source": str(helper_lib), "snapshot": str(helper_snapshot),
+                "sha256": library_sha, "size": helper_snapshot.stat().st_size, "kind": "rust-rlib-data"}
         helper_depfile = helper_lib.parent / (helper_lib.stem.removeprefix("lib") + ".d")
         helper_retained = output / "helper-sdk.d"
         shutil.copyfile(helper_depfile, helper_retained)
