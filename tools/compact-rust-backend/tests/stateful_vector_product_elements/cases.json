@@ -896,5 +896,17 @@
     ],
     "initialSeen": "0",
     "seen": "1"
+  },
+  {
+    "id": "empty_component",
+    "source": "empty_component",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      []
+    ],
+    "expected": [],
+    "initialSeen": "0",
+    "seen": "1"
   }
 ]

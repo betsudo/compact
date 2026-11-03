@@ -157,6 +157,33 @@ default-strict applications with immutable identity and replay controls are
 still required. Constructors, unselected/all-input outcomes, full required CI,
 Linux and integration stay open. No Forge work, publication or cleanup occurs.
 
+## Next static and untrusted-input stage (under qualification)
+
+The reviewed `037ca61d5` documentation head is preserved by a separate local
+evidence ref before this stage. Eleven marked ordinary caller misuses now have
+eleven explicit independent positive twins. Each twin retains a real correct-type
+call; ownership twins also execute a Program/context once. The diagnostic gate
+requires the declared E0308/E0382 at the exact marked expression, rejecting
+unrelated errors. Twins are separate files so Rust formatting cannot leave a
+partial invalid statement when a marker spans multiple lines.
+
+A complete empty-component source extends the positive roster to 18 SDK roots /
+21 cases (80 stateful routes plus one pure). Twelve private malformed-IR controls
+cover outer/inner dimensions, product arity, inner leaf/narrowing, input/binding
+types, helper argument source bounds, a dead branch, an empty body, an invalid
+inner product and an action smuggled into an expression. Each has a separately
+rendered valid private-IR twin. These control the actual native JSON ingress;
+they do not pretend to be valid Compact programs or genuine proofs.
+
+The gate now records resolved consumer/SDK lockfiles before build, verifies every
+registry/Git version/checksum against the original root lock and admits only the
+declared local packages. It also binds the generated consumer manifest/source,
+TS result file, marked callers/twins and target/toolchain environment before use,
+then checks the recorded bytes again at completion. This strengthens build
+provenance without claiming complete proof-runner/transitive input qualification.
+Current execution and reviews are pending. Whole-producer mutations, checked
+helper/witness error cases and all model/proof/application gates remain open.
+
 ## Original gap and baseline (historical)
 
 Original compiler177 at `438bf21c9f64b133970f8dadb212c24e54a2873d` retains

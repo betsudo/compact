@@ -222,6 +222,17 @@ stateful_case!(
     ])]
 );
 
+stateful_case!(
+    empty_component,
+    empty_component,
+    run,
+    [],
+    [FixedVector::<
+        (FixedVector<BoundedUint<255>, 2>, BoundedUint<65535>),
+        0,
+    >::new([])]
+);
+
 struct VectorWitness {
     expected_seen: u64,
     calls: std::cell::RefCell<Vec<Value>>,

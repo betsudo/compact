@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http:#www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ Requires a clean source and its original compiler recipe receipt. Every run writ
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
 """
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -29,8 +30,9 @@ import time
 import tomllib
 
 from check_stateful_product_vector_widening import (
-    digest, inventory, reject_compiler_overrides, source_manifest_snapshot,
+    digest, inventory, reject_compiler_overrides, source_manifest_snapshot, first_local_binding,
 )
+from check_constant_vector_projection import compile_failure
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "stateful_vector_product_elements"
@@ -40,6 +42,68 @@ SOURCES = ROOT / "examples/rust_backend/stateful_vector_product_elements"
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def malformed_ir_controls(irs):
+    """Private ingress controls; complete genuine SDKs remain unchanged."""
+    checks = {
+        "outer_dimension": ["expression has type Vector", "length: 2", "length: 3"],
+        "inner_dimension": ["expression has type Vector", "length: 2", "length: 3"],
+        "product_arity": ["expression has type Tuple", "expected Tuple", "Boolean"],
+        "inner_leaf": ["expression has type Unsigned", "expected Boolean"],
+        "inner_narrowing": ["expression has type Unsigned", 'max: "255"', 'max: "1"'],
+        "input_type": ["expression has type Boolean", "expected Vector"],
+        "binding_type": ["expression has type Vector", "expected Boolean"],
+        "source_binding": ["expression has type Vector", 'max: "255"', 'max: "65535"'],
+        "dead_branch": ["expression has type Unsigned", "expected Boolean"],
+        "empty_body": ["expression has type Unsigned", "expected Boolean"],
+        "inner_product": ["expression has type Unsigned", "expected Tuple"],
+        "misplaced_action": ["cell_write"],
+    }
+    for name, expected in checks.items():
+        base = ("local" if name in {"binding_type", "source_binding"} else
+                "proof_candidate" if name == "dead_branch" else
+                "empty_component" if name == "empty_body" else "parameter")
+        positive = copy.deepcopy(irs[base])
+        circuit = next(c for c in positive["stateful_circuits"] if c["name"] == "run")
+        if name == "dead_branch":
+            circuit["return_value"]["body"]["condition"] = {"kind": "boolean", "value": True}
+        malformed = copy.deepcopy(positive)
+        circuit = next(c for c in malformed["stateful_circuits"] if c["name"] == "run")
+        body = circuit["return_value"]["body"]
+        binding = first_local_binding(body) if base == "local" else None
+        expr = (binding["value"] if binding else
+                body["otherwise"]["result"]["value"] if name == "dead_branch" else
+                body["result"]["value"])
+        require(expr["kind"] == "coerce", "missing intended aggregate conversion")
+        inner = expr["ty"]["element"]["elements"][0]
+        require(inner["kind"] == "vector", "missing intended Vector component")
+        if name == "outer_dimension":
+            expr["ty"]["length"] = 3
+        elif name == "inner_dimension":
+            inner["length"] = 3
+        elif name == "product_arity":
+            expr["ty"]["element"]["elements"].append({"kind": "boolean"})
+        elif name in {"inner_leaf", "dead_branch", "empty_body"}:
+            inner["element"] = {"kind": "boolean"}
+        elif name == "inner_narrowing":
+            inner["element"]["max"] = "1"
+        elif name == "input_type":
+            circuit["parameters"][0]["ty"] = {"kind": "boolean"}
+        elif name == "binding_type":
+            binding["ty"] = {"kind": "boolean"}
+        elif name == "source_binding":
+            argument = expr["value"]["arguments"][0]
+            require(argument["kind"] == "coerce", "missing supplied helper argument conversion")
+            argument["ty"]["element"]["elements"][0]["element"]["max"] = "65535"
+        elif name == "inner_product":
+            inner["element"] = {"kind": "tuple", "elements": [
+                {"kind": "unsigned", "max": "255"}, {"kind": "unsigned", "max": "255"}]}
+        else:
+            circuit["return_value"] = {"kind": "expression", "value": {
+                "kind": "cell_write", "field": "seen", "index": 0,
+                "value": {"kind": "field_literal", "value": "1"}}}
+        yield name, positive, malformed, expected
 
 
 def main():
@@ -85,14 +149,41 @@ def main():
     output.mkdir(parents=True)
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
-                  scope="Focused whole SDK execution/strict compilation, two exact frontend refusals and deeper-product scope controls; compile-fail, malformed IR, producer mutations, model/proofs/Linux/integration remain open")
+                  environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
+                  scope="Focused whole SDK execution/strict compilation, marked static misuses/twins and malformed IR, exact frontend refusals and deeper-product scope controls; producer/error/model/proof/Linux/integration gates remain open")
+    report["build_inputs_before_use"] = {}
+    report["resolved_locks"] = {}
+    root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+    root_versions = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in root_packages}
+    allowed_local_packages = {("vector-product-elements-consumer", "0.1.0")}
+
+    def bind_build_inputs(paths):
+        for path in paths:
+            key = str(path)
+            sha = digest(path)
+            require(key not in report["build_inputs_before_use"] or report["build_inputs_before_use"][key] == sha,
+                    "build input changed before reuse: " + key)
+            report["build_inputs_before_use"][key] = sha
+
+    def bind_lock(path):
+        packages = tomllib.loads(path.read_text())["package"]
+        for package in packages:
+            key = (package["name"], package["version"], package.get("source"))
+            if package.get("source") is not None:
+                require(key in root_versions and package.get("checksum") == root_versions[key],
+                        "resolved registry/Git package differs from original root lock")
+            else:
+                require(key in root_versions or key[:2] in allowed_local_packages,
+                        "unexpected resolved local package")
+        bind_build_inputs([path])
+        report["resolved_locks"][str(path)] = {"sha256": digest(path), "packages": packages}
     start = time.monotonic()
 
-    def run(label, command, *, success=True):
+    def run(label, command, *, success=True, stdin=None):
         command = list(map(str, command))
         began = time.monotonic()
         try:
-            p = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=300)
+            p = subprocess.run(command, cwd=ROOT, env=env, input=stdin, capture_output=True, text=True, timeout=300)
         except subprocess.TimeoutExpired as error:
             for suffix, value in [("stdout", error.stdout), ("stderr", error.stderr)]:
                 (output / f"{label}.{suffix}").write_bytes(
@@ -110,15 +201,16 @@ def main():
         cases = json.loads((FIXTURES / "cases.json").read_text())
         refusals = json.loads((FIXTURES / "frontend-refusals.json").read_text())
         names = {s["source"] for s in definitions}
-        require(len(names) == len(definitions) == 17 and names.isdisjoint(refusals)
+        require(len(names) == len(definitions) == 18 and names.isdisjoint(refusals)
                 and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 20
+        require(len(cases) == len({r["id"] for r in cases}) == 21
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}
                     == set(spec["entries"]), "an export has no declared execution case")
         generated = output / "generated"
         snapshots = {}
+        irs = {}
         report["sources"] = {}
         for spec in definitions:
             name = spec["source"]
@@ -129,6 +221,7 @@ def main():
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, output / "independent" / name])
             require((target / "contract/compact-rust-ir.json").read_bytes() ==
                     (output / "independent" / name / "contract/compact-rust-ir.json").read_bytes(), "independent IR differs: " + name)
+            irs[name] = json.loads((target / "contract/compact-rust-ir.json").read_text())
             programs = inventory(target / "contract/checked-programs")
             require(len(programs) == (len(spec["entries"]) if spec["stateful"] else 0), "Program count differs")
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
@@ -157,12 +250,15 @@ def main():
             name = spec["source"]
             path = generated / name / "contract"
             package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
+            allowed_local_packages.add((package, "0.1.0"))
             dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
         manifest = consumer / "Cargo.toml"
         manifest.write_text('[workspace]\n[package]\nname="vector-product-elements-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_TS"] = str(ts)
         report["generated_inputs_before_build"] = {name: inventory(generated / name) for name in names}
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
+        bind_lock(consumer / "Cargo.lock")
+        bind_build_inputs([manifest, consumer / "consumer.rs", ts])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
         require(f"test result: ok. {len(cases)} passed; 0 failed; 0 ignored;" in result.stdout, "all Rust cases must execute")
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest, "--lib", "--tests", "--", "-D", "warnings"])
@@ -174,9 +270,53 @@ def main():
             before = inventory(target)
             shutil.copyfile(consumer / "Cargo.lock", target / "Cargo.lock")
             run(name + "-root-resolve", ["cargo", "metadata", "--offline", "--manifest-path", target / "Cargo.toml", "--format-version", "1"])
+            bind_lock(target / "Cargo.lock")
+            bind_build_inputs([target / "Cargo.toml"])
             run(name + "-root-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", target / "Cargo.toml", "--all-targets", "--all-features", "--", "-D", "warnings"])
             require(all(digest(target / path) == sha for path, sha in before.items()), "root Clippy edited emitted files")
             report["strict_sdk_roots"][name] = before
+        report["compile_fail"] = {}
+        controls = json.loads((FIXTURES / "compile-fail.json").read_text())
+        require(len(controls) == 11 and set(controls) | {"consumer"} == {p.stem for p in FIXTURES.glob("*.rs")},
+                "ordinary misuse roster differs")
+        require({spec["twin"] for spec in controls.values()} ==
+                {str(p.relative_to(FIXTURES)) for p in (FIXTURES / "compile-pass").glob("*.rs")},
+                "positive twin roster differs")
+        bins = consumer / "src/bin"
+        bins.mkdir(parents=True)
+        for name, spec in controls.items():
+            source = (FIXTURES / (name + ".rs")).read_text()
+            twin = (FIXTURES / spec["twin"]).read_text()
+            require("// expected-error" not in twin and "c::run(context(), input())" in twin,
+                    "positive twin must retain an actual correct-type call")
+            positive = bins / (name + "_twin.rs")
+            positive.write_text(twin)
+            bind_build_inputs([positive])
+            run(name + "-correct-twin", ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest, "--bin", name + "_twin"])
+            negative = bins / (name + ".rs")
+            negative.write_text(source)
+            bind_build_inputs([negative])
+            rejected = run(name + "-misuse", ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
+                           "--bin", name, "--message-format=json"], success=False)
+            report["compile_fail"][name] = {"source_sha256": digest(negative), "twin_sha256": digest(positive),
+                "errors": compile_failure(rejected, name, spec["code"], source)}
+        report["native_ir_controls"] = {}
+        ir_folder = output / "native-ir-controls"
+        ir_folder.mkdir()
+        backend = ["cargo", "run", "--locked", "--offline", "--quiet", "-p", "compact-rust-backend", "--bin", "compact-rust-backend"]
+        for name, positive, malformed, expected in malformed_ir_controls(irs):
+            original_path = ir_folder / (name + "-positive.json")
+            original_path.write_text(json.dumps(positive, indent=2) + "\n")
+            positive_bytes = original_path.read_text()
+            run(name + "-valid-ir", backend, stdin=positive_bytes)
+            rejected_path = ir_folder / (name + "-malformed.json")
+            rejected_path.write_text(json.dumps(malformed, indent=2) + "\n")
+            rejected = run(name + "-malformed-ir", backend, success=False, stdin=rejected_path.read_text())
+            require(rejected.returncode != 0 and not rejected.stdout and
+                    all(part in rejected.stderr for part in expected), "wrong malformed-IR refusal: " + name)
+            report["native_ir_controls"][name] = {"positive_sha256": digest(original_path),
+                "malformed_sha256": digest(rejected_path), "stderr": rejected.stderr,
+                "scope": "native untrusted JSON ingress, with a separate valid private-IR twin; not proof acceptance"}
         report["frontend_refusals"] = {}
         for name, expected in refusals.items():
             source = SOURCES / (name + ".compact")
@@ -212,6 +352,8 @@ def main():
             require(digest(ROOT / path) == sha, "source changed: " + path)
         for path, sha in tools.items():
             require(digest(path) == sha, "tool changed: " + path)
+        for path, sha in report["build_inputs_before_use"].items():
+            require(digest(path) == sha, "resolved build input changed: " + path)
         require(reject_compiler_overrides(configuration_environment) == configuration, "Cargo configuration changed")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
         pure_routes = sum(not next(s["stateful"] for s in definitions if s["source"] == row["source"]) for row in cases)

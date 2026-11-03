@@ -138,5 +138,13 @@
       "run"
     ],
     "descriptor": "component_field"
+  },
+  {
+    "source": "empty_component",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "empty"
   }
 ]

@@ -75,7 +75,7 @@ const u16=uint(65535n,2), u32=uint(4294967295n,4), vector=(n,t)=>new r.CompactTy
 const tuple=(types)=>({alignment:()=>types.flatMap(t=>t.alignment()),toValue:v=>types.flatMap((t,i)=>t.toValue(v[i]))});
 const u8=uint(255n,1);
 const product8=tuple([vector(2,u8),u16]), product16=tuple([vector(2,u16),u32]);
-const descriptors={wide:vector(2,product16),narrow:vector(2,product8),
+const descriptors={empty:vector(0,product16),wide:vector(2,product16),narrow:vector(2,product8),
  field:vector(2,tuple([vector(2,r.CompactTypeField),r.CompactTypeField])),
  boolean:vector(2,tuple([vector(2,u16),r.CompactTypeBoolean])),
  component_2d:vector(2,tuple([vector(2,vector(2,u16)),u32])),
