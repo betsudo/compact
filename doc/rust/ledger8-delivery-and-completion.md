@@ -631,3 +631,33 @@ generated-package distribution and a finite capability/evidence handoff. Accepte
 foundation, checked-recording and historical crosswalk work is preserved. Forge
 remains deferred and independent of backend progress. No cleanup is due before
 verified merge.
+
+## Products below Vector components — 2026-11-03
+
+Local execution `cb38c00ff2` extends the existing ordered lowering selection to
+one scalar product below a component Vector, retaining arity, original bounds,
+single evaluation, action/witness order and checked Coerce/AST owners. Existing
+runtime, validator, IR and ABI authorities are unchanged. The private request
+field style metadata preserves exact carriers and visibility. Empty/single/mixed
+product arities, aliases, upper second-child bounds and large Field values have
+whole-source controls; deeper products and Vectors inside that product remain
+explicitly refused.
+
+The [bounded qualification](plans/vector-component-products.md#reviewed-bounded-sourceapi-result--2026-11-03)
+passes 170 commands, 24 full unedited strict SDK roots, 35 TS/Rust cases,
+116 successful stateful routes, 20 expected errors, one pure route and 58 exact
+public transcript comparisons. Marked misuse/twin, native ingress/twin,
+whole-producer, corrupt-oracle and exact source-refusal controls pass. Separate
+current183 fixture comparison passes all283 without updates. Actual Claude quota
+causes separate Codex CLI source and receipt fallbacks; both find no P1/P2 within
+the recorded finite scope and disclosed provenance limits.
+
+All 24 proof-required exports remain unproved in this family. A separate author
+model observation finds six within k<=8 and eighteen over the unchanged limit;
+it grants no proof/input/material admission. The next unchanged-source proposal
+qualifies both complete witnessed pair sources and the single-product source.
+Original helper/Field/pair sources remain intact and unproved. No previous
+compiler180 proof is relabeled as this result. Full required CI/Linux, reviewed
+integration, remaining application scenarios, isolated distribution and finite
+capability/evidence handoff remain open. The broader goal is incomplete and
+independent of deferred Forge work.

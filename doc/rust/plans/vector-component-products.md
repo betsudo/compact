@@ -1,6 +1,8 @@
 # Products below fixed Vector components
 
-Status: local source characterization, not semantic acceptance. Base is signed
+Status: reviewed bounded local source/API/static/ingress/producer qualification;
+model/input, genuine proof/application and integration acceptance remain open.
+Base is signed
 `a20cacc53771fada330a863c200b0aad98aaf863`, the reviewed Vector-component successor;
 canonical `codex/rust-backend-ast` and the Forge experiment remain preserved.
 
@@ -226,3 +228,77 @@ The result-oracle control corrupts one expected encoded atom and must be consume
 it is not a genuine TS verdict, typed proof mutation or proof acceptance. Changed
 source files are bound before their producer compilation. Fresh complete protocol
 and source/receipt review remain required before any stage acceptance or proof.
+
+## Reviewed bounded source/API result — 2026-11-03
+
+Clean signed execution `cb38c00ff2c4a870d982752d13e8b0380f34e3e1`
+passes the complete **170-command** protocol: 24 complete unedited SDK roots,
+35 TS/Rust cases, 116 successful stateful Rust routes, 20 intended error attempts,
+one pure route and 58 exact public-transcript comparisons. All 24 full SDK roots
+pass strict all-target/all-feature Clippy. Fourteen marked ordinary misuses have
+independent correct-type twins (12 E0308 and two E0382). Thirteen private malformed
+IR inputs and their valid twins, three regenerated complete producer mutations,
+the consumed corrupt-result oracle and both exact complete outside-scope refusals
+execute with their intended outcomes. The producer failures occur in their first
+native lane; they do not claim execution of every mutated route. These overlapping
+populations are not additive coverage or a language percentage.
+
+Original compiler183 has a fresh 150.16-second v6 build at `b9b8c5f8b` and a
+6.01-second v7 cached realization of the same immutable package at execution cb3.
+Three field AST tests, two signature tests and backend strict Clippy retain the
+b9 epoch; cb3 changes only the checker and plan. A separate fresh current183
+comparison passes all 283 retained fixtures, zero stale/failed, without updates.
+Normal fixture formatting and complete Program equality are distinct from the
+24-root unedited SDK execution protocol.
+
+Both Claude source v3 and receipt v1 attempts actually hit session quota; neither
+is an approval. Authorized separate Codex CLI fallbacks, requested
+`gpt-6-astra`/high, report no P1/P2: source inspection in 210.56 seconds and actual
+receipt audit in 350.28 seconds. The receipt reviewer independently checks all
+enumerated 1,632 source pins in both checkouts, tool/receipt inputs, 312 generated
+files, 216 strict copies, 30 mutant files, 28 locks, 219 runtime files and 20
+recorded external Node libraries, with no sampling of those declared sets. Source
+and receipt acceptance are separate; earlier five/six-P2 reviews and all failed
+full gates remain literal and earn no additional coverage.
+
+Limits remain explicit. The execution receipt does not hash-bind command raw logs
+or metadata logs. The independent audit observes their present consistency, not
+tamper-proof historical provenance. External Node-library hashes are collected
+after execution, and 337 system-library paths have no qualified byte hashes.
+Source snapshots and endpoint checks do not attest consumed bytes, continuous or
+atomic invariance, the entire host, or complete transitive proof-runner inputs.
+Review event files grow during inspection. None of this stage executes proofs,
+verifiers, parameters, constructors or funded transactions.
+
+Evidence under the existing local root includes `whole-sdk-execution-v4/receipt.json`,
+`fixture-freshness-v1/receipt.json`, `signed-field-checks-v2/receipt.json`,
+`local-codex-source-review-v3.json`, `local-codex-receipt-review-v1.json`,
+`review-adjudication-v3.json` and `source-api-author-summary-v1.json`.
+
+### Whole-model observation and next proof cohort
+
+A separate fresh author observation reads all 25 current exports: 24 are
+proof-required and one is pure. The pinned official zkir2.1.1 `mock-compile`
+observes exact copied complete ZKIR and serializes diagnostic binary IR only in a
+new evidence folder; primary SDKs remain unchanged. It creates no keys or proofs.
+Six required models fit k<=8; eighteen remain over that unchanged automatic limit.
+The helper, Field and original pair regression are k9; nested outer, component2d
+and checked helper are k10. They remain intact and unproved. This observation is
+not independently accepted proof-input qualification or key/proof feasibility.
+
+The concrete next proposal selects the existing complete `witness_before.run`,
+`witness_after.run` (both k8/240 rows) and `inner_product_single.run` (k8/206 rows).
+It preserves both real witness orderings and typed nested numeric widening, with
+the single-product source supplying a different full-circuit wrong-key control.
+Actual verifier distinction must be checked after fresh keys, never inferred
+from source names. These sources do not replace or earn proof credit for the
+unproved original helper/Field/pair sources. All 24 required exports are currently
+unproved. The detailed local `next-proof-qualification-v1.md` requires own SDK crate
+roots, prebuild physical/dependency/IR binding, fresh all-model observation, locked
+material, genuine proofs and separately proved funded default-strict applications
+with immutable identity and replay controls before acceptance. No current proof
+preparation, material or key admission is inferred from this proposal.
+
+Full required CI/Linux, integration, remaining application/distribution/capability
+handoff and the broad goal remain open. Forge stays deferred; all work is local,
+and cleanup remains conditional on completion and verified merge.

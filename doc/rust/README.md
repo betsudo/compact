@@ -14,6 +14,8 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Stateful Vector products with Vector components](plans/stateful-vector-product-elements.md): reviewed bounded compiler180 API/static/ingress/error qualification and two selected fresh proofs with separate funded default-strict applications. Seventeen required exports, including four intact k9 models, remain unproved; full integration is open.
 
+- [Products below Vector components](plans/vector-component-products.md): reviewed bounded compiler183 source/API/static/ingress/producer qualification, 24 complete SDKs and 35 cases. All 24 proof-required exports remain unproved; whole-model observation identifies the next unchanged-source proof cohort. Integration remains open.
+
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 
 ## Checked recording checkpoint
