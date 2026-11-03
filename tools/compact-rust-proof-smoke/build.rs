@@ -109,4 +109,17 @@ fn main() {
         );
         println!("cargo::rustc-cfg=compact_stateful_product_vector_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_vector_product_elements_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_VECTOR_PRODUCT_ELEMENTS_WIDENING").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute() && root.join("contract/lib.rs").is_file(),
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED must name the complete generated SDK"
+        );
+        println!("cargo::rustc-cfg=compact_vector_product_elements_generated");
+    }
 }

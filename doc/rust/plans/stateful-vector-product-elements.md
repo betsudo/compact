@@ -422,3 +422,22 @@ The external `proof-runner-proposal-v1` draft and copied complete fixtures are
 **unrun source proposals**, not an adopted runner, model result or proof receipt.
 Constructor, unselected/all-input, full required CI/Linux, integration, application
 closure, distribution and finite capability handoff remain separate obligations.
+
+## Opt-in proof cohort (under qualification)
+
+The separate `vector-product-elements` proof-smoke feature and its inventory,
+models and proof routes now include the complete current nested SDK. The copied
+proposal's predecessor fixture paths are corrected to this maintained cohort.
+Inventory checks applicability against emitted capabilities, not just fixture
+labels. The proof gate captures all tracked workspace inputs and generated SDK
+files before build, resolves actual locked Cargo package identities, snapshots
+physical registry/Git source roots, and reconciles actual runner depfile inputs
+against those prebuild maps. Default/all-feature checks without an SDK remain
+separate from the opt-in build. Changed IR/Program/membership controls must refuse
+before keys/state; full model observation precedes selected tiny-model checks.
+Preparation verifies locked material but creates no keys or proofs.
+
+Original recipe, whole-source/API rerun, physical binding, observed models,
+preparation execution and independent reviews are pending for this source
+successor. The older reviewed141-command result remains its literal e293 epoch;
+this section does not renew it or assert proof feasibility.

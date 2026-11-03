@@ -31,6 +31,7 @@ direct-stateful-vector-literal-returns = ["ledger-transaction", "midnight-compac
 stateful-vector-value-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-local-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-product-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
+vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 

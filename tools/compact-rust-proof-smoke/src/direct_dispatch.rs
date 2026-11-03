@@ -215,6 +215,33 @@ pub(super) fn try_run(
             }
             crate::stateful_product_vector_widening::inventory(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements", _) => {
+            Some(collections::vector_product_elements(arguments, false))
+        }
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements-models", _) => {
+            Some(collections::vector_product_elements(arguments, true))
+        }
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::vector_product_elements::inventory(std::path::Path::new(&root))
+        })()),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

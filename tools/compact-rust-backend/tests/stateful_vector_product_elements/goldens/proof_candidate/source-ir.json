@@ -1,0 +1,636 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "proof_candidate.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "keep",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "parameter",
+          "name": "input"
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              },
+              {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            ]
+          }
+        }
+      },
+      "source": {
+        "file": "proof_candidate.compact",
+        "line": 6,
+        "column": 1
+      }
+    },
+    {
+      "name": "flip",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "vector",
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        },
+        "elements": [
+          {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "input"
+            },
+            "index": 1
+          },
+          {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "input"
+            },
+            "index": 0
+          }
+        ]
+      },
+      "source": {
+        "file": "proof_candidate.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "cell_read",
+              "field": "seen",
+              "index": 0
+            },
+            "right": {
+              "kind": "field_literal",
+              "value": "0"
+            }
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_9",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "1"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_9"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "call",
+                  "name": "keep",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "ty": {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "vector",
+                              "length": 2,
+                              "element": {
+                                "kind": "unsigned",
+                                "max": "255"
+                              }
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "65535"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "4294967295"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_10",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "3"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_10"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "call",
+                  "name": "flip",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "ty": {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "vector",
+                              "length": 2,
+                              "element": {
+                                "kind": "unsigned",
+                                "max": "255"
+                              }
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "65535"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "4294967295"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "proof_candidate.compact",
+        "line": 9,
+        "column": 1
+      }
+    },
+    {
+      "name": "run_field",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "field"
+              }
+            },
+            {
+              "kind": "field"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_8",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "2"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_8"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "call",
+                "name": "keep",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "ty": {
+                      "kind": "vector",
+                      "length": 2,
+                      "element": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "vector",
+                            "length": 2,
+                            "element": {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          },
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "vector",
+                      "length": 2,
+                      "element": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "kind": "field"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "proof_candidate.compact",
+        "line": 10,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "initialSeen",
+        "ty": {
+          "kind": "field"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "cell_write",
+        "field": "seen",
+        "index": 0,
+        "value": {
+          "kind": "parameter",
+          "name": "initialSeen"
+        }
+      }
+    ],
+    "source": {
+      "file": "proof_candidate.compact",
+      "line": 8,
+      "column": 1
+    }
+  }
+}

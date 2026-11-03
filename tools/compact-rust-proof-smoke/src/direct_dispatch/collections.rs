@@ -665,3 +665,23 @@ pub(super) fn stateful_product_vector_widening(
         crate::stateful_product_vector_widening::run(Path::new(&root))
     }
 }
+
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+pub(super) fn vector_product_elements(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --vector-product-elements <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::vector_product_elements::models(Path::new(&root))
+    } else {
+        crate::vector_product_elements::run(Path::new(&root))
+    }
+}
