@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.184, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Keep same-type nested product inputs usable under strict generated-crate
+  Clippy by attaching reasoned type-complexity metadata to the immutable
+  Program's private input field. The exact carrier, visibility, checked
+  execution and conversion-admission rules are unchanged.
+
 ## [Toolchain 0.31.183, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.

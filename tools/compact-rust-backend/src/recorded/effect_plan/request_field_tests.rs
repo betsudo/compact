@@ -48,6 +48,66 @@ fn nested_request_field_metadata_preserves_the_complete_private_carrier() {
 }
 
 #[test]
+fn nested_component_product_field_keeps_its_exact_publicly_usable_carrier() {
+    // The same-type source compiles before widening is supported, but strict
+    // generated-crate Clippy rejects this private input without local metadata.
+    let types: Vec<syn::Type> = vec![
+        syn::parse_quote!(
+            runtime::FixedVector<
+                (
+                    runtime::FixedVector<
+                        (
+                            (runtime::BoundedUint<255>, runtime::BoundedUint<255>),
+                            runtime::BoundedUint<255>
+                        ),
+                        2,
+                    >,
+                    runtime::BoundedUint<255>
+                ),
+                2,
+            >
+        ),
+        syn::parse_quote!(
+            runtime::FixedVector<
+                (
+                    runtime::FixedVector<
+                        (
+                            runtime::BoundedUint<255>,
+                            (runtime::BoundedUint<255>, runtime::BoundedUint<255>)
+                        ),
+                        2,
+                    >,
+                    runtime::BoundedUint<255>
+                ),
+                2,
+            >
+        ),
+    ];
+    for ty in types {
+        let name = format_ident!("input");
+        let before = syn::Field::parse_named
+            .parse2(quote::quote!(#name: #ty))
+            .unwrap();
+        let mut actual = request_field(&name, &ty);
+        assert_eq!(actual.attrs.len(), 1);
+        let attribute = actual.attrs.pop().unwrap();
+        assert_eq!(
+            attribute.meta.to_token_stream().to_string(),
+            quote::quote!(allow(
+                clippy::type_complexity,
+                reason = "preserves the Compact nested Vector/product carrier in this field"
+            ))
+            .to_string()
+        );
+        assert_eq!(
+            actual.to_token_stream().to_string(),
+            before.to_token_stream().to_string()
+        );
+        assert!(matches!(actual.vis, syn::Visibility::Inherited));
+    }
+}
+
+#[test]
 fn request_field_metadata_keeps_prior_and_unrelated_carriers_unmarked() {
     let types: Vec<syn::Type> = vec![
         syn::parse_quote!(u8),
