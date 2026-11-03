@@ -453,3 +453,22 @@ full-header violations in the proof harness. Restore only those complete license
 headers, preserving executable bodies and all old proof/source identities. Record
 this actual CI-readiness failure rather than relabeling earlier local proofs as
 full integration acceptance. Inherited unchanged header debt remains separate.
+
+
+The complete logical-base check against `a20cacc53` additionally finds 27 cohort violations:
+24 example sources, two refusal sources and one request-field test. Restore full
+headers on the 26 mutable files. Preserve the exact original regression copy and
+its old authority at SHA256
+`6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c`.
+The PR header classifier separately accounts for that sole pinned copy only when
+the base authority, current authority and current copy are byte-identical to the
+literal digest. Changed copy/authority, unknown base, aliases and symlinks remain
+violations; the ordinary full-header scanner remains strict. This is not a general
+SPDX-only or filename exemption. Old historical refusal metadata stays unchanged.
+
+License-comment changes shift current source spans. Regenerate the three complete
+selected SDKs and copy their raw IR/whole Program goldens from actual compiler
+output; capture the two current complete refusal outcomes anew. Preserve their
+older literal source/metadata epochs. Fresh clean original-recipe/recorder/full
+cohort execution and independent review are required before claiming current
+integration-readiness acceptance.

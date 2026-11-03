@@ -255,5 +255,23 @@ class CompilerFanoutTests(unittest.TestCase):
         self.assertNotIn('  push:', caller.split('permissions:', 1)[0])
 
 
+class NestedProductWiringTests(unittest.TestCase):
+    def test_full_linux_gate_uses_current_imported_compiler_and_complete_proofs(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        linux = workflow.split('  build:\n', 1)[1]
+        before, step = linux.split('      - name: Qualify complete nested-product APIs and selected proofs\n', 1)
+        step = step.split('      - name: Retain failed nested-product', 1)[0]
+        self.assertIn('--prepare-proof-material --parameter-k 6 --parameter-k 8', before)
+        self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
+        self.assertIn('check_vector_component_products_proof.py --compiler-receipt', step)
+        self.assertIn('--zkir "${COMPACTC%/bin/compactc}/lib/zkir"', step)
+        self.assertNotIn('if:', step)
+        self.assertNotIn('--prepare-only', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertIn('steps.vector_component_products.outcome == \'failure\'', linux)
+        self.assertIn('vector-component-products-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}', linux)
+        self.assertEqual(linux.count('${{ runner.temp }}/compact-vector-component-products-proof/'), 2)
+
+
 if __name__ == '__main__':
     unittest.main()

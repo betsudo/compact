@@ -16,7 +16,7 @@
     "current_positive_consumer": "../vector_component_products/consumer.rs: original_regression (complete identical source, declared new physical path)"
   },
   "nested_product_below_component": {
-    "source_sha256": "44d89210d433ae9b7e4e293c5e62dd1ebcb2c3416f144b6b5f97279b8a02328f",
+    "source_sha256": "33c091f6cc2907b05c08156a129a067be8ae15ad062c2c61473538e51a8177c7",
     "lanes": {
       "ts": {
         "exit": 0
@@ -24,17 +24,17 @@
       "rust": {
         "exit": 255,
         "stdout": "",
-        "stderr": "Exception: nested_product_below_component.compact line 6 char 147:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "stderr": "Exception: nested_product_below_component.compact line 17 char 147:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
       },
       "ir": {
         "exit": 255,
         "stdout": "",
-        "stderr": "Exception: nested_product_below_component.compact line 6 char 147:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "stderr": "Exception: nested_product_below_component.compact line 17 char 147:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
       }
     }
   },
   "vector_inside_component_product": {
-    "source_sha256": "6253b8d8da9195d87a6e33fbd275d5810645fc39c383c635b2b637d9c8c7f5d1",
+    "source_sha256": "c3cd039fe59cddf0d45ac3d73b0efbf5e086ae961259dc3f0fe711e100c6fde7",
     "lanes": {
       "ts": {
         "exit": 0
@@ -42,12 +42,12 @@
       "rust": {
         "exit": 255,
         "stdout": "",
-        "stderr": "Exception: vector_inside_component_product.compact line 6 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
       },
       "ir": {
         "exit": 255,
         "stdout": "",
-        "stderr": "Exception: vector_inside_component_product.compact line 6 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
       }
     }
   }

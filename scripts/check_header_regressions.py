@@ -32,6 +32,16 @@ sys.path.insert(0, str(ROOT))
 from add_headers import HeaderManager
 
 
+# This sole copy is a byte-authenticated historical compiler regression, not
+# newly authored code. Preserve its original source/proof binding. All three
+# byte identities (base authority, current authority, current copy) must match.
+RETAINED_SOURCE_COPIES = {
+    'examples/rust_backend/vector_component_products/original_regression.compact': (
+        'tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact',
+        '6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c'),
+}
+
+
 def base_contents(root, base, names):
     # Resolve paths once, then read unique blobs in one process. Filenames never
     # become line-delimited batch commands, so spaces/newlines remain unambiguous.
@@ -74,17 +84,31 @@ def base_bytes(root, base, name):
 
 
 def classify(root, base, missing):
-    originals = base_contents(root, base, [Path(path).relative_to(root).as_posix() for path in missing])
-    inherited, violations = [], []
+    names = [Path(path).relative_to(root).as_posix() for path in missing]
+    authorities = [RETAINED_SOURCE_COPIES[name][0] for name in names if name in RETAINED_SOURCE_COPIES]
+    originals = base_contents(root, base, names + authorities)
+    inherited, retained, violations = [], [], []
     for path in sorted(missing):
         path = Path(path)
         name = path.relative_to(root).as_posix()
         current = path.read_bytes()
         original = originals[name]
         row = dict(path=name, sha256=hashlib.sha256(current).hexdigest())
-        (inherited if original is not None and original == current else violations).append(row)
+        if original is not None and original == current:
+            inherited.append(row)
+            continue
+        authority = RETAINED_SOURCE_COPIES.get(name)
+        if authority is not None:
+            source, expected = authority
+            current_authority = root / source
+            if (not path.is_symlink() and current_authority.is_file() and not current_authority.is_symlink()
+                    and row['sha256'] == expected and originals[source] == current
+                    and current_authority.read_bytes() == current):
+                retained.append(dict(row, authority=source, reason='pinned exact historical source copy'))
+                continue
+        violations.append(row)
     return dict(scope='PR header regressions; not full-tree license compliance', base_commit=base,
-                missing_full_headers=len(missing), inherited_unchanged=inherited,
+                missing_full_headers=len(missing), inherited_unchanged=inherited, retained_source_copies=retained,
                 new_or_modified_violations=violations, passed=not violations)
 
 
@@ -105,7 +129,7 @@ def main(argv=None):
         json.dump(report, output, indent=2)
         output.write('\n')
     print(json.dumps(dict(scope=report['scope'], missing_full_headers=report['missing_full_headers'],
-                         inherited_count=len(report['inherited_unchanged']),
+                         inherited_count=len(report['inherited_unchanged']), retained_source_copies=report['retained_source_copies'],
                          violations=report['new_or_modified_violations'], passed=report['passed']), indent=2))
     return 0 if report['passed'] else 1
 
