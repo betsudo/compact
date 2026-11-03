@@ -394,7 +394,16 @@ pub(super) fn try_run(
         ("--did-digest-reducer", _) => Some(identity::did_digest_reducer(arguments)),
         ("--did-digest-verification", _) => Some(identity::did_digest_verification(arguments)),
         ("--did-deactivate", _) => Some(identity::did_deactivate(arguments)),
-        ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(arguments)),
+        ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(
+            arguments,
+            crate::did_functional_lifecycle::Case::Valid,
+        )),
+        ("--did-functional-lifecycle-timestamp-zero", _) => {
+            Some(identity::did_functional_lifecycle(
+                arguments,
+                crate::did_functional_lifecycle::Case::TimestampZero,
+            ))
+        }
         ("--terminal-lexical-return", _) => Some(expressions::terminal_lexical_return(arguments)),
         ("--micro-dao-buy-in", _) => Some(contracts::micro_dao_buy_in(arguments)),
         ("--micro-dao-cash-out", _) => Some(contracts::micro_dao_cash_out(arguments)),

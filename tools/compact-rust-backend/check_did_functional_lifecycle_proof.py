@@ -38,12 +38,29 @@ from check_functional_effects import generated_manifest_snapshot, scheme_compile
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged, require
 
 ROOT = common.ROOT
-PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v1"
+LEGACY_PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v1"
+PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v2"
+CASES = {"did/valid": ("200", "--did-functional-lifecycle"),
+         "did/timestamp-zero": ("0", "--did-functional-lifecycle-timestamp-zero")}
 
 
-def validate_proof_summary(summary):
+def validate_proof_summary(summary, expected_case=None):
     """Validate the result protocol; live Rust assertions establish the behavior."""
-    require(summary["format"] == PROOF_RESULT_FORMAT and summary["status"] == "passed"
+    # Decode old case-unbound receipts only as historical protocol evidence.
+    # Every current gate invocation below supplies its exact expected case.
+    current = summary["format"] == PROOF_RESULT_FORMAT
+    if current:
+        source_case = summary.get("source_case")
+        require(source_case in CASES and summary.get("timestamp_witness") == CASES[source_case][0],
+                "invalid DID proof case binding")
+    else:
+        require("source_case" not in summary and "timestamp_witness" not in summary,
+                "historical DID receipt cannot claim a selected case")
+    if expected_case is not None:
+        require(expected_case in CASES and current and summary.get("source_case") == expected_case,
+                "DID proof result does not bind the requested case")
+    require(summary["format"] in {LEGACY_PROOF_RESULT_FORMAT, PROOF_RESULT_FORMAT}
+            and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False
             and summary["all_twelve_exports_proved"] is False
             and summary["execution"] == "functional-recorded"
@@ -73,6 +90,10 @@ def run(args):
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
         require_clean_source(receipt)
+        require(args.case in CASES, "unknown DID proof case")
+        runner_case = CASES[args.case][1]
+        receipt["source_case"] = args.case
+        receipt["timestamp_witness"] = CASES[args.case][0]
         target = args.target_dir.absolute()
         env["CARGO_TARGET_DIR"] = str(target)
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "MIDNIGHT_PP required")
@@ -134,7 +155,7 @@ def run(args):
         changed = json.loads((generated / "contract/compact-rust-ir.json").read_text())
         changed["contractName"] = "changed-did-functional-proof-source"
         (negative / "contract/compact-rust-ir.json").write_text(json.dumps(changed))
-        refused = subprocess.run([runner, "--did-functional-lifecycle", str(negative)], cwd=ROOT,
+        refused = subprocess.run([runner, runner_case, str(negative)], cwd=ROOT,
                                  env=env, capture_output=True, text=True, timeout=30)
         (output / "changed-ir.stdout").write_text(refused.stdout)
         (output / "changed-ir.stderr").write_text(refused.stderr)
@@ -148,7 +169,7 @@ def run(args):
         shutil.copyfile(generated / "contract/compact-rust-ir.json", changed_program / "contract/compact-rust-ir.json")
         selected_program = next((changed_program / "contract/checked-programs").glob("*.json"))
         selected_program.write_bytes(selected_program.read_bytes() + b" ")
-        refused = subprocess.run([runner, "--did-functional-lifecycle", str(changed_program)], cwd=ROOT,
+        refused = subprocess.run([runner, runner_case, str(changed_program)], cwd=ROOT,
                                  env=env, capture_output=True, text=True, timeout=30)
         (output / "changed-program.stdout").write_text(refused.stdout)
         (output / "changed-program.stderr").write_text(refused.stderr)
@@ -185,9 +206,9 @@ def run(args):
                                for row in selected["assets"] + selected["parameters"]]
         require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
         receipt["material_hashes"] = hashes(material_paths + artifacts)
-        execute([runner, "--did-functional-lifecycle", generated], "prove-verify-apply")
+        execute([runner, runner_case, generated], "prove-verify-apply")
         summary = json.loads((generated / "did-functional-lifecycle-proof-result.json").read_text())
-        validate_proof_summary(summary)
+        validate_proof_summary(summary, expected_case=args.case)
         receipt["proof_result"] = summary
         proof_file = generated / "deactivate-input-control.proof"
         require(proof_file.stat().st_size == summary["proof_bytes"], "fresh proof bytes missing")
@@ -216,5 +237,6 @@ if __name__ == "__main__":
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--zkir", type=Path)
     parser.add_argument("--target-dir", type=Path, default=Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")))
+    parser.add_argument("--case", choices=tuple(CASES), default="did/valid")
     parser.add_argument("--output", type=Path, required=True)
     raise SystemExit(run(parser.parse_args()))

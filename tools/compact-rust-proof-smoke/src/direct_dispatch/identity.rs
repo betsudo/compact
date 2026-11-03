@@ -267,6 +267,7 @@ pub(super) fn did_deactivate(
 
 pub(super) fn did_functional_lifecycle(
     arguments: &mut impl Iterator<Item = OsString>,
+    case: crate::did_functional_lifecycle::Case,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --did-functional-lifecycle <proof-output>";
     let root = arguments.next().ok_or(usage)?;
@@ -277,7 +278,7 @@ pub(super) fn did_functional_lifecycle(
         .name("did-functional-lifecycle-proof".into())
         .stack_size(64 * 1024 * 1024)
         .spawn(move || {
-            crate::did_functional_lifecycle::run(Path::new(&root)).map_err(|e| e.to_string())
+            crate::did_functional_lifecycle::run(Path::new(&root), case).map_err(|e| e.to_string())
         })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
