@@ -113,6 +113,62 @@ fn nested_component_products_keep_checked_shape_bounds_and_empty_validation() {
 }
 
 #[test]
+fn vector_leaves_in_component_products_keep_static_conversion_boundaries() {
+    // The frontend slice selects this relation; both the native checked plan
+    // and the independent recorded-domain validator already compose it.
+    let shape = |leaf: Type, wrapped: bool, outer: usize, inner: usize, leaves: usize| {
+        let child = vector(leaf, leaves);
+        let child = if wrapped { tuple(vec![child]) } else { child };
+        vector(
+            tuple(vec![
+                vector(tuple(vec![child, uint("255")]), inner),
+                uint("65535"),
+            ]),
+            outer,
+        )
+    };
+    for wrapped in [false, true] {
+        let narrow = shape(uint("255"), wrapped, 2, 1, 2);
+        let wide = shape(uint("65535"), wrapped, 2, 1, 2);
+        let field = shape(Type::Field, wrapped, 2, 1, 2);
+        for target in [&wide, &field] {
+            assert!(crate::pure_semantics::coercion::plan_coercion(&narrow, target).is_ok());
+            assert!(coercible(&narrow, target));
+        }
+        for ty in [Type::Boolean, Type::Field] {
+            let identity = shape(ty, wrapped, 2, 1, 2);
+            assert!(crate::pure_semantics::coercion::plan_coercion(&identity, &identity).is_ok());
+            assert!(coercible(&identity, &identity));
+        }
+        for target in [
+            shape(uint("15"), wrapped, 2, 1, 2),
+            shape(uint("65535"), wrapped, 3, 1, 2),
+            shape(uint("65535"), wrapped, 2, 2, 2),
+            shape(uint("65535"), wrapped, 2, 1, 3),
+            shape(Type::Boolean, wrapped, 2, 1, 2),
+            shape(Type::OpaqueBytes, wrapped, 2, 1, 2),
+        ] {
+            assert!(crate::pure_semantics::coercion::plan_coercion(&narrow, &target).is_err());
+            assert!(!coercible(&narrow, &target));
+        }
+        let wrong_arity = vector(tuple(vec![uint("65535")]), 2);
+        assert!(!coercible(&narrow, &wrong_arity));
+        let wrong_result = vector(Type::Field, 2);
+        assert!(!coercible(&narrow, &wrong_result));
+
+        // No runtime element is needed to validate the original leaf types.
+        for (outer, leaves) in [(0, 2), (2, 0), (0, 0)] {
+            let from = shape(uint("255"), wrapped, outer, 1, leaves);
+            let to = shape(uint("65535"), wrapped, outer, 1, leaves);
+            assert!(coercible(&from, &to));
+            assert!(!coercible(&to, &from));
+            let invalid = shape(uint("00"), wrapped, outer, 1, leaves);
+            assert!(!coercible(&invalid, &invalid));
+        }
+    }
+}
+
+#[test]
 fn recorded_conversion_matches_the_frozen_relation_on_bounded_domains() {
     let mut cases = vec![
         Type::Unit,

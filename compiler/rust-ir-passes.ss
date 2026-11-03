@@ -1800,11 +1800,11 @@
                      [(tboolean ,src^) #t]
                      [else #f])]
                   [else #f]))))
-        ;; A product below a component Vector may compose scalar/tuple leaves.
-        ;; Preserve every arity, including empty and single-element products.
-        ;; Vectors inside that product and new identity carriers retain their
-        ;; existing owners; checked Coerce still owns conversion and resources.
-        (define (scalar-product-widening? target source)
+        ;; Products below a component Vector compose scalar, tuple and fixed
+        ;; Vector children. Preserve every dimension and product arity, including
+        ;; empty/single products and static-empty Vectors. New identity carriers
+        ;; retain their owners; checked Coerce owns conversion and resources.
+        (define (component-product-widening? target source)
           (nanopass-case (Lnodisclose Type) (leaf-carrier source)
             [(ttuple ,src ,type* ...)
              (nanopass-case (Lnodisclose Type) (leaf-carrier target)
@@ -1813,12 +1813,13 @@
                      (for-all
                        (lambda (target source)
                          (or (scalar-widening? target source)
-                             (scalar-product-widening? target source)))
+                             (component-product-widening? target source)
+                             (vector-component-widening? target source)))
                        type^* type*))]
                [else #f])]
             [else #f]))
         ;; Product components may contain fixed Vector dimensions ending in
-        ;; scalar/tuple leaves, with unchanged dimensions and tuple shape.
+        ;; scalar/product/Vector leaves, with unchanged dimensions and shape.
         (define (vector-component-widening? target source)
           (nanopass-case (Lnodisclose Type) (leaf-carrier source)
             [(tvector ,src ,len ,type)
@@ -1826,7 +1827,7 @@
                [(tvector ,src^ ,len^ ,type^)
                 (and (= len len^)
                      (or (scalar-widening? type^ type)
-                         (scalar-product-widening? type^ type)
+                         (component-product-widening? type^ type)
                          (vector-component-widening? type^ type)))]
                [else #f])]
             [else #f]))

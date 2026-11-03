@@ -151,3 +151,25 @@ order, both witness positions/failure, both branches, deeper alternation,
 Boolean-to-Boolean and Uint-to-Field, Field identity, empty outer/leaf Vectors,
 and empty/single tuples. It is not a smaller replacement for either original.
 Source/model/API/proof acceptance remains open pending actual execution.
+
+## Current source characterization and existing checked owners
+
+At signed characterization head `08ac3bb51`, the unchanged original compiler186
+recipe was rebuilt because its declared inputs include the new full example.
+The existing-only check correctly refused the older package; that failed epoch
+is retained. The resulting original package built successfully in 56.21 seconds.
+Its separate ten-command gate passed: every complete source succeeds in TS with
+all 1/1/14 declared exports and refuses both Rust and independent IR before the
+selector change. No refused Rust/IR artifact was published.
+
+Before changing the selector, all five conversion-domain tests passed, including
+new direct and singleton-wrapped Vector children, native checked-plan positives,
+independent recorded-domain positives/refusals, narrowing, mismatched dimensions,
+wrong arity/result, identity leaves and static-empty validation. The original
+four test bodies are unchanged. Strict backend library/test Clippy passed.
+
+The next compiler187 change only composes the existing component-product
+relation with the existing component-Vector relation. The root element rule,
+checked coercion, AST renderer, recording validator, runtime and ABI are intact.
+Whole generated SDK execution, malformed ingress/source boundaries, model/proof
+qualification and independent reviews remain open; this is not slice acceptance.
