@@ -18,7 +18,7 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 
 - [Current-candidate isolated witnessed SDK handoff](plans/current-profile-sdk-handoff.md): reviewed repaired compiler 0.31.183 local qualification of the existing documented consumer, actual proof-feature library Clippy, typed refusals, fresh proof and separate funded strict transaction. Accepted compiler143 integration remains separate; full CI and profile handoff stay open.
 
-- [Current-candidate Passport consumer handoff](plans/current-passport-handoff.md): planned compiler183 qualification of the intact pure application and documented consumer. Earlier accepted application and fixture/provenance epochs remain separate.
+- [Current-candidate Passport consumer handoff](plans/current-passport-handoff.md): reviewed local compiler183 qualification passes for the intact pure application, raw SDK and documented consumer, with independent provenance controls. Historical application/fixture epochs remain separate; full integration is open.
 
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 

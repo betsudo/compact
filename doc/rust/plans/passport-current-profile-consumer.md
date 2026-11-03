@@ -147,3 +147,15 @@ protocol-wide compatibility. A real current baseline failure must be retained,
 minimized and repaired at its existing owner before accepting dependent results.
 Harness setup failures retain their own receipts and are not compiler defects.
 The broader Rust AST goal remains incomplete after this bounded slice.
+
+
+## Current-candidate reconciliation — 2026-11-03
+
+The [compiler183 handoff](current-passport-handoff.md) has its own reviewed local
+qualification at `9286fe749`: all 40 maintained commands pass, with live 202-case
+TS/codec comparison, 16 raw-SDK adoption methods, the actual two-test guide,
+strict Clippy, typed misuse and changed-expectation controls. Three maintained
+provenance methods run independently. The original 17-file source and historical
+oracle authorities stay intact; the compiler144 fixture metadata is not relabeled.
+This newer finite local result does not replace the earlier source/CI/merge
+receipts or create a new hosted integration, proof or release claim.

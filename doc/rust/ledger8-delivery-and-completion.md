@@ -723,3 +723,21 @@ proves no constructor/deployment, wallet lifecycle or unselected nested-product
 export. Full required CI/Linux, logical integration, current application
 reconciliation and finite supported-profile capability handoff remain open;
 the broad goal stays incomplete and Forge remains deferred.
+
+
+### Current-candidate Passport handoff — local qualification
+
+The [current Passport handoff](plans/current-passport-handoff.md) passes at signed
+compiler183 execution `9286fe749`. It retains the intact 17-file source and all
+75 pure exports, with 202 live TS samples plus codec comparison, 16 adoption Rust
+methods, two actual guide methods, strict SDK/consumer Clippy, intended E0308
+misuses and changed-oracle assertion failure/restoration. Three existing
+provenance methods pass separately; fresh Claude source/receipt review reports
+no P1/P2 within the recorded finite local scope.
+
+Only a separate formatting copy matches the retained compiler144 Rust fixture;
+the executed SDK stays raw and historical identities/labels remain unchanged.
+This is current-candidate application qualification, not a new semantic feature.
+The pure library has no recording/proof/application stage. Current Linux/full
+required CI, logical integration and the finite supported-profile handoff remain
+open. The broader goal is incomplete; Forge remains deferred.
