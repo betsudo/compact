@@ -1,0 +1,42 @@
+[
+  {
+    "source": "original",
+    "path": "tools/compact-rust-backend/tests/nested_component_products/unsupported/top_level_nested_tuple.compact",
+    "sha256": "36d8ab210f5981a88cdc6e497d2fd26bf4070ea226a5c1b2a75212c9dac983e2",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "role": "Untouched complete existing counterexample at original path"
+  },
+  {
+    "source": "same_type_stateful",
+    "path": "tools/compact-rust-backend/tests/outer_vector_product_widening/same_type_stateful.compact",
+    "sha256": "1b878fee6d470255294371c7c85dc16a0d81871cdb13ea991e30be6140046a3b",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "role": "Separately declared complete one-export control; not replacement or extraction of original"
+  },
+  {
+    "source": "pure_same_type",
+    "path": "tools/compact-rust-backend/tests/outer_vector_product_widening/pure_same_type.compact",
+    "sha256": "19c7c1e20b37c7ac8bfb95445224f750a4e48681bee198e84d5733c6eef832ee",
+    "stateful": false,
+    "entries": [
+      "run"
+    ],
+    "role": "Separately declared complete one-export control; not replacement or extraction of original"
+  },
+  {
+    "source": "pure_widening",
+    "path": "tools/compact-rust-backend/tests/outer_vector_product_widening/pure_widening.compact",
+    "sha256": "725ec00ff9e29508323b71eb507361a6102fd41345370498f66aeaedf6a530f8",
+    "stateful": false,
+    "entries": [
+      "run"
+    ],
+    "role": "Separately declared complete one-export control; not replacement or extraction of original"
+  }
+]
