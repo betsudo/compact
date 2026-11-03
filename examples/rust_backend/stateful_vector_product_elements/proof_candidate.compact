@@ -1,0 +1,10 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+import CompactStandardLibrary;
+export ledger seen:Field;
+pure circuit keep(input:Vector<2,[Vector<2,Uint<8>>,Uint<16>]>):Vector<2,[Vector<2,Uint<8>>,Uint<16>]>{return input;}
+pure circuit flip(input:Vector<2,[Vector<2,Uint<8>>,Uint<16>]>):Vector<2,[Vector<2,Uint<8>>,Uint<16>]>{return [input[1],input[0]];}
+constructor(initialSeen:Field){seen=disclose(initialSeen);}
+export circuit run(input:Vector<2,[Vector<2,Uint<8>>,Uint<16>]>):Vector<2,[Vector<2,Uint<16>>,Uint<32>]>{if(seen==0){seen=1;return keep(input);}else{seen=3;return flip(input);}}
+export circuit run_field(input:Vector<2,[Vector<2,Uint<8>>,Uint<16>]>):Vector<2,[Vector<2,Field>,Field]>{seen=2;return keep(input);}

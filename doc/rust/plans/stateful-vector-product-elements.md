@@ -3,8 +3,9 @@
 Status: isolated local continuation from reviewed V documentation head
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
-strict signature baseline. Aggregate coercion semantics, SDK execution,
-model/key/proof feasibility and integration acceptance remain open.
+strict signature baseline. Compiler179 begins the component conversion change;
+whole-source semantic/API execution, model/key/proof feasibility and integration
+acceptance remain open.
 
 ## Strict signature baseline repair
 
@@ -46,6 +47,22 @@ the actual supplied casts. Check whether selecting the existing ordered owner
 also resolves the two legacy plain witness-call failures before adding a dispatch
 rule. Preserve original child bounds, exact dimensions, single evaluation and
 witness identities; arbitrary tuple/nominal support remains excluded.
+
+### Compiler179 implementation under qualification
+
+Actual original178 pass traces of the full parameter, local, alias and witness
+sources show frontend-supplied `safe-cast` nodes with the original nested Vector
+bounds. The witness initializer is a cast of the declared witness call; the
+legacy IR loses that cast and emits a plain call. Compiler179 extends only the
+existing product-component relation to recurse through fixed Vectors. Return
+and local-binding selection reuse the existing ordered lowering and typed
+witness dispatch; no separate call-dispatch change is made.
+
+The 15 complete original probes, including both frontend refusal controls and
+the pure/identity/prior-V controls, are adopted byte-for-byte under
+`examples/rust_backend/stateful_vector_product_elements/`. These maintained
+physical source paths are explicit new compiler inputs, not rewritten origins
+or normalized Programs. Their current output and execution remain to be checked.
 
 ## Actual gap and baseline
 

@@ -1806,7 +1806,14 @@
              (nanopass-case (Lnodisclose Type) (leaf-carrier target)
                [(ttuple ,src^ ,type^* ...)
                 (and (= (length type*) (length type^*))
-                     (for-all scalar-widening? type^* type*))]
+                     ;; A product component can itself be a fixed Vector.
+                     ;; Reuse the same dimension/leaf relation; do not admit
+                     ;; arbitrary nested products or new identity carriers.
+                     (for-all
+                       (lambda (target source)
+                         (or (scalar-widening? target source)
+                             (vector-value-widening? target source)))
+                       type^* type*))]
                [else #f])]
             [else (or (vector-value-widening? target source)
                       (scalar-widening? target source))]))
