@@ -362,6 +362,10 @@ def run(args):
                     and (type(r["k"]) is int and r["k"] >= 0 if r["proof_required"] else r["k"] is None)
                     and r["selected_for_proof"] == ((r["source"], r["circuit"]) in SELECTED)
                     for r in full_models["circuits"]), "model observation/applicability differs")
+        expected_models = json.loads((main_gate.FIXTURES / "model-expectations.json").read_text())
+        require(expected_models["format"] == "compact-vector-product-elements-model-expectations/v1"
+                and [{k: r[k] for k in ["source", "circuit", "k", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
+                "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
         require(main_gate.inventory(full_generated) == full_before, "model observation changed producers")
         report["all_source_models"] = full_models
         report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]

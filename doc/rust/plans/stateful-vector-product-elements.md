@@ -595,3 +595,12 @@ rlib as read-only DATA, requiring source-before/copy/source-after SHA equality.
 The executable snapshot policy is unchanged. Original failed receipt, binary,
 helper rlib and helper depfile remain preserved; no model/material/key/proof
 acceptance follows from this failed preparation. Fresh qualification is pending.
+
+The data-snapshot successor also hardens reviewed source identity: API, initial
+state, verifier and changed-result dispatch use explicit (source,circuit) pairs;
+the constructor's actual source-specific seen value must match its scenario
+label. The compiled helper selector must be the candidate pool's helper sibling.
+A maintained observed-size/applicability table checks freshly loaded all20models
+for drift; it stores no proof/key/verdict outcomes. If source/profile changes
+make more coverage eligible, qualification must review and extend selection.
+All these current-source checks still require execution and fresh review.

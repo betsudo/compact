@@ -129,6 +129,17 @@ fn main() {
             helper.is_absolute() && helper.join("contract/lib.rs").is_file(),
             "COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED must name the complete helper SDK"
         );
+        let expected_helper = root
+            .parent()
+            .expect("candidate SDK pool required")
+            .join("helper");
+        assert_eq!(
+            helper.canonicalize().expect("helper SDK must exist"),
+            expected_helper
+                .canonicalize()
+                .expect("paired sibling helper SDK must exist"),
+            "helper SDK must be the candidate pool's complete helper sibling"
+        );
         println!("cargo::rustc-cfg=compact_vector_product_elements_generated");
     }
 }

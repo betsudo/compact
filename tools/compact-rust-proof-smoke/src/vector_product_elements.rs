@@ -272,11 +272,23 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         let pool = root;
         let source_root = pool.join(source);
         let root = source_root.as_path();
-        let initial = if source == "helper" {
-            h::initial_state(ConstructorContext::new(7_u64))?
-        } else {
-            c::initial_state(ConstructorContext::new(7_u64), Field::from(initial_seen))?
+        let initial = match (source, name) {
+            ("helper", "run") => h::initial_state(ConstructorContext::new(7_u64))?,
+            ("proof_candidate", "run_field") => {
+                c::initial_state(ConstructorContext::new(7_u64), Field::from(initial_seen))?
+            }
+            _ => return Err("unknown selected source/circuit constructor".into()),
         };
+        let actual_initial_seen = match (source, name) {
+            ("helper", "run") => helper_slots::seen.inspect(initial.ledger_state.get_ref())?,
+            ("proof_candidate", "run_field") => {
+                slots::seen.inspect(initial.ledger_state.get_ref())?
+            }
+            _ => return Err("unknown selected source/circuit slot".into()),
+        };
+        if actual_initial_seen != Field::from(initial_seen) {
+            return Err("source-specific initial seen value differs from scenario identity".into());
+        }
         let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
         let observed = ObservedContractState::new(
             deploy.address(),
@@ -328,12 +340,16 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 (prepared, state, verifier)
             }};
         }
-        let (prepared, state, verifier) = match name {
-            "run" => check_routes!(h, helper_slots, run, run_call, result_vector(values)),
-            "run_field" => check_routes!(c, slots, run_field, run_field_call, field_result(values)),
+        let (prepared, state, verifier) = match (source, name) {
+            ("helper", "run") => {
+                check_routes!(h, helper_slots, run, run_call, result_vector(values))
+            }
+            ("proof_candidate", "run_field") => {
+                check_routes!(c, slots, run_field, run_field_call, field_result(values))
+            }
             _ => return Err("unknown selected export".into()),
         };
-        let proof_bytes = prove(root, pool, name, index, &prepared, &verifier)?;
+        let proof_bytes = prove(root, pool, source, name, index, &prepared, &verifier)?;
         let transaction_bytes = apply(root, name, index, prepared, deploy, &state, rng)?;
         rows.push(serde_json::json!({"source":source,"circuit":name,"initial_seen":initial_seen,"input":input_values,"expected":values,"seen":seen,
             "result_type":if name == "run" {"Vector<2,[Vector<2,Uint<16>>,Uint<32>]>"} else {"Vector<2,[Vector<2,Field>,Field]>"},"witness_count":0,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
@@ -371,6 +387,7 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 fn prove(
     root: &Path,
     pool: &Path,
+    source: &str,
     name: &str,
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
@@ -418,10 +435,10 @@ fn prove(
         return Err("vector-product-elements accepted corrupted proof bytes".into());
     }
     // A genuinely different source relation, not merely a second key for the same erased circuit.
-    let (other_source, other) = if name == "run" {
-        ("proof_candidate", "run_field")
-    } else {
-        ("helper", "run")
+    let (other_source, other) = match (source, name) {
+        ("helper", "run") => ("proof_candidate", "run_field"),
+        ("proof_candidate", "run_field") => ("helper", "run"),
+        _ => return Err("unknown source/circuit verifier pair".into()),
     };
     let wrong_path = pool
         .join(other_source)
@@ -451,9 +468,13 @@ fn prove(
     // Bind a genuinely different public result through the exact upstream
     // communication commitment, rather than changing an arbitrary input slot.
     let mut changed_call = call.clone();
-    changed_call.output = match name {
-        "run" => AlignedValue::from(result_vector([([999, 998], 99999), ([997, 996], 99998)])),
-        "run_field" => AlignedValue::from(field_result([([999, 998], 99999), ([997, 996], 99998)])),
+    changed_call.output = match (source, name) {
+        ("helper", "run") => {
+            AlignedValue::from(result_vector([([999, 998], 99999), ([997, 996], 99998)]))
+        }
+        ("proof_candidate", "run_field") => {
+            AlignedValue::from(field_result([([999, 998], 99999), ([997, 996], 99998)]))
+        }
         _ => return Err("unknown selected result carrier".into()),
     };
     if changed_call.output.alignment != call.output.alignment
