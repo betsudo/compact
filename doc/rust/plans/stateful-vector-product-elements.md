@@ -1,11 +1,13 @@
 # Stateful Vector products with Vector elements
 
-Status: isolated local continuation from reviewed V documentation head
+Status: reviewed bounded local source/API stage, continuing from V documentation head
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
-strict signature baseline. Compiler180 implements the bounded component conversion;
-whole-source semantic/API execution, model/key/proof feasibility and integration
-acceptance remain open.
+strict signature baseline. Compiler180 implements the bounded component conversion.
+The current stage passes 17 complete SDK roots / 20 TS/Rust cases, with fresh
+source and separate receipt review reporting no P1/P2. Full feature acceptance,
+static/untrusted/producer controls, model/key/proof qualification and integration
+remain open. Forge is deferred and does not block this backend work.
 
 ## Strict signature baseline repair
 
@@ -48,7 +50,7 @@ also resolves the two legacy plain witness-call failures before adding a dispatc
 rule. Preserve original child bounds, exact dimensions, single evaluation and
 witness identities; arbitrary tuple/nominal support remains excluded.
 
-### Compiler179 implementation under qualification
+### Initial compiler179 implementation (historical)
 
 Actual original178 pass traces of the full parameter, local, alias and witness
 sources show frontend-supplied `safe-cast` nodes with the original nested Vector
@@ -73,8 +75,7 @@ positive SDK roots and 15 TS/Rust cases (56 stateful routes plus one pure route)
 including both helper branches, the Field result and observed witness order. It
 compares independent current IR, authenticates whole manifests, retains original
 source/tool/config/generated inputs, executes unedited consumers and full strict
-SDK roots, and checks both complete source-bound frontend refusals. Its current
-execution is pending. Compile-fail/positive twins, malformed IR, complete producer
+SDK roots, and checks both complete source-bound frontend refusals. At that checkpoint, execution was pending. Compile-fail/positive twins, malformed IR, complete producer
 mutations, broader sources, model inventory and genuine proof/application remain
 separate open gates; this first execution gate is not full acceptance.
 
@@ -107,11 +108,56 @@ component-local aliases had not been executed. This gate remains development
 evidence. Four complete sources/cases now cover a two-dimensional Vector
 component, component aliases, Boolean component leaves and unchanged Field
 component leaves. The next gate declares 17 roots / 20 cases, derives its route
-counts, and drops copied unused assertion/no-mutation paths. Current execution
-and fresh reviews of this expanded cohort are pending; no prior result is
-relabeled as its acceptance.
+counts, and drops copied unused assertion/no-mutation paths. At that checkpoint, execution and fresh reviews of the expanded cohort were
+pending; no prior result was relabeled as its acceptance.
 
-## Actual gap and baseline
+
+## Current bounded source/API result
+
+At `cba7de0824d82d013ba61db7a0841abbc185a791`, original compiler180 and the
+maintained gate pass **77 commands**: 17 complete unedited generated SDK roots,
+20 TS/Rust cases, 76 stateful routes plus one pure route, strict Clippy on every
+root, both complete frontend refusals and the deeper-product scope control.
+Both recorded routes compare the entire serialized Rust verification-op list
+with the actual TS public transcript and replay state/effects; the four Rust
+routes agree on state, effects and gas. This is not a TS/replay gas equality claim.
+
+Actual Claude source review v4 reports no P1/P2 (141.73 seconds). A separate
+Claude receipt review v3 also reports no P1/P2 (340.86 seconds), independently
+reconciling all 1,593 source inputs, 1,124 actual derivation source files, compiler
+and tool identities, 17 whole manifests/SDKs, 219 Node runtime files, 20 loaded
+external libraries and all command outcomes. It executes no author helper or
+proof. The live and frozen trees remain exact at its observation. Host OS bytes,
+resolved lock/target environment and transitive proof-runner inputs do not gain
+new qualification from this first API gate.
+
+Twelve original178 commands separately demonstrate that all four new component
+sources previously passed TS but failed Rust/IR. The current180 pass trace still
+contains `talias NarrowPair`/`WidePair` at the component in the `emit-rust-ir`
+input; aliases were not already erased at that boundary. These observations
+and all prior failures/reviews remain at their literal epochs. The separately
+emitted IR lane uses the same packaged Scheme compiler, not an independent
+compiler implementation.
+
+Current local receipts: `original-native-v6/receipt.json`,
+`whole-sdk-execution-v4/receipt.json`, `local-claude-source-review-v4.json`,
+`local-claude-receipt-review-v3.json`, `new-component-baseline-and-trace-v1/receipt.json`
+and `consumer-depfile-preservation-v4.json` under the existing evidence root.
+The retained consumer depfile lists only `consumer.rs`; it does not establish
+transitive generated/runtime or proof-runner completeness. Circuit test names
+`proof_keep`, `proof_flip` and `proof_field` are **not proofs**.
+
+Next, promote the eight unrun static misuse/positive-twin drafts into the
+maintained gate, add marked diagnostics, malformed-IR and complete producer
+mutations, and qualify checked-helper/witness first-error cases. Bind resolved
+locks, target/environment and physical proof-runner inputs before proof build.
+Observe every accepted export/model before selecting any tiny-admitted proof;
+retain intact over-cap refusals. Fresh keys, real proofs and separate funded
+default-strict applications with immutable identity and replay controls are
+still required. Constructors, unselected/all-input outcomes, full required CI,
+Linux and integration stay open. No Forge work, publication or cleanup occurs.
+
+## Original gap and baseline (historical)
 
 Original compiler177 at `438bf21c9f64b133970f8dadb212c24e54a2873d` retains
 15 complete sources / 45 commands in `next-vector-product-elements-v1/receipt.json`.
