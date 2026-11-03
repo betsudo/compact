@@ -284,3 +284,13 @@ previous external-driver/workflow-source gap; execution of that workflow in CI
 remains required. The separate compiler185 child retains its own accepted local
 selected-proof epoch. Preserve both histories before local stack reconciliation;
 no merge, publication, hosted run or cleanup is authorized by this closeout.
+
+### Combined compiler185 successor
+
+The parent source `6511a34b8` is now an ancestor of local child `e4acd20a8`.
+A fresh 13-command run of this unchanged complete consumer passes in 12.29s against
+the exact current original185 recipe. Its four typed routes, two VM replays,
+strict SDK/test-code lint and marked static refusals retain the documented
+scope; no new proof/TS/MSRV or hosted result is inferred. The accepted184 epochs
+above remain literal. The original parent and child histories are preserved;
+see the nested-component plan's combined reconciliation closeout and evidence.

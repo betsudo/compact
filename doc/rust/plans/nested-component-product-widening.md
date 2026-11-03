@@ -1,13 +1,14 @@
 # Nested scalar products below Vector components
 
-Status: bounded local source/API/static/ingress/producer/refusal and selected
-proof/application stages pass at `660e3937b`. Actual independent Claude source
-and receipt reviews find no P1/P2 for that scope. Both maintained predecessor
-API suites also pass (147 and 170 commands). Four of fourteen intact exports
-have fresh proof/verification and separate DEFAULT-strict application coverage;
-ten remain unproved, including three k9 exports. Full CI/Linux/integration and
-the primary Rust AST goal remain incomplete. Based on reviewed request-field
-baseline `d9e9cb2cb`; subsequent parent ancestry reconciliation remains open.
+Status: the combined local source/API/static/ingress and selected proof/application
+stage is accepted at `e4acd20a8`, with fresh independent Codex CLI source and
+receipt reviews after an authentic Claude session limit. The reviewed parent
+`6511a34b8` is now an ancestor; all 20 child commits were replayed with valid
+GPG/DCO/Assisted trailers and both original histories preserved. The current
+same-type parent consumer also passes on compiler185. Four of fourteen intact
+proof-cohort exports have fresh proof/verification and separate DEFAULT-strict
+application coverage; ten remain unproved, including three k9 exports. Full
+required CI/Linux/MSRV/integration and the broad Rust AST goal remain incomplete.
 
 ## Gap and owners
 
@@ -497,3 +498,56 @@ Current evidence: `workflow-preparation-v1/receipt.json`, its recipe and logs,
 This paragraph is a documentation-only successor to the reviewed625source.
 No branch merge, rebase, push, hosted run, release, shared installation, Forge
 work or cleanup occurred in this follow-up.
+
+## Combined local reconciliation accepted — 2026-11-03
+
+Preserved original documented child `f25b6861f` and parent `6511a34b8` in local
+backup refs before rebasing. The new clean combined head is
+`e4acd20a82f08e25adea02c069e06317e52424e9`. All 20 original child commits map in
+order to signed successors with unchanged subjects/DCO/Assisted trailers.
+The only conflict was the request-field plan's duplicate relocation/inventory
+note: retain the exact full parent plan, including its newer consumer sections,
+and keep every child code change. All three stages and the resolution are retained.
+
+The final tree differs from the original child in exactly seven parent-owned
+paths. Six match the parent byte-for-byte; removing the exact 17-line parent
+workflow insertion reconstructs the prior child workflow. Compiler/runtime/
+contracts/SDK/proof-consumer code remains unchanged. This supersedes the earlier
+local ancestry-open notes without relabelling their historical source epochs.
+No branch merge, canonical ref mutation, push, hosted run or cleanup occurred.
+
+The exact current original185 recipe passes in 11.11s. Fresh whole proof v5 passes
+17 commands in 299.46s plus its complete 73-command native protocol: all source/
+SDK/parameter/raw-binding/over-cap controls, four fresh standalone proofs and
+independent verification/negatives, then four separately proved funded
+DEFAULT-strict applications and unchanged-state replay refusal. Fourteen
+workflow and 31 fixture-registry methods pass. The parent maintained 13-command
+same-type SDK/API/static gate also passes in 12.29s on that same current185 receipt;
+its original184 qualification stays separate. It adds no fifteenth proof model.
+
+Claude source review hit its actual session limit; preserve that raw failure,
+not a completed review. Authorized independent Codex CLI fallback
+(gpt-6.1-sol, medium, 262.97s) verifies ancestry, exact tree/conflict/mapping and
+OpenPGP signatures and finds no P1/P2. Separate actual receipt review
+(gpt-6.1-sol, high, 253.08s) rehashes current inputs/logs/artifacts and inspects
+the executed fail-closed consumers, finding no P1/P2 and accepting this bounded
+local scope. No independent cryptographic rerun by the reviewers is claimed.
+All previously stated count/Debug/discrete-attestation/symlink/MSRV/CI limits
+remain. Ten proof-cohort exports and the parent control have no new proof claim.
+
+Evidence under the declared root: `reconcile-stack-v1/`,
+`reconciled-source-checks-v1/`, `proof-controller-v5.json`,
+`proof-existing-recipe-v5/`, `paired-proof-v5/`,
+`reconciled-parent-gate-v1/`,
+`local-claude-reconciled-source-review-v1.json`,
+`local-codex-reconciled-source-review-v1.json` and
+`local-codex-reconciled-receipt-review-v1.json`.
+
+The next source-characterized gap is
+[fixed Vector leaves below component products](component-product-vector-leaves.md).
+Current actual TS-positive/Rust-IR-refused whole sources remain unchanged. Four
+complete pure/same-type controls pass TS/Rust/IR emission; both pure SDKs pass
+strict lint, while both same-type SDKs expose an existing private request-field
+type-complexity lint defect. Fix and qualify that baseline before implementing
+the new widening relation. This does not reopen accepted semantics or the
+deferred Forge experiment.
