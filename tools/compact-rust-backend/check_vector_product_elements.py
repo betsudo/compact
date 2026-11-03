@@ -112,7 +112,7 @@ def main():
         names = {s["source"] for s in definitions}
         require(len(names) == len(definitions) == 13 and names.isdisjoint(refusals)
                 and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 15
+        require(len(cases) == len({r["id"] for r in cases}) == 16
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}
@@ -164,7 +164,7 @@ def main():
         report["generated_inputs_before_build"] = {name: inventory(generated / name) for name in names}
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
-        require("test result: ok. 15 passed; 0 failed; 0 ignored;" in result.stdout, "all Rust cases must execute")
+        require(f"test result: ok. {len(cases)} passed; 0 failed; 0 ignored;" in result.stdout, "all Rust cases must execute")
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest, "--lib", "--tests", "--", "-D", "warnings"])
         report["strict_sdk_roots"] = {}
         for spec in definitions:
@@ -186,6 +186,26 @@ def main():
             require(rejected.returncode == expected["exit"] != 0 and rejected.stdout == expected["stdout"]
                     and rejected.stderr == expected["stderr"], "exact frontend refusal changed")
             report["frontend_refusals"][name] = expected
+        report["scope_controls"] = {}
+        scope_controls = json.loads((FIXTURES / "scope-controls.json").read_text())
+        require(set(scope_controls) == {p.stem for p in (FIXTURES / "unsupported").glob("*.compact")},
+                "scope control roster differs")
+        for name, expected in scope_controls.items():
+            source = FIXTURES / "unsupported" / (name + ".compact")
+            require(digest(source) == expected["source_sha256"], "scope control source changed")
+            for lane, outcome in expected["lanes"].items():
+                command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
+                           else [compiler, "--target", lane, "--skip-zk"])
+                if lane == "rust":
+                    command += ["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"]
+                rejected = run("scope-" + name + "-" + lane,
+                               command + [source.relative_to(ROOT), output / ("scope-" + name + "-" + lane)],
+                               success=outcome["exit"] == 0)
+                require(rejected.returncode == outcome["exit"], "scope control outcome changed")
+                if outcome["exit"]:
+                    require(rejected.stdout == outcome["stdout"] and rejected.stderr == outcome["stderr"],
+                            "complete scope refusal changed")
+            report["scope_controls"][name] = expected
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
         for path, sha in pins.items():
@@ -194,7 +214,8 @@ def main():
             require(digest(path) == sha, "tool changed: " + path)
         require(reject_compiler_overrides(configuration_environment) == configuration, "Cargo configuration changed")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
-        report.update(status="passed", rust_tests=15, stateful_routes=56, pure_routes=1, generated_hashes=snapshots)
+        pure_routes = sum(not next(s["stateful"] for s in definitions if s["source"] == row["source"]) for row in cases)
+        report.update(status="passed", rust_tests=len(cases), stateful_routes=4*(len(cases)-pure_routes), pure_routes=pure_routes, generated_hashes=snapshots)
     except Exception as error:
         report.update(status="failed", error=str(error))
         raise

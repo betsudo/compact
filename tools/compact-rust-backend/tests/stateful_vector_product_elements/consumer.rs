@@ -57,7 +57,13 @@ fn u<const M: u128>(value: u128) -> BoundedUint<M> {
 }
 fn replay<T>(
     out: r::recording::RecordedCircuitResult<u64, T>,
+    row: &Value,
 ) -> r::context::CircuitResult<u64, T> {
+    assert_eq!(
+        serde_json::to_value(out.public.verify_ops()).unwrap(),
+        row["publicTranscript"],
+        "complete public transcript differs from TS"
+    );
     let replay = out
         .public
         .initial()
@@ -85,9 +91,9 @@ macro_rules! stateful_case {
                 let held=ctx.query.state.clone();
                 let result=match lane {
                     0=>api::$entry(ctx,$($arg),*),
-                    1=>api::recorded::$entry(ctx,$($arg),*).map(replay),
+                    1=>api::recorded::$entry(ctx,$($arg),*).map(|out|replay(out,&row)),
                     2=>api::functional::$entry::Program::new($($arg),*).execute_native(ctx),
-                    3=>api::functional::$entry::Program::new($($arg),*).execute_recorded(ctx).map(replay),
+                    3=>api::functional::$entry::Program::new($($arg),*).execute_recorded(ctx).map(|out|replay(out,&row)),
                     _=>unreachable!()
                 };
                 check(result.map(|out|{
@@ -141,6 +147,16 @@ stateful_case!(
     [FixedVector::new([input(), second()])]
 );
 stateful_case!(parameter, parameter, run, [], [input()]);
+stateful_case!(
+    parameter_boundary,
+    parameter,
+    run,
+    [],
+    [FixedVector::new([
+        (FixedVector::new([u(255), u(0)]), u(65535)),
+        (FixedVector::new([u(1), u(254)]), u(65534))
+    ])]
+);
 stateful_case!(
     prior_product_control,
     prior_product_control,
@@ -225,16 +241,19 @@ macro_rules! witness_case {
                 let held = ctx.query.state.clone();
                 let out = match lane {
                     0 => api::run(ctx, &witness),
-                    1 => api::recorded::run(ctx, &witness).map(replay),
+                    1 => api::recorded::run(ctx, &witness).map(|out| replay(out, &row)),
                     2 => api::functional::run::Program::new().execute_native(ctx, &witness),
                     3 => api::functional::run::Program::new()
                         .execute_recorded(ctx, &witness)
-                        .map(replay),
+                        .map(|out| replay(out, &row)),
                     _ => unreachable!(),
                 }
                 .unwrap();
                 check(Ok(out.result), &row);
-                assert_eq!(out.context.private_state, 8);
+                assert_eq!(
+                    out.context.private_state,
+                    row["privateState"].as_u64().unwrap()
+                );
                 assert_eq!(
                     out.private_transcript_outputs
                         .into_iter()
@@ -250,11 +269,11 @@ macro_rules! witness_case {
                     $module::ledger_slots::seen
                         .inspect(out.context.query.state.get_ref())
                         .unwrap(),
-                    Field::from(1_u64)
+                    Field::from(row["seen"].as_str().unwrap().parse::<u64>().unwrap())
                 );
                 assert_eq!(
                     $module::ledger_slots::seen.inspect(held.get_ref()).unwrap(),
-                    Field::from(0_u64)
+                    Field::from(row["initialSeen"].as_str().unwrap().parse::<u64>().unwrap())
                 );
                 let state = (
                     out.context.query.state,

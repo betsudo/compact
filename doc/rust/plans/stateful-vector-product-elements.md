@@ -78,6 +78,27 @@ execution is pending. Compile-fail/positive twins, malformed IR, complete produc
 mutations, broader sources, model inventory and genuine proof/application remain
 separate open gates; this first execution gate is not full acceptance.
 
+### Source review findings and compiler180 successor
+
+Claude's actual review of `a971993b0` found three P2 issues. The compiler179
+component recursion also reached products below a component Vector; public TS
+transcripts were not compared with Rust; and copied TS scope text claimed
+assertion-refusal checks absent from this first cohort. That review is not an
+approval, even though the corrected witness-literal successor `182243c07` passed
+the first 58-command execution gate (15 cases, 56 stateful routes plus one pure).
+
+Compiler180 restricts component recursion to fixed Vectors ending in scalar
+leaves. Products below that component retain their previous owner. A complete
+deeper-product source records the original178 TS success and exact Rust/IR
+refusals, alongside the positive component-vector sources. The successor gate
+compares complete TS public transcripts exactly with serialized Rust
+verification ops, without operation/geometry normalization. It also removes the
+unsupported assertion claim, adds a real 255/65535 boundary case, uses the
+declared witness outcomes and derives route counts from the case roster.
+These revisions require fresh source/SDK execution and independent review;
+the earlier successful gate is retained as development evidence, not renewed
+acceptance. Compile-fail/untrusted/mutation/model/proof gates remain open.
+
 ## Actual gap and baseline
 
 Original compiler177 at `438bf21c9f64b133970f8dadb212c24e54a2873d` retains

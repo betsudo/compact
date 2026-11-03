@@ -108,7 +108,6 @@ for(const spec of specs){
  const encoded=encode({value:descriptor.toValue(value),alignment:descriptor.alignment()});
  if(stateful){
   assert.equal(m.ledger(out.context.currentQueryContext.state).seen,BigInt(spec.seen),spec.id);
-  if(spec.noMutation&&source==='read_only')assert.deepEqual(m.ledger(out.context.currentQueryContext.state).saved,convert(spec.constructor[0]),spec.id);
   assert.equal(out.context.currentPrivateState,spec.privateState??7,spec.id);
   const privateDescriptor=vector(2,product8);
   const privateValues=(spec.witnessValues??[]).map(value=>encode({value:privateDescriptor.toValue(convert(value)),alignment:privateDescriptor.alignment()}));
@@ -116,7 +115,7 @@ for(const spec of specs){
   assert.deepEqual(observed,(spec.witnessValues??[]).map((value,i)=>({privateState:7+i,value,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.witnessSeen)),alignment:r.CompactTypeField.alignment()})})),spec.id);
   assert.deepEqual(encode(out.proofData.output),encoded,spec.id);
  }
- rows.push({...spec,result:encoded,privateState:stateful?(spec.privateState??7):null,privateOutputs:stateful?out.proofData.privateTranscriptOutputs.map(encode):[],observedWitnesses:observed});
+ rows.push({...spec,result:encoded,privateState:stateful?(spec.privateState??7):null,privateOutputs:stateful?out.proofData.privateTranscriptOutputs.map(encode):[],publicTranscript:stateful?json(out.proofData.publicTranscript):null,observedWitnesses:observed});
 }
 assert.deepEqual(inventory(runtime),before,'runtime production closure changed');
 for(const {path,sha256} of Object.values(wrappers)) assert.equal(hash(path),sha256);
@@ -133,5 +132,5 @@ writeFileSync(options.output,JSON.stringify({status:'passed',format:'stateful-ve
   node:{...nodeIdentity,sharedLibraries:Object.fromEntries(external.map(path=>[path,hash(path)])),
     systemLibraries:system,kernelVirtualLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'},
   wrappers,inputs,capture:{path:realpathSync(process.argv[1]),sha256:selfHash},
-  scope:'actual complete wrappers and independent expected values, ordered assertion refusals and state/private checks; no native error substitutions, proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
+  scope:'actual complete wrappers and independent expected values, public transcript equality inputs and state/private checks; no native error substitutions, proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({cases:rows.length,success:rows.filter(row=>!row.error).length,failures:rows.filter(row=>row.error).length,output:options.output}));

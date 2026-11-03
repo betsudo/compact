@@ -571,9 +571,7 @@
         ],
         "41"
       ]
-    ],
-    "initialSeen": "0",
-    "seen": "1"
+    ]
   },
   {
     "id": "witness_after",
@@ -664,5 +662,47 @@
       ]
     ],
     "privateState": 8
+  },
+  {
+    "id": "parameter_boundary",
+    "source": "parameter",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "255",
+            "0"
+          ],
+          "65535"
+        ],
+        [
+          [
+            "1",
+            "254"
+          ],
+          "65534"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "255",
+          "0"
+        ],
+        "65535"
+      ],
+      [
+        [
+          "1",
+          "254"
+        ],
+        "65534"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
   }
 ]
