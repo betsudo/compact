@@ -173,3 +173,23 @@ relation with the existing component-Vector relation. The root element rule,
 checked coercion, AST renderer, recording validator, runtime and ABI are intact.
 Whole generated SDK execution, malformed ingress/source boundaries, model/proof
 qualification and independent reviews remain open; this is not slice acceptance.
+
+## Original compiler187 and native-stage harness
+
+The unchanged original recipe built from signed `dbfe7eb5d` in 175.17 seconds.
+The maintained ledger documentation owner regenerated its full output with only
+the compiler version line changed; the literal workflow version check passed.
+Scheme/controller hashes and compiler input pins were retained before execution.
+
+The separate maintained native-stage entrypoint is
+`tools/compact-rust-backend/check_component_product_vector_widening.py`.
+It keeps both whole original sources and the full fourteen-export family,
+explicit independent TS input/output type descriptors, twenty-six declared
+cases and four Rust execution routes with exact typed argument FAB binding.
+It requires unedited whole SDK strict lint, exact independent IR, all sixteen
+Program/capability rows, actual helper/assert/cast/witness errors, once-only
+witness observation and successful VM replay/state/effects/gas comparisons.
+This describes the gate's intended scope, not an executed result. Marked static,
+malformed IR/recording/source/producer controls, all-model inventory, applicable
+fresh proof/verification/strict-transaction gates and independent reviews remain
+required before local slice acceptance. Full CI/Linux/integration remain open.

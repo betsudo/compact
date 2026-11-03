@@ -5,7 +5,8 @@
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "original_direct"
   },
   {
     "source": "original_nested",
@@ -13,7 +14,8 @@
     "stateful": true,
     "entries": [
       "run"
-    ]
+    ],
+    "descriptor": "original_nested"
   },
   {
     "source": "family",
@@ -34,6 +36,22 @@
       "tuple_single",
       "field_identity",
       "empty_leaf"
-    ]
+    ],
+    "descriptor": {
+      "parameter": "wide",
+      "helper": "wide",
+      "local": "wide",
+      "checked_helper": "wide",
+      "witness_before": "wide",
+      "witness_after": "wide",
+      "branch": "wide",
+      "deep": "deep",
+      "boolean_field": "boolean_field",
+      "empty": "empty",
+      "tuple_empty": "tuple_empty",
+      "tuple_single": "tuple_single",
+      "field_identity": "field_identity",
+      "empty_leaf": "empty_leaf"
+    }
   }
 ]
