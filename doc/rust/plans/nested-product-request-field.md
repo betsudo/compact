@@ -1,10 +1,10 @@
 # Nested product request field: baseline repair before widening
 
-Status: current184 focused source/SDK/routes/static qualification passes. The
-first independent review accepted the narrow implementation and found a required
-CI documentation-version correction; owner regeneration and the literal local
-version gate now pass. Fresh correction review remains pending. The primary Rust
-AST goal is incomplete; Forge is deferred.
+Status: compiler 0.31.184 has reviewed, bounded local source/SDK/routes/static
+qualification. The required documentation-version correction is closed by owner
+regeneration, the literal local version gate and independent correction review.
+Full CI/integration and the primary Rust AST goal remain incomplete; Forge is
+deferred.
 
 ## Baseline and concrete gap
 
@@ -168,3 +168,30 @@ protects its E2E outcome. Extra adjacent empty/one-tuple style controls and a te
 name cleanup are optional hardening, not executed coverage. Existing negative
 carrier controls retain their original bodies. No runtime refusal or new semantic
 admission was added by this metadata-only prerequisite.
+
+
+### Reviewed bounded closeout
+
+The first Claude source/receipt review at `f872753e2` remains its literal epoch,
+including its actual P2 finding. Claude's correction review hit a genuine quota;
+it is not a completed review. Authorized Codex CLI fallback (`gpt-6.1-sol`, medium)
+then reviews clean `c0264f73c` in 105.20 seconds and finds no remaining actionable
+P1/P2 for this local metadata repair. It independently checks 197 file hashes,
+the raw owner regeneration, literal version gate, all-target test-code lint and
+source/documentation bridge. Current-clean correction evidence also retains a
+separate four-test run (0.78 seconds) and existing-only recipe (7.45 seconds);
+this does not supply the missing raw log for the first test invocation.
+
+The exact comparison applies to `contract/Cargo.toml` and the listed IR/origin/
+Program/capability/ZKIR assets. `compiler/contract-manifest.json` is a distinct
+epoch with version and derived hashes/sizes, including the changed Rust file;
+it is not claimed byte-equal. New proof execution and universal coverage remain
+unclaimed. Consumer-driver/workflow integration stays open. Begin the separately
+planned nested-product widening from this repaired baseline without reopening
+accepted SDK, Passport, DID or historical recording work.
+
+Final review records are `local-claude-request-field-review-v1.json`, the genuine
+quota `local-claude-request-field-review-v2.json`,
+`local-codex-request-field-correction-review-v1.json` and
+`correction-focused-v1/receipt.json`. This paragraph is a documentation successor
+to reviewed `c0264f73c`; it creates no new independent execution/review epoch.
