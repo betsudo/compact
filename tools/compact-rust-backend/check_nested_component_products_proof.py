@@ -188,10 +188,7 @@ def run(args):
         report["zkir"] = common.stable_copy(zkir, output / "bin/zkir")
         components = report["components"] = {}
 
-        def execute(label, command, stdout=None):
-            argv = list(map(str, command))
-            if argv[0] in rust_tools:
-                argv[0] = rust_tools[argv[0]]["path"]
+        def check_premises():
             for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "compiler_tools", "material_hashes", "dust_fixture_hashes", "key_hashes", "binary_ir_hashes"]:
                 if field in report:
                     unchanged(report[field])
@@ -199,6 +196,12 @@ def run(args):
                 unchanged({component["snapshot"]: component["sha256"]})
             require(main_gate.reject_compiler_overrides(configuration_environment) == configuration,
                     "Cargo configuration changed before command")
+
+        def execute(label, command, stdout=None):
+            argv = list(map(str, command))
+            if argv[0] in rust_tools:
+                argv[0] = rust_tools[argv[0]]["path"]
+            check_premises()
             report["current"] = label
             (output / "receipt.json").write_text(json.dumps(report, indent=2)+"\n")
             try:
@@ -355,6 +358,7 @@ def run(args):
             sdk_tracked = depfile_prerequisites(retained.read_text(), ROOT)
             sdk_required = [package_root / "lib.rs", generated / source / "contract/lib.rs",
                             *sorted((generated / source / "contract/checked-programs").glob("*.json"))]
+            require(len(list((generated / source / "contract/checked-programs").glob("*.json"))) == 13, "SDK complete Program count differs")
             require(all(str(p.resolve(strict=True)) in sdk_tracked for p in sdk_required), "SDK omitted complete raw includes")
             report["sdk_artifacts"][source] = {"package_id":row["package_id"],"manifest":str(manifest),"crate_root":row["target"]["src_path"],
                 "artifact":component,"depfile":str(retained),"depfile_sha256":digest(retained),"prerequisites":sorted(sdk_tracked)}
@@ -386,7 +390,11 @@ def run(args):
                 shutil.copyfile(generated / "family/contract/compact-rust-ir.json", folder / "compact-rust-ir.json")
                 if kind=="changed-ir":
                     path=folder / "compact-rust-ir.json"
-                    path.write_bytes(path.read_bytes()+b" ")
+                    original = path.read_bytes()
+                    changed = original + b" "
+                    require(len(changed) == len(original) + 1, "raw IR byte mutation differs")
+                    json.loads(changed)
+                    path.write_bytes(changed)
                 else:
                     path=folder / f"checked-programs/program-{index}.json"
                     if kind=="missing-program":
@@ -394,7 +402,9 @@ def run(args):
                     else:
                         path.write_bytes(path.read_bytes()+b" ")
                 control_inputs=hashes([p for p in negative.rglob("*") if p.is_file()])
+                check_premises()
                 result=bounded_command([runner,"--nested-component-products",str(negative)],env)
+                check_premises()
                 (negative / "stdout").write_text(result.stdout);(negative / "stderr").write_text(result.stderr)
                 require(result.returncode!=0 and not result.stdout and "nested-component-products family "+message in result.stderr, "wrong raw identity refusal: "+label)
                 require(not (negative / "family/keys").exists() and not list(negative.rglob("*.proof")), "pre-key refusal produced proofs/keys")
@@ -440,7 +450,9 @@ def run(args):
         require(next(r["k"] for r in full_models["circuits"] if r["source"] == "original") > 8, "over-cap control premise changed")
         shutil.copyfile(donor, excessive / "family/zkir/helper.zkir")
         control_inputs = hashes([p for p in excessive.rglob("*") if p.is_file()])
+        check_premises()
         refused = bounded_command([runner,"--nested-component-products-models",str(excessive)], env)
+        check_premises()
         (excessive / "stdout").write_text(refused.stdout); (excessive / "stderr").write_text(refused.stderr)
         require(refused.returncode != 0 and "model exceeds tiny automatic k<=8" in refused.stderr, "over-cap guard did not refuse")
         refused_models = json.loads(refused.stdout)
@@ -466,6 +478,8 @@ def run(args):
             for source in SELECTED_SOURCES:
                 (generated / source / "keys").mkdir()
             report["keygen"] = []
+            report["key_hashes"] = {}
+            report["binary_ir_hashes"] = {}
             execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
             for row in selected_models:
                 circuit = row["circuit"]
@@ -474,6 +488,8 @@ def run(args):
                                               source_root / f"keys/{circuit}.prover", source_root / f"keys/{circuit}.verifier"])
                 model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
                 require(model is not None and int(model[1]) == row["k"], "actual key model differs from verified pre-key model")
+                report["key_hashes"].update(hashes([source_root / f"keys/{circuit}.{ext}" for ext in ["prover", "verifier"]]))
+                report["binary_ir_hashes"].update(hashes([source_root / f"zkir/{circuit}.bzkir"]))
                 report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
             require(all(not (generated / name / "keys").exists() for name in by_source if name not in SELECTED_SOURCES), "unselected source acquired keys")
             require({p.name for p in (generated / "family/keys").iterdir()} == {f"{c}.{ext}" for _,c in SELECTED for ext in ["prover","verifier"]}, "selected family key membership differs")
