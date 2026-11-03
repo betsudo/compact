@@ -62,7 +62,21 @@ The 15 complete original probes, including both frontend refusal controls and
 the pure/identity/prior-V controls, are adopted byte-for-byte under
 `examples/rust_backend/stateful_vector_product_elements/`. These maintained
 physical source paths are explicit new compiler inputs, not rewritten origins
-or normalized Programs. Their current output and execution remain to be checked.
+or normalized Programs. At signed `e02b52f5d9077ad9a3e93a00a7f32f1946acb35f`,
+all 45 original-path commands match the declared outcomes: 13 sources emit through
+TS/Rust/independent IR and both frontend refusals remain. The pure/identity/prior-V
+control IR, origins and complete Programs remain byte-identical. This includes
+successful native emission for both witness positions without a new dispatch rule.
+
+The maintained `check_vector_product_elements.py` gate now declares 13 complete
+positive SDK roots and 15 TS/Rust cases (56 stateful routes plus one pure route),
+including both helper branches, the Field result and observed witness order. It
+compares independent current IR, authenticates whole manifests, retains original
+source/tool/config/generated inputs, executes unedited consumers and full strict
+SDK roots, and checks both complete source-bound frontend refusals. Its current
+execution is pending. Compile-fail/positive twins, malformed IR, complete producer
+mutations, broader sources, model inventory and genuine proof/application remain
+separate open gates; this first execution gate is not full acceptance.
 
 ## Actual gap and baseline
 

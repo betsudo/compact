@@ -1,0 +1,668 @@
+[
+  {
+    "id": "aliases",
+    "source": "aliases",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "boolean",
+    "source": "boolean",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          true
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          false
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        true
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        false
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "field",
+    "source": "field",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "helper",
+    "source": "helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "identity_control",
+    "source": "identity_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "local",
+    "source": "local",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "nested_outer",
+    "source": "nested_outer",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3",
+              "5"
+            ],
+            "31"
+          ],
+          [
+            [
+              "4",
+              "6"
+            ],
+            "41"
+          ]
+        ],
+        [
+          [
+            [
+              "7",
+              "9"
+            ],
+            "71"
+          ],
+          [
+            [
+              "8",
+              "10"
+            ],
+            "81"
+          ]
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ],
+      [
+        [
+          [
+            "7",
+            "9"
+          ],
+          "71"
+        ],
+        [
+          [
+            "8",
+            "10"
+          ],
+          "81"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "parameter",
+    "source": "parameter",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "prior_product_control",
+    "source": "prior_product_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          "31"
+        ],
+        [
+          "4",
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "31"
+      ],
+      [
+        "4",
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "proof_keep",
+    "source": "proof_candidate",
+    "entry": "run",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "proof_flip",
+    "source": "proof_candidate",
+    "entry": "run",
+    "constructor": [
+      "1"
+    ],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ],
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ]
+    ],
+    "initialSeen": "1",
+    "seen": "3"
+  },
+  {
+    "id": "proof_field",
+    "source": "proof_candidate",
+    "entry": "run_field",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2"
+  },
+  {
+    "id": "pure_control",
+    "source": "pure_control",
+    "entry": "value",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "witness_after",
+    "source": "witness_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "witnessSeen": "1",
+    "witnessValues": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "privateState": 8
+  },
+  {
+    "id": "witness_before",
+    "source": "witness_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "witnessSeen": "0",
+    "witnessValues": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "privateState": 8
+  }
+]
