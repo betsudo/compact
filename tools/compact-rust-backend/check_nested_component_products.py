@@ -21,8 +21,9 @@ Always uses an absent output directory and unedited whole generated SDKs.
 """
 import argparse
 from pathlib import Path
-import os, json, subprocess, time, hashlib, shutil, sys, tomllib, datetime
+import os, json, subprocess, time, hashlib, shutil, tomllib, datetime
 from check_stateful_product_vector_widening import reject_compiler_overrides, source_manifest_snapshot
+from check_passport_current_profile import bounded_command, cargo_target
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name('tests') / 'nested_component_products'
 
@@ -51,29 +52,38 @@ def main():
     require(hashlib.sha256(C.read_bytes()).hexdigest() == B['compactc']['sha256'] and hashlib.sha256(S.read_bytes()).hexdigest() == B['compactc-scheme']['sha256'], 'compiler identity changed')
     RT = args.ts_runtime.resolve(strict=True)
     NODE = Path(shutil.which('node')).resolve(strict=True)
-    O.mkdir(parents=True)
     sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
     g = lambda *a: subprocess.check_output(['git', *a], cwd=W, text=True).strip()
     H = g('rev-parse', 'HEAD')
     require(not g('status', '--porcelain'), 'qualification invariant failed')
     env = dict(os.environ)
     config = reject_compiler_overrides(dict(env))
-    env.update(RUSTUP_TOOLCHAIN='1.99.0', CARGO_INCREMENTAL='0', CARGO_BUILD_JOBS='2', CARGO_TARGET_DIR='/Users/ysh/.codex/local-targets/functional-ledger8-completion-20261018/target', PYTHONDONTWRITEBYTECODE='1')
+    env.setdefault('RUSTUP_TOOLCHAIN', '1.99.0')
+    require(env['RUSTUP_TOOLCHAIN'] == '1.99.0', 'use Rust1.99.0')
+    env.setdefault('CARGO_INCREMENTAL', '0')
+    env.setdefault('CARGO_BUILD_JOBS', '2')
+    env['CARGO_TARGET_DIR'] = str(cargo_target(env, O))
+    env['PYTHONDONTWRITEBYTECODE'] = '1'
     env.pop('LD_LIBRARY_PATH', None)
-    rust = {name: Path(subprocess.check_output(['/Users/ysh/.cargo/bin/rustup', 'which', '--toolchain', '1.99.0', name], text=True).strip()).resolve(strict=True) for name in ['cargo', 'rustc', 'clippy-driver', 'cargo-clippy']}
-    env['PATH'] = str(rust['cargo'].parent) + ':/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:' + env['PATH']
+    rustup = Path(shutil.which('rustup')).resolve(strict=True)
+    rust = {name: Path(subprocess.check_output([str(rustup), 'which', '--toolchain', '1.99.0', name], text=True).strip()).resolve(strict=True) for name in ['cargo', 'rustc', 'clippy-driver', 'cargo-clippy']}
+    env['PATH'] = str(rust['cargo'].parent) + os.pathsep + env['PATH']
     env['RUSTC'] = str(rust['rustc'])
     definitions = json.loads((F / 'sources.json').read_text())
     cases = json.loads((F / 'cases.json').read_text())
     require(len(cases) == len({c['id'] for c in cases}) == 23, 'qualification invariant failed')
-    pins = {str(p): sha(p) for p in [C, S, NODE, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
+    pins = {str(p): sha(p) for p in [C, S, NODE, rustup, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
+    pins.update({str(p): sha(p) for p in Path(__file__).parent.glob('*.py')})
     for folder in ['compiler', 'runtime-rs', 'runtime-rs-macros', 'tools/compact-rust-backend/src']:
         for p in (W / folder).rglob('*'):
             if p.is_file() and p.suffix in ['.rs', '.ss', '.toml', '.json']:
                 pins[str(p)] = sha(p)
     for spec in definitions:
-        p = W / spec['path']
+        p = (W / spec['path']).resolve(strict=True)
+        p.relative_to(W)
         pins[str(p)] = sha(p)
+    require(pins[str((W / definitions[0]['path']).resolve())] == '33c091f6cc2907b05c08156a129a067be8ae15ad062c2c61473538e51a8177c7', 'complete original regression changed')
+    O.mkdir(parents=True)
     j = dict(status='running', head=H, inputs=pins, tools={str(p): sha(p) for p in [C, S, NODE, *rust.values()]}, commands=[], sources={}, cargo_configuration_sha256=config, scope='Complete two-source /14export native API cohort with strict roots and23freshTS/four-routeRust cases. Source/artifact/configuration identity pins are not complete physical/transitive build attestation; static/ingress/model/proof/review remain separate.')
     report = O / 'receipt.json'
     root_packages = tomllib.loads((W / 'Cargo.lock').read_text())['package']
@@ -92,8 +102,17 @@ def main():
         j['current'] = label
         report.write_text(json.dumps(j, indent=2) + '\n')
         t = time.monotonic()
-        with (O / (label + '.stdout')).open('xb') as out, (O / (label + '.stderr')).open('xb') as err:
-            r = subprocess.run(cmd, cwd=W, env=env, stdout=out, stderr=err, timeout=300)
+        try:
+            r = bounded_command(cmd, env)
+        except subprocess.TimeoutExpired as error:
+            for stream, value in [('stdout', error.stdout), ('stderr', error.stderr)]:
+                (O / (label + '.' + stream)).write_bytes(value if isinstance(value, bytes) else (value or '').encode())
+            j['commands'].append(dict(label=label, argv=cmd, timeout=True, seconds=time.monotonic()-t,
+                stdout_sha256=sha(O/(label+'.stdout')), stderr_sha256=sha(O/(label+'.stderr'))))
+            report.write_text(json.dumps(j, indent=2) + '\n')
+            raise
+        for stream in ['stdout', 'stderr']:
+            (O / (label + '.' + stream)).write_text(getattr(r, stream))
         row = dict(label=label, argv=cmd, exit=r.returncode, seconds=time.monotonic() - t)
         for stream in ['stdout', 'stderr']:
             row[stream + '_sha256'] = sha(O / (label + '.' + stream))
