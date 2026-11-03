@@ -111,6 +111,7 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(compact_vector_product_elements_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED");
+    println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED");
     if std::env::var_os("CARGO_FEATURE_VECTOR_PRODUCT_ELEMENTS").is_some()
         && let Some(root) = std::env::var_os("COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED")
         && !root.is_empty()
@@ -119,6 +120,14 @@ fn main() {
         assert!(
             root.is_absolute() && root.join("contract/lib.rs").is_file(),
             "COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED must name the complete generated SDK"
+        );
+        let helper = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED")
+                .expect("paired complete helper SDK is required"),
+        );
+        assert!(
+            helper.is_absolute() && helper.join("contract/lib.rs").is_file(),
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED must name the complete helper SDK"
         );
         println!("cargo::rustc-cfg=compact_vector_product_elements_generated");
     }

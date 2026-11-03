@@ -13,9 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Complete Vector product elements helper SDK, three selected proofs and separate strict transactions.
+//! Complete Vector product elements helper SDK, two selected full-source proofs and separate strict transactions.
 use super::*;
 use crate::vector_product_elements_fixture::{ledger_contract as c, ledger_slots as slots};
+use crate::vector_product_elements_helper_fixture::{
+    ledger_contract as h, ledger_slots as helper_slots,
+};
 use midnight_compact_runtime::{BoundedUint, Field, FixedVector};
 use midnight_transient_crypto::proofs::{ProverKey, Zkir};
 const IR: &[u8] = include_bytes!(
@@ -36,6 +39,21 @@ const PROGRAMS: &[(&str, &[u8])] = &[
     ),
 ];
 
+const HELPER_IR: &[u8] = include_bytes!(
+    "../../compact-rust-backend/tests/stateful_vector_product_elements/goldens/helper/source-ir.json"
+);
+const HELPER_PROGRAMS: &[(&str, &[u8])] = &[(
+    "program-0.json",
+    include_bytes!(
+        "../../compact-rust-backend/tests/stateful_vector_product_elements/goldens/helper/checked-programs/program-0.json"
+    ),
+)];
+fn selected(source: &str, circuit: &str) -> bool {
+    matches!(
+        (source, circuit),
+        ("helper", "run") | ("proof_candidate", "run_field")
+    )
+}
 type InputProducts = FixedVector<(FixedVector<BoundedUint<255>, 2>, BoundedUint<65535>), 2>;
 type ResultProducts = FixedVector<(FixedVector<BoundedUint<65535>, 2>, BoundedUint<4294967295>), 2>;
 fn input(values: [([u128; 2], u128); 2]) -> InputProducts {
@@ -62,26 +80,32 @@ fn field_result(values: [([u128; 2], u128); 2]) -> FixedVector<(FixedVector<Fiel
         )
     }))
 }
-fn validate_bindings(root: &Path) -> Result<(), Box<dyn Error>> {
-    if std::fs::read(root.join("contract/compact-rust-ir.json"))? != IR {
-        return Err("vector-product-elements complete IR bytes differ".into());
-    }
-    let directory = root.join("contract/checked-programs");
-    let mut names = std::fs::read_dir(&directory)?
-        .map(|row| row.map(|row| row.file_name()))
-        .collect::<Result<Vec<_>, _>>()?;
-    names.sort();
-    let mut expected = PROGRAMS
-        .iter()
-        .map(|(name, _)| std::ffi::OsString::from(name))
-        .collect::<Vec<_>>();
-    expected.sort();
-    if names != expected {
-        return Err("vector-product-elements complete Program membership differs".into());
-    }
-    for (name, bytes) in PROGRAMS {
-        if std::fs::read(directory.join(name))? != *bytes {
-            return Err("vector-product-elements complete Program bytes differ".into());
+fn validate_bindings(pool: &Path) -> Result<(), Box<dyn Error>> {
+    for (source, ir, programs) in [
+        ("proof_candidate", IR, PROGRAMS),
+        ("helper", HELPER_IR, HELPER_PROGRAMS),
+    ] {
+        let root = pool.join(source);
+        if std::fs::read(root.join("contract/compact-rust-ir.json"))? != ir {
+            return Err("vector-product-elements complete IR bytes differ".into());
+        }
+        let directory = root.join("contract/checked-programs");
+        let mut names = std::fs::read_dir(&directory)?
+            .map(|row| row.map(|row| row.file_name()))
+            .collect::<Result<Vec<_>, _>>()?;
+        names.sort();
+        let mut expected = programs
+            .iter()
+            .map(|(name, _)| std::ffi::OsString::from(name))
+            .collect::<Vec<_>>();
+        expected.sort();
+        if names != expected {
+            return Err("vector-product-elements complete Program membership differs".into());
+        }
+        for (name, bytes) in programs {
+            if std::fs::read(directory.join(name))? != *bytes {
+                return Err("vector-product-elements complete Program bytes differ".into());
+            }
         }
     }
     Ok(())
@@ -159,42 +183,49 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
             )?))?;
             rows.push(
                 serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"proof_required":true,
-                "selected_for_proof":name == "proof_candidate"}),
+                "selected_for_proof":selected(name,entry)}),
             );
         }
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-vector-product-elements-model-inventory/v1",
+        serde_json::json!({"format":"compact-vector-product-elements-model-inventory/v2",
         "circuits":rows,"proof_execution":false,"scope":"complete model observation, no key generation or all-source proof acceptance"})
     );
     Ok(())
 }
 
-/// Validate exact bindings and inspect selected tiny models before key generation.
-pub(super) fn models(root: &Path) -> Result<(), Box<dyn Error>> {
-    validate_bindings(root)?;
+/// Inspect selected whole-source models and retain the original conditional refusal.
+pub(super) fn models(pool: &Path) -> Result<(), Box<dyn Error>> {
+    validate_bindings(pool)?;
     let mut rows = Vec::new();
-    for name in ["run", "run_field"] {
+    for (source, name) in [
+        ("helper", "run"),
+        ("proof_candidate", "run_field"),
+        ("proof_candidate", "run"),
+    ] {
         let ir = IrSource::load(BufReader::new(File::open(
-            root.join(format!("zkir/{name}.zkir")),
+            pool.join(source).join(format!("zkir/{name}.zkir")),
         )?))?;
-        let k = ir.model().k();
-        rows.push(serde_json::json!({"circuit":name,"k":k}));
+        rows.push(serde_json::json!({"source":source,"circuit":name,"k":ir.model().k(),"selected_for_proof":selected(source,name)}));
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-vector-product-elements-models/v1","circuits":rows,
-            "selected_for_proof":["run","run_field"],"unselected":[],"proof_execution":false})
+        serde_json::json!({"format":"compact-vector-product-elements-models/v2","circuits":rows,
+        "selected_for_proof":[["helper","run"],["proof_candidate","run_field"]],"unselected":[["proof_candidate","run"]],"proof_execution":false})
     );
     if rows
         .iter()
-        .any(|row| row["k"].as_u64().is_none_or(|k| k > 8))
+        .filter(|r| r["selected_for_proof"] == true)
+        .any(|r| r["k"].as_u64().is_none_or(|k| k > 8))
     {
         return Err(
             "vector-product-elements model exceeds tiny automatic k<=8; full roster retained above"
                 .into(),
         );
+    }
+    if rows[2]["k"].as_u64().is_none_or(|k| k <= 8) {
+        return Err("original conditional Uint is now tiny-eligible; qualify both original branch outcomes before retaining this selection".into());
     }
     Ok(())
 }
@@ -208,8 +239,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("Vector product elements proof already exists".into());
     }
     let mut rows = Vec::new();
-    for (index, (name, initial_seen, input_values, values, seen)) in [
+    for (index, (source, name, initial_seen, input_values, values, seen)) in [
         (
+            "helper",
             "run",
             0_u64,
             [([3_u128, 5], 31), ([4, 6], 41)],
@@ -217,13 +249,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             1_u64,
         ),
         (
-            "run",
-            1,
-            [([3, 5], 31), ([4, 6], 41)],
-            [([4, 6], 41), ([3, 5], 31)],
-            3,
-        ),
-        (
+            "proof_candidate",
             "run_field",
             0,
             [([3, 5], 31), ([4, 6], 41)],
@@ -235,7 +261,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     .enumerate()
     {
         let mut rng = StdRng::seed_from_u64(0x0180_0000 + index as u64);
-        let initial = c::initial_state(ConstructorContext::new(7_u64), Field::from(initial_seen))?;
+        let pool = root;
+        let source_root = pool.join(source);
+        let root = source_root.as_path();
+        let initial = if source == "helper" {
+            h::initial_state(ConstructorContext::new(7_u64))?
+        } else {
+            c::initial_state(ConstructorContext::new(7_u64), Field::from(initial_seen))?
+        };
         let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
         let observed = ObservedContractState::new(
             deploy.address(),
@@ -249,13 +282,13 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         // Each complete generated API is exercised at its genuine Rust type.
         // Only the upstream prepared call is shared after typed comparisons.
         macro_rules! check_routes {
-            ($entry:ident, $call:ident, $expected:expr) => {{
+            ($api:ident, $slots:ident, $entry:ident, $call:ident, $expected:expr) => {{
                 let expected = $expected;
-                let native = c::$entry(observed.circuit_context(7), input(input_values))?;
-                let recorded = c::recorded::$entry(observed.circuit_context(7), input(input_values))?;
-                let functional_native = c::functional::$entry::Program::new(input(input_values))
+                let native = $api::$entry(observed.circuit_context(7), input(input_values))?;
+                let recorded = $api::recorded::$entry(observed.circuit_context(7), input(input_values))?;
+                let functional_native = $api::functional::$entry::Program::new(input(input_values))
                     .execute_native(observed.circuit_context(7))?;
-                let functional = c::functional::$entry::Program::new(input(input_values))
+                let functional = $api::functional::$entry::Program::new(input(input_values))
                     .execute_recorded(observed.circuit_context(7))?;
                 for actual in [&native, &recorded.execution, &functional_native, &functional.execution] {
                     if actual.result != expected
@@ -269,7 +302,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                     }
                 }
                 if recorded.public.verify_ops() != functional.public.verify_ops()
-                    || slots::seen.inspect(native.context.query.state.get_ref())? != Field::from(seen)
+                    || $slots::seen.inspect(native.context.query.state.get_ref())? != Field::from(seen)
                 {
                     return Err("Vector product elements recording or seen Cell differs".into());
                 }
@@ -278,7 +311,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
                     root.join(format!("keys/{name}.verifier")),
                 )?))?;
-                let facade = c::Contract::default();
+                let facade = $api::Contract::default();
                 let ordinary = facade.recording().$call(&observed, 7, input(input_values))?
                     .prepare(verifier.clone(), Fr::from(0_u64))?;
                 if format!("{prepared:?}") != format!("{ordinary:?}") {
@@ -288,22 +321,22 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             }};
         }
         let (prepared, state, verifier) = match name {
-            "run" => check_routes!(run, run_call, result_vector(values)),
-            "run_field" => check_routes!(run_field, run_field_call, field_result(values)),
+            "run" => check_routes!(h, helper_slots, run, run_call, result_vector(values)),
+            "run_field" => check_routes!(c, slots, run_field, run_field_call, field_result(values)),
             _ => return Err("unknown selected export".into()),
         };
-        let proof_bytes = prove(root, name, index, &prepared, &verifier)?;
+        let proof_bytes = prove(root, pool, name, index, &prepared, &verifier)?;
         let transaction_bytes = apply(root, name, index, prepared, deploy, &state, rng)?;
-        rows.push(serde_json::json!({"circuit":name,"initial_seen":initial_seen,"input":input_values,"expected":values,"seen":seen,
+        rows.push(serde_json::json!({"source":source,"circuit":name,"initial_seen":initial_seen,"input":input_values,"expected":values,"seen":seen,
             "result_type":if name == "run" {"Vector<2,[Vector<2,Uint<16>>,Uint<32>]>"} else {"Vector<2,[Vector<2,Field>,Field]>"},"witness_count":0,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
-            "standalone_proof":format!("vector-product-elements-{index}.proof"),"applied_transaction":format!("vector-product-elements-{index}-transaction.bin"),
+            "standalone_proof":format!("{source}/vector-product-elements-{index}.proof"),"applied_transaction":format!("{source}/vector-product-elements-{index}-transaction.bin"),
             "transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,
             "changed_result_rejected":true,"changed_result_same_geometry":true,"wrong_verifier_rejected":true,
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-vector-product-elements-proof/v1","status":"passed",
-        "scope":"both complete component-Vector helper branch outcomes and Field export, fresh proofs and independently proved funded default-strict transactions",
-        "constructor_execution_proved":false,"all_exports_proved":false,"selected_source_exports_proved":["run","run_field"],"unproved_selected_source_exports":[],"calls":rows});
+    let result = serde_json::json!({"format":"compact-vector-product-elements-proof/v2","status":"passed",
+        "scope":"complete existing Uint helper and original Field export; conditional Uint k9 remains unproved, fresh proofs and independently proved funded default-strict transactions",
+        "constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":[["helper","run"],["proof_candidate","run_field"]],"unproved_selected_source_exports":[["proof_candidate","run"]],"calls":rows});
     write_new(
         root.join("vector-product-elements-proof-result.json"),
         &serde_json::to_vec_pretty(&result)?,
@@ -329,6 +362,7 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 
 fn prove(
     root: &Path,
+    pool: &Path,
     name: &str,
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
@@ -376,8 +410,14 @@ fn prove(
         return Err("vector-product-elements accepted corrupted proof bytes".into());
     }
     // A genuinely different source relation, not merely a second key for the same erased circuit.
-    let other = if name == "run" { "run_field" } else { "run" };
-    let wrong_path = root.join(format!("keys/{other}.verifier"));
+    let (other_source, other) = if name == "run" {
+        ("proof_candidate", "run_field")
+    } else {
+        ("helper", "run")
+    };
+    let wrong_path = pool
+        .join(other_source)
+        .join(format!("keys/{other}.verifier"));
     if std::fs::read(&wrong_path)? == std::fs::read(root.join(format!("keys/{name}.verifier")))? {
         return Err("wrong-verifier control has identical key bytes".into());
     }

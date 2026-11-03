@@ -231,6 +231,16 @@ pub mod vector_product_elements_fixture {
     feature = "vector-product-elements",
     compact_vector_product_elements_generated
 ))]
+pub mod vector_product_elements_helper_fixture {
+    include!(concat!(
+        env!("COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
 pub use vector_product_elements_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
 #[cfg(all(
     feature = "vector-product-elements",

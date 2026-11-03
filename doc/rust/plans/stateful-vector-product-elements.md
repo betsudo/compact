@@ -546,3 +546,28 @@ is `next-model-proof-qualification-v3.md` in local evidence; it is not adopted
 proof code or execution evidence yet. Constructor, other unselected/all-input,
 full required CI/Linux/integration, application/distribution/capability closure
 and the broader goal remain open. Forge stays deferred; all work remains local.
+
+## Paired existing Uint/Field proof cohort (under qualification)
+
+The observed-model follow-up adopts complete existing helper and proof_candidate
+SDKs under separate modules, source-scoped keys and typed API/ledger owners. It
+selects helper.run and proof_candidate.run_field (both observed k8), while the
+original conditional Uint export remains k9/unproved. All20models still precede
+selection. If that original conditional becomes tiny-eligible, the gate requires
+revising the plan to add both original branch proofs. Qualification formats use
+private v2 labels; production ABI/IR/capability/origin formats remain unchanged.
+
+Both whole sources receive raw IR/Program/membership controls. IR controls change
+exactly one helper-declaration-name byte without reserialization. The physical
+source walker now retains source directories named target (including cc/src/target);
+only Git internals are excluded. Every actual Make prerequisite must exist and
+be a regular file, with an actual added-missing-prerequisite refusal before keys
+or models. Build-script preparation and strict prebuild physical binding remain.
+
+The intended qualification is two genuine typed standalone proofs, immutable
+other-source verifier/corruption/binding/same-geometry result negatives and two
+separately proved funded default-strict transactions/replay. Per-case deployment
+fixtures register the selected entry; full export deployment and constructor
+proofs are not claimed. All unselected/k9/conditional/all-input and full CI/Linux/
+integration/application/distribution/handoff gates remain open. Fresh original
+recipe, API/preparation, source review and actual proof evidence are pending.
