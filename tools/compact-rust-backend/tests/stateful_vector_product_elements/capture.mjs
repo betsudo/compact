@@ -90,6 +90,10 @@ for(const spec of specs){
  if(stateful){
   const c=new m.Contract(source.startsWith('witness_')?{vector_value:({privateState,ledger})=>{
     const seen=ledger.seen;assert.equal(seen,BigInt(spec.witnessSeen),'initializer witness order');
+    if(spec.error?.kind==='witness'){
+      observed.push({privateState,seen:encode({value:r.CompactTypeField.toValue(seen),alignment:r.CompactTypeField.alignment()})});
+      throw new Error(spec.error.message);
+    }
     const value=[[[BigInt(privateState-4),BigInt(privateState-2)],31n],[[BigInt(privateState-3),BigInt(privateState-1)],41n]];
     observed.push({privateState,value:json(value),seen:encode({value:r.CompactTypeField.toValue(seen),alignment:r.CompactTypeField.alignment()})});
     return [privateState+1,value];
@@ -98,6 +102,20 @@ for(const spec of specs){
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
   try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
  }else{try{value=m.pureCircuits[spec.entry](...spec.args.map(convert));}catch(e){error=e;}}
+ if(spec.error){
+  assert.ok(error instanceof Error,spec.id+': must return an actual error');
+  assert.equal(out,undefined,spec.id+': error must not return execution/proof data');
+  const expected=spec.error.kind==='unsigned'?`cast from Field or Uint value to smaller Uint value failed: ${spec.error.value} is greater than ${spec.error.max}`:spec.error.message;
+  if(spec.error.kind==='witness'){
+    assert.equal(error.message,expected,spec.id);
+    assert.deepEqual(observed,[{privateState:7,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.witnessSeen)),alignment:r.CompactTypeField.alignment()})}],spec.id);
+  }else{
+    assert.ok(error instanceof r.CompactError,spec.id+': expected runtime CompactError');
+    assert.ok(error.message.includes(expected),spec.id+': '+error.message);
+    assert.deepEqual(observed,[],spec.id);
+  }
+  rows.push({...spec,observedError:error.message,observedWitnesses:observed});continue;
+ }
  assert.ifError(error);assert.deepEqual(value,convert(spec.expected),spec.id);
  const descriptorSpec=bySource.get(source).descriptor;
  const name=typeof descriptorSpec==='string'?descriptorSpec:descriptorSpec[spec.entry];
@@ -129,5 +147,5 @@ writeFileSync(options.output,JSON.stringify({status:'passed',format:'stateful-ve
   node:{...nodeIdentity,sharedLibraries:Object.fromEntries(external.map(path=>[path,hash(path)])),
     systemLibraries:system,kernelVirtualLibraries,systemScope:'host OS paths and kernel mapping names retained; their bytes not qualified'},
   wrappers,inputs,capture:{path:realpathSync(process.argv[1]),sha256:selfHash},
-  scope:'actual complete wrappers and independent expected values, public transcript equality inputs and state/private checks; no native error substitutions, proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
+  scope:'actual complete wrappers and independent expected values, public transcript equality inputs and state/private checks; actual ordered assertion/cast/witness errors; no native error substitutions, proof or Linux claim',rows},null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({cases:rows.length,success:rows.filter(row=>!row.error).length,failures:rows.filter(row=>row.error).length,output:options.output}));

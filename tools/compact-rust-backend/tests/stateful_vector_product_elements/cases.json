@@ -908,5 +908,166 @@
     "expected": [],
     "initialSeen": "0",
     "seen": "1"
+  },
+  {
+    "id": "checked_helper_valid",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ],
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "checked_helper_assert_first",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "300",
+            "6"
+          ],
+          "100000"
+        ]
+      ]
+    ],
+    "error": {
+      "kind": "assert",
+      "message": "helper denied"
+    },
+    "initialSeen": "0"
+  },
+  {
+    "id": "checked_helper_inner_first",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "300",
+            "6"
+          ],
+          "100000"
+        ]
+      ]
+    ],
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    },
+    "initialSeen": "0"
+  },
+  {
+    "id": "checked_helper_scalar",
+    "source": "checked_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "100000"
+        ]
+      ]
+    ],
+    "error": {
+      "kind": "unsigned",
+      "value": "100000",
+      "max": "65535"
+    },
+    "initialSeen": "0"
+  },
+  {
+    "id": "witness_before_error",
+    "source": "witness_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "error": {
+      "kind": "witness",
+      "message": "witness refused"
+    },
+    "initialSeen": "0",
+    "witnessSeen": "0"
+  },
+  {
+    "id": "witness_after_error",
+    "source": "witness_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "error": {
+      "kind": "witness",
+      "message": "witness refused"
+    },
+    "initialSeen": "0",
+    "witnessSeen": "1"
   }
 ]

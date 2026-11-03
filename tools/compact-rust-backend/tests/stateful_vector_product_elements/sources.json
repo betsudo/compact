@@ -146,5 +146,13 @@
       "run"
     ],
     "descriptor": "empty"
+  },
+  {
+    "source": "checked_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
   }
 ]

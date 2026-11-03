@@ -162,7 +162,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole SDK execution/strict compilation, marked static misuses/twins, malformed IR and complete producer mutations, exact frontend/scope refusals; expanded error/model/proof/Linux/integration gates remain open")
+                  scope="Focused whole SDK execution/strict compilation, marked static misuses/twins, malformed IR and complete producer mutations, exact frontend/scope refusals; ordered checked-helper/witness errors; model/proof/Linux/integration gates remain open")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -219,9 +219,9 @@ def main():
         cases = json.loads((FIXTURES / "cases.json").read_text())
         refusals = json.loads((FIXTURES / "frontend-refusals.json").read_text())
         names = {s["source"] for s in definitions}
-        require(len(names) == len(definitions) == 18 and names.isdisjoint(refusals)
+        require(len(names) == len(definitions) == 19 and names.isdisjoint(refusals)
                 and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 21
+        require(len(cases) == len({r["id"] for r in cases}) == 27
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}
@@ -433,7 +433,11 @@ def main():
         require(reject_compiler_overrides(configuration_environment) == configuration, "Cargo configuration changed")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
         pure_routes = sum(not next(s["stateful"] for s in definitions if s["source"] == row["source"]) for row in cases)
-        report.update(status="passed", rust_tests=len(cases), stateful_routes=4*(len(cases)-pure_routes), pure_routes=pure_routes, generated_hashes=snapshots)
+        error_cases = sum("error" in row for row in cases)
+        report.update(status="passed", rust_tests=len(cases), stateful_routes=4*(len(cases)-pure_routes),
+                      successful_stateful_routes=4*(len(cases)-pure_routes-error_cases),
+                      expected_error_routes=4*error_cases, public_transcript_comparisons=2*(len(cases)-pure_routes-error_cases),
+                      pure_routes=pure_routes, generated_hashes=snapshots)
     except Exception as error:
         report.update(status="failed", error=str(error))
         raise

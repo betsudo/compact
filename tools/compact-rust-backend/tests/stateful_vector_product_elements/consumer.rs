@@ -37,7 +37,25 @@ fn encode(value: r::fab::AlignedValue) -> Value {
     json!({"valueAtoms":value.value.0.iter().map(|x|&x.0).collect::<Vec<_>>(),"alignment":value.alignment})
 }
 fn check<T: Into<r::fab::AlignedValue>>(result: Result<T, r::CompactError>, row: &Value) {
-    assert_eq!(encode(result.unwrap().into()), row["result"]);
+    if row["error"].is_null() {
+        assert_eq!(encode(result.unwrap().into()), row["result"]);
+    } else {
+        let error = &row["error"];
+        let expected = match error["kind"].as_str().unwrap() {
+            "unsigned" => r::CompactError::UnsignedOutOfRange {
+                value: error["value"].as_str().unwrap().parse().unwrap(),
+                max: error["max"].as_str().unwrap().parse().unwrap(),
+            },
+            "assert" | "witness" => {
+                r::CompactError::AssertionFailed(error["message"].as_str().unwrap().into())
+            }
+            _ => panic!("unknown independently declared error"),
+        };
+        assert_eq!(
+            result.err().expect("expected actual execution refusal"),
+            expected
+        );
+    }
 }
 fn u<const M: u128>(value: u128) -> BoundedUint<M> {
     BoundedUint::new(value).unwrap()
@@ -338,3 +356,88 @@ macro_rules! witness_case {
 }
 witness_case!(witness_before);
 witness_case!(witness_after);
+
+// The helper narrows original wide input before returning a value widened by its caller.
+// Both invalid components are supplied together to make first-error ordering observable.
+type Wide = FixedVector<(FixedVector<BoundedUint<65535>, 2>, BoundedUint<4294967295>), 2>;
+fn checked_input(inner: u128, scalar: u128) -> Wide {
+    FixedVector::new([
+        (FixedVector::new([u(3), u(5)]), u(31)),
+        (FixedVector::new([u(inner), u(6)]), u(scalar)),
+    ])
+}
+stateful_case!(
+    checked_helper_valid,
+    checked_helper,
+    run,
+    [],
+    [true, checked_input(4, 41)]
+);
+stateful_case!(
+    checked_helper_assert_first,
+    checked_helper,
+    run,
+    [],
+    [false, checked_input(300, 100000)]
+);
+stateful_case!(
+    checked_helper_inner_first,
+    checked_helper,
+    run,
+    [],
+    [true, checked_input(300, 100000)]
+);
+stateful_case!(
+    checked_helper_scalar,
+    checked_helper,
+    run,
+    [],
+    [true, checked_input(4, 100000)]
+);
+
+// Failure consumes the context without a returned execution/proof result. This is not
+// transaction rollback; the external witness journal deliberately remains observable.
+struct RefusingWitness {
+    calls: std::cell::RefCell<Vec<Value>>,
+}
+macro_rules! witness_error_case {
+    ($id:ident, $module:ident) => {
+        impl $module::ledger_contract::TryWitnesses<u64> for RefusingWitness {
+            fn vector_value(
+                &self,
+                ctx: r::context::WitnessContext<'_, u64, $module::ledger_contract::LedgerView<'_>>,
+            ) -> Result<(u64, Narrow), r::CompactError> {
+                self.calls.borrow_mut().push(json!({
+                    "privateState": *ctx.private_state,
+                    "seen": encode(ctx.ledger.seen()?.into())
+                }));
+                Err(r::CompactError::AssertionFailed("witness refused".into()))
+            }
+        }
+        #[test]
+        fn $id() {
+            use $module::ledger_contract as api;
+            let row = row(stringify!($id));
+            for lane in 0..4 {
+                let witness = RefusingWitness { calls: Default::default() };
+                let ctx = api::initial_state(r::context::ConstructorContext::new(7_u64))
+                    .unwrap().into_circuit_context(Default::default());
+                let held = ctx.query.state.clone();
+                let result = match lane {
+                    0 => api::run(ctx, &witness),
+                    1 => api::recorded::run(ctx, &witness).map(|out| replay(out, &row)),
+                    2 => api::functional::run::Program::new().execute_native(ctx, &witness),
+                    3 => api::functional::run::Program::new().execute_recorded(ctx, &witness).map(|out| replay(out, &row)),
+                    _ => unreachable!(),
+                };
+                check(result.map(|out| out.result), &row);
+                let calls = witness.calls.borrow();
+                assert_eq!(*calls, vec![json!({"privateState":7,"seen":encode(Field::from(row["witnessSeen"].as_str().unwrap().parse::<u64>().unwrap()).into())})]);
+                assert_eq!(*calls, row["observedWitnesses"].as_array().unwrap().clone());
+                assert_eq!($module::ledger_slots::seen.inspect(held.get_ref()).unwrap(), Field::from(0_u64));
+            }
+        }
+    };
+}
+witness_error_case!(witness_before_error, witness_before);
+witness_error_case!(witness_after_error, witness_after);

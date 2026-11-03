@@ -341,3 +341,24 @@ remain observable. Then inventory every accepted model before tiny selection,
 bind the actual proof runner and locked material, and execute fresh proofs,
 verifier negatives and separate funded default-strict applications. Constructor,
 unselected/all-input, full required CI, Linux and integration gates remain open.
+
+## Checked-helper and fallible-witness error stage (under qualification)
+
+A complete checked-helper source takes the original wide nested input, checks
+an assertion, narrows each component in source order and returns a narrow value
+that its stateful caller widens. The declared cases independently require valid
+reversed output, assertion failure before both invalid casts, inner 300/255
+failure before scalar 100000/65535, and the scalar failure after valid inner
+casts. Actual fallible witnesses separately refuse before/after the ledger
+write, retaining one external callback observation at seen=0/1 and private=7.
+All cases must execute ordinary/functional native/recorded routes and compare
+actual typed Rust errors against independent expectations and actual TS errors.
+No returned execution/proof data is accepted on error. Holding an immutable
+initial-state reference is not a transaction rollback or witness-journal rollback
+claim. This stage adds no production operation, public ABI or dependency.
+
+The maintained roster becomes 19 complete roots and 27 cases: 21 successful
+stateful cases across four routes, five intended error cases across four routes,
+and one pure case. Exact public transcripts apply to the 42 successful recorded
+routes; error cases have no returned public trace. Fresh execution/review is
+pending; the reviewed 137-command predecessor remains a separate epoch.
