@@ -50,6 +50,8 @@ TESTS = {
     "did_deactivate_functional_matches_retained_typescript_and_native",
     "did_functional_late_witness_failure_keeps_lab_checkpoint_and_journal",
     "did_all_captured_failure_controls_match_across_four_routes",
+    "did_zero_timestamp_recorded_lab_matches_original_typescript_and_native",
+    "did_zero_timestamp_functional_matches_retained_typescript_and_native",
 }
 
 
@@ -168,7 +170,8 @@ def run(args):
                 did_rows == expected["cases"], "complete live DID observations differ")
         receipt["typescript"] = {"capture_sha256": common.sha256(capture),
                                   "did_rows": 12, "all_rows": len(observations["cases"]),
-                                  "rust_selected_ids": ["did/valid"] + [row["id"] for row in did_rows if "error" in row],
+                                  "rust_selected_ids": [row["id"] for row in did_rows],
+                                  "success_route_executions": 8,
                                   "failure_route_executions": 40}
         tests = output / "tests.log"
         execute(["cargo", "test", "--locked", "--offline", "-p", PACKAGE, "--tests"], "four-route-tests", tests)

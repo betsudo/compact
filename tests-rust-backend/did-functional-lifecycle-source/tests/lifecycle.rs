@@ -116,7 +116,17 @@ fn private_outputs(outputs: &[r::fab::AlignedValue]) -> Value {
 
 #[test]
 fn did_deactivate_recorded_lab_matches_original_typescript_and_native() {
-    let row = capture("did/valid");
+    assert_success_case("did/valid");
+}
+
+#[test]
+fn did_zero_timestamp_recorded_lab_matches_original_typescript_and_native() {
+    assert_eq!(capture("did/timestamp-zero")["options"]["timestamp"], "0");
+    assert_success_case("did/timestamp-zero");
+}
+
+fn assert_success_case(id: &str) {
+    let row = capture(id);
     let original = template(&row);
     let mut lab = lab(&row);
     let before = lab.snapshot();
