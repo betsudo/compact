@@ -3,6 +3,8 @@
 Status: reviewed selected local compiler183 API and separate proof/application
 qualification pass at `67cbded3e8e6b0fd830679e8eae967e63dfadfb5`.
 The broad goal and full CI/Linux/integration remain open.
+The later [zero timestamp witness slice](did-zero-timestamp.md) qualifies the
+previously unexecuted positive edge separately at compiler183 source `4e49b59e5`.
 Parent: signed `940183cbba9a04af2a530ce3462b2ed1935e72b5`.
 Branch: `codex/rust-ast-current-did-handoff`.
 

@@ -753,9 +753,21 @@ three typed refusals. A separate fresh k11 / 1,804-row deactivation proof verifi
 applies (7,413 bytes), with binding/version and unchanged replay controls.
 Fresh Claude source/receipt review reports no P1/P2 in the finite selected scope.
 
-The positive TS `did/timestamp-zero` row is not executed by the selected Rust
-suite and is the next concrete boundary check. Constructor/all-export proofs,
+At this `67cbded3e` epoch, the positive TS `did/timestamp-zero` row was not
+executed by the selected Rust suite. The later
+[zero timestamp witness slice](plans/did-zero-timestamp.md) closes that bounded
+coverage gap at actual `4e49b59e5`: seven Rust methods retain all five old methods,
+eight success-route executions and 40 error-route executions match the twelve
+original DID TS rows. Two separately selected case-bound proof gates retain
+k11 / 1,804 rows, each with a fresh verified 3,296-byte standalone proof and an
+independently proved funded DEFAULT-strict transaction (7,413 bytes valid,
+7,412 zero). Source and actual receipt Claude reviews find no actionable P1/P2.
+The original sources, fixture, IR and twelve Programs remain exact. The zero
+proof CI invocation is still pending; local success is not hosted acceptance. Constructor/all-export proofs,
 full current protocol/network acceptance, complete CI/Linux and logical
 integration remain open. Existing compiler138 deactivation acceptance stays
 intact; current source/receipt epochs and capture/host limits are explicit in
 the handoff. The broad Rust AST goal is incomplete and Forge stays deferred.
+
+
+The next bounded delivery task is the [finite supported-profile handoff](plans/current-supported-profile-handoff.md), joining current application/SDK and product evidence with explicit stage, host and proof limits. It does not reopen accepted historical capabilities or complete the broader goal.
