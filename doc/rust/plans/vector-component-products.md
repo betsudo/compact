@@ -421,3 +421,35 @@ Constructor execution and complete-export deployment are not proved; each select
 entry has its own deployment fixture. Full CI/Linux/logical integration, remaining
 application/distribution acceptance and the finite capability/release handoff stay
 open. This local result does not complete the broad Rust AST goal or deferred Forge.
+
+
+## Required integration wiring — bounded follow-up
+
+The existing full compiler workflow authenticates a same-run compiler closure,
+but does not yet execute this maintained nested-product gate. Connect its imported
+package to the normal exact-head recipe receipt without another compiler build.
+Owners are `record_compiler_recipe.py`, the existing Linux compiler workflow,
+focused recorder/workflow refusal controls and this plan. Do not replace the
+compiler importer, source/API/physical/proof validators or existing required gates.
+
+The adapter must perform an actual offline original-recipe realization with local
+builds, remote builders and substitutions disabled, require the supplied imported
+compiler to be that package's real sibling binary, and retain clean HEAD/tree,
+recipe/tool hashes, command output and truthful failure status. A probe at9142
+returns the existing immutable compiler package with those restrictions; it is not
+a rebuild or CI execution. The existing k6 material preparation must also prepare
+locked k8; source selection and all model limits stay unchanged.
+
+The full gate must be a required Linux compiler step with attempt-specific failure
+evidence and retained success evidence. Focused local controls must reject wrong
+package, changed source/tool, failed realization and reused output; an actual
+arm64 recorder plus complete maintained cohort run must qualify the final wiring.
+Source review and separate actual receipt review remain required. Hosted Linux,
+full CI and integration remain open until their actual runs. No CI optimization,
+workflow activation, push, merge, shared install, cleanup or Forge work is included.
+
+Before wiring, the actual required header check against99b identifies13new/modified
+full-header violations in the proof harness. Restore only those complete license
+headers, preserving executable bodies and all old proof/source identities. Record
+this actual CI-readiness failure rather than relabeling earlier local proofs as
+full integration acceptance. Inherited unchanged header debt remains separate.
