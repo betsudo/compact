@@ -460,3 +460,40 @@ operands without a hosted run. Compiler, runtime, contracts and proof/SDK
 consumers are unchanged. Current arm64 acceptance remains the exact660e epoch;
 this workflow-source change does not claim Linux/CI execution or integration.
 Parent source/consumer follow-up and stack ancestry retain their separate heads.
+
+
+## Reviewed workflow source and parent consumer closeout
+
+At clean signed `62534f6a87a1403260bda69ca9e9fa4ca39c3540`, all14focused
+workflow-contract methods pass; its exact original185 existing-only recipe
+passes8.69s. Actual independent Claude source/evidence review (148.77s) finds
+no P1/P2. It confirms explicit selected k7 preparation is necessary on a cold
+runner, full-gate argument support, current imported compiler/official ZKIR/TS
+runtime handoff, retained existing gates and failure diagnostics. The source
+diff from accepted660e contains only this plan and the two workflow/test files;
+no compiler/runtime/contract/SDK/proof-consumer logic changes. Proof acceptance
+remains exact660e, not a fresh625proof execution.
+
+Keep the reviewed nonblocking limits: workflow string controls do not fully
+bind the failure step id/output operands or rule out a future MIDNIGHT_PP
+rewrite. The current actual workflow has the correct id/paths and no rewrite.
+Cold Linux runtime/disk headroom within the existing180minute job limit remains
+unknown; local arm64 receipts do not measure it. Failure artifacts include full
+proof-directory snapshots/keys as in the existing neighbouring gate. The
+controller's terminal passed receipt retains its last-command `current` label;
+status and actual command exits are controlling, not that progress label.
+
+The parent same-type184 maintained consumer and target portability follow-up
+are separately reviewed at `f786dda85` with no P1/P2 and a complete actual
+13command unset-target run. Its complete source/consumer remain unchanged;
+the parent plan records current evidence and limits. This child does not yet
+contain the parent workflow step or its new maintained driver. Local ancestry
+reconciliation is the next integration-preparation step, preserving both exact
+reviewed histories first. Full required CI/Linux/MSRV/integration, constructor/
+callback implementation, all-input and ten other export proofs remain open.
+
+Current evidence: `workflow-preparation-v1/receipt.json`, its recipe and logs,
+`local-claude-workflow-review-v1.json` and the retained parent evidence root.
+This paragraph is a documentation-only successor to the reviewed625source.
+No branch merge, rebase, push, hosted run, release, shared installation, Forge
+work or cleanup occurred in this follow-up.
