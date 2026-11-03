@@ -153,3 +153,19 @@ transient, unqualified version mismatch. Generated SDK lint, exact raw-input/
 AST comparison, runtime/static consumers, owner documentation/version gate and
 independent reviews remain required. No repaired SDK or semantic admission is
 claimed from focused unit/lint evidence alone.
+
+## Original compiler188 and documentation owner
+
+The clean signed e05ab source builds through the original maintained .#compactc
+recipe from a frozen checkout in188.58s. Both executable identities and full
+source pins are retained. The actual independent Codex medium source review
+(59.38s, after retained authentic Claude weekly quota) found no actionable issues;
+it does not qualify generated SDK behavior.
+
+The maintained ledger.ss owner then regenerated the complete raw ledger document
+in50.71s from an isolated source/object copy. Its only output change is the
+compiler187-to188 version sentence. The literal existing workflow version step
+passed in12.09s. The earlier transient version mismatch is resolved by this
+owner output, without manual generated-document editing. Complete generated SDK
+lint, same-physical-source raw/attribute continuity, typed/runtime/static checks,
+maintained regression wiring and independent receipt review remain open.
