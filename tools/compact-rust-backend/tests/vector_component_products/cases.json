@@ -1970,5 +1970,179 @@
     ],
     "initialSeen": "0",
     "seen": "1"
+  },
+  {
+    "id": "inner_product_empty",
+    "source": "inner_product_empty",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [],
+            []
+          ],
+          "3"
+        ],
+        [
+          [
+            [],
+            []
+          ],
+          "4"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [],
+          []
+        ],
+        "3"
+      ],
+      [
+        [
+          [],
+          []
+        ],
+        "4"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "inner_product_single",
+    "source": "inner_product_single",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3"
+            ],
+            [
+              "5"
+            ]
+          ],
+          "7"
+        ],
+        [
+          [
+            [
+              "4"
+            ],
+            [
+              "6"
+            ]
+          ],
+          "8"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "3"
+          ],
+          [
+            "5"
+          ]
+        ],
+        "7"
+      ],
+      [
+        [
+          [
+            "4"
+          ],
+          [
+            "6"
+          ]
+        ],
+        "8"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "inner_product_three",
+    "source": "inner_product_three",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3",
+              true,
+              "31"
+            ],
+            [
+              "5",
+              false,
+              "41"
+            ]
+          ],
+          "7"
+        ],
+        [
+          [
+            [
+              "4",
+              false,
+              "51"
+            ],
+            [
+              "6",
+              true,
+              "61"
+            ]
+          ],
+          "8"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "3",
+            true,
+            "31"
+          ],
+          [
+            "5",
+            false,
+            "41"
+          ]
+        ],
+        "7"
+      ],
+      [
+        [
+          [
+            "4",
+            false,
+            "51"
+          ],
+          [
+            "6",
+            true,
+            "61"
+          ]
+        ],
+        "8"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
   }
 ]

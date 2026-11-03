@@ -55,10 +55,12 @@ fn request_field(name: &syn::Ident, ty: &syn::Type) -> syn::Field {
             element = inner;
         }
         component_dimensions > 0
-            && matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2)
+            && matches!(element, syn::Type::Tuple(product)
+                if product.elems.len() >= 2
+                    && (dimensions + component_dimensions >= 3 || product.elems.len() >= 3))
     }));
     let attribute: Option<syn::Attribute> =
-        (dimensions >= 2 && nested_component_product).then(|| {
+        (dimensions > 0 && nested_component_product).then(|| {
             syn::parse_quote!(
                 #[allow(clippy::type_complexity,
                     reason = "preserves the Compact nested Vector/product carrier in this field")]

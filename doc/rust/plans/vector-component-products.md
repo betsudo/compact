@@ -121,11 +121,11 @@ Its first current181 execution belongs to the later API attempt. Current181 TS-p
 controls for a second product level and a Vector inside the inner product remain
 refused before IR. These are emission results, not execution/proof acceptance.
 
-The initial maintained API gate now declares20whole roots and28TS/Rust cases,
+At `3f24d113e`, the initial API gate declared20whole roots and28TS/Rust cases,
 including the original regression, nested outer/inner dimensions, Boolean/Field/
 alias/empty forms and checked-helper/witness first errors. It checks unedited
-SDKs, exact transcripts, four typed Rust routes and strict full roots. Static/
-ingress/producer-mutation and model/proof gates remain separate pending work.
+SDKs, exact transcripts, four typed Rust routes and strict full roots. Static/ingress/producer-mutation and model/proof gates were pending at that
+initial checkpoint; the successor sections below record later changes.
 The original compiler180 scope/refusal table is preserved byte-for-byte as
 `scope-controls-compiler180.json`; the current table explicitly reclassifies the
 now-supported original and adds both genuine outside-scope refusals. The complete
@@ -184,3 +184,27 @@ validator/runtime code is unchanged. Private payloads are never represented as
 valid Compact programs or proofs. Fresh successor execution remains required.
 The frozen ca4 source review may continue while this local test repair advances;
 its results will retain the old epoch and cannot approve the successor.
+
+### Second source review and arity coverage
+
+Actual frozen ca4 Claude source review v2 reports six P2 findings. The empty result
+expectation was already corrected in669f32a54. Direct strict probes now confirm
+private-field type_complexity for component_2d and a mixed three-element product;
+the field selector covers both component depth and observed product arity, with
+adjacent exact-carrier AST tests. It still marks only the private request field.
+
+Complete empty/single/mixed-three product sources pass TS on original180 and fail
+its Rust/IR paths; all emit on current182. These valid arities are covered rather
+than restricting the classifier to pairs. Current compiler183 changes only field
+style coverage and version labels; the scalar-product relation remains unchanged.
+The initial comment is clarified: product arity is preserved, and scalar leaves
+remain in the prior relation. No new non-product identity carrier is admitted.
+
+The literal historical180 refusal table now has its own fixed SHA256 guard, and
+both deeper-product/Vector-inside-product sources are re-run in this slice's own
+gate with exact source/stdout/stderr comparison. The current cohort declares
+24complete SDK roots/35TSRustcases,14marked misuse/twin pairs and13private native
+IR refusal/valid pairs. Previous20/28 and21/32 rows retain their literal epochs;
+the gate docstring now includes the adopted static/ingress checks. Full producer
+mutations, models, physical proof-input/material qualification, genuine proofs,
+separate funded applications and independent current reviews remain open.

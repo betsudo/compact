@@ -1801,6 +1801,7 @@
                      [else #f])]
                   [else #f]))))
         ;; One product below a component Vector may widen its scalar leaves.
+        ;; Preserve its arity, including empty and single-element products.
         ;; Nested products, Vectors inside that product and new identity
         ;; carriers retain their existing owners; this only selects evaluation.
         (define (scalar-product-widening? target source)

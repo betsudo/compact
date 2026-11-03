@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Focused complete nested-product SDK API execution. Proof/static gates are separate.
+"""Focused complete nested-product SDK API/static/ingress execution. Proof qualification is separate.
 
 Requires a clean source and its original compiler recipe receipt. Every run writes
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
@@ -221,7 +221,10 @@ def main():
     runtime = args.ts_runtime.resolve(strict=True)
     paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "flake.nix", ROOT / "flake.lock",
              ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/scope-controls-compiler180.json",
-             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact"]
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact",
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/scope-controls.json",
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/nested_product_below_component.compact",
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/vector_inside_component_product.compact"]
     for directory in [ROOT / "compiler", ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
                       ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
         paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
@@ -243,7 +246,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; 13 malformed native ingress controls and valid twins execute; mutation/refusal/model/proof/Linux/integration gates remain open.")
+                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; 13 malformed native ingress controls and valid twins execute; Two exact complete outside-scope refusals execute; producer mutation/model/proof/Linux/integration gates remain open.")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -298,6 +301,9 @@ def main():
     try:
         historical = ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements"
         original_hash = "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c"
+        require(digest(historical / "scope-controls-compiler180.json") ==
+                "04f33133d10a0e1be883450e7968682ccde4b860e73239aa7638a31c5863b4a3",
+                "literal historical refusal table changed")
         old_scope = json.loads((historical / "scope-controls-compiler180.json").read_text())["product_below_component"]
         require(old_scope["source_sha256"] == original_hash
                 and old_scope["lanes"]["rust"]["exit"] == 255
@@ -306,11 +312,10 @@ def main():
                 "complete original source/refusal authority changed")
         definitions = json.loads((FIXTURES / "sources.json").read_text())
         cases = json.loads((FIXTURES / "cases.json").read_text())
-        refusals = {}
         names = {s["source"] for s in definitions}
-        require(len(names) == len(definitions) == 21 and names.isdisjoint(refusals)
-                and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 32
+        require(len(names) == len(definitions) == 24
+                and names == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
+        require(len(cases) == len({r["id"] for r in cases}) == 35
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}
@@ -430,6 +435,25 @@ def main():
             report["native_ir_controls"][name] = {"positive_sha256": digest(original_path),
                 "malformed_sha256": digest(rejected_path), "stderr": rejected.stderr,
                 "scope": "native untrusted JSON ingress, with a separate valid private-IR twin; not proof acceptance"}
+        report["scope_refusals"] = {}
+        scope_table = json.loads((historical / "scope-controls.json").read_text())
+        for name in ["nested_product_below_component", "vector_inside_component_product"]:
+            expected = scope_table[name]
+            source = historical / "unsupported" / (name + ".compact")
+            require(digest(source) == expected["source_sha256"], "scope source changed")
+            for lane, outcome in expected["lanes"].items():
+                command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
+                           else [compiler, "--target", lane, "--skip-zk"])
+                if lane == "rust":
+                    command += ["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"]
+                rejected = run("scope-" + name + "-" + lane,
+                               command + [source.relative_to(ROOT), output / ("scope-" + name + "-" + lane)],
+                               success=outcome["exit"] == 0)
+                require(rejected.returncode == outcome["exit"], "scope outcome changed")
+                if outcome["exit"]:
+                    require(rejected.stdout == outcome["stdout"] and rejected.stderr == outcome["stderr"],
+                            "complete scope refusal changed")
+            report["scope_refusals"][name] = expected
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
         for path, sha in pins.items():

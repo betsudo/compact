@@ -69,3 +69,32 @@ fn request_field_metadata_keeps_prior_and_unrelated_carriers_unmarked() {
         );
     }
 }
+
+#[test]
+fn component_dimensions_and_mixed_product_fields_preserve_private_carriers() {
+    let types: Vec<syn::Type> = vec![
+        syn::parse_quote!(
+            runtime::FixedVector<
+                (
+                    runtime::FixedVector<runtime::FixedVector<(u8, u8), 2>, 2>,
+                    u16
+                ),
+                2,
+            >
+        ),
+        syn::parse_quote!(runtime::FixedVector<(runtime::FixedVector<(u8, bool, u16), 2>, u8), 2>),
+    ];
+    for ty in types {
+        let name = format_ident!("input");
+        let before = syn::Field::parse_named
+            .parse2(quote::quote!(#name:#ty))
+            .unwrap();
+        let mut actual = request_field(&name, &ty);
+        assert_eq!(actual.attrs.len(), 1);
+        actual.attrs.clear();
+        assert_eq!(
+            actual.to_token_stream().to_string(),
+            before.to_token_stream().to_string()
+        );
+    }
+}

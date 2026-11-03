@@ -170,5 +170,29 @@
       "run"
     ],
     "descriptor": "wide"
+  },
+  {
+    "source": "inner_product_empty",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "inner_product_empty"
+  },
+  {
+    "source": "inner_product_single",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "inner_product_single"
+  },
+  {
+    "source": "inner_product_three",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "inner_product_three"
   }
 ]

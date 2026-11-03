@@ -591,3 +591,49 @@ stateful_case!(
     ])],
     FixedVector<(FixedVector<(Field, Field), 2>, BoundedUint<65535>), 2>
 );
+
+stateful_case!(
+    inner_product_empty,
+    inner_product_empty,
+    run,
+    [],
+    [FixedVector::new([
+        (FixedVector::new([(), ()]), u(3)),
+        (FixedVector::new([(), ()]), u(4))
+    ])],
+    FixedVector<(FixedVector<(), 2>, BoundedUint<65535>), 2>
+);
+stateful_case!(
+    inner_product_single,
+    inner_product_single,
+    run,
+    [],
+    [FixedVector::new([
+        (FixedVector::new([(u(3),), (u(5),)]), u(7)),
+        (FixedVector::new([(u(4),), (u(6),)]), u(8))
+    ])],
+    FixedVector<(FixedVector<(BoundedUint<65535>,), 2>, BoundedUint<65535>), 2>
+);
+stateful_case!(
+    inner_product_three,
+    inner_product_three,
+    run,
+    [],
+    [FixedVector::new([
+        (
+            FixedVector::new([(u(3), true, u(31)), (u(5), false, u(41))]),
+            u(7)
+        ),
+        (
+            FixedVector::new([(u(4), false, u(51)), (u(6), true, u(61))]),
+            u(8)
+        )
+    ])],
+    FixedVector<
+        (
+            FixedVector<(BoundedUint<65535>, bool, Field), 2>,
+            BoundedUint<65535>
+        ),
+        2,
+    >
+);
