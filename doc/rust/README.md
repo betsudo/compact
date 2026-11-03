@@ -12,7 +12,7 @@ The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust A
 - [Keccak capability and proof-profile audit record](audit/2026-10-18-keccak-profile-boundary.md): native/ordinary checked support, the ZKIRv2 exclusion, observed target selection and the qualification needed for an extension.
 - [Stateful product Vector widening](plans/stateful-product-vector-widening.md): reviewed bounded local compiler177 source/API and selected genuine proof/default-strict application qualification; full coverage and integration remain open.
 
-- [Stateful Vector products with Vector components](plans/stateful-vector-product-elements.md): reviewed bounded local compiler180 API/static/ingress/error and all-export model/input observation; four intact k9 models remain unproved, with material/proof/application and integration gates open.
+- [Stateful Vector products with Vector components](plans/stateful-vector-product-elements.md): reviewed bounded compiler180 API/static/ingress/error qualification and two selected fresh proofs with separate funded default-strict applications. Seventeen required exports, including four intact k9 models, remain unproved; full integration is open.
 
 These records retain their exact source/evidence revisions. They do not claim PR merge, completed hosted validation or a released Ledger9 target.
 

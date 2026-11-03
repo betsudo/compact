@@ -1,14 +1,16 @@
 # Stateful Vector products with Vector elements
 
-Status: reviewed bounded local source/API stage, continuing from V documentation head
+Status: reviewed bounded local source/API and selected proof/application stage, continuing from V documentation head
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
 strict signature baseline. Compiler180 implements the bounded component conversion.
 The current stage passes 19 complete SDK roots / 27 TS/Rust cases and 141
 commands, including marked static, private ingress, complete producer and actual
 checked-helper/witness first-error controls. Fresh source and separate receipt
-review report no P1/P2. The all-export model/input stage is reviewed; locked material, keys, proofs,
-application and integration qualification remain open. Forge is deferred and does not block this backend work.
+review report no P1/P2. The latest qualification below proves the existing Uint
+helper and original Field export with separate funded default-strict applications.
+The original conditional Uint export, other unselected exports and full
+integration remain open. Forge is deferred and does not block this backend work.
 
 ## Strict signature baseline repair
 
@@ -528,7 +530,7 @@ Evidence under the existing local root: `proof-preparation-v3/receipt.json`,
 `observed-model-selection-v2.json`. Selection v2 separates raw historical planned
 flags from the next proposal; v1's copied labels remain preserved.
 
-### Next bounded proof cohort
+### Proposed bounded proof cohort (historical)
 
 The existing complete helper.run Uint path and original complete
 proof_candidate.run_field path are both k8. Qualify both unchanged whole SDKs
@@ -547,7 +549,7 @@ proof code or execution evidence yet. Constructor, other unselected/all-input,
 full required CI/Linux/integration, application/distribution/capability closure
 and the broader goal remain open. Forge stays deferred; all work remains local.
 
-## Paired existing Uint/Field proof cohort (under qualification)
+## Paired existing Uint/Field proof cohort (preparation history)
 
 The observed-model follow-up adopts complete existing helper and proof_candidate
 SDKs under separate modules, source-scoped keys and typed API/ledger owners. It
@@ -604,3 +606,75 @@ A maintained observed-size/applicability table checks freshly loaded all20models
 for drift; it stores no proof/key/verdict outcomes. If source/profile changes
 make more coverage eligible, qualification must review and extend selection.
 All these current-source checks still require execution and fresh review.
+
+## Reviewed selected Uint/Field proofs — 2026-11-03
+
+Clean signed execution `81b7bbb4335239950bb29b3a61a889a4e98a4ad2`
+passes the complete paired gate. Original compiler180 is realized through the
+unchanged Nix recipe as the same already-built immutable package; this six-second
+realization is not a fresh compiler rebuild. The API protocol freshly passes
+141 commands, 19 complete SDK roots and 27 TS/Rust cases: 84 successful stateful
+routes, 20 intended error attempts, one pure route and 42 exact public-transcript
+comparisons. The enclosing gate has 16 command records, including this protocol;
+the counts overlap.
+
+The helper SDK now compiles at its own crate root, retaining generated absolute
+`crate::` paths. Its source, actual Cargo artifact and own depfile join the runner's
+926 physical prerequisites. All 6,889 tracked files, 29,528 declared dependency
+source files and 633 prepared build inputs are pinned by the gate. Prepared
+build-script outputs are mostly reused, with their declared owners and inputs
+bound; they are not freshly rederived. All 16 locked proof-material files are
+verified before keys. The only lockfile addition is the local qualification helper
+package and its proof-runner dependency; existing package records are unchanged.
+
+| Complete source/export | Model | Fresh standalone proof | Separately proved funded transaction |
+| --- | --- | --- | --- |
+| `helper.run`, original nested Uint carrier, seen 0 → 1 | k8 / 222 rows | 2,912 bytes | 6,555 bytes; default strict application |
+| `proof_candidate.run_field`, original nested Field carrier, seen 0 → 2 | k8 / 222 rows | 2,912 bytes | 6,561 bytes; default strict application |
+
+Before proof, both source-specific constructor initial-state assertions and all
+four typed API routes agree with upstream preparation and the ordinary observed
+call. Matching immutable verifiers accept. Other-source verifier, corrupt proof,
+changed binding, same-geometry typed output/IR-preimage and unchanged-state
+`IntentAlreadyExists` replay controls reject. Each deployment fixture registers
+only its selected entry; constructor execution and full-export deployment are
+not proved. The pool contains exactly four selected key files and no conditional
+Uint keys. No proof or verdict is cached.
+
+Actual Claude source review v11 reports no P1/P2 (320.73 seconds). Separate
+Claude receipt audit v7 reports no P1/P2 (212.50 seconds), independently checking
+actual logs, complete tracked-source and physical-input maps, artifacts and
+outcomes. It samples 3,000 of the 29,528 dependency source pins; it does not claim
+an independent exhaustive dependency walk. It observes clean unchanged source
+before and after inspection, not atomic or continuous supply-chain invariance.
+
+Nonblocking evidence limits remain explicit: direct binding/cap negative outputs
+are retained but not all raw-output bytes are hashed in the execution receipt;
+four binding-control scope labels incorrectly describe Program/membership edits
+as IR edits; rejection flags rely on preceding mandatory error checks; the
+over-cap diagnostic lacks a separate input-unchanged check. These are not new
+proofs or separately logged executions. The CLI engine also spilled one large
+review tool result outside the repository; its retained observation is separate
+from the reviewer's read-only source inspection. Earlier failed preparations
+and reviews are preserved without acceptance credit.
+
+Every current export is modeled before selection: 19 proof-required and one
+pure. **Seventeen required exports remain unproved**, including four intact k9
+models: `nested_outer.run`, `proof_candidate.run`, `component_2d.run` and
+`checked_helper.run`. Both original conditional Uint branches remain unproved.
+The unchanged k<=8 policy is not a technical-impossibility claim. Future model
+eligibility requires reviewing and extending selection, including both branches;
+private diagnostic substitutions earn no source/proof coverage.
+
+Evidence in the existing local root: `paired-proof-v1/receipt.json`,
+`paired-proof-author-summary-v1.json`, `original-native-v18/receipt.json`,
+`local-claude-source-review-v11.json`, `local-claude-receipt-review-v7.json`
+and `review-adjudication-v5.json`. Preparation v6 is a separate prepare-only
+success without keys or proofs. Earlier compiler177 proofs remain historical.
+The prior 283 retained-fixture pass keeps its original execution and unchanged
+relevant compiler/fixture premises; it is not a new run at this proof head.
+
+Full required CI/Linux, logical integration, remaining application scenarios,
+isolated distribution and capability handoff remain open. The broader Rust AST
+goal is incomplete. Work remains local; Forge stays deferred and no cleanup is
+due before verified merge.
