@@ -73,3 +73,22 @@ that failed37.62s receipt. Correct the new assertions to require the existing
 fallibility, additionally compare exact AST/fallibility against the frozen old
 owner, and retain all dimension, narrowing and malformed-empty-child refusals.
 Every prior test body remains byte-identical and production coercion is unchanged.
+
+## Existing relation characterized before selector implementation
+
+At signed d3a033c2f both actual relation tests pass (26.76s), followed by strict
+backend lib/test Clippy (21.81s). Exact native spelling and fallibility match the
+frozen historical owner for outer lengths0/1/2 and nested static-empty children.
+Dimension, narrowing and malformed-empty-child refusals stay required. The
+complete predecessor test body is a byte-identical prefix. The failed first
+test epoch remains retained and explicitly corrected; production coercion and
+frontend admission are unchanged.
+
+Next implementation should add only the existing component-product-widening?
+relation to element-widening?'s direct tuple-child alternatives. Qualify the
+original complete compiler recipe and all16 declared exports before current
+source/control reclassification. Preserve the current literal refusal table as
+a historical188 artifact; update only an actually accepted current row after
+observing its complete TS/Rust/independent-IR results. Retain all unrelated
+refusals and both positive/negative source-binding checks. Generated native,
+static, TS, recorded, model, proof and strict-application gates remain open.
