@@ -111,7 +111,7 @@ for(const spec of specs){
     assert.deepEqual(observed,[{privateState:7,seen:encode({value:r.CompactTypeField.toValue(BigInt(spec.witnessSeen)),alignment:r.CompactTypeField.alignment()})}],spec.id);
   }else{
     assert.ok(error instanceof r.CompactError,spec.id+': expected runtime CompactError');
-    assert.ok(error.message.includes(expected),spec.id+': '+error.message);
+    assert.equal(error.message,spec.error.tsMessage,spec.id);
     assert.deepEqual(observed,[],spec.id);
   }
   rows.push({...spec,observedError:error.message,observedWitnesses:observed});continue;

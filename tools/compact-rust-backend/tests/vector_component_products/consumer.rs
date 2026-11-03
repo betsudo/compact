@@ -83,10 +83,10 @@ fn replay<T>(
     out.execution
 }
 macro_rules! pure_case {
- ($id:ident,$module:ident,[$($arg:expr),*])=>{#[test] fn $id(){check($module::pure_circuits::value($($arg),*),&row(stringify!($id)));}};
+ ($id:ident,$module:ident,[$($arg:expr),*],$expected:ty)=>{#[test] fn $id(){let result:Result<$expected,r::CompactError>=$module::pure_circuits::value($($arg),*);check(result,&row(stringify!($id)));}};
 }
 macro_rules! stateful_case {
-    ($id:ident,$module:ident,$entry:ident,[$($ctor:expr),*],[$($arg:expr),*])=>{
+    ($id:ident,$module:ident,$entry:ident,[$($ctor:expr),*],[$($arg:expr),*],$expected:ty)=>{
         #[test] fn $id(){
             use $module::ledger_contract as api;
             let row=row(stringify!($id));
@@ -94,7 +94,7 @@ macro_rules! stateful_case {
             for lane in 0..4 {
                 let ctx=api::initial_state(r::context::ConstructorContext::new(7_u64),$($ctor),*).unwrap().into_circuit_context(Default::default());
                 let held=ctx.query.state.clone();
-                let result=match lane {
+                let result: Result<r::context::CircuitResult<u64,$expected>,r::CompactError>=match lane {
                     0=>api::$entry(ctx,$($arg),*),
                     1=>api::recorded::$entry(ctx,$($arg),*).map(|out|replay(out,&row)),
                     2=>api::functional::$entry::Program::new($($arg),*).execute_native(ctx),
@@ -137,7 +137,7 @@ fn second() -> Narrow {
         (FixedVector::new([pair(8), pair(10)]), u(81)),
     ])
 }
-stateful_case!(aliases, aliases, run, [], [input()]);
+stateful_case!(aliases, aliases, run, [], [input()], Wide);
 stateful_case!(
     boolean,
     boolean,
@@ -146,20 +146,40 @@ stateful_case!(
     [FixedVector::new([
         (FixedVector::new([pair(3), pair(5)]), true),
         (FixedVector::new([pair(4), pair(6)]), false)
-    ])]
+    ])],
+    FixedVector<
+        (
+            FixedVector<(BoundedUint<65535>, BoundedUint<65535>), 2>,
+            bool
+        ),
+        2,
+    >
 );
-stateful_case!(field, field, run, [], [input()]);
-stateful_case!(helper, helper, run, [], [input()]);
-stateful_case!(identity_control, identity_control, run, [], [input()]);
-stateful_case!(local, local, run, [], [input()]);
+stateful_case!(
+    field,
+    field,
+    run,
+    [],
+    [input()],
+    FixedVector<(FixedVector<(Field, Field), 2>, Field), 2>
+);
+stateful_case!(helper, helper, run, [], [input()], Wide);
+stateful_case!(
+    identity_control,
+    identity_control,
+    run,
+    [],
+    [input()],
+    Narrow
+);
+stateful_case!(local, local, run, [], [input()], Wide);
 stateful_case!(
     nested_outer,
     nested_outer,
     run,
     [],
-    [FixedVector::new([input(), second()])]
-);
-stateful_case!(parameter, parameter, run, [], [input()]);
+    [FixedVector::new([input(), second()])], FixedVector<Wide,2>);
+stateful_case!(parameter, parameter, run, [], [input()], Wide);
 stateful_case!(
     parameter_boundary,
     parameter,
@@ -168,38 +188,43 @@ stateful_case!(
     [FixedVector::new([
         (FixedVector::new([pair(255), pair(0)]), u(65535)),
         (FixedVector::new([pair(1), pair(254)]), u(65534))
-    ])]
+    ])],
+    Wide
 );
 stateful_case!(
     prior_product_control,
     prior_product_control,
     run,
     [],
-    [FixedVector::new([(u(3), u(31)), (u(4), u(41))])]
+    [FixedVector::new([(u(3), u(31)), (u(4), u(41))])],
+    FixedVector<(BoundedUint<65535>, BoundedUint<4294967295>), 2>
 );
 stateful_case!(
     proof_keep,
     proof_candidate,
     run,
     [Field::from(0_u64)],
-    [input()]
+    [input()],
+    Wide
 );
 stateful_case!(
     proof_flip,
     proof_candidate,
     run,
     [Field::from(1_u64)],
-    [input()]
+    [input()],
+    Wide
 );
 stateful_case!(
     proof_field,
     proof_candidate,
     run_field,
     [Field::from(0_u64)],
-    [input()]
+    [input()],
+    FixedVector<(FixedVector<(Field, Field), 2>, Field), 2>
 );
-pure_case!(pure_control, pure_control, [input()]);
-stateful_case!(component_alias, component_alias, run, [], [input()]);
+pure_case!(pure_control, pure_control, [input()], Wide);
+stateful_case!(component_alias, component_alias, run, [], [input()], Wide);
 stateful_case!(
     component_2d,
     component_2d,
@@ -220,7 +245,14 @@ stateful_case!(
             ]),
             u(41)
         )
-    ])]
+    ])],
+    FixedVector<
+        (
+            FixedVector<FixedVector<(BoundedUint<65535>, BoundedUint<65535>), 2>, 2>,
+            BoundedUint<4294967295>
+        ),
+        2,
+    >
 );
 stateful_case!(
     component_boolean,
@@ -230,7 +262,8 @@ stateful_case!(
     [FixedVector::new([
         (FixedVector::new([(true, false), (false, true)]), u(3)),
         (FixedVector::new([(false, true), (true, false)]), u(4))
-    ])]
+    ])],
+    FixedVector<(FixedVector<(bool, bool), 2>, BoundedUint<65535>), 2>
 );
 stateful_case!(
     component_field,
@@ -252,7 +285,8 @@ stateful_case!(
             ]),
             u(4)
         )
-    ])]
+    ])],
+    FixedVector<(FixedVector<(Field, Field), 2>, BoundedUint<65535>), 2>
 );
 
 stateful_case!(
@@ -266,7 +300,14 @@ stateful_case!(
             BoundedUint<65535>
         ),
         0,
-    >::new([])]
+    >::new([])],
+    FixedVector<
+        (
+            FixedVector<(BoundedUint<255>, BoundedUint<255>), 2>,
+            BoundedUint<65535>
+        ),
+        0,
+    >
 );
 
 struct VectorWitness {
@@ -328,7 +369,7 @@ macro_rules! witness_case {
                     .unwrap()
                     .into_circuit_context(Default::default());
                 let held = ctx.query.state.clone();
-                let out = match lane {
+                let out: r::context::CircuitResult<u64, Wide> = match lane {
                     0 => api::run(ctx, &witness),
                     1 => api::recorded::run(ctx, &witness).map(|out| replay(out, &row)),
                     2 => api::functional::run::Program::new().execute_native(ctx, &witness),
@@ -401,28 +442,32 @@ stateful_case!(
     checked_helper,
     run,
     [],
-    [true, checked_input(4, 41)]
+    [true, checked_input(4, 41)],
+    Wide
 );
 stateful_case!(
     checked_helper_assert_first,
     checked_helper,
     run,
     [],
-    [false, checked_input(300, 100000)]
+    [false, checked_input(300, 100000)],
+    Wide
 );
 stateful_case!(
     checked_helper_inner_first,
     checked_helper,
     run,
     [],
-    [true, checked_input(300, 100000)]
+    [true, checked_input(300, 100000)],
+    Wide
 );
 stateful_case!(
     checked_helper_scalar,
     checked_helper,
     run,
     [],
-    [true, checked_input(4, 100000)]
+    [true, checked_input(4, 100000)],
+    Wide
 );
 
 // Failure consumes the context without a returned execution/proof result. This is not
@@ -453,7 +498,7 @@ macro_rules! witness_error_case {
                 let ctx = api::initial_state(r::context::ConstructorContext::new(7_u64))
                     .unwrap().into_circuit_context(Default::default());
                 let held = ctx.query.state.clone();
-                let result = match lane {
+                let result: Result<r::context::CircuitResult<u64,Wide>,r::CompactError> = match lane {
                     0 => api::run(ctx, &witness),
                     1 => api::recorded::run(ctx, &witness).map(|out| replay(out, &row)),
                     2 => api::functional::run::Program::new().execute_native(ctx, &witness),
@@ -480,5 +525,69 @@ stateful_case!(
     [FixedVector::new([
         (FixedVector::new([pair(3), pair(5)]), u(31)),
         (FixedVector::new([pair(4), pair(6)]), u(41))
-    ])]
+    ])],
+    FixedVector<
+        (
+            FixedVector<(BoundedUint<65535>, BoundedUint<65535>), 2>,
+            BoundedUint<65535>
+        ),
+        2,
+    >
+);
+
+stateful_case!(
+    inner_tuple_alias,
+    inner_tuple_alias,
+    run,
+    [],
+    [input()],
+    Wide
+);
+fn second_boundary() -> Narrow {
+    FixedVector::new([
+        (FixedVector::new([(u(0), u(255)), (u(255), u(0))]), u(65535)),
+        (
+            FixedVector::new([(u(254), u(255)), (u(1), u(254))]),
+            u(65534),
+        ),
+    ])
+}
+stateful_case!(
+    parameter_second_boundary,
+    parameter,
+    run,
+    [],
+    [second_boundary()],
+    Wide
+);
+stateful_case!(
+    proof_field_boundary,
+    proof_candidate,
+    run_field,
+    [Field::from(0_u64)],
+    [second_boundary()],
+    FixedVector<(FixedVector<(Field, Field), 2>, Field), 2>
+);
+stateful_case!(
+    component_field_large,
+    component_field,
+    run,
+    [],
+    [FixedVector::new([
+        (
+            FixedVector::new([
+                (Field::from(u128::MAX), Field::from(0_u64)),
+                (Field::from(1_u64), Field::from(u128::MAX - 1))
+            ]),
+            u(255)
+        ),
+        (
+            FixedVector::new([
+                (Field::from(2_u64), Field::from(3_u64)),
+                (Field::from(4_u64), Field::from(5_u64))
+            ]),
+            u(254)
+        )
+    ])],
+    FixedVector<(FixedVector<(Field, Field), 2>, BoundedUint<65535>), 2>
 );

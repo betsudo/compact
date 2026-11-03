@@ -114,8 +114,10 @@ the implementation or from earlier source receipts.
 
 At `a5a868639`, the actual original Nix recipe builds compiler181 in53.81seconds.
 All57current emission commands pass for19complete sources, including the exact
-original regression at its declared new physical path. Additional original180
-TS-positive nested-outer baseline still refuses Rust/IR. Current181 TS-positive
+original regression at its declared new physical path. A separate original180
+TS-positive nested-outer baseline refuses Rust/IR. That source was added only
+in the later3f24d113e test commit and is outside the19source a5a868 result.
+Its first current181 execution belongs to the later API attempt. Current181 TS-positive
 controls for a second product level and a Vector inside the inner product remain
 refused before IR. These are emission results, not execution/proof acceptance.
 
@@ -128,3 +130,39 @@ The original compiler180 scope/refusal table is preserved byte-for-byte as
 `scope-controls-compiler180.json`; the current table explicitly reclassifies the
 now-supported original and adds both genuine outside-scope refusals. The complete
 original source remains unchanged. Fresh expanded execution and reviews pending.
+
+## First API failure and review repairs
+
+The actual3f24d113e API attempt executes all28behavior cases, then fails the strict
+nested_outer root on type_complexity of the immutable Program's private input
+FIELD. It is not a function-signature diagnostic. Original receipt/artifacts and
+all earlier failures remain retained; the whole SDK gate is not accepted.
+
+Compiler182 emits a reasoned field-level style attribute at the immutable request
+AST owner only for the observed nested Vector/product carrier. Field type, name,
+private visibility and execution stay unchanged; existing signature behavior and
+witness-macro attribute policy are unchanged. Adjacent AST tests preserve the exact
+field after removing its one style attribute and keep prior/unrelated/foreign
+carrier shapes unmarked. This is a narrow amendment to the initial function-only
+style plan, justified by the concrete private-field diagnostic.
+
+Actual Claude review v1 found no compiler defect but five P2 harness/documentation
+issues. The successor declares exact Rust result carriers on every API/pure/witness
+route before serialization; binds the complete original source to the unchanged
+literal180refusal authority; inspects six actual IR conversions at their original
+lexical sites with once-only calls and supplied narrow bounds; adds the tuple-leaf
+alias, second-child Uint boundaries and a large Field case; and freezes exact TS
+error messages rather than matching substrings. The nested_outer historical/current
+wording is corrected. Identity casts on helper arguments stay explicit: a blanket
+single-coerce assertion would incorrectly reject legitimate original IR.
+
+Fourteen marked ordinary misuses now have independent correct-type twins, including
+inner product arity, second-leaf bound and result product arity. The external3f
+prototype passes29commands (14errors/14twins + metadata); its earlier author-path
+failure before controls is preserved. The new structural observer passes six actual
+IRs and rejects three private duplicated-conversion variants. These are prototype
+observations, not successor acceptance. The complete new alias source passes
+original180 TS and refuses Rust/IR before adoption. Fresh clean current182
+unit/strict/API/static execution and independent source/receipt reviews remain
+required. Untrusted ingress, producer mutants, all-export model/input/material and
+applicable fresh proofs/separate strict funded applications remain open.

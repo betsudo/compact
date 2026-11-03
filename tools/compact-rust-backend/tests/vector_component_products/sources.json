@@ -162,5 +162,13 @@
       "run"
     ],
     "descriptor": "original"
+  },
+  {
+    "source": "inner_tuple_alias",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
   }
 ]

@@ -20,7 +20,6 @@ Requires a clean source and its original compiler recipe receipt. Every run writ
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
 """
 import argparse
-import copy
 import json
 import os
 from pathlib import Path
@@ -30,7 +29,7 @@ import time
 import tomllib
 
 from check_stateful_product_vector_widening import (
-    digest, inventory, reject_compiler_overrides, source_manifest_snapshot, first_local_binding,
+    digest, inventory, reject_compiler_overrides, source_manifest_snapshot,
 )
 from check_constant_vector_projection import compile_failure
 
@@ -42,6 +41,82 @@ SOURCES = ROOT / "examples/rust_backend/vector_component_products"
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def evaluation_order_controls(irs):
+    """Inspect the original source value and its one conversion at its lexical site.
+
+    Identity casts on call arguments remain explicit. This structural control is
+    separate from native/TS witness/error observations, not a formal equivalence proof.
+    """
+    def nodes(value):
+        if isinstance(value, dict):
+            yield value
+            for child in value.values():
+                yield from nodes(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from nodes(child)
+
+    observations = {}
+    for name in ["helper", "local", "aliases", "checked_helper", "witness_before", "witness_after"]:
+        ir = irs[name]
+        circuit = next(c for c in ir["stateful_circuits"] if c["name"] == "run")
+        body = circuit["return_value"]["body"]
+        before_write = name in {"local", "aliases", "witness_before"}
+        if before_write:
+            binding_body, sequence = body, body["result"]
+        elif name == "helper":
+            binding_body, sequence = None, body
+        else:
+            binding_body, sequence = body["result"], body
+        require(sequence["kind"] == "sequence" and len(sequence["actions"]) == 1,
+                "original write sequence changed: " + name)
+        action = sequence["actions"][0]
+        writes = [n for n in nodes(action) if n.get("kind") == "cell_write"]
+        require(len(writes) == 1 and writes[0]["field"] == "seen", "write identity changed: " + name)
+        if binding_body is not None:
+            require(binding_body["kind"] == "let" and len(binding_body["bindings"]) == 1,
+                    "original local conversion binding changed: " + name)
+            binding = binding_body["bindings"][0]
+            require(binding["ty"] == circuit["result"], "converted local type changed: " + name)
+            coerce = binding["value"]
+            tail = sequence["result"] if before_write else binding_body["result"]
+            require(tail == {"kind": "value", "value": {"kind": "parameter", "name": binding["name"]}},
+                    "converted local was reevaluated or discarded: " + name)
+        else:
+            coerce = body["result"]["value"]
+        require(coerce["kind"] == "coerce" and coerce["ty"] == circuit["result"],
+                "original widening missing: " + name)
+        value = coerce["value"]
+        if name in {"helper", "local", "checked_helper"}:
+            callee = "checked" if name == "checked_helper" else "keep"
+            calls = [n for n in nodes(body) if n.get("kind") == "call"]
+            require(len(calls) == 1 and calls[0] is value and value["name"] == callee,
+                    "original helper evaluated more than once or replaced: " + name)
+            declaration = next(c for c in ir["circuits"] if c["name"] == callee)
+            original = declaration["result"]
+        elif name.startswith("witness_"):
+            calls = [n for n in nodes(body) if n.get("kind") == "witness_call"]
+            require(len(calls) == 1 and calls[0] is value and value["name"] == "vector_value",
+                    "typed original witness evaluated more than once or replaced: " + name)
+            original = next(w for w in ir["witnesses"] if w["name"] == "vector_value")["result"]
+        else:
+            require(value == {"kind": "parameter", "name": "input"}, "original alias value changed")
+            original = next(p for p in circuit["parameters"] if p["name"] == "input")["ty"]
+        expected_original = {"kind": "vector", "length": 2, "element": {"kind": "tuple", "elements": [
+            {"kind": "vector", "length": 2, "element": {"kind": "tuple", "elements": [
+                {"kind": "unsigned", "max": "255"}, {"kind": "unsigned", "max": "255"}]}},
+            {"kind": "unsigned", "max": "65535"}]}}
+        require(original == expected_original, "original source bounds were widened before conversion: " + name)
+        all_nodes = list(nodes(body))
+        coerce_count = sum(n.get("kind") == "coerce" for n in all_nodes)
+        require(coerce_count == ({"helper": 2, "local": 2, "checked_helper": 3}.get(name, 1)),
+                "conversion structure duplicated or lost: " + name)
+        require(sum(n.get("kind") == "cell_write" for n in all_nodes) == 1, "write duplicated: " + name)
+        observations[name] = dict(original_type=original, coerce_count=coerce_count,
+                                  conversion_position="before write" if before_write else "after write")
+    return observations
 
 
 def main():
@@ -66,7 +141,9 @@ def main():
     compiler, scheme = [Path(build[k]["path"]).resolve(strict=True) for k in ["compactc", "compactc-scheme"]]
     require(compiler.parent == scheme.parent, "one original compiler package required")
     runtime = args.ts_runtime.resolve(strict=True)
-    paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "flake.nix", ROOT / "flake.lock"]
+    paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "flake.nix", ROOT / "flake.lock",
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/scope-controls-compiler180.json",
+             ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact"]
     for directory in [ROOT / "compiler", ROOT / "runtime-rs", ROOT / "runtime-rs-macros",
                       ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
         paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
@@ -88,7 +165,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Static/ingress/mutation/refusal/model/proof/Linux/integration gates remain open.")
+                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; ingress/mutation/refusal/model/proof/Linux/integration gates remain open.")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -141,13 +218,21 @@ def main():
         return p
 
     try:
+        historical = ROOT / "tools/compact-rust-backend/tests/stateful_vector_product_elements"
+        original_hash = "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c"
+        old_scope = json.loads((historical / "scope-controls-compiler180.json").read_text())["product_below_component"]
+        require(old_scope["source_sha256"] == original_hash
+                and old_scope["lanes"]["rust"]["exit"] == 255
+                and digest(historical / "unsupported/product_below_component.compact") == original_hash
+                and digest(SOURCES / "original_regression.compact") == original_hash,
+                "complete original source/refusal authority changed")
         definitions = json.loads((FIXTURES / "sources.json").read_text())
         cases = json.loads((FIXTURES / "cases.json").read_text())
         refusals = {}
         names = {s["source"] for s in definitions}
-        require(len(names) == len(definitions) == 20 and names.isdisjoint(refusals)
+        require(len(names) == len(definitions) == 21 and names.isdisjoint(refusals)
                 and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 28
+        require(len(cases) == len({r["id"] for r in cases}) == 32
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}
@@ -176,6 +261,7 @@ def main():
                 require(not caps, "pure source acquired proof APIs")
             report["sources"][name] = dict(source_sha256=digest(ROOT / source), manifest=source_manifest_snapshot(target, spec["stateful"]), programs=programs)
             snapshots[name] = inventory(target)
+        report["evaluation_order"] = evaluation_order_controls(irs)
         modules = output / "node_modules/@midnight-ntwrk"
         modules.mkdir(parents=True)
         (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
@@ -220,6 +306,33 @@ def main():
             run(name + "-root-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", target / "Cargo.toml", "--all-targets", "--all-features", "--", "-D", "warnings"])
             require(all(digest(target / path) == sha for path, sha in before.items()), "root Clippy edited emitted files")
             report["strict_sdk_roots"][name] = before
+        report["compile_fail"] = {}
+        controls = json.loads((FIXTURES / "compile-fail.json").read_text())
+        require(len(controls) == 14 and set(controls) | {"consumer"} == {p.stem for p in FIXTURES.glob("*.rs")},
+                "ordinary misuse roster differs")
+        require({spec["twin"] for spec in controls.values()} ==
+                {str(p.relative_to(FIXTURES)) for p in (FIXTURES / "compile-pass").glob("*.rs")},
+                "positive twin roster differs")
+        bins = consumer / "src/bin"
+        bins.mkdir(parents=True)
+        for name, spec in controls.items():
+            source = (FIXTURES / (name + ".rs")).read_text()
+            twin = (FIXTURES / spec["twin"]).read_text()
+            require("// expected-error" not in twin and "c::run(context(), input())" in twin,
+                    "positive twin must retain an actual correct-type call")
+            positive = bins / (name + "_twin.rs")
+            positive.write_text(twin)
+            bind_build_inputs([positive])
+            run(name + "-correct-twin", ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest, "--bin", name + "_twin"])
+            negative = bins / (name + ".rs")
+            negative.write_text(source)
+            bind_build_inputs([negative])
+            rejected = run(name + "-misuse", ["cargo", "check", "--locked", "--offline", "--manifest-path", manifest,
+                           "--bin", name, "--message-format=json"], success=False)
+            report["compile_fail"][name] = {"source_sha256": digest(negative), "twin_sha256": digest(positive),
+                "errors": compile_failure(rejected, name, spec["code"], source)}
+        ir_folder = output / "native-ir-controls"
+        ir_folder.mkdir()
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
         for path, sha in pins.items():

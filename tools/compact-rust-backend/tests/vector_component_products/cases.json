@@ -1518,7 +1518,8 @@
     ],
     "error": {
       "kind": "assert",
-      "message": "helper denied"
+      "message": "helper denied",
+      "tsMessage": "failed assert: helper denied"
     },
     "initialSeen": "0"
   },
@@ -1561,7 +1562,8 @@
     "error": {
       "kind": "unsigned",
       "value": "300",
-      "max": "255"
+      "max": "255",
+      "tsMessage": "checked_helper.compact line 9 char 8: cast from Field or Uint value to smaller Uint value failed: 300 is greater than 255"
     },
     "initialSeen": "0"
   },
@@ -1604,7 +1606,8 @@
     "error": {
       "kind": "unsigned",
       "value": "100000",
-      "max": "65535"
+      "max": "65535",
+      "tsMessage": "checked_helper.compact line 9 char 132: cast from Field or Uint value to smaller Uint value failed: 100000 is greater than 65535"
     },
     "initialSeen": "0"
   },
@@ -1616,7 +1619,8 @@
     "args": [],
     "error": {
       "kind": "witness",
-      "message": "witness refused"
+      "message": "witness refused",
+      "tsMessage": "witness refused"
     },
     "initialSeen": "0",
     "witnessSeen": "0"
@@ -1629,7 +1633,8 @@
     "args": [],
     "error": {
       "kind": "witness",
-      "message": "witness refused"
+      "message": "witness refused",
+      "tsMessage": "witness refused"
     },
     "initialSeen": "0",
     "witnessSeen": "1"
@@ -1695,6 +1700,272 @@
           ]
         ],
         "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "inner_tuple_alias",
+    "source": "inner_tuple_alias",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3",
+              "20"
+            ],
+            [
+              "5",
+              "22"
+            ]
+          ],
+          "31"
+        ],
+        [
+          [
+            [
+              "4",
+              "21"
+            ],
+            [
+              "6",
+              "23"
+            ]
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "3",
+            "20"
+          ],
+          [
+            "5",
+            "22"
+          ]
+        ],
+        "31"
+      ],
+      [
+        [
+          [
+            "4",
+            "21"
+          ],
+          [
+            "6",
+            "23"
+          ]
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "parameter_second_boundary",
+    "source": "parameter",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "0",
+              "255"
+            ],
+            [
+              "255",
+              "0"
+            ]
+          ],
+          "65535"
+        ],
+        [
+          [
+            [
+              "254",
+              "255"
+            ],
+            [
+              "1",
+              "254"
+            ]
+          ],
+          "65534"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "0",
+            "255"
+          ],
+          [
+            "255",
+            "0"
+          ]
+        ],
+        "65535"
+      ],
+      [
+        [
+          [
+            "254",
+            "255"
+          ],
+          [
+            "1",
+            "254"
+          ]
+        ],
+        "65534"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "proof_field_boundary",
+    "source": "proof_candidate",
+    "entry": "run_field",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        [
+          [
+            [
+              "0",
+              "255"
+            ],
+            [
+              "255",
+              "0"
+            ]
+          ],
+          "65535"
+        ],
+        [
+          [
+            [
+              "254",
+              "255"
+            ],
+            [
+              "1",
+              "254"
+            ]
+          ],
+          "65534"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "0",
+            "255"
+          ],
+          [
+            "255",
+            "0"
+          ]
+        ],
+        "65535"
+      ],
+      [
+        [
+          [
+            "254",
+            "255"
+          ],
+          [
+            "1",
+            "254"
+          ]
+        ],
+        "65534"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2"
+  },
+  {
+    "id": "component_field_large",
+    "source": "component_field",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "340282366920938463463374607431768211455",
+              "0"
+            ],
+            [
+              "1",
+              "340282366920938463463374607431768211454"
+            ]
+          ],
+          "255"
+        ],
+        [
+          [
+            [
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5"
+            ]
+          ],
+          "254"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "340282366920938463463374607431768211455",
+            "0"
+          ],
+          [
+            "1",
+            "340282366920938463463374607431768211454"
+          ]
+        ],
+        "255"
+      ],
+      [
+        [
+          [
+            "2",
+            "3"
+          ],
+          [
+            "4",
+            "5"
+          ]
+        ],
+        "254"
       ]
     ],
     "initialSeen": "0",
