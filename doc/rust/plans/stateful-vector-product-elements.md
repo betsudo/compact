@@ -4,10 +4,10 @@ Status: reviewed bounded local source/API stage, continuing from V documentation
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
 strict signature baseline. Compiler180 implements the bounded component conversion.
-The current stage passes 17 complete SDK roots / 20 TS/Rust cases, with fresh
-source and separate receipt review reporting no P1/P2. Full feature acceptance,
-static/untrusted/producer controls, model/key/proof qualification and integration
-remain open. Forge is deferred and does not block this backend work.
+The current stage passes 18 complete SDK roots / 21 TS/Rust cases and 137
+commands, including marked static, private ingress and complete producer controls.
+Fresh source and separate receipt review report no P1/P2. Checked-helper/witness
+first-error cases, model/key/proof qualification and integration remain open. Forge is deferred and does not block this backend work.
 
 ## Strict signature baseline repair
 
@@ -112,7 +112,7 @@ counts, and drops copied unused assertion/no-mutation paths. At that checkpoint,
 pending; no prior result was relabeled as its acceptance.
 
 
-## Current bounded source/API result
+## First bounded source/API result (historical)
 
 At `cba7de0824d82d013ba61db7a0841abbc185a791`, original compiler180 and the
 maintained gate pass **77 commands**: 17 complete unedited generated SDK roots,
@@ -302,3 +302,42 @@ contract to make a selected proof pass. Retain all complete probes and failures.
    Obsidian process/CAS. Focused local arm64 iteration retains full required CI,
    Linux/proof/integration gates. Current goal stays local only; no Forge,
    publication, shared install or cleanup. Broad goal remains incomplete.
+
+## Reviewed static, ingress and producer result
+
+At `eb4b7cd680afb130ca5e4607a8e833e925094b4d`, the maintained gate passes
+137 commands: 106 successful exits and 31 intended refusals/assertion failures.
+It executes 18 complete unedited SDK roots, 21 paired TS/Rust cases, 80 stateful
+Rust routes plus one pure route and 40 exact public transcript comparisons. All
+11 marked caller misuses refuse at the intended diagnostic line, all 11 explicit
+positive twins pass, and all 12 private malformed inputs refuse with separately
+successful valid twins. Three complete regenerated producer mutations fail the
+unchanged selected consumer in its first native lane. A deliberately corrupted
+expected-result atom separately fails the actual result assertion.
+
+Actual Codex source review v7 and separate receipt review v4 report no P1/P2.
+This fallback follows Claude v5's actual session-limit error, not approval. The
+receipt reviewer independently reconciles 8,037 physical paths, 137 command
+records/274 raw logs, 21 manifests/243 declared assets, 22 resolved locks and
+7,750 package occurrences. These observations are bounded read-only checks;
+they do not establish cryptographic or global supply-chain acceptance.
+
+Reporting precision: rechecks before every Cargo invocation cover the 129
+explicitly bound build inputs. Broader source/tool/configuration and baseline
+SDK inventories are checked at phase boundaries/completion, not before every
+Cargo invocation. The retained depfile binds the direct consumer only. The
+original-native-v9 receipt establishes cached original compiler180 realization
+and paired binary identity, not a new rebuild. Current receipts are
+`whole-sdk-execution-v7/receipt.json`, `local-codex-source-review-v7.json`,
+`local-codex-receipt-review-v4.json` and `consumer-depfile-preservation-v7.json`.
+Earlier 77/127-command passes, producer prototypes and predecessor proofs retain
+their original epochs and are not added to this command count.
+
+Next qualify a complete checked helper with valid narrow-then-widen output,
+assertion-before-cast, inner-component-before-scalar cast errors and actual
+fallible witnesses before/after the ledger write across all four routes. No
+returned error context implies transaction rollback; external witness journals
+remain observable. Then inventory every accepted model before tiny selection,
+bind the actual proof runner and locked material, and execute fresh proofs,
+verifier negatives and separate funded default-strict applications. Constructor,
+unselected/all-input, full required CI, Linux and integration gates remain open.
