@@ -23,6 +23,7 @@ description = "Ledger-8 proof compatibility gate for Rust Compact output"
 
 [features]
 default = []
+component-product-vector-models = ["ledger-transaction"]
 fold-vector-result-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 vector-alias-source-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 aggregate-literal-projection-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]

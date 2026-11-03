@@ -100,7 +100,7 @@ def main():
     require(definitions[1]['source'] == 'original_nested' and definitions[1]['path'] == 'tools/compact-rust-backend/tests/nested_component_products/unsupported/vector_inside_nested_product.compact', 'nested original path changed')
     require(pins[str((W / definitions[1]['path']).resolve())] == '9aac8007cd3d66711fe262f5d2b094eb2422b63fa0f94dc23ec301834bc436d3', 'complete nested original changed')
     O.mkdir(parents=True)
-    j = dict(status='running', head=H, inputs=pins, tools={str(p): sha(p) for p in [C, S, NODE, *rust.values()]}, commands=[], sources={}, cargo_configuration_sha256=config, scope='Complete three-source /16export native API stage with strict roots and26freshTS/four-routeRust cases. Source/artifact/configuration identity pins are not complete physical/transitive build attestation; marked static, whole private native IR and producer/source controls execute here; independent recorded-plan forgery/resources, raw proof identity, models/proofs/review remain required.')
+    j = dict(status='running', head=H, inputs=pins, tools={str(p): sha(p) for p in [C, S, NODE, *rust.values()]}, commands=[], sources={}, cargo_configuration_sha256=config, scope='Complete three-source /16export native API stage with strict roots and26freshTS/four-routeRust cases. Source/artifact/configuration identity pins are not complete physical/transitive build attestation; marked static, whole private native IR and producer/source controls execute here; independent recorded-plan forgery/resources execute here; raw proof identity, models/proofs/review remain required.')
     report = O / 'receipt.json'
     root_packages = tomllib.loads((W / 'Cargo.lock').read_text())['package']
     expected = {(p['name'], p['version'], p.get('source')): p.get('checksum') for p in root_packages}
@@ -163,6 +163,13 @@ def main():
             require(all((x['recorded'] and x['observed_call'] and (x['proof_required'] is True) for x in caps)), 'qualification invariant failed')
             require(len(list((root / 'contract/checked-programs').glob('*.json'))) == len(spec['entries']), 'qualification invariant failed')
             require({x['entry'] for x in cases if x['source'] == name} == set(spec['entries']), 'qualification invariant failed')
+            if name == 'family':
+                golden = F / 'proof-goldens/family'
+                require((root / 'contract/compact-rust-ir.json').read_bytes() == (golden / 'source-ir.json').read_bytes(), 'whole raw family IR differs from the independently checked fixture')
+                actual_programs = root / 'contract/checked-programs'
+                expected_programs = golden / 'checked-programs'
+                require({p.name for p in actual_programs.iterdir()} == {p.name for p in expected_programs.iterdir()}, 'whole Program membership differs')
+                require(all(p.read_bytes() == (expected_programs / p.name).read_bytes() for p in actual_programs.iterdir()), 'whole raw Program bytes differ')
             raw[name] = {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
             bound.update({str(root / n): h for n, h in raw[name].items()})
             j['sources'][name] = dict(source_sha256=sha(W / spec['path']), manifest=source_manifest_snapshot(root, True), raw_files=raw[name])
@@ -196,8 +203,10 @@ def main():
         out = run('consumer', ['cargo', 'test', '--locked', '--offline', '--manifest-path', M, '--lib'])
         require('test result: ok. 26 passed; 0 failed; 0 ignored;' in out, 'qualification invariant failed')
         run('consumer-strict', ['cargo', 'clippy', '--locked', '--offline', '--manifest-path', M, '--all-targets', '--', '-D', 'warnings'])
+        recorded = run('independent-recorded-validator', ['cargo', 'test', '--locked', '--offline', '-p', 'compact-rust-backend', '--lib', 'recorded::effect_plan::tests::component_product_vectors::'])
+        require('test result: ok. 3 passed; 0 failed; 0 ignored;' in recorded, 'independent recorded validation tests were not executed')
         j['boundaries'] = qualify_boundaries(O, F, C, env, run, lock, bind, sha, require)
-        j['remaining_gates'] = ['independent recorded-plan forgery/resource tests and raw proof identity controls', 'all model inventory', 'applicable fresh standalone proofs and strict applications', 'independent source and receipt review', 'full CI/Linux/integration']
+        j['remaining_gates'] = ['raw proof identity controls', 'all model inventory', 'applicable fresh standalone proofs and strict applications', 'independent source and receipt review', 'full CI/Linux/integration']
         for name, files in raw.items():
             root = O / 'generated' / name
             require(all((sha(root / n) == h for n, h in files.items())), 'qualification invariant failed')

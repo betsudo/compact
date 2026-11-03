@@ -233,3 +233,30 @@ under distinct historical filenames; every unrelated row remains unchanged.
 The predecessor boundary gate handles these successful current lanes while
 retaining exact diagnostics and no-output checks for actual refusals. No nominal,
 narrowing or top-level nested tuple capability is admitted by metadata.
+
+## Independent recorded-plan ingress controls
+
+Three focused tests now pass against the entire raw fourteen-export source IR:
+all fourteen roots keep independent checked-plan validation; fifteen forged
+conversion annotations across ordinary, empty outer and empty leaf Vector roots
+are rejected at their original conversion operation; noncanonical numeric text
+and resource-excess annotations cannot hide behind a zero-length leaf. The
+initial test asserted a lowercase diagnostic fragment while the actual owner
+reported `Compact Uint`; its failed epoch is retained and the corrected test
+requires the exact canonical-bound diagnostic. Strict backend library/test lint
+also passes. No production recorded validator or resource limit changed.
+
+The complete fourteen Program inventories and raw IR are retained as an exact
+fixture, explicitly review-only metadata rather than execution authority. The
+maintained gate compares all raw bytes and membership before using the fixture
+and now executes these three independent validator tests. The previous clean
+native/boundary gate passed 87 commands at `5e0c4694f`; current-source compiler
+recipe and gate requalification are still required after the new test inputs.
+
+A separate opt-in `component-product-vector-models` mode in the existing proof
+runner observes every complete source/export and checks emitted capability and
+ZKIR membership. It generates no keys/proofs and selects no exports. Observe
+all sixteen models before deciding the applicable whole-source proof cohort;
+retain any over-limit source intact. This mode is pending actual compilation
+and execution. Raw proof identity, fresh proofs/verification/strict applications,
+final source/receipt reviews and full CI/Linux/integration remain open.
