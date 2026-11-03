@@ -1,10 +1,12 @@
 # Nested product request field: baseline repair before widening
 
 Status: compiler 0.31.184 has reviewed, bounded local source/SDK/routes/static
-qualification. The required documentation-version correction is closed by owner
-regeneration, the literal local version gate and independent correction review.
-Full CI/integration and the primary Rust AST goal remain incomplete; Forge is
-deferred.
+qualification. The maintained whole-example consumer and workflow-source gap is
+closed locally at `f786dda85`, including an actual default-target run and fresh
+Claude correction review with no P1/P2. The required documentation-version
+correction remains closed in its original epoch. Full CI/Linux/integration,
+local ancestry reconciliation and the primary Rust AST goal remain incomplete;
+Forge is deferred.
 
 ## Baseline and concrete gap
 
@@ -249,3 +251,36 @@ counts are source-derived literals, not separately measured output fields.
 The three positive commands remain one distinct signature. No TS/proof/MSRV or
 hosted result is claimed. The guard successor requires its own focused execution
 and correction review; preserve first-run source, logs and review unchanged.
+
+
+### Reviewed maintained consumer closeout
+
+At clean signed `f786dda854ab3214a0ad7b70d0c9674295da74bb`, the original184
+existing-only recipe passes8.83s. With CARGO_TARGET_DIR explicitly unset, all13
+maintained commands pass in112.70s from a new output-local target. Whole SDK
+strict all-target/all-feature lint, consumer lib/test lint, actual four typed
+routes/two VM replays and three marked E0308 refusals with the independent
+positive signature pass. The generated SDK has its original10files plus only
+its Cargo.lock; no target or handwritten source change appears within it.
+Both locks preserve repository dependency identities.
+
+Actual fresh Claude correction source/receipt review (79.39s) independently
+rehashes1432total input/tool/receipt pins and18bound build inputs, all command
+logs and the generated outputs. It finds no P1/P2 and accepts this bounded
+portability correction. The first independent review remains at its original
+1dbd epoch. Effective target/environment are recorded after path selection.
+One nonblocking limit remains: comparing resolved target with lexical output
+can miss a caller's explicit inside-SDK target through a symlinked output parent;
+extra generated files still fail the final inventory check. The actual default
+run uses a non-symlinked path and is unaffected. Route/replay counts remain
+source-derived literals checked by code assertions, not separately emitted
+measurements. No MSRV, TS, proof, full CI/Linux or integration claim is added.
+
+Evidence under the declared parent root: `maintained-request-field-v1/`,
+`maintained-request-field-v2/`, `run-maintained-request-field-v2.py`,
+`local-claude-maintained-review-v1.json` and
+`local-claude-maintained-review-v2.json`. These maintained gates close the
+previous external-driver/workflow-source gap; execution of that workflow in CI
+remains required. The separate compiler185 child retains its own accepted local
+selected-proof epoch. Preserve both histories before local stack reconciliation;
+no merge, publication, hosted run or cleanup is authorized by this closeout.
