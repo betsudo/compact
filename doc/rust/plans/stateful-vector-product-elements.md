@@ -184,6 +184,31 @@ provenance without claiming complete proof-runner/transitive input qualification
 Current execution and reviews are pending. Whole-producer mutations, checked
 helper/witness error cases and all model/proof/application gates remain open.
 
+The first static/untrusted gate at `08dd37873` passes 127 commands. A successor
+at `9dde83467` also passes 127 after making malformed targets agree with declared
+results, keeping the dead branch's outer result correct and changing only an
+invalid nested conversion, and keeping the empty body's target correct while
+forging an incompatible source leaf. The 11 marked misuses and their 11 twins,
+12 native malformed controls and their valid private-IR twins, and all 21 normal
+cases execute. These are bounded source/API/ingress results, not new proofs.
+
+Actual Claude review v5 reached its session limit (error, not approval); the
+authorized Codex CLI fallback v6 (`gpt-6-astra`, high) reports no P1/P2 at
+`9dde83467`. Its lower-priority input-reuse suggestion is addressed by checking
+every bound input before each subsequent Cargo command. Selected lockfiles stay
+bound after authorized resolution and before compilation; manifests/consumers
+are bound before resolution, and private IR payloads before their use.
+
+Three complete helper/witness producer mutations and a controlled changed-result
+oracle now join the maintained gate after an external prototype exercised them
+successfully. Regenerate each whole producer, authenticate its manifest and SDK,
+bind its sources/manifest/resolved lock, and execute the unchanged old consumer.
+It must reject reversed helper values or changed witness order in its first
+native lane. This does not claim that every mutated route executes. The corrupt
+expected-result table is an explicit negative oracle, not a genuine new TS
+verdict or a proof result. Current expanded execution and fresh review remain
+pending; checked-helper/witness first-error and proof gates still remain open.
+
 ## Original gap and baseline (historical)
 
 Original compiler177 at `438bf21c9f64b133970f8dadb212c24e54a2873d` retains

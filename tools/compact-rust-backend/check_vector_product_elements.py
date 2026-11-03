@@ -162,7 +162,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole SDK execution/strict compilation, marked static misuses/twins and malformed IR, exact frontend refusals and deeper-product scope controls; producer/error/model/proof/Linux/integration gates remain open")
+                  scope="Focused whole SDK execution/strict compilation, marked static misuses/twins, malformed IR and complete producer mutations, exact frontend/scope refusals; expanded error/model/proof/Linux/integration gates remain open")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -189,10 +189,16 @@ def main():
                         "unexpected resolved local package")
         bind_build_inputs([path])
         report["resolved_locks"][str(path)] = {"sha256": digest(path), "packages": packages}
+
+    def check_bound_inputs():
+        for path, sha in report["build_inputs_before_use"].items():
+            require(digest(path) == sha, "bound build input changed before Cargo use: " + path)
     start = time.monotonic()
 
     def run(label, command, *, success=True, stdin=None):
         command = list(map(str, command))
+        if command[0] == "cargo":
+            check_bound_inputs()
         began = time.monotonic()
         try:
             p = subprocess.run(command, cwd=ROOT, env=env, input=stdin, capture_output=True, text=True, timeout=300)
@@ -268,9 +274,9 @@ def main():
         manifest.write_text('[workspace]\n[package]\nname="vector-product-elements-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_TS"] = str(ts)
         report["generated_inputs_before_build"] = {name: inventory(generated / name) for name in names}
+        bind_build_inputs([manifest, consumer / "consumer.rs", ts])
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         bind_lock(consumer / "Cargo.lock")
-        bind_build_inputs([manifest, consumer / "consumer.rs", ts])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
         require(f"test result: ok. {len(cases)} passed; 0 failed; 0 ignored;" in result.stdout, "all Rust cases must execute")
         run("consumer-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest, "--lib", "--tests", "--", "-D", "warnings"])
@@ -281,6 +287,7 @@ def main():
             shutil.copytree(generated / name / "contract", target)
             before = inventory(target)
             shutil.copyfile(consumer / "Cargo.lock", target / "Cargo.lock")
+            bind_build_inputs([target / "Cargo.toml"])
             run(name + "-root-resolve", ["cargo", "metadata", "--offline", "--manifest-path", target / "Cargo.toml", "--format-version", "1"])
             bind_lock(target / "Cargo.lock")
             bind_build_inputs([target / "Cargo.toml"])
@@ -319,16 +326,73 @@ def main():
         for name, positive, malformed, expected in malformed_ir_controls(irs):
             original_path = ir_folder / (name + "-positive.json")
             original_path.write_text(json.dumps(positive, indent=2) + "\n")
+            bind_build_inputs([original_path])
             positive_bytes = original_path.read_text()
             run(name + "-valid-ir", backend, stdin=positive_bytes)
             rejected_path = ir_folder / (name + "-malformed.json")
             rejected_path.write_text(json.dumps(malformed, indent=2) + "\n")
+            bind_build_inputs([rejected_path])
             rejected = run(name + "-malformed-ir", backend, success=False, stdin=rejected_path.read_text())
             require(rejected.returncode != 0 and not rejected.stdout and
                     all(part in rejected.stderr for part in expected), "wrong malformed-IR refusal: " + name)
             report["native_ir_controls"][name] = {"positive_sha256": digest(original_path),
                 "malformed_sha256": digest(rejected_path), "stderr": rejected.stderr,
                 "scope": "native untrusted JSON ingress, with a separate valid private-IR twin; not proof acceptance"}
+        report["producer_mutations"] = {}
+        target_type = "Vector<2,[Vector<2,Uint<16>>,Uint<32>]>"
+        before = f"const wide:{target_type} = disclose(vector_value());seen=1;"
+        after = f"seen=1;const wide:{target_type} = disclose(vector_value());"
+        for name, old, new in [("helper", "return input;", "return [input[1],input[0]];"),
+                               ("witness_before", before, after), ("witness_after", after, before)]:
+            original = SOURCES / (name + ".compact")
+            text = original.read_text()
+            require(text.count(old) == 1, "complete producer mutation premise differs: " + name)
+            folder = output / "producer-mutations" / name
+            folder.mkdir(parents=True)
+            changed_source = folder / (name + ".compact")
+            changed_source.write_text(text.replace(old, new))
+            changed = folder / "generated"
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger8", "--rust-require-recording", changed_source, changed])
+            changed_manifest = source_manifest_snapshot(changed, True)
+            changed_snapshot = inventory(changed)
+            changed_consumer = folder / "consumer"
+            changed_consumer.mkdir()
+            shutil.copyfile(consumer / "consumer.rs", changed_consumer / "consumer.rs")
+            shutil.copyfile(consumer / "Cargo.lock", changed_consumer / "Cargo.lock")
+            text = manifest.read_text()
+            original_path = json.dumps(str(generated / name / "contract"))
+            require(text.count(original_path) == 1, "producer dependency membership differs")
+            changed_manifest_path = changed_consumer / "Cargo.toml"
+            changed_manifest_path.write_text(text.replace(original_path, json.dumps(str(changed / "contract"))))
+            bind_build_inputs([changed_source, changed_manifest_path, changed_consumer / "consumer.rs"])
+            for relative in changed_snapshot:
+                bind_build_inputs([changed / relative])
+            run(name + "-mutant-resolve", ["cargo", "metadata", "--offline", "--manifest-path", changed_manifest_path, "--format-version", "1"])
+            bind_lock(changed_consumer / "Cargo.lock")
+            rejected = run(name + "-mutant-consume", ["cargo", "test", "--locked", "--offline", "--manifest-path", changed_manifest_path,
+                           "--lib", name, "--", "--exact"], success=False)
+            require(rejected.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+                    and "assertion `left == right` failed" in rejected.stdout, "changed producer not consumed: " + name)
+            require(name == "helper" or "initializer witness order" in rejected.stdout, "wrong producer refusal")
+            require(inventory(changed) == changed_snapshot, "changed generated producer edited")
+            report["producer_mutations"][name] = {"original_source_sha256": digest(original),
+                "changed_source_sha256": digest(changed_source), "manifest": changed_manifest,
+                "generated_files": changed_snapshot,
+                "scope": "complete typed producer; unchanged old consumer rejects on first native lane, not all mutated routes"}
+        wrong = copy.deepcopy(reference)
+        next(row for row in wrong["rows"] if row["id"] == "parameter")["result"]["valueAtoms"][0][0] ^= 1
+        wrong_path = output / "changed-expected-result.json"
+        wrong_path.write_text(json.dumps(wrong) + "\n")
+        bind_build_inputs([wrong_path])
+        env["COMPACT_VECTOR_PRODUCT_ELEMENTS_TS"] = str(wrong_path)
+        rejected = run("changed-expected-result", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
+                       "--lib", "parameter", "--", "--exact"], success=False)
+        require(rejected.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+                and "assertion `left == right` failed" in rejected.stdout, "changed expected result not consumed")
+        report["changed_expected_result"] = {"sha256": digest(wrong_path),
+            "scope": "controlled corrupt expected-result table, not a new genuine TS verdict, typed proof result or proof acceptance"}
+        env["COMPACT_VECTOR_PRODUCT_ELEMENTS_TS"] = str(ts)
         report["frontend_refusals"] = {}
         for name, expected in refusals.items():
             source = SOURCES / (name + ".compact")
