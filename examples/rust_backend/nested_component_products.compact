@@ -29,7 +29,7 @@ export circuit checked_helper(ok: Boolean, input: Wide): Wide { seen = 4; const 
 export circuit witness_before(): Wide { const wide: Wide = disclose(vector_value()); seen = 5; return wide; }
 export circuit witness_after(): Wide { seen = 6; const wide: Wide = disclose(vector_value()); return wide; }
 export circuit branch(pick: Boolean, left: Narrow, right: Narrow): Wide {
-  if (pick) { seen = 7; return keep(left); } else { seen = 8; return keep(right); }
+  if (disclose(pick)) { seen = 7; return keep(left); } else { seen = 8; return keep(right); }
 }
 export circuit deep(input: Vector<1, [Vector<1, [[[Uint<8>, Uint<16>], Uint<8>], Uint<16>]>, Uint<8>]>): Vector<1, [Vector<1, [[[Uint<16>, Uint<32>], Uint<16>], Uint<32>]>, Uint<16>]> { seen = 9; return input; }
 export circuit boolean_field(input: Vector<1, [Vector<1, [[Boolean, Uint<8>], Uint<8>]>, Boolean]>): Vector<1, [Vector<1, [[Boolean, Field], Field]>, Boolean]> { seen = 10; return input; }
