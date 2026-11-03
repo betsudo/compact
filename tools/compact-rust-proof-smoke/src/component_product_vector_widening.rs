@@ -708,22 +708,72 @@ fn prove(
         root.join(format!("keys/{name}.prover")),
     )?))?;
     let checked = preimage.check(&ir)?;
-    let mut changed_statement = preimage.as_ref().clone();
-    let last = changed_statement
-        .public_transcript_inputs
-        .last_mut()
-        .ok_or("missing source CellWrite input")?;
-    if *last != Fr::from(seen) {
-        return Err("source CellWrite constant is not the targeted final transcript input".into());
+    // Change exactly the structured CellWrite payload. The final encoded
+    // transcript input is an opcode; it is not the source storage value.
+    let mut changed_call = call.clone();
+    let expected: AlignedValue = Field::from(seen).into();
+    let mut writes = 0;
+    for transcript in changed_call
+        .guaranteed_public_transcript
+        .iter_mut()
+        .chain(changed_call.fallible_public_transcript.iter_mut())
+    {
+        let mut program = Vec::new();
+        for operation in transcript.program.iter_deref() {
+            let mut operation = operation.clone();
+            if let Op::Push {
+                storage: true,
+                value: midnight_onchain_state::state::StateValue::Cell(value),
+            } = &operation
+            {
+                let actual: AlignedValue = (**value).clone().into();
+                if actual != expected {
+                    return Err("storage payload differs from the fixed source CellWrite".into());
+                }
+                operation = Op::Push {
+                    storage: true,
+                    value: midnight_onchain_state::state::StateValue::<DefaultDB>::from(
+                        AlignedValue::from(Field::from(0_u64)),
+                    )
+                    .try_into_checked()
+                    .map_err(|()| "changed CellWrite value is not canonical")?,
+                };
+                writes += 1;
+            }
+            program.push(operation);
+        }
+        transcript.program = program.into_iter().collect();
     }
-    if seen == 0 {
-        return Err("changed CellWrite control requires the fixed nonzero source write".into());
+    if writes != 1 || seen == 0 {
+        return Err("source CellWrite negative requires exactly one fixed nonzero write".into());
     }
-    *last = Fr::from(0_u64);
+    let changed_statement = match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(
+        &changed_call,
+        commitment,
+    ) {
+        ProofPreimageVersioned::V2(value) => value,
+        _ => return Err("unexpected changed CellWrite proof version".into()),
+    };
+    if changed_statement.inputs != preimage.inputs
+        || changed_statement.private_transcript != preimage.private_transcript
+        || changed_statement.public_transcript_outputs != preimage.public_transcript_outputs
+        || changed_statement.public_transcript_inputs.len()
+            != preimage.public_transcript_inputs.len()
+        || changed_statement
+            .public_transcript_inputs
+            .iter()
+            .zip(&preimage.public_transcript_inputs)
+            .filter(|(a, b)| a != b)
+            .count()
+            != 1
+    {
+        return Err(
+            "changed CellWrite preimage changed more than its single public payload".into(),
+        );
+    }
     if changed_statement.check(&ir).is_ok() {
         return Err("IR accepted changed source CellWrite preimage".into());
     }
-
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     progress_event(root, source, name, index, "proof-started", 0)?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(

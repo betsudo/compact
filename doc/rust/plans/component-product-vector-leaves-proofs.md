@@ -122,3 +122,20 @@ or partial files are reported separately. These events are execution evidence,
 not cached verdicts, resume authority or substitutes for source/material guards.
 The follow-up strict development compile passes; current clean recipe/full
 proof execution and fresh source/receipt review still remain.
+
+## Structured source-write negative control
+
+Source inspection before key generation found that the final public transcript
+input is an opcode, not the CellWrite value. The negative control now clones the
+actual call, locates its unique storage Push Cell containing the exact fixed
+nonzero source value, and replaces only that value with canonical Field zero.
+The upstream checked StateValue conversion and construct_proof encoder rebuild
+the statement. The guard requires unchanged inputs, private transcript, public
+outputs and public-input count, exactly one changed public input, and actual IR
+refusal. This preserves opcodes and value geometry instead of guessing a slot.
+
+The first compile of this correction failed because checked StateValue has no
+new_cell constructor; the fix uses the upstream AlignedValue conversion followed
+by try_into_checked. The next strict development Clippy run passed (4.07s).
+Both epochs are retained. This is compile evidence only; the structured control
+still requires actual execution in the fresh proof gate.
