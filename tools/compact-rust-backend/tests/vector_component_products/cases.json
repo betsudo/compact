@@ -1563,7 +1563,7 @@
       "kind": "unsigned",
       "value": "300",
       "max": "255",
-      "tsMessage": "checked_helper.compact line 9 char 8: cast from Field or Uint value to smaller Uint value failed: 300 is greater than 255"
+      "tsMessage": "checked_helper.compact line 20 char 8: cast from Field or Uint value to smaller Uint value failed: 300 is greater than 255"
     },
     "initialSeen": "0"
   },
@@ -1607,7 +1607,7 @@
       "kind": "unsigned",
       "value": "100000",
       "max": "65535",
-      "tsMessage": "checked_helper.compact line 9 char 132: cast from Field or Uint value to smaller Uint value failed: 100000 is greater than 65535"
+      "tsMessage": "checked_helper.compact line 20 char 132: cast from Field or Uint value to smaller Uint value failed: 100000 is greater than 65535"
     },
     "initialSeen": "0"
   },

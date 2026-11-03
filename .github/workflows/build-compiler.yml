@@ -583,8 +583,9 @@ jobs:
         id: vector_component_products
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-vector-component-products-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_vector_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-vector-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "${COMPACTC%/bin/compactc}/lib/zkir" --output "$RUNNER_TEMP/compact-vector-component-products-proof"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_vector_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-vector-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-vector-component-products-proof"
 
       - name: Retain failed nested-product qualification diagnostics
         if: failure() && steps.vector_component_products.outcome == 'failure'

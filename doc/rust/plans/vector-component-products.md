@@ -472,3 +472,20 @@ output; capture the two current complete refusal outcomes anew. Preserve their
 older literal source/metadata epochs. Fresh clean original-recipe/recorder/full
 cohort execution and independent review are required before claiming current
 integration-readiness acceptance.
+
+
+### Wiring review and current diagnostic repair
+
+The first CI-source review at `c1f6dafb0` finds one P1: the imported source compiler has no
+`lib/zkir`. Resolve the actual pinned ZKIR executable inside `nix develop .#compiler`
+and pass its physical path; keep the existing importer and tool hash checks. The
+old path-based structural test is corrected with the command. That review is not
+an approval; no hosted workflow or Linux success is inferred.
+
+Actual `c1f6dafb0` existing-only recipe recording passes, but the complete API prerequisite
+then fails on an exact TypeScript diagnostic: the full license prefix shifts
+checked-helper casts from line 9 to line 20. Preserve the failed receipt and update
+only the two current expected source locations, retaining exact messages, columns,
+values and first-error behavior. Do not replace exact equality with substring or
+normalization. No Rust API/model/key/proof executes in that failed attempt.
+Fresh clean successor execution and review remain required.
