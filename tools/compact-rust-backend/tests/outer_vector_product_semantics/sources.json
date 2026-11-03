@@ -1,0 +1,39 @@
+[
+  {
+    "role": "original",
+    "path": "tools/compact-rust-backend/tests/nested_component_products/unsupported/top_level_nested_tuple.compact",
+    "sha256": "36d8ab210f5981a88cdc6e497d2fd26bf4070ea226a5c1b2a75212c9dac983e2",
+    "entries": [
+      "run"
+    ]
+  },
+  {
+    "role": "family",
+    "path": "examples/rust_backend/outer_vector_product_widening/outer_vector_product_widening.compact",
+    "sha256": "ae8b7d1406c2011e07b4069361b4d1178e5e04856838044bd8b17c4906854f1d",
+    "entries": [
+      "parameter",
+      "helper",
+      "local",
+      "checked_helper",
+      "witness_before",
+      "witness_after",
+      "branch",
+      "deep",
+      "boolean_field",
+      "empty",
+      "tuple_empty",
+      "tuple_single",
+      "field_identity",
+      "empty_leaf",
+      "last_child"
+    ],
+    "helpers": [
+      "keep",
+      "checked"
+    ],
+    "witnesses": [
+      "product_value"
+    ]
+  }
+]
