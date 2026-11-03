@@ -38,15 +38,13 @@
         "exit": 0
       },
       "rust": {
-        "exit": 255,
-        "stdout": "",
-        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "exit": 0
       },
       "ir": {
-        "exit": 255,
-        "stdout": "",
-        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+        "exit": 0
       }
-    }
+    },
+    "historical_refusal": "scope-controls-compiler186.json",
+    "current_positive_consumer": "../component_product_vector_widening/consumer.rs: original_direct (complete unchanged historical source at its declared path)"
   }
 }

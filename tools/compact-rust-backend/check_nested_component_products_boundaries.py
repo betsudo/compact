@@ -184,12 +184,14 @@ def qualify(output, fixtures, compiler, environment, run, lock, bind, digest, re
             expected = spec["lanes"][lane]
             stdout = run(label, [*command, source, folder], expected_exit=expected["exit"])
             if lane != "ts":
-                require(stdout == expected["stdout"] and (output / (label + ".stderr")).read_text() == expected["stderr"],
-                        "source refusal diagnostic differs: " + label)
-                require(not (folder / "contract/lib.rs").exists() and not (folder / "contract/compact-rust-ir.json").exists(),
-                        "refused source published Rust/IR")
+                if expected["exit"]:
+                    require(stdout == expected["stdout"] and (output / (label + ".stderr")).read_text() == expected["stderr"], "source refusal diagnostic differs: " + label)
+                    require(not (folder / "contract/lib.rs").exists() and not (folder / "contract/compact-rust-ir.json").exists(), "refused source published Rust/IR")
+                else:
+                    artifact = "lib.rs" if lane == "rust" else "compact-rust-ir.json"
+                    require((folder / "contract" / artifact).is_file(), "accepted original omitted artifact: " + label)
         result["source_refusals"][name] = dict(source_sha256=digest(source), lanes=spec["lanes"],
-            scope="complete TS-positive/Rust-and-independent-IR refused source; exact current diagnostic, not proof execution")
+            scope="complete current source lanes; exact diagnostics on refusals and artifacts on reclassified success; not proof execution")
 
     family_source = ROOT / "examples/rust_backend/nested_component_products/nested_component_products.compact"
     source_text = family_source.read_text()

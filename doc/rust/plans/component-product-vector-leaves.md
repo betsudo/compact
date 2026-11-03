@@ -209,3 +209,27 @@ Actual independent Codex CLI source review of production `dbfe7eb5d`, after the
 retained authentic Claude session limit, reports no actionable correctness
 findings. It covers classifier source and existing-owner characterization only;
 it does not accept the new native-stage harness or execution/proof receipts.
+
+## Native stage passed; negative controls now required
+
+Fresh `a6a48fe3a` original compiler187 recipe recording passed (7.25s), followed
+by the complete native stage (18.92s): three whole SDKs under strict Clippy,
+exact independent IR, sixteen Programs/capability rows, twenty-six fresh TS
+cases and 104 Rust routes. Seven genuine error cases produce 28 expected errors;
+nineteen success cases produce 38 public-transcript/state/effect VM replays.
+Rust arguments are independently compared with source-typed TS FAB values.
+The failed earlier deep-case declaration remains retained, not relabeled.
+
+The extended gate adds twelve separately marked ordinary-use compile-fail
+controls with valid twins, fourteen private whole-IR shape/bound/static/dead/
+source controls with valid twins, all current source lanes and complete changed
+helper/witness producers plus a corrupt-result control. These new negative
+checks have not executed yet. Whole IR rendering refusal does not substitute
+for independent recorded-plan forgery/resource or raw proof identity controls.
+
+The two specifically implemented current refusal rows now point to their whole
+native consumers. Both prior compiler186 scope tables are preserved byte-for-byte
+under distinct historical filenames; every unrelated row remains unchanged.
+The predecessor boundary gate handles these successful current lanes while
+retaining exact diagnostics and no-output checks for actual refusals. No nominal,
+narrowing or top-level nested tuple capability is admitted by metadata.

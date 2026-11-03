@@ -1,0 +1,62 @@
+{
+  "leaf_bound": {
+    "twin": "leaf_bound_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input leaf_bound rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "middle_bound": {
+    "twin": "middle_bound_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input middle_bound rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "outer_bound": {
+    "twin": "outer_bound_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input outer_bound rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "leaf_dimension": {
+    "twin": "leaf_dimension_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input leaf_dimension rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "component_dimension": {
+    "twin": "component_dimension_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input component_dimension rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "outer_dimension": {
+    "twin": "outer_dimension_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input outer_dimension rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "component_arity": {
+    "twin": "component_arity_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input component_arity rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "tuple_instead_vector": {
+    "twin": "tuple_instead_vector_twin.rs",
+    "code": "E0308",
+    "scope": "Exact input tuple_instead_vector rejected at ordinary generated Program constructor; complete source unchanged"
+  },
+  "result": {
+    "twin": "result_twin.rs",
+    "code": "E0308",
+    "scope": "Generated result keeps every widened bound and fixed Vector carrier"
+  },
+  "program": {
+    "twin": "program_twin.rs",
+    "code": "E0382",
+    "scope": "Program is consumed once across full input ownership"
+  },
+  "context": {
+    "twin": "context_twin.rs",
+    "code": "E0382",
+    "scope": "Execution consumes context once"
+  },
+  "witness": {
+    "twin": "witness_twin.rs",
+    "code": "E0277",
+    "scope": "Witness interface requires exact generated source bound"
+  }
+}
