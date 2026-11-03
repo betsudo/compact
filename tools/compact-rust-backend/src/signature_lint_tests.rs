@@ -116,3 +116,104 @@ fn signature_metadata_retains_previous_shapes_and_excludes_unrelated_types() {
         }
     }
 }
+
+#[test]
+fn outer_product_metadata_marks_only_execution_signatures_without_erasing_types() {
+    let mut file: syn::File = syn::parse_quote! {
+        mod api {
+            fn native(input: runtime::FixedVector<((u8,), u8), 1>)
+                -> Result<runtime::context::CircuitResult<Private, runtime::FixedVector<((u8,), u8), 1>>, Error>
+            { run_once(input) }
+            struct Program;
+            impl Program {
+                fn recorded(self)
+                    -> Result<crate::runtime::recording::RecordedCircuitResult<Private, crate::runtime::FixedVector<(u8, (u8,)), 1>>, Error>
+                { record_once(self) }
+                fn observed(self)
+                    -> Result<runtime::transaction::RecordedCall<'state, Private, runtime::FixedVector<((u8, u8), u8), 1>>, Error>
+                { prepare_once(self) }
+            }
+            trait Interpreter {
+                fn execute(self) -> E::Outcome<crate::runtime::FixedVector<(u8, (u8,)), 1>, Error>;
+            }
+            fn pure(input: runtime::FixedVector<((u8,), u8), 1>)
+                -> Result<runtime::FixedVector<((u8,), u8), 1>, Error>
+            { Ok(input) }
+            fn foreign(input: runtime::FixedVector<((u8,), u8), 1>)
+                -> other::context::CircuitResult<Private, runtime::FixedVector<((u8,), u8), 1>>
+            { other_once(input) }
+        }
+    };
+    let before = file.to_token_stream().to_string();
+    CompactSignatureLint.visit_file_mut(&mut file);
+    let printed = prettyplease::unparse(&file);
+    assert_eq!(printed.matches("clippy::type_complexity").count(), 4);
+    assert!(!printed.contains("#![allow"));
+    let syn::Item::Mod(module) = &mut file.items[0] else {
+        panic!("module")
+    };
+    assert!(module.attrs.is_empty());
+    let items = &mut module.content.as_mut().unwrap().1;
+    let syn::Item::Fn(native) = &mut items[0] else {
+        panic!("native")
+    };
+    assert_eq!(native.attrs.len(), 1);
+    native.attrs.clear();
+    let syn::Item::Impl(implementation) = &mut items[2] else {
+        panic!("impl")
+    };
+    assert!(implementation.attrs.is_empty());
+    for method in &mut implementation.items {
+        let syn::ImplItem::Fn(method) = method else {
+            panic!("method")
+        };
+        assert_eq!(method.attrs.len(), 1);
+        method.attrs.clear();
+    }
+    let syn::Item::Trait(interpreter) = &mut items[3] else {
+        panic!("trait")
+    };
+    assert!(interpreter.attrs.is_empty());
+    let syn::TraitItem::Fn(method) = &mut interpreter.items[0] else {
+        panic!("execute")
+    };
+    assert_eq!(method.attrs.len(), 1);
+    method.attrs.clear();
+    for item in &items[4..] {
+        let syn::Item::Fn(function) = item else {
+            panic!("function")
+        };
+        assert!(function.attrs.is_empty());
+    }
+    assert_eq!(file.to_token_stream().to_string(), before);
+}
+
+#[test]
+fn outer_product_signature_metadata_excludes_pure_direct_and_foreign_results() {
+    let ty: syn::Type = syn::parse_quote!(runtime::FixedVector<((u8,), u8), 1>);
+    let positive: Vec<syn::Signature> = vec![
+        syn::parse_quote!(fn native() -> Result<runtime::context::CircuitResult<P, #ty>, Error>),
+        syn::parse_quote!(fn recorded() -> Result<runtime::recording::RecordedCircuitResult<P, #ty>, Error>),
+        syn::parse_quote!(fn observed() -> Result<crate::runtime::transaction::RecordedCall<'a, P, #ty>, Error>),
+        syn::parse_quote!(fn execute() -> E::Outcome<#ty, Error>),
+    ];
+    let negative: Vec<syn::Signature> = vec![
+        syn::parse_quote!(fn pure(input: #ty) -> Result<#ty, Error>),
+        syn::parse_quote!(fn direct(input: #ty) -> #ty),
+        syn::parse_quote!(fn foreign() -> Result<other::context::CircuitResult<P, #ty>, Error>),
+        syn::parse_quote!(fn foreign_interpreter() -> Other::Outcome<#ty, Error>),
+        syn::parse_quote!(fn foreign_vector() -> Result<runtime::context::CircuitResult<P, other::FixedVector<((u8,), u8), 1>>, Error>),
+        syn::parse_quote!(fn scalar_product() -> Result<runtime::context::CircuitResult<P, ((u8,), u8)>, Error>),
+        syn::parse_quote!(fn empty_child() -> Result<runtime::context::CircuitResult<P, runtime::FixedVector<((), u8), 1>>, Error>),
+    ];
+    for (signatures, expected) in [(positive, true), (negative, false)] {
+        for signature in signatures {
+            assert_eq!(
+                CompactSignatureLint::has_complex_product_vector(&signature),
+                expected,
+                "{}",
+                signature.to_token_stream()
+            );
+        }
+    }
+}

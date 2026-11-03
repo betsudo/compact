@@ -136,3 +136,20 @@ separate semantic classifier change. Retain both failed and passing epochs.
 
 Required CI/Linux/integration remain open even after a bounded local metadata
 repair. No new proof is inferred from unchanged proof inputs or a metadata fix.
+
+## Focused metadata development checkpoint
+
+Four signature-owner AST tests now pass, including both complete unchanged prior
+test bodies and two new methods covering free/impl/trait execution signatures,
+first/last tuple children, exact post-attribute-removal AST identity and pure,
+direct, empty-child and foreign exclusions. Strict backend lib/test-code Clippy
+passes. The repair requires a Compact execution result wrapper (or the generated
+E::Outcome interpreter) before marking this new carrier shape. It changes no
+frontend selector, checked operation, AST body, public carrier or runtime API.
+
+The next maintained compiler label is188. The generated ledger document is still
+187 until its owner runs after the clean signed original build; this is a
+transient, unqualified version mismatch. Generated SDK lint, exact raw-input/
+AST comparison, runtime/static consumers, owner documentation/version gate and
+independent reviews remain required. No repaired SDK or semantic admission is
+claimed from focused unit/lint evidence alone.

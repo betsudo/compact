@@ -1023,6 +1023,41 @@ fn collect_return_plan_types<'ir>(
 struct CompactSignatureLint;
 
 impl CompactSignatureLint {
+    // The outer nested-product carrier is already accepted by pure emission.
+    // Its additional execution wrappers cause the observed signature lint;
+    // keep the previously clean pure signatures unchanged.
+    fn has_execution_result(signature: &syn::Signature) -> bool {
+        let syn::ReturnType::Type(_, output) = &signature.output else {
+            return false;
+        };
+        let mut ty = output.as_ref();
+        if let syn::Type::Path(path) = ty
+            && path.path.leading_colon.is_none()
+            && path.path.segments.len() == 1
+            && path.path.segments[0].ident == "Result"
+            && let syn::PathArguments::AngleBracketed(arguments) = &path.path.segments[0].arguments
+            && let Some(syn::GenericArgument::Type(inner)) = arguments.args.first()
+        {
+            ty = inner;
+        }
+        let syn::Type::Path(path) = ty else {
+            return false;
+        };
+        let names = path
+            .path
+            .segments
+            .iter()
+            .map(|s| s.ident.to_string())
+            .collect::<Vec<_>>();
+        names == ["runtime", "context", "CircuitResult"]
+            || names == ["crate", "runtime", "context", "CircuitResult"]
+            || names == ["runtime", "recording", "RecordedCircuitResult"]
+            || names == ["crate", "runtime", "recording", "RecordedCircuitResult"]
+            || names == ["runtime", "transaction", "RecordedCall"]
+            || names == ["crate", "runtime", "transaction", "RecordedCall"]
+            || names == ["E", "Outcome"]
+    }
+
     fn vector_element(ty: &syn::Type) -> Option<&syn::Type> {
         let syn::Type::Path(path) = ty else {
             return None;
@@ -1047,6 +1082,7 @@ impl CompactSignatureLint {
     }
 
     fn has_complex_product_vector(signature: &syn::Signature) -> bool {
+        let execution_result = Self::has_execution_result(signature);
         let mut pending = signature
             .inputs
             .iter()
@@ -1068,7 +1104,11 @@ impl CompactSignatureLint {
             let vector_component = matches!(element, Some(syn::Type::Tuple(product))
                 if product.elems.len() >= 2
                     && product.elems.iter().any(|ty| Self::vector_element(ty).is_some()));
-            if wide_product || nested_product || vector_component {
+            let product_component = execution_result
+                && matches!(element, Some(syn::Type::Tuple(product))
+                if product.elems.len() >= 2
+                    && product.elems.iter().any(|ty| matches!(ty, syn::Type::Tuple(nested) if !nested.elems.is_empty())));
+            if wide_product || nested_product || vector_component || product_component {
                 return true;
             }
             match ty {
