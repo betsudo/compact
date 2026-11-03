@@ -204,3 +204,26 @@ the top CHANGELOG entry still named187 despite compiler/flake/document188. Add
 the missing188 source-checkpoint entry and execute the literal existing workflow
 version checks. This review finding is retained; it is not a clean final review.
 Separate receipt review and corrected source review remain required.
+
+## Accepted bounded local metadata prerequisite
+
+The missing188 changelog entry is fixed at744f6ea11. All three literal existing
+workflow version steps pass locally. Fresh independent Codex medium source review
+(71.23s) confirms the P2 is resolved and no further actionable findings. Separate
+Codex high receipt review (360.94s) reconciles23 packet pins,7127 frozen build
+files against Git blobs, executable/derivation identities, exact SDK continuity,
+64 commands, complete artifact membership, bound tools/dependencies/eight locks
+and all18 marked refusals/positive twins; it found no actionable evidence issues.
+
+Accept only the local metadata prerequisite. Epochs remain explicit: e05ab build,
+3098177 same-physical controls,0764 maintained gate,744f documentation correction.
+No new TS runtime/proof or semantic widening was executed, and native Linux,
+required full CI and integration remain open. All failed baseline/report epochs,
+prior fixture bytes, accepted component proof stage and Forge experiment remain
+untouched. See baseline-stage-closeout-v1.json in the evidence root.
+
+The next semantic candidate is declared separately under
+/Users/ysh/.codex/local-evidence/rust-ast-outer-vector-product-semantics-20261103.
+Its whole15-export family generates TS under original188 but Rust and independent
+frontend IR refuse with the same retained diagnostic. It is not a replacement
+for the original whole counterexample. No selector change has yet occurred.
