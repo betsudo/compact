@@ -741,3 +741,21 @@ This is current-candidate application qualification, not a new semantic feature.
 The pure library has no recording/proof/application stage. Current Linux/full
 required CI, logical integration and the finite supported-profile handoff remain
 open. The broader goal is incomplete; Forge remains deferred.
+
+
+### Current-candidate DID lifecycle — selected local qualification
+
+The [current DID handoff](plans/current-did-handoff.md) passes at signed compiler183
+execution `67cbded3e`: whole original source and all twelve Programs, twelve live
+DID TS rows, five selected four-route Rust methods, strict consumer Clippy and
+three typed refusals. A separate fresh k11 / 1,804-row deactivation proof verifies
+(3,296 bytes), and an independently proved funded DEFAULT-strict transaction
+applies (7,413 bytes), with binding/version and unchanged replay controls.
+Fresh Claude source/receipt review reports no P1/P2 in the finite selected scope.
+
+The positive TS `did/timestamp-zero` row is not executed by the selected Rust
+suite and is the next concrete boundary check. Constructor/all-export proofs,
+full current protocol/network acceptance, complete CI/Linux and logical
+integration remain open. Existing compiler138 deactivation acceptance stays
+intact; current source/receipt epochs and capture/host limits are explicit in
+the handoff. The broad Rust AST goal is incomplete and Forge stays deferred.

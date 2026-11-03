@@ -1,6 +1,8 @@
 # Current-candidate DID lifecycle handoff
 
-Status: planned local qualification at compiler 0.31.183; no new DID result yet.
+Status: reviewed selected local compiler183 API and separate proof/application
+qualification pass at `67cbded3e8e6b0fd830679e8eae967e63dfadfb5`.
+The broad goal and full CI/Linux/integration remain open.
 Parent: signed `940183cbba9a04af2a530ce3462b2ed1935e72b5`.
 Branch: `codex/rust-ast-current-did-handoff`.
 
@@ -82,3 +84,65 @@ Evidence: `/Users/ysh/.codex/local-evidence/rust-ast-current-did-handoff-2026110
 After this candidate application obligation, reconcile the capability/exception
 book against current and retained evidence without reopening accepted work or
 inventing coverage percentages.
+
+
+## Reviewed current-candidate local result — 2026-11-03
+
+At clean signed `67cbded3e8e6b0fd830679e8eae967e63dfadfb5`, the original
+build-disabled compiler recipe passes, followed by the unchanged API gate and
+then the separate unchanged proof gate. The compiler is the same immutable
+0.31.183 package; no rebuild, compiler change or fixture repair was needed.
+
+The API gate's ten commands pass. The complete original two-file closure matches
+its authority. Fresh full IR, origins, capability metadata and all twelve checked
+Programs exactly match the current fixture. Only a separate formatting copy is
+compared with the checked-in generated Rust. Twelve live DID observations (plus
+twelve auxiliary crypto observations) match the retained TS cases. Five selected
+Rust methods cover the ordinary and functional native/recorded routes, including
+ten failing scenarios across four routes (40 executions), genuine witnesses,
+ordering, checkpoint and metering. Strict consumer Clippy and three intended
+E0308/E0382 controls pass. These are selected deactivation cases, not every export.
+
+The proof gate's nine commands and two manual source-binding refusals pass.
+Changed full IR and changed Program bytes refuse before keys/state. All twelve
+Programs and complete IR remain bound. Direct fresh keys retain the existing
+k11 / 1,804-row geometry and verified upstream built-ins/SRS. A 3,296-byte
+standalone mutation-control proof verifies; a **separately proved** funded
+DEFAULT-strict 7,413-byte transaction applies. Changed binding and version input,
+same-geometry checks, post-application stale-version refusal and unchanged-state
+IntentAlreadyExists replay pass. Unit has zero output atoms, so a changed-result
+control is not applicable. No constructor or all-twelve-export proof is claimed.
+
+Fresh authentic Claude CLI source/receipt inspection reports no actionable P1/P2.
+It checks the 1,507 API and 2,943 proof source pins, generated assets, components
+at source and snapshot, material, dust, result and command records. This is receipt
+inspection, not an independent cryptographic rerun. The Python gate enforces full
+IR byte equality; the runner's separate IR validator compares parsed JSON. Program
+byte binding remains exact; neither is described as a formal semantic proof.
+
+The TS capture records Node25.6.1 and runtime0.16.102 identity, 219 declared
+runtime/dependency file hashes before import with after-run equality, capture and
+Node continuity, and 23 reported non-system shared-library hashes. A separate
+post-run comparison matches the preceding accepted Passport cohort's 44 overlapping
+pins. These are trusted capture/inspection observations, not independent external
+before-use admission or exhaustive consumed-source, Rust-dependency, system-library,
+kernel, continuous/atomic or hostile-host attestation. The v1 supplied-cohort prose
+is clarified by its v2 record without rewriting the original evidence.
+
+Evidence: `controller-v1.json`, `original-existing-recipe-v1/receipt.json`,
+`did-api-v1/receipt.json`, `did-proof-v1/receipt.json`,
+`local-claude-did-receipt-review-v1.json`, `supplied-ts-tool-cohort-v2.json`
+and `did-final-adjudication-v1.json` under the slice evidence root. Old accepted
+compiler138/PR#693 and earlier renderer/fixture/proof epochs remain separate.
+The existing explicit DID k11 recipe does not increase the tiny/nested-product
+k8 limit. Full CI/Linux, logical integration and finite profile handoff remain open.
+
+### Concrete remaining positive edge
+
+`did/timestamp-zero` is a successful original TS capture that the selected Rust
+suite does not execute: its success helpers select `did/valid`, while the shared
+four-route loop covers the ten error rows. Preserve the existing five methods and
+all original captures. The next bounded slice should reproduce this positive zero-
+timestamp case across the four Rust routes, then fix an actual semantic owner
+only if it fails. Do not claim this unexecuted Rust edge or all twelve export
+behavior from the present selected qualification. The broad goal stays incomplete.
