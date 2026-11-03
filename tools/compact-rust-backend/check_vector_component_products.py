@@ -246,7 +246,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; 13 malformed native ingress controls and valid twins execute; Two exact complete outside-scope refusals execute; producer mutation/model/proof/Linux/integration gates remain open.")
+                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; 13 malformed native ingress controls and valid twins execute; Two exact complete outside-scope refusals execute; Three whole typed producer mutations and a controlled result-oracle corruption execute; model/proof/Linux/integration gates remain open.")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -414,8 +414,6 @@ def main():
                            "--bin", name, "--message-format=json"], success=False)
             report["compile_fail"][name] = {"source_sha256": digest(negative), "twin_sha256": digest(positive),
                 "errors": compile_failure(rejected, name, spec["code"], source)}
-        ir_folder = output / "native-ir-controls"
-        ir_folder.mkdir()
         report["native_ir_controls"] = {}
         ir_folder = output / "native-ir-controls"
         ir_folder.mkdir()
@@ -435,6 +433,62 @@ def main():
             report["native_ir_controls"][name] = {"positive_sha256": digest(original_path),
                 "malformed_sha256": digest(rejected_path), "stderr": rejected.stderr,
                 "scope": "native untrusted JSON ingress, with a separate valid private-IR twin; not proof acceptance"}
+        report["producer_mutations"] = {}
+        target_type = "Vector<2,[Vector<2,[Uint<16>,Uint<16>]>,Uint<32>]>"
+        before = f"const wide:{target_type} = disclose(vector_value());seen=1;"
+        after = f"seen=1;const wide:{target_type} = disclose(vector_value());"
+        for name, old, new in [("helper", "return input;", "return [input[1],input[0]];"),
+                               ("witness_before", before, after), ("witness_after", after, before)]:
+            original = SOURCES / (name + ".compact")
+            text = original.read_text()
+            require(text.count(old) == 1, "complete producer mutation premise differs: " + name)
+            folder = output / "producer-mutations" / name
+            folder.mkdir(parents=True)
+            changed_source = folder / (name + ".compact")
+            changed_source.write_text(text.replace(old, new))
+            bind_build_inputs([changed_source])
+            changed = folder / "generated"
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger8", "--rust-require-recording", changed_source, changed])
+            changed_manifest = source_manifest_snapshot(changed, True)
+            changed_snapshot = inventory(changed)
+            changed_consumer = folder / "consumer"
+            changed_consumer.mkdir()
+            shutil.copyfile(consumer / "consumer.rs", changed_consumer / "consumer.rs")
+            shutil.copyfile(consumer / "Cargo.lock", changed_consumer / "Cargo.lock")
+            text = manifest.read_text()
+            original_path = json.dumps(str(generated / name / "contract"))
+            require(text.count(original_path) == 1, "producer dependency membership differs")
+            changed_manifest_path = changed_consumer / "Cargo.toml"
+            changed_manifest_path.write_text(text.replace(original_path, json.dumps(str(changed / "contract"))))
+            bind_build_inputs([changed_source, changed_manifest_path, changed_consumer / "consumer.rs"])
+            for relative in changed_snapshot:
+                bind_build_inputs([changed / relative])
+            run(name + "-mutant-resolve", ["cargo", "metadata", "--offline", "--manifest-path", changed_manifest_path, "--format-version", "1"])
+            bind_lock(changed_consumer / "Cargo.lock")
+            rejected = run(name + "-mutant-consume", ["cargo", "test", "--locked", "--offline", "--manifest-path", changed_manifest_path,
+                           "--lib", name, "--", "--exact"], success=False)
+            require(rejected.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+                    and "assertion `left == right` failed" in rejected.stdout, "changed producer not consumed: " + name)
+            require(name == "helper" or "initializer witness order" in rejected.stdout, "wrong producer refusal")
+            require(inventory(changed) == changed_snapshot, "changed generated producer edited")
+            report["producer_mutations"][name] = {"original_source_sha256": digest(original),
+                "changed_source_sha256": digest(changed_source), "manifest": changed_manifest,
+                "generated_files": changed_snapshot,
+                "scope": "complete typed producer; unchanged old consumer rejects on first native lane, not all mutated routes"}
+        wrong = copy.deepcopy(reference)
+        next(row for row in wrong["rows"] if row["id"] == "parameter")["result"]["valueAtoms"][0][0] ^= 1
+        wrong_path = output / "changed-expected-result.json"
+        wrong_path.write_text(json.dumps(wrong) + "\n")
+        bind_build_inputs([wrong_path])
+        env["COMPACT_VECTOR_COMPONENT_PRODUCTS_TS"] = str(wrong_path)
+        rejected = run("changed-expected-result", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest,
+                       "--lib", "parameter", "--", "--exact"], success=False)
+        require(rejected.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+                and "assertion `left == right` failed" in rejected.stdout, "changed expected result not consumed")
+        report["changed_expected_result"] = {"sha256": digest(wrong_path),
+            "scope": "controlled corrupt expected-result table, not a new genuine TS verdict, typed proof result or proof acceptance"}
+        env["COMPACT_VECTOR_COMPONENT_PRODUCTS_TS"] = str(ts)
         report["scope_refusals"] = {}
         scope_table = json.loads((historical / "scope-controls.json").read_text())
         for name in ["nested_product_below_component", "vector_inside_component_product"]:

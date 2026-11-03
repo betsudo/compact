@@ -208,3 +208,21 @@ IR refusal/valid pairs. Previous20/28 and21/32 rows retain their literal epochs;
 the gate docstring now includes the adopted static/ingress checks. Full producer
 mutations, models, physical proof-input/material qualification, genuine proofs,
 separate funded applications and independent current reviews remain open.
+
+### Source/API/static development result and harness closeout
+
+At signedb9b8c5f8b, original183 builds in150.16seconds. Three private-field AST
+and two signature tests pass, and backend all-target/all-feature strict Clippy
+passes. The actual APIv3 attempt completes35TS/Rust behavior cases,24complete
+strict SDK roots and14marked misuse/independent twin pairs, then fails after128
+commands on duplicate allocation of native-ir-controls. No integrated ingress or
+outside-scope commands execute in this failed attempt. Remove only the duplicate
+mkdir; keep fresh-output refusal and all artifacts. The gate is not accepted yet.
+
+The successor also adopts the prepared full-producer controls: reverse the whole
+helper return and reorder each whole witness producer, regenerate complete SDKs,
+then require the unchanged typed consumer to fail in its first native lane.
+The result-oracle control corrupts one expected encoded atom and must be consumed;
+it is not a genuine TS verdict, typed proof mutation or proof acceptance. Changed
+source files are bound before their producer compilation. Fresh complete protocol
+and source/receipt review remain required before any stage acceptance or proof.
