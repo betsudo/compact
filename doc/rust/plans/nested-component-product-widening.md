@@ -444,3 +444,19 @@ local stack reconciliation without merging branches or rewriting preserved
 history. All required CI/Linux/integration gates remain required and unexecuted
 for this current stack; Forge remains deliberately deferred. This documentation
 successor changes no compiler, contract, SDK, runtime, proof consumer or recipe.
+
+
+## Required workflow source follow-up
+
+The existing imported-compiler Linux workflow now calls the maintained complete
+nested-component API/proof gate, with an exact current-head original recipe,
+resolved official ZKIR executable and TS runtime. Verified parameter preparation
+explicitly retains k6/k8 and adds k7 for the two selected witnessed exports.
+The new step invokes the full gate, not prepare-only; all four selected proofs,
+negative controls and separate strict applications remain required. Failed
+recipe/gate diagnostics are retained by the existing artifact mechanism.
+A focused workflow contract checks material ordering and required full-gate
+operands without a hosted run. Compiler, runtime, contracts and proof/SDK
+consumers are unchanged. Current arm64 acceptance remains the exact660e epoch;
+this workflow-source change does not claim Linux/CI execution or integration.
+Parent source/consumer follow-up and stack ancestry retain their separate heads.
