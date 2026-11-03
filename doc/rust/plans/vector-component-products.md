@@ -332,3 +332,29 @@ these new source files. The first development check caught a missing fixture-loc
 `ledger-transaction` feature; the corrected three SDKs and runner now pass opt-in
 strict Clippy. Its failed development log remains retained. No compiler/runtime,
 validator, ordinary API or generated SDK bytes are patched by this preparation.
+
+
+### Review correction: generated inputs below the checkout
+
+The first independent Codex source review (actual Claude quota fallback) finds
+one P2: the initial proof gate incorrectly classifies every depfile path below
+ROOT as tracked source. This rejects legitimate default `ROOT/target` OUT_DIRs and
+ignored in-checkout SDK outputs even though both have separate prebuild maps.
+The external-target preparation at `84de59285` still passes its literal configuration;
+it does not establish the affected layouts or close the source review finding.
+
+Classify every actual prerequisite through the bound inventory roles, require
+one consistent prebuild hash and current byte equality, and retain every path in
+the full physical union. Six focused controls cover valid source/SDK/default-target
+inputs, unknown existing target input, missing file, missing generated-role pin,
+changed output and conflicting roles. No path exclusion or missing-file skip is
+introduced. Complete raw Program files are review-only metadata: their byte guards
+establish fixture identity, not independent validation of the executable proof
+relation. Actual ZKIR, keys, immutable verifier and proof checks own that relation.
+Fresh successor preparation and independent review remain required before crypto.
+
+The preparation report also distinguishes the 21 unselected required exports from
+all 24 currently unproved exports; only successful actual proof execution can move
+the three selected exports out of its unproved list. The old preparation field
+listed 21 planned residuals despite proof_execution=false; retain that literal
+receipt without treating selection as completion.

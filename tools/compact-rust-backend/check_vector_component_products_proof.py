@@ -42,6 +42,26 @@ def depfile_prerequisites(raw, base=ROOT):
     return paths
 
 
+def qualify_dependency_inputs(prerequisites, inventories):
+    """Qualify every physical prerequisite by prebound identity, not location.
+
+    A generated SDK or OUT_DIR may live below the checkout (including target).
+    No path, generated directory or unknown prerequisite is exempted.
+    """
+    require(bool(prerequisites), "empty actual runner dependency set")
+    qualified, origins = {}, {}
+    for path in sorted(prerequisites):
+        bindings = {name: files[path] for name, files in inventories.items() if path in files}
+        require(bindings and len(set(bindings.values())) == 1,
+                "actual runner dependency missing or inconsistent in physical prebuild input map: " + path)
+        sha = next(iter(bindings.values()))
+        require(Path(path).is_file() and digest(path) == sha,
+                "actual runner dependency changed after physical prebuild binding: " + path)
+        qualified[path] = sha
+        origins[path] = sorted(bindings)
+    return qualified, origins
+
+
 def validate_summary(summary, generated):
     require(summary["format"] == "compact-vector-component-products-proof/v1" and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False
@@ -297,17 +317,14 @@ def run(args):
             required.extend([*sdk_required, main_gate.FIXTURES / f"proof-goldens/{source}/source-ir.json",
                              main_gate.FIXTURES / f"proof-goldens/{source}/checked-programs/program-0.json"])
         require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual paired SDK/Program dependency")
-        worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
-                           if Path(path).is_relative_to(ROOT)}
-        require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
-                "runner worktree dependency was not pinned before build")
-        physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes", "generated_build_inputs_before_compile"] for p, sha in report[field].items()}
-        actual_files = set(tracked)
-        require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
-                "actual runner dependency missing from physical prebuild input map")
-        report["runner_physical_inputs_before_build"] = {p: physical_inputs[p] for p in sorted(actual_files)}
+        input_maps = {field: report[field] for field in ["source_hashes", "generated_input_hashes",
+                "dependency_source_hashes", "generated_build_inputs_before_compile"]}
+        physical_inputs, input_origins = qualify_dependency_inputs(tracked, input_maps)
+        report["runner_physical_inputs_before_build"] = physical_inputs
+        report["runner_physical_input_origins"] = input_origins
+        declared_sources = {p: physical_inputs[p] for p in physical_inputs if p in report["source_hashes"]}
         report["runner_depfile"].update(membership_status="passed", all_generated_includes=True,
-                worktree_inputs_pinned_before_build=worktree_inputs)
+                declared_source_inputs_pinned_before_build=declared_sources)
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-component-products", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for source in SELECTED_SOURCES:
@@ -362,7 +379,8 @@ def run(args):
                 "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
         require(main_gate.inventory(full_generated) == full_before, "model observation changed producers")
         report["all_source_models"] = full_models
-        report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]
+        report["unselected_required_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]
+        report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"]]
         execute("models", [runner, "--vector-component-products-models", generated], output / "models.json")
         models = json.loads((output / "models.json").read_text())
         require(models["format"] == "compact-vector-component-products-models/v1"
@@ -425,6 +443,7 @@ def run(args):
             validate_summary(summary, generated)
             report["proof_result"] = summary
             report["proof_execution"] = True
+            report["unproved_exports"] = report["unselected_required_exports"]
             report["result_hashes"] = hashes([p for p in generated.rglob("vector-component-products-*") if p.is_file()])
             unchanged(report["key_hashes"])
             unchanged(report["binary_ir_hashes"])
