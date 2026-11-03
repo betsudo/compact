@@ -302,3 +302,33 @@ preparation, material or key admission is inferred from this proposal.
 Full required CI/Linux, integration, remaining application/distribution/capability
 handoff and the broad goal remain open. Forge stays deferred; all work is local,
 and cleanup remains conditional on completion and verified merge.
+
+
+## Three-source proof preparation — implementation pending qualification
+
+The whole-model observation selects the existing complete witness-before,
+witness-after and single-element product sources (each k8), with independent
+wrong-verifier controls across the witnessed and single-product relations. It
+does not replace the intact k9 original pair/helper/Field sources or earn proof
+credit for them. All 24 required exports remain unproved until actual execution.
+
+The new optional `vector-component-products` proof feature gives each complete
+selected SDK its own private crate root. Its default build needs no SDK paths;
+the root lock retains all existing package records, adding only three local
+fixture packages and their optional runner edges. The runner checks exact raw IR
+and whole Program membership, all-export native model observations, four typed
+API routes, private witness count/order, ordinary observed-call/preparation
+agreement, and source-specific immutable verifier identities. Fresh standalone
+proofs and separately proved funded default-strict applications with changed
+output/binding/preimage, corruption, wrong-key and unchanged replay refusals are
+implemented but not yet executed or accepted.
+
+The separate maintained proof gate prepares actual build-script outputs before
+the qualifying build, unions runner and all three SDK depfiles against prebound
+physical input maps, preserves raw artifacts as data, and verifies locked SRS and
+funding material before keys. Preparation, source review and receipt review remain
+required; no physical-input, crypto or integration acceptance follows merely from
+these new source files. The first development check caught a missing fixture-local
+`ledger-transaction` feature; the corrected three SDKs and runner now pass opt-in
+strict Clippy. Its failed development log remains retained. No compiler/runtime,
+validator, ordinary API or generated SDK bytes are patched by this preparation.

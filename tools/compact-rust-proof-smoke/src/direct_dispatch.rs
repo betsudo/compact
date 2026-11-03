@@ -242,6 +242,37 @@ pub(super) fn try_run(
             }
             crate::vector_product_elements::inventory(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "vector-component-products",
+            compact_vector_component_products_generated
+        ))]
+        ("--vector-component-products-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::vector_component_products::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "vector-component-products",
+            compact_vector_component_products_generated
+        ))]
+        ("--vector-component-products" | "--vector-component-products-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("proof command requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected proof command argument".into());
+            }
+            if selector == "--vector-component-products-models" {
+                crate::vector_component_products::models(std::path::Path::new(&root))
+            } else {
+                crate::vector_component_products::run(std::path::Path::new(&root))
+            }
+        })(
+        )),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {

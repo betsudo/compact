@@ -1,0 +1,18 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "compact-rust-vector-component-products-witness-after-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "Apache-2.0"
+publish = false
+[lib]
+path = "lib.rs"
+[features]
+default = []
+ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
+generated-sdk = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
+[dependencies]
+midnight-compact-runtime = { path = "../../../runtime-rs" }

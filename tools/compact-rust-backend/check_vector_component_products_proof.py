@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+
+"""Fresh source-bound Vector component products proofs and strict funded local applications.
+
+The opt-in runner compiles three complete unedited current SDKs at their own
+crate roots. Preparation verifies
+source/API/binding/parameter premises but generates no keys or proofs. Full CI,
+all-export proof coverage and integration acceptance remain separate.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import shlex
+import subprocess
+import sys
+import tomllib
+
+import check_vector_component_products as main_gate
+import local_parity_gate as common
+import resolve_ledger_test_static as ledger_static
+from did_proof_gate import dust_fixture_inventory, hashes, unchanged
+
+ROOT = main_gate.ROOT
+SELECTED = [("witness_before", "run"), ("witness_after", "run"), ("inner_product_single", "run")]
+SELECTED_SOURCES = [source for source, _ in SELECTED]
+require, digest = main_gate.require, main_gate.digest
+
+
+def depfile_prerequisites(raw, base=ROOT):
+    logical = raw.replace("\\\n", "")
+    first_rule = next(line for line in logical.splitlines() if line.strip())
+    _, separator, prerequisites = first_rule.partition(": ")
+    require(separator and prerequisites, "invalid actual runner dependency rule")
+    paths = {str((base / path).resolve(strict=True)) for path in shlex.split(prerequisites)}
+    require(paths and all(Path(path).is_file() for path in paths), "non-file runner prerequisite")
+    return paths
+
+
+def validate_summary(summary, generated):
+    require(summary["format"] == "compact-vector-component-products-proof/v1" and summary["status"] == "passed"
+            and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False
+            and summary["all_source_exports_deployed"] is False, "invalid proof scope")
+    require(summary["selected_source_exports_proved"] == list(map(list, SELECTED))
+            and summary["unproved_selected_source_exports"] == [], "selected export coverage differs")
+    require([(r["source"],r["circuit"]) for r in summary["calls"]] == SELECTED, "scenario roster differs")
+    for index, row in enumerate(summary["calls"]):
+        root = generated / row["source"]
+        require(row["initial_seen"] == 0 and row["seen"] == 1
+                and row["private_state"] == (8 if index < 2 else 7)
+                and row["witness_count"] == (1 if index < 2 else 0)
+                and row["witness_seen"] == (index if index < 2 else None), "typed scenario/witness differs")
+        require(row["result_type"] == ("Vector<2,[Vector<2,[Uint<16>,Uint<16>]>,Uint<32>]>" if index < 2
+                else "Vector<2,[Vector<2,[Uint<16>]>,Uint<16>]>"), "result carrier differs")
+        for field, suffix in [("proof_bytes",".proof"),("transaction_bytes","-transaction.bin")]:
+            require(type(row[field]) is int and row[field] > 0
+                    and (root / f"vector-component-products-{index}{suffix}").stat().st_size == row[field], "missing/truncated artifact")
+        require(row["standalone_proof"] == f"{row['source']}/vector-component-products-{index}.proof"
+                and row["applied_transaction"] == f"{row['source']}/vector-component-products-{index}-transaction.bin"
+                and row["transaction_proof_relationship"] == "independently proved"
+                and row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists", "proof/application identity differs")
+        require(all(row[key] is True for key in ["corrupt_proof_rejected","changed_binding_rejected","changed_result_rejected",
+                "changed_result_same_geometry","changed_preimage_rejected","wrong_verifier_rejected","replay_unchanged"]), "control missing")
+        require(all((root / f"vector-component-products-{index}{suffix}").stat().st_size > 0
+                for suffix in [".preimage","-state.bin"]), "preimage/state missing")
+
+
+def run(args):
+    requested_output = args.output.absolute()
+    require(not requested_output.exists() and not requested_output.is_symlink(), "proof output must be a new destination")
+    output = requested_output.resolve(strict=False)
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    inherited_sdk_selectors = sorted(key for key, value in env.items()
+                                     if key.startswith("COMPACT_") and key.endswith("_GENERATED") and value)
+    require(not inherited_sdk_selectors, "unset inherited generated-SDK selectors: " + ", ".join(inherited_sdk_selectors))
+    configuration_environment = dict(env)
+    configuration = main_gate.reject_compiler_overrides(configuration_environment)
+    output.mkdir(parents=True)
+    report = {"format": "compact-vector-component-products-proof-gate/v1", "status": "incomplete", "commands": [],
+              "cargo_configuration_sha256": configuration, "scope": __doc__, "proof_execution": False, "full_integration_acceptance": "OPEN"}
+    try:
+        # This maintained gate admits the exact clean HEAD/compiler/Rust tools,
+        # source/golden/Program identities, consumer behavior and negative controls.
+        common.run([sys.executable, str(Path(main_gate.__file__)),
+                    "--ts-runtime", str(args.ts_runtime), "--compiler-receipt", str(args.compiler_receipt),
+                    "--output", str(output / "protocol")], "source-api-protocol", output, report, env=env)
+        admitted = json.loads((output / "protocol/receipt.json").read_text())
+        require(admitted["status"] == "passed", "source/API protocol not admitted")
+        report["head"] = admitted["head"]
+        report["protocol_receipt"] = {"path": str(output / "protocol/receipt.json"), "sha256": digest(output / "protocol/receipt.json")}
+        report["rust_tools"] = admitted["rust_tools"]
+        report["compiler_tools"] = admitted["tools"]
+        unchanged(report["compiler_tools"])
+        env.update({key: value for key, value in admitted["environment"].items() if value is not None})
+        env["RUSTUP_TOOLCHAIN"] = "1.99.0"
+        env["RUSTC"] = admitted["rust_tools"]["rustc"]["path"]
+        env["CARGO_INCREMENTAL"] = "0"
+        require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "absolute MIDNIGHT_PP required")
+        generated = output / "protocol/generated"
+        env["COMPACT_VECTOR_COMPONENT_PRODUCTS_GENERATED"] = str(generated)
+        report["generated_sdk"] = str(generated)
+        report["selected_exports"] = list(map(list, SELECTED))
+        report["generated_before"] = before = main_gate.inventory(generated)
+        tracked_sources = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
+        source_paths = [ROOT / os.fsdecode(path) for path in tracked_sources if path]
+        require(all(p.is_file() for p in source_paths), "tracked source file is absent")
+        report["source_hashes"] = hashes(source_paths)
+        report["generated_input_hashes"] = hashes([p for p in (output / "protocol/generated").rglob("*") if p.is_file()])
+        report["bound_api_inputs"] = admitted["build_inputs_before_use"]
+        report["environment"] = {k: env.get(k) for k in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_BUILD_JOBS", "CARGO_TARGET_DIR", "COMPACT_VECTOR_COMPONENT_PRODUCTS_GENERATED", "MIDNIGHT_PP"]}
+        # Carry every already-admitted compiler/source/API input through the
+        # proof epoch, including original Compact examples, not just includes.
+        for relative, sha in admitted["inputs"].items():
+            path = str(ROOT / relative)
+            require(digest(path) == sha, "admitted source changed before proof build: " + relative)
+            require(path not in report["source_hashes"] or report["source_hashes"][path] == sha,
+                    "prebuild source authorities disagree: " + relative)
+            report["source_hashes"][path] = sha
+
+        (output / "bin").mkdir()
+        zkir = args.zkir.resolve(strict=True)
+        report["zkir"] = common.stable_copy(zkir, output / "bin/zkir")
+        components = report["components"] = {}
+
+        def execute(label, command, stdout=None):
+            argv = list(map(str, command))
+            if argv[0] in admitted["rust_tools"]:
+                argv[0] = admitted["rust_tools"][argv[0]]["path"]
+            for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "compiler_tools"]:
+                if field in report:
+                    unchanged(report[field])
+            require(main_gate.reject_compiler_overrides(configuration_environment) == configuration,
+                    "Cargo configuration changed before command")
+            try:
+                common.run(argv, label, output, report, env=env, stdout_path=stdout)
+            finally:
+                if report["commands"]:
+                    command = report["commands"][-1]
+                    command["raw_files_after_command"] = hashes([Path(command["log"]), *([Path(command["stdout"]["path"])] if command.get("stdout") else [])])
+
+        execute("locked-build-metadata", ["cargo", "metadata", "--locked", "--offline", "--format-version", "1"], output / "build-metadata.json")
+        metadata = json.loads((output / "build-metadata.json").read_text())
+        root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+        root_pins = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in root_packages}
+        dependency_roots = set()
+        report["resolved_packages"] = []
+        for package in metadata["packages"]:
+            source = package.get("source")
+            key = (package["name"], package["version"], source)
+            require(key in root_pins, "metadata package differs from root lock")
+            manifest = Path(package["manifest_path"]).resolve(strict=True)
+            report["resolved_packages"].append({"name": key[0], "version": key[1], "source": source,
+                "checksum": root_pins[key], "manifest": str(manifest)})
+            if source is not None:
+                directory = manifest.parent
+                if source.startswith("git+"):
+                    while directory != directory.parent and not (directory / ".git").exists():
+                        directory = directory.parent
+                    require((directory / ".git").exists(), "Git dependency checkout root not found")
+                dependency_roots.add(directory)
+        dependencies = set()
+        for directory in dependency_roots:
+            for folder, dirs, files in os.walk(directory, followlinks=False):
+                dirs[:] = [d for d in dirs if d != ".git"]
+                for name in files:
+                    path = Path(folder) / name
+                    if path.is_file():
+                        dependencies.add(path.resolve(strict=True))
+        report["dependency_source_roots"] = sorted(map(str, dependency_roots))
+        report["dependency_source_hashes"] = hashes(dependencies)
+        report["metadata_before_build"] = {"path": str(output / "build-metadata.json"), "sha256": digest(output / "build-metadata.json")}
+        # No SDK path is needed by the default build. The opt-in build follows it.
+        selected_sdk = env.pop("COMPACT_VECTOR_COMPONENT_PRODUCTS_GENERATED")
+        execute("default-runner-check", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--no-default-features"])
+        execute("all-features-runner-clippy-without-sdk", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"])
+        env["COMPACT_VECTOR_COMPONENT_PRODUCTS_GENERATED"] = selected_sdk
+        # Cargo fixture build scripts produce real include! inputs outside the
+        # tracked tree. Prepare and pin those physical files before qualifying
+        # the runner, rather than accepting newly discovered bytes afterward.
+        execute("prepare-runner-inputs", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                "compact-rust-proof-smoke", "--features", "vector-component-products", "--message-format=json"], output / "prepare-build.jsonl")
+        package_metadata = {package["id"]: package for package in metadata["packages"]}
+        source_map = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "dependency_source_hashes", "generated_input_hashes"] for p, sha in report[field].items()}
+        events = [json.loads(line) for line in (output / "prepare-build.jsonl").read_text().splitlines() if line.startswith("{")]
+        prepared_dirs, generated_inputs, owners = set(), set(), []
+        target_directory = Path(metadata["target_directory"]).resolve(strict=True)
+        for event in events:
+            if event.get("reason") != "build-script-executed":
+                continue
+            require(event["package_id"] in package_metadata, "unknown generated-input package")
+            package = package_metadata[event["package_id"]]
+            scripts = [Path(t["src_path"]).resolve(strict=True) for t in package["targets"] if "custom-build" in t["kind"]]
+            require(len(scripts) == 1 and str(scripts[0]) in source_map and digest(scripts[0]) == source_map[str(scripts[0])],
+                    "generated-input build owner was not bound before preparation")
+            directory = Path(event["out_dir"]).resolve(strict=True)
+            require(directory.is_relative_to(target_directory), "generated-input directory outside actual Cargo target")
+            prepared_dirs.add(directory)
+            files = [p.resolve(strict=True) for p in directory.rglob("*") if p.is_file()]
+            generated_inputs.update(files)
+            owner = {"package_id": event["package_id"], "source": str(scripts[0]),
+                "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory), "files": sorted(map(str, files))}
+            # Local fixture generation declares its tracked source inputs via
+            # Cargo rerun lines; authenticate those against the pre-preparation map.
+            script_log = directory.parent / "output"
+            require(script_log.is_file(), "missing actual build-script output log")
+            generated_inputs.add(script_log.resolve(strict=True))
+            owner.update(output_log=str(script_log), output_log_sha256=digest(script_log))
+            if package.get("source") is None:
+                manifest = Path(package["manifest_path"]).resolve(strict=True)
+                require(str(manifest) in source_map and digest(manifest) == source_map[str(manifest)],
+                        "local build-script manifest was not bound")
+                rerun_files = set()
+                for line in script_log.read_text().splitlines():
+                    if line.startswith(("cargo:rerun-if-changed=", "cargo::rerun-if-changed=")):
+                        path = (manifest.parent / line.split("=", 1)[1]).resolve(strict=True)
+                        rerun_files.update(p.resolve(strict=True) for p in path.rglob("*") if p.is_file()) if path.is_dir() else rerun_files.add(path)
+                require(all(str(p) in source_map and digest(p) == source_map[str(p)] for p in rerun_files),
+                        "local generated-input source absent from pre-preparation map")
+                owner["rerun_inputs_before_preparation"] = {str(p): source_map[str(p)] for p in sorted(rerun_files)}
+            owners.append(owner)
+        require(owners and generated_inputs, "no actual build-generated inputs prepared")
+        report["prepared_build_scripts"] = owners
+        report["prepared_generated_directories"] = sorted(map(str, prepared_dirs))
+        report["generated_build_inputs_before_compile"] = hashes(generated_inputs)
+        report["preparation_scope"] = "Explicit preparatory Cargo check creates/caches build-script inputs; physical paths/bytes and bound source owners pinned before qualifying build. Not a proof or atomic/global supply-chain attestation."
+        execute("build-runner", ["cargo", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                                "compact-rust-proof-smoke", "--features", "vector-component-products", "--message-format=json"], output / "build.jsonl")
+        artifacts = [json.loads(line) for line in (output / "build.jsonl").read_text().splitlines() if line.startswith("{")]
+        executable = {row["executable"] for row in artifacts if row.get("reason") == "compiler-artifact"
+                      and row["target"]["name"] == "compact-rust-proof-smoke" and row.get("executable")}
+        require(len(executable) == 1, "ambiguous proof runner artifact")
+        built = Path(executable.pop())
+        components["runner"] = common.stable_copy(built, output / "bin/proof-runner")
+        runner = components["runner"]["snapshot"]
+        depfile = built.with_suffix(".d")
+        retained_depfile = output / "runner.d"
+        shutil.copyfile(depfile, retained_depfile)
+        report["runner_depfile"] = {"path": str(retained_depfile), "build_path": str(depfile),
+                "sha256": digest(retained_depfile), "membership_status": "pending"}
+        dependencies = retained_depfile.read_text()
+        # Cargo preserves lexical ../ components for relative include_bytes!, and
+        # escapes spaces in Make paths. Resolve parsed paths to physical files;
+        # retain the raw depfile bytes/hash and exact include membership checks.
+        tracked = depfile_prerequisites(dependencies)
+        missing = output / "dependency-that-must-be-absent.rs"
+        require(not missing.exists(), "missing-dependency control path already exists")
+        logical = dependencies.replace("\\\n", "")
+        first_rule = next(line for line in logical.splitlines() if line.strip())
+        poisoned = logical.replace(first_rule, first_rule + " " + str(missing).replace("\\", "\\\\").replace(" ", "\\ "), 1)
+        poisoned_path = output / "missing-dependency.d"
+        poisoned_path.write_text(poisoned)
+        try:
+            depfile_prerequisites(poisoned)
+        except FileNotFoundError as error:
+            require(error.filename == str(missing.resolve(strict=False)), "wrong missing-prerequisite locus")
+        else:
+            raise ValueError("missing-prerequisite control accepted")
+        report["missing_dependency_control"] = {"path": str(poisoned_path), "sha256": digest(poisoned_path),
+                "missing_path": str(missing), "before_keys_or_models": True}
+        report["sdk_artifacts"] = {}
+        required = [main_gate.FIXTURES / "sources.json"]
+        for source in SELECTED_SOURCES:
+            slug = source.replace("_", "-")
+            target_name = "compact_rust_vector_component_products_" + source + "_sdk"
+            matches = [r for r in artifacts if r.get("reason") == "compiler-artifact" and r["target"]["name"] == target_name]
+            require(len(matches) == 1, "ambiguous complete SDK artifact: " + source)
+            row = matches[0]
+            manifest = Path(package_metadata[row["package_id"]]["manifest_path"]).resolve(strict=True)
+            package_root = ROOT / f"tools/compact-rust-proof-smoke/vector-component-products-{slug}-sdk"
+            require(manifest == package_root / "Cargo.toml" and Path(row["target"]["src_path"]).resolve(strict=True) == package_root / "lib.rs", "SDK not compiled at its OWN crate root")
+            libs = [Path(p) for p in row["filenames"] if p.endswith(".rlib")]
+            require(len(libs) == 1 and libs[0].is_file(), "missing SDK rlib data artifact")
+            lib = libs[0]
+            snapshot = output / f"bin/{source}-sdk.rlib"
+            require(not snapshot.exists(), "SDK data snapshot must be fresh")
+            sha = digest(lib)
+            shutil.copyfile(lib, snapshot)
+            require(digest(snapshot) == sha == digest(lib), "SDK library changed during snapshot")
+            snapshot.chmod(0o444)
+            component = {"source":str(lib),"snapshot":str(snapshot),"sha256":sha,"size":snapshot.stat().st_size,"kind":"rust-rlib-data"}
+            components[source + "_sdk_rlib"] = component
+            raw_depfile = lib.parent / (lib.stem.removeprefix("lib") + ".d")
+            retained = output / f"{source}-sdk.d"
+            shutil.copyfile(raw_depfile, retained)
+            sdk_tracked = depfile_prerequisites(retained.read_text(), ROOT)
+            sdk_required = [package_root / "lib.rs", generated / source / "contract/lib.rs",
+                            *sorted((generated / source / "contract/checked-programs").glob("*.json"))]
+            require(all(str(p.resolve(strict=True)) in sdk_tracked for p in sdk_required), "SDK omitted complete raw includes")
+            report["sdk_artifacts"][source] = {"package_id":row["package_id"],"manifest":str(manifest),"crate_root":row["target"]["src_path"],
+                "artifact":component,"depfile":str(retained),"depfile_sha256":digest(retained),"prerequisites":sorted(sdk_tracked)}
+            tracked.update(sdk_tracked)
+            required.extend([*sdk_required, main_gate.FIXTURES / f"proof-goldens/{source}/source-ir.json",
+                             main_gate.FIXTURES / f"proof-goldens/{source}/checked-programs/program-0.json"])
+        require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual paired SDK/Program dependency")
+        worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
+                           if Path(path).is_relative_to(ROOT)}
+        require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
+                "runner worktree dependency was not pinned before build")
+        physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes", "generated_build_inputs_before_compile"] for p, sha in report[field].items()}
+        actual_files = set(tracked)
+        require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
+                "actual runner dependency missing from physical prebuild input map")
+        report["runner_physical_inputs_before_build"] = {p: physical_inputs[p] for p in sorted(actual_files)}
+        report["runner_depfile"].update(membership_status="passed", all_generated_includes=True,
+                worktree_inputs_pinned_before_build=worktree_inputs)
+        execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                                  "compact-rust-proof-smoke", "--features", "vector-component-products", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
+        for source in SELECTED_SOURCES:
+            for kind, message in [("changed-ir", f"vector-component-products {source} complete IR bytes differ"),
+                                  ("changed-program", f"vector-component-products {source} complete Program bytes differ"),
+                                  ("missing-program", f"vector-component-products {source} complete Program membership differs")]:
+                label = source + "-" + kind
+                negative = output / label
+                for member in SELECTED_SOURCES:
+                    shutil.copytree(generated / member / "contract/checked-programs", negative / member / "contract/checked-programs")
+                    shutil.copyfile(generated / member / "contract/compact-rust-ir.json", negative / member / "contract/compact-rust-ir.json")
+                folder = negative / source / "contract"
+                if kind == "changed-ir":
+                    path = folder / "compact-rust-ir.json"
+                    original = path.read_bytes()
+                    changed = original + b" "
+                    require(len(changed) == len(original) + 1, "raw IR byte identity control differs")
+                    json.loads(changed)
+                    path.write_bytes(changed)
+                elif kind == "changed-program":
+                    path = folder / "checked-programs/program-0.json"
+                    path.write_bytes(path.read_bytes() + b" ")
+                else:
+                    (folder / "checked-programs/program-0.json").unlink()
+                control_inputs = hashes([p for p in negative.rglob("*") if p.is_file()])
+                result = subprocess.run([runner, "--vector-component-products", str(negative)], cwd=ROOT, env=env,
+                                        capture_output=True, text=True, timeout=30)
+                (negative / "stdout").write_text(result.stdout)
+                (negative / "stderr").write_text(result.stderr)
+                require(result.returncode != 0 and result.stdout == "" and message in result.stderr, label + " failed outside binding guard")
+                require(not any((negative / member / "keys").exists() for member in SELECTED_SOURCES)
+                        and not list(negative.rglob("*.proof")) and not list(negative.glob("vector-component-products-*")), "pre-key refusal produced evidence")
+                unchanged(control_inputs)
+                report[label] = {"exit": result.returncode, "before_keys_or_state": True, "input_hashes_before": control_inputs,
+                                 "scope": "raw complete IR/Program byte/membership identity refusal; IR one-byte trailing whitespace identity change, no reserialization or semantic mutation"}
+        full_generated = output / "protocol/generated"
+        full_before = main_gate.inventory(full_generated)
+        execute("all-source-models", [runner, "--vector-component-products-inventory", full_generated], output / "all-source-models.json")
+        full_models = json.loads((output / "all-source-models.json").read_text())
+        definitions = json.loads((main_gate.FIXTURES / "sources.json").read_text())
+        require(full_models["format"] == "compact-vector-component-products-model-inventory/v1"
+                and [(r["source"], r["circuit"]) for r in full_models["circuits"]]
+                == [(s["source"], entry) for s in definitions for entry in s["entries"]], "complete model roster differs")
+        by_source = {s["source"]:s for s in definitions}
+        require(all(r["proof_required"] is by_source[r["source"]]["stateful"]
+                    and (type(r["k"]) is int and r["k"] >= 0 if r["proof_required"] else r["k"] is None)
+                    and r["selected_for_proof"] == ((r["source"], r["circuit"]) in SELECTED)
+                    for r in full_models["circuits"]), "model observation/applicability differs")
+        expected_models = json.loads((main_gate.FIXTURES / "model-expectations.json").read_text())
+        require(expected_models["format"] == "compact-vector-component-products-model-expectations/v1"
+                and [{k: r[k] for k in ["source", "circuit", "k", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
+                "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
+        require(main_gate.inventory(full_generated) == full_before, "model observation changed producers")
+        report["all_source_models"] = full_models
+        report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]
+        execute("models", [runner, "--vector-component-products-models", generated], output / "models.json")
+        models = json.loads((output / "models.json").read_text())
+        require(models["format"] == "compact-vector-component-products-models/v1"
+                and [(r["source"],r["circuit"]) for r in models["circuits"]] == SELECTED
+                and models["proof_execution"] is False, "selected model roster differs")
+        require(all(next(x["k"] for x in full_models["circuits"] if (x["source"],x["circuit"]) == (r["source"],r["circuit"])) == r["k"]
+                and r["selected_for_proof"] is True for r in models["circuits"]), "selected/full models disagree")
+        selected_models = models["circuits"]
+        require(len(selected_models) == 3 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models), "selected model exceeds tiny bound")
+        report["models"] = models
+        # Private diagnostic: an existing intact over-limit model exercises the
+        # selected-model guard, without changing original source or proof inputs.
+        excessive = output / "selected-model-over-cap"
+        for source in SELECTED_SOURCES:
+            shutil.copytree(generated / source, excessive / source)
+        donor = generated / "helper/zkir/run.zkir"
+        require(next(r["k"] for r in full_models["circuits"] if r["source"] == "helper") > 8, "over-cap control premise changed")
+        shutil.copyfile(donor, excessive / "witness_before/zkir/run.zkir")
+        control_inputs = hashes([p for p in excessive.rglob("*") if p.is_file()])
+        refused = subprocess.run([runner,"--vector-component-products-models",str(excessive)],cwd=ROOT,env=env,capture_output=True,text=True,timeout=60)
+        (excessive / "stdout").write_text(refused.stdout); (excessive / "stderr").write_text(refused.stderr)
+        require(refused.returncode != 0 and "model exceeds tiny automatic k<=8" in refused.stderr, "over-cap guard did not refuse")
+        refused_models = json.loads(refused.stdout)
+        require(refused_models["circuits"][0]["k"] > 8 and refused_models["circuits"][1:] == selected_models[1:]
+                and not list(excessive.rglob("*.proof")) and not any((excessive / n / "keys").exists() for n in SELECTED_SOURCES), "over-cap refusal scope differs")
+        unchanged(control_inputs)
+        report["selected_model_over_cap_refusal"] = {"exit":refused.returncode,"models":refused_models,"input_hashes_before":control_inputs,
+            "donor_sha256":digest(donor),"before_keys_or_proofs":True,"scope":"private intact existing helper ZKIR diagnostic, not admitted selected SDK semantics"}
+        material = output / "proof-material.json"
+        execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
+                *[arg for k in sorted({r["k"] for r in selected_models}) for arg in ["--parameter-k", str(k)]]], material)
+        verified = json.loads(material.read_text())
+        require(verified["mode"] == "verify-only" and verified["verification"] == "all files checked against locked upstream SHA256 tables"
+                and Path(verified["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "proof material premise differs")
+        require({r["k"] for r in selected_models} <= {r["k"] for r in verified["parameters"]}, "selected SRS not verified before key generation")
+        report["material_hashes"] = hashes([Path(verified["cache_directory"]) / r["name"] for r in verified["assets"] + verified["parameters"]])
+        execute("ledger-metadata", ["cargo", "metadata", "--locked", "--offline", "--format-version", "1"], output / "metadata.json")
+        ledger = ledger_static.resolve(json.loads((output / "metadata.json").read_text()), tomllib.loads((ROOT / "Cargo.lock").read_text()))
+        env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"] = ledger["static_directory"]
+        report["ledger_static"] = ledger
+        report["dust_fixture_hashes"] = dust_fixture_inventory(Path(ledger["static_directory"]))
+        if not args.prepare_only:
+            for source in SELECTED_SOURCES:
+                (generated / source / "keys").mkdir()
+            report["keygen"] = []
+            execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
+            for row in selected_models:
+                circuit = row["circuit"]
+                source_root = generated / row["source"]
+                execute("keygen-" + row["source"] + "-" + circuit, [report["zkir"]["snapshot"], "compile", source_root / f"zkir/{circuit}.zkir",
+                                              source_root / f"keys/{circuit}.prover", source_root / f"keys/{circuit}.verifier"])
+                model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
+                require(model is not None and int(model[1]) == row["k"], "actual key model differs from verified pre-key model")
+                report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
+            require(all(not (generated / name / "keys").exists() for name in by_source if name not in SELECTED_SOURCES), "unselected source acquired keys")
+            report["key_hashes"] = hashes([generated / source / f"keys/{c}.{ext}" for source, c in SELECTED for ext in ["prover", "verifier"]])
+            report["binary_ir_hashes"] = hashes([generated / source / f"zkir/{c}.bzkir" for source, c in SELECTED])
+            execute("prove-verify-apply", [runner, "--vector-component-products", generated])
+            summary = json.loads((generated / "vector-component-products-proof-result.json").read_text())
+            validate_summary(summary, generated)
+            report["proof_result"] = summary
+            report["proof_execution"] = True
+            report["result_hashes"] = hashes([p for p in generated.rglob("vector-component-products-*") if p.is_file()])
+            unchanged(report["key_hashes"])
+            unchanged(report["binary_ir_hashes"])
+        for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "material_hashes", "dust_fixture_hashes", "compiler_tools"]:
+            unchanged(report[field])
+        unchanged({str(generated / path): sha for path, sha in before.items()})
+        for component in [report["zkir"], *components.values()]:
+            # Shared Cargo target may be rebuilt elsewhere; only the private snapshot is executed.
+            unchanged({component["snapshot"]: component["sha256"]})
+        unchanged({str(output / "protocol/receipt.json"): report["protocol_receipt"]["sha256"]})
+        require(subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip() == report["head"]
+                and not subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip(), "source changed during proof gate")
+        require(main_gate.reject_compiler_overrides(configuration_environment) == configuration,
+                "Cargo configuration membership or bytes changed during proof qualification")
+        report["status"] = "prepared" if args.prepare_only else "passed"
+    except Exception as error:
+        report["status"] = "failed"
+        report["error"] = repr(error)
+        raise
+    finally:
+        (output / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps({"status": report["status"], "receipt": str(output / "receipt.json")}))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ["ts-runtime", "compiler-receipt", "zkir", "output"]:
+        parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--prepare-only", action="store_true", help="compile and verify bindings/material only; no keys/proofs/application")
+    run(parser.parse_args())

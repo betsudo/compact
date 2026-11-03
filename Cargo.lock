@@ -3056,6 +3056,9 @@ dependencies = [
  "compact-rust-tuple-return-wrappers-source-fixture",
  "compact-rust-uints-oracle-fixture",
  "compact-rust-unit-mutation-initializers-source-fixture",
+ "compact-rust-vector-component-products-inner-product-single-sdk",
+ "compact-rust-vector-component-products-witness-after-sdk",
+ "compact-rust-vector-component-products-witness-before-sdk",
  "compact-rust-vector-key-adt-fixture",
  "compact-rust-vector-product-elements-proof-helper",
  "compact-rust-wide-uint-oracle-fixture",
@@ -3688,6 +3691,27 @@ dependencies = [
  "midnight-compact-runtime",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "compact-rust-vector-component-products-inner-product-single-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-vector-component-products-witness-after-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-vector-component-products-witness-before-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
 ]
 
 [[package]]
