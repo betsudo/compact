@@ -87,7 +87,9 @@ fn validate_bindings(pool: &Path) -> Result<(), Box<dyn Error>> {
     ] {
         let root = pool.join(source);
         if std::fs::read(root.join("contract/compact-rust-ir.json"))? != ir {
-            return Err("vector-product-elements complete IR bytes differ".into());
+            return Err(
+                format!("vector-product-elements {source} complete IR bytes differ").into(),
+            );
         }
         let directory = root.join("contract/checked-programs");
         let mut names = std::fs::read_dir(&directory)?
@@ -100,11 +102,17 @@ fn validate_bindings(pool: &Path) -> Result<(), Box<dyn Error>> {
             .collect::<Vec<_>>();
         expected.sort();
         if names != expected {
-            return Err("vector-product-elements complete Program membership differs".into());
+            return Err(format!(
+                "vector-product-elements {source} complete Program membership differs"
+            )
+            .into());
         }
         for (name, bytes) in programs {
             if std::fs::read(directory.join(name))? != *bytes {
-                return Err("vector-product-elements complete Program bytes differ".into());
+                return Err(format!(
+                    "vector-product-elements {source} complete Program bytes differ"
+                )
+                .into());
             }
         }
     }

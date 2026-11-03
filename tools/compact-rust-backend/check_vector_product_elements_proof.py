@@ -33,12 +33,12 @@ CASES = [("helper", "run", 0, [[[3,5],31],[[4,6],41]], [[[3,5],31],[[4,6],41]], 
 require, digest = main_gate.require, main_gate.digest
 
 
-def depfile_prerequisites(raw):
+def depfile_prerequisites(raw, base=ROOT):
     logical = raw.replace("\\\n", "")
     first_rule = next(line for line in logical.splitlines() if line.strip())
     _, separator, prerequisites = first_rule.partition(": ")
     require(separator and prerequisites, "invalid actual runner dependency rule")
-    paths = {str((ROOT / path).resolve(strict=True)) for path in shlex.split(prerequisites)}
+    paths = {str((base / path).resolve(strict=True)) for path in shlex.split(prerequisites)}
     require(paths and all(Path(path).is_file() for path in paths), "non-file runner prerequisite")
     return paths
 
@@ -76,8 +76,9 @@ def validate_summary(summary, generated):
 
 
 def run(args):
-    output = args.output.absolute()
-    require(not output.exists() and not output.is_symlink(), "proof output must be a new destination")
+    requested_output = args.output.absolute()
+    require(not requested_output.exists() and not requested_output.is_symlink(), "proof output must be a new destination")
+    output = requested_output.resolve(strict=False)
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     inherited_sdk_selectors = sorted(key for key, value in env.items()
                                      if key.startswith("COMPACT_") and key.endswith("_GENERATED") and value)
@@ -186,7 +187,7 @@ def run(args):
         execute("prepare-runner-inputs", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p",
                 "compact-rust-proof-smoke", "--features", "vector-product-elements", "--message-format=json"], output / "prepare-build.jsonl")
         package_metadata = {package["id"]: package for package in metadata["packages"]}
-        source_map = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "dependency_source_hashes"] for p, sha in report[field].items()}
+        source_map = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "dependency_source_hashes", "generated_input_hashes"] for p, sha in report[field].items()}
         events = [json.loads(line) for line in (output / "prepare-build.jsonl").read_text().splitlines() if line.startswith("{")]
         prepared_dirs, generated_inputs, owners = set(), set(), []
         target_directory = Path(metadata["target_directory"]).resolve(strict=True)
@@ -252,17 +253,39 @@ def run(args):
         require(not missing.exists(), "missing-dependency control path already exists")
         logical = dependencies.replace("\\\n", "")
         first_rule = next(line for line in logical.splitlines() if line.strip())
-        poisoned = logical.replace(first_rule, first_rule + " " + str(missing), 1)
+        poisoned = logical.replace(first_rule, first_rule + " " + str(missing).replace("\\", "\\\\").replace(" ", "\\ "), 1)
         poisoned_path = output / "missing-dependency.d"
         poisoned_path.write_text(poisoned)
         try:
             depfile_prerequisites(poisoned)
         except FileNotFoundError as error:
-            require(error.filename == str(missing), "wrong missing-prerequisite locus")
+            require(error.filename == str(missing.resolve(strict=False)), "wrong missing-prerequisite locus")
         else:
             raise ValueError("missing-prerequisite control accepted")
         report["missing_dependency_control"] = {"path": str(poisoned_path), "sha256": digest(poisoned_path),
                 "missing_path": str(missing), "before_keys_or_models": True}
+        helper_artifacts = [row for row in artifacts if row.get("reason") == "compiler-artifact"
+                            and row["target"]["name"] == "compact_rust_vector_product_elements_proof_helper"]
+        require(len(helper_artifacts) == 1, "ambiguous helper crate artifact")
+        helper_row = helper_artifacts[0]
+        helper_package = package_metadata[helper_row["package_id"]]
+        helper_manifest = Path(helper_package["manifest_path"]).resolve(strict=True)
+        helper_libs = [Path(p) for p in helper_row["filenames"] if p.endswith(".rlib")]
+        require(len(helper_libs) == 1 and helper_manifest == ROOT / "tools/compact-rust-proof-smoke/vector-product-elements-helper-sdk/Cargo.toml",
+                "helper SDK must compile at its own declared crate root")
+        helper_lib = helper_libs[0]
+        components["helper_sdk_rlib"] = common.stable_copy(helper_lib, output / "bin/helper-sdk.rlib")
+        helper_depfile = helper_lib.parent / (helper_lib.stem.removeprefix("lib") + ".d")
+        helper_retained = output / "helper-sdk.d"
+        shutil.copyfile(helper_depfile, helper_retained)
+        helper_tracked = depfile_prerequisites(helper_retained.read_text(), ROOT)
+        helper_required = [helper_manifest.parent / "lib.rs", generated / "helper/contract/lib.rs",
+                           *sorted((generated / "helper/contract/checked-programs").glob("*.json"))]
+        require(all(str(p.resolve(strict=True)) in helper_tracked for p in helper_required), "helper crate omitted actual complete SDK inputs")
+        report["helper_sdk_artifact"] = {"package_id": helper_row["package_id"], "manifest": str(helper_manifest),
+            "crate_root": helper_row["target"]["src_path"], "artifact": components["helper_sdk_rlib"],
+            "depfile": str(helper_retained), "depfile_sha256": digest(helper_retained), "prerequisites": sorted(helper_tracked)}
+        tracked.update(helper_tracked)
         required = [main_gate.FIXTURES / "sources.json"]
         for source in ["helper", "proof_candidate"]:
             required.extend([generated / source / "contract/lib.rs", *sorted((generated / source / "contract/checked-programs").glob("*.json")),
@@ -282,9 +305,9 @@ def run(args):
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-product-elements", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for source in ["helper", "proof_candidate"]:
-            for kind, message in [("changed-ir", "vector-product-elements complete IR bytes differ"),
-                                  ("changed-program", "vector-product-elements complete Program bytes differ"),
-                                  ("missing-program", "vector-product-elements complete Program membership differs")]:
+            for kind, message in [("changed-ir", f"vector-product-elements {source} complete IR bytes differ"),
+                                  ("changed-program", f"vector-product-elements {source} complete Program bytes differ"),
+                                  ("missing-program", f"vector-product-elements {source} complete Program membership differs")]:
                 label = source + "-" + kind
                 negative = output / label
                 for member in ["helper", "proof_candidate"]:
@@ -379,6 +402,25 @@ def run(args):
         report["selected_model_over_cap_refusal"] = {"exit": refused.returncode,
                 "before_keys_or_proofs": True, "models": refused_models,
                 "scope": "genuine larger compiler-produced ZKIR under selected diagnostic slot; not proof admission"}
+        newly_tiny = output / "original-conditional-now-tiny"
+        shutil.copytree(generated, newly_tiny)
+        replacement = newly_tiny / "proof_candidate/zkir/run.zkir"
+        shutil.copyfile(generated / "helper/zkir/run.zkir", replacement)
+        future_inputs = hashes([p for p in newly_tiny.rglob("*") if p.is_file()])
+        refused = subprocess.run([runner, "--vector-product-elements-models", str(newly_tiny)],
+                                 cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
+        (newly_tiny / "stdout").write_text(refused.stdout)
+        (newly_tiny / "stderr").write_text(refused.stderr)
+        future_models = json.loads(refused.stdout)
+        require(refused.returncode != 0 and "now tiny-eligible" in refused.stderr
+                and future_models["circuits"][2]["k"] <= 8
+                and future_models["circuits"][:2] == models["circuits"][:2], "future branch-expansion refusal failed")
+        require(not any((newly_tiny / source / "keys").exists() for source in ["helper", "proof_candidate"])
+                and not list(newly_tiny.rglob("*.proof")), "future tiny refusal produced keys/proofs")
+        unchanged(future_inputs)
+        report["future_conditional_tiny_refusal"] = {"exit": refused.returncode, "models": future_models,
+            "input_hashes_before": future_inputs, "before_keys_or_proofs": True,
+            "scope": "real complete helper ZKIR in a private diagnostic slot only; original conditional source/model unchanged"}
         material = output / "proof-material.json"
         execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
                 *[arg for k in sorted({r["k"] for r in selected_models}) for arg in ["--parameter-k", str(k)]]], material)

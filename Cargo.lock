@@ -3057,6 +3057,7 @@ dependencies = [
  "compact-rust-uints-oracle-fixture",
  "compact-rust-unit-mutation-initializers-source-fixture",
  "compact-rust-vector-key-adt-fixture",
+ "compact-rust-vector-product-elements-proof-helper",
  "compact-rust-wide-uint-oracle-fixture",
  "compact-rust-widening-arith-oracle-fixture",
  "compact-rust-witness-cell-write-fixture",
@@ -3711,6 +3712,13 @@ dependencies = [
  "midnight-serialize",
  "midnight-storage",
  "serde_json",
+]
+
+[[package]]
+name = "compact-rust-vector-product-elements-proof-helper"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
 ]
 
 [[package]]

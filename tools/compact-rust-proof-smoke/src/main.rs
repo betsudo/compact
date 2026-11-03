@@ -231,12 +231,7 @@ pub mod vector_product_elements_fixture {
     feature = "vector-product-elements",
     compact_vector_product_elements_generated
 ))]
-pub mod vector_product_elements_helper_fixture {
-    include!(concat!(
-        env!("COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED"),
-        "/contract/lib.rs"
-    ));
-}
+pub use compact_rust_vector_product_elements_proof_helper as vector_product_elements_helper_fixture;
 #[cfg(all(
     feature = "vector-product-elements",
     compact_vector_product_elements_generated

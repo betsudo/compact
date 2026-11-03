@@ -31,11 +31,12 @@ direct-stateful-vector-literal-returns = ["ledger-transaction", "midnight-compac
 stateful-vector-value-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-local-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-product-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
-vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
+vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-product-elements-proof-helper", "compact-rust-vector-product-elements-proof-helper/generated-sdk"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
 experimental-recording-plan = ["dep:compact-rust-recording-effect-plan-prototype-fixture"]
 
 [dependencies]
+compact-rust-vector-product-elements-proof-helper = { path = "vector-product-elements-helper-sdk", optional = true }
 did_contract = { package = "compact-rust-did-functional-lifecycle-source-fixture", path = "../../tests-rust-backend/did-functional-lifecycle-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-captured-source-fixture = { path = "../../tests-rust-backend/direct-fold-captured-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-counter-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-capture-source", features = ["ledger-transaction"] }
