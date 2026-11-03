@@ -467,6 +467,24 @@ jobs:
           # The final native gate repeats this exact command after its tests.
           cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings
 
+      - name: Check complete Counter source-map publication
+        id: source_map_publication
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-source-map-recipe"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json" --output "$RUNNER_TEMP/compact-source-map-publication"
+
+      - name: Retain failed source-map publication diagnostics
+        if: failure() && steps.source_map_publication.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: source-map-publication-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-source-map-recipe/
+            ${{ runner.temp }}/compact-source-map-publication/
+            !${{ runner.temp }}/compact-source-map-publication/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Check generated functional Ledger8 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
@@ -699,6 +717,9 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-proof/
             ${{ runner.temp }}/compact-vector-component-products-recipe/
             ${{ runner.temp }}/compact-vector-component-products-proof/
+            ${{ runner.temp }}/compact-source-map-recipe/
+            ${{ runner.temp }}/compact-source-map-publication/
+            !${{ runner.temp }}/compact-source-map-publication/cargo-target/**
             ${{ runner.temp }}/compact-functional-source-sdk/
             !${{ runner.temp }}/compact-functional-source-sdk/cargo-target/**
             ${{ runner.temp }}/compact-functional-consumer.json

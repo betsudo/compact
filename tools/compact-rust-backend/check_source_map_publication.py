@@ -47,6 +47,32 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def capture_command(command, environment, cwd, stdout, stderr):
+    # Redirect before exec so the bounded owner never decodes the child's bytes.
+    # exec preserves its process group and the existing timeout/kill policy.
+    wrapped = [sys.executable, "-c",
+               "import os,sys;os.chdir(sys.argv[1]);"
+               "out=open(sys.argv[2],'xb');err=open(sys.argv[3],'xb');"
+               "os.dup2(out.fileno(),1);os.dup2(err.fileno(),2);"
+               "os.execvpe(sys.argv[4],sys.argv[4:],os.environ)",
+               str(cwd), str(stdout), str(stderr), *map(str, command)]
+    result = bounded_command(wrapped, environment)
+    require(not result.stdout and not result.stderr, "capture controller failed before exec")
+    return subprocess.CompletedProcess(command, result.returncode, stdout.read_bytes(), stderr.read_bytes())
+
+
+def cargo_executable(stdout, manifest):
+    artifacts = [message for line in stdout.splitlines() if line
+                 for message in [json.loads(line)]
+                 if message.get("reason") == "compiler-artifact"
+                 and message.get("target", {}).get("name") == "compact-rustc"
+                 and "bin" in message.get("target", {}).get("kind", [])
+                 and Path(message["manifest_path"]).resolve() == manifest.resolve()
+                 and message.get("executable")]
+    require(len(artifacts) == 1, "Cargo must report exactly one current standalone executable")
+    return Path(artifacts[0]["executable"]).resolve(strict=True)
+
+
 def tree(path, compiler=False):
     data = {"type": "directory"}
     for item in sorted(path.iterdir()):
@@ -136,22 +162,23 @@ def main():
         environment = dict(env)
         environment.update(extra or {})
         actual = list(map(str, command))
-        # Keep the existing bounded process-group owner while selecting a fixture cwd.
-        wrapped = [str(python), "-c", "import os,sys;os.chdir(sys.argv[1]);os.execvpe(sys.argv[2],sys.argv[2:],os.environ)", str(cwd), *actual]
         report["current"] = label
         (out / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
         began = time.monotonic()
         try:
-            result = bounded_command(wrapped, environment)
-        except subprocess.TimeoutExpired as error:
-            for stream, value in (("stdout", error.stdout), ("stderr", error.stderr)):
-                (out / (label + "." + stream)).write_bytes(value if isinstance(value, bytes) else (value or "").encode())
-            report["commands"].append({"label": label, "actual_argv": actual, "controller_argv": wrapped, "cwd": str(cwd), "timeout": True})
+            result = capture_command(actual, environment, cwd, out / (label + ".stdout"), out / (label + ".stderr"))
+        except subprocess.TimeoutExpired:
+            row = {"label": label, "actual_argv": actual, "cwd": str(cwd), "timeout": True,
+                   "seconds": time.monotonic() - began}
+            for stream in ("stdout", "stderr"):
+                path = out / (label + "." + stream)
+                if path.is_file():
+                    row[stream + "_sha256"] = digest(path)
+            report["commands"].append(row)
             raise
-        row = {"label": label, "actual_argv": actual, "controller_argv": wrapped, "cwd": str(cwd), "exit": result.returncode, "seconds": time.monotonic() - began}
+        row = {"label": label, "actual_argv": actual, "cwd": str(cwd), "exit": result.returncode, "seconds": time.monotonic() - began}
         for stream in ("stdout", "stderr"):
             path = out / (label + "." + stream)
-            path.write_text(getattr(result, stream))
             row[stream + "_sha256"] = digest(path)
         report["commands"].append(row)
         unchanged()
@@ -159,12 +186,14 @@ def main():
         return result
 
     try:
-        run("build-current-standalone", ["cargo", "build", "--locked", "--offline", "-p", "compact-rust-backend", "--bin", "compact-rustc"])
+        build = run("build-current-standalone", ["cargo", "build", "--locked", "--offline", "--message-format=json-render-diagnostics", "-p", "compact-rust-backend", "--bin", "compact-rustc"])
+        executable = cargo_executable(build.stdout, ROOT / "tools/compact-rust-backend/Cargo.toml")
         standalone = out / "tools/compact-rustc"
         standalone.parent.mkdir()
-        shutil.copy2(Path(env["CARGO_TARGET_DIR"]) / "debug/compact-rustc", standalone)
+        shutil.copy2(executable, standalone)
+        require(digest(executable) == digest(standalone), "reported Cargo executable changed while copying")
         bound[str(standalone)] = digest(standalone)
-        report["standalone"] = {"path": str(standalone), "sha256": digest(standalone), "scope": "current maintained Cargo entrypoint; not a binary from the Nix package"}
+        report["standalone"] = {"path": str(standalone), "sha256": digest(standalone), "cargo_reported_executable": str(executable), "scope": "current maintained Cargo entrypoint; not a binary from the Nix package"}
         specs = []
         for name in ("plain", "Unicode β space", 'literal"quote β space'):
             cwd = out / "cwd" / name
@@ -234,7 +263,7 @@ def main():
             else:
                 require({p.name for p in destination.iterdir()} == {"sentinel"}
                         and (destination / "sentinel").read_bytes() == b"prior publication must survive", "failed publication replaced prior output")
-                require(("invalid contract manifest" if mode == "malformed" else "not a regular file") in result.stderr, "wrong manifest refusal")
+                require((b"invalid contract manifest" if mode == "malformed" else b"not a regular file") in result.stderr, "wrong manifest refusal")
             report["private_manifest_controls"][mode] = {"status": "passed", "role": "configured test producer; no source/proof authority"}
         require(len(report["commands"]) == 32 and len(report["genuine"]) == 28, "command roster differs")
         unchanged()

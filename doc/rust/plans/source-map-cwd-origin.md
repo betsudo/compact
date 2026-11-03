@@ -84,3 +84,25 @@ publication changes. Existing main-CLI behavior remains required-manifest; the
 standalone entry keeps missing manifests optional and rejects a present malformed
 or non-regular manifest before final publication. Version191 owner documentation
 is temporarily pending the original build; source/native/proof acceptance is open.
+
+## Review corrections and CI retention
+
+The first independent source review found two qualification-harness defects:
+assuming Cargo's default output path could select a stale executable under a
+configured target, and text-mode diagnostic capture could alter CRLF/CR bytes.
+The gate now selects the sole binary artifact reported by the current Cargo JSON
+build stream for the exact package manifest, then preserves its copied identity.
+Child streams are redirected to exclusive binary files before exec while the
+existing bounded process-group owner retains timeout/kill ownership. Diagnostics
+are interpreted separately from retained bytes. Real-child controls cover raw
+undecodable bytes, CRLF/CR, cwd and timeout retention; artifact controls reject
+missing, duplicate and wrong-package/non-binary records while a stale default
+binary remains present.
+
+The Linux compiler workflow calls the full publication gate using the existing
+authenticated compiler and original-recipe recorder; failure and success evidence
+are retained. The three new public controls use existing unittest discovery.
+All existing compiler, native consumer and proof gates remain required. These
+are local workflow-source changes, with no hosted execution or Linux acceptance.
+Explicit URL and absolute escaped roots are tested literally; relative explicit
+roots retain the existing Rust relocation semantics and are not a new guarantee.

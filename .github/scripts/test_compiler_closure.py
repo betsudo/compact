@@ -275,6 +275,21 @@ class NestedProductWiringTests(unittest.TestCase):
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
 
+    def test_source_map_gate_is_required_and_retains_publication_evidence(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        linux = workflow.split('  build:\n', 1)[1]
+        before, step = linux.split('      - name: Check complete Counter source-map publication\n', 1)
+        step = step.split('      - name: Retain failed source-map publication diagnostics', 1)[0]
+        self.assertIn('Import authenticated same-run compiler closure', before)
+        self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
+        self.assertIn('check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json"', step)
+        for weakened in ('continue-on-error', 'if:', '--prepare-only'):
+            self.assertNotIn(weakened, step)
+        self.assertIn("steps.source_map_publication.outcome == 'failure'", linux)
+        for role in ('recipe', 'publication'):
+            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-source-map-' + role + '/'), 2)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
+
     def test_nested_component_gate_keeps_required_material_and_fresh_proof_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]
