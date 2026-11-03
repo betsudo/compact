@@ -552,12 +552,37 @@ including three intact k9 models, remain unproved; constructor/all-input and CI/
 integration coverage stays open. U/fixture/old full-test reuse keeps exact epochs;
 no fresh compiler rebuild or cryptographic reexecution by reviewers is claimed.
 
-A separate [Vector-containing product plan](plans/stateful-vector-product-elements.md)
-retains15complete probes/45original177commands and a concrete strict identity-SDK
-signature baseline failure. It proposes closing that baseline first, then the
-observed aggregate-cast/local/witness dispatch gap. No implementation or proof
-feasibility has been inferred.
+The initial [Vector-containing product proposal](plans/stateful-vector-product-elements.md)
+retains 15 complete probes/45 original177 commands and its strict identity-SDK
+signature baseline failure. At that admission no implementation or proof
+feasibility was inferred. The current bounded result follows below; the original
+probes and failures retain their historical scope.
 
 Full required arm64/Linux CI, reviewed integration and the broader goal remain
 open. Forge remains deliberately deferred. No candidate cleanup is due before
 verified GitHub merge.
+
+## Current Vector-component qualification — 2026-11-03
+
+The local candidate at `e293f2fe1500783b84d456f679767dfa5315b621` closes the
+observed signature baseline and bounded component-Vector coercion gap through
+existing checked lowering and structured AST owners. It passes 141 commands:
+19 complete SDK roots, 27 TS/Rust cases, 84 successful stateful executions,
+20 intended error attempts and one pure case, plus 42 exact public transcript
+comparisons. Actual source and separate receipt reviews report no P1/P2. A
+separate current compiler180 check passes all 283 retained fixtures without
+updating them. See the [scope and next acceptance gates](plans/stateful-vector-product-elements.md#reviewed-ordered-error-result).
+
+Current model inventory, keys, genuine proofs and funded default-strict
+applications remain open; earlier compiler177 proofs are not credited to this
+component-Vector candidate. Next inventory every current export before tiny
+selection, bind physical runner inputs/locked material and execute fresh
+proof/verifier/application/replay controls. Keep intact sources and k<=8.
+
+Broader completion still requires reviewed logical integration slices and full
+required host CI, remaining real-application scenarios, independently consumable
+generated packages and the finite capability/evidence handoff. Preserve the
+accepted crosswalk, checked-recording owners and retirement ledger; do not reopen
+accepted capabilities or infer universal language parity. Current work remains
+local. Forge is deferred and does not block backend development. No cleanup is
+due before verified merge.

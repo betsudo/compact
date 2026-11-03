@@ -4,10 +4,10 @@ Status: reviewed bounded local source/API stage, continuing from V documentation
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
 strict signature baseline. Compiler180 implements the bounded component conversion.
-The current stage passes 18 complete SDK roots / 21 TS/Rust cases and 137
-commands, including marked static, private ingress and complete producer controls.
-Fresh source and separate receipt review report no P1/P2. Checked-helper/witness
-first-error cases, model/key/proof qualification and integration remain open. Forge is deferred and does not block this backend work.
+The current stage passes 19 complete SDK roots / 27 TS/Rust cases and 141
+commands, including marked static, private ingress, complete producer and actual
+checked-helper/witness first-error controls. Fresh source and separate receipt
+review report no P1/P2. Model/key/proof qualification and integration remain open. Forge is deferred and does not block this backend work.
 
 ## Strict signature baseline repair
 
@@ -362,3 +362,63 @@ stateful cases across four routes, five intended error cases across four routes,
 and one pure case. Exact public transcripts apply to the 42 successful recorded
 routes; error cases have no returned public trace. Fresh execution/review is
 pending; the reviewed 137-command predecessor remains a separate epoch.
+
+## Reviewed ordered-error result
+
+At signed `e293f2fe1500783b84d456f679767dfa5315b621`, original compiler180
+recipe v10 builds successfully and the maintained whole-SDK v8 gate passes
+**141 commands** (110 zero exits, 31 intended nonzero controls). All 27 cases
+execute: 84 successful stateful Rust routes, 20 intended error attempts and one
+pure route, with 42 successful recorded-route public transcript comparisons.
+All 19 complete unedited SDK roots pass strict compilation. Assertions beat
+invalid casts, inner 300/255 beats scalar 100000/65535, the scalar fails after
+valid inner casts, and each refusing witness records one actual callback at
+private=7 / seen=0 or 1 through all four APIs. The valid checked helper returns
+its reversed, narrowed-then-widened value. Earlier static/ingress/producer controls
+retain their successful intended outcomes.
+
+Actual Codex source review v8 reports no P1/P2 (137.68 seconds); the separate
+receipt review v5 reports no P1/P2 (550.22 seconds). The latter independently
+checks before/after inventories covering 15,271 paths, 6,878 tracked Git blobs,
+1,618 source pins, 131 explicitly bound build inputs, 23 locks and 282 raw
+command logs. Claude's recorded session-limit error justifies these fallback
+reviews; it is not an approval. Reporting remains bounded: TS assertion/cast
+checks require error class and message fragments, not full diagnostic bytes;
+producer mutations fail in their first native lane; Programs are authenticated
+review inventories, with consumed-source correspondence unresolved by this API
+gate. Pre-Cargo checks cover the explicit bound inputs; broader inventories are
+phase/end checks. Held immutable state does not establish transaction rollback,
+and external witness journals remain observable.
+
+A separate current original180 freshness check passes all **283 retained
+fixtures**, with zero stale output and zero failures (154.65 seconds). It compares
+the normal formatted libraries and complete functional Program assets without
+`--update`; no retained fixture is changed. It is separate from the 141-command
+API population and from the receipt review's execution scope. Earlier178 fixture
+results remain historical. Receipts: `original-native-v10/receipt.json`,
+`whole-sdk-execution-v8/receipt.json`, `local-codex-source-review-v8.json`,
+`local-codex-receipt-review-v5.json`, `review-adjudication-v3.json`,
+`consumer-depfile-preservation-v8.json` and `fixture-freshness-v2/receipt.json`.
+
+### Next: model inventory and genuine proof/application qualification
+
+The remaining gap is current-source model/proof/application evidence, not a new
+production coercion or API framework. Extend the existing opt-in proof-smoke
+owner with a separate component-Vector cohort and exact nested carriers; ordinary
+default builds must remain independent of generated SDKs. Inventory all 19
+complete sources / 20 exports (19 required and one pure) before selecting proofs.
+Retain intact over-cap models under automatic k<=8, with no source trim/cap raise.
+Only actual observed models may justify the selected run branch states and Field
+export; this plan does not assert that both fit.
+
+Bind complete physical generated SDK/IR/Program inputs, actual runner depfile,
+resolved dependencies/configuration and locked parameters before build/key use.
+Require changed-IR/changed-Program/missing-Program refusal at the intended binding
+guard before keys/state. Qualify actual typed ordinary/functional native/recorded
+outputs and preparation, fresh keys/proofs, immutable verifier corruption/wrong
+verifier/changed binding/same-geometry typed output negatives, then separately
+proved funded default-strict transactions and unchanged-state replay refusal.
+The external `proof-runner-proposal-v1` draft and copied complete fixtures are
+**unrun source proposals**, not an adopted runner, model result or proof receipt.
+Constructor, unselected/all-input, full required CI/Linux, integration, application
+closure, distribution and finite capability handoff remain separate obligations.
