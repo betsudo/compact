@@ -119,7 +119,7 @@ def run(args):
             argv = list(map(str, command))
             if argv[0] in admitted["rust_tools"]:
                 argv[0] = admitted["rust_tools"][argv[0]]["path"]
-            for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "compiler_tools"]:
+            for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "compiler_tools"]:
                 if field in report:
                     unchanged(report[field])
             require(main_gate.reject_compiler_overrides(configuration_environment) == configuration,
@@ -162,6 +162,36 @@ def run(args):
         execute("default-runner-check", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--no-default-features"])
         execute("all-features-runner-clippy-without-sdk", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"])
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED"] = selected_sdk
+        # Cargo fixture build scripts produce real include! inputs outside the
+        # tracked tree. Prepare and pin those physical files before qualifying
+        # the runner, rather than accepting newly discovered bytes afterward.
+        execute("prepare-runner-inputs", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                "compact-rust-proof-smoke", "--features", "vector-product-elements", "--message-format=json"], output / "prepare-build.jsonl")
+        package_metadata = {package["id"]: package for package in metadata["packages"]}
+        source_map = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "dependency_source_hashes"] for p, sha in report[field].items()}
+        events = [json.loads(line) for line in (output / "prepare-build.jsonl").read_text().splitlines() if line.startswith("{")]
+        prepared_dirs, generated_inputs, owners = set(), set(), []
+        target_directory = Path(metadata["target_directory"]).resolve(strict=True)
+        for event in events:
+            if event.get("reason") != "build-script-executed":
+                continue
+            require(event["package_id"] in package_metadata, "unknown generated-input package")
+            package = package_metadata[event["package_id"]]
+            scripts = [Path(t["src_path"]).resolve(strict=True) for t in package["targets"] if "custom-build" in t["kind"]]
+            require(len(scripts) == 1 and str(scripts[0]) in source_map and digest(scripts[0]) == source_map[str(scripts[0])],
+                    "generated-input build owner was not bound before preparation")
+            directory = Path(event["out_dir"]).resolve(strict=True)
+            require(directory.is_relative_to(target_directory), "generated-input directory outside actual Cargo target")
+            prepared_dirs.add(directory)
+            files = [p.resolve(strict=True) for p in directory.rglob("*") if p.is_file()]
+            generated_inputs.update(files)
+            owners.append({"package_id": event["package_id"], "source": str(scripts[0]),
+                "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory), "files": sorted(map(str, files))})
+        require(owners and generated_inputs, "no actual build-generated inputs prepared")
+        report["prepared_build_scripts"] = owners
+        report["prepared_generated_directories"] = sorted(map(str, prepared_dirs))
+        report["generated_build_inputs_before_compile"] = hashes(generated_inputs)
+        report["preparation_scope"] = "Explicit preparatory Cargo check creates/caches build-script inputs; physical paths/bytes and bound source owners pinned before qualifying build. Not a proof or atomic/global supply-chain attestation."
         execute("build-runner", ["cargo", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                 "compact-rust-proof-smoke", "--features", "vector-product-elements", "--message-format=json"], output / "build.jsonl")
         artifacts = [json.loads(line) for line in (output / "build.jsonl").read_text().splitlines() if line.startswith("{")]
@@ -187,7 +217,7 @@ def run(args):
                            if Path(path).is_file() and Path(path).is_relative_to(ROOT)}
         require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
                 "runner worktree dependency was not pinned before build")
-        physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes"] for p, sha in report[field].items()}
+        physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes", "generated_build_inputs_before_compile"] for p, sha in report[field].items()}
         actual_files = {str(Path(p).resolve(strict=True)) for p in tracked if Path(p).is_file()}
         require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
                 "actual runner dependency missing from physical prebuild input map")
@@ -318,7 +348,7 @@ def run(args):
             report["result_hashes"] = hashes([p for p in generated.glob("vector-product-elements-*") if p.is_file()])
             unchanged(report["key_hashes"])
             unchanged(report["binary_ir_hashes"])
-        for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "material_hashes", "dust_fixture_hashes", "compiler_tools"]:
+        for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "material_hashes", "dust_fixture_hashes", "compiler_tools"]:
             unchanged(report[field])
         unchanged({str(generated / path): sha for path, sha in before.items()})
         for component in [report["zkir"], *components.values()]:

@@ -449,3 +449,15 @@ include dependency guard. The copied build-script environment predicate retained
 or proofs were reached. The successor corrects that exact predicate and retains
 the guard; the original failed receipt, binary snapshot and raw depfile remain.
 Fresh opt-in compilation and preparation are required before acceptance.
+
+Actual Codex source review v9 finds two P2 issues at `abe9c29f0`: the feature
+predicate and missing build-generated physical inputs. The first is fixed at
+`428f43aa2`; its preparation compiles the real opt-in module and includes the SDK
+then refuses at the physical prebuild-map guard. Its raw depfile independently
+identifies 56 unpinned fixture OUT_DIR files. The successor adds an explicit
+preparatory Cargo check, authenticates each build-script owner against locked
+metadata/prebound source, and pins its actual output paths/bytes before the
+qualifying build. Every qualifying depfile input must still match a prebuild map;
+no after-build-only admission or source-map exclusion is added. Both failed
+predecessors and binary/depfile snapshots remain retained; current preparation
+and fresh review are required. No current models, keys or proofs are accepted.
