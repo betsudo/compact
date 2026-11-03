@@ -1,8 +1,9 @@
 # Nested scalar products below Vector components
 
-Status: original compiler185 emission and complete native API qualification
-pass at `ebd9c2b52`. Static/ingress/model/proof qualification, independent reviews
-and full integration remain open. Based on reviewed request-field baseline
+Status: corrected original compiler185 and complete24case native API qualification
+pass at `32d7eaa79`;9marked static misuse/twin pairs also pass in the development
+consumer. Maintained boundary/producer controls, models/proofs, final independent
+reviews and full integration remain open. Based on reviewed request-field baseline
 `d9e9cb2cb`; the primary Rust AST goal is incomplete.
 
 ## Gap and owners
@@ -193,3 +194,29 @@ top-level nested-tuple source preserves the intended boundary outside component
 Vectors. Actual source-refusal/static/ingress/producer/model/proof and review
 gates remain open. Parent/child ancestry reconciliation is a future integration
 step; current local authority allows no merge, publication or hosted run.
+
+## Maintained boundary stage
+
+The review-corrected current recipe resolves its exact frozen original185 package
+in7.03s; the full fresh native API gate passes in17.71s:24TS cases,24Rust methods,
+96routes including28errors and34successful recorded VM replays. Every Rust lane
+binds its actual supplied source-typed argument FAB values before execution.
+This supersedes the23case result for current behavior without relabelling its
+earlier receipt or frozen source.
+
+Development static controls execute9marked failures with exact error codes and
+primary misuse spans, plus9matching positive commands. Five input-shape/bound
+controls share the same genuine Narrow signature in their positive files; those
+are not five distinct positive semantic behaviors. A separate whole13export IR
+diagnostic probe executes12valid/malformed pairs, including actual nested tuple
+shape, bounds, source/helper binding, dead-branch and static-empty child checks.
+All valid twins render; each invalid copy exits before any Rust output. These
+private copies are untrusted ingress controls, not genuine new compiler output.
+
+The maintained API gate now includes those controls and three complete producer
+mutations (helper result and both witness orders), plus one controlled corrupt
+expected-result table. SDK source trees remain unedited, and changed producers
+have separate whole-source SDK/consumer roots. The unchanged typed consumer must
+fail through a real executed assertion, not an unrelated compiler error. The
+new maintained stage must execute before acceptance; no model/proof verdict or
+whole-CI result is inferred from the earlier development commands.

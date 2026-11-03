@@ -24,6 +24,7 @@ from pathlib import Path
 import os, json, subprocess, time, hashlib, shutil, tomllib, datetime
 from check_stateful_product_vector_widening import reject_compiler_overrides, source_manifest_snapshot
 from check_passport_current_profile import bounded_command, cargo_target
+from check_nested_component_products_boundaries import qualify as qualify_boundaries
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name('tests') / 'nested_component_products'
 
@@ -79,6 +80,7 @@ def main():
     require(len(cases) == len({c['id'] for c in cases}) == 24, 'qualification invariant failed')
     pins = {str(p): sha(p) for p in [C, S, NODE, rustup, *rust.values(), Path(__file__), W / 'Cargo.lock', W / 'flake.nix', W / 'flake.lock', args.compiler_receipt.resolve(), *[F / n for n in ['sources.json', 'cases.json', 'consumer.rs', 'capture.mjs']]]}
     pins.update({str(p): sha(p) for p in Path(__file__).parent.glob('*.py')})
+    pins.update({str(p): sha(p) for p in F.rglob('*') if p.is_file()})
     for folder in ['compiler', 'runtime-rs', 'runtime-rs-macros', 'tools/compact-rust-backend/src']:
         for p in (W / folder).rglob('*'):
             if p.is_file() and p.suffix in ['.rs', '.ss', '.toml', '.json']:
@@ -101,7 +103,7 @@ def main():
         require(all((sha(p) == h for p, h in pins.items())), 'qualification invariant failed')
         require(all((sha(p) == h for p, h in bound.items())), 'qualification invariant failed')
 
-    def run(label, cmd):
+    def run(label, cmd, *, expected_exit=0):
         unchanged()
         cmd = list(map(str, cmd))
         j['current'] = label
@@ -123,9 +125,12 @@ def main():
             row[stream + '_sha256'] = sha(O / (label + '.' + stream))
         j['commands'].append(row)
         report.write_text(json.dumps(j, indent=2) + '\n')
-        require(r.returncode == 0, (label, r.returncode))
+        require(r.returncode == expected_exit, (label, r.returncode, expected_exit))
         unchanged()
         return (O / (label + '.stdout')).read_text()
+
+    def bind(path):
+        bound[str(path)] = sha(path)
 
     def lock(path):
         for p in tomllib.loads(path.read_text())['package']:
@@ -182,6 +187,7 @@ def main():
         out = run('consumer', ['cargo', 'test', '--locked', '--offline', '--manifest-path', M, '--lib'])
         require('test result: ok. 24 passed; 0 failed; 0 ignored;' in out, 'qualification invariant failed')
         run('consumer-strict', ['cargo', 'clippy', '--locked', '--offline', '--manifest-path', M, '--all-targets', '--', '-D', 'warnings'])
+        j['boundaries'] = qualify_boundaries(O, F, C, env, run, lock, bind, sha, require)
         for name, files in raw.items():
             root = O / 'generated' / name
             require(all((sha(root / n) == h for n, h in files.items())), 'qualification invariant failed')

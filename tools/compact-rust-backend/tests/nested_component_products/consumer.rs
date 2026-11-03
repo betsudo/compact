@@ -314,7 +314,7 @@ impl family::ledger_contract::TryWitnesses<u64> for VectorWitness {
     ) -> Result<(u64, Narrow), r::CompactError> {
         let before = *ctx.private_state;
         let seen = ctx.ledger.seen()?;
-        assert_eq!(seen, Field::from(self.expected_seen));
+        assert_eq!(seen, Field::from(self.expected_seen), "nested witness order");
         if self.fail {
             self.calls
                 .borrow_mut()

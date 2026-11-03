@@ -1,0 +1,47 @@
+{
+  "first_bound": {
+    "code": "E0308",
+    "twin": "first_bound_twin.rs",
+    "scope": "wrong source carrier at marked ordinary Program::new; matching positive uses the genuine narrow signature"
+  },
+  "second_bound": {
+    "code": "E0308",
+    "twin": "second_bound_twin.rs",
+    "scope": "wrong source carrier at marked ordinary Program::new; matching positive uses the genuine narrow signature"
+  },
+  "nested_arity": {
+    "code": "E0308",
+    "twin": "nested_arity_twin.rs",
+    "scope": "wrong source carrier at marked ordinary Program::new; matching positive uses the genuine narrow signature"
+  },
+  "component_dimension": {
+    "code": "E0308",
+    "twin": "component_dimension_twin.rs",
+    "scope": "wrong source carrier at marked ordinary Program::new; matching positive uses the genuine narrow signature"
+  },
+  "outer_dimension": {
+    "code": "E0308",
+    "twin": "outer_dimension_twin.rs",
+    "scope": "wrong source carrier at marked ordinary Program::new; matching positive uses the genuine narrow signature"
+  },
+  "result": {
+    "code": "E0308",
+    "twin": "result_twin.rs",
+    "scope": "wrong complete nested result carrier; genuine execution result typed Wide in twin"
+  },
+  "program": {
+    "code": "E0382",
+    "twin": "program_twin.rs",
+    "scope": "consumed immutable request; twin constructs a distinct request for the second call"
+  },
+  "context": {
+    "code": "E0382",
+    "twin": "context_twin.rs",
+    "scope": "consumed context; twin constructs a distinct context for the second call"
+  },
+  "witness": {
+    "code": "E0053",
+    "twin": "witness_twin.rs",
+    "scope": "incorrect nested witness output signature with type-consistent body; twin provides genuine Narrow witness and typed call"
+  }
+}
