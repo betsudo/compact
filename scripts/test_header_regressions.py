@@ -124,5 +124,22 @@ class PinnedHistoricalCopyTests(unittest.TestCase):
         self.assertFalse(gate.classify(self.root, self.base, [self.copy])['passed'])
 
 
+    def test_authority_symlink_and_coordinated_nonliteral_bytes_refuse(self):
+        raw = self.authority.read_bytes()
+        target = self.root / 'original-target.compact'
+        target.write_bytes(raw)
+        self.authority.unlink()
+        self.authority.symlink_to(target)
+        result = gate.classify(self.root, self.base, [self.copy])
+        self.assertFalse(result['passed'])
+        self.assertEqual(result['retained_source_copies'], [])
+        self.authority.unlink()
+        self.authority.write_bytes(raw + b' ')
+        self.copy.write_bytes(raw + b' ')
+        result = gate.classify(self.root, self.base, [self.copy])
+        self.assertFalse(result['passed'])
+        self.assertEqual(result['retained_source_copies'], [])
+
+
 if __name__ == '__main__':
     unittest.main()

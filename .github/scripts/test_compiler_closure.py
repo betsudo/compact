@@ -274,6 +274,10 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertIn('steps.vector_component_products.outcome == \'failure\'', linux)
         self.assertIn('vector-component-products-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}', linux)
         self.assertEqual(linux.count('${{ runner.temp }}/compact-vector-component-products-proof/'), 2)
+        license_job = workflow.split('  license-check:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertIn('python3 -m unittest discover -s scripts -p test_header_regressions.py', license_job)
+        self.assertLess(license_job.index('Test exact header-regression accounting'),
+                        license_job.index('Reject new header violations on pull requests'))
 
 
 if __name__ == '__main__':

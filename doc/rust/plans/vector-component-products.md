@@ -489,3 +489,13 @@ only the two current expected source locations, retaining exact messages, column
 values and first-error behavior. Do not replace exact equality with substring or
 normalization. No Rust API/model/key/proof executes in that failed attempt.
 Fresh clean successor execution and review remain required.
+
+
+The corrected `ec0f60da6` source review reports no P1/P2, and its actual Nix-shell full gate
+passes all 170 API commands plus three fresh proofs and separate strict applications.
+That result retains its literal source epoch. The final wiring also executes the
+maintained header-policy unit controls in the existing required license job before
+classification, including authority-symlink and coordinated nonliteral-byte refusal
+controls. These synthetic filesystem cases are not compiler/proof or hosted-CI
+acceptance. Current-head recording, full cohort and independent actual receipt
+review remain required for the final wiring.
