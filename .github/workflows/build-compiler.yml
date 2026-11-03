@@ -602,6 +602,23 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
 
+      - name: Qualify complete nested request-field API regression
+        id: nested_request_field
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-nested-request-field-recipe"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_nested_product_request_field.py --compiler-receipt "$RUNNER_TEMP/compact-nested-request-field-recipe/receipt.json" --output "$RUNNER_TEMP/compact-nested-request-field"
+
+      - name: Retain failed nested request-field diagnostics
+        if: failure() && steps.nested_request_field.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nested-request-field-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-nested-request-field-recipe/
+            ${{ runner.temp }}/compact-nested-request-field/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Qualify complete nested-product APIs and selected proofs
         id: vector_component_products
         run: |

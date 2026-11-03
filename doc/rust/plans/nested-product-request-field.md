@@ -206,3 +206,27 @@ its dedicated cohort directory, with its full bytes and basename unchanged.
 The actual existing fixture_inventory.source_registry() gate is rerun on this
 parent before later integration. No registry authority or old fixture is removed.
 A new exact recipe/consumer validation remains separate from the old184 epoch.
+
+
+### Maintained whole-example consumer follow-up — 2026-11-03
+
+The remaining gap is regression protection: the complete same-type source and
+consumer have actual local184 receipts, but their driver was external evidence.
+Maintain `check_nested_product_request_field.py` with the complete source cohort,
+exact current clean original-recipe/compiler identity and unedited whole SDK.
+Keep the original consumer unchanged: four ordinary/functional native/recorded
+routes, exact typed result/private state/public state/effects/gas and two VM
+replays. Strictly lint the whole SDK at its own crate root, including all features,
+and the consumer's actual test code. Three marked wrong bound/arity/dimension
+ordinary calls must fail E0308 at their intended spans; run the same independently
+checked positive signature beside each misuse. These are three controls, not
+three distinct positive behaviors.
+
+Wire that maintained gate into the existing imported-compiler Linux workflow,
+including retained failure diagnostics. Local workflow tests do not imply a
+hosted execution. Keep the source body, typed public API, frontend semantics,
+request-field metadata fix, recording validation and historical source/proof
+identities unchanged. Do not add TS parity or proof claims to this prerequisite.
+The separately qualified nested-widening stage keeps its own compiler185 epoch.
+Current gate execution and independent review are required before closing this
+follow-up; full CI/Linux/integration and local ancestry reconciliation stay open.
