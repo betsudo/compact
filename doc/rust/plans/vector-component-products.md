@@ -166,3 +166,21 @@ original180 TS and refuses Rust/IR before adoption. Fresh clean current182
 unit/strict/API/static execution and independent source/receipt reviews remain
 required. Untrusted ingress, producer mutants, all-export model/input/material and
 applicable fresh proofs/separate strict funded applications remain open.
+
+### Typed empty-output correction and private ingress controls
+
+The literalca498d740/APIv2 attempt passes current generation, six structural IR
+checks and all32TS cases, then fails consumer compilation: the explicit empty
+result expectation accidentally used source Uint8/16 bounds. The compiler correctly
+returns the declared Uint16/32 carrier even for Vector0. No Rust behavior cases
+executed in that attempt. Correct only the output expectation; preserve its narrow
+input, complete source and empty case. This demonstrates why type assertions are
+required even when empty FAB values serialize identically.
+
+Thirteen private malformed-IR controls now have separately rendered valid twins,
+including each inner child narrowing, inner-product arity, dead-branch and static
+empty validation. The external current182 prototype passes26commands; native
+validator/runtime code is unchanged. Private payloads are never represented as
+valid Compact programs or proofs. Fresh successor execution remains required.
+The frozen ca4 source review may continue while this local test repair advances;
+its results will retain the old epoch and cannot approve the successor.

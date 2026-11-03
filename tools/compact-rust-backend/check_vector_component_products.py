@@ -20,6 +20,7 @@ Requires a clean source and its original compiler recipe receipt. Every run writ
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
 """
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -29,7 +30,7 @@ import time
 import tomllib
 
 from check_stateful_product_vector_widening import (
-    digest, inventory, reject_compiler_overrides, source_manifest_snapshot,
+    digest, inventory, reject_compiler_overrides, source_manifest_snapshot, first_local_binding,
 )
 from check_constant_vector_projection import compile_failure
 
@@ -119,6 +120,83 @@ def evaluation_order_controls(irs):
     return observations
 
 
+def malformed_ir_controls(irs):
+    """Private ingress controls; complete genuine SDKs remain unchanged."""
+    checks = {
+        "outer_dimension": ["expression has type Vector", "length: 2", "length: 3"],
+        "inner_dimension": ["expression has type Vector", "length: 2", "length: 3"],
+        "product_arity": ["expression has type Tuple", "expected Tuple", "Boolean"],
+        "inner_leaf": ["expression has type Unsigned", "expected Boolean"],
+        "inner_narrowing": ["expression has type Unsigned", 'max: "255"', 'max: "1"'],
+        "input_type": ["expression has type Boolean", "expected Vector"],
+        "binding_type": ["expression has type Vector", "expected Boolean"],
+        "source_binding": ["expression has type Vector", 'max: "255"', 'max: "65535"'],
+        "dead_branch": ["expression has type Unsigned", "expected Boolean"],
+        "empty_body": ["expression has type Boolean", "expected Unsigned"],
+        "inner_product": ["expression has type Tuple", "expected Tuple"],
+        "second_leaf_narrowing": ["expression has type Unsigned", 'max: "255"', 'max: "1"'],
+        "misplaced_action": ["cell_write"],
+    }
+    for name, expected in checks.items():
+        base = ("local" if name in {"binding_type", "source_binding"} else
+                "proof_candidate" if name == "dead_branch" else
+                "empty_component" if name == "empty_body" else "parameter")
+        positive = copy.deepcopy(irs[base])
+        circuit = next(c for c in positive["stateful_circuits"] if c["name"] == "run")
+        if name == "dead_branch":
+            circuit["return_value"]["body"]["condition"] = {"kind": "boolean", "value": True}
+            unreachable = circuit["return_value"]["body"]["otherwise"]["result"]["value"]
+            unreachable["value"] = {"kind": "coerce", "value": unreachable["value"],
+                                    "ty": copy.deepcopy(circuit["parameters"][0]["ty"])}
+        malformed = copy.deepcopy(positive)
+        circuit = next(c for c in malformed["stateful_circuits"] if c["name"] == "run")
+        body = circuit["return_value"]["body"]
+        binding = first_local_binding(body) if base == "local" else None
+        expr = (binding["value"] if binding else
+                body["otherwise"]["result"]["value"] if name == "dead_branch" else
+                body["result"]["value"])
+        require(expr["kind"] == "coerce", "missing intended aggregate conversion")
+        inner = expr["ty"]["element"]["elements"][0]
+        require(inner["kind"] == "vector", "missing intended Vector component")
+        if name == "outer_dimension":
+            expr["ty"]["length"] = 3
+        elif name == "inner_dimension":
+            inner["length"] = 3
+        elif name == "product_arity":
+            expr["ty"]["element"]["elements"].append({"kind": "boolean"})
+        elif name == "inner_leaf":
+            inner["element"]["elements"][1] = {"kind": "boolean"}
+        elif name == "dead_branch":
+            expr["value"]["ty"]["element"]["elements"][0]["element"]["elements"][1] = {"kind": "boolean"}
+        elif name == "empty_body":
+            circuit["parameters"][0]["ty"]["element"]["elements"][0]["element"]["elements"][1] = {"kind": "boolean"}
+        elif name == "inner_narrowing":
+            inner["element"]["elements"][0]["max"] = "1"
+        elif name == "second_leaf_narrowing":
+            inner["element"]["elements"][1]["max"] = "1"
+        elif name == "input_type":
+            circuit["parameters"][0]["ty"] = {"kind": "boolean"}
+        elif name == "binding_type":
+            binding["ty"] = {"kind": "boolean"}
+        elif name == "source_binding":
+            argument = expr["value"]["arguments"][0]
+            require(argument["kind"] == "coerce", "missing supplied helper argument conversion")
+            argument["ty"]["element"]["elements"][0]["element"]["elements"][0]["max"] = "65535"
+        elif name == "inner_product":
+            inner["element"] = {"kind": "tuple", "elements": [
+                {"kind": "unsigned", "max": "65535"}]}
+        else:
+            circuit["return_value"] = {"kind": "expression", "value": {
+                "kind": "cell_write", "field": "seen", "index": 0,
+                "value": {"kind": "field_literal", "value": "1"}}}
+        # Keep the declared result equal to the forged conversion target so a
+        # contextual return-type mismatch cannot substitute for checking Coerce.
+        if name in {"outer_dimension", "inner_dimension", "product_arity", "inner_leaf",
+                    "inner_narrowing", "second_leaf_narrowing", "inner_product"}:
+            circuit["result"] = copy.deepcopy(expr["ty"])
+        yield name, positive, malformed, expected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler-receipt", type=Path, required=True)
@@ -165,7 +243,7 @@ def main():
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
                   environment={key: env.get(key) for key in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_TARGET_DIR", "CARGO_BUILD_JOBS"]},
-                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; ingress/mutation/refusal/model/proof/Linux/integration gates remain open.")
+                  scope="Focused whole unedited SDK API execution and strict root compilation, including checked helper and witness errors. Marked static misuses and independent twins execute; 13 malformed native ingress controls and valid twins execute; mutation/refusal/model/proof/Linux/integration gates remain open.")
     report["build_inputs_before_use"] = {}
     report["resolved_locks"] = {}
     root_packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
@@ -333,6 +411,25 @@ def main():
                 "errors": compile_failure(rejected, name, spec["code"], source)}
         ir_folder = output / "native-ir-controls"
         ir_folder.mkdir()
+        report["native_ir_controls"] = {}
+        ir_folder = output / "native-ir-controls"
+        ir_folder.mkdir()
+        backend = ["cargo", "run", "--locked", "--offline", "--quiet", "-p", "compact-rust-backend", "--bin", "compact-rust-backend"]
+        for name, positive, malformed, expected in malformed_ir_controls(irs):
+            original_path = ir_folder / (name + "-positive.json")
+            original_path.write_text(json.dumps(positive, indent=2) + "\n")
+            bind_build_inputs([original_path])
+            positive_bytes = original_path.read_text()
+            run(name + "-valid-ir", backend, stdin=positive_bytes)
+            rejected_path = ir_folder / (name + "-malformed.json")
+            rejected_path.write_text(json.dumps(malformed, indent=2) + "\n")
+            bind_build_inputs([rejected_path])
+            rejected = run(name + "-malformed-ir", backend, success=False, stdin=rejected_path.read_text())
+            require(rejected.returncode != 0 and not rejected.stdout and
+                    all(part in rejected.stderr for part in expected), "wrong malformed-IR refusal: " + name)
+            report["native_ir_controls"][name] = {"positive_sha256": digest(original_path),
+                "malformed_sha256": digest(rejected_path), "stderr": rejected.stderr,
+                "scope": "native untrusted JSON ingress, with a separate valid private-IR twin; not proof acceptance"}
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
         for path, sha in pins.items():

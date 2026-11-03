@@ -303,8 +303,8 @@ stateful_case!(
     >::new([])],
     FixedVector<
         (
-            FixedVector<(BoundedUint<255>, BoundedUint<255>), 2>,
-            BoundedUint<65535>
+            FixedVector<(BoundedUint<65535>, BoundedUint<65535>), 2>,
+            BoundedUint<4294967295>
         ),
         0,
     >
