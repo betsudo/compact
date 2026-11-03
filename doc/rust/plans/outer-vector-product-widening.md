@@ -191,3 +191,16 @@ bounds, tuple arity, outer dimension, tuple-versus-Vector kind and consumed Prog
 reuse, with matching valid twins. The planned complete gate has64 commands, four
 consumer methods,16 routes and8 VM replays. This metadata prerequisite gate makes
 no new TS-runtime, proof, semantic widening or full integration claim.
+
+## Maintained execution and source-review correction
+
+At signed0764e2264 the complete gate passed64 commands in61.58s: four SDK/consumer
+roots,16 typed execution routes,8 actual VM replays and18 marked refusal/positive
+pairs. Current original188 recipe qualification took13.91s. All15 workflow-owner
+and31 source-registry tests passed. No source/runtime/proof boundary was widened.
+The fresh independent Codex medium source review (78.93s) confirmed preserved
+fixtures, test bodies, carrier fidelity and gate accounting. It found one P2:
+the top CHANGELOG entry still named187 despite compiler/flake/document188. Add
+the missing188 source-checkpoint entry and execute the literal existing workflow
+version checks. This review finding is retained; it is not a clean final review.
+Separate receipt review and corrected source review remain required.

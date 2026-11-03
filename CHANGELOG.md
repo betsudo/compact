@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.188, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve strict generated-SDK Clippy for nested tuple children in outer Vector
+  execution results with reasoned method-local type-complexity metadata. Keep
+  exact public carriers, consuming request ownership, pure-library output and
+  conversion admission unchanged.
+- Extend the existing complete request-carrier regression gate with typed
+  execution, VM replay and compile-time misuse controls for this carrier shape.
+
 ## [Toolchain 0.31.187, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
