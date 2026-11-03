@@ -37,20 +37,7 @@ fn encode(value: r::fab::AlignedValue) -> Value {
     json!({"valueAtoms":value.value.0.iter().map(|x|&x.0).collect::<Vec<_>>(),"alignment":value.alignment})
 }
 fn check<T: Into<r::fab::AlignedValue>>(result: Result<T, r::CompactError>, row: &Value) {
-    if row["error"].is_null() {
-        assert_eq!(encode(result.unwrap().into()), row["result"]);
-    } else {
-        let error = &row["error"];
-        let expected = match error["kind"].as_str().unwrap() {
-            "unsigned" => r::CompactError::UnsignedOutOfRange {
-                value: error["value"].as_str().unwrap().parse().unwrap(),
-                max: error["max"].as_str().unwrap().parse().unwrap(),
-            },
-            "assert" => r::CompactError::AssertionFailed(error["message"].as_str().unwrap().into()),
-            _ => panic!("unknown independently declared error"),
-        };
-        assert_eq!(result.err().expect("expected callback refusal"), expected);
-    }
+    assert_eq!(encode(result.unwrap().into()), row["result"]);
 }
 fn u<const M: u128>(value: u128) -> BoundedUint<M> {
     BoundedUint::new(value).unwrap()
@@ -98,7 +85,6 @@ macro_rules! stateful_case {
                 };
                 check(result.map(|out|{
                     assert_eq!($module::ledger_slots::seen.inspect(out.context.query.state.get_ref()).unwrap(),Field::from(row["seen"].as_str().unwrap().parse::<u64>().unwrap()));
-                    if row["noMutation"] == true {assert_eq!(out.context.query.state,held);}
                     assert_eq!(out.context.private_state,7);
                     assert!(out.private_transcript_outputs.is_empty());
                     let state=(out.context.query.state.clone(),out.context.query.effects.clone(),out.gas_cost);
@@ -186,6 +172,56 @@ stateful_case!(
     [input()]
 );
 pure_case!(pure_control, pure_control, [input()]);
+stateful_case!(component_alias, component_alias, run, [], [input()]);
+stateful_case!(
+    component_2d,
+    component_2d,
+    run,
+    [],
+    [FixedVector::new([
+        (
+            FixedVector::new([
+                FixedVector::new([u(3), u(5)]),
+                FixedVector::new([u(7), u(9)])
+            ]),
+            u(31)
+        ),
+        (
+            FixedVector::new([
+                FixedVector::new([u(4), u(6)]),
+                FixedVector::new([u(8), u(10)])
+            ]),
+            u(41)
+        )
+    ])]
+);
+stateful_case!(
+    component_boolean,
+    component_boolean,
+    run,
+    [],
+    [FixedVector::new([
+        (FixedVector::new([true, false]), u(3)),
+        (FixedVector::new([false, true]), u(4))
+    ])]
+);
+stateful_case!(
+    component_field,
+    component_field,
+    run,
+    [],
+    [FixedVector::new([
+        (
+            FixedVector::new([Field::from(3_u64), Field::from(5_u64)]),
+            u(3)
+        ),
+        (
+            FixedVector::new([Field::from(4_u64), Field::from(6_u64)]),
+            u(4)
+        )
+    ])]
+);
+
 struct VectorWitness {
     expected_seen: u64,
     calls: std::cell::RefCell<Vec<Value>>,

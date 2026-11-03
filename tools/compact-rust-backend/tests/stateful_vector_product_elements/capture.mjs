@@ -78,6 +78,9 @@ const product8=tuple([vector(2,u8),u16]), product16=tuple([vector(2,u16),u32]);
 const descriptors={wide:vector(2,product16),narrow:vector(2,product8),
  field:vector(2,tuple([vector(2,r.CompactTypeField),r.CompactTypeField])),
  boolean:vector(2,tuple([vector(2,u16),r.CompactTypeBoolean])),
+ component_2d:vector(2,tuple([vector(2,vector(2,u16)),u32])),
+ component_boolean:vector(2,tuple([vector(2,r.CompactTypeBoolean),u16])),
+ component_field:vector(2,tuple([vector(2,r.CompactTypeField),u16])),
  nested:vector(2,vector(2,product16)),prior:vector(2,tuple([u16,u32]))};
 const bySource=new Map(definitions.map(row=>[row.source,row]));
 for(const spec of specs){
@@ -95,12 +98,6 @@ for(const spec of specs){
   const ctx=r.createCircuitContext(r.dummyContractAddress(),key,init.currentContractState.data,7,undefined,undefined,0);
   try{out=c.circuits[spec.entry](ctx,...spec.args.map(convert));value=out.result;}catch(e){error=e;}
  }else{try{value=m.pureCircuits[spec.entry](...spec.args.map(convert));}catch(e){error=e;}}
- if(spec.error){
-  assert.equal(value,undefined,spec.id);
-  const suffix=spec.error.kind==='unsigned'?`cast from Field or Uint value to smaller Uint value failed: ${spec.error.value} is greater than ${spec.error.max}`:spec.error.message;
-  assert.ok(error?.message.includes(suffix),spec.id+': '+error);
-  rows.push({...spec,observedError:error.message});continue;
- }
  assert.ifError(error);assert.deepEqual(value,convert(spec.expected),spec.id);
  const descriptorSpec=bySource.get(source).descriptor;
  const name=typeof descriptorSpec==='string'?descriptorSpec:descriptorSpec[spec.entry];

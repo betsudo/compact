@@ -3,7 +3,7 @@
 Status: isolated local continuation from reviewed V documentation head
 `0bd77849cae0cf907e54c361ce92a9c04e45f5d3`, on
 `codex/rust-ast-vector-product-elements`. The first change repairs the observed
-strict signature baseline. Compiler179 begins the component conversion change;
+strict signature baseline. Compiler180 implements the bounded component conversion;
 whole-source semantic/API execution, model/key/proof feasibility and integration
 acceptance remain open.
 
@@ -68,7 +68,7 @@ TS/Rust/independent IR and both frontend refusals remain. The pure/identity/prio
 control IR, origins and complete Programs remain byte-identical. This includes
 successful native emission for both witness positions without a new dispatch rule.
 
-The maintained `check_vector_product_elements.py` gate now declares 13 complete
+The initial maintained `check_vector_product_elements.py` gate declared 13 complete
 positive SDK roots and 15 TS/Rust cases (56 stateful routes plus one pure route),
 including both helper branches, the Field result and observed witness order. It
 compares independent current IR, authenticates whole manifests, retains original
@@ -98,6 +98,18 @@ declared witness outcomes and derives route counts from the case roster.
 These revisions require fresh source/SDK execution and independent review;
 the earlier successful gate is retained as development evidence, not renewed
 acceptance. Compile-fail/untrusted/mutation/model/proof gates remain open.
+
+The actual `35ac5aa9c` successor passes its first 61-command gate: 13 complete
+roots, 16 TS/Rust cases, 60 stateful routes plus one pure, exact public transcript
+equality, two frontend refusals and the deeper-product scope control. Source
+review nevertheless found a further P2 coverage gap: component recursion and
+component-local aliases had not been executed. This gate remains development
+evidence. Four complete sources/cases now cover a two-dimensional Vector
+component, component aliases, Boolean component leaves and unchanged Field
+component leaves. The next gate declares 17 roots / 20 cases, derives its route
+counts, and drops copied unused assertion/no-mutation paths. Current execution
+and fresh reviews of this expanded cohort are pending; no prior result is
+relabeled as its acceptance.
 
 ## Actual gap and baseline
 

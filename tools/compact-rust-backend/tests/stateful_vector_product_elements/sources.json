@@ -106,5 +106,37 @@
       "run"
     ],
     "descriptor": "wide"
+  },
+  {
+    "source": "component_2d",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_2d"
+  },
+  {
+    "source": "component_alias",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "component_boolean",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_boolean"
+  },
+  {
+    "source": "component_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_field"
   }
 ]

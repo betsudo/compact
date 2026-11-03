@@ -85,7 +85,7 @@ def main():
     output.mkdir(parents=True)
     report = dict(status="incomplete", head=head, tree=tree, commands=[], inputs=pins, tools=tools,
                   rust_tools=rust_tools, cargo_configuration_sha256=configuration,
-                  scope="Focused whole SDK execution/strict compilation and two exact frontend refusals only; compile-fail, malformed IR, producer mutations, model/proofs/Linux/integration remain open")
+                  scope="Focused whole SDK execution/strict compilation, two exact frontend refusals and deeper-product scope controls; compile-fail, malformed IR, producer mutations, model/proofs/Linux/integration remain open")
     start = time.monotonic()
 
     def run(label, command, *, success=True):
@@ -110,9 +110,9 @@ def main():
         cases = json.loads((FIXTURES / "cases.json").read_text())
         refusals = json.loads((FIXTURES / "frontend-refusals.json").read_text())
         names = {s["source"] for s in definitions}
-        require(len(names) == len(definitions) == 13 and names.isdisjoint(refusals)
+        require(len(names) == len(definitions) == 17 and names.isdisjoint(refusals)
                 and names | set(refusals) == {p.stem for p in SOURCES.glob("*.compact")}, "whole source roster differs")
-        require(len(cases) == len({r["id"] for r in cases}) == 16
+        require(len(cases) == len({r["id"] for r in cases}) == 20
                 and {r["source"] for r in cases} == names, "case roster differs")
         for spec in definitions:
             require({r["entry"] for r in cases if r["source"] == spec["source"]}

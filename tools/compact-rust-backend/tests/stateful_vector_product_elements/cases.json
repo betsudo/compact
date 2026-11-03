@@ -704,5 +704,197 @@
     ],
     "initialSeen": "0",
     "seen": "1"
+  },
+  {
+    "id": "component_2d",
+    "source": "component_2d",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3",
+              "5"
+            ],
+            [
+              "7",
+              "9"
+            ]
+          ],
+          "31"
+        ],
+        [
+          [
+            [
+              "4",
+              "6"
+            ],
+            [
+              "8",
+              "10"
+            ]
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          [
+            "7",
+            "9"
+          ]
+        ],
+        "31"
+      ],
+      [
+        [
+          [
+            "4",
+            "6"
+          ],
+          [
+            "8",
+            "10"
+          ]
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "component_alias",
+    "source": "component_alias",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "31"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "41"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "31"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "41"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "component_boolean",
+    "source": "component_boolean",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            true,
+            false
+          ],
+          "3"
+        ],
+        [
+          [
+            false,
+            true
+          ],
+          "4"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          true,
+          false
+        ],
+        "3"
+      ],
+      [
+        [
+          false,
+          true
+        ],
+        "4"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
+  },
+  {
+    "id": "component_field",
+    "source": "component_field",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3",
+            "5"
+          ],
+          "3"
+        ],
+        [
+          [
+            "4",
+            "6"
+          ],
+          "4"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3",
+          "5"
+        ],
+        "3"
+      ],
+      [
+        [
+          "4",
+          "6"
+        ],
+        "4"
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1"
   }
 ]
