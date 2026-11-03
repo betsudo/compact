@@ -56,7 +56,7 @@ def malformed_ir_controls(irs):
         "binding_type": ["expression has type Vector", "expected Boolean"],
         "source_binding": ["expression has type Vector", 'max: "255"', 'max: "65535"'],
         "dead_branch": ["expression has type Unsigned", "expected Boolean"],
-        "empty_body": ["expression has type Unsigned", "expected Boolean"],
+        "empty_body": ["expression has type Boolean", "expected Unsigned"],
         "inner_product": ["expression has type Unsigned", "expected Tuple"],
         "misplaced_action": ["cell_write"],
     }
@@ -68,6 +68,9 @@ def malformed_ir_controls(irs):
         circuit = next(c for c in positive["stateful_circuits"] if c["name"] == "run")
         if name == "dead_branch":
             circuit["return_value"]["body"]["condition"] = {"kind": "boolean", "value": True}
+            unreachable = circuit["return_value"]["body"]["otherwise"]["result"]["value"]
+            unreachable["value"] = {"kind": "coerce", "value": unreachable["value"],
+                                    "ty": copy.deepcopy(circuit["parameters"][0]["ty"])}
         malformed = copy.deepcopy(positive)
         circuit = next(c for c in malformed["stateful_circuits"] if c["name"] == "run")
         body = circuit["return_value"]["body"]
@@ -84,8 +87,12 @@ def malformed_ir_controls(irs):
             inner["length"] = 3
         elif name == "product_arity":
             expr["ty"]["element"]["elements"].append({"kind": "boolean"})
-        elif name in {"inner_leaf", "dead_branch", "empty_body"}:
+        elif name == "inner_leaf":
             inner["element"] = {"kind": "boolean"}
+        elif name == "dead_branch":
+            expr["value"]["ty"]["element"]["elements"][0]["element"] = {"kind": "boolean"}
+        elif name == "empty_body":
+            circuit["parameters"][0]["ty"]["element"]["elements"][0]["element"] = {"kind": "boolean"}
         elif name == "inner_narrowing":
             inner["element"]["max"] = "1"
         elif name == "input_type":
@@ -103,6 +110,11 @@ def malformed_ir_controls(irs):
             circuit["return_value"] = {"kind": "expression", "value": {
                 "kind": "cell_write", "field": "seen", "index": 0,
                 "value": {"kind": "field_literal", "value": "1"}}}
+        # Keep the declared result equal to the forged conversion target so a
+        # contextual return-type mismatch cannot substitute for checking Coerce.
+        if name in {"outer_dimension", "inner_dimension", "product_arity", "inner_leaf",
+                    "inner_narrowing", "inner_product"}:
+            circuit["result"] = copy.deepcopy(expr["ty"])
         yield name, positive, malformed, expected
 
 
