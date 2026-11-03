@@ -461,3 +461,13 @@ qualifying build. Every qualifying depfile input must still match a prebuild map
 no after-build-only admission or source-map exclusion is added. Both failed
 predecessors and binary/depfile snapshots remain retained; current preparation
 and fresh review are required. No current models, keys or proofs are accepted.
+
+Claude source review v7 of the historical `428f43aa2` independently classifies
+the same OUT_DIR omission as P1 (fail-closed preparation blocker, not unsound
+proof acceptance). The prebuild preparation stage addresses it without adopting
+a weaker after-build-only input map. The successor also retains the raw depfile
+before membership guards, refuses inherited generated-SDK selectors and binds
+local build-script manifest/rerun source inputs. Claude wrote a separate plan
+file despite the no-write prompt; that observation/copy is retained and the
+review is not described as having made no external writes. Fresh source and
+receipt qualification remains necessary.

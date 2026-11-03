@@ -67,6 +67,9 @@ def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof output must be a new destination")
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    inherited_sdk_selectors = sorted(key for key, value in env.items()
+                                     if key.startswith("COMPACT_") and key.endswith("_GENERATED") and value)
+    require(not inherited_sdk_selectors, "unset inherited generated-SDK selectors: " + ", ".join(inherited_sdk_selectors))
     configuration_environment = dict(env)
     configuration = main_gate.reject_compiler_overrides(configuration_environment)
     output.mkdir(parents=True)
@@ -185,8 +188,27 @@ def run(args):
             prepared_dirs.add(directory)
             files = [p.resolve(strict=True) for p in directory.rglob("*") if p.is_file()]
             generated_inputs.update(files)
-            owners.append({"package_id": event["package_id"], "source": str(scripts[0]),
-                "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory), "files": sorted(map(str, files))})
+            owner = {"package_id": event["package_id"], "source": str(scripts[0]),
+                "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory), "files": sorted(map(str, files))}
+            # Local fixture generation declares its tracked source inputs via
+            # Cargo rerun lines; authenticate those against the pre-preparation map.
+            script_log = directory.parent / "output"
+            require(script_log.is_file(), "missing actual build-script output log")
+            generated_inputs.add(script_log.resolve(strict=True))
+            owner.update(output_log=str(script_log), output_log_sha256=digest(script_log))
+            if package.get("source") is None:
+                manifest = Path(package["manifest_path"]).resolve(strict=True)
+                require(str(manifest) in source_map and digest(manifest) == source_map[str(manifest)],
+                        "local build-script manifest was not bound")
+                rerun_files = set()
+                for line in script_log.read_text().splitlines():
+                    if line.startswith(("cargo:rerun-if-changed=", "cargo::rerun-if-changed=")):
+                        path = (manifest.parent / line.split("=", 1)[1]).resolve(strict=True)
+                        rerun_files.update(p.resolve(strict=True) for p in path.rglob("*") if p.is_file()) if path.is_dir() else rerun_files.add(path)
+                require(all(str(p) in source_map and digest(p) == source_map[str(p)] for p in rerun_files),
+                        "local generated-input source absent from pre-preparation map")
+                owner["rerun_inputs_before_preparation"] = {str(p): source_map[str(p)] for p in sorted(rerun_files)}
+            owners.append(owner)
         require(owners and generated_inputs, "no actual build-generated inputs prepared")
         report["prepared_build_scripts"] = owners
         report["prepared_generated_directories"] = sorted(map(str, prepared_dirs))
@@ -202,7 +224,11 @@ def run(args):
         components["runner"] = common.stable_copy(built, output / "bin/proof-runner")
         runner = components["runner"]["snapshot"]
         depfile = built.with_suffix(".d")
-        dependencies = depfile.read_text()
+        retained_depfile = output / "runner.d"
+        shutil.copyfile(depfile, retained_depfile)
+        report["runner_depfile"] = {"path": str(retained_depfile), "build_path": str(depfile),
+                "sha256": digest(retained_depfile), "membership_status": "pending"}
+        dependencies = retained_depfile.read_text()
         # Cargo preserves lexical ../ components for relative include_bytes!, and
         # escapes spaces in Make paths. Resolve parsed paths to physical files;
         # retain the raw depfile bytes/hash and exact include membership checks.
@@ -222,11 +248,8 @@ def run(args):
         require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
                 "actual runner dependency missing from physical prebuild input map")
         report["runner_physical_inputs_before_build"] = {p: physical_inputs[p] for p in sorted(actual_files)}
-        retained_depfile = output / "runner.d"
-        shutil.copyfile(depfile, retained_depfile)
-        report["runner_depfile"] = {"path": str(retained_depfile), "build_path": str(depfile),
-                "sha256": digest(retained_depfile), "all_generated_includes": True,
-                "worktree_inputs_pinned_before_build": worktree_inputs}
+        report["runner_depfile"].update(membership_status="passed", all_generated_includes=True,
+                worktree_inputs_pinned_before_build=worktree_inputs)
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-product-elements", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for label, message in [("changed-ir", "vector-product-elements complete IR bytes differ"),
