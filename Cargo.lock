@@ -2859,6 +2859,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-outer-vector-product-family-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-outer-vector-product-original-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-passport-dogfood-fixture"
 version = "0.1.0"
 dependencies = [
@@ -3046,6 +3060,8 @@ dependencies = [
  "compact-rust-opaque-cell-inputs-source-fixture",
  "compact-rust-opaque-string-map-query-oracle-fixture",
  "compact-rust-opaque-string-set-oracle-fixture",
+ "compact-rust-outer-vector-product-family-sdk",
+ "compact-rust-outer-vector-product-original-sdk",
  "compact-rust-pm-19252-unused-read-eight-a-fixture",
  "compact-rust-pm-19252-unused-read-eight-b-fixture",
  "compact-rust-pm-19252-unused-read-seven-fixture",

@@ -361,3 +361,35 @@ replay refusals for the same cohort. Retain empty-result applicability honestly.
 Keep existing typed public APIs and runtime/compiler/lowering semantics unchanged;
 exclude constructors/deployment/wallet, source trimming, cap changes, Forge,
 remote execution and implied fullCI/Linux/integration or broader completion.
+
+
+## Fifteen-export proof owner: implementation pending qualification
+
+The continuation preserves the accepted model/documentation baseline5007bf56a
+on codex/rust-ast-outer-vector-product-model-inventory. Two opt-in generated-SDK
+adapter crates compile the complete original1/family15 raw SDKs at their own crate
+roots, with every Program included. The existing proof-smoke proof/verification
+and separately funded DEFAULT-strict application owners are reused for all15
+actual in-cap exports, retaining exact bounds/carriers and source Cell writes.
+The intact family branch remains k9/unproved. No runtime/compiler/lowering change.
+
+The maintained check_outer_vector_product_proof.py first reruns the complete91
+native/API gate with a fresh current original recipe. It binds source/dependency/
+physical generated includes, Cargo-reported executable and immutable SDK/runner/
+verifier/material identities; all16 models are reobserved before every k<=8 export
+is selected. Raw IR/Program identity and actual over-cap controls run before keys.
+Verified locked material precedes fresh direct keys and separate proof/application
+execution. Empty output has no invented changed-result negative; its fixed source
+CellWrite still supplies an independent statement/preimage refusal.
+
+Development only: new adapter Cargo check passes17.11s and strict Clippy62.42s
+against an exact copied58-file accepted SDK. Three raw command-evidence tests
+exercise separate CRLF/CR streams, undecodable bytes and timeout partial output.
+Only two new local package nodes and two proof-runner dependency edges change in
+the root lock; all prior registry/Git/checksum records remain exact. These checks
+are not current-head source generation, proof preparation, keys or proof results.
+Original recipe, complete maintained preparation, independent source review,
+actual15proofs/verification and15separate strict applications/replay controls and
+separate receipt review remain required. Full required Linux/CI/integration stays
+open. Preserve every failed attempt and all predecessor evidence; no cap changes,
+source trimming, Forge, remote publication or cleanup follows from this work.

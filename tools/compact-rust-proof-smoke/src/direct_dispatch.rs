@@ -300,6 +300,32 @@ pub(super) fn try_run(
                 _ => crate::nested_component_products::run(root),
             }
         })()),
+        #[cfg(all(
+            feature = "outer-vector-product-proofs",
+            compact_outer_vector_product_generated
+        ))]
+        ("--outer-vector-product" | "--outer-vector-product-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("component Vector proof command requires a complete root")?;
+            if selector == "--outer-vector-product-models" {
+                if arguments.next().is_some() {
+                    return Err("unexpected selected models argument".into());
+                }
+                crate::outer_vector_product_proofs::models(std::path::Path::new(&root))
+            } else {
+                let ts = arguments
+                    .next()
+                    .ok_or("current independent TS capture required")?;
+                if arguments.next().is_some() {
+                    return Err("unexpected proof argument".into());
+                }
+                crate::outer_vector_product_proofs::run(
+                    std::path::Path::new(&root),
+                    std::path::Path::new(&ts),
+                )
+            }
+        })()),
         #[cfg(feature = "outer-vector-product-models")]
         ("--outer-vector-product-inventory", _) => Some((|| {
             let root = arguments

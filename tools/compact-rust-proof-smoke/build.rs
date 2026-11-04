@@ -16,6 +16,34 @@
 // Default/all-features checks need no generated SDK. The explicit gate selects
 // an absolute current bundle; Cargo tracks this env and every actual include.
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(compact_outer_vector_product_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_OUTER_VECTOR_PRODUCT_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_OUTER_VECTOR_PRODUCT_PROOFS").is_some()
+        && let Some(pool) = std::env::var_os("COMPACT_OUTER_VECTOR_PRODUCT_GENERATED")
+        && !pool.is_empty()
+    {
+        let pool = std::path::PathBuf::from(pool);
+        assert!(
+            pool.is_absolute(),
+            "absolute complete outer Vector SDK pool required"
+        );
+        for (source, count) in [("family", 15), ("original", 1)] {
+            let root = pool.join(source).join("contract");
+            for name in ["lib.rs", "compact-rust-ir.json", "rust-capabilities.json"] {
+                assert!(
+                    root.join(name).is_file(),
+                    "complete generated SDK member required"
+                );
+                println!("cargo::rerun-if-changed={}", root.join(name).display());
+            }
+            for index in 0..count {
+                let path = root.join(format!("checked-programs/program-{index}.json"));
+                assert!(path.is_file(), "complete Program inventory required");
+                println!("cargo::rerun-if-changed={}", path.display());
+            }
+        }
+        println!("cargo::rustc-cfg=compact_outer_vector_product_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_component_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_COMPONENT_PRODUCT_VECTOR_GENERATED");
     if std::env::var_os("CARGO_FEATURE_COMPONENT_PRODUCT_VECTOR_WIDENING").is_some()
