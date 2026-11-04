@@ -232,3 +232,28 @@ Acceptance:
 Scope exclusions remain unchanged: no ABI/runtime/schema/resource or public
 carrier redesign, broad refactor, CI optimization project or inferred broad-goal
 completion from this feature or the accepted publication prerequisite.
+
+## Independent recorded-plan boundary controls
+
+Five added methods pass locally (33.39s compile/run), followed by strict backend
+library/test Clippy (17.57s). The methods independently check all16 whole roots,
+then forge dimensions, both tuple arities, narrowing and Boolean/foreign nominal
+children across nonempty, outer-empty, inner-empty and last-child positions.
+Operand IDs/types cannot forge scope, self-reference or definition annotations.
+Malformed canonical bounds and oversized numeric annotations retain their exact
+original-operation/resource refusal even in empty children. A constant-true
+private source condition still validates and refuses a malformed otherwise plan.
+
+These tests read exact complete source IR/Program fixtures copied from the
+independently matched compiler191 sourceSDK epochdee8f46b3. All18 raw files are
+unchanged copies; no golden normalization or proof acceptance. The old parent
+module is a byte-identical prefix and all predecessor test bodies are untouched.
+The test proposal changes no production validator, conversion or runtime code.
+
+The current scope table had a stale top_level_nested_tuple refusal even though
+compiler191 now accepts the untouched source. Three fresh genuine lanes confirm
+TS/Rust/independent IR exit0. Update only that current row and its positive-consumer
+reference; preserve the compiler188 historical table byte-for-byte and leave all
+other rows/source bytes unchanged. Existing gates still execute their complete
+current controls. These observations do not replace running those full gates or
+the remaining maintained native-IR, producer/source, model and proof checks.

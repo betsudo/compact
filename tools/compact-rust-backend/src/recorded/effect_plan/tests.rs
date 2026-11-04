@@ -572,3 +572,6 @@ mod storage_codecs;
 
 #[path = "tests/vector_projection.rs"]
 mod vector_projection;
+
+#[path = "tests/outer_vector_products.rs"]
+mod outer_vector_products;
