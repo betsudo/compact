@@ -479,3 +479,18 @@ rustfmt also required ordering one component-product test module declaration.
 Provision the actual tool, retain strict skip accounting and every test, and
 correct only declaration ordering. These repairs do not change compiler/runtime
 semantics or relabel the accepted cc7 proof execution as a new-head proof run.
+
+
+The next hosted core run passed all1878 backend unit tests, then exposed one
+historical render test with two obsolete shape refusals: a Boolean ledger query
+as a Vector-child predicate and a scalar Field witness in its arm now compose.
+Keep the original schema13 fixture bytes unchanged. Assert admitted recording,
+read-before-write order and one branch-local witness call; retain real rejection
+of a Field-valued predicate and a Vector-valued witness supplied as one Field.
+All154 render tests pass with those controls. No compiler, proof fixture,
+Program, source/verifier binding or runtime behavior changes in this repair.
+
+Complete local follow-up validation passes: four-owner all-feature tests276.69s,
+readability tests1.27s and unchanged corpus policy1.43s, all-target/all-feature
+Clippy with warnings denied41.32s, and changed-file rustfmt. The separate local
+CI-wiring branch remains held until this published baseline repair is settled.
