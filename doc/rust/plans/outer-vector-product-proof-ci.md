@@ -51,3 +51,49 @@ Focused controls execute the literal configured shell with observable tool
 boundaries and failing recipe/ZKIR/runtime/gate commands. These shell controls
 are not proof evidence. A clean-head literal Nix execution and independent
 source/receipt reviews remain required before local acceptance.
+
+
+## Bounded local qualification accepted — 2026-11-04
+
+Execution source:5297fca2a3c2ccb54dce0d6d1933de5f9d77cb16. The literal configured
+Bash step passes under the existing local Nix compiler environment on macOS
+arm64 in877.73s. It uses a fresh current original-recipe receipt, the actual
+same-version compiler package, devShell ZKIR and newly resolved TS runtime/Node
+identities, plus verified built-in parameters. All91 native/API/ingress commands
+pass, all16 intact models are observed, all22 ordered refusals precede key
+generation, and all958 physical runner inputs remain bound. Fifteen fresh
+keypairs produce15 independently verified standalone proofs, and15 separately
+proved funded DEFAULT-strict applications pass with unchanged-ledger replay
+refusals. Typed, binding, corruption, CellWrite and wrong-verifier controls remain
+intact; empty-result controls retain explicit N/A fields. The whole k9branch
+remains unproved and has no keys.
+
+All18 focused workflow controls pass, including literal shell quoting/forwarding
+and recipe, ZKIR, runtime and proof-command failure propagation. The other64
+Linux workflow blocks are byte-identical and ordered as before; all17 prior
+workflow test methods remain. Source review150.63s reports no findings. The
+three reviewed CI paths remain byte-identical after adopting the separately
+qualified test-only prerequisite repair. A separate receipt review302.62s reports
+no findings and recomputes retained evidence hashes; it does not itself rerun
+cryptographic verification. Before further builds, all634 current generated
+inputs were retained after exact hash matching:16,336,341bytes, within256MiB.
+No overwritten historical Cargo log is reconstructed or relabelled.
+
+The initial literal-v1 attempt correctly failed existing-recipe admission10.40s
+before native/proof execution: the inherited module-order formatting repair had
+changed the original CLI/compiler derivations. The unchanged original recipe
+then actually built the current package in201.66s. Current-source realization
+8.98s reused that package; this is not another compiler build. All failed
+attempts and predecessor outputs remain preserved. These timings are single
+local observations, with no benchmark or causal performance claim.
+
+This branch remains LOCAL. Draft PR #701 separately publishes the completed
+proof slice and test-only CI prerequisite repairs at ec3531a83. Rust required
+checks and the Linux producer pass; its Linux full consumer is still running.
+GitHub abandoned the macOS producer before acquiring a hosted arm64 runner,
+reporting capacity constraints; the consumer correctly refused missing material.
+No gate is waived. Full hosted Linux/macOS qualification and reviewed integration
+remain open, including reconciliation of193 preserved prerequisite commits
+above the stable delivery target codex/rust-backend-ast. The broader goal remains
+incomplete and Forge deliberately deferred. Documentation after the execution
+source records this result; it does not claim a new-head execution.
