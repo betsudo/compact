@@ -15,14 +15,14 @@
 
 #[path = "tests/calls.rs"]
 mod calls;
+#[path = "tests/component_product_vectors.rs"]
+mod component_product_vectors;
 #[path = "tests/context_queries.rs"]
 mod context_queries;
 #[path = "tests/counter.rs"]
 mod counter;
 #[path = "tests/declarations.rs"]
 mod declaration_tests;
-#[path = "tests/component_product_vectors.rs"]
-mod component_product_vectors;
 #[path = "tests/execution_results.rs"]
 mod execution_results;
 #[path = "tests/funded_mint_inclusion.rs"]

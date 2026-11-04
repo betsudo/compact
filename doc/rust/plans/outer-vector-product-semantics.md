@@ -462,3 +462,20 @@ hosted CI/Linux and reviewed integration remain open. The
 [next bounded CI wiring slice](outer-vector-product-proof-ci.md) changes no public
 API, compiler/runtime semantics, proof cap or source cohort. Forge stays deferred;
 no cleanup, backend push/merge or broader-goal completion follows from this result.
+
+
+## Published bounded proof slice and inherited CI prerequisites
+
+PR #701 preserves the three proof commits against model baseline5007bf56a.
+Its stable delivery target remains codex/rust-backend-ast; the193 earlier local
+prerequisite commits are preserved, not implicitly reviewed or merged. Full
+Linux/integration acceptance remains open. The proof workflow follow-up stays
+separate and local.
+
+The first hosted checks exposed two inherited prerequisite defects: public
+Python accounting correctly refused an unexpectedly skipped real Clippy
+regression because its job did not provision pinned Rust1.99 Clippy; workspace
+rustfmt also required ordering one component-product test module declaration.
+Provision the actual tool, retain strict skip accounting and every test, and
+correct only declaration ordering. These repairs do not change compiler/runtime
+semantics or relabel the accepted cc7 proof execution as a new-head proof run.
