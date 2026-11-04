@@ -1,10 +1,13 @@
 # Outer Vector product semantic continuation
 
-Status: baseline characterized before semantic implementation. The preceding
-metadata prerequisite is locally accepted at d18fe6b78 with separate source and
-receipt reviews; it is preserved on its original branch and inert backup.
+Status: selector implemented; complete source/SDK and development runtime/API
+controls pass locally. Maintained untrusted-boundary, model and genuine proof/
+application qualification is incomplete. The preceding metadata prerequisite is
+locally accepted at d18fe6b78 and preserved on its original branch and backup.
 
-Branch: codex/rust-ast-outer-vector-product-semantics.
+Implementation branch preserved: codex/rust-ast-outer-vector-product-semantics
+at aa2be69c9. Continuation: codex/rust-ast-outer-vector-product-qualification,
+from accepted publication prerequisite dee8f46b3.
 Evidence: /Users/ysh/.codex/local-evidence/rust-ast-outer-vector-product-semantics-20261103.
 
 Gap: the existing ordered conversion selector omits a tuple child directly below
@@ -151,3 +154,81 @@ only the189-to190 compiler sentence changed; the literal document version gate
 passed13.55s. The temporary mismatch is resolved. Complete190 SDK qualification,
 exact189 output continuity, currentTS/native/static/IR/recorded/model/proof and
 strict application gates remain open.
+
+## Compiler191 publication prerequisite and actual development controls
+
+The source-map publication regression is independently accepted locally at
+signed dee8f46b3 on codex/rust-ast-source-map-cwd-origin. Its original recipe,
+owner documentation,32command Counter publication matrix, three version checks,
+source and separate receipt reviews are retained in the source-map evidence root.
+This prerequisite does not complete the semantic feature or supply proof coverage.
+
+At that exact source head, both complete original/family SDKs pass strict lint,
+independent IR/full Program/capability membership and physical source-map binding
+(16.24s). Exact comparisons against retained189/190 outputs pass for both sources:
+raw IR, Programs, ZKIR, JS and geometry are identical; only corrected map path
+fields, version/derived manifests and the two justified190 Rust attributes differ.
+No prior output, proof geometry or source operand is normalized.
+
+Fresh current TypeScript and complete Rust consumers pass26cases in11.05s:
+104 ordinary/recorded/functional-native/functional-recorded routes,28 expected
+error routes and38 real VM replays, with argument/result FAB, state/private/witness
+order, effects and gas controls plus strict consumer lint. Ten marked API refusals
+then pass with ten valid twins that actually run and assert typed parameter or
+witness behavior (21commands,29.43s). The bounds, arity, dimension, result type,
+consumed Program and witness-interface controls are preserved in the boundary
+fixtures. These are development qualification receipts at dee8f46b3, not execution
+claims for the later fixture-adoption commit or complete feature acceptance.
+
+All25 fixture files are adopted byte-for-byte from the independently declared
+external cohort; no original Compact source or existing test body is replaced.
+The original implementation branchaa2be69c9 and source-map branchdee8f46b3 retain
+their histories. Native/static receipts and failed earlier epochs remain external.
+
+## Next bounded qualification work
+
+Gap: the new outer-Vector product carrier has observed source/runtime/API behavior,
+but lacks a maintained end-to-end gate, explicit adversarial native/recorded ingress
+controls and its own complete model/proof/application evidence. Do not reopen the
+accepted metadata, component-product Vector feature or constant projection work.
+
+Owners and public API:
+
+- compiler/rust-ir-passes.ss remains the sole source selector; preserve its one
+  added component-product alternative and all original source operands.
+- pure_semantics/coercion.rs and value_lowering/coercion.rs keep the checked
+  relation and structured Rust emission; public carriers remain FixedVector,
+  tuples, BoundedUint/Field/Boolean, consuming Program and Result/CompactError.
+- ir-native ingress plus recorded/effect_plan/validate.rs must independently
+  reject false annotations, foreign identities/aliases, arity/dimension/narrowing,
+  dead/empty-child and resource forgeries. Reuse their existing boundaries.
+- The existing proof-smoke model/proof owners must observe every one of the16
+  intact exports before any cohort is selected. No key/proof generation occurs
+  during model observation; determine actual k for every export rather than
+  inheriting another source family's selected list or counts.
+
+Acceptance:
+
+1. Add the maintained exact-head/source/compiler/tool-bound gate using the25
+   retained fixtures, full SDK generation/strict lint, fresh current TS, all four
+   Rust routes and the ten marked refusal/executed-positive pairs.
+2. Retain the complete historical refusal tables and unrelated current controls.
+   Exercise actual private native IR and independent recorded-plan refusals with
+   valid controls, exact diagnostic/boundary checks, complete producer/source
+   identity and unchanged-output controls. Add only missing tests to existing
+   owners; no framework or representation refactor.
+3. Observe all16 actual intact ZKIR models and bind raw file identities. Select
+   every applicable k<=8 export from those observations. Keep any over-cap source
+   whole, unchanged and explicitly unproved; no trimming, normalization or cap raise.
+4. Generate fresh direct keys/proofs and independently verify every selected
+   export, with applicable changed result/preimage/CellWrite and identity-bound
+   refusals. Then separately prove funded DEFAULT-strict applications and test
+   unchanged-state replay refusals. Do not reuse a proof/verdict as acceptance.
+5. Run focused local checks while iterating, then the complete maintained local
+   gate with fresh original recipe, source and separate receipt reviews. Retain
+   full required Linux/CI/proof gates for integration; no hosted execution, push,
+   merge, release, installation, cleanup or Forge work is authorized here.
+
+Scope exclusions remain unchanged: no ABI/runtime/schema/resource or public
+carrier redesign, broad refactor, CI optimization project or inferred broad-goal
+completion from this feature or the accepted publication prerequisite.

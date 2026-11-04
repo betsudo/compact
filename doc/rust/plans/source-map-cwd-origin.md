@@ -84,7 +84,8 @@ publication changes. Existing main-CLI behavior remains required-manifest; the
 standalone entry keeps missing manifests optional and rejects a present malformed
 or non-regular manifest before final publication. Version191 owner documentation
 is generated through the maintained ledger.ss owner after the original build;
-actual publication and semantic/native/proof acceptance remain open.
+publication acceptance was pending at that checkpoint. The accepted bounded
+result is recorded below; semantic/proof integration remains open.
 
 ## Review corrections and CI retention
 
@@ -118,3 +119,24 @@ workflow-control output remain retained. The maintained ledger owner generated
 version191 documentation with only its version line changed; its literal version
 workflow check passes. Actual publication matrix and separate receipt review
 remain prerequisites, followed by the complete outer-Vector semantic gates.
+
+## Accepted bounded publication repair
+
+At clean signed dee8f46b3, fresh original-recipe realization binds the same
+compiler191 package built from0739a65e3. The complete gate passes32commands:
+one current Cargo standalone build,28genuine whole Counter invocations (24default,
+four explicit roots) and three private manifest-policy controls. Physical source
+bindings, literal explicit roots, non-path maps/JS and manifest hashes/sizes pass.
+All three literal version steps pass. Separate independent receipt review255.91s
+finds no actionable issues; local GPG verification covers all three signed commits.
+This accepts this publication repair locally, with no semantic proof, Linux,
+whole-CI or integration acceptance. The source-map branch remains at dee8f46b3.
+
+The unchanged complete outer-Vector sources additionally pass compiler191 strict
+SDK/independent-IR checks (16exports), physical map binding and four exact retained
+189/190 comparisons. All raw IR, Programs, ZKIR, JS and geometry are unchanged;
+only declared map paths, version/derived manifests and the two intended190 Rust
+attributes differ. Historical SDK maps and failed comparisons remain untouched.
+Semantic runtime/API qualification continues on the separate local branch
+codex/rust-ast-outer-vector-product-qualification; its remaining proof obligations
+are described in outer-vector-product-semantics.md.

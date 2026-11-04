@@ -1,0 +1,12 @@
+{
+  "leaf_bound": "E0308",
+  "second_leaf_bound": "E0308",
+  "inner_arity": "E0308",
+  "product_arity": "E0308",
+  "outer_dimension": "E0308",
+  "inner_vector_kind": "E0308",
+  "array_not_vector": "E0308",
+  "result": "E0308",
+  "program": "E0382",
+  "witness": "E0277"
+}

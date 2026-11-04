@@ -1,0 +1,839 @@
+[
+  {
+    "id": "original",
+    "source": "original",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3"
+          ],
+          "255"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "255"
+      ]
+    ]
+  },
+  {
+    "id": "parameter",
+    "source": "family",
+    "entry": "parameter",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "parameter_boundaries",
+    "source": "family",
+    "entry": "parameter",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "0"
+          ],
+          "255"
+        ],
+        [
+          [
+            "255"
+          ],
+          "0"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "1",
+    "expected": [
+      [
+        [
+          "0"
+        ],
+        "255"
+      ],
+      [
+        [
+          "255"
+        ],
+        "0"
+      ]
+    ]
+  },
+  {
+    "id": "helper",
+    "source": "family",
+    "entry": "helper",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "2",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "local",
+    "source": "family",
+    "entry": "local",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "3",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "checked_valid",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "checked_assert_first",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          [
+            "256"
+          ],
+          "257"
+        ],
+        [
+          [
+            "258"
+          ],
+          "259"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "assert",
+      "message": "outer Vector product helper denied",
+      "tsMessage": "failed assert: outer Vector product helper denied"
+    }
+  },
+  {
+    "id": "checked_first_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "256"
+          ],
+          "257"
+        ],
+        [
+          [
+            "258"
+          ],
+          "259"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255",
+      "tsMessage": "outer_vector_product_widening.compact line 22 char 13: cast from Field or Uint value to smaller Uint value failed: 256 is greater than 255"
+    }
+  },
+  {
+    "id": "checked_second_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3"
+          ],
+          "257"
+        ],
+        [
+          [
+            "258"
+          ],
+          "259"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "257",
+      "max": "255",
+      "tsMessage": "outer_vector_product_widening.compact line 22 char 41: cast from Field or Uint value to smaller Uint value failed: 257 is greater than 255"
+    }
+  },
+  {
+    "id": "checked_third_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "258"
+          ],
+          "259"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "258",
+      "max": "255",
+      "tsMessage": "outer_vector_product_widening.compact line 23 char 13: cast from Field or Uint value to smaller Uint value failed: 258 is greater than 255"
+    }
+  },
+  {
+    "id": "checked_fourth_leaf",
+    "source": "family",
+    "entry": "checked_helper",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "259"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "4",
+    "error": {
+      "kind": "unsigned",
+      "value": "259",
+      "max": "255",
+      "tsMessage": "outer_vector_product_widening.compact line 23 char 41: cast from Field or Uint value to smaller Uint value failed: 259 is greater than 255"
+    }
+  },
+  {
+    "id": "branch_left",
+    "source": "family",
+    "entry": "branch",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ],
+      [
+        [
+          [
+            "17"
+          ],
+          "255"
+        ],
+        [
+          [
+            "0"
+          ],
+          "254"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "7",
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "branch_right",
+    "source": "family",
+    "entry": "branch",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ],
+      [
+        [
+          [
+            "17"
+          ],
+          "255"
+        ],
+        [
+          [
+            "0"
+          ],
+          "254"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "8",
+    "expected": [
+      [
+        [
+          "17"
+        ],
+        "255"
+      ],
+      [
+        [
+          "0"
+        ],
+        "254"
+      ]
+    ]
+  },
+  {
+    "id": "deep",
+    "source": "family",
+    "entry": "deep",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              [
+                [
+                  "3"
+                ],
+                "255"
+              ]
+            ]
+          ],
+          "65535"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "9",
+    "expected": [
+      [
+        [
+          [
+            [
+              [
+                "3"
+              ],
+              "255"
+            ]
+          ]
+        ],
+        "65535"
+      ]
+    ]
+  },
+  {
+    "id": "boolean_field",
+    "source": "family",
+    "entry": "boolean_field",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            true,
+            "255"
+          ],
+          false
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "10",
+    "expected": [
+      [
+        [
+          true,
+          "255"
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "boolean_field_other",
+    "source": "family",
+    "entry": "boolean_field",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            false,
+            "0"
+          ],
+          true
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "10",
+    "expected": [
+      [
+        [
+          false,
+          "0"
+        ],
+        true
+      ]
+    ]
+  },
+  {
+    "id": "empty",
+    "source": "family",
+    "entry": "empty",
+    "constructor": [],
+    "args": [
+      []
+    ],
+    "initialSeen": "0",
+    "seen": "11",
+    "expected": []
+  },
+  {
+    "id": "tuple_empty",
+    "source": "family",
+    "entry": "tuple_empty",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [],
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "12",
+    "expected": [
+      [
+        [
+          [],
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "tuple_single",
+    "source": "family",
+    "entry": "tuple_single",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [
+              "3"
+            ]
+          ],
+          "255"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "13",
+    "expected": [
+      [
+        [
+          [
+            "3"
+          ]
+        ],
+        "255"
+      ]
+    ]
+  },
+  {
+    "id": "field_identity",
+    "source": "family",
+    "entry": "field_identity",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            "1361129467683753853853498429727072845845",
+            "17"
+          ],
+          "255"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "14",
+    "expected": [
+      [
+        [
+          "1361129467683753853853498429727072845845",
+          "17"
+        ],
+        "255"
+      ]
+    ]
+  },
+  {
+    "id": "empty_leaf",
+    "source": "family",
+    "entry": "empty_leaf",
+    "constructor": [],
+    "args": [
+      [
+        [
+          [
+            [],
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "15",
+    "expected": [
+      [
+        [
+          [],
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "last_child",
+    "source": "family",
+    "entry": "last_child",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "3",
+          [
+            "128",
+            "255"
+          ]
+        ]
+      ]
+    ],
+    "initialSeen": "0",
+    "seen": "16",
+    "expected": [
+      [
+        "3",
+        [
+          "128",
+          "255"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "witness_before",
+    "source": "family",
+    "entry": "witness_before",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "5",
+    "privateState": 8,
+    "witnessSeen": "0",
+    "witnessValues": [
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "witness_before_error",
+    "source": "family",
+    "entry": "witness_before",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "5",
+    "witnessSeen": "0",
+    "error": {
+      "kind": "witness",
+      "message": "outer Vector product witness denied"
+    }
+  },
+  {
+    "id": "witness_after",
+    "source": "family",
+    "entry": "witness_after",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "6",
+    "privateState": 8,
+    "witnessSeen": "6",
+    "witnessValues": [
+      [
+        [
+          [
+            "3"
+          ],
+          "128"
+        ],
+        [
+          [
+            "255"
+          ],
+          "219"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        [
+          "3"
+        ],
+        "128"
+      ],
+      [
+        [
+          "255"
+        ],
+        "219"
+      ]
+    ]
+  },
+  {
+    "id": "witness_after_error",
+    "source": "family",
+    "entry": "witness_after",
+    "constructor": [],
+    "args": [],
+    "initialSeen": "0",
+    "seen": "6",
+    "witnessSeen": "6",
+    "error": {
+      "kind": "witness",
+      "message": "outer Vector product witness denied"
+    }
+  }
+]
