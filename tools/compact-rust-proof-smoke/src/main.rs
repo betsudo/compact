@@ -52,6 +52,8 @@ mod component_product_vector_widening;
 mod composite_zswap;
 mod constant_valued_vector_indices;
 mod constant_vector_projection;
+#[cfg(feature = "outer-vector-product-models")]
+mod outer_vector_product_models;
 #[cfg(all(
     feature = "fold-vector-result-widening",
     compact_fold_vector_result_generated

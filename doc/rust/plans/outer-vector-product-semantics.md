@@ -304,3 +304,32 @@ local workflow controls for passed-gate/later-failure, failed and skipped cases;
 all17 methods pass. No compiler/gate semantics or previous required checks change.
 Fresh corrected source review, current-head recipe realization and the complete
 91command execution remain required; no full native stage acceptance yet.
+
+
+## Native qualification accepted; complete model inventory next
+
+The preserved qualification branch ends at signed0dc0e5a42. After storage was
+restored, a fresh current original191 recipe passed9.56s and the complete
+91command native/API/ingress gate passed128.60s. Fresh independent Codex high
+source/receipt review285.24s found no actionable findings, recomputing source,
+artifact and raw-stream pins and confirming all intended negative assertions.
+The earlier84command ENOSPC failure and source-review finalization failure remain
+unaltered historical evidence; neither is relabelled successful. The recovered
+source message is authentic, and the fresh review independently confirms its
+bounded source conclusions. Local GPG verification of0dc also passes.
+
+Continuation: codex/rust-ast-outer-vector-product-proofs from that accepted head.
+The opt-in outer-vector-product-models feature adds only a model-inventory command
+to the existing proof-smoke owner. It checks complete emitted capability/ZKIR
+membership against the immutable two-source roster, loads every intact export,
+and reports its actual model k before any selection. No generated-SDK selector,
+key generation, proof, verifier or transaction execution is enabled by this step.
+The feature adds no dependency and does not change compiler/runtime semantics.
+
+Acceptance for inventory: strict runner lint and exact Cargo-reported executable
+build; immutable retained binary/source/tool identities; all16 exports observed,
+complete producer hashes unchanged before/after, and no keys/proofs created.
+Only those observations may determine a later k<=8 cohort. Retain all over-cap
+sources whole and unproved. Genuine direct proofs, independent verification,
+identity-bound negatives, separately proved funded DEFAULT-strict applications,
+Linux/fullCI and integration remain open. The broader goal remains incomplete.

@@ -300,6 +300,16 @@ pub(super) fn try_run(
                 _ => crate::nested_component_products::run(root),
             }
         })()),
+        #[cfg(feature = "outer-vector-product-models")]
+        ("--outer-vector-product-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires the complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::outer_vector_product_models::inventory(std::path::Path::new(&root))
+        })()),
         #[cfg(feature = "component-product-vector-models")]
         ("--component-product-vector-inventory", _) => Some((|| {
             let root = arguments
