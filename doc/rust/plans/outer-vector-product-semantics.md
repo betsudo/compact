@@ -333,3 +333,31 @@ Only those observations may determine a later k<=8 cohort. Retain all over-cap
 sources whole and unproved. Genuine direct proofs, independent verification,
 identity-bound negatives, separately proved funded DEFAULT-strict applications,
 Linux/fullCI and integration remain open. The broader goal remains incomplete.
+
+
+## Actual complete model observation
+
+At signedff4fbcb0e, strict runner Clippy passes65.05s and the actual Cargo-reported
+binary builds107.09s. Its immutable retained copy models all16 intact exports in
+2.31s; complete producer membership/hashes and all1486 native-input pins remain
+unchanged. Missing-root and extra-argument invocations genuinely refuse with the
+intended diagnostics. Independent Codex medium source/receipt review131.95s
+recomputes all model/source/producer pins and reports no actionable findings.
+This accepts only the bounded local model inventory, separately from native0dc.
+
+Actual k values: original::run7; family::parameter8, helper8, local8,
+checked_helper8, witness_before7, witness_after7, branch9, deep8, boolean_field7,
+empty5, tuple_empty7, tuple_single7, field_identity7, empty_leaf7, last_child7.
+All16 were observed before proposing the15 in-cap proof cases. The intact branch
+export remains unproved at k9. No keys or proofs have been generated for this
+slice; do not inherit any older family count or proof selection.
+
+Next bounded gap: add whole-source generated-SDK proof adapters in the existing
+proof-smoke owner and prove each of those15 actual in-cap exports with fresh
+keys/proofs, independent verification, source/Program/SDK/parameter/verifier
+identity refusals and applicable changed result/preimage/CellWrite controls.
+Then separately prove funded DEFAULT-strict applications and unchanged-state
+replay refusals for the same cohort. Retain empty-result applicability honestly.
+Keep existing typed public APIs and runtime/compiler/lowering semantics unchanged;
+exclude constructors/deployment/wallet, source trimming, cap changes, Forge,
+remote execution and implied fullCI/Linux/integration or broader completion.
