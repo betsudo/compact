@@ -15,6 +15,7 @@
 
 """Failure-path controls for raw proof-gate command evidence, not proof verdicts."""
 import hashlib
+import copy
 import os
 from pathlib import Path
 import subprocess
@@ -65,6 +66,47 @@ class CommandEvidence(unittest.TestCase):
             self.assertEqual(Path(row["stdout"]["path"]).read_bytes(), b"partial\r\n")
             self.assertEqual(Path(row["stderr"]["path"]).read_bytes(), b"diagnostic\x00")
             self.assertEqual(Path(row["log"]).read_bytes(), b"partial\r\ndiagnostic\x00")
+
+
+class PreKeyRefusalMembership(unittest.TestCase):
+    def report(self):
+        # Synthetic validator input only: no subprocess, key or proof verdict.
+        expected = (["family-changed-ir"]
+                    + [f"family-changed-program-{index}" for index in range(15)]
+                    + ["family-missing-program-0", "family-missing-program-14",
+                       "original-changed-ir", "original-changed-program-0",
+                       "original-missing-program-0", "selected-model-over-cap"])
+        return {"raw_binding_refusals": [{"label": label} for label in expected[:-1]],
+                "refusal_invocations": [{"label": label, "runner_sha256": "controlled-runner",
+                                         "started_monotonic": 1, "ended_monotonic": 2}
+                                        for label in expected]}
+
+    def test_complete_actual_cohort_requires_twenty_two_refusals(self):
+        report = self.report()
+        self.assertEqual(len(report["refusal_invocations"]), 22)
+        self.assertEqual(gate.validate_pre_key_refusals(report, "controlled-runner"),
+                         [row["label"] for row in report["refusal_invocations"]])
+
+    def test_missing_duplicate_and_reordered_controls_refuse(self):
+        for change in ("missing", "duplicate", "reordered", "raw-member"):
+            with self.subTest(change=change):
+                report = copy.deepcopy(self.report())
+                rows = report["refusal_invocations"]
+                if change == "missing": rows.pop(15)
+                elif change == "duplicate": rows[15] = rows[14].copy()
+                elif change == "reordered": rows[14], rows[15] = rows[15], rows[14]
+                else: report["raw_binding_refusals"].pop()
+                with self.assertRaisesRegex(ValueError, "refusal.*differs"):
+                    gate.validate_pre_key_refusals(report, "controlled-runner")
+
+    def test_different_runner_or_reversed_time_refuses(self):
+        for change in ("runner", "time"):
+            with self.subTest(change=change):
+                report = self.report()
+                if change == "runner": report["refusal_invocations"][0]["runner_sha256"] = "other"
+                else: report["refusal_invocations"][0]["ended_monotonic"] = 0
+                with self.assertRaisesRegex(ValueError, "runner or timing differs"):
+                    gate.validate_pre_key_refusals(report, "controlled-runner")
 
 
 if __name__ == "__main__":

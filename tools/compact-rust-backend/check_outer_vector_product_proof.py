@@ -48,6 +48,30 @@ SDK_PACKAGES = {
     "original": ("outer-vector-product-original-sdk", "compact_rust_outer_vector_product_original_sdk", 1),
 }
 
+
+def expected_refusal_roster():
+    """Complete exact binding/member roster, followed by the actual over-cap guard."""
+    labels = []
+    for source, (_, _, count) in SDK_PACKAGES.items():
+        labels.append(source + "-changed-ir")
+        labels.extend(source + "-changed-program-" + str(index) for index in range(count))
+        labels.extend(source + "-missing-program-" + str(index) for index in sorted({0, count - 1}))
+    return labels + ["selected-model-over-cap"]
+
+
+def validate_pre_key_refusals(report, runner_sha256):
+    expected = expected_refusal_roster()
+    actual = report.get("refusal_invocations", [])
+    require(len(expected) == len(set(expected))
+            and [row["label"] for row in actual] == expected,
+            "complete pre-key refusal roster differs")
+    require([row["label"] for row in report.get("raw_binding_refusals", [])] == expected[:-1],
+            "raw binding refusal membership differs")
+    require(all(row["runner_sha256"] == runner_sha256
+                and row["ended_monotonic"] >= row["started_monotonic"]
+                for row in actual), "pre-key refusal runner or timing differs")
+    return expected
+
 require = main_gate.require
 from check_passport_current_profile import digest, bounded_command, cargo_target
 import time
@@ -506,6 +530,10 @@ def run(args):
         env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"] = ledger["static_directory"]
         report["ledger_static"] = ledger
         report["dust_fixture_hashes"] = dust_fixture_inventory(Path(ledger["static_directory"]))
+        report["pre_key_refusal_roster"] = validate_pre_key_refusals(report, components["runner"]["sha256"])
+        require(not list(generated.rglob("*.proof"))
+                and not any((generated / source / "keys").exists() for source in SELECTED_SOURCES),
+                "refusal qualification must complete before keys or proofs exist")
         if not args.prepare_only:
             for source in SELECTED_SOURCES:
                 (generated / source / "keys").mkdir()
@@ -524,7 +552,7 @@ def run(args):
                 report["binary_ir_hashes"].update(hashes([source_root / f"zkir/{circuit}.bzkir"]))
                 report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
             first_key = next(c["started_monotonic"] for c in report["commands"] if c["label"].startswith("keygen-"))
-            require(len(report["refusal_invocations"]) == 21
+            require([row["label"] for row in report["refusal_invocations"]] == expected_refusal_roster()
                     and all(r["ended_monotonic"] <= first_key and r["runner_sha256"] == components["runner"]["sha256"]
                             for r in report["refusal_invocations"]), "refusal invocations did not precede fresh keys with the same immutable runner")
             require(all(not (generated / name / "keys").exists() for name in by_source if name not in SELECTED_SOURCES), "unselected source acquired keys")

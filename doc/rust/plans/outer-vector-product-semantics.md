@@ -393,3 +393,24 @@ actual15proofs/verification and15separate strict applications/replay controls an
 separate receipt review remain required. Full required Linux/CI/integration stays
 open. Preserve every failed attempt and all predecessor evidence; no cap changes,
 source trimming, Forge, remote publication or cleanup follows from this work.
+
+
+## Reviewed pre-key roster correction
+
+At e06bf3e6b the maintained prepare-only execution completes299.12s, including
+all91 native commands, all16 models, complete physical input binding,21 raw
+IR/Program refusals plus one over-cap refusal, and locked material verification.
+No keys/proofs/apps run. Independent high source review238.05s identifies one P2:
+the full execution path retained an old hardcoded21-invocation assertion even
+though this source cohort needs22. Prepare-only bypassed that old assertion.
+Preserve this source/review/preparation epoch; it is not accepted as a corrected
+full proof protocol and no actual key-generation failure is claimed.
+
+The corrected gate derives the complete ordered raw/member/over-cap roster,
+checks actual labels, membership, runner identity and timing before any key
+creation in both preparation and full modes, then retains the before-key timing
+check after keygen. Missing, duplicate, reordered, incomplete raw membership,
+wrong-runner and reversed-time unit controls accompany the concrete22-member
+positive. Original raw-capture tests remain unchanged. Fresh current recipe,
+complete corrected preparation and corrected source/receipt reviews remain
+required before the new full proof/application execution.
