@@ -279,16 +279,26 @@ class NestedProductWiringTests(unittest.TestCase):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]
         before, step = linux.split('      - name: Check complete outer-Vector product semantics and boundaries\n', 1)
-        step = step.split('      - name: Retain failed outer-Vector product semantic diagnostics', 1)[0]
+        step = step.split('      - name: Retain outer-Vector product semantic diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
         self.assertIn('check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json"', step)
         self.assertIn('--ts-runtime "$TS_RUNTIME"', step)
         for weakened in ('continue-on-error', 'if:', '--prepare-only'):
             self.assertNotIn(weakened, step)
-        self.assertIn("steps.outer_vector_product_semantics.outcome == 'failure'", linux)
+        upload = linux.split('      - name: Retain outer-Vector product semantic diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        condition = next(line.strip()[4:] for line in upload.splitlines() if line.strip().startswith('if: '))
+        self.assertEqual(condition, "always() && (steps.outer_vector_product_semantics.outcome == 'success' || steps.outer_vector_product_semantics.outcome == 'failure')")
+        # The explicit always() removes GitHub's implicit success() dependency:
+        # a successful gate must upload even when a subsequent step fails.
+        for outcome, later_failed, expected in [('success', False, True), ('success', True, True), ('failure', True, True), ('skipped', True, False)]:
+            with self.subTest(gate=outcome, later_failed=later_failed):
+                expression = condition.replace('always()', 'True').replace('steps.outer_vector_product_semantics.outcome', repr(outcome)).replace('&&', 'and').replace('||', 'or')
+                self.assertEqual(eval(expression, {"__builtins__": {}}, {}), expected)
+        self.assertNotIn('steps.runtime-packages', upload)
+        self.assertLess(linux.index('Retain outer-Vector product semantic diagnostics'), linux.index('Check generated functional Ledger8 consumers'))
         for role in ('recipe', 'semantics'):
-            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 2)
+            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
         self.assertIn('Qualify constant vector projection proofs', linux)
 
@@ -296,15 +306,18 @@ class NestedProductWiringTests(unittest.TestCase):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]
         before, step = linux.split('      - name: Check complete Counter source-map publication\n', 1)
-        step = step.split('      - name: Retain failed source-map publication diagnostics', 1)[0]
+        step = step.split('      - name: Retain source-map publication diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
         self.assertIn('check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json"', step)
         for weakened in ('continue-on-error', 'if:', '--prepare-only'):
             self.assertNotIn(weakened, step)
-        self.assertIn("steps.source_map_publication.outcome == 'failure'", linux)
+        upload = linux.split('      - name: Retain source-map publication diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        self.assertIn("if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')", upload)
+        self.assertNotIn('steps.runtime-packages', upload)
+        self.assertLess(linux.index('Retain source-map publication diagnostics'), linux.index('Check complete outer-Vector product semantics and boundaries'))
         for role in ('recipe', 'publication'):
-            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-source-map-' + role + '/'), 2)
+            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-source-map-' + role + '/'), 1)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
 
     def test_nested_component_gate_keeps_required_material_and_fresh_proof_execution(self):

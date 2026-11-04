@@ -290,3 +290,17 @@ and focused v4 resource/schema controls. No production law/limit/source/golden
 changes follow from these corrections. The complete new91command gate has not
 yet run; original recipe, full gate and independent source/receipt review remain
 required before accepting this maintained stage. Models/proofs/apps are separate.
+
+## Source review: independent receipt retention
+
+Original191 #compactc built from frozen633840d76 in184.44s. Fresh independent
+Codex high source review186.15s found one P2: successful native-gate artifacts
+were uploaded only through a later runtime-packages success condition. An
+intervening failure could lose a successful receipt. Dedicated outer-Vector and
+source-map uploads now use explicit always() plus their own success/failure
+outcomes immediately after their gates; they do not depend on later results.
+Remove only their duplicate paths from the later runtime-package upload. Extend
+local workflow controls for passed-gate/later-failure, failed and skipped cases;
+all17 methods pass. No compiler/gate semantics or previous required checks change.
+Fresh corrected source review, current-head recipe realization and the complete
+91command execution remain required; no full native stage acceptance yet.
