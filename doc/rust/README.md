@@ -34,6 +34,10 @@ These records retain their exact source/evidence revisions. They do not claim PR
 
 - [Nested product request-field baseline](plans/nested-product-request-field.md): local compiler184 metadata repair passes strict complete-SDK lint, four typed routes and marked static controls. Nested widening, automatic consumer-driver wiring and full integration remain separate; the compiler183 application/proof epochs are not relabelled.
 
+- [Outer Vector product semantics](plans/outer-vector-product-semantics.md): reviewed local compiler191 qualification of the complete91-command native/API/ingress protocol, all16 models and all15 eligible fresh direct proofs with separate funded DEFAULT-strict applications/replay refusals. The intact family branch remains k9 and unproved. Earlier application/proof epochs are not relabelled; full CI/Linux and integration remain open.
+
+- [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): next bounded integration proposal for the complete maintained native/proof/application gate, with all prior required gates and independent diagnostics retained. No hosted result is claimed.
+
 ## Checked recording checkpoint
 
 The current recording-effect branch is documented in [Checked recording and source diagnostics](guides/checked-recording.md) and the [capability and retirement book](recording-effect-algebra/capability-and-retirement-book.md). The compiler/runtime ABI is **53**, private Rust IR is **20**, finalized capability reports use **3**, and private source-origin transport uses **3**. Package versions remain separate.
