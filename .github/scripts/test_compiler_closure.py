@@ -278,29 +278,88 @@ class NestedProductWiringTests(unittest.TestCase):
     def test_outer_vector_gate_keeps_full_current_source_and_boundary_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]
-        before, step = linux.split('      - name: Check complete outer-Vector product semantics and boundaries\n', 1)
-        step = step.split('      - name: Retain outer-Vector product semantic diagnostics', 1)[0]
+        before, step = linux.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)
+        step = step.split('      - name: Retain outer-Vector product proof diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
+        self.assertIn('Prepare verified built-in proof material', before)
+        material = before.split('      - name: Prepare verified built-in proof material\n', 1)[1].split('      - name:', 1)[0]
+        for k in (5, 7, 8):
+            self.assertIn('--parameter-k ' + str(k), material)
+        self.assertLess(before.index('Import authenticated same-run compiler closure'), before.index('Prepare verified built-in proof material'))
+        self.assertIn('shutil.which("zkir")', step)
+        self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', step)
+        self.assertEqual(linux.count('check_outer_vector_product_proof.py'), 1)
+        self.assertNotIn('check_outer_vector_product_semantics.py', linux)
+        # The combined proof owner must actually call the complete native gate.
+        proof_owner = (owner.ROOT / 'tools/compact-rust-backend/check_outer_vector_product_proof.py').read_text()
+        self.assertIn('run_logged([sys.executable, str(Path(main_gate.__file__)),', proof_owner)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
-        self.assertIn('check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json"', step)
+        self.assertIn('check_outer_vector_product_proof.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json"', step)
         self.assertIn('--ts-runtime "$TS_RUNTIME"', step)
-        for weakened in ('continue-on-error', 'if:', '--prepare-only'):
+        for weakened in ('continue-on-error', 'if:', '--prepare-only', '/lib/zkir'):
             self.assertNotIn(weakened, step)
-        upload = linux.split('      - name: Retain outer-Vector product semantic diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        upload = linux.split('      - name: Retain outer-Vector product proof diagnostics\n', 1)[1].split('      - name:', 1)[0]
         condition = next(line.strip()[4:] for line in upload.splitlines() if line.strip().startswith('if: '))
-        self.assertEqual(condition, "always() && (steps.outer_vector_product_semantics.outcome == 'success' || steps.outer_vector_product_semantics.outcome == 'failure')")
+        self.assertEqual(condition, "always() && (steps.outer_vector_product_proof.outcome == 'success' || steps.outer_vector_product_proof.outcome == 'failure')")
         # The explicit always() removes GitHub's implicit success() dependency:
         # a successful gate must upload even when a subsequent step fails.
         for outcome, later_failed, expected in [('success', False, True), ('success', True, True), ('failure', True, True), ('skipped', True, False)]:
             with self.subTest(gate=outcome, later_failed=later_failed):
-                expression = condition.replace('always()', 'True').replace('steps.outer_vector_product_semantics.outcome', repr(outcome)).replace('&&', 'and').replace('||', 'or')
+                expression = condition.replace('always()', 'True').replace('steps.outer_vector_product_proof.outcome', repr(outcome)).replace('&&', 'and').replace('||', 'or')
                 self.assertEqual(eval(expression, {"__builtins__": {}}, {}), expected)
         self.assertNotIn('steps.runtime-packages', upload)
-        self.assertLess(linux.index('Retain outer-Vector product semantic diagnostics'), linux.index('Check generated functional Ledger8 consumers'))
-        for role in ('recipe', 'semantics'):
+        self.assertLess(linux.index('Retain outer-Vector product proof diagnostics'), linux.index('Qualify isolated witnessed functional SDK'))
+        for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
         self.assertIn('Qualify constant vector projection proofs', linux)
+
+    def test_outer_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
+        import os
+        import subprocess
+        import sys
+        import textwrap
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        step = workflow.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)[1].split('      - name:', 1)[0]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        # Execute the configured shell with observable command boundaries. This
+        # is argument/failure propagation coverage, not a mock proof verdict.
+        with tempfile.TemporaryDirectory(prefix='outer vector shell ') as directory:
+            root = Path(directory)
+            bin_dir = root / 'bin'
+            bin_dir.mkdir()
+            wrapper = '''import json, os, pathlib, sys
+args = sys.argv[1:]
+kind = pathlib.Path(sys.argv[0]).name
+stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+with open(os.environ['TEST_LOG'], 'a') as log:
+    log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'))) + "\\n")
+if os.environ.get('TEST_FAIL') == stage:
+    raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
+if stage == 'runtime': print('/mock/runtime-package')
+if stage == 'zkir': print('/mock/bin/zkir')
+'''
+            for name in ('python3', 'nix'):
+                path = bin_dir / name
+                path.write_text('#!' + sys.executable + '\n' + wrapper)
+                path.chmod(0o755)
+            for failure, expected in [('', 0), ('recipe', 71), ('zkir', 73), ('runtime', 72), ('gate', 74)]:
+                with self.subTest(failure=failure):
+                    log = root / ('log-' + (failure or 'success'))
+                    env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'],
+                               TEST_LOG=str(log), TEST_FAIL=failure, COMPACTC='/mock/compiler with spaces/compactc',
+                               RUNNER_TEMP=str(root / 'runner with spaces'), LD_LIBRARY_PATH='/untrusted/setup-python/lib')
+                    result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell], env=env, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, expected, result.stderr)
+                    rows = [json.loads(line) for line in log.read_text().splitlines()]
+                    stages = ['recipe', 'zkir', 'runtime', 'gate']
+                    self.assertEqual([r['stage'] for r in rows], stages if not failure else stages[:stages.index(failure) + 1])
+                    self.assertEqual(rows[0]['args'], ['tools/compact-rust-backend/record_compiler_recipe.py', '--compiler', env['COMPACTC'], '--output', env['RUNNER_TEMP'] + '/compact-outer-vector-product-recipe'])
+                    for row in rows:
+                        if row['stage'] in ('zkir', 'gate'):
+                            self.assertIsNone(row['ld'])
+                    if not failure:
+                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_outer_vector_product_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-outer-vector-product-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-outer-vector-product-proof'])
 
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
@@ -310,12 +369,12 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
         self.assertIn('check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json"', step)
-        for weakened in ('continue-on-error', 'if:', '--prepare-only'):
+        for weakened in ('continue-on-error', 'if:', '--prepare-only', '/lib/zkir'):
             self.assertNotIn(weakened, step)
         upload = linux.split('      - name: Retain source-map publication diagnostics\n', 1)[1].split('      - name:', 1)[0]
         self.assertIn("if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')", upload)
         self.assertNotIn('steps.runtime-packages', upload)
-        self.assertLess(linux.index('Retain source-map publication diagnostics'), linux.index('Check complete outer-Vector product semantics and boundaries'))
+        self.assertLess(linux.index('Retain source-map publication diagnostics'), linux.index('Qualify outer-Vector product APIs and fifteen selected proofs'))
         for role in ('recipe', 'publication'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-source-map-' + role + '/'), 1)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
