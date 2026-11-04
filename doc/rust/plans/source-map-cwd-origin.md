@@ -83,7 +83,8 @@ into bin_support/output_manifest.rs and reused by compact-rustc after map/librar
 publication changes. Existing main-CLI behavior remains required-manifest; the
 standalone entry keeps missing manifests optional and rejects a present malformed
 or non-regular manifest before final publication. Version191 owner documentation
-is temporarily pending the original build; source/native/proof acceptance is open.
+is generated through the maintained ledger.ss owner after the original build;
+actual publication and semantic/native/proof acceptance remain open.
 
 ## Review corrections and CI retention
 
@@ -106,3 +107,14 @@ All existing compiler, native consumer and proof gates remain required. These
 are local workflow-source changes, with no hosted execution or Linux acceptance.
 Explicit URL and absolute escaped roots are tested literally; relative explicit
 roots retain the existing Rust relocation semantics and are not a new guarantee.
+
+## Current local evidence
+
+Signed implementation bf6b14560 and harness correction0739a65e3 retain all prior
+branches and raw outputs. Original compiler191 built from frozen0739a65e3 in
+153.17s using the unchanged .#compactc recipe. Independent corrected source review
+completed in174.59s with no actionable findings; first-review findings and failed
+workflow-control output remain retained. The maintained ledger owner generated
+version191 documentation with only its version line changed; its literal version
+workflow check passes. Actual publication matrix and separate receipt review
+remain prerequisites, followed by the complete outer-Vector semantic gates.
