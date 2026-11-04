@@ -275,6 +275,23 @@ class NestedProductWiringTests(unittest.TestCase):
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
 
+    def test_outer_vector_gate_keeps_full_current_source_and_boundary_execution(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        linux = workflow.split('  build:\n', 1)[1]
+        before, step = linux.split('      - name: Check complete outer-Vector product semantics and boundaries\n', 1)
+        step = step.split('      - name: Retain failed outer-Vector product semantic diagnostics', 1)[0]
+        self.assertIn('Import authenticated same-run compiler closure', before)
+        self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
+        self.assertIn('check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json"', step)
+        self.assertIn('--ts-runtime "$TS_RUNTIME"', step)
+        for weakened in ('continue-on-error', 'if:', '--prepare-only'):
+            self.assertNotIn(weakened, step)
+        self.assertIn("steps.outer_vector_product_semantics.outcome == 'failure'", linux)
+        for role in ('recipe', 'semantics'):
+            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 2)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
+        self.assertIn('Qualify constant vector projection proofs', linux)
+
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]

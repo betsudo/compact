@@ -257,3 +257,36 @@ reference; preserve the compiler188 historical table byte-for-byte and leave all
 other rows/source bytes unchanged. Existing gates still execute their complete
 current controls. These observations do not replace running those full gates or
 the remaining maintained native-IR, producer/source, model and proof checks.
+
+## Maintained native/API/ingress gate implementation
+
+check_outer_vector_product_semantics.py declares91commands using a fresh clean
+current-head original compiler recipe, exact whole-source/independent-IR/Program
+fixtures, physical maps, complete SDK strict lint, fresh current TS, all four Rust
+routes, five independent recorded methods, ten marked refusals with executed
+twins, nine current scope lanes, nineteen whole private native-IR controls with
+valid twins, three complete changed producers and a corrupt-result expectation.
+The existing binary-stream/process-group owner retains exact diagnostics and
+bounded execution. Full source/compiler/Rust/Python/Node/runtime/fixture identities
+are bound; these pins are not complete transitive/consumed-source attestation.
+
+The changed helper and both witness-order producers keep the entire15-export
+Compact source; unchanged consumers must detect their changed results/order.
+Private malformed IR and corrupt expectation data supply no source/proof authority.
+All original generated SDKs remain byte-bound and unedited. The Linux workflow
+requires this gate via its authenticated compiler/original-recipe recorder and
+retains success/failure evidence; all previous consumer/proof gates remain intact.
+All17 workflow controls pass locally; no hosted execution is implied.
+
+Native-IR development retains all actual failed epochs. The first negative
+mistakenly expected a matching nonempty Tuple-to-Vector conversion to refuse;
+the pre-existing checked law permits it. Retain it as a valid private twin and
+refuse the dimension mismatch. A generator assumption about empty tuples was
+corrected to the genuine schema3 Unit transport. Finally, the actual resource
+string_bytes refusal was correct, but its diagnostic lacked the generic words
+used by the test. Match its actual kind,262144 limit and263859 observed count.
+The19 controls are exercised across retained v3 (first17), actual resource refusal
+and focused v4 resource/schema controls. No production law/limit/source/golden
+changes follow from these corrections. The complete new91command gate has not
+yet run; original recipe, full gate and independent source/receipt review remain
+required before accepting this maintained stage. Models/proofs/apps are separate.

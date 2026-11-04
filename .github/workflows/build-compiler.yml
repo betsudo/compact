@@ -485,6 +485,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Check complete outer-Vector product semantics and boundaries
+        id: outer_vector_product_semantics
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-outer-vector-product-recipe"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --output "$RUNNER_TEMP/compact-outer-vector-product-semantics"
+
+      - name: Retain failed outer-Vector product semantic diagnostics
+        if: failure() && steps.outer_vector_product_semantics.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: outer-vector-product-semantics-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-outer-vector-product-recipe/
+            ${{ runner.temp }}/compact-outer-vector-product-semantics/
+            !${{ runner.temp }}/compact-outer-vector-product-semantics/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Check generated functional Ledger8 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
@@ -717,6 +736,9 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-proof/
             ${{ runner.temp }}/compact-vector-component-products-recipe/
             ${{ runner.temp }}/compact-vector-component-products-proof/
+            ${{ runner.temp }}/compact-outer-vector-product-recipe/
+            ${{ runner.temp }}/compact-outer-vector-product-semantics/
+            !${{ runner.temp }}/compact-outer-vector-product-semantics/cargo-target/**
             ${{ runner.temp }}/compact-source-map-recipe/
             ${{ runner.temp }}/compact-source-map-publication/
             !${{ runner.temp }}/compact-source-map-publication/cargo-target/**
