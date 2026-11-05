@@ -328,3 +328,12 @@ fresh selected standalone proofs, immutable verification and separately proved
 funded DEFAULT-strict transactions with replay and relation/identity negatives.
 There is no constructor/deployment cryptographic or wallet-lifecycle claim.
 The observer and this proof preparation still require actual execution and review.
+
+The first model observation built successfully but refused the producer root
+before loading any model: the root contains the compiler's 13 persistent
+`.<role>.compactc.lock` files alongside the 13 SDK directories. Independent
+review confirmed the overly strict root-membership premise. The corrected
+observer requires exactly these named regular sidecars and real SDK directories,
+without opening, deleting or modifying the locks. Unknown root entries, missing
+members and directory/symlink substitutions still refuse. This does not establish
+lock ownership or liveness. The failed observation remains separate evidence.

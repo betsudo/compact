@@ -35,6 +35,23 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
                 .ok_or("invalid role")
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // StagedOutput retains one regular lock sidecar for each published SDK.
+    // Account for those exact names without opening or changing their contents.
+    let expected_locks = expected_roles
+        .iter()
+        .map(|role| std::ffi::OsString::from(format!(".{}.compactc.lock", role.to_string_lossy())))
+        .collect::<Vec<_>>();
+    for entry in std::fs::read_dir(root)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        let kind = entry.file_type()?;
+        if (expected_roles.contains(&name) && !kind.is_dir())
+            || (expected_locks.contains(&name) && !kind.is_file())
+        {
+            return Err("constructor SDK directory or lock sidecar kind differs".into());
+        }
+    }
+    expected_roles.extend(expected_locks);
     expected_roles.sort();
     let mut actual_roles = std::fs::read_dir(root)?
         .map(|e| e.map(|e| e.file_name()))
