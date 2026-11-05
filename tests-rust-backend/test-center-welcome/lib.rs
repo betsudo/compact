@@ -190,6 +190,8 @@ pub mod ledger_contract {
             let step = context.insert_set(0, __compact_constructor_local_2)?;
             context = step.context;
             for __compact_constructor_item_0 in __compact_constructor_param_0.0.iter() {
+                let __compact_constructor_item_0: crate::types::Maybe =
+                    (*__compact_constructor_item_0).clone();
                 if (__compact_constructor_item_0.clone()).is_some {
                     let __compact_constructor_local_3: runtime::OpaqueString =
                         ((__compact_constructor_item_0.clone()).value).clone();

@@ -64,15 +64,46 @@ def main():
             p = root / role / rel
             assert sha(p) == digest, p
             pins[str(p)] = digest
-    for rel in git('ls-files', 'tools/compact-rust-proof-smoke', 'tests-rust-backend', 'runtime-rs', 'runtime-rs-macros', 'testkit-rs', 'Cargo.toml', 'Cargo.lock', '.cargo', str(roster_path.relative_to(W))).splitlines():
+    for rel in git(
+        'ls-files',
+        'tools/compact-rust-proof-smoke',
+        'tests-rust-backend',
+        'runtime-rs',
+        'runtime-rs-macros',
+        'testkit-rs',
+        'Cargo.toml',
+        'Cargo.lock',
+        '.cargo',
+        str(roster_path.relative_to(W)),
+    ).splitlines():
         p = W / rel
-        if p.is_file(): pins[str(p)] = sha(p)
-    env = dict(os.environ, RUSTUP_TOOLCHAIN='1.99.0', CARGO_BUILD_JOBS=os.environ.get('CARGO_BUILD_JOBS','2'), CARGO_CACHE_AUTO_CLEAN_FREQUENCY='never', CARGO_INCREMENTAL='0', PYTHONDONTWRITEBYTECODE='1')
+        if p.is_file():
+            pins[str(p)] = sha(p)
+    env = dict(
+        os.environ,
+        RUSTUP_TOOLCHAIN='1.99.0',
+        CARGO_BUILD_JOBS=os.environ.get('CARGO_BUILD_JOBS', '2'),
+        CARGO_CACHE_AUTO_CLEAN_FREQUENCY='never',
+        CARGO_INCREMENTAL='0',
+        PYTHONDONTWRITEBYTECODE='1',
+    )
     env.setdefault('CARGO_TARGET_DIR', str(D/'cargo-target'))
     assert not Path(env['CARGO_TARGET_DIR']).resolve().is_relative_to(W)
     configuration = sdk.cargo_configuration(env)
     env.pop('LD_LIBRARY_PATH', None)
-    r = dict(format='constructor-model-observation/v2', status='running', producer_source=accepted['head'], qualifier_source=source, qualifier_tree=git('rev-parse', 'HEAD^{tree}'), started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), inputs=pins, commands=[], key_generation=False, proof_execution=False, scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission')
+    r = dict(
+        format='constructor-model-observation/v2',
+        status='running',
+        producer_source=accepted['head'],
+        qualifier_source=source,
+        qualifier_tree=git('rev-parse', 'HEAD^{tree}'),
+        started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        inputs=pins,
+        commands=[],
+        key_generation=False,
+        proof_execution=False,
+        scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission',
+    )
     save = lambda: (D / 'receipt.json').write_text(json.dumps(r, indent=2) + '\n')
     save()
     def run(label, argv, expected=0, diagnostic=None, timeout=600):
@@ -85,7 +116,16 @@ def main():
         out, err = D / (label + '.stdout'), D / (label + '.stderr')
         with out.open('xb') as o, err.open('xb') as e:
             p = subprocess.run(list(map(str, argv)), cwd=W, env=env, stdout=o, stderr=e, timeout=timeout)
-        row = dict(label=label, argv=list(map(str, argv)), exit=p.returncode, seconds=time.monotonic()-start, stdout=str(out), stderr=str(err), stdout_sha256=sha(out), stderr_sha256=sha(err))
+        row = dict(
+            label=label,
+            argv=list(map(str, argv)),
+            exit=p.returncode,
+            seconds=time.monotonic() - start,
+            stdout=str(out),
+            stderr=str(err),
+            stdout_sha256=sha(out),
+            stderr_sha256=sha(err),
+        )
         r['commands'].append(row);save()
         assert (p.returncode == 0) if expected == 0 else (p.returncode != 0), row
         if diagnostic: assert diagnostic in err.read_text(), row
@@ -98,18 +138,71 @@ def main():
             tool_paths[tool]=path
             run(tool + '-version', [path, '--version', '--verbose'])
         env['PATH']=str(Path(tool_paths['cargo']).parent)+os.pathsep+env['PATH']
-        run('metadata', ['cargo', 'metadata', '--locked', '--offline', '--format-version', '1', '--features', 'compact-rust-proof-smoke/constructor-vector-models'])
+        run(
+            'metadata',
+            [
+                'cargo',
+                'metadata',
+                '--locked',
+                '--offline',
+                '--format-version',
+                '1',
+                '--features',
+                'compact-rust-proof-smoke/constructor-vector-models',
+            ],
+        )
         metadata=json.loads((D/'metadata.stdout').read_text())
         cohort={(p['name'],p['version'],p.get('source')):p.get('checksum') for p in tomllib.loads((W/'Cargo.lock').read_text())['package']}
         dependencies.authenticate(metadata,cohort,dependency_sources)
         r['dependency_sources']=dependency_sources;r['cargo_configuration']=configuration;save()
-        artifacts = run('build', ['cargo', 'build', '--profile', 'proof-checks', '--locked', '--offline', '-p', 'compact-rust-proof-smoke', '--features', 'constructor-vector-models', '--message-format', 'json'])
-        candidates = [j['executable'] for line in artifacts.read_text().splitlines() if (j := json.loads(line)).get('reason') == 'compiler-artifact' and j.get('executable') and j['target']['name'] == 'compact-rust-proof-smoke']
+        artifacts = run(
+            'build',
+            [
+                'cargo',
+                'build',
+                '--profile',
+                'proof-checks',
+                '--locked',
+                '--offline',
+                '-p',
+                'compact-rust-proof-smoke',
+                '--features',
+                'constructor-vector-models',
+                '--message-format',
+                'json',
+            ],
+        )
+        candidates = [
+            j['executable']
+            for line in artifacts.read_text().splitlines()
+            if (j := json.loads(line)).get('reason') == 'compiler-artifact'
+            and j.get('executable')
+            and j['target']['name'] == 'compact-rust-proof-smoke'
+        ]
         assert len(candidates) == 1, candidates
         built=Path(candidates[0]);(D/'bin').mkdir();binary=D/'bin/compact-rust-proof-smoke'
         shutil.copyfile(built,binary);assert sha(binary)==sha(built);binary.chmod(0o555)
         pins[str(binary)]=sha(binary);r['binary']=dict(path=str(binary),sha256=sha(binary),built_path=str(built),built_sha256=sha(built));save()
-        run('clippy', ['cargo', 'clippy', '--profile', 'proof-checks', '--locked', '--offline', '-p', 'compact-rust-proof-smoke', '--bin', 'compact-rust-proof-smoke', '--features', 'constructor-vector-models', '--', '-D', 'warnings'])
+        run(
+            'clippy',
+            [
+                'cargo',
+                'clippy',
+                '--profile',
+                'proof-checks',
+                '--locked',
+                '--offline',
+                '-p',
+                'compact-rust-proof-smoke',
+                '--bin',
+                'compact-rust-proof-smoke',
+                '--features',
+                'constructor-vector-models',
+                '--',
+                '-D',
+                'warnings',
+            ],
+        )
         output = run('inventory', [binary, '--constructor-vector-inventory', root], timeout=120)
         inventory = json.loads(output.read_text());rows=inventory['circuits']
         assert len(rows) == 42 and {(x['source'], x['circuit']) for x in rows} == {(s['role'], e) for s in specs for e in s['entries']}
@@ -130,25 +223,85 @@ def main():
             (negative/('.'+s['role']+'.compactc.lock')).touch()
         run('host-positive-control', [binary, '--constructor-vector-inventory', negative], timeout=120)
         extra = negative/'unknown';extra.mkdir()
-        run('extra-directory', [binary,'--constructor-vector-inventory',negative],1,'complete constructor SDK membership differs');extra.rename(D/'HOST-retained-extra-directory')
+        run(
+            'extra-directory',
+            [binary, '--constructor-vector-inventory', negative],
+            1,
+            'complete constructor SDK membership differs',
+        )
+        extra.rename(D / 'HOST-retained-extra-directory')
         lock = negative/('.'+specs[0]['role']+'.compactc.lock');lock.rename(D/'HOST-retained-lock');lock.mkdir()
-        run('lock-is-directory', [binary,'--constructor-vector-inventory',negative],1,'constructor SDK directory or lock sidecar kind differs');lock.rename(D/'HOST-retained-lock-directory');shutil.copyfile(D/'HOST-retained-lock',lock)
+        run(
+            'lock-is-directory',
+            [binary, '--constructor-vector-inventory', negative],
+            1,
+            'constructor SDK directory or lock sidecar kind differs',
+        )
+        lock.rename(D / 'HOST-retained-lock-directory')
+        shutil.copyfile(D / 'HOST-retained-lock', lock)
         role = negative/specs[0]['role'];role.rename(D/'HOST-retained-role');role.symlink_to(D/'HOST-retained-role',target_is_directory=True)
-        run('role-is-symlink',[binary,'--constructor-vector-inventory',negative],1,'constructor SDK directory or lock sidecar kind differs');role.rename(D/'HOST-retained-role-symlink');shutil.copytree(D/'HOST-retained-role',role)
+        run(
+            'role-is-symlink',
+            [binary, '--constructor-vector-inventory', negative],
+            1,
+            'constructor SDK directory or lock sidecar kind differs',
+        )
+        role.rename(D / 'HOST-retained-role-symlink')
+        shutil.copytree(D / 'HOST-retained-role', role)
         model = role/'zkir'/(specs[0]['entries'][0]+'.zkir');model.rename(D/'HOST-retained-model')
-        run('missing-model',[binary,'--constructor-vector-inventory',negative],1,'complete constructor model membership differs');shutil.copyfile(D/'HOST-retained-model',model)
+        run(
+            'missing-model',
+            [binary, '--constructor-vector-inventory', negative],
+            1,
+            'complete constructor model membership differs',
+        )
+        shutil.copyfile(D / 'HOST-retained-model', model)
         extra = role/'zkir'/'unknown.zkir';extra.write_bytes(b'not a model')
-        run('extra-model',[binary,'--constructor-vector-inventory',negative],1,'complete constructor model membership differs');extra.rename(D/'HOST-retained-extra-model')
+        run(
+            'extra-model',
+            [binary, '--constructor-vector-inventory', negative],
+            1,
+            'complete constructor model membership differs',
+        )
+        extra.rename(D / 'HOST-retained-extra-model')
         dependencies.unchanged(dependency_sources)
         for name,digest in pins.items(): assert sha(name)==digest,name
         for name,expected_inventory in sdk_roots.items(): sdk.equal_inventory(Path(name),expected_inventory)
         assert git('rev-parse','HEAD')==source and not git('status','--porcelain')
         assert sdk.cargo_configuration(env)==configuration
-        r.update(status='passed', input_bytes_unchanged=True, observed_models=len(rows), observed_k=sorted(set(x['k'] for x in rows)), within_numeric_cap=sum(x['k']<=8 for x in rows), missing_or_extra_members_refused=True, frozen_directories=sdk_roots)
+        r.update(
+            status='passed',
+            input_bytes_unchanged=True,
+            observed_models=len(rows),
+            observed_k=sorted(set(x['k'] for x in rows)),
+            within_numeric_cap=sum(x['k'] <= 8 for x in rows),
+            missing_or_extra_members_refused=True,
+            frozen_directories=sdk_roots,
+        )
     except BaseException as error:
         r.update(status='failed',error=repr(error));raise
     finally:
-        save();print(json.dumps({k:r[k] for k in ['status','producer_source','qualifier_source','observed_models','observed_k','key_generation','proof_execution','error'] if k in r},indent=2),flush=True)
+        save()
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        'status',
+                        'producer_source',
+                        'qualifier_source',
+                        'observed_models',
+                        'observed_k',
+                        'key_generation',
+                        'proof_execution',
+                        'error',
+                    ]
+                    if k in r
+                },
+                indent=2,
+            ),
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

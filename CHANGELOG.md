@@ -12,6 +12,9 @@ remain pending. Bounded local execution retains its exact source identities.
 
 ### Fixed
 
+- Regenerate the welcome constructor fixture after owned Vector-element emission,
+  and require full license headers before source code or module documentation.
+
 - Preserve outer lexical Vector bindings through nested constructor loop,
   sequence and conditional lowering; retain original source/proof fixtures and
   add a separate complete nested-capture regression.

@@ -643,3 +643,33 @@ This result paragraph is a documentation-only follow-up to the exact executed
 073 source epoch. Required native Linux GitHub CI and human integration review
 remain open. The separate Field-equality constructor-condition refusal remains a future
 semantic gap; no broader condition language or framework is introduced here.
+
+## PR #705 review repair — 6 November 2026
+
+Review comment `6671282935` identifies one stale generated welcome fixture. The
+original compiler194 package, authenticated against PR head `475553343`,
+reproduces the refusal. The maintained `check_fixture_outputs.py --only
+welcome.compact --update` regenerates its library with only the expected owned
+`Maybe` element clone; the complete original Compact source, recorded reference,
+private IR, checked Programs and historical proof bindings remain unchanged.
+Current-output comparison remains independent of those compatibility fixtures.
+
+The misplaced `constructor_vm.rs` license is moved verbatim above module docs.
+The stricter scan also finds and repairs the same footer placement in its lexical
+guard test, preserving every Rust test token.
+The full-template header validator now requires a leading header, preserving its
+existing script and Chez reader preambles; Rust inner attributes and executable/module
+text cannot hide a trailing license. New refusal and positive controls cover
+placement, shebangs, whitespace and changed inherited debt without weakening
+full-header or exact historical-copy checks.
+
+Only long statements in this PR's new Python tooling are wrapped. All seven
+module syntax trees, including literal receipt strings, remain identical; all
+62 lines over150 characters are removed. This is formatting, not a proof protocol
+or source-binding change. Prior local and hosted proof epochs retain their exact
+identities; the repaired head still requires the complete configured PR gates.
+
+The missing canonical push trigger and serial CI cost remain tracked in #706.
+Restoring duplicate post-merge qualification changes the deliberate cost policy;
+this fixture/header repair preserves current triggers, optional macOS behavior,
+all proof/E2E gates and diagnostic retention. No CI optimization is introduced.

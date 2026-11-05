@@ -121,12 +121,18 @@ class HeaderManager:
 
     def _scan_for_header(self, prefix: str, content: str) -> bool:
         pattern = self._get_header_pattern(prefix)
-        return bool(pattern.search(content))
+        lines = content.splitlines(keepends=True)
+        # A license footer must not certify preceding code. Keep the same
+        # script/Chez preamble that the header writer preserves, without
+        # treating Rust inner attributes (#![...]) as executable shebangs.
+        start = self._get_insert_index(lines)
+        return bool(pattern.match("".join(lines[start:]).lstrip()))
 
     @staticmethod
     def _get_insert_index(lines: list[str]) -> int:
         index = 0
-        while index < len(lines) and lines[index].startswith("#!"):
+        while (index < len(lines) and lines[index].startswith("#!")
+               and not lines[index].startswith("#![")):
             index += 1
         return index
 

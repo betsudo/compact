@@ -82,6 +82,48 @@ class HeaderRegressionTests(unittest.TestCase):
         self.assertFalse(manager._scan_for_header('#', short))
         self.assertTrue(manager._scan_for_header('#', manager._format_license_header('#', '2026')))
 
+    def test_full_header_must_precede_code_and_module_documentation(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        for prefix, preamble in [('#', 'print("code")\n'),
+                                 ('#', '"""Module documentation."""\n'),
+                                 ('//', 'use std::collections::HashMap;\n'),
+                                 ('//', '//! Module documentation.\n'),
+                                 ('//', '#![allow(dead_code)]\n')]:
+            with self.subTest(prefix=prefix, preamble=preamble):
+                header = manager._format_license_header(prefix, '2026') + '\n'
+                self.assertTrue(manager._scan_for_header(prefix, header + preamble))
+                self.assertFalse(manager._scan_for_header(prefix, preamble + header))
+
+    def test_full_header_accepts_blank_lines_and_preserved_shebangs(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('#', '2026') + '\n'
+        for preamble in ['', '\n\n', '#!/usr/bin/env python3\n\n',
+                         '#!/usr/bin/env nix-shell\n#! nix-shell -i bash\n\n']:
+            with self.subTest(preamble=preamble):
+                self.assertTrue(manager._scan_for_header('#', preamble + header + 'print(1)\n'))
+        self.assertFalse(manager._scan_for_header('#', '#!/usr/bin/env python3\nprint(1)\n' + header))
+
+    def test_full_header_preserves_chez_reader_preamble_not_executable_forms(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header(';;;', '2026') + '\n'
+        self.assertTrue(manager._scan_for_header(';;;', '#!chezscheme\n\n' + header + '(library ())\n'))
+        self.assertFalse(manager._scan_for_header(';;;', '#!chezscheme\n(library ())\n' + header))
+
+    def test_slash_comment_scripts_keep_shebang_before_header_not_rust_attributes(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('//', '2026') + '\n'
+        for command in ['#!/usr/bin/env node', '#!/usr/bin/env rust-script']:
+            with self.subTest(command=command):
+                self.assertTrue(manager._scan_for_header('//', command + '\n\n' + header))
+        self.assertEqual(manager._get_insert_index(['#![allow(dead_code)]\n']), 0)
+
+    def test_footer_violation_is_not_inherited_after_modifying_base_code(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('#', '2026') + '\n'
+        self.path.write_text('print("modified debt")\n' + header)
+        self.assertIn(self.path, manager.validate_headers())
+        self.assertFalse(gate.classify(self.root, self.base, [self.path])['passed'])
+
 
 class PinnedHistoricalCopyTests(unittest.TestCase):
     def setUp(self):

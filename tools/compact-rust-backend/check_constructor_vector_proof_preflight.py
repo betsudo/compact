@@ -114,7 +114,11 @@ def consumer_manifest(package):
     old = 'package="compact-contract-field-witness-proof"'
     require(prefix.count(old) == 1, "SDK package recipe changed")
     prefix = prefix.replace(old, f'package="{package}"')
-    return prefix + '\n[[bin]]\nname="constructor-vector-proof"\npath="proof/prove.rs"\nrequired-features=["proof"]\n\n[profile.proof-checks]' + original.split("[profile.proof-checks]", 1)[1]
+    return (
+        prefix
+        + '\n[[bin]]\nname="constructor-vector-proof"\npath="proof/prove.rs"\nrequired-features=["proof"]\n\n[profile.proof-checks]'
+        + original.split("[profile.proof-checks]", 1)[1]
+    )
 
 
 def main():
@@ -129,9 +133,18 @@ def main():
     require(not output.exists() and not args.output.is_symlink() and not output.is_relative_to(ROOT),
             "fresh output outside checkout required")
     output.mkdir(parents=True, mode=0o700)
-    report = dict(format="constructor-vector-proof-preflight/v1", status="running", commands=[],
-                  sources={}, key_generation=False, proof_execution=False,
-                  scope="selected compiler-produced complete SDKs; native constructor/Program and build-graph admission only; not cryptographic, integration or constructor-cost acceptance")
+    report = dict(
+        format="constructor-vector-proof-preflight/v1",
+        status="running",
+        commands=[],
+        sources={},
+        key_generation=False,
+        proof_execution=False,
+        scope=(
+            "selected compiler-produced complete SDKs; native constructor/Program and build-graph "
+            "admission only; not cryptographic, integration or constructor-cost acceptance"
+        ),
+    )
     receipt = output / "receipt.json"
     def save():
         receipt.write_text(json.dumps(report, indent=2) + "\n")
@@ -231,8 +244,13 @@ def main():
                 "one resolved Rust toolchain directory required")
         env["PATH"] = str(Path(tools["cargo"]["path"]).parent) + os.pathsep + env["PATH"]
         cargo = tools["cargo"]["path"]
-        for tool, command in (("compiler",[compiler_path,"--version"]),("zkir",[prereq["zkir"],"--version"]),("cargo",[cargo,"--version"]),("rustc",[tools["rustc"]["path"],"-Vv"])):
-            report["versions"][tool] = run(tool+"-version", command).stdout.strip()
+        for tool, command in (
+            ("compiler", [compiler_path, "--version"]),
+            ("zkir", [prereq["zkir"], "--version"]),
+            ("cargo", [cargo, "--version"]),
+            ("rustc", [tools["rustc"]["path"], "-Vv"]),
+        ):
+            report["versions"][tool] = run(tool + "-version", command).stdout.strip()
         require(report["versions"]["compiler"] == compiler["version"], "compiler version differs")
         material = json.loads(run("verify-material",[binary,"--prepare-proof-material","--verify-only","--parameter-k","6"]).stdout)
         require(material.get("mode") == "verify-only" and material.get("verification") == "all files checked against locked upstream SHA256 tables"
@@ -273,24 +291,95 @@ def main():
             shutil.copyfile(FIXTURE/"constructors"/(spec["constructor_consumer"]+".rs"),consumer/"proof/constructor.rs")
             recipe=sdk.source_testkit(ROOT/"testkit-rs",lane/"testkit-rs")
             shutil.copyfile(ROOT/"Cargo.lock",consumer/"Cargo.lock")
-            metadata=json.loads(run(role+"-metadata",[cargo,"metadata","--offline","--format-version","1","--features","proof","--manifest-path",manifest]).stdout)
+            metadata = json.loads(
+                run(
+                    role + "-metadata",
+                    [
+                        cargo,
+                        "metadata",
+                        "--offline",
+                        "--format-version",
+                        "1",
+                        "--features",
+                        "proof",
+                        "--manifest-path",
+                        manifest,
+                    ],
+                ).stdout
+            )
             graph=sdk.dependency_graph(metadata,consumer/"Cargo.lock",lane,cohort)
             dependencies.authenticate(metadata,cohort,dependency_sources)
             frozen.update({str(consumer/rel):digest for rel,digest in sdk.inventory(consumer).items()})
             frozen.update({str(lane/"testkit-rs"/rel):digest for rel,digest in sdk.inventory(lane/"testkit-rs").items()})
             frozen_roots[str(consumer)]=sdk.inventory(consumer)
             frozen_roots[str(lane/"testkit-rs")]=sdk.inventory(lane/"testkit-rs")
-            build=run(role+"-build",[cargo,"build","--locked","--offline","--profile","proof-checks","--features","proof","--bin","constructor-vector-proof","--manifest-path",manifest,"--message-format","json"])
+            build = run(
+                role + "-build",
+                [
+                    cargo,
+                    "build",
+                    "--locked",
+                    "--offline",
+                    "--profile",
+                    "proof-checks",
+                    "--features",
+                    "proof",
+                    "--bin",
+                    "constructor-vector-proof",
+                    "--manifest-path",
+                    manifest,
+                    "--message-format",
+                    "json",
+                ],
+            )
             messages=[json.loads(line) for line in build.stdout.splitlines() if line.strip()]
-            artifacts=[m for m in messages if m.get("reason")=="compiler-artifact" and m.get("executable") and m["target"]["name"]=="constructor-vector-proof"]
+            artifacts = [
+                m
+                for m in messages
+                if m.get("reason") == "compiler-artifact"
+                and m.get("executable")
+                and m["target"]["name"] == "constructor-vector-proof"
+            ]
             require(len(artifacts)==1, "one actual proof binary required")
             actual=Path(artifacts[0]["executable"]).resolve()
             require(actual.is_relative_to(target), "proof binary escaped target")
             (lane/"bin").mkdir()
             executable=common.stable_copy(actual,lane/"bin/constructor-vector-proof")
             frozen[executable["snapshot"]]=executable["sha256"]
-            run(role+"-clippy",[cargo,"clippy","--locked","--offline","--profile","proof-checks","--features","proof","--bin","constructor-vector-proof","--manifest-path",manifest,"--","-D","warnings"])
-            native=json.loads(run(role+"-native",[executable["snapshot"],"--preflight",generated,role,FIXTURE/"cases.json",lane/"material-not-created",lane/"proofs-not-created"]).stdout)
+            run(
+                role + "-clippy",
+                [
+                    cargo,
+                    "clippy",
+                    "--locked",
+                    "--offline",
+                    "--profile",
+                    "proof-checks",
+                    "--features",
+                    "proof",
+                    "--bin",
+                    "constructor-vector-proof",
+                    "--manifest-path",
+                    manifest,
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+            )
+            native = json.loads(
+                run(
+                    role + "-native",
+                    [
+                        executable["snapshot"],
+                        "--preflight",
+                        generated,
+                        role,
+                        FIXTURE / "cases.json",
+                        lane / "material-not-created",
+                        lane / "proofs-not-created",
+                    ],
+                ).stdout
+            )
             expected={c["id"] for c in cases if c["role"]==role and c["error"] is None}
             require(native["status"]=="passed" and {r["case"] for r in native["results"]}==expected, "all selected cases must execute")
             report["sources"][role]=dict(raw_sdk=raw,testkit_recipe=recipe,dependency_graph=graph,binary=executable,native_preflight=native)
@@ -306,7 +395,25 @@ def main():
         report["frozen_directories"] = frozen_roots
         report["dependency_sources"] = dependency_sources
         save()
-        print(json.dumps({k:report[k] for k in ("format","status","qualifier_head","producer_head","key_generation","proof_execution","selected_cases","error") if k in report},indent=2))
+        print(
+            json.dumps(
+                {
+                    k: report[k]
+                    for k in (
+                        "format",
+                        "status",
+                        "qualifier_head",
+                        "producer_head",
+                        "key_generation",
+                        "proof_execution",
+                        "selected_cases",
+                        "error",
+                    )
+                    if k in report
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":

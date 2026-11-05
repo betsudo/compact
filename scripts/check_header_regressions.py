@@ -120,7 +120,7 @@ def main(argv=None):
     if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', args.base):
         parser.error('full base commit SHA required')
     subprocess.run(['git', 'cat-file', '-e', args.base + '^{commit}'], cwd=ROOT, check=True)
-    # Original validator and full-template policy are unchanged. Keep per-file debt
+    # Use the full-template validator, including header placement. Keep per-file debt
     # in the receipt instead of flooding the log with inherited warnings.
     logging.getLogger().setLevel(logging.ERROR)
     manager = HeaderManager(str(ROOT / 'header_config.json'), str(ROOT))
