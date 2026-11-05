@@ -52,6 +52,37 @@ impl Log {
 }
 include!("constructor.rs");
 
+fn check_program_bindings() {
+    let root =
+        std::path::PathBuf::from(std::env::var_os("COMPACT_CONSTRUCTOR_PROGRAM_ROOT").unwrap());
+    let mut assets = std::collections::BTreeMap::new();
+    for entry in std::fs::read_dir(root).unwrap() {
+        let path = entry.unwrap().path();
+        assert!(path.is_file() && path.extension().unwrap() == "json");
+        let text = std::fs::read_to_string(path).unwrap();
+        let value: Value = serde_json::from_str(&text).unwrap();
+        let name = value["root"].as_str().unwrap().to_owned();
+        assert!(
+            assets.insert(name, text).is_none(),
+            "duplicate Program root"
+        );
+    }
+    assert_eq!(assets.len(), 3);
+    for (name, exported) in [
+        ("read", c::functional::read::CHECKED_PROGRAM),
+        ("advance", c::functional::advance::CHECKED_PROGRAM),
+        (
+            "advance_other",
+            c::functional::advance_other::CHECKED_PROGRAM,
+        ),
+    ] {
+        let value: Value = serde_json::from_str(exported).unwrap();
+        assert_eq!(value["root"], name, "exported Program root");
+        assert_eq!(value["purpose"], "review_only_not_execution_authority");
+        assert_eq!(exported, assets[name], "exported Program asset bytes");
+    }
+}
+
 fn replay(
     out: r::recording::RecordedCircuitResult<u64, Field>,
     row: &Value,
@@ -82,6 +113,7 @@ fn replay(
 }
 #[test]
 fn constructor_cases() {
+    check_program_bindings();
     let role = std::env::var("COMPACT_CONSTRUCTOR_ROLE").unwrap();
     let reference: Value = serde_json::from_slice(
         &std::fs::read(std::env::var_os("COMPACT_CONSTRUCTOR_TS").unwrap()).unwrap(),

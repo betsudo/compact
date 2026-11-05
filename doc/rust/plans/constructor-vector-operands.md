@@ -268,3 +268,32 @@ constructor gas. Constructor total-cost acceptance therefore remains open; later
 Rust route-cost equality cannot substitute for it. Fresh applicable entrypoint
 proofs, independent verification, separate funded strict applications, immutable
 identity negatives and full integration remain required. Forge stays deferred.
+
+
+## First maintained execution and identity-review corrections
+
+At clean `5aad4d3cc`, the original maintained compiler builds and its recorder
+passes. The first maintained gate executes all 120 commands successfully: 13
+complete sources, 22 TS cases, 60 later Rust routes, 30 replay comparisons, five
+executing API twins with marked refusals, eight IR refusals and four semantic
+negative controls. This result remains diagnostic rather than final acceptance.
+Independent source review found two P2 gaps: Program assets were checked by count
+without proving exported constant associations, and the consumed TS oracle was
+not hashed into the receipt or rechecked during consumption.
+
+The correction admits unique expected Program roots with their review-only
+policy, records each root/file/hash, and checks the actual three exported Rust
+constants against their exact retained assets. An isolated duplicate-root
+control refuses; a separate cloned SDK swaps only metadata assets and must fail
+the real compiled public-constant check. Positive generated SDKs and generated
+Rust are unchanged. This validates metadata identity, not semantic equivalence or
+execution authority for the review-only sidecars.
+
+The TS receipt now binds the actual wrapper, fixture, capture and runtime
+identities and records the oracle hash. Each subsequent command checks the
+selected oracle path and bytes; final success repeats both hash and identity
+checks. A changed oracle path must refuse before a sentinel child starts, and
+changed bytes must fail against the retained digest. Current source review and
+a fresh clean-head original recipe plus full gate run remain required for this
+correction. Earlier results retain their source identities; proof, constructor
+cost and integration boundaries remain open.

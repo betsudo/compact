@@ -50,7 +50,8 @@ ABI. See the [bounded plan](../../doc/rust/plans/constructor-vector-operands.md)
 `check_constructor_vector_operands.py --compiler-receipt RECEIPT --ts-runtime
 RUNTIME --output NEW_DIRECTORY` requires an original current clean-head compiler
 receipt. Its complete 13-source/22-case fixture checks unedited bundled SDKs,
-independent IR/origins, live TS, constructor state/owned reuse/witness and error
+independent IR/origins, immutable consumed TS observations, actual exported
+Program-to-asset identities, constructor state/owned reuse/witness and error
 order, four later Rust routes, complete replay state, typed misuse, malformed IR
 and same-type source mutations. The maintained gate is a qualification candidate
 until its actual receipt passes; earlier external evidence keeps its own source
