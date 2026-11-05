@@ -508,6 +508,58 @@ jobs:
           name: Coverage Report
           path: compiler-coverage.zip
 
+  package-outputs:
+    name: Complete Nix package outputs
+    needs: compiler-linux
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 90
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+
+      - name: Checkout exact source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Realize complete default package
+        run: nix build
+
   build:
     name: Native, proof and package qualification
     runs-on: ubuntu-latest
@@ -580,10 +632,11 @@ jobs:
         with:
           python-version: 3.13
 
-      - name: Realize remaining default package outputs
+      - name: Realize compiler package output
         run: |
-          # The exact compiler is already imported; preserve other default outputs.
-          nix build
+          # The broad default package has its own parallel owner.
+          # Keep result/bin/compactc for existing consumer commands.
+          nix build .#compactc
 
       - name: Check Rust capability refusals before expensive qualification
         run: |
@@ -1036,7 +1089,7 @@ jobs:
 
   complete:
     name: Build and test compiler
-    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, build]
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions: {}
@@ -1048,6 +1101,7 @@ jobs:
           PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
           FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
           COMPILER_TESTS_RESULT: ${{ needs.compiler-tests.result }}
+          PACKAGES_RESULT: ${{ needs.package-outputs.result }}
           NATIVE_RESULT: ${{ needs.build.result }}
         run: |
           test "$LICENSE_RESULT" = success
@@ -1055,4 +1109,5 @@ jobs:
           test "$PRODUCER_RESULT" = success
           test "$FIXTURES_RESULT" = success
           test "$COMPILER_TESTS_RESULT" = success
+          test "$PACKAGES_RESULT" = success
           test "$NATIVE_RESULT" = success

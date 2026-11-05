@@ -238,10 +238,16 @@ class WorkflowOwnershipTests(unittest.TestCase):
                          'check_native_ci.sh', 'yarn test'):
             self.assertIn(retained, linux)
         self.assertNotIn('./compiler/go', linux)
+        packages = workflow.split('  package-outputs:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertIn('needs: compiler-linux', packages)
+        self.assertIn('--artifact-id "$ARTIFACT_ID"', packages)
+        self.assertIn('run: nix build\n', packages)
+        self.assertIn('nix build .#compactc', linux)
         complete = workflow.split('  complete:\n', 1)[1]
         self.assertIn('name: Build and test compiler', complete)
         self.assertIn('compiler-tests', complete)
         self.assertIn('test "$COMPILER_TESTS_RESULT" = success', complete)
+        self.assertIn('test "$PACKAGES_RESULT" = success', complete)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
         self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)
