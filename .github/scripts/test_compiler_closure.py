@@ -264,7 +264,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
         linux_producer = workflow.split('  compiler-linux:\n', 1)[1].split('  compiler-darwin:', 1)[0]
         linux = workflow.split('  build:\n', 1)[1]
         self.assertNotIn('if:', linux_producer)
-        self.assertIn('needs: [license-check, compiler-linux, fixture-freshness]', linux)
+        self.assertIn('needs: [license-check, source-preflight, compiler-linux, fixture-freshness]', linux)
         self.assertNotIn('run_macos', linux)
         self.assertNotIn('compiler-darwin', linux)
         self.assertNotIn('continue-on-error', workflow)
@@ -298,7 +298,7 @@ class CompilerFanoutTests(unittest.TestCase):
         caller = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         self.assertEqual(caller.count('uses: ./.github/workflows/compiler-producer.yml'), 2)
         self.assertIn('    needs: compiler-darwin', caller)
-        self.assertIn('    needs: [license-check, compiler-linux, fixture-freshness]', caller)
+        self.assertIn('    needs: [license-check, source-preflight, compiler-linux, fixture-freshness]', caller)
         for required in ('check_native_ci.sh', 'check_archive_consumer.py', 'check_rejections.py',
                          'cargo clippy --workspace', 'yarn test'):
             self.assertIn(required, caller)

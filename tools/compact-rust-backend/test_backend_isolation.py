@@ -72,6 +72,13 @@ import did_digest_reducer_gate, did_primitive_reducer_gate, acc_jubjub_gate
         self.assertIn("check_fixture_outputs.py", fixture_job)
         self.assertEqual(workflow.count("check_fixture_outputs.py"), 1)
         self.assertNotIn("check_fixture_outputs.py", gate)
+        preflight_job = workflow.split("  source-preflight:\n", 1)[1].split("  fixture-freshness:\n", 1)[0]
+        self.assertNotIn("needs:", preflight_job)
+        self.assertIn("check_oracle_acceptance.py", preflight_job)
+        self.assertIn("Check CHANGELOG.md top entry matches version files", preflight_job)
+        build_job = workflow.split("  build:\n", 1)[1]
+        self.assertIn("needs.source-preflight.result", build_job)
+        self.assertIn('test "$PREFLIGHT_RESULT" = success', build_job)
 
 
 if __name__ == "__main__":

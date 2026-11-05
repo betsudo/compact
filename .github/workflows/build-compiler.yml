@@ -148,136 +148,19 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  fixture-freshness:
-    name: Generated Rust fixtures are fresh
-    needs: compiler-linux
-    if: ${{ !cancelled() }}
+  source-preflight:
+    name: Source and version preflight
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read
-    timeout-minutes: 30
     steps:
-      - name: Require successful compiler producer
-        env:
-          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
-          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
-          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
-        run: |
-          test "$PRODUCER_RESULT" = success
-          test -n "$PRODUCER_ARTIFACT"
-          test -n "$PRODUCER_ATTEMPT"
-
       - name: Checkout exact source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Setup Nix with cache
-        uses: ./.github/actions/setup-nix-cache
-        with:
-          skip_cache: 'true'
-
-      - name: Import authenticated same-run compiler closure
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          SOURCE_SHA: ${{ github.sha }}
-          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
-          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
-        run: |
-          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
-          compiler=$(python3 .github/scripts/compiler_closure.py import \
-            --source-sha "$SOURCE_SHA" --system x86_64-linux \
-            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
-            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
-            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
-            --directory "$RUNNER_TEMP/imported-compiler")
-          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
-
-      - name: Setup Rust formatter
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
-        with:
-          toolchain: 1.99.0
-          components: rustfmt
-
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: 3.13
-
-      - name: Check all generated Rust fixtures
-        run: |
-          python3 -X faulthandler -u tools/compact-rust-backend/check_fixture_outputs.py
-
-  build:
-    name: Build and test compiler
-    runs-on: ubuntu-latest
-    env:
-      # Share heavy dependencies with generated consumers and preserve target/package.
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target
-      # Keep debug assertions and overflow checks; omit bulky CI-only debug symbols.
-      CARGO_PROFILE_DEV_DEBUG: 0
-      CARGO_PROFILE_TEST_DEBUG: 0
-    permissions:
-      contents: read
-      actions: read
-    needs: [license-check, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
-    # It takes 90+ minutes to build without Nix caching
-    timeout-minutes: 180
-    steps:
-      - name: Require successful compiler producer
-        env:
-          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
-          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
-          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
-          LICENSE_RESULT: ${{ needs.license-check.result }}
-          FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
-        run: |
-          test "$PRODUCER_RESULT" = success
-          test -n "$PRODUCER_ARTIFACT"
-          test -n "$PRODUCER_ATTEMPT"
-          test "$LICENSE_RESULT" = success
-          test "$FIXTURES_RESULT" = success
-      - name: Checkout compactc repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Setup Nix with cache
-        uses: ./.github/actions/setup-nix-cache
-        with:
-          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
-
-      - name: Import authenticated same-run compiler closure
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          SOURCE_SHA: ${{ github.sha }}
-          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
-          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
-        run: |
-          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
-          compiler=$(python3 .github/scripts/compiler_closure.py import \
-            --source-sha "$SOURCE_SHA" --system x86_64-linux \
-            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
-            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
-            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
-            --directory "$RUNNER_TEMP/imported-compiler")
-          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
-
-      - name: Setup Rust toolchain for native backend
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
-        with:
-          toolchain: 1.99.0
-          components: rustfmt, clippy
-
-      - name: Setup Python for Rust backend checks
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: 3.13
@@ -429,6 +312,142 @@ jobs:
           if [ "$FAILED" -eq 1 ]; then
             exit 1
           fi
+
+  fixture-freshness:
+    name: Generated Rust fixtures are fresh
+    needs: compiler-linux
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 30
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+
+      - name: Checkout exact source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          skip_cache: 'true'
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Setup Rust formatter
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+          components: rustfmt
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Check all generated Rust fixtures
+        run: |
+          python3 -X faulthandler -u tools/compact-rust-backend/check_fixture_outputs.py
+
+  build:
+    name: Build and test compiler
+    runs-on: ubuntu-latest
+    env:
+      # Share heavy dependencies with generated consumers and preserve target/package.
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      # Keep debug assertions and overflow checks; omit bulky CI-only debug symbols.
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    permissions:
+      contents: read
+      actions: read
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
+    if: ${{ !cancelled() }}
+    # It takes 90+ minutes to build without Nix caching
+    timeout-minutes: 180
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+          LICENSE_RESULT: ${{ needs.license-check.result }}
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+          test "$LICENSE_RESULT" = success
+          test "$PREFLIGHT_RESULT" = success
+          test "$FIXTURES_RESULT" = success
+      - name: Checkout compactc repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Setup Rust toolchain for native backend
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
+
+      - name: Setup Python for Rust backend checks
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
 
       - name: Realize remaining default package outputs
         run: |
