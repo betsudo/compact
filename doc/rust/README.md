@@ -38,7 +38,7 @@ These records retain their exact source/evidence revisions. They do not claim PR
 
 - [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): next bounded integration proposal for the complete maintained native/proof/application gate, with all prior required gates and independent diagnostics retained. No hosted result is claimed.
 
-- [Constructor Vector iterable operands](plans/constructor-vector-operands.md): nine genuine source probes expose a bounded local source gap; constructor baseline checks pass. Implementation, behavior and proof qualification remain open.
+- [Constructor Vector iterable operands](plans/constructor-vector-operands.md): reviewed local compiler192 qualification covers 13 complete SDKs, constructor state/witness/owned-value behavior and 15 selected fresh later-entrypoint proofs with separate funded DEFAULT-strict applications and replay controls. Constructor cryptography/total cost, new-head CI/Linux and integration remain open.
 
 ## Checked recording checkpoint
 

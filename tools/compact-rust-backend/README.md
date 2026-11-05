@@ -53,11 +53,41 @@ receipt. Its complete 13-source/22-case fixture checks unedited bundled SDKs,
 independent IR/origins, immutable consumed TS observations, actual exported
 Program-to-asset identities, constructor state/owned reuse/witness and error
 order, four later Rust routes, complete replay state, typed misuse, malformed IR
-and same-type source mutations. The maintained gate is a qualification candidate
-until its actual receipt passes; earlier external evidence keeps its own source
-identity. It generates no keys or proofs. Constructor total-cost observability,
-fresh selected entrypoint proofs, strict application and full integration remain
-separate open acceptance boundaries.
+and same-type source mutations. The corrected 122-command gate and independent
+source/receipt reviews pass at frozen producer `f09900533`. Earlier external
+evidence keeps its own source identity. This gate generates no keys or proofs.
+
+The separate `check_constructor_vector_proof_preflight.py` consumes explicit
+producer, compiler-build and intact-model receipts:
+
+```sh
+python3 tools/compact-rust-backend/check_constructor_vector_proof_preflight.py \
+  --producer-receipt FUNCTIONAL_RECEIPT --producer-root COMPLETE_SDK_ROOT \
+  --compiler-receipt ORIGINAL_BUILD_RECEIPT --model-receipt MODEL_RECEIPT \
+  --output NEW_DIRECTORY
+```
+
+It requires existing official proof material, the ledger test fixtures, native
+`zkir` and Rust 1.99. Each external SDK closure has exactly five local packages
+and one untouched bundled runtime. Physical Git sources must match the admitted
+commit and index; registry sources must match cached crate archives with locked
+checksums. The selected local recipe requires those archives to be readable;
+this is not a vendored-distribution claim. Full memberships, tool identities,
+parameters and source bytes are checked before builds and completion. This
+command executes native preflight only and never generates keys or proves.
+
+At separate qualifier `a8133996b`, the retained reviewed local proof recipe
+passes 15 fresh standalone proofs with immutable verification and 15 separately
+proved, funded DEFAULT-strict applications/replay refusals across all 13 complete
+sources. All 39 original models and three exports per SDK remain present; selected
+keys are k6 under the unchanged automatic cap of 8. Source/Program, dependency,
+parameter, binary, key and output bindings are independently reviewed. The
+committed `tests/constructor_vector_operands/proof.rs` is the consumer template;
+running preflight alone does not execute that cryptographic stage or activate CI.
+
+These later-entrypoint proofs do not prove constructor initialization. Constructor
+total-cost observability, constructor cryptography, Linux/new-head CI, the full
+supported profile and canonical integration remain open.
 
 ## Historical Effectful return checkpoint
 

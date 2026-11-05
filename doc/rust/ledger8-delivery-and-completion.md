@@ -10,6 +10,14 @@ The latest delivery adds the missing witness, value, collection, Merkle and Ledg
 
 **The bounded Ledger8 implementation is integrated through reviewed PR #664. The primary Rust AST goal remains incomplete.** Published slices through #696 have passed full CI and review and are merged into the canonical branch. Current real-application requalification, distributable artifacts and remaining source-language gaps are separate work; the historical evidence below retains its original scope.
 
+Latest local qualification, 5 November 2026: [constructor Vector operands](plans/constructor-vector-operands.md)
+retain frozen compiler192 producer `f09900533` and separate proof qualifier
+`a8133996b`. Thirteen complete SDKs and 15 selected later-entrypoint proofs with
+separately proved DEFAULT-strict funded applications/replay pass independent
+source and receipt reviews. This is local arm64 evidence; constructor cryptography
+and total cost, new-head CI/Linux, the supported-profile handoff and canonical
+integration remain open. It does not change the historical integration epochs.
+
 The statement-action follow-up is verified merged as PR #696 at signed canonical
 `f0e4ba788`, with the same complete tree as reviewed `9667072e7` and actual CI
 checkout `b7c15323b`. All eleven checks, actual Claude review and retained runtime

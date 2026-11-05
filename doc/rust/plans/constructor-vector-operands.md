@@ -1,8 +1,9 @@
 # Constructor fixed-Vector iterable expressions
 
 Status: bounded functional qualification accepted at frozen producer `f09900533`;
-complete model sizing accepted at separate qualifier `775b662ed`. Fresh selected
-proofs, strict applications, constructor total cost and integration remain open.
+complete model sizing accepted at `775b662ed`; selected later-entrypoint proofs
+and strict applications accepted at separate qualifier `a8133996b`. Constructor
+cryptography/total cost, new-head CI/Linux and integration remain open.
 Local continuation of the primary Rust AST goal, 2026-11-05. Earlier sections
 retain their historical execution epochs; the current results are below.
 
@@ -429,3 +430,53 @@ them before execution. Repository head and launch-time self-hashing alone do not
 bind external source to its earlier review. All failed/withheld predecessor
 receipts remain retained. Full preflight, fresh review and actual proof/application
 execution remain required; these preparation checks do not imply completion.
+
+## Accepted selected proof/application qualification — 2026-11-05
+
+At clean qualifier `a8133996b625615540cb24d7f46013068fa19884`, the final maintained
+preflight passes all 57 commands: 13 complete SDK builds and strict Clippy runs,
+15 native cases, actual exported Program bindings and the full isolated dependency
+graph. Physical dependency admission covers one Git and 337 registry roots.
+Six maintained source-authority controls and the five source/SDK staging refusal
+controls pass. Earlier failed and withheld runs keep their original identities.
+
+Independent source review reports no remaining finding and explicitly identifies
+the read-only executor digest. Parent triage binds that digest/path to the actual
+review. The trusted parent rechecks the literal reviewed bytes, clean source head,
+packet and successful preflight immediately before invoking that copy. Mutable
+prototype executors are not execution authorities.
+
+The actual fresh run passes all 40 commands. Every complete source receives new
+direct `advance` and distinct `advance_other` key generation: k6 with 50 and 51
+rows respectively, without changing the cap of 8. All 15 selected success cases,
+including both conditional choices, generate a fresh 2,912-byte standalone proof
+and verify it directly against the immutable selected verifier. Each case also
+separately proves, funds and applies a DEFAULT-strict transaction. Complete final
+contract data matches the generated execution; replay returns
+`IntentAlreadyExists` with the whole ledger unchanged.
+
+Controls reject changed binding, input, output, input/output proof preimages,
+same-length corrupted proofs and the distinct relation's verifier. Positive proof
+verification is repeated after mutation controls; key bytes remain unchanged.
+Constructor state/private state/witness trace/owned extras and ordinary-versus-
+functional prepared calls are checked. No skipped public inputs are admitted.
+All 13 SDKs and their 39 models remain intact; material outputs are separate.
+
+Independent receipt review rehashes 29,529 distinct files, checks physical source
+authorities, source/tool/parameter/key/binary/log/artifact bindings and finds no
+actionable defect or unsupported success claim. This review is source/hash
+inspection, not another cryptographic execution. The actual run retains 15 unique
+proofs and 15 unique sealed transactions among 162 lane artifacts. No proof or
+verdict cache is used.
+
+Evidence under the retained directory: `proof-preflight-v4/receipt.json`,
+`fresh-proofs-v4/receipt.json`, `trusted-proof-launch-v4.json`,
+`proof-source-review-v3.json`, `proof-receipt-review-v1.json`,
+`proof-results-parent-audit-v1.json` and `proof-qualification-closeout-v1.json`.
+These are local evidence locators, not a portable public evidence bundle.
+
+The accepted scope is later-entrypoint qualification from constructor-derived
+test state. Constructor insertion and Night/Dust fee funding are privileged test
+setup. Constructor cryptography/total cost, wallet lifecycle, native Linux,
+new-head required CI, full supported-profile handoff and canonical integration
+remain open. The broad Rust AST goal is incomplete; Forge remains deferred.
