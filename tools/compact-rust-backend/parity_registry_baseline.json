@@ -3998,5 +3998,125 @@
     "name": "values",
     "signature": "witness values(): Vector<2, Field>",
     "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "checkedLeft",
+    "signature": "export pure circuit checkedLeft(x: Uint<200>, z: Uint<8>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "checkedRight",
+    "signature": "export pure circuit checkedRight(z: Uint<8>, x: Uint<200>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "firstErrorLeft",
+    "signature": "export pure circuit firstErrorLeft(x: Uint<200>, z: Uint<8>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "firstErrorRight",
+    "signature": "export pure circuit firstErrorRight(z: Uint<8>, x: Uint<200>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "guardedZero",
+    "signature": "pure circuit guardedZero(z: Uint<8>): Uint<0..1>",
+    "visibility": "internal"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "leftParameter",
+    "signature": "export pure circuit leftParameter(z: Uint<0..1>, x: Uint<200>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "leftZero",
+    "signature": "export pure circuit leftZero(x: Uint<200>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "multiplyLeft",
+    "signature": "export circuit multiplyLeft(x: Uint<200>): Uint<8>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "multiplyRight",
+    "signature": "export circuit multiplyRight(x: Uint<200>): Uint<8>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "nested",
+    "signature": "export pure circuit nested(x: Uint<200>, active: Boolean): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "rightParameter",
+    "signature": "export pure circuit rightParameter(x: Uint<200>, z: Uint<0..1>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "rightZero",
+    "signature": "export pure circuit rightZero(x: Uint<200>): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "witnessedLeft",
+    "signature": "export circuit witnessedLeft(): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "circuit",
+    "name": "witnessedRight",
+    "signature": "export circuit witnessedRight(): Uint<0..1>",
+    "visibility": "export"
+  },
+  {
+    "source": "examples/rust_backend/wide_zero_multiplication.compact",
+    "module_path": [],
+    "kind": "witness",
+    "name": "wide",
+    "signature": "witness wide(): Uint<200>",
+    "visibility": "internal"
   }
 ]
