@@ -650,44 +650,40 @@ Review comment `6671282935` identifies one stale generated welcome fixture. The
 original compiler194 package, authenticated against PR head `475553343`,
 reproduces the refusal. The maintained `check_fixture_outputs.py --only
 welcome.compact --update` regenerates its library with only the expected owned
-`Maybe` element clone; the complete original Compact source, recorded reference,
+`Maybe` element clone. The complete original Compact source, recorded reference,
 private IR, checked Programs and historical proof bindings remain unchanged.
-Current-output comparison remains independent of those compatibility fixtures.
+The rebuilt compiler at `09b581735` passes the full comparison: 284 fixtures,
+zero stale and zero failed. Nine welcome tests, strict Clippy and formatting pass;
+those records retain their literal execution revisions.
 
-The misplaced `constructor_vm.rs` license is moved verbatim above module docs.
-The stricter scan also finds and repairs the same footer placement in its lexical
-guard test, preserving every Rust test token.
-The full-template header validator now requires a leading header, preserving its
-existing script and Chez reader preambles; Rust inner attributes and executable/module
-text cannot hide a trailing license. New refusal and positive controls cover
-placement, shebangs, whitespace and changed inherited debt without weakening
-full-header or exact historical-copy checks.
+Both Rust module licenses now precede module documentation. The lexical test
+retains the authored 2026 copyright year. Only long statements in this PR's new
+Python tooling are wrapped: all seven syntax trees and literal receipt strings
+remain identical, with 62 lines over 150 characters removed. No source/proof-binding
+or proof protocol change is attributed to formatting.
 
-Only long statements in this PR's new Python tooling are wrapped. All seven
-module syntax trees, including literal receipt strings, remain identical; all
-62 lines over 150 characters are removed. This is formatting, not a proof protocol
-or source-binding change. Prior local and hosted proof epochs retain their exact
-identities; the repaired head still requires the complete configured PR gates.
+Fresh Claude CLI reviews of `d82be3f7` and `812c8e70b` identify edge cases in the
+initial attempt to enforce placement through the shared header tool. The final
+repair restores `add_headers.py` verbatim and preserves all ten original header
+controls. It adds leading-full-header validation only to changed, tracked Rust
+files in the PR regression gate, preserving Rust script shebangs while rejecting
+inner attributes even when whitespace or nested comments separate their tokens.
+The existing non-Rust validator/writer behavior and all workflow bytes are intact.
+No global header rewriting, encoding transformation or new preamble policy is
+introduced by this repair.
+
+The retained-conformance generator's embedded `GENERATED_HEADER` is string data,
+not its file license or a footer. Its unchanged historical bytes remain untouched.
+A new or modified Rust file cannot use such a literal as its leading license.
+The new controls cover this distinction, full versus short headers, actual module
+and attribute placement, BOM/shebangs, unusual filenames, deletion and duplicate
+report accounting. Existing exact-content inheritance and historical-copy guards
+remain authoritative; this is not full-tree license-compliance acceptance.
 
 The missing canonical push trigger and serial CI cost remain tracked in #706.
 Restoring duplicate post-merge qualification changes the deliberate cost policy;
-this fixture/header repair preserves current triggers, optional macOS behavior,
-all proof/E2E gates and diagnostic retention. No CI optimization is introduced.
-
-### Fresh-review header follow-up
-
-Fresh Claude CLI review of `d82be3f7` confirms the generated welcome repair and
-Python AST equivalence, then identifies header-policy edge cases. The follow-up
-preserves the existing Compact negative-test directives, Docker parser directives,
-PEP263 cookies and script/reader preambles. Spaced or split Rust inner attributes
-still cannot precede a header. Write mode leaves any already complete header
-byte-for-byte unchanged, including exact historical copies with a footer;
-validation continues reporting misplaced-header debt rather than silently
-rewriting or duplicating historical source. New controls exercise actual writes,
-repeat-write idempotence and an isolated copy of the retained conformance source.
-The lexical test keeps its original authored 2026 copyright year.
-
-The extra clones in generated welcome field projections are unchanged emitter
-behavior. Minimizing them is a separate measured optimization, requiring checked
-ownership and error-order controls; this repair does not hand-edit fresh output
-or broaden the compiler/proof scope. Full new-head hosted CI remains required.
+this repair preserves triggers, optional macOS behavior and all required proof,
+assertion, negative, application/replay and E2E gates. No CI optimization is added.
+The repeated clones in generated field projections remain an unmeasured separate
+optimization; the repair does not hand-edit output or broaden emitter semantics.
+Full current-head hosted CI and human integration review remain required.

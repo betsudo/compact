@@ -13,12 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Full-header placement, safe writing and exact PR license-debt controls."""
+"""PR license scope controls; the original full-header validator remains strict."""
 from pathlib import Path
 import hashlib
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import check_header_regressions as gate
 
@@ -82,123 +83,6 @@ class HeaderRegressionTests(unittest.TestCase):
         self.assertFalse(manager._scan_for_header('#', short))
         self.assertTrue(manager._scan_for_header('#', manager._format_license_header('#', '2026')))
 
-    def test_full_header_must_precede_code_and_module_documentation(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        for prefix, preamble in [('#', 'print("code")\n'),
-                                 ('#', '"""Module documentation."""\n'),
-                                 ('//', 'use std::collections::HashMap;\n'),
-                                 ('//', '//! Module documentation.\n'),
-                                 ('//', '#![allow(dead_code)]\n')]:
-            with self.subTest(prefix=prefix, preamble=preamble):
-                header = manager._format_license_header(prefix, '2026') + '\n'
-                self.assertTrue(manager._scan_for_header(prefix, header + preamble))
-                self.assertFalse(manager._scan_for_header(prefix, preamble + header))
-
-    def test_full_header_accepts_blank_lines_and_preserved_shebangs(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('#', '2026') + '\n'
-        for preamble in ['', '\n\n', '#!/usr/bin/env python3\n\n',
-                         '#!/usr/bin/env nix-shell\n#! nix-shell -i bash\n\n']:
-            with self.subTest(preamble=preamble):
-                self.assertTrue(manager._scan_for_header('#', preamble + header + 'print(1)\n'))
-        self.assertFalse(manager._scan_for_header('#', '#!/usr/bin/env python3\nprint(1)\n' + header))
-
-    def test_full_header_preserves_chez_reader_preamble_not_executable_forms(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header(';;;', '2026') + '\n'
-        self.assertTrue(manager._scan_for_header(';;;', '#!chezscheme\n\n' + header + '(library ())\n'))
-        self.assertFalse(manager._scan_for_header(';;;', '#!chezscheme\n(library ())\n' + header))
-
-    def test_slash_comment_scripts_keep_shebang_before_header_not_rust_attributes(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('//', '2026') + '\n'
-        for command in ['#!/usr/bin/env node', '#!/usr/bin/env rust-script']:
-            with self.subTest(command=command):
-                self.assertTrue(manager._scan_for_header('//', command + '\n\n' + header))
-        self.assertEqual(manager._get_insert_index(['#![allow(dead_code)]\n']), 0)
-
-    def test_footer_violation_is_not_inherited_after_modifying_base_code(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('#', '2026') + '\n'
-        self.path.write_text('print("modified debt")\n' + header)
-        self.assertIn(self.path, manager.validate_headers())
-        self.assertFalse(gate.classify(self.root, self.base, [self.path])['passed'])
-
-    def test_rust_attributes_with_whitespace_cannot_precede_header(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('//', '2026') + '\n'
-        for attribute in ['#! [allow(dead_code)]\n', '#!\t[allow(dead_code)]\n',
-                          '#!\n[allow(dead_code)]\n']:
-            with self.subTest(attribute=attribute):
-                self.assertEqual(manager._get_insert_index(attribute.splitlines(keepends=True)), 0)
-                self.assertFalse(manager._scan_for_header('//', attribute + header))
-
-    def test_unchanged_compact_execution_directives_remain_valid_preambles(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        for name in ['counter_failing.compact', 'map_failing.compact', 'map_field_field.compact']:
-            with self.subTest(name=name):
-                source = gate.ROOT / 'examples/adt/negative' / name
-                self.assertTrue(manager._scan_for_header('//', source.read_text()))
-        header = manager._format_license_header('//', '2026') + '\n'
-        self.assertFalse(manager._scan_for_header('//', '//EXECUTION_FAIL\nledger x: Field;\n' + header))
-
-    def test_encoding_and_docker_directives_precede_header_not_code(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('#', '2026') + '\n'
-        for preamble in ['# -*- coding: latin-1 -*-\n', '# comment\n# coding=utf-8\n',
-                         '#!/usr/bin/env python3\n# coding: utf-8\n',
-                         '# syntax=docker/dockerfile:1\n# escape=`\n']:
-            with self.subTest(preamble=preamble):
-                self.assertTrue(manager._scan_for_header('#', preamble + '\n' + header))
-                self.assertFalse(manager._scan_for_header('#', preamble + 'RUN true\n' + header))
-
-    def test_writer_preserves_existing_full_headers_including_footers(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        header = manager._format_license_header('//', '2026') + '\n'
-        path = self.root / 'existing.rs'
-        for content in [header + 'fn main() {}\n', 'fn main() {}\n' + header]:
-            with self.subTest(content=content):
-                path.write_text(content)
-                manager._save_header_to_file('//', path, header)
-                self.assertEqual(path.read_text(), content)
-                manager._save_header_to_file('//', path, header)
-                self.assertEqual(path.read_text(), content)
-        self.assertEqual(manager.processed_files, 0)
-
-    def test_writer_preserves_byte_pinned_historical_source_copy(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        source = gate.ROOT / ('tools/compact-rust-backend/tests/retained-conformance-6e37443b/'
-                              'tools/compact-rust-backend/src/lib.rs')
-        original = source.read_bytes()
-        path = self.root / 'historical.rs'
-        path.write_bytes(original)
-        manager._save_header_to_file('//', path, manager._format_license_header('//', '2026'))
-        self.assertEqual(path.read_bytes(), original)
-        self.assertEqual(source.read_bytes(), original)
-        self.assertEqual(manager.processed_files, 0)
-
-    def test_writer_inserts_once_without_disabling_directives_or_rust_attributes(self):
-        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
-        for index, (prefix, preamble, body) in enumerate([
-                ('#', '# syntax=docker/dockerfile:1\n', 'FROM scratch\n'),
-                ('#', '#!/usr/bin/env python3\n# coding: utf-8\n', 'print(1)\n'),
-                ('//', '#!/usr/bin/env node\n', 'console.log(1);\n'),
-                (';;;', '#!chezscheme\n', '(library ())\n'),
-                ('//', '//EXECUTION_FAIL\n//CompactError: expected\n', 'ledger x: Field;\n'),
-                ('//', '', '#! [allow(dead_code)]\nfn main() {}\n')]):
-            with self.subTest(prefix=prefix, preamble=preamble):
-                path = self.root / f'new-{index}'
-                path.write_text(preamble + body)
-                header = manager._format_license_header(prefix, '2026')
-                manager._save_header_to_file(prefix, path, header)
-                result = path.read_text()
-                self.assertTrue(result.startswith(preamble))
-                self.assertIn(body, result)
-                self.assertTrue(manager._scan_for_header(prefix, result))
-                self.assertEqual(result.count('This file is part of Compact.'), 1)
-                manager._save_header_to_file(prefix, path, header)
-                self.assertEqual(path.read_text(), result)
-
 
 class PinnedHistoricalCopyTests(unittest.TestCase):
     def setUp(self):
@@ -258,6 +142,111 @@ class PinnedHistoricalCopyTests(unittest.TestCase):
         result = gate.classify(self.root, self.base, [self.copy])
         self.assertFalse(result['passed'])
         self.assertEqual(result['retained_source_copies'], [])
+
+
+class RustHeaderPlacementTests(unittest.TestCase):
+    def setUp(self):
+        HeaderRegressionTests.setUp(self)
+        self.manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        self.header = self.manager._format_license_header('//', '2026') + '\n'
+
+    def source(self, name, content):
+        path = self.root / name
+        path.write_bytes(content if isinstance(content, bytes) else content.encode())
+        subprocess.run(['git', 'add', '--', name], cwd=self.root, check=True)
+        return path
+
+    def violations(self):
+        return gate.rust_header_placement_violations(self.root, self.base, self.manager)
+
+    def commit_fixture(self):
+        subprocess.run(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                        '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture'],
+                       cwd=self.root, check=True)
+        self.base = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.root, text=True).strip()
+
+    def test_full_header_precedes_module_documentation_and_code(self):
+        body = '//! Module docs.\npub fn example() {}\n'
+        path = self.source('module.rs', self.header + body)
+        self.assertEqual(self.violations(), [])
+        path.write_text(body + self.header)
+        self.assertEqual(self.violations(), [path])
+
+    def test_short_spdx_or_header_literal_is_not_a_leading_full_header(self):
+        for index, content in enumerate([
+                '// SPDX-License-Identifier: Apache-2.0\npub fn example() {}\n',
+                'const TEXT: &str = r#"\n' + self.header + '"#;\n']):
+            path = self.source(f'bad-{index}.rs', content)
+            self.assertIn(path, self.violations())
+
+    def test_inner_attributes_with_whitespace_and_nested_comments_are_code(self):
+        for index, attribute in enumerate([
+                '#![allow(dead_code)]', '#! [allow(dead_code)]', '#!\t[allow(dead_code)]',
+                '#!\n[allow(dead_code)]', '#!/*c*/[allow(dead_code)]',
+                '#! /* outer /* nested */ end */ [allow(dead_code)]',
+                '#!\n// comment\n[allow(dead_code)]', '#!/* unterminated']):
+            with self.subTest(attribute=attribute):
+                path = self.source(f'attribute-{index}.rs', attribute + '\n' + self.header)
+                self.assertIn(path, self.violations())
+
+    def test_rust_script_shebang_and_utf8_bom_keep_leading_header(self):
+        for index, preamble in enumerate(['#!/usr/bin/env rust-script\n', '#!rust-script\n', '\ufeff']):
+            path = self.source(f'valid-{index}.rs', preamble + '\n' + self.header + 'fn main() {}\n')
+            self.assertNotIn(path, self.violations())
+        raw = (self.header + 'fn main() {}\n').replace('\n', '\r\n').encode()
+        path = self.source('valid-crlf.rs', raw)
+        self.assertNotIn(path, self.violations())
+        self.assertEqual(path.read_bytes(), raw)
+        path = self.source('invalid-utf8.rs', b'\xff' + self.header.encode())
+        self.assertIn(path, self.violations())
+
+    def test_other_languages_keep_original_header_rules(self):
+        for name in ['counter_failing.compact', 'map_failing.compact', 'map_field_field.compact']:
+            raw = (gate.ROOT / 'examples/adt/negative' / name).read_bytes()
+            self.source(name, raw)
+            self.assertTrue(self.manager._scan_for_header('//', raw.decode()))
+        self.source('Dockerfile', '# syntax=docker/dockerfile:1\n')
+        self.source('encoding.py', '# coding: latin-1\n')
+        self.assertEqual(self.violations(), [])
+
+    def test_unchanged_historical_generator_bytes_stay_unchanged_not_certified_as_a_header(self):
+        authority = gate.ROOT / ('tools/compact-rust-backend/tests/retained-conformance-6e37443b/'
+                                 'tools/compact-rust-backend/src/lib.rs')
+        original = authority.read_bytes()
+        retained = self.source('historical.rs', original)
+        self.commit_fixture()
+        self.assertEqual(self.violations(), [])
+        # Its embedded GENERATED_HEADER is data, not this source file's license.
+        copied = self.source('new-copy.rs', original)
+        self.assertEqual(self.violations(), [copied])
+        retained.write_bytes(original + b'\n// changed\n')
+        self.assertIn(retained, self.violations())
+        self.assertEqual(authority.read_bytes(), original)
+
+    def test_unusual_filename_deletion_and_symlink_are_unambiguous(self):
+        path = self.source('space and\nnewline.rs', self.header + 'fn main() {}\n')
+        self.commit_fixture()
+        path.write_text('fn main() {}\n' + self.header)
+        self.assertEqual(self.violations(), [path])
+        path.unlink()
+        subprocess.run(['git', 'add', '--all'], cwd=self.root, check=True)
+        self.assertEqual(self.violations(), [])
+        link = self.root / 'link.rs'
+        link.symlink_to(self.path)
+        subprocess.run(['git', 'add', 'link.rs'], cwd=self.root, check=True)
+        with self.assertRaisesRegex(ValueError, 'regular file'):
+            self.violations()
+
+    def test_main_deduplicates_missing_and_misplaced_rust_header(self):
+        self.source('bad.rs', 'fn main() {}\n')
+        (self.root / 'header_config.json').write_bytes((gate.ROOT / 'header_config.json').read_bytes())
+        report = self.root / 'report.json'
+        with patch.object(gate, 'ROOT', self.root):
+            self.assertEqual(gate.main(['--base', self.base, '--report', str(report)]), 1)
+        import json
+        result = json.loads(report.read_text())
+        self.assertEqual(len(result['new_or_modified_violations']), 1)
+        self.assertEqual(result['rust_placement_violations'], ['bad.rs'])
 
 
 if __name__ == '__main__':
