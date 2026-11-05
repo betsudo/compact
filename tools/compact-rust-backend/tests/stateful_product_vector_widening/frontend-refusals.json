@@ -1,0 +1,44 @@
+{
+  "boolean_numeric": {
+    "source_sha256": "94e37127fdbe8331f49014a370631e7f69fc9c58a63213d29fb7fcc0b6d19d43",
+    "exit": 255,
+    "stderr": "Exception: boolean_numeric.compact line 6 char 89:\n  mismatch between actual return type Vector<2, [Uint<8>, Boolean]> and declared return type\n  Vector<2, [Uint<16>, Field]> of circuit run\n",
+    "stdout": ""
+  },
+  "explicit_narrow": {
+    "source_sha256": "ee885a2ebbfd9f9a3e718841db1dd4cf4c4285a13a05e4f00ad3f13a9918d68d",
+    "exit": 255,
+    "stderr": "Exception: explicit_narrow.compact line 6 char 100:\n  cannot cast from type Vector<2, [Uint<16>, Uint<32>]> to type Vector<2, [Uint<8>, Uint<16>]>\n",
+    "stdout": ""
+  },
+  "nominal_implicit": {
+    "source_sha256": "df53b3e26d647b027aa15e785989e2afc86b34b38cc028bf1c43d7ba3ebe6f4c",
+    "exit": 255,
+    "stderr": "Exception: nominal_implicit.compact line 7 char 70:\n  mismatch between actual return type Vector<2, [Uint<8>, Uint<16>]> and declared return type\n  Output of circuit run\n",
+    "stdout": ""
+  },
+  "private_condition": {
+    "source_sha256": "408fbb154f398f0be14df41640a685f9fff52e1f7fb29daa59e863bf6e4162a1",
+    "exit": 255,
+    "stderr": "Exception: private_condition.compact line 6 char 108:\n  potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      the value of parameter ok of exported circuit run at line 6 char 20\n    nature of the disclosure:\n      performing this ledger operation might disclose the boolean value of the witness value\n    via this path through the program:\n      the conditional branch at line 6 char 97\nException: private_condition.compact line 6 char 134:\n  potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      the value of parameter ok of exported circuit run at line 6 char 20\n    nature of the disclosure:\n      performing this ledger operation might disclose the boolean value of the witness value\n    via this path through the program:\n      the conditional branch at line 6 char 97\n",
+    "stdout": ""
+  },
+  "refused_narrow": {
+    "source_sha256": "57dd904ad6f2b9b41ca7c0c7862b75188b9b2d0becc981adfee16557b1f6a9a0",
+    "exit": 255,
+    "stderr": "Exception: refused_narrow.compact line 6 char 93:\n  mismatch between actual return type Vector<2, [Uint<16>, Uint<32>]> and declared return type\n  Vector<2, [Uint<8>, Uint<16>]> of circuit run\n",
+    "stdout": ""
+  },
+  "refused_wrong_arity": {
+    "source_sha256": "c53936c952492c6d16831f8287000530100526e2a92ceb6975ef3d85794a689c",
+    "exit": 255,
+    "stderr": "Exception: refused_wrong_arity.compact line 6 char 84:\n  mismatch between actual return type Vector<2, [Uint<8>, Uint<16>]> and declared return type\n  Vector<2, [Uint<16>]> of circuit run\n",
+    "stdout": ""
+  },
+  "wrong_length": {
+    "source_sha256": "2ce7b2ee4e49109d21f71e72b1e07b2925edfd1abe44569f9fcd11b48560b5a0",
+    "exit": 255,
+    "stderr": "Exception: wrong_length.compact line 6 char 93:\n  mismatch between actual return type Vector<2, [Uint<8>, Uint<16>]> and declared return type\n  Vector<3, [Uint<16>, Uint<32>]> of circuit run\n",
+    "stdout": ""
+  }
+}

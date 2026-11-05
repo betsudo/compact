@@ -1,0 +1,89 @@
+{
+  "format": "compact-nested-component-products-model-expectations/v1",
+  "circuits": [
+    {
+      "source": "original",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "parameter",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "helper",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "local",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "checked_helper",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "witness_before",
+      "k": 7,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "witness_after",
+      "k": 7,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "branch",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "deep",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "boolean_field",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "empty",
+      "k": 5,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_empty",
+      "k": 7,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_single",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "family",
+      "circuit": "field_identity",
+      "k": 8,
+      "proof_required": true
+    }
+  ]
+}

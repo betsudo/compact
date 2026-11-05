@@ -1,0 +1,33 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#![allow(dead_code)]
+use family::{ledger_contract as api,runtime as r};
+use api::functional::parameter::Program;
+use r::{BoundedUint,FixedVector};
+type U8=BoundedUint<255>;
+type U16=BoundedUint<65535>;
+type U32=BoundedUint<4294967295>;
+type Narrow=FixedVector<(FixedVector<((U8,U16),U8),1>,U16),1>;
+type Wide=FixedVector<(FixedVector<((U16,U32),U16),1>,U32),1>;
+fn u<const M:u128>(value:u128)->BoundedUint<M>{BoundedUint::new(value).unwrap()}
+fn input()->Narrow{FixedVector::new([(FixedVector::new([((u(3),u(60000)),u(255))]),u(65535))])}
+fn wide_input()->Wide{FixedVector::new([(FixedVector::new([((u(3),u(60000)),u(255))]),u(65535))])}
+fn context()->r::context::CircuitContext<u64>{api::initial_state(r::context::ConstructorContext::new(7_u64)).unwrap().into_circuit_context(Default::default())}
+fn main(){
+ let program=Program::new(input());
+ let _=program.execute_native(context());
+ let _=Program::new(input()).execute_native(context());
+}

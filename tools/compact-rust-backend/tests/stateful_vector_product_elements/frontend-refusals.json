@@ -1,0 +1,14 @@
+{
+  "refused_narrow": {
+    "source_sha256": "8b0534799660c5888171e41fa99ef3525b7f531e3fac79043d39c799ede8c31d",
+    "exit": 255,
+    "stdout": "",
+    "stderr": "Exception: refused_narrow.compact line 6 char 113:\n  mismatch between actual return type Vector<2, [Vector<2, Uint<16>>, Uint<32>]> and declared\n  return type Vector<2, [Vector<2, Uint<8>>, Uint<16>]> of circuit run\n"
+  },
+  "refused_inner_dimension": {
+    "source_sha256": "4370080839f6614954c2c7f1b739363fa5e7f5be3206d06fe317245a97f514ee",
+    "exit": 255,
+    "stdout": "",
+    "stderr": "Exception: refused_inner_dimension.compact line 6 char 113:\n  mismatch between actual return type Vector<2, [Vector<2, Uint<8>>, Uint<16>]> and declared\n  return type Vector<2, [Vector<3, Uint<16>>, Uint<32>]> of circuit run\n"
+  }
+}

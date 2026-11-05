@@ -1943,3 +1943,27 @@ Six failures compare specific source assertion errors. Independent `close`
 capture checks native/recorded state, private values/order, normalized full VM,
 query gas, replay and exact repeat refusal without another witness call. No
 emitter, runtime, generated crate, ABI49 or schema20 change is involved.
+
+
+### Selected DID zero timestamp proof case
+
+The maintained `check_did_functional_lifecycle_proof.py` accepts
+`--case did/valid` (default) and `--case did/timestamp-zero`. Supply the existing
+`--compiler`, `--zkir`, `--target-dir` and a distinct absent `--output` directory
+for each run, with the same verified `MIDNIGHT_PP` recipe. Each invocation
+retains the full original two-file source, twelve Programs and exact IR, runs
+fresh direct key generation and a standalone proof, then separately proves and
+applies its funded DEFAULT-strict transaction. No proof/verdict cache is used.
+
+Current proof results use `compact-did-functional-lifecycle-proof/v2` and require
+the exact requested capture id and timestamp witness. Historical v1 decoding is
+retained without a case claim; it cannot satisfy current case-bound validation.
+The selected Rust API gate exercises both original successes across all four
+routes, preserving prior failure and compile-time refusal controls. See the
+[bounded local result](../../doc/rust/plans/did-zero-timestamp.md) for actual
+source, receipts and limits at that literal qualification epoch. The subsequent
+[native profile handoff](../../doc/rust/guides/native-ledger8-profile.md) adds a
+separate required workflow invocation for `--case did/timestamp-zero`, preserving
+the valid default, authenticated compiler handoff and failure/success artifacts.
+This is local wiring; hosted zero-case proof acceptance and full integration
+remain pending. No constructor or all-export proof claim follows from either case.

@@ -371,3 +371,68 @@ fn borrowed_preflight_precedes_equal_type_identity_and_owned_refusal() {
         Err(RenderError::ResourceLimit { .. })
     ));
 }
+
+#[test]
+fn outer_vector_product_relation_already_supports_exact_nested_products() {
+    for length in [0, 1, 2] {
+        let source = vector(tuple(vec![tuple(vec![uint("255")]), uint("255")]), length);
+        let target = vector(
+            tuple(vec![tuple(vec![uint("65535")]), uint("65535")]),
+            length,
+        );
+        let plan = plan_coercion(&source, &target).unwrap();
+        // The existing checked cast construction remains fallible even when
+        // these declared bounds make widening total on valid source values.
+        assert!(plan.may_fail());
+        assert_old_output(&source, &target, 0);
+        assert!(matches!(plan.kind(), CoercionKind::Vector { length: n, .. } if *n == length));
+        assert!(plan_coercion(&target, &source).is_err());
+        let wrong_dimension = vector(
+            tuple(vec![tuple(vec![uint("65535")]), uint("65535")]),
+            length + 1,
+        );
+        assert!(plan_coercion(&source, &wrong_dimension).is_err());
+    }
+}
+
+#[test]
+fn outer_vector_product_empty_children_keep_static_obligations() {
+    let source = vector(
+        tuple(vec![vector(tuple(vec![uint("255")]), 0), uint("255")]),
+        1,
+    );
+    let target = vector(
+        tuple(vec![vector(tuple(vec![uint("65535")]), 0), uint("65535")]),
+        1,
+    );
+    // Empty iteration keeps the child plan and its construction obligations.
+    assert!(plan_coercion(&source, &target).unwrap().may_fail());
+    assert_old_output(&source, &target, 0);
+    let malformed = vector(
+        tuple(vec![vector(tuple(vec![uint("00")]), 0), uint("65535")]),
+        1,
+    );
+    assert!(
+        matches!(plan_coercion(&source, &malformed), Err(RenderError::InvalidUnsignedMaximum(value)) if value == "00")
+    );
+    let narrowed = vector(
+        tuple(vec![vector(tuple(vec![uint("15")]), 0), uint("65535")]),
+        1,
+    );
+    assert!(plan_coercion(&source, &narrowed).is_err());
+}
+
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.

@@ -1,0 +1,258 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "255"
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "vector",
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "255"
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        },
+        "elements": [
+          {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "parameter",
+                "name": "item"
+              },
+              {
+                "kind": "tuple_index",
+                "value": {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "acc"
+                  },
+                  "index": 0
+                },
+                "index": 1
+              }
+            ]
+          },
+          {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "acc"
+            },
+            "index": 0
+          }
+        ]
+      },
+      "source": {
+        "file": "product.compact",
+        "line": 17,
+        "column": 1
+      }
+    },
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        },
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            },
+            {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "vector_fold_call",
+          "name": "step",
+          "initial": {
+            "kind": "coerce",
+            "value": {
+              "kind": "parameter",
+              "name": "seed"
+            },
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                ]
+              }
+            }
+          },
+          "source": {
+            "kind": "coerce",
+            "value": {
+              "kind": "parameter",
+              "name": "input"
+            },
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            }
+          },
+          "accumulator": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          },
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          },
+          "length": 2
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              {
+                "kind": "unsigned",
+                "max": "4294967295"
+              }
+            ]
+          }
+        }
+      },
+      "source": {
+        "file": "product.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

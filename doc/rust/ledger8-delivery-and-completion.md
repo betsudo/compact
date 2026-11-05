@@ -455,3 +455,367 @@ at literal `cf7a2fa2c`, after review-control fixes. The earlier all284 emission
 and selected DID receipts retain `83d967324` and their unchanged compiler/runtime/
 fixture inputs. No documentation successor renews a proof receipt. PR #696's
 final exact-head review and full required CI remain mandatory.
+
+
+## Local source-semantics qualification — 2026-11-02
+
+Canonical `codex/rust-backend-ast` remains at
+`1bdf185ea35929292a79d35946d4a98fb344d11c`. The local candidate stack is not
+integrated canonical.
+
+The [aggregate literal projection slice](plans/aggregate-literal-projection-widening.md)
+has reviewed bounded compiler 166/source/API and two selected genuine
+proof/default-strict application receipts at execution `e8d9293ba`. Existing
+native coercion, typed validation and AST ownership are reused. No IR/runtime
+ABI change is made. Earlier branch and evidence authorities remain distinct.
+
+The [struct-member literal slice](plans/struct-member-literal-widening.md) adds
+reviewed bounded compiler 167/source/API and two genuine helper proof/application
+receipts at execution `886a69bc5`. Original narrow struct fields and accepted
+output controls are preserved.
+
+The [direct stateful Vector literal slice](plans/direct-stateful-vector-literal-returns.md)
+now has reviewed bounded compiler170 qualification at execution `7ab60b620`:
+31complete sources,50cases/200Rust routes,155source/API commands,31strict unedited
+SDK roots and independent refusal/mutation controls. The ordered return owner
+preserves original bounds and action order; the native aggregate owner evaluates
+effectful Vector children once while preserving successful pure Vector ASTs.
+No validator, recording certification, runtime or ABI change is introduced.
+Three genuine proofs cover both direct Uint branch states and the Field export;
+three separately proved funded default-strict applications and immutable negative
+controls pass. All1833native tests pass/7existingignored;283retained compiler
+fixtures are freshly identical. Two unselected wide-input models are k9 and remain
+unproved;31required exports beyond the selected two and all unenumerated inputs
+remain outside proof acceptance. Constructor execution is unproved.
+
+The [stateful Vector value-widening slice](plans/stateful-vector-value-widening.md)
+now has reviewed bounded compiler 172 qualification at execution `eaefb3752`:
+23 complete sources, 37 cases / 144 stateful Rust routes plus one pure route,
+136 API commands and 23 strict unedited SDK roots. It preserves original source
+values before the existing checked Vector conversion, including helpers,
+parameters, aliases, queries and once-only witnesses. Eight misuse/twin pairs,
+seven frontend refusals, seven malformed-IR refusals and three real producer
+controls pass their intended outcomes. Three fresh proofs and separate funded
+default-strict applications cover both helper branch states and the Field export.
+All 283 retained compiler fixtures and the predecessor S API gate (155 commands,
+50 cases / 200 Rust routes) freshly pass. The other 21 required T exports remain
+unproved, including the intact k=9 wide input; constructor execution is unproved.
+
+The [stateful local Vector slice](plans/stateful-local-vector-widening.md) has
+reviewed bounded compiler 173 qualification at execution `408dd00ee`:24 complete
+sources,34 cases/132 stateful Rust routes plus one pure route,144 API commands and
+24 strict unedited SDK roots. Local initializers retain their supplied source
+before conversion and execute once with surrounding actions. Witnesses observe
+both before/after-write positions; checked/discarded initializers preserve first
+errors. Eight misuse/twin pairs, seven frontend and eight native IR refusals,
+four complete producer controls and the result oracle cover the boundary.
+Three fresh selected proofs and separate funded default-strict applications pass
+with immutable negatives/replay. All860worktree proof-runner dependencies are
+prebuild-pinned. Current T API qualification passes unchanged IR/Programs; the
+283 fixture and 35 baseline results retain their explicit source/tool bridges.
+The other 22 required U exports remain unproved, including intact `wide_local` k=9.
+
+The proposal-time [stateful product-Vector baseline](plans/stateful-product-vector-widening.md)
+retains 13 complete sources / 39 current 173 commands. Eleven pass TS: seven valid
+stateful product/empty/nested/helper/Field/Boolean-component/full-proof-source
+forms fail before IR at nested Cell.write; a local product conversion emits IR
+then fails native type checking. Three controls pass all lanes and two frontend
+refusals remain. This is source-only evidence; no new implementation, model or
+proof acceptance is inferred. Existing pure coercion and prior return/local
+binding work stay accepted within their recorded scopes.
+
+The product-Vector successor has a bounded compiler177 source/API stage at
+`2da9c2dbc`:153 commands,25 strict complete unedited SDK roots,32 TS/Rust cases
+with124 stateful executions plus one pure, ten marked misuse/twin pairs, seven
+exact frontend diagnostics, nine malformed-IR controls and complete producer/
+result mutations. It preserves numeric/product bounds and ordered actions with
+both combined nested witness positions. Independent review found a witness bridge
+metadata regression; its fix and all failures are retained. Current U API
+regression (144commands/34cases/24roots) and all283current fixtures pass.
+The sole refreshed snapshot adds seven scoped signature style attributes;
+historical complete bytes and compatibility tests remain preserved. Source
+reviews cover their exact epochs. At that source/API checkpoint, no V model inventory, key generation, genuine
+proof or application gate had run; emitted ZKIR did not establish model sizing
+or proof acceptance. That qualification and independent receipt review remained
+open until the later438bf result below. Existing predecessor proofs retain their own source epochs.
+
+The V successor at438bf now has reviewed bounded local compiler177 qualification:
+the current153-command/25-root/32-case protocol passes, all26export models are
+observed, both selected exports are k8 (run212rows, run_field161), and locked
+material precedes two fresh keys. Three2,912-byte standalone proofs and three
+separately proved funded default-strict6,604/6,605/6,561-byte applications pass
+with immutable verifier/binding/result/corruption and unchanged replay controls.
+Independent source and separate receipt/hash/premise reviews report no P1/P2
+within their scopes. All860physical worktree inputs are prebuild-pinned in the
+actual4,439-source map; the raw depfile is retained. The other23required exports,
+including three intact k9 models, remain unproved; constructor/all-input and CI/
+integration coverage stays open. U/fixture/old full-test reuse keeps exact epochs;
+no fresh compiler rebuild or cryptographic reexecution by reviewers is claimed.
+
+The initial [Vector-containing product proposal](plans/stateful-vector-product-elements.md)
+retains 15 complete probes/45 original177 commands and its strict identity-SDK
+signature baseline failure. At that admission no implementation or proof
+feasibility was inferred. The current bounded result follows below; the original
+probes and failures retain their historical scope.
+
+Full required arm64/Linux CI, reviewed integration and the broader goal remain
+open. Forge remains deliberately deferred. No candidate cleanup is due before
+verified GitHub merge.
+
+## Current Vector-component qualification — 2026-11-03
+
+The local candidate at `e293f2fe1500783b84d456f679767dfa5315b621` closes the
+observed signature baseline and bounded component-Vector coercion gap through
+existing checked lowering and structured AST owners. It passes 141 commands:
+19 complete SDK roots, 27 TS/Rust cases, 84 successful stateful executions,
+20 intended error attempts and one pure case, plus 42 exact public transcript
+comparisons. Actual source and separate receipt reviews report no P1/P2. A
+separate current compiler180 check passes all 283 retained fixtures without
+updating them. See the [scope and next acceptance gates](plans/stateful-vector-product-elements.md#reviewed-ordered-error-result).
+
+At that source/API checkpoint, model inventory, keys, genuine proofs and funded
+default-strict applications remained open. The selected successor result below
+now qualifies two complete existing source/export pairs. Earlier compiler177
+proofs are not credited to the component-Vector candidate. Keep intact sources
+and the unchanged k<=8 policy.
+
+Broader completion still requires reviewed logical integration slices and full
+required host CI, remaining real-application scenarios, independently consumable
+generated packages and the finite capability/evidence handoff. Preserve the
+accepted crosswalk, checked-recording owners and retirement ledger; do not reopen
+accepted capabilities or infer universal language parity. Current work remains
+local. Forge is deferred and does not block backend development. No cleanup is
+due before verified merge.
+
+## Component-Vector model boundary — 2026-11-03
+
+The local source `6ca41ba55` passes the current141-command API protocol and
+actual default/opt-in build/strict checks. After fixing two fail-closed
+preparation defects, all919physical runner inputs match prebuild maps. Actual
+Claude source and separate receipt reviews find no P1/P2 within the finite
+model/input observation scope. All20exports are observed before selection:
+19required/onepure;15required fitk<=8 andfourintactk9 models remainunproved.
+The conditional Uint export is k9 and correctly refuses the automatic limit.
+Preparation remains failed at that guard; material, keys, genuine proofs and
+funded transactions were not reached. This is not proof or full integration
+acceptance, and earlier compiler177 proofs are not credited here.
+
+Next qualify the existing complete Uint helper and original complete Field
+export (bothk8), preserving exact sources/SDKs and source-scoped identities.
+Keep the conditional branches and other over-cap/unselected scenarios open.
+See the [model/input boundary and next cohort](plans/stateful-vector-product-elements.md#reviewed-modelinput-observation-and-retained-cap-refusal).
+FullCI/Linux/integration, remaining application/distribution/capability handoff
+and the broader goal remain open. Current work stays local; no Forge or cleanup.
+
+## Selected component-Vector proof qualification — 2026-11-03
+
+Clean signed execution `81b7bbb43` passes the current 141-command API protocol
+and complete paired proof gate. The existing whole Uint helper and original
+Field export each produce a fresh 2,912-byte standalone proof and a separately
+proved funded default-strict transaction (6,555 / 6,561 bytes). Matching immutable
+verifiers accept; wrong-source verifier, corruption, changed binding, genuinely
+typed changed output/IR-preimage and unchanged-state replay controls reject.
+Actual Claude source review and separate receipt audit find no P1/P2.
+
+All20exports are observed before selection. Seventeen required exports remain
+unproved, including the four intact k9 models and both original conditional Uint
+branch outcomes. Constructor proofs and full-source deployment are not claimed.
+The helper retains its own crate root and generated bytes; 926 physical build
+inputs and locked proof material precede keys. This is bounded local proof/
+application acceptance, with [explicit audit limits](plans/stateful-vector-product-elements.md#reviewed-selected-uintfield-proofs--2026-11-03),
+not full integration or a universal language claim.
+
+The remaining goal work is reviewed integration/full required host CI, concrete
+unaccepted semantic/API gaps, required real-application scenarios, isolated
+generated-package distribution and a finite capability/evidence handoff. Accepted
+foundation, checked-recording and historical crosswalk work is preserved. Forge
+remains deferred and independent of backend progress. No cleanup is due before
+verified merge.
+
+## Products below Vector components — 2026-11-03
+
+Local execution `cb38c00ff2` extends the existing ordered lowering selection to
+one scalar product below a component Vector, retaining arity, original bounds,
+single evaluation, action/witness order and checked Coerce/AST owners. Existing
+runtime, validator, IR and ABI authorities are unchanged. The private request
+field style metadata preserves exact carriers and visibility. Empty/single/mixed
+product arities, aliases, upper second-child bounds and large Field values have
+whole-source controls; deeper products and Vectors inside that product remain
+explicitly refused.
+
+The [bounded qualification](plans/vector-component-products.md#reviewed-bounded-sourceapi-result--2026-11-03)
+passes 170 commands, 24 full unedited strict SDK roots, 35 TS/Rust cases,
+116 successful stateful routes, 20 expected errors, one pure route and 58 exact
+public transcript comparisons. Marked misuse/twin, native ingress/twin,
+whole-producer, corrupt-oracle and exact source-refusal controls pass. Separate
+current183 fixture comparison passes all283 without updates. Actual Claude quota
+causes separate Codex CLI source and receipt fallbacks; both find no P1/P2 within
+the recorded finite scope and disclosed provenance limits.
+
+All 24 proof-required exports remain unproved in this family. A separate author
+model observation finds six within k<=8 and eighteen over the unchanged limit;
+it grants no proof/input/material admission. The next unchanged-source proposal
+qualifies both complete witnessed pair sources and the single-product source.
+Original helper/Field/pair sources remain intact and unproved. No previous
+compiler180 proof is relabeled as this result. Full required CI/Linux, reviewed
+integration, remaining application scenarios, isolated distribution and finite
+capability/evidence handoff remain open. The broader goal is incomplete and
+independent of deferred Forge work.
+
+
+## Bounded products below Vector components — local proof checkpoint
+
+The [nested-product slice](plans/vector-component-products.md#reviewed-selected-proofapplication-result--2026-11-03)
+retains reviewed compiler183 source/API/static/ingress/producer acceptance. At
+signed source `6b45a4051`, three existing complete sources (witness-before,
+witness-after and single-element inner product) each produce a fresh verified
+2,912-byte proof and a separately proved funded default-strict transaction, with
+changed-result/binding/preimage, corruption, wrong-verifier and unchanged replay
+refusals. Actual independent source, preparation and crypto-receipt reviews report
+no current P1/P2. All source identities, historical failures and receipt limits are
+retained in the slice plan.
+
+This proves three selected exports, not the whole corpus: 21 other required
+exports remain unproved, including 18 over-limit models; the pure export is N/A.
+Callback implementation, constructor execution and full-export deployment are not
+proved. Full CI/Linux/integration, final application/standalone-SDK acceptance and
+capability handoff remain open. Accepted historical crosswalk and algebra work is
+not reopened, and the broad goal stays incomplete. Forge stays deferred.
+
+
+### Nested-product required CI wiring — local readiness
+
+At signed source `5ef204e8e`, the existing-only original-recipe recorder and full
+nested-product gate pass in the arm64 Nix environment: 170 API commands, three
+fresh verified proofs and three separately proved funded default-strict
+applications. Current source and separate actual receipt reviews report no
+P1/P2. All prior failed attempts and literal source epochs remain retained.
+
+The required Linux compiler workflow now calls this complete gate using the
+existing authenticated compiler handoff and devShell-resolved ZKIR. It retains
+k6/k8 locked material, all old required checks, failure/success artifacts and
+required header-policy controls. This is checked local wiring, **not a hosted
+Linux/CI result**. See the [slice plan](plans/vector-component-products.md#reviewed-local-ci-readiness-result--2026-11-03)
+for exact source/header/proof identity, remaining 21 unproved exports and limits.
+Logical integration and final profile/application/SDK/capability handoff remain
+open; the broad goal and Forge deferral are unchanged.
+
+
+### Current-candidate isolated SDK — repaired local handoff
+
+The [current SDK slice](plans/current-profile-sdk-handoff.md) passes at signed
+compiler 0.31.183 execution `cd3f432c6`: all 29 commands reach intended outcomes, with
+three documented ContractLab methods, correct-type twins and E0053/E0382 misuses,
+actual proof-feature Clippy for all three selected libraries, fresh k6 / 49-row keys,
+a verified 2,912-byte proof and a separately proved funded DEFAULT-strict
+6,607-byte transaction with expected state and unchanged replay refusal.
+Fresh Claude source/receipt review reports no current P1/P2 in this finite scope.
+
+The inherited external-package lint gap is repaired without changing qualified
+SDK/consumer/testkit manifests or public APIs. A private lint root preserves every
+original Cargo package/feature node, and 14 focused controls include actual warm-
+check lint refusal and its corrected positive. The initial false-lint-success and
+failed feature-flag epochs remain retained. Older physical-input/transitive/log
+limits and verifier-loader versus proof controls are explicit in the plan.
+
+Accepted compiler 0.31.143 SDK integration is not relabeled or reopened. This Cell case
+proves no constructor/deployment, wallet lifecycle or unselected nested-product
+export. Full required CI/Linux, logical integration, current application
+reconciliation and finite supported-profile capability handoff remain open;
+the broad goal stays incomplete and Forge remains deferred.
+
+
+### Current-candidate Passport handoff — local qualification
+
+The [current Passport handoff](plans/current-passport-handoff.md) passes at signed
+compiler183 execution `9286fe749`. It retains the intact 17-file source and all
+75 pure exports, with 202 live TS samples plus codec comparison, 16 adoption Rust
+methods, two actual guide methods, strict SDK/consumer Clippy, intended E0308
+misuses and changed-oracle assertion failure/restoration. Three existing
+provenance methods pass separately; fresh Claude source/receipt review reports
+no P1/P2 within the recorded finite local scope.
+
+Only a separate formatting copy matches the retained compiler144 Rust fixture;
+the executed SDK stays raw and historical identities/labels remain unchanged.
+This is current-candidate application qualification, not a new semantic feature.
+The pure library has no recording/proof/application stage. Current Linux/full
+required CI, logical integration and the finite supported-profile handoff remain
+open. The broader goal is incomplete; Forge remains deferred.
+
+
+### Current-candidate DID lifecycle — selected local qualification
+
+The [current DID handoff](plans/current-did-handoff.md) passes at signed compiler183
+execution `67cbded3e`: whole original source and all twelve Programs, twelve live
+DID TS rows, five selected four-route Rust methods, strict consumer Clippy and
+three typed refusals. A separate fresh k11 / 1,804-row deactivation proof verifies
+(3,296 bytes), and an independently proved funded DEFAULT-strict transaction
+applies (7,413 bytes), with binding/version and unchanged replay controls.
+Fresh Claude source/receipt review reports no P1/P2 in the finite selected scope.
+
+At this `67cbded3e` epoch, the positive TS `did/timestamp-zero` row was not
+executed by the selected Rust suite. The later
+[zero timestamp witness slice](plans/did-zero-timestamp.md) closes that bounded
+coverage gap at actual `4e49b59e5`: seven Rust methods retain all five old methods,
+eight success-route executions and 40 error-route executions match the twelve
+original DID TS rows. Two separately selected case-bound proof gates retain
+k11 / 1,804 rows, each with a fresh verified 3,296-byte standalone proof and an
+independently proved funded DEFAULT-strict transaction (7,413 bytes valid,
+7,412 zero). Source and actual receipt Claude reviews find no actionable P1/P2.
+The original sources, fixture, IR and twelve Programs remain exact. The zero
+proof CI invocation is still pending; local success is not hosted acceptance. Constructor/all-export proofs,
+full current protocol/network acceptance, complete CI/Linux and logical
+integration remain open. Existing compiler138 deactivation acceptance stays
+intact; current source/receipt epochs and capture/host limits are explicit in
+the handoff. The broad Rust AST goal is incomplete and Forge stays deferred.
+
+
+The next bounded delivery task is the [finite supported-profile handoff](plans/current-supported-profile-handoff.md), joining current application/SDK and product evidence with explicit stage, host and proof limits. It does not reopen accepted historical capabilities or complete the broader goal.
+
+
+### Finite native candidate profile handoff
+
+The [candidate profile contract](guides/native-ledger8-profile.md) joins the
+literal current SDK, Passport, selected DID and nested-product evidence with
+versions, usable examples, type/runtime boundaries and explicit exceptions.
+It preserves the historical crosswalk and retirement authorities. No additive
+coverage percentage, whole-language parity or release completion is claimed.
+
+The local workflow adds the zero timestamp proof case after the unchanged valid
+case, using the authenticated compiler handoff and distinct output directory.
+Focused controls cover ordering, argument/env forwarding, failure propagation
+and retained diagnostics. The source SDK guide now removes the old ineffective
+external-dependency Clippy commands and points to the already repaired maintained
+proof-feature library gate. Full current hosted CI/Linux and logical integration
+remain open; see the [handoff plan](plans/current-supported-profile-handoff.md)
+for actual local recipe and execution status. Forge remains deferred.
+
+
+At actual `51616d5ce`, the finalized README-bound original compiler package is
+rebuilt and passes its exact existing-only recipe check, affected DID API gate
+and both fresh selected proof/application cases. The zero case executes the
+literal configured CI shell locally under Nix; it is not a hosted result.
+Earlier SDK, Passport and product rows keep their literal tool/source epochs.
+The [local result](plans/current-supported-profile-handoff.md#actual-final-package-local-result)
+records the package identity transition, snapshot/target distinction, controls
+and remaining technical-profile/integration gates.
+
+
+### Exact current-package installed-default SDK
+
+The [installed-default SDK slice](plans/current-package-bundled-sdk.md) passes
+at `026f1109b` with the current `pbr` compiler183 package. The complete 29-command
+gate retains all three ContractLab methods, correct-type/misuse controls, three
+actual proof-feature library lints, source/raw-SDK/graph identity and fresh k6 /
+49-row proof with separate funded DEFAULT-strict application and replay refusal.
+
+A concrete qualification gap is repaired: the CLI's runtime-source override can
+bypass installed selection, including when empty. The gate now refuses its
+presence, admits the installed prefixes before generation and checks 105
+installed source hashes against selected sources before and after execution.
+All sixteen focused methods and three real entry/byte-mismatch refusals pass.
+The initial raw baseline and failed outer harness assertion remain preserved;
+no production compiler/runtime or original consumer/proof behavior changed.
+Previous SDK acceptance stays literal; full current CI/Linux, technical profile
+freeze and logical integration remain open. Forge remains deferred and the
+broader Rust AST goal is incomplete.

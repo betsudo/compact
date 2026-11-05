@@ -1,0 +1,762 @@
+[
+  {
+    "id": "small",
+    "source": "small",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "small_bounds",
+    "source": "small",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "254",
+        "253"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "zero",
+    "source": "zero",
+    "entry": "value",
+    "args": [
+      [],
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "single",
+    "source": "single",
+    "entry": "value",
+    "args": [
+      [
+        "7"
+      ],
+      [
+        "1",
+        "2"
+      ]
+    ],
+    "expected": [
+      "7",
+      "1"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "field",
+    "source": "field",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "254",
+        "253"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "wide",
+    "source": "wide",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "254",
+        "253"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "wide_to_wide",
+    "source": "wide_to_wide",
+    "entry": "value",
+    "args": [
+      [
+        "340282366920938463463374607431768211456",
+        "680564733841876926926749214863536422911"
+      ],
+      [
+        "0",
+        "1"
+      ]
+    ],
+    "expected": [
+      "680564733841876926926749214863536422911",
+      "340282366920938463463374607431768211456"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "checked",
+    "source": "checked",
+    "entry": "value",
+    "args": [
+      [
+        "1",
+        "2"
+      ],
+      [
+        "0",
+        "0"
+      ]
+    ],
+    "expected": [
+      "3",
+      "1"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "checked_first",
+    "source": "checked",
+    "entry": "value",
+    "args": [
+      [
+        "255",
+        "1"
+      ],
+      [
+        "1",
+        "0"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "checked_second",
+    "source": "checked",
+    "entry": "value",
+    "args": [
+      [
+        "255",
+        "1"
+      ],
+      [
+        "0",
+        "0"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "nested",
+    "source": "nested",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        [
+          "9",
+          "8"
+        ],
+        [
+          "7",
+          "6"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "2"
+      ],
+      [
+        "2",
+        "9"
+      ]
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "product",
+    "source": "product",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        [
+          "9",
+          "65535"
+        ],
+        [
+          "8",
+          "42"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "3",
+        "65535"
+      ],
+      [
+        "2",
+        "65535"
+      ]
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "aliased",
+    "source": "aliased",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "alias_bool",
+    "source": "alias_bool",
+    "entry": "value",
+    "args": [
+      [
+        true,
+        false
+      ],
+      [
+        false,
+        false
+      ]
+    ],
+    "expected": [
+      false,
+      true
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "local",
+    "source": "local_control",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "selected_true",
+    "source": "selected_control",
+    "entry": "value",
+    "args": [
+      true,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "selected_false",
+    "source": "selected_control",
+    "entry": "value",
+    "args": [
+      false,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "9",
+      "8"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "scalar",
+    "source": "scalar_control",
+    "entry": "value",
+    "args": [
+      [
+        "2",
+        "3"
+      ]
+    ],
+    "expected": "5",
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "scalar_overflow",
+    "source": "scalar_control",
+    "entry": "value",
+    "args": [
+      [
+        "255",
+        "1"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "source_ok",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "seed_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      true,
+      [
+        "7",
+        "7"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "seed denied"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "items_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      false,
+      [
+        "7",
+        "7"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "items denied"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "both_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      false,
+      false,
+      [
+        "7",
+        "7"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "seed denied"
+    },
+    "nativeError": {
+      "kind": "assert",
+      "message": "items denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "first_item_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      [
+        "7",
+        "2"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "item denied"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "second_item_denied",
+    "source": "source_checked",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      [
+        "2",
+        "7"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "item denied"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "order_control_ok",
+    "source": "source_checked_control",
+    "entry": "value",
+    "args": [
+      true,
+      true,
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "order_control_both_denied",
+    "source": "source_checked_control",
+    "entry": "value",
+    "args": [
+      false,
+      false,
+      [
+        "7",
+        "7"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "assert",
+      "message": "seed denied"
+    },
+    "nativeError": {
+      "kind": "assert",
+      "message": "items denied"
+    },
+    "seen": null
+  },
+  {
+    "id": "run",
+    "source": "helper",
+    "entry": "run",
+    "args": [
+      [
+        "2",
+        "3"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "expected": [
+      "3",
+      "2"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": "1"
+  },
+  {
+    "id": "run_bounds",
+    "source": "helper",
+    "entry": "run",
+    "args": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "254",
+        "253"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": "1"
+  },
+  {
+    "id": "run_checked",
+    "source": "helper",
+    "entry": "run_checked",
+    "args": [
+      [
+        "1",
+        "2"
+      ],
+      [
+        "0",
+        "0"
+      ]
+    ],
+    "expected": [
+      "3",
+      "1"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": "2"
+  },
+  {
+    "id": "run_checked_first",
+    "source": "helper",
+    "entry": "run_checked",
+    "args": [
+      [
+        "255",
+        "1"
+      ],
+      [
+        "1",
+        "0"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "run_checked_second",
+    "source": "helper",
+    "entry": "run_checked",
+    "args": [
+      [
+        "255",
+        "1"
+      ],
+      [
+        "0",
+        "0"
+      ]
+    ],
+    "expected": null,
+    "error": {
+      "kind": "unsigned",
+      "value": "256",
+      "max": "255"
+    },
+    "nativeError": null,
+    "seen": null
+  },
+  {
+    "id": "alias_cast",
+    "source": "alias_cast",
+    "entry": "value",
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "error": null,
+    "nativeError": null,
+    "seen": null
+  }
+]

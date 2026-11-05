@@ -1,0 +1,202 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "ordered_guards.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "keep",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "255"
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "parameter",
+          "name": "input"
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      },
+      "source": {
+        "file": "ordered_guards.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "a",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "b",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "assert",
+              "condition": {
+                "kind": "parameter",
+                "name": "a"
+              },
+              "message": "first denied"
+            },
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_2",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_2"
+                }
+              }
+            },
+            {
+              "kind": "assert",
+              "condition": {
+                "kind": "parameter",
+                "name": "b"
+              },
+              "message": "second denied"
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "call",
+                "name": "keep",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "ty": {
+                      "kind": "vector",
+                      "length": 2,
+                      "element": {
+                        "kind": "unsigned",
+                        "max": "255"
+                      }
+                    }
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "ordered_guards.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ]
+}

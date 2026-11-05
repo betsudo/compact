@@ -1,0 +1,155 @@
+{
+  "format": "compact-vector-component-products-model-expectations/v1",
+  "circuits": [
+    {
+      "source": "aliases",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "boolean",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "field",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "helper",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "identity_control",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "local",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "nested_outer",
+      "circuit": "run",
+      "k": 10,
+      "proof_required": true
+    },
+    {
+      "source": "parameter",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "prior_product_control",
+      "circuit": "run",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "proof_candidate",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "proof_candidate",
+      "circuit": "run_field",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "pure_control",
+      "circuit": "value",
+      "k": null,
+      "proof_required": false
+    },
+    {
+      "source": "witness_after",
+      "circuit": "run",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "witness_before",
+      "circuit": "run",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "component_2d",
+      "circuit": "run",
+      "k": 10,
+      "proof_required": true
+    },
+    {
+      "source": "component_alias",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "component_boolean",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "component_field",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "empty_component",
+      "circuit": "run",
+      "k": 5,
+      "proof_required": true
+    },
+    {
+      "source": "checked_helper",
+      "circuit": "run",
+      "k": 10,
+      "proof_required": true
+    },
+    {
+      "source": "original_regression",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "inner_tuple_alias",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    },
+    {
+      "source": "inner_product_empty",
+      "circuit": "run",
+      "k": 7,
+      "proof_required": true
+    },
+    {
+      "source": "inner_product_single",
+      "circuit": "run",
+      "k": 8,
+      "proof_required": true
+    },
+    {
+      "source": "inner_product_three",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true
+    }
+  ]
+}

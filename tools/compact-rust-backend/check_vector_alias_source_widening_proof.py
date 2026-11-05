@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+
+"""Fresh source-bound Vector alias source proofs and strict funded local applications.
+
+The opt-in runner includes the whole unedited current SDK. Preparation verifies
+source/API/binding/parameter premises but generates no keys or proofs. Full CI,
+all-export proof coverage and integration acceptance remain separate.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tomllib
+
+import check_vector_alias_source_widening as main_gate
+import local_parity_gate as common
+import resolve_ledger_test_static as ledger_static
+from did_proof_gate import dust_fixture_inventory, hashes, unchanged
+
+ROOT = main_gate.ROOT
+CIRCUITS = ["run", "run_reverse"]
+ALL_HELPER_CIRCUITS = ["run", "run_reverse"]
+CASES = [("run", [0, 255], [0, 255], 1),
+         ("run_reverse", [255, 0], [0, 255], 2)]
+require, digest = main_gate.require, main_gate.digest
+
+
+def validate_summary(summary, generated):
+    require(summary["format"] == "compact-vector-alias-source-proof/v1" and summary["status"] == "passed"
+            and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False,
+            "invalid Vector alias source proof summary")
+    require([(r["circuit"], r["input"], r["expected"], r["seen"]) for r in summary["calls"]] == CASES,
+            "selected proof scenario roster differs")
+    require(summary["helper_exports_proved"] == CIRCUITS and summary["unproved_helper_exports"] == [],
+            "selected/unproved helper export coverage differs")
+    for index, row in enumerate(summary["calls"]):
+        require(isinstance(row["expected"], list) and len(row["expected"]) == 2 and all(type(x) is int for x in row["expected"]) and type(row["witness_count"]) is int
+                and row["witness_count"] == 0, "witness count or result differs")
+        for field, path in [("proof_bytes", f"vector-alias-source-{index}.proof"),
+                            ("transaction_bytes", f"vector-alias-source-{index}-transaction.bin")]:
+            require(type(row[field]) is int and row[field] > 0
+                    and (generated / path).stat().st_size == row[field], "missing or truncated proof/application artifact")
+        require(row["standalone_proof"] == f"vector-alias-source-{index}.proof"
+                and row["applied_transaction"] == f"vector-alias-source-{index}-transaction.bin"
+                and row["transaction_proof_relationship"] == "independently proved"
+                and row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists",
+                "proof/application identity or strictness differs")
+        require(all(row[name] is True for name in ["corrupt_proof_rejected", "changed_binding_rejected",
+                    "changed_result_rejected", "changed_result_same_geometry", "wrong_verifier_rejected", "replay_unchanged"]),
+                "proof/application control missing")
+        require((generated / f"vector-alias-source-{index}.preimage").stat().st_size > 0
+                and (generated / f"vector-alias-source-{index}-state.bin").stat().st_size > 0, "proof/state evidence missing")
+
+
+def run(args):
+    output = args.output.absolute()
+    require(not output.exists() and not output.is_symlink(), "proof output must be a new destination")
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    main_gate.reject_compiler_overrides(env)
+    output.mkdir(parents=True)
+    report = {"format": "compact-vector-alias-source-widening-proof-gate/v1", "status": "incomplete", "commands": [],
+              "scope": __doc__, "proof_execution": False, "full_integration_acceptance": "OPEN"}
+    try:
+        # This maintained gate admits the exact clean HEAD/compiler/Rust tools,
+        # source/golden/Program identities, consumer behavior and negative controls.
+        common.run([sys.executable, str(Path(main_gate.__file__)),
+                    "--ts-runtime", str(args.ts_runtime), "--compiler-receipt", str(args.compiler_receipt),
+                    "--output", str(output / "protocol")], "source-api-protocol", output, report, env=env)
+        admitted = json.loads((output / "protocol/receipt.json").read_text())
+        require(admitted["status"] == "passed", "source/API protocol not admitted")
+        report["head"] = admitted["head"]
+        report["protocol_receipt"] = {"path": str(output / "protocol/receipt.json"), "sha256": digest(output / "protocol/receipt.json")}
+        report["rust_tools"] = admitted["rust_tools"]
+        report["compiler_tools"] = admitted["tools"]
+        unchanged(report["compiler_tools"])
+        env.update({key: value for key, value in admitted["environment"].items() if value is not None})
+        env["RUSTUP_TOOLCHAIN"] = "1.99.0"
+        env["RUSTC"] = admitted["rust_tools"]["rustc"]["path"]
+        env["CARGO_INCREMENTAL"] = "0"
+        require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "absolute MIDNIGHT_PP required")
+        generated = output / "protocol/generated/helper"
+        env["COMPACT_VECTOR_ALIAS_SOURCE_GENERATED"] = str(generated)
+        report["generated_sdk"] = str(generated)
+        report["generated_before"] = before = main_gate.inventory(generated)
+        source_paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
+                        Path(main_gate.__file__), Path(common.__file__), Path(ledger_static.__file__),
+                        ROOT / "tools/compact-rust-backend/did_proof_gate.py"]
+        for directory in ["tools/compact-rust-proof-smoke", "tests-rust-backend", "runtime-rs", "runtime-rs-macros"]:
+            source_paths += [p for p in (ROOT / directory).rglob("*") if p.suffix in {".rs", ".toml", ".json"}]
+        report["source_hashes"] = hashes(source_paths)
+        (output / "bin").mkdir()
+        zkir = args.zkir.resolve(strict=True)
+        report["zkir"] = common.stable_copy(zkir, output / "bin/zkir")
+        components = report["components"] = {}
+
+        def execute(label, command, stdout=None):
+            argv = list(map(str, command))
+            if argv[0] in admitted["rust_tools"]:
+                argv[0] = admitted["rust_tools"][argv[0]]["path"]
+            common.run(argv, label, output, report, env=env, stdout_path=stdout)
+
+        # No SDK path is needed by the default build. The opt-in build follows it.
+        plain = dict(env)
+        plain.pop("COMPACT_VECTOR_ALIAS_SOURCE_GENERATED", None)
+        common.run([admitted["rust_tools"]["cargo"]["path"], "check", "--profile", "proof-checks", "--locked", "--offline",
+                    "-p", "compact-rust-proof-smoke", "--no-default-features"], "default-runner-check", output, report, env=plain)
+        common.run([admitted["rust_tools"]["cargo"]["path"], "clippy", "--profile", "proof-checks", "--locked", "--offline",
+                    "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"],
+                   "all-features-runner-clippy-without-sdk", output, report, env=plain)
+        execute("build-runner", ["cargo", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                                "compact-rust-proof-smoke", "--features", "vector-alias-source-widening", "--message-format=json"], output / "build.jsonl")
+        artifacts = [json.loads(line) for line in (output / "build.jsonl").read_text().splitlines() if line.startswith("{")]
+        executable = {row["executable"] for row in artifacts if row.get("reason") == "compiler-artifact"
+                      and row["target"]["name"] == "compact-rust-proof-smoke" and row.get("executable")}
+        require(len(executable) == 1, "ambiguous proof runner artifact")
+        built = Path(executable.pop())
+        components["runner"] = common.stable_copy(built, output / "bin/proof-runner")
+        runner = components["runner"]["snapshot"]
+        depfile = built.with_suffix(".d")
+        dependencies = depfile.read_text()
+        for path in [generated / "contract/lib.rs", *sorted((generated / "contract/checked-programs").glob("*.json"))]:
+            # Cargo's Make depfile escapes spaces; it must track every included file.
+            require(str(path).replace(" ", "\\ ") in dependencies, "runner omitted an actual generated SDK/Program dependency")
+        report["runner_depfile"] = {"path": str(depfile), "sha256": digest(depfile), "all_generated_includes": True}
+        execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
+                                  "compact-rust-proof-smoke", "--features", "vector-alias-source-widening", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
+        for label, message in [("changed-ir", "vector-alias-source complete IR bytes differ"),
+                               ("changed-program", "vector-alias-source complete Program bytes differ"),
+                               ("missing-program", "vector-alias-source complete Program membership differs")]:
+            negative = output / label
+            shutil.copytree(generated / "contract/checked-programs", negative / "contract/checked-programs")
+            shutil.copyfile(generated / "contract/compact-rust-ir.json", negative / "contract/compact-rust-ir.json")
+            if label == "changed-ir":
+                import copy
+                changed = copy.deepcopy(json.loads((main_gate.FIXTURES / "goldens/helper/source-ir.json").read_text()))
+                root = next(c for c in changed["circuits"] if c["name"] == "widen")
+                root["body"]["value"] = {"kind": "vector", "element": {"kind": "unsigned", "max": "255"},
+                    "elements": [{"kind": "unsigned_literal", "value": str(v), "max": "255"} for v in [1, 0]]}
+                (negative / "contract/compact-rust-ir.json").write_text(json.dumps(changed, indent=2) + "\n")
+            elif label == "changed-program":
+                path = negative / "contract/checked-programs/program-0.json"
+                path.write_bytes(path.read_bytes() + b" ")
+            else:
+                (negative / "contract/checked-programs/program-1.json").unlink()
+            result = subprocess.run([runner, "--vector-alias-source-widening", str(negative)], cwd=ROOT, env=env,
+                                    capture_output=True, text=True, timeout=30)
+            (negative / "stdout").write_text(result.stdout)
+            (negative / "stderr").write_text(result.stderr)
+            require(result.returncode != 0 and message in result.stderr, label + " failed outside its binding guard")
+            require(not (negative / "keys").exists() and not list(negative.glob("vector-alias-source-*")), "pre-key refusal produced runtime evidence")
+            report[label] = {"exit": result.returncode, "before_keys_or_state": True}
+        execute("models", [runner, "--vector-alias-source-widening-models", generated], output / "models.json")
+        models = json.loads((output / "models.json").read_text())
+        require(models["format"] == "compact-vector-alias-source-models/v1" and [r["circuit"] for r in models["circuits"]] == ALL_HELPER_CIRCUITS,
+                "selected model roster differs")
+        require(models["selected_for_proof"] == CIRCUITS and models["unproved"] == [], "selected proof scope differs")
+        selected_models = [r for r in models["circuits"] if r["circuit"] in CIRCUITS]
+        require(len(selected_models) == 2 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models),
+                "selected circuit exceeds automatic tiny bound")
+        report["models"] = models
+        # A separate complete retained Fold source supplies a real k9 diagnostic.
+        # It never replaces the admitted alias-source IR/Programs or proof inputs.
+        diagnostic = output / "over-cap-producer"
+        diagnostic.mkdir()
+        diagnostic_input = ROOT / "examples/rust_backend/fold_vector_result_widening/helper.compact"
+        text = diagnostic_input.read_text()
+        report["over_cap_input_source"] = {"path": str(diagnostic_input), "sha256": digest(diagnostic_input)}
+        require(text.count("input:Vector<2,Uint<8>>") == 4 and text.count("run_checked") == 1,
+                "retained diagnostic source premise changed")
+        source = diagnostic / "helper.compact"
+        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<8,Uint<8>>").replace("run_checked", "run_reverse"))
+        unchanged(report["compiler_tools"])
+        compiler = json.loads(args.compiler_receipt.read_text())["compactc"]["path"]
+        execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger8", "--rust-require-recording",
+                "--skip-zk", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
+        report["over_cap_diagnostic_source"] = {"sha256": digest(source),
+                "zkir_sha256": digest(diagnostic / "generated/zkir/run_reverse.zkir"),
+                "scope": "complete retained Fold length8 diagnostic only, not source/proof admission"}
+        excessive = output / "selected-model-over-cap"
+        shutil.copytree(generated, excessive)
+        shutil.copyfile(diagnostic / "generated/zkir/run_reverse.zkir", excessive / "zkir/run_reverse.zkir")
+        refused = subprocess.run([runner, "--vector-alias-source-widening-models", str(excessive)],
+                                 cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
+        (excessive / "stdout").write_text(refused.stdout)
+        (excessive / "stderr").write_text(refused.stderr)
+        require(refused.returncode and "model exceeds tiny automatic k<=8" in refused.stderr,
+                "selected over-cap model did not refuse")
+        refused_models = json.loads(refused.stdout)
+        require(next(r["k"] for r in refused_models["circuits"] if r["circuit"] == "run_reverse") > 8
+                and not (excessive / "keys").exists(), "over-cap refusal was not before keys")
+        report["selected_model_over_cap_refusal"] = {"exit": refused.returncode,
+                "before_keys_or_proofs": True, "models": refused_models,
+                "scope": "genuine larger compiler-produced ZKIR under selected diagnostic slot; not proof admission"}
+        material = output / "proof-material.json"
+        execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
+                *[arg for k in sorted({r["k"] for r in selected_models}) for arg in ["--parameter-k", str(k)]]], material)
+        verified = json.loads(material.read_text())
+        require(verified["mode"] == "verify-only" and verified["verification"] == "all files checked against locked upstream SHA256 tables"
+                and Path(verified["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "proof material premise differs")
+        require({r["k"] for r in selected_models} <= {r["k"] for r in verified["parameters"]}, "selected SRS not verified before key generation")
+        report["material_hashes"] = hashes([Path(verified["cache_directory"]) / r["name"] for r in verified["assets"] + verified["parameters"]])
+        execute("ledger-metadata", ["cargo", "metadata", "--locked", "--offline", "--format-version", "1"], output / "metadata.json")
+        ledger = ledger_static.resolve(json.loads((output / "metadata.json").read_text()), tomllib.loads((ROOT / "Cargo.lock").read_text()))
+        env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"] = ledger["static_directory"]
+        report["ledger_static"] = ledger
+        report["dust_fixture_hashes"] = dust_fixture_inventory(Path(ledger["static_directory"]))
+        if not args.prepare_only:
+            (generated / "keys").mkdir()
+            report["keygen"] = []
+            execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
+            for row in selected_models:
+                circuit = row["circuit"]
+                execute("keygen-" + circuit, [report["zkir"]["snapshot"], "compile", generated / f"zkir/{circuit}.zkir",
+                                              generated / f"keys/{circuit}.prover", generated / f"keys/{circuit}.verifier"])
+                model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
+                require(model is not None and int(model[1]) == row["k"], "actual key model differs from verified pre-key model")
+                report["keygen"].append({"circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
+            report["key_hashes"] = hashes([generated / f"keys/{c}.{ext}" for c in CIRCUITS for ext in ["prover", "verifier"]])
+            report["binary_ir_hashes"] = hashes([generated / f"zkir/{c}.bzkir" for c in CIRCUITS])
+            execute("prove-verify-apply", [runner, "--vector-alias-source-widening", generated])
+            summary = json.loads((generated / "vector-alias-source-proof-result.json").read_text())
+            validate_summary(summary, generated)
+            report["proof_result"] = summary
+            report["proof_execution"] = True
+            report["result_hashes"] = hashes([p for p in generated.glob("vector-alias-source-*") if p.is_file()])
+            unchanged(report["key_hashes"])
+            unchanged(report["binary_ir_hashes"])
+        for field in ["source_hashes", "material_hashes", "dust_fixture_hashes", "compiler_tools"]:
+            unchanged(report[field])
+        unchanged({str(generated / path): sha for path, sha in before.items()})
+        for component in [report["zkir"], *components.values()]:
+            # Shared Cargo target may be rebuilt elsewhere; only the private snapshot is executed.
+            unchanged({component["snapshot"]: component["sha256"]})
+        unchanged({str(output / "protocol/receipt.json"): report["protocol_receipt"]["sha256"]})
+        require(subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip() == report["head"]
+                and not subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip(), "source changed during proof gate")
+        report["status"] = "prepared" if args.prepare_only else "passed"
+    except Exception as error:
+        report["status"] = "failed"
+        report["error"] = repr(error)
+        raise
+    finally:
+        (output / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps({"status": report["status"], "receipt": str(output / "receipt.json")}))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ["ts-runtime", "compiler-receipt", "zkir", "output"]:
+        parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--prepare-only", action="store_true", help="compile and verify bindings/material only; no keys/proofs/application")
+    run(parser.parse_args())
+
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.

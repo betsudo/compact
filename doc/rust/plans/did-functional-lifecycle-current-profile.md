@@ -319,3 +319,16 @@ were checked against the reviewed fixture. It retains the selected standalone
 proof and a separate independently proved, default-strictly applied transaction.
 Constructor execution and all twelve exports remain outside that proof claim.
 Local bf and CI 0c14 receipts retain their original identities and boundaries.
+
+
+## Current-candidate selected lifecycle — 2026-11-03
+
+The [compiler183 handoff](current-did-handoff.md) separately qualifies the intact
+source and all twelve Programs at `67cbded3e`, with twelve live DID TS rows, five
+selected four-route Rust methods, typed refusals and strict Clippy. Fresh k11 /
+1,804-row deactivation keys produce a verified 3,296-byte standalone proof and a
+separately proved funded DEFAULT-strict 7,413-byte transaction with version/binding
+and unchanged replay controls. Actual Claude source/receipt review reports no P1/P2.
+Constructor/all-export proofs and the TS-only positive timestamp-zero Rust edge
+remain unclaimed. Earlier compiler138 integration and all historical receipts
+retain their literal scope; no new hosted integration or release follows.

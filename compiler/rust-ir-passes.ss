@@ -313,27 +313,31 @@
                (source-errorf src "Rust backend Field literal must be nonnegative"))]
           [else (expression-ir expr owner-src)]))
 
-      (define (let-expression-ir local* expr* body expected-type src)
-        (when (current-variable-types)
-          (for-each (lambda (local)
-                      (nanopass-case (Lnodisclose Argument) local
-                        [(,var-name ,type)
-                         (eq-hashtable-set! (current-variable-types) var-name type)]))
-                    local*))
-        (object (cons "kind" "let")
-                (cons "bindings"
-                      (list->vector
-                        (map (lambda (local value)
-                               (nanopass-case (Lnodisclose Argument) local
-                                 [(,var-name ,type)
-                                  (object (cons "name" (sourced-rust-var-name var-name))
-                                          (cons "ty" (type-ir type src))
-                                          (cons "value" (typed-expression-ir value type src)))]))
-                             local* expr*)))
-                (cons "body"
-                      (if expected-type
-                          (typed-expression-ir body expected-type src)
-                          (expression-ir body src)))))
+      (define let-expression-ir
+        (case-lambda
+          [(local* expr* body expected-type src)
+           (let-expression-ir local* expr* body expected-type src #f)]
+          [(local* expr* body expected-type src source-type)
+           (when (current-variable-types)
+             (for-each (lambda (local)
+                         (nanopass-case (Lnodisclose Argument) local
+                           [(,var-name ,type)
+                            (eq-hashtable-set! (current-variable-types) var-name type)]))
+                       local*))
+           (object (cons "kind" "let")
+                   (cons "bindings"
+                         (list->vector
+                           (map (lambda (local value)
+                                  (nanopass-case (Lnodisclose Argument) local
+                                    [(,var-name ,type)
+                                     (object (cons "name" (sourced-rust-var-name var-name))
+                                             (cons "ty" (type-ir type src))
+                                             (cons "value" (typed-expression-ir value type src)))]))
+                                local* expr*)))
+                   (cons "body"
+                         (if expected-type
+                             (typed-expression-ir body expected-type src source-type)
+                             (expression-ir body src))))]))
 
       ;; Analysis inserts this guard for Uint subtraction. The native checked
       ;; subtraction performs the same comparison, so only this exact guard
@@ -433,6 +437,16 @@
               (with-output-language (Lnodisclose Type)
                 `(tunsigned ,(type-origin type) ,maximum))
               type)))
+
+      ;; type-ir erases aliases to their Vector carrier. Use that carrier
+      ;; for expected Vector context and cast dispatch, including reducer
+      ;; Vector literals. Other alias families retain their current owners.
+      (define (vector-carrier-type type)
+        (let loop ([value type])
+          (nanopass-case (Lnodisclose Type) value
+            [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+            [(tvector ,src ,len ,type^) value]
+            [else type])))
 
       ;; arithmetic-binop annotates both operands with the result bound.
       ;; For multiplication by zero that bound is smaller than an operand's;
@@ -590,7 +604,7 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
+           (nanopass-case (Lnodisclose Type) (vector-carrier-type (unsigned-canonical-type type))
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
                 (if value
@@ -613,10 +627,10 @@
                     (object (cons "kind" "unsigned_cast")
                             (cons "max" (number->string nat))
                             (cons "value" (typed-expression-ir expr type^ src)))))]
-             [(tvector ,src^ ,len ,type^)
-              (typed-expression-ir expr type src)]
+             [(tvector ,src^ ,len ,type1)
+              (typed-expression-ir expr type src type^)]
              [(ttuple ,src^ ,type* ...)
-              (typed-expression-ir expr type src)]
+              (typed-expression-ir expr type src type^)]
              [else (source-errorf src "Rust backend does not yet support this cast")])]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
@@ -883,13 +897,107 @@
                        (cons "right" (field-argument-ir expr2 src))))]
           [else (source-errorf owner-src "Rust backend does not yet support this circuit expression")]))
 
-      (define (typed-expression-ir expr expected-type owner-src)
-        (call-with-rust-origin "expression" (expression-origin expr) #t
-          (lambda () (typed-expression-ir-value expr (unsigned-canonical-type expected-type) owner-src)) (expression-operation-origin expr)))
+      ;; Only literal elements are expanded: never unroll a declared Vector
+      ;; length independently of the actual source syntax. Cast analysis owns
+      ;; these source types; desired target types do not infer actual bounds.
+      (define (literal-source-types source-type count owner-src)
+        (nanopass-case (Lnodisclose Type) source-type
+          [(talias ,src ,nominal? ,type-name ,type)
+           (literal-source-types type count owner-src)]
+          [(ttuple ,src ,type* ...)
+           (unless (= (length type*) count)
+             (source-errorf owner-src "Rust literal source type arity differs"))
+           type*]
+          [(tvector ,src ,len ,type)
+           (unless (= len count)
+             (source-errorf owner-src "Rust literal source Vector length differs"))
+           (make-list count type)]
+          [else (source-errorf owner-src "Rust literal lacks an aggregate source type")]))
 
-      (define (typed-expression-ir-value expr expected-type owner-src)
+      (define (typed-projection-value-ir expr expected-type source-type owner-src)
+        (let ([value (expression-ir expr owner-src)])
+          (if source-type
+              (let ([actual (type-ir source-type owner-src)]
+                    [target (type-ir expected-type owner-src)])
+                (if (equal? actual target)
+                    value
+                    (object (cons "kind" "coerce")
+                            (cons "value" value) (cons "ty" target))))
+              value)))
+
+      ;; Conditional arms already supply an outer Coerce. Preserve the original
+      ;; Fold accumulator, source alias or nested cast without a new wrapper.
+      (define typed-coercion-value-ir
+        (case-lambda
+          [(expr expected-type owner-src)
+           (typed-coercion-value-ir expr expected-type owner-src #f)]
+          [(expr expected-type owner-src source-type)
+           (nanopass-case (Lnodisclose Expression) expr
+              [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+               (expression-ir expr owner-src)]
+              [(safe-cast ,src ,type ,type^ ,expr^)
+               (expression-ir expr owner-src)]
+              [(var-ref ,src ,var-name)
+               (let ([actual-type (and (current-variable-types)
+                                       (eq-hashtable-ref (current-variable-types) var-name #f))])
+                 (if (and actual-type
+                          (nanopass-case (Lnodisclose Type) actual-type
+                            [(talias ,src1 ,nominal? ,type-name ,type1)
+                             (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
+                               [(tvector ,src2 ,len2 ,type2) #t]
+                               [else #f])]
+                            [else #f]))
+                     (expression-ir expr owner-src)
+                     (typed-expression-ir expr expected-type owner-src source-type)))]
+              [else (typed-expression-ir expr expected-type owner-src source-type)])]))
+
+      (define typed-expression-ir
+        (case-lambda
+          [(expr expected-type owner-src)
+           (typed-expression-ir expr expected-type owner-src #f)]
+          [(expr expected-type owner-src source-type)
+           (call-with-rust-origin "expression" (expression-origin expr) #t
+             (lambda ()
+               (typed-expression-ir-value expr
+                 (vector-carrier-type (unsigned-canonical-type expected-type))
+                 owner-src source-type))
+             (expression-operation-origin expr))]))
+
+      (define (typed-expression-ir-value expr expected-type owner-src source-type)
         (nanopass-case (Lnodisclose Expression) expr
-          [(return ,src ,expr) (typed-expression-ir expr expected-type src)]
+          [(return ,src ,expr) (typed-expression-ir expr expected-type src source-type)]
+          [(elt-ref ,src ,expr^ ,elt-name ,nat)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(tuple-ref ,src ,expr^ ,kindex)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(vector-ref ,src ,type ,expr^ ,index)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(downcast-unsigned ,src ,nat? ,nat ,expr^)
+           (typed-projection-value-ir expr expected-type source-type owner-src)]
+          [(safe-cast ,src ,type ,type^ ,expr^)
+           ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
+           ;; Lower that complete cast first, then preserve its wider Vector
+           ;; context instead of losing it while unwrapping the source alias.
+           (let* ([value (expression-ir expr owner-src)]
+                  [actual (type-ir type src)]
+                  [target (type-ir expected-type src)])
+             (if (and (or source-type
+                          (and (equal? (cdr (assoc "kind" actual)) "vector")
+                               (equal? (cdr (assoc "kind" target)) "vector")))
+                      (not (equal? actual target)))
+                 (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
+                 value))]
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           ;; Lower the complete Fold at its supplied accumulator type first.
+           ;; Its reducer and guards retain that type; independent existing
+           ;; Coerce owners validate any declared Vector result conversion.
+           (let* ([value (expression-ir expr owner-src)]
+                  [actual (type-ir type0 src)]
+                  [target (type-ir expected-type src)])
+             (if (and (equal? (cdr (assoc "kind" target)) "vector")
+                      (not (equal? actual target)))
+                 (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
+                 value))]
           [(var-ref ,src ,var-name)
            (let ([actual-type (and (current-variable-types)
                                    (eq-hashtable-ref (current-variable-types) var-name #f))])
@@ -912,6 +1020,19 @@
                       [else (expression-ir expr owner-src)])]
                    [(tvector ,src^ ,len ,type)
                     (nanopass-case (Lnodisclose Type) actual-type
+                      [(talias ,src1 ,nominal? ,type-name ,type1)
+                       ;; Frontend typing retains nominal/implicit-cast authority.
+                       ;; Only a Vector source carrier needs the existing Coerce;
+                       ;; retain the original identity-alias IR unchanged.
+                       (nanopass-case (Lnodisclose Type) (vector-carrier-type actual-type)
+                         [(tvector ,src2 ,len2 ,type2)
+                          (if (equal? (type-ir actual-type src)
+                                      (type-ir expected-type src))
+                              (expression-ir expr owner-src)
+                              (object (cons "kind" "coerce")
+                                      (cons "value" (expression-ir expr src))
+                                      (cons "ty" (type-ir expected-type src))))]
+                         [else (expression-ir expr owner-src)])]
                       [(tvector ,src1 ,len1 ,type1)
                        (object (cons "kind" "coerce")
                                (cons "value" (expression-ir expr src))
@@ -935,54 +1056,57 @@
                    [else (expression-ir expr owner-src)])
                  (expression-ir expr owner-src)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
-           (let-expression-ir local* expr* expr expected-type src)]
+           (let-expression-ir local* expr* expr expected-type src source-type)]
           [(tuple ,src ,tuple-arg* ...)
-           (nanopass-case (Lnodisclose Type) expected-type
-             [(tvector ,src^ ,len ,type)
-              (reject-spreads tuple-arg* "vector")
-              (unless (= (length tuple-arg*) len)
-                (source-errorf src "Rust vector literal length does not match its type"))
-              (object (cons "kind" "vector")
-                      (cons "element" (type-ir type src))
-                      (cons "elements"
-                            (list->vector
-                              (map (lambda (arg)
-                                     (nanopass-case (Lnodisclose Tuple-Argument) arg
-                                       [(single ,src1 ,expr)
-                                        (typed-expression-ir expr type src1)]
-                                       [else (source-errorf src "Rust backend does not yet support vector spreads")]))
-                                   tuple-arg*))))]
-             [(ttuple ,src^ ,type* ...)
-              (reject-spreads tuple-arg* "tuple")
-              (unless (= (length tuple-arg*) (length type*))
-                (source-errorf src "Rust tuple literal length does not match its type"))
-              (if (null? type*)
-                  (kind "unit")
-                  (object (cons "kind" "tuple")
-                          (cons "elements"
-                                (list->vector
-                                  (map (lambda (arg ty)
-                                         (nanopass-case (Lnodisclose Tuple-Argument) arg
-                                           [(single ,src1 ,expr)
-                                            (typed-expression-ir expr ty src1)]
-                                           [else (source-errorf src "Rust backend does not yet support tuple spreads")]))
-                                       tuple-arg* type*)))))]
-             [else (expression-ir expr owner-src)])]
+           (let ([source-type* (if source-type
+                                   (literal-source-types source-type (length tuple-arg*) src)
+                                   (make-list (length tuple-arg*) #f))])
+             (nanopass-case (Lnodisclose Type) expected-type
+               [(tvector ,src^ ,len ,type)
+                (reject-spreads tuple-arg* "vector")
+                (unless (= (length tuple-arg*) len)
+                  (source-errorf src "Rust vector literal length does not match its type"))
+                (object (cons "kind" "vector")
+                        (cons "element" (type-ir type src))
+                        (cons "elements"
+                              (list->vector
+                                (map (lambda (arg source-type)
+                                       (nanopass-case (Lnodisclose Tuple-Argument) arg
+                                         [(single ,src1 ,expr)
+                                          (typed-expression-ir expr type src1 source-type)]
+                                         [else (source-errorf src "Rust backend does not yet support vector spreads")]))
+                                     tuple-arg* source-type*))))]
+               [(ttuple ,src^ ,type* ...)
+                (reject-spreads tuple-arg* "tuple")
+                (unless (= (length tuple-arg*) (length type*))
+                  (source-errorf src "Rust tuple literal length does not match its type"))
+                (if (null? type*)
+                    (kind "unit")
+                    (object (cons "kind" "tuple")
+                            (cons "elements"
+                                  (list->vector
+                                    (map (lambda (arg ty source-type)
+                                           (nanopass-case (Lnodisclose Tuple-Argument) arg
+                                             [(single ,src1 ,expr)
+                                              (typed-expression-ir expr ty src1 source-type)]
+                                             [else (source-errorf src "Rust backend does not yet support tuple spreads")]))
+                                         tuple-arg* type* source-type*)))))]
+               [else (expression-ir expr owner-src)]))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "if")
                    (cons "condition" (expression-ir expr0 src))
                    (cons "then" (object (cons "kind" "coerce")
-                                        (cons "value" (typed-expression-ir expr1 expected-type src))
+                                        (cons "value" (typed-coercion-value-ir expr1 expected-type src source-type))
                                         (cons "ty" (type-ir expected-type src))))
                    (cons "otherwise" (object (cons "kind" "coerce")
-                                             (cons "value" (typed-expression-ir expr2 expected-type src))
+                                             (cons "value" (typed-coercion-value-ir expr2 expected-type src source-type))
                                              (cons "ty" (type-ir expected-type src)))))]
           [(seq ,src ,expr* ... ,expr)
            (if (checked-unsigned-subtraction? expr* expr)
-               (typed-expression-ir expr expected-type src)
+               (typed-expression-ir expr expected-type src source-type)
                (object (cons "kind" "sequence")
                        (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
-                       (cons "value" (typed-expression-ir expr expected-type src))))]
+                       (cons "value" (typed-expression-ir expr expected-type src source-type))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (if mbits
                (nanopass-case (Lnodisclose Type) expected-type
@@ -1655,6 +1779,113 @@
              [else #f])]
           [else #f]))
 
+      ;; Classify only frontend-supplied Vector value conversions. This chooses
+      ;; ordered evaluation; the existing native/recording Coerce owners still
+      ;; independently check the reached value and its representation bounds.
+      (define (vector-value-widening? target source)
+        ;; Type emission already erases these aliases. Unwrap them only for
+        ;; Vector conversion classification; do not change other owners.
+        (define (leaf-carrier type)
+          (nanopass-case (Lnodisclose Type) type
+            [(talias ,src ,nominal? ,type-name ,type^) (leaf-carrier type^)]
+            [else type]))
+        (define (scalar-widening? target source)
+          (let ([target (leaf-carrier target)] [source (leaf-carrier source)])
+            (or (return-component-widening? target source)
+                ;; A Boolean product component is preserved, never converted
+                ;; to a number. Other identity types keep their current owner.
+                (nanopass-case (Lnodisclose Type) source
+                  [(tboolean ,src)
+                   (nanopass-case (Lnodisclose Type) target
+                     [(tboolean ,src^) #t]
+                     [else #f])]
+                  [else #f]))))
+        ;; Products below a component Vector compose scalar, tuple and fixed
+        ;; Vector children. Preserve every dimension and product arity, including
+        ;; empty/single products and static-empty Vectors. New identity carriers
+        ;; retain their owners; checked Coerce owns conversion and resources.
+        (define (component-product-widening? target source)
+          (nanopass-case (Lnodisclose Type) (leaf-carrier source)
+            [(ttuple ,src ,type* ...)
+             (nanopass-case (Lnodisclose Type) (leaf-carrier target)
+               [(ttuple ,src^ ,type^* ...)
+                (and (= (length type*) (length type^*))
+                     (for-all
+                       (lambda (target source)
+                         (or (scalar-widening? target source)
+                             (component-product-widening? target source)
+                             (vector-component-widening? target source)))
+                       type^* type*))]
+               [else #f])]
+            [else #f]))
+        ;; Product components may contain fixed Vector dimensions ending in
+        ;; scalar/product/Vector leaves, with unchanged dimensions and shape.
+        (define (vector-component-widening? target source)
+          (nanopass-case (Lnodisclose Type) (leaf-carrier source)
+            [(tvector ,src ,len ,type)
+             (nanopass-case (Lnodisclose Type) (leaf-carrier target)
+               [(tvector ,src^ ,len^ ,type^)
+                (and (= len len^)
+                     (or (scalar-widening? type^ type)
+                         (component-product-widening? type^ type)
+                         (vector-component-widening? type^ type)))]
+               [else #f])]
+            [else #f]))
+        (define (element-widening? target source)
+          (nanopass-case (Lnodisclose Type) (leaf-carrier source)
+            [(ttuple ,src ,type* ...)
+             (nanopass-case (Lnodisclose Type) (leaf-carrier target)
+               [(ttuple ,src^ ,type^* ...)
+                (and (= (length type*) (length type^*))
+                     ;; Compose the existing scalar, product and fixed Vector
+                     ;; relations directly below the outer element product.
+                     ;; Preserve every arity/dimension and identity boundary;
+                     ;; checked Coerce still owns conversion and resources.
+                     (for-all
+                       (lambda (target source)
+                         (or (scalar-widening? target source)
+                             (component-product-widening? target source)
+                             (vector-component-widening? target source)))
+                       type^* type*))]
+               [else #f])]
+            [else (or (vector-value-widening? target source)
+                      (scalar-widening? target source))]))
+        (nanopass-case (Lnodisclose Type) (vector-carrier-type source)
+          [(tvector ,src ,len ,type)
+           (nanopass-case (Lnodisclose Type) (vector-carrier-type target)
+             [(tvector ,src^ ,len^ ,type^)
+              (and (= len len^)
+                   (element-widening? type^ type))]
+             [else #f])]
+          [else #f]))
+
+      ;; Preserve a supplied local Vector conversion at its original source
+      ;; value. Identity casts keep their current IR and evaluation owner.
+      (define (nonidentity-vector-widening-cast? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(safe-cast ,src ,type ,type^ ,expr^)
+           (and (vector-value-widening? type type^)
+                (not (equal? (type-ir type src) (type-ir type^ src))))]
+          [else #f]))
+
+      ;; A local initializer can call a witness or a stateful helper even when
+      ;; the returned value is only a variable. Keep its binding and surrounding
+      ;; actions in one ordered body instead of evaluating it in both halves of
+      ;; the legacy action/return split. This selects an owner, not admission.
+      (define (stateful-local-vector-widening? expr)
+        (let loop ([expr expr])
+          (nanopass-case (Lnodisclose Expression) expr
+            [(let* ,src ([,local* ,expr*] ...) ,expr^)
+             (or (exists nonidentity-vector-widening-cast? expr*)
+                 (exists loop expr*) (loop expr^))]
+            [(safe-cast ,src ,type ,type^ ,expr^) (loop expr^)]
+            [(return ,src ,expr^) (loop expr^)]
+            [(seq ,src ,expr* ... ,expr^)
+             (or (exists loop expr*) (loop expr^))]
+            [(if ,src ,expr0 ,expr1 ,expr2)
+             (or (loop expr0) (loop expr1) (loop expr2))]
+            [else #f])))
+
       (define (return-value-widening? target source)
         (nanopass-case (Lnodisclose Type) source
           [(tunsigned ,src ,nat) (return-component-widening? target source)]
@@ -1677,7 +1908,12 @@
            ;; The checked aggregate coercion owner binds the reached tuple
            ;; once and converts its components in order.
            (object (cons "kind" "coerce") (cons "value" value)
-                   (cons "ty" (type-ir target src)))]))
+                   (cons "ty" (type-ir target src)))]
+          [(tvector ,src ,len ,type)
+           (object (cons "kind" "coerce") (cons "value" value)
+                   (cons "ty" (type-ir target src)))]
+          [(talias ,src ,nominal? ,type-name ,type)
+           (return-widening-ir type value)]))
 
       ;; Preserve a terminal conditional and its selected storage mutations in
       ;; one ordered return body. Re-evaluating its condition after a mutation
@@ -1717,6 +1953,44 @@
           [(talias ,src ,nominal? ,type-name ,type)
            (unit-return-type? type)]
           [else #f]))
+
+      ;; This selects the existing ordered return owner, not recording
+      ;; admission. Keep the declared Vector context on actual literal tails;
+      ;; nonliteral conversions select this owner through the value predicate.
+      ;; A mixed conditional is one ordered body, including its helper branch.
+      (define (stateful-vector-literal-return? expr result-type)
+        (and
+          (nanopass-case (Lnodisclose Type) (vector-carrier-type result-type)
+            [(tvector ,src ,len ,type) #t]
+            [else #f])
+          (let loop ([expr expr])
+            (nanopass-case (Lnodisclose Expression) expr
+              [(return ,src ,expr) (loop expr)]
+              [(safe-cast ,src ,type ,type^ ,expr) (loop expr)]
+              [(let* ,src ([,local* ,expr*] ...) ,expr) (loop expr)]
+              [(seq ,src ,expr* ... ,expr) (loop expr)]
+              [(if ,src ,expr0 ,expr1 ,expr2) (or (loop expr1) (loop expr2))]
+              [(tuple ,src ,tuple-arg* ...) #t]
+              [else #f]))))
+
+      ;; A Vector-valued helper, parameter, query or witness need not end in a
+      ;; literal. Keep its declared conversion in the same ordered return body.
+      ;; Look only along the returned value flow; unrelated call arguments and
+      ;; discarded expressions retain their existing owners.
+      (define (stateful-vector-value-widening-return? expr result-type)
+        (and
+          (nanopass-case (Lnodisclose Type) (vector-carrier-type result-type)
+            [(tvector ,src ,len ,type) #t]
+            [else #f])
+          (let loop ([expr expr])
+            (nanopass-case (Lnodisclose Expression) expr
+              [(safe-cast ,src ,type ,type^ ,expr^)
+               (or (vector-value-widening? type type^) (loop expr^))]
+              [(return ,src ,expr^) (loop expr^)]
+              [(let* ,src ([,local* ,expr*] ...) ,expr^) (loop expr^)]
+              [(seq ,src ,expr* ... ,expr^) (loop expr^)]
+              [(if ,src ,expr0 ,expr1 ,expr2) (or (loop expr1) (loop expr2))]
+              [else #f]))))
 
       ;; A Unit binding has one possible value, but its initializer may still
       ;; select and execute storage effects. Preserve those effects before the
@@ -1781,13 +2055,38 @@
               (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids
                 (if (null? finish*) (lambda (value) value) (car finish*))))) (expression-operation-origin expr)))
 
+      ;; A uniform source literal already has one checked Rust element carrier.
+      ;; Materialize that source as a Vector before its aggregate conversion,
+      ;; keeping the original bound (not the wider destination bound). This
+      ;; avoids a generated N-tuple type at the source-value boundary. Mixed
+      ;; carriers retain their exact Tuple source and the same native Coerce.
+      (define (uniform-vector-literal-source-type source)
+        (nanopass-case (Lnodisclose Type) source
+          [(ttuple ,src ,type* ...)
+           (and (pair? type*)
+                (let ([element (car type*)])
+                  (and (for-all (lambda (other)
+                                   (equal? (type-ir-value element src)
+                                           (type-ir-value other src)))
+                                (cdr type*))
+                       (with-output-language (Lnodisclose Type)
+                         `(tvector ,src ,(length type*) ,element)))))]
+          [else #f]))
+
       (define (stateful-return-plan-ir-value expr expected-type owner-src environment witness-ids finish)
         (nanopass-case (Lnodisclose Expression) expr
           [(safe-cast ,src ,type ,type^ ,expr^)
-           (if (return-value-widening? type type^)
-               ;; Carry the conversion as a continuation, rather than moving
-               ;; it ahead of actions or evaluating the condition twice.
-               (stateful-return-plan-ir expr^ type^ src environment witness-ids
+           (if (or (return-value-widening? type type^)
+                   (vector-value-widening? type type^)
+                   (stateful-vector-literal-return? expr^ type))
+               ;; Reach the original source value after its actions, then
+               ;; apply the existing checked conversion exactly once. The
+               ;; supplied source type retains intermediate casts and guards.
+               (stateful-return-plan-ir expr^
+                 (if (stateful-vector-literal-return? expr^ type)
+                     (or (uniform-vector-literal-source-type type^) type^)
+                     type^)
+                 src environment witness-ids
                  (lambda (value)
                    (finish (return-widening-ir type value))))
                (object (cons "kind" "value")
@@ -1979,7 +2278,11 @@
           [(quote ,src ,datum)
            (typed-expression-ir value-expr expected-type src)]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
+           (if (nonidentity-vector-widening-cast? value-expr)
+               (object (cons "kind" "coerce")
+                       (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids))
+                       (cons "ty" (type-ir type src)))
+               (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
                   (expression-ir value-expr owner-src)
@@ -2001,7 +2304,7 @@
                     (object (cons "kind" "unsigned_cast")
                             (cons "max" (number->string nat))
                             (cons "value" (stateful-typed-expression-ir expr type^ src witness-ids)))))]
-             [else (stateful-expression-ir value-expr owner-src witness-ids)])]
+             [else (stateful-expression-ir value-expr owner-src witness-ids)]))]
           [else (stateful-expression-ir value-expr owner-src witness-ids)]))
 
       (define (stateful-expression-ir value-expr owner-src witness-ids)
@@ -2547,7 +2850,11 @@
                                  [(,var-name ,type)
                                   (cons var-name (object (cons "kind" "parameter")
                                                         (cons "name" (rust-var-name var-name))))])) arg*)]
-                      [effectful-return? (or (has-unit-mutation-initializer? expr)
+                      [vector-literal-return? (stateful-vector-literal-return? expr type)]
+                      [vector-value-return? (stateful-vector-value-widening-return? expr type)]
+                      [local-vector-widening? (stateful-local-vector-widening? expr)]
+                      [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
+                                             (has-unit-mutation-initializer? expr)
                                              (and (not (unit-return-type? type))
                                                   (or (terminal-storage-mutation-conditional? expr)
                                                       (lexical-storage-mutation-return? expr))))]
@@ -2566,7 +2873,8 @@
                                           (if effectful-return?
                                               (object (cons "kind" "effectful")
                                                       (cons "body"
-                                                            (stateful-return-plan-ir expr type src
+                                                            (stateful-return-plan-ir expr
+                                                              (if (or vector-literal-return? vector-value-return? local-vector-widening?) (vector-carrier-type type) type) src
                                                               (map (lambda (arg)
                                                                      (nanopass-case (Lnodisclose Argument) arg
                                                                        [(,var-name ,type)

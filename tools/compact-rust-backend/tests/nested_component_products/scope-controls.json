@@ -1,0 +1,34 @@
+{
+  "top_level_nested_tuple": {
+    "source_sha256": "36d8ab210f5981a88cdc6e497d2fd26bf4070ea226a5c1b2a75212c9dac983e2",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 0
+      },
+      "ir": {
+        "exit": 0
+      }
+    },
+    "historical_refusal": "scope-controls-compiler188.json",
+    "current_positive_consumer": "../outer_vector_product_semantics/consumer.rs: original (complete unchanged historical source at its declared path)"
+  },
+  "vector_inside_nested_product": {
+    "source_sha256": "9aac8007cd3d66711fe262f5d2b094eb2422b63fa0f94dc23ec301834bc436d3",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 0
+      },
+      "ir": {
+        "exit": 0
+      }
+    },
+    "historical_refusal": "scope-controls-compiler186.json",
+    "current_positive_consumer": "../component_product_vector_widening/consumer.rs: original_nested (complete unchanged historical source at its declared path)"
+  }
+}

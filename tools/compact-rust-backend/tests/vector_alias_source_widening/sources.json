@@ -1,0 +1,102 @@
+[
+  {
+    "source": "small",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "explicit",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "chain",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "identity",
+    "stateful": false,
+    "descriptor": "u8"
+  },
+  {
+    "source": "identity_vector",
+    "stateful": false,
+    "descriptor": "u8"
+  },
+  {
+    "source": "zero",
+    "stateful": false,
+    "descriptor": "empty"
+  },
+  {
+    "source": "nested",
+    "stateful": false,
+    "descriptor": "nested"
+  },
+  {
+    "source": "product",
+    "stateful": false,
+    "descriptor": "product"
+  },
+  {
+    "source": "wide",
+    "stateful": false,
+    "descriptor": "wide"
+  },
+  {
+    "source": "field",
+    "stateful": false,
+    "descriptor": "field"
+  },
+  {
+    "source": "boolean",
+    "stateful": false,
+    "descriptor": "boolean"
+  },
+  {
+    "source": "local",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "conditional",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "argument",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "element",
+    "stateful": false,
+    "descriptor": "nested"
+  },
+  {
+    "source": "nominal_source",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "nominal_target_control",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "helper",
+    "stateful": true,
+    "descriptor": "u16"
+  },
+  {
+    "source": "source_checked",
+    "stateful": false,
+    "descriptor": "u16"
+  },
+  {
+    "source": "unaliased_control",
+    "stateful": false,
+    "descriptor": "u16"
+  }
+]

@@ -1,0 +1,242 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "state_condition.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "65535"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "cell_read",
+              "field": "seen",
+              "index": 0
+            },
+            "right": {
+              "kind": "field_literal",
+              "value": "0"
+            }
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_4",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "1"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_4"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  "elements": [
+                    {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 1
+                    },
+                    {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 0
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_5",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "2"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_5"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  "elements": [
+                    {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 0
+                    },
+                    {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 1
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "state_condition.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "initialSeen",
+        "ty": {
+          "kind": "field"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "cell_write",
+        "field": "seen",
+        "index": 0,
+        "value": {
+          "kind": "parameter",
+          "name": "initialSeen"
+        }
+      }
+    ],
+    "source": {
+      "file": "state_condition.compact",
+      "line": 6,
+      "column": 1
+    }
+  }
+}

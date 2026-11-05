@@ -1019,16 +1019,153 @@ fn collect_return_plan_types<'ir>(
 }
 
 /// A Compact circuit's positional signature is part of the generated Rust API.
-/// Scope the Clippy exception to functions that cross its seven-input limit.
+/// Scope style exceptions to the individual generated signatures that need them.
 struct CompactSignatureLint;
 
 impl CompactSignatureLint {
+    // The outer nested-product carrier is already accepted by pure emission.
+    // Its additional execution wrappers cause the observed signature lint;
+    // keep the previously clean pure signatures unchanged.
+    fn has_execution_result(signature: &syn::Signature) -> bool {
+        let syn::ReturnType::Type(_, output) = &signature.output else {
+            return false;
+        };
+        let mut ty = output.as_ref();
+        if let syn::Type::Path(path) = ty
+            && path.path.leading_colon.is_none()
+            && path.path.segments.len() == 1
+            && path.path.segments[0].ident == "Result"
+            && let syn::PathArguments::AngleBracketed(arguments) = &path.path.segments[0].arguments
+            && let Some(syn::GenericArgument::Type(inner)) = arguments.args.first()
+        {
+            ty = inner;
+        }
+        let syn::Type::Path(path) = ty else {
+            return false;
+        };
+        let names = path
+            .path
+            .segments
+            .iter()
+            .map(|s| s.ident.to_string())
+            .collect::<Vec<_>>();
+        names == ["runtime", "context", "CircuitResult"]
+            || names == ["crate", "runtime", "context", "CircuitResult"]
+            || names == ["runtime", "recording", "RecordedCircuitResult"]
+            || names == ["crate", "runtime", "recording", "RecordedCircuitResult"]
+            || names == ["runtime", "transaction", "RecordedCall"]
+            || names == ["crate", "runtime", "transaction", "RecordedCall"]
+            || names == ["E", "Outcome"]
+    }
+
+    fn vector_element(ty: &syn::Type) -> Option<&syn::Type> {
+        let syn::Type::Path(path) = ty else {
+            return None;
+        };
+        let names = path
+            .path
+            .segments
+            .iter()
+            .map(|segment| segment.ident.to_string())
+            .collect::<Vec<_>>();
+        if names != ["runtime", "FixedVector"] && names != ["crate", "runtime", "FixedVector"] {
+            return None;
+        }
+        let syn::PathArguments::AngleBracketed(arguments) = &path.path.segments.last()?.arguments
+        else {
+            return None;
+        };
+        match arguments.args.first()? {
+            syn::GenericArgument::Type(element) => Some(element),
+            _ => None,
+        }
+    }
+
+    // A tuple wrapper around a component Vector adds the observed complexity
+    // even in the unwrapped Program constructor and private request field.
+    // Recognize only Compact Vector/product carriers; no type is rewritten.
+    fn has_tuple_wrapped_product_vector(ty: &syn::Type) -> bool {
+        matches!(Self::vector_element(ty), Some(syn::Type::Tuple(product))
+            if product.elems.len() >= 2 && product.elems.iter().any(|component|
+                matches!(component, syn::Type::Tuple(wrapper)
+                    if !wrapper.elems.is_empty() && wrapper.elems.iter().any(|child|
+                        matches!(Self::vector_element(child), Some(syn::Type::Tuple(inner))
+                            if inner.elems.len() >= 2 && inner.elems.iter().any(|member|
+                                matches!(member, syn::Type::Tuple(nested) if !nested.elems.is_empty())))))))
+    }
+
+    fn has_complex_product_vector(signature: &syn::Signature) -> bool {
+        let execution_result = Self::has_execution_result(signature);
+        let mut pending = signature
+            .inputs
+            .iter()
+            .filter_map(|argument| match argument {
+                syn::FnArg::Typed(argument) => Some(argument.ty.as_ref()),
+                syn::FnArg::Receiver(_) => None,
+            })
+            .collect::<Vec<_>>();
+        if let syn::ReturnType::Type(_, ty) = &signature.output {
+            pending.push(ty);
+        }
+        while let Some(ty) = pending.pop() {
+            let element = Self::vector_element(ty);
+            let wide_product =
+                matches!(element, Some(syn::Type::Tuple(product)) if product.elems.len() >= 3);
+            let nested_product = element.and_then(Self::vector_element).is_some_and(
+                |element| matches!(element, syn::Type::Tuple(product) if product.elems.len() >= 2),
+            );
+            let vector_component = matches!(element, Some(syn::Type::Tuple(product))
+                if product.elems.len() >= 2
+                    && product.elems.iter().any(|ty| Self::vector_element(ty).is_some()));
+            let product_component = execution_result
+                && matches!(element, Some(syn::Type::Tuple(product))
+                if product.elems.len() >= 2
+                    && product.elems.iter().any(|ty| matches!(ty, syn::Type::Tuple(nested) if !nested.elems.is_empty())));
+            if wide_product
+                || nested_product
+                || vector_component
+                || product_component
+                || Self::has_tuple_wrapped_product_vector(ty)
+            {
+                return true;
+            }
+            match ty {
+                syn::Type::Path(path) => {
+                    for segment in &path.path.segments {
+                        if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                            pending.extend(arguments.args.iter().filter_map(|argument| {
+                                match argument {
+                                    syn::GenericArgument::Type(ty) => Some(ty),
+                                    _ => None,
+                                }
+                            }));
+                        }
+                    }
+                }
+                syn::Type::Tuple(tuple) => pending.extend(&tuple.elems),
+                syn::Type::Reference(reference) => pending.push(&reference.elem),
+                syn::Type::Paren(paren) => pending.push(&paren.elem),
+                syn::Type::Group(group) => pending.push(&group.elem),
+                _ => {}
+            }
+        }
+        false
+    }
+
     fn mark(attrs: &mut Vec<syn::Attribute>, signature: &syn::Signature) {
         if signature.inputs.len() > 7 {
             attrs.push(syn::parse_quote!(
                 #[allow(
                     clippy::too_many_arguments,
                     reason = "preserves the declared Compact circuit signature"
+                )]
+            ));
+        }
+        if Self::has_complex_product_vector(signature) {
+            attrs.push(syn::parse_quote!(
+                #[allow(
+                    clippy::type_complexity,
+                    reason = "preserves Compact Vector/product carriers in this signature"
                 )]
             ));
         }
@@ -3706,3 +3843,6 @@ mod constructor_prepass;
 
 #[cfg(test)]
 mod named_collection_tests;
+
+#[cfg(test)]
+mod signature_lint_tests;

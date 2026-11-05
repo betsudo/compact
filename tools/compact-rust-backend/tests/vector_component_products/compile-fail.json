@@ -1,0 +1,58 @@
+{
+  "wrong_inner_bound": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_inner_bound.rs"
+  },
+  "wrong_inner_dimension": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_inner_dimension.rs"
+  },
+  "wrong_result_inner_bound": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_result_inner_bound.rs"
+  },
+  "wrong_result_inner_dimension": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_result_inner_dimension.rs"
+  },
+  "wrong_result_outer_dimension": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_result_outer_dimension.rs"
+  },
+  "wrong_result_arity": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_result_arity.rs"
+  },
+  "program_reuse": {
+    "code": "E0382",
+    "twin": "compile-pass/program_reuse.rs"
+  },
+  "context_reuse": {
+    "code": "E0382",
+    "twin": "compile-pass/context_reuse.rs"
+  },
+  "wrong_input_arity": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_input_arity.rs"
+  },
+  "wrong_input_element": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_input_element.rs"
+  },
+  "field_result": {
+    "code": "E0308",
+    "twin": "compile-pass/field_result.rs"
+  },
+  "wrong_inner_product_arity": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_inner_product_arity.rs"
+  },
+  "wrong_second_leaf_bound": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_second_leaf_bound.rs"
+  },
+  "wrong_result_inner_product_arity": {
+    "code": "E0308",
+    "twin": "compile-pass/wrong_result_inner_product_arity.rs"
+  }
+}

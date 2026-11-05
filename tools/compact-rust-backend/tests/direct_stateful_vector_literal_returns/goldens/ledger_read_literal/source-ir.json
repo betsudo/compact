@@ -1,0 +1,100 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "ledger_read_literal.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "field"
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "value",
+          "value": {
+            "kind": "vector",
+            "element": {
+              "kind": "field"
+            },
+            "elements": [
+              {
+                "kind": "cell_read",
+                "field": "seen",
+                "index": 0
+              },
+              {
+                "kind": "cell_read",
+                "field": "seen",
+                "index": 0
+              }
+            ]
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "ledger_read_literal.compact",
+        "line": 7,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "initialSeen",
+        "ty": {
+          "kind": "field"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "cell_write",
+        "field": "seen",
+        "index": 0,
+        "value": {
+          "kind": "parameter",
+          "name": "initialSeen"
+        }
+      }
+    ],
+    "source": {
+      "file": "ledger_read_literal.compact",
+      "line": 6,
+      "column": 1
+    }
+  }
+}

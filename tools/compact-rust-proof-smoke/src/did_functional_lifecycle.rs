@@ -103,7 +103,29 @@ const PROGRAMS: &[(&str, &[u8])] = &[
     ),
 ];
 
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+#[derive(Clone, Copy)]
+pub(super) enum Case {
+    Valid,
+    TimestampZero,
+}
+
+impl Case {
+    fn id(self) -> &'static str {
+        match self {
+            Self::Valid => "did/valid",
+            Self::TimestampZero => "did/timestamp-zero",
+        }
+    }
+
+    fn timestamp(self) -> &'static str {
+        match self {
+            Self::Valid => "200",
+            Self::TimestampZero => "0",
+        }
+    }
+}
+
+pub(super) fn run(root: &Path, case: Case) -> Result<(), Box<dyn Error>> {
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         IR,
@@ -137,16 +159,24 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         .as_array()
         .ok_or("missing DID cases")?
         .iter()
-        .find(|r| r["id"] == "did/valid")
-        .ok_or("missing DID valid row")?;
+        .find(|r| r["id"] == case.id())
+        .ok_or("missing selected DID success row")?;
+    if row["options"]["timestamp"].as_str().unwrap_or("200") != case.timestamp()
+        || row.get("error").is_some()
+        || row["result"] != json!([])
+    {
+        return Err("DID selected success capture differs".into());
+    }
     let changed_input = AlignedValue::from((
         signature(row)?,
         r::BoundedUint::<18446744073709551615>::new(1)?,
     ));
     let mut result =
         did_deactivate::run_with(root, row, prepare, check_final, Some(changed_input))?;
-    result["format"] = json!("compact-did-functional-lifecycle-proof/v1");
+    result["format"] = json!("compact-did-functional-lifecycle-proof/v2");
     result["status"] = json!("passed");
+    result["source_case"] = json!(case.id());
+    result["timestamp_witness"] = json!(case.timestamp());
     result["circuit"] = json!("deactivate");
     result["constructor_execution_proved"] = json!(false);
     result["all_twelve_exports_proved"] = json!(false);
@@ -229,6 +259,19 @@ fn prepare(
                 .ok_or("missing private state")?
     {
         return Err("DID recording or witness order differs".into());
+    }
+    // Compare the selected original TS state independently of Rust route parity.
+    // A successful nonzero run must never satisfy the zero-case proof obligation.
+    let captured_after: ContractState<DefaultDB> = tagged_deserialize(
+        &mut hex::decode(
+            row["after"]
+                .as_str()
+                .ok_or("missing DID captured after state")?,
+        )?
+        .as_slice(),
+    )?;
+    if native.context.query.state != captured_after.data {
+        return Err("DID final data differs from selected original TS capture".into());
     }
     let expected = native.context.query.state.get_ref().clone();
     let stale = c::functional::deactivate::Program::new(signature.clone(), version)

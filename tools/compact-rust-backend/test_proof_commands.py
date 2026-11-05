@@ -125,6 +125,69 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", workflow)
         self.assertIn("compact-passport-current/formatted-generated-lib.rs", workflow)
 
+    def test_did_zero_proof_keeps_default_valid_and_uses_authenticated_compiler(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        valid = workflow.index("      - name: Qualify selected original DID functional proof\n")
+        zero = workflow.index("      - name: Qualify original DID zero timestamp proof\n")
+        retain = workflow.index("      - name: Retain failed DID zero timestamp proof diagnostics\n")
+        self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), zero)
+        self.assertLess(workflow.index("- name: Prepare verified built-in proof material"), valid)
+        self.assertLess(valid, zero)
+        self.assertLess(zero, retain)
+        valid_step = workflow[valid:zero]
+        self.assertIn('--output "$RUNNER_TEMP/compact-did-functional-proof"', valid_step)
+        self.assertNotIn("--case", valid_step)  # Historical valid default is retained.
+        zero_step = workflow[zero:retain]
+        self.assertIn("id: did_zero_timestamp_proof", zero_step)
+        self.assertNotIn("continue-on-error", zero_step)
+        self.assertNotIn("if:", zero_step)
+        command = shlex.split(zero_step.split("run: |\n", 1)[1].strip())
+        self.assertEqual(command[:7], ["env", "-u", "LD_LIBRARY_PATH", "nix", "develop", ".#compiler", "--command"])
+        self.assertIn("tools/compact-rust-backend/check_did_functional_lifecycle_proof.py", command)
+        self.assertEqual(command[command.index("--compiler") + 1], "$COMPACTC")
+        self.assertEqual(command[command.index("--case") + 1], "did/timestamp-zero")
+        self.assertEqual(command[command.index("--output") + 1], "$RUNNER_TEMP/compact-did-zero-timestamp-proof")
+
+    def test_did_zero_proof_retains_failure_without_waiting_for_packages(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        start = workflow.index("      - name: Retain failed DID zero timestamp proof diagnostics\n")
+        end = workflow.index("      - name: Qualify selected Unit mutation initializer proofs\n", start)
+        failure = workflow[start:end]
+        self.assertIn("if: failure() && steps.did_zero_timestamp_proof.outcome == 'failure'", failure)
+        self.assertNotIn("runtime-packages", failure)
+        self.assertIn("did-zero-timestamp-proof-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}", failure)
+        self.assertIn("if-no-files-found: ignore", failure)
+        success = workflow[workflow.index("      - name: Retain Rust runtime packages and manifest\n"):]
+        for suffix in ["receipt.json", "logs/", "*.stdout", "*.stderr", "*material*.json", "generated/"]:
+            path = "${{ runner.temp }}/compact-did-zero-timestamp-proof/" + suffix
+            self.assertIn(path, failure)
+            self.assertIn(path, success)
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", success)
+        self.assertIn("compact-did-functional-proof/generated/", success)
+
+    def test_did_zero_proof_shell_forwards_case_and_propagates_failure(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        step = workflow.split("      - name: Qualify original DID zero timestamp proof\n", 1)[1]
+        script = step.split("      - name:", 1)[0].split("run: |\n", 1)[1]
+        with tempfile.TemporaryDirectory(prefix="did proof boundary ") as directory:
+            root = Path(directory)
+            nix = root / "nix"
+            nix.write_text('#!/bin/sh\ntest -z "${LD_LIBRARY_PATH+x}" || exit 48\n'
+                           'printf "%s\\0" "$@" > "$TRACE"\nexit 47\n')
+            nix.chmod(0o755)
+            trace = root / "trace"
+            compiler = root / "compiler with spaces/bin/compactc"
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
+                       TRACE=str(trace), COMPACTC=str(compiler), RUNNER_TEMP=str(root),
+                       LD_LIBRARY_PATH="must be removed")
+            result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],
+                                    cwd=ROOT, env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 47, result.stderr)
+            argv = trace.read_text().rstrip("\0").split("\0")
+            self.assertEqual(argv[argv.index("--case") + 1], "did/timestamp-zero")
+            self.assertEqual(argv[argv.index("--compiler") + 1], str(compiler))
+            self.assertEqual(argv[argv.index("--output") + 1], str(root / "compact-did-zero-timestamp-proof"))
+
     def test_native_script_stops_after_a_failed_proof_command(self):
         # Exercise the actual shell boundary without generating or caching proofs.
         with tempfile.TemporaryDirectory(prefix="native failure ") as temporary:

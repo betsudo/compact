@@ -152,6 +152,34 @@ fn recorded_conditional_field_pair_preserves_native_predicate_and_arm_validation
         field: "flag".into(),
         index: 0,
     };
+    // Boolean queries now compose inside Vector children. Keep the historical
+    // fixture intact and check the admitted read rather than an obsolete shape
+    // refusal. A non-Boolean query must still fail at this same predicate.
+    let queried = render_with_capabilities(&contract).unwrap();
+    assert!(queried.capabilities.circuits[0].recorded);
+    let body = super::lifecycle_recording::generated_body(
+        &queried.source,
+        "recorded",
+        &contract.stateful_circuits[0].name,
+    );
+    assert_eq!(body.matches("record_read").count(), 2, "{body}");
+    assert!(body.find("record_read").unwrap() < body.find("record_write").unwrap());
+    let StateAction::Let { action, .. } = &mut contract.stateful_circuits[0].actions[0] else {
+        unreachable!()
+    };
+    let StateAction::Let { bindings, .. } = action.as_mut() else {
+        unreachable!()
+    };
+    let Expr::Vector { elements, .. } = &mut bindings[0].value else {
+        unreachable!()
+    };
+    let Expr::If { condition, .. } = &mut elements[0] else {
+        unreachable!()
+    };
+    **condition = Expr::CellRead {
+        field: "fieldCell".into(),
+        index: 1,
+    };
     assert!(render_with_capabilities(&contract).is_err());
 
     let mut contract = closed;
@@ -179,6 +207,20 @@ fn recorded_conditional_field_pair_preserves_native_predicate_and_arm_validation
             arguments: vec![],
         }),
         ty: Type::Field,
+    };
+    let witnessed = render_with_capabilities(&contract).unwrap();
+    assert!(witnessed.capabilities.circuits[0].recorded);
+    let body = super::lifecycle_recording::generated_body(
+        &witnessed.source,
+        "recorded",
+        &contract.stateful_circuits[0].name,
+    );
+    assert_eq!(body.matches("dynamicField").count(), 1, "{body}");
+    assert!(body.find("if ").unwrap() < body.find("dynamicField").unwrap());
+    // Scalar Field arms compose, but a Vector witness cannot supply one Field.
+    contract.witnesses[0].result = Type::Vector {
+        length: 2,
+        element: Box::new(Type::Field),
     };
     assert!(render_with_capabilities(&contract).is_err());
 }

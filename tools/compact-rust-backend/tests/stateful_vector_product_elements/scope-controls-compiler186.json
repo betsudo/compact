@@ -1,0 +1,52 @@
+{
+  "product_below_component": {
+    "source_sha256": "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 0
+      },
+      "ir": {
+        "exit": 0
+      }
+    },
+    "historical_refusal": "scope-controls-compiler180.json",
+    "current_positive_consumer": "../vector_component_products/consumer.rs: original_regression (complete identical source, declared new physical path)"
+  },
+  "nested_product_below_component": {
+    "source_sha256": "33c091f6cc2907b05c08156a129a067be8ae15ad062c2c61473538e51a8177c7",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 0
+      },
+      "ir": {
+        "exit": 0
+      }
+    },
+    "historical_refusal": "scope-controls-compiler184.json",
+    "current_positive_consumer": "../nested_component_products/consumer.rs: original (complete unchanged historical source at its declared path)"
+  },
+  "vector_inside_component_product": {
+    "source_sha256": "c3cd039fe59cddf0d45ac3d73b0efbf5e086ae961259dc3f0fe711e100c6fde7",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 255,
+        "stdout": "",
+        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+      },
+      "ir": {
+        "exit": 255,
+        "stdout": "",
+        "stderr": "Exception: vector_inside_component_product.compact line 17 char 146:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+      }
+    }
+  }
+}

@@ -1,0 +1,2649 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 16,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "product_value",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 25,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "keep",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "parameter",
+        "name": "input"
+      },
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "checked",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "255"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "outer Vector product helper denied"
+          }
+        ],
+        "value": {
+          "kind": "vector",
+          "element": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "unsigned",
+                    "max": "255"
+                  }
+                ]
+              },
+              {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            ]
+          },
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 0
+                          },
+                          "index": 0
+                        },
+                        "index": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned_cast",
+                  "max": "255",
+                  "value": {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 0
+                    },
+                    "index": 1
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 1
+                          },
+                          "index": 0
+                        },
+                        "index": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned_cast",
+                  "max": "255",
+                  "value": {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 1
+                    },
+                    "index": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "parameter",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_29",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_29"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 26,
+        "column": 1
+      }
+    },
+    {
+      "name": "helper",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_28",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "2"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_28"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "call",
+                "name": "keep",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "input"
+                    },
+                    "ty": {
+                      "kind": "vector",
+                      "length": 2,
+                      "element": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "tuple",
+                            "elements": [
+                              {
+                                "kind": "unsigned",
+                                "max": "255"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "unsigned",
+                            "max": "255"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 27,
+        "column": 1
+      }
+    },
+    {
+      "name": "local",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "wide",
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              },
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "call",
+                  "name": "keep",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "ty": {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "tuple",
+                              "elements": [
+                                {
+                                  "kind": "unsigned",
+                                  "max": "255"
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_27",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "3"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_27"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 28,
+        "column": 1
+      }
+    },
+    {
+      "name": "checked_helper",
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_26",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "4"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_26"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "wide",
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                },
+                "value": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "call",
+                    "name": "checked",
+                    "arguments": [
+                      {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "parameter",
+                          "name": "ok"
+                        },
+                        "ty": {
+                          "kind": "boolean"
+                        }
+                      },
+                      {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "parameter",
+                          "name": "input"
+                        },
+                        "ty": {
+                          "kind": "vector",
+                          "length": 2,
+                          "element": {
+                            "kind": "tuple",
+                            "elements": [
+                              {
+                                "kind": "tuple",
+                                "elements": [
+                                  {
+                                    "kind": "unsigned",
+                                    "max": "65535"
+                                  }
+                                ]
+                              },
+                              {
+                                "kind": "unsigned",
+                                "max": "65535"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "ty": {
+                    "kind": "vector",
+                    "length": 2,
+                    "element": {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "unsigned",
+                              "max": "65535"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 29,
+        "column": 1
+      }
+    },
+    {
+      "name": "witness_before",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "wide",
+              "ty": {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              },
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "witness_call",
+                  "name": "product_value",
+                  "arguments": [
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_25",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "5"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_25"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 30,
+        "column": 1
+      }
+    },
+    {
+      "name": "witness_after",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_24",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "6"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_24"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "wide",
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                },
+                "value": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "witness_call",
+                    "name": "product_value",
+                    "arguments": [
+                    ]
+                  },
+                  "ty": {
+                    "kind": "vector",
+                    "length": 2,
+                    "element": {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "unsigned",
+                              "max": "65535"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 31,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch",
+      "parameters": [
+        {
+          "name": "pick",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "left",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "right",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "conditional",
+          "condition": {
+            "kind": "parameter",
+            "name": "pick"
+          },
+          "then": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_22",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "7"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_22"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "call",
+                  "name": "keep",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "left"
+                      },
+                      "ty": {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "tuple",
+                              "elements": [
+                                {
+                                  "kind": "unsigned",
+                                  "max": "255"
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "otherwise": {
+            "kind": "sequence",
+            "actions": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_23",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "8"
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "cell_write",
+                  "field": "seen",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_23"
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "call",
+                  "name": "keep",
+                  "arguments": [
+                    {
+                      "kind": "coerce",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "right"
+                      },
+                      "ty": {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "tuple",
+                              "elements": [
+                                {
+                                  "kind": "unsigned",
+                                  "max": "255"
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "unsigned",
+                              "max": "255"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 32,
+        "column": 1
+      }
+    },
+    {
+      "name": "deep",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "vector",
+                      "length": 1,
+                      "element": {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "tuple",
+                            "elements": [
+                              {
+                                "kind": "unsigned",
+                                "max": "255"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "unsigned",
+                            "max": "255"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 1,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "tuple",
+                        "elements": [
+                          {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "65535"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_21",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "9"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_21"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "vector",
+                          "length": 1,
+                          "element": {
+                            "kind": "tuple",
+                            "elements": [
+                              {
+                                "kind": "tuple",
+                                "elements": [
+                                  {
+                                    "kind": "unsigned",
+                                    "max": "65535"
+                                  }
+                                ]
+                              },
+                              {
+                                "kind": "unsigned",
+                                "max": "65535"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "4294967295"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 35,
+        "column": 1
+      }
+    },
+    {
+      "name": "boolean_field",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "boolean"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "boolean"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "boolean"
+                },
+                {
+                  "kind": "field"
+                }
+              ]
+            },
+            {
+              "kind": "boolean"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_20",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "10"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_20"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "boolean"
+                        },
+                        {
+                          "kind": "field"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "boolean"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 36,
+        "column": 1
+      }
+    },
+    {
+      "name": "empty",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 0,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 0,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_19",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "11"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_19"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 0,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 37,
+        "column": 1
+      }
+    },
+    {
+      "name": "tuple_empty",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unit"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unit"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_18",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "12"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_18"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unit"
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 38,
+        "column": 1
+      }
+    },
+    {
+      "name": "tuple_single",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "255"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_17",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "13"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_17"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "tuple",
+                          "elements": [
+                            {
+                              "kind": "unsigned",
+                              "max": "65535"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 39,
+        "column": 1
+      }
+    },
+    {
+      "name": "field_identity",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "field"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "field"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_16",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "14"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_16"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "field"
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 40,
+        "column": 1
+      }
+    },
+    {
+      "name": "empty_leaf",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "vector",
+                      "length": 0,
+                      "element": {
+                        "kind": "unsigned",
+                        "max": "255"
+                      }
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 0,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_15",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "15"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_15"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "vector",
+                          "length": 0,
+                          "element": {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 41,
+        "column": 1
+      }
+    },
+    {
+      "name": "last_child",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 1,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
+                {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    },
+                    {
+                      "kind": "unsigned",
+                      "max": "255"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 1,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            },
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_14",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "16"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_14"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "value",
+            "value": {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "input"
+              },
+              "ty": {
+                "kind": "vector",
+                "length": 1,
+                "element": {
+                  "kind": "tuple",
+                  "elements": [
+                    {
+                      "kind": "unsigned",
+                      "max": "65535"
+                    },
+                    {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "outer_vector_product_widening.compact",
+        "line": 42,
+        "column": 1
+      }
+    }
+  ]
+}

@@ -5,6 +5,200 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.193, language 0.23.105, runtime 0.16.102]
+
+Unreleased reconciliation checkpoint; no release or completed qualification is implied.
+
+### Fixed
+
+- Reconcile the preserved outer-Vector product stack with the canonical wide-Uint
+  multiplication-by-zero backend. Retain both typed lowering paths, generated
+  consumers, proof suites and CI diagnostics without rewriting either history.
+
+## [Toolchain 0.31.191, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Retain the invocation directory for default source-map path fallbacks and
+  serialize path strings as valid JSON, preserving source operands, mappings
+  and explicit sourceRoot overrides through staged publication.
+- Refresh an existing standalone Rust frontend manifest after map relocation
+  and Rust library emission, using the main compiler's unchanged manifest hasher.
+  Missing frontend manifests remain optional; no metadata is synthesized.
+
+## [Toolchain 0.31.190, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Keep tuple-wrapped component Vector/product inputs usable under strict generated
+  SDK Clippy. Scope existing reasoned metadata to the exact private request field
+  and constructor signatures; preserve carriers, bodies and execution semantics.
+
+## [Toolchain 0.31.189, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Compose existing checked product conversions directly below outer Vector
+  product elements. Preserve nested tuple arity, fixed Vector dimensions,
+  original bounds and ordered helper/witness evaluation through the existing
+  checked coercion and structured AST owners. New identity carriers, narrowing,
+  runtime, ABI and resource limits are unchanged.
+
+## [Toolchain 0.31.188, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve strict generated-SDK Clippy for nested tuple children in outer Vector
+  execution results with reasoned method-local type-complexity metadata. Keep
+  exact public carriers, consuming request ownership, pure-library output and
+  conversion admission unchanged.
+- Extend the existing complete request-carrier regression gate with typed
+  execution, VM replay and compile-time misuse controls for this carrier shape.
+
+## [Toolchain 0.31.187, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve frontend-supplied widening through fixed Vector leaves nested below
+  component products. Keep exact dimensions, tuple arities, source bounds and
+  ordered evaluation through the existing checked conversion and AST owners.
+  Narrowing, new identity carriers and top-level nested product admission remain
+  unchanged; runtime, ABI and resource limits are unchanged.
+
+## [Toolchain 0.31.186, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve exact nested Vector/product request carriers under strict generated
+  SDK Clippy when a component product contains a fixed Vector, directly or in a
+  singleton tuple. Attach only the existing reasoned private-field metadata;
+  public types, ownership, execution and widening admission are unchanged.
+
+## [Toolchain 0.31.185, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Classify frontend-supplied scalar tuple subtree widenings below a component
+  Vector in the existing ordered-value owner. Preserve every tuple arity,
+  Vector dimension, original source bound and helper/witness evaluation order;
+  checked coercion, validation, resource limits and runtime semantics are unchanged.
+
+## [Toolchain 0.31.184, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Keep same-type nested product inputs usable under strict generated-crate
+  Clippy by attaching reasoned type-complexity metadata to the immutable
+  Program's private input field. The exact carrier, visibility, checked
+  execution and conversion-admission rules are unchanged.
+
+## [Toolchain 0.31.183, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Preserve checked fixed-Vector/product conversions through ordered stateful
+  values, including a characterized product level below Vector components.
+  Retain original bounds, product arity, once-only evaluation and witness order;
+  unsupported deeper forms continue to receive explicit checked refusals.
+- Preserve complete generated Rust request carriers with reasoned field-local
+  type-complexity annotations where nested inputs require them.
+- Require the maintained current-source API and selected proof/strict-transaction
+  cohort in the existing native CI definition, using the shared compiler package,
+  pinned proof tool/material and exact source/IR/Program/verifier bindings.
+  Other required exports retain their explicit unproved/over-limit status.
+
+## [Toolchain 0.31.173, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve supplied Vector conversions in stateful local initializers. Evaluate
+  each original source value before conversion and retain local bindings with
+  their surrounding actions in the existing ordered body. Native/recording
+  validation, source bounds and runtime ABI are unchanged.
+
+## [Toolchain 0.31.172, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve frontend-supplied monotone Vector value conversions in ordered stateful
+  returns, including helper, parameter, query and witness values. Retain original
+  source bounds, actions and nested/empty Vector structure before the checked
+  conversion. Existing native/recording validation and runtime ABI are unchanged.
+
+## [Toolchain 0.31.170, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Lower effectful Vector children in the existing native stateful aggregate owner,
+  preserving successful pure Vector AST output, child evaluation order and exact
+  element types. Uniform ordered-return source carriers retain their original
+  checked bound before widening. No validator, runtime or ABI change.
+
+- Retain the declared Vector context for direct stateful literal returns. Use
+  existing ordered return plans for the complete action sequence and apply
+  frontend-supplied aggregate casts after reaching their original source value.
+  Preserve empty literal construction, intermediate bounds and condition order;
+  reuse existing checked coercion and Rust AST owners without an IR/runtime ABI
+  change.
+
+## [Toolchain 0.31.167, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve frontend-supplied source types for struct member projections in wider
+  aggregate literals. Reuse existing checked coercion and struct-field ownership,
+  retaining the complete base expression, field bounds and evaluation order.
+  Standalone field and struct literal behavior remains unchanged; no runtime ABI
+  or IR schema change is introduced.
+
+## [Toolchain 0.31.166, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Retain frontend-inferred literal source element types through pure aggregate
+  cast lowering. Apply existing checked Coerce to projected numeric values and
+  complete checked casts in their declared element context, preserving source
+  bounds, evaluation order and accepted scalar/identity behavior. Keep existing
+  literal construction for empty and nested carriers; no new conversion relation,
+  runtime ABI, IR variant or executor is introduced.
+
+## [Toolchain 0.31.165, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Preserve checked widening when a pure Vector source is typed through an alias,
+  including alias chains and explicit frontend-approved casts. Reuse existing
+  Coerce validation and Rust AST emission; preserve identity-alias output and
+  nominal frontend refusals without changing other alias families or stateful
+  expected-type ingress.
+
+## [Toolchain 0.31.164, language 0.23.105, runtime 0.16.102]
+
+### Fixed
+
+- Apply the existing checked Vector conversion after a complete named pure
+  Fold when its enclosing declaration requires a wider numeric Vector result.
+  Preserve the original accumulator/reducer bounds and legacy operand order.
+- Resolve Vector alias carriers at expected-type and pure cast ingress,
+  including reducer Vector literals; unrelated alias families keep their owners.
 ## [Toolchain 0.31.145, language 0.23.105, runtime 0.16.102]
 
 ### Added

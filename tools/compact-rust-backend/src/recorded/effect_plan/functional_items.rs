@@ -31,6 +31,55 @@ pub(crate) struct FunctionalArtifacts {
 #[path = "functional_artifact_tests.rs"]
 mod artifact_tests;
 
+#[cfg(test)]
+#[path = "request_field_tests.rs"]
+mod request_field_tests;
+
+// Only the immutable request's private fields need this metadata. Keep exact
+// carriers rather than erasing them behind aliases or changing execution.
+fn request_field(name: &syn::Ident, ty: &syn::Type) -> syn::Field {
+    use syn::parse::Parser;
+    let vector_element = crate::CompactSignatureLint::vector_element;
+    let mut element = ty;
+    let mut dimensions = 0;
+    while let Some(inner) = vector_element(element) {
+        dimensions += 1;
+        element = inner;
+    }
+    let nested_component_product = matches!(element, syn::Type::Tuple(product)
+    if product.elems.len() >= 2 && product.elems.iter().any(|component| {
+        let mut element = component;
+        let mut component_dimensions = 0;
+        while let Some(inner) = vector_element(element) {
+            component_dimensions += 1;
+            element = inner;
+        }
+        component_dimensions > 0
+            && matches!(element, syn::Type::Tuple(product)
+                if product.elems.len() >= 2
+                    && (dimensions + component_dimensions >= 3
+                        || product.elems.len() >= 3
+                        || product.elems.iter().any(|child|
+                            vector_element(child).is_some()
+                                || matches!(child, syn::Type::Tuple(nested)
+                                    if nested.elems.len() >= 2
+                                        || nested.elems.iter().any(|child|
+                                            vector_element(child).is_some())))))
+    }));
+    let attribute: Option<syn::Attribute> = (dimensions > 0
+        && (nested_component_product
+            || crate::CompactSignatureLint::has_tuple_wrapped_product_vector(ty)))
+    .then(|| {
+        syn::parse_quote!(
+            #[allow(clippy::type_complexity,
+                reason = "preserves the Compact nested Vector/product carrier in this field")]
+        )
+    });
+    syn::Field::parse_named
+        .parse2(quote::quote!(#attribute #name: #ty))
+        .expect("typed request field")
+}
+
 /// Issued by retained frontend ingress for the original borrowed circuit only.
 /// This is an occurrence/snapshot binding, not consumed-source authentication.
 pub(crate) trait FunctionalSources {
@@ -173,6 +222,7 @@ fn render(
         .collect::<Result<Vec<_>, RecordingGap>>()?;
     let names: Vec<_> = parameters.iter().map(|(name, _)| name).collect();
     let types: Vec<_> = parameters.iter().map(|(_, ty)| ty).collect();
+    let request_fields = parameters.iter().map(|(name, ty)| request_field(name, ty));
     let locals: Vec<_> = parameters
         .iter()
         .enumerate()
@@ -394,7 +444,7 @@ fn render(
             /// Immutable checked request. Creating it performs no ledger or witness work.
             /// Execution consumes the request and its selected interpreter.
             pub struct Program {
-                #(#names: #types),*
+                #(#request_fields),*
             }
 
             #default

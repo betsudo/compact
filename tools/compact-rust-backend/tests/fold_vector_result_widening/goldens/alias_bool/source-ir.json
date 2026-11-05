@@ -1,0 +1,152 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+    {
+      "name": "Input",
+      "ty": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "boolean"
+        }
+      },
+      "source": {
+        "file": "alias_bool.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "boolean"
+            }
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "boolean"
+        }
+      },
+      "body": {
+        "kind": "vector",
+        "element": {
+          "kind": "boolean"
+        },
+        "elements": [
+          {
+            "kind": "parameter",
+            "name": "item"
+          },
+          {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "acc"
+            },
+            "index": 0
+          }
+        ]
+      },
+      "source": {
+        "file": "alias_bool.compact",
+        "line": 18,
+        "column": 1
+      }
+    },
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "boolean"
+            }
+          }
+        },
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "boolean"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "boolean"
+        }
+      },
+      "body": {
+        "kind": "vector_fold_call",
+        "name": "step",
+        "initial": {
+          "kind": "parameter",
+          "name": "seed"
+        },
+        "source": {
+          "kind": "coerce",
+          "value": {
+            "kind": "parameter",
+            "name": "input"
+          },
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "boolean"
+            }
+          }
+        },
+        "accumulator": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "boolean"
+          }
+        },
+        "element": {
+          "kind": "boolean"
+        },
+        "length": 2
+      },
+      "source": {
+        "file": "alias_bool.compact",
+        "line": 19,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

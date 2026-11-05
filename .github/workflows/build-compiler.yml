@@ -117,6 +117,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
+      - name: Test exact header-regression accounting
+        run: python3 -m unittest discover -s scripts -p test_header_regressions.py
+
       - name: Reject new header violations on pull requests
         if: github.event_name == 'pull_request'
         env:
@@ -464,6 +467,57 @@ jobs:
           # The final native gate repeats this exact command after its tests.
           cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings
 
+      - name: Check complete Counter source-map publication
+        id: source_map_publication
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-source-map-recipe"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json" --output "$RUNNER_TEMP/compact-source-map-publication"
+
+      - name: Package source-map publication diagnostics
+        if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')
+        shell: bash
+        run: |
+          # Preserve literal quote-containing test paths inside one portable upload.
+          diagnostics=()
+          for directory in compact-source-map-recipe compact-source-map-publication; do
+            if [ -d "$RUNNER_TEMP/$directory" ]; then
+              diagnostics+=("$directory")
+            fi
+          done
+          if [ "${#diagnostics[@]}" -gt 0 ]; then
+            COPYFILE_DISABLE=1 tar --exclude='compact-source-map-publication/cargo-target' \
+              -czf "$RUNNER_TEMP/compact-source-map-diagnostics.tar.gz" \
+              -C "$RUNNER_TEMP" "${diagnostics[@]}"
+          fi
+
+      - name: Retain source-map publication diagnostics
+        if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: source-map-publication-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Check complete outer-Vector product semantics and boundaries
+        id: outer_vector_product_semantics
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-outer-vector-product-recipe"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --output "$RUNNER_TEMP/compact-outer-vector-product-semantics"
+
+      - name: Retain outer-Vector product semantic diagnostics
+        if: always() && (steps.outer_vector_product_semantics.outcome == 'success' || steps.outer_vector_product_semantics.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: outer-vector-product-semantics-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-outer-vector-product-recipe/
+            ${{ runner.temp }}/compact-outer-vector-product-semantics/
+            !${{ runner.temp }}/compact-outer-vector-product-semantics/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Check generated functional Ledger8 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
@@ -532,7 +586,7 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Qualify isolated witnessed functional SDK
@@ -586,10 +640,103 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-did-functional-proof"
 
+      - name: Qualify original DID zero timestamp proof
+        id: did_zero_timestamp_proof
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_did_functional_lifecycle_proof.py --compiler "$COMPACTC" --case did/timestamp-zero --output "$RUNNER_TEMP/compact-did-zero-timestamp-proof"
+
+      - name: Retain failed DID zero timestamp proof diagnostics
+        if: failure() && steps.did_zero_timestamp_proof.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: did-zero-timestamp-proof-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/receipt.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/logs/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stdout
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Qualify selected Unit mutation initializer proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
 
+      - name: Qualify complete nested request-field API regression
+        id: nested_request_field
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-nested-request-field-recipe"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_nested_product_request_field.py --compiler-receipt "$RUNNER_TEMP/compact-nested-request-field-recipe/receipt.json" --output "$RUNNER_TEMP/compact-nested-request-field"
+
+      - name: Retain failed nested request-field diagnostics
+        if: failure() && steps.nested_request_field.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nested-request-field-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-nested-request-field-recipe/
+            ${{ runner.temp }}/compact-nested-request-field/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Qualify complete nested-product APIs and selected proofs
+        id: vector_component_products
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-vector-component-products-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_vector_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-vector-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-vector-component-products-proof"
+
+      - name: Retain failed nested-product qualification diagnostics
+        if: failure() && steps.vector_component_products.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vector-component-products-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-vector-component-products-recipe/
+            ${{ runner.temp }}/compact-vector-component-products-proof/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Qualify nested component product APIs and four selected proofs
+        id: nested_component_products
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-nested-component-products-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_nested_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-nested-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-nested-component-products-proof"
+
+      - name: Retain failed nested component product diagnostics
+        if: failure() && steps.nested_component_products.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nested-component-products-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-nested-component-products-recipe/
+            ${{ runner.temp }}/compact-nested-component-products-proof/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Qualify component-product Vector APIs and fourteen selected proofs
+        id: component_product_vector
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_component_product_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-component-product-vector-proof"
+
+      - name: Retain failed component-product Vector diagnostics
+        if: failure() && steps.component_product_vector.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: component-product-vector-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-component-product-vector-recipe/
+            ${{ runner.temp }}/compact-component-product-vector-proof/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Retain failed wide-zero qualification diagnostics
         if: failure() && (steps.wide_zero_api.outcome == 'failure' || steps.wide_zero_proof.outcome == 'failure')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -625,6 +772,10 @@ jobs:
             target/rust-runtime-release.json
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
+            ${{ runner.temp }}/compact-component-product-vector-recipe/
+            ${{ runner.temp }}/compact-component-product-vector-proof/
+            ${{ runner.temp }}/compact-vector-component-products-recipe/
+            ${{ runner.temp }}/compact-vector-component-products-proof/
             ${{ runner.temp }}/compact-functional-source-sdk/
             !${{ runner.temp }}/compact-functional-source-sdk/cargo-target/**
             ${{ runner.temp }}/compact-functional-consumer.json
@@ -634,6 +785,12 @@ jobs:
             ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
             ${{ runner.temp }}/compact-did-functional-proof/receipt.json
             ${{ runner.temp }}/compact-did-functional-proof/generated/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/receipt.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/logs/
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stdout
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
+            ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
             ${{ runner.temp }}/compact-wide-zero.json
             ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
             ${{ runner.temp }}/compact-wide-zero/typescript.json

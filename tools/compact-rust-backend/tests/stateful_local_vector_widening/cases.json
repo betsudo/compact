@@ -1,0 +1,674 @@
+[
+  {
+    "id": "alias_after",
+    "source": "alias_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "checked_helper_after",
+    "source": "checked_helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "discarded_checked",
+    "source": "discarded_checked",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "1",
+      "255"
+    ],
+    "seen": "2",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "empty_after",
+    "source": "empty_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      []
+    ],
+    "expected": [],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "field_after",
+    "source": "field_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "helper_after",
+    "source": "helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "literal_control",
+    "source": "literal_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      "1",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "multiple_bindings",
+    "source": "multiple_bindings",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "nested_after",
+    "source": "nested_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        [
+          "0",
+          "255"
+        ],
+        [
+          "1",
+          "2"
+        ]
+      ]
+    ],
+    "expected": [
+      [
+        "0",
+        "255"
+      ],
+      [
+        "1",
+        "2"
+      ]
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "pure_control",
+    "source": "pure_control",
+    "entry": "value",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "read_only_value",
+    "source": "read_only_value",
+    "entry": "run",
+    "constructor": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "args": [],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "0",
+    "initialSeen": "0",
+    "error": null,
+    "noMutation": true
+  },
+  {
+    "id": "returned_value_control",
+    "source": "returned_value_control",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "scalar_alias",
+    "source": "scalar_alias",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "scalar_result",
+    "source": "scalar_result",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": "255",
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "stateful_helper",
+    "source": "stateful_helper",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "3",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "stateful_helper_value",
+    "source": "stateful_helper_value",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "3",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "struct_projection",
+    "source": "struct_projection",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      {
+        "value": [
+          "0",
+          "255"
+        ]
+      }
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "unit_result",
+    "source": "unit_result",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [],
+    "seen": "255",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "unsigned_after",
+    "source": "unsigned_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "unsigned_before",
+    "source": "unsigned_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "wide_local",
+    "source": "wide_local",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      [
+        "340282366920938463463374607431768211465",
+        "0"
+      ]
+    ],
+    "expected": [
+      "340282366920938463463374607431768211465",
+      "0"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "witness_after",
+    "source": "witness_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      "3",
+      "4"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null,
+    "privateState": 8,
+    "witnessValues": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "witnessSeen": "1"
+  },
+  {
+    "id": "witness_before",
+    "source": "witness_before",
+    "entry": "run",
+    "constructor": [],
+    "args": [],
+    "expected": [
+      "3",
+      "4"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null,
+    "privateState": 8,
+    "witnessValues": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "witnessSeen": "0"
+  },
+  {
+    "id": "checked_guard_first",
+    "source": "checked_helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "helper denied"
+    }
+  },
+  {
+    "id": "checked_first",
+    "source": "checked_helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "1",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_second",
+    "source": "checked_helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "300",
+        "1"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "checked_both",
+    "source": "checked_helper_after",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "discarded_guard_first",
+    "source": "discarded_checked",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      false,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "assert",
+      "message": "helper denied"
+    }
+  },
+  {
+    "id": "discarded_first",
+    "source": "discarded_checked",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "1",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "discarded_second",
+    "source": "discarded_checked",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "300",
+        "1"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "discarded_both",
+    "source": "discarded_checked",
+    "entry": "run",
+    "constructor": [],
+    "args": [
+      true,
+      [
+        "400",
+        "300"
+      ]
+    ],
+    "expected": null,
+    "seen": "1",
+    "initialSeen": "0",
+    "error": {
+      "kind": "unsigned",
+      "value": "300",
+      "max": "255"
+    }
+  },
+  {
+    "id": "proof_branch_0",
+    "source": "proofs",
+    "entry": "run",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "1",
+    "initialSeen": "0",
+    "error": null
+  },
+  {
+    "id": "proof_branch_1",
+    "source": "proofs",
+    "entry": "run",
+    "constructor": [
+      "1"
+    ],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "255",
+      "0"
+    ],
+    "seen": "3",
+    "initialSeen": "1",
+    "error": null
+  },
+  {
+    "id": "proof_field",
+    "source": "proofs",
+    "entry": "run_field",
+    "constructor": [
+      "0"
+    ],
+    "args": [
+      [
+        "0",
+        "255"
+      ]
+    ],
+    "expected": [
+      "0",
+      "255"
+    ],
+    "seen": "2",
+    "initialSeen": "0",
+    "error": null
+  }
+]

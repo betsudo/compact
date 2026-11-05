@@ -107,6 +107,7 @@ pub(crate) fn render_state_expression_observed(
         Expr::StructLiteral { .. }
         | Expr::StructField { .. }
         | Expr::Tuple { .. }
+        | Expr::Vector { .. }
         | Expr::TupleIndex { .. } => render_aggregate_expression(
             value,
             parameters,
@@ -402,6 +403,55 @@ fn render_aggregate_expression(
                 }
             };
             Ok((expression, result, witness_effect))
+        }
+        Expr::Vector { element, elements } => {
+            // Preserve the established pure Vector AST byte-for-byte. Only the
+            // pure owner's explicit effect refusal selects ordered child lowering;
+            // every other rejection retains its observed diagnostic owner.
+            match expression_with_calls(source, parameters, environment.circuits) {
+                Ok((value, ty)) => return Ok((value, ty, false)),
+                Err(RenderError::EffectfulExpression) => {}
+                Err(_) => {
+                    return environment
+                        .pure_expression(source, parameters)
+                        .map(|(value, ty)| (value, ty, false));
+                }
+            }
+            let mut values = Vec::<syn::Expr>::with_capacity(elements.len());
+            let mut effect = false;
+            for value in elements {
+                let (rendered, actual, child_effect) = render_state_expression_observed(
+                    value,
+                    parameters,
+                    statements,
+                    next_temp,
+                    query_effect,
+                    environment,
+                )?;
+                if actual != *element {
+                    environment.refused(value);
+                    return Err(RenderError::TypeMismatch {
+                        expected: element.clone(),
+                        actual,
+                    });
+                }
+                let name = syn::Ident::new(
+                    &format!("__compact_vector_element_{}", *next_temp),
+                    Span::call_site(),
+                );
+                *next_temp += 1;
+                statements.push(syn::parse_quote!(let #name = #rendered;));
+                values.push(syn::parse_quote!(#name));
+                effect |= child_effect;
+            }
+            Ok((
+                syn::parse_quote!(runtime::FixedVector::new([#(#values),*])),
+                Type::Vector {
+                    element: Box::new(element.clone()),
+                    length: elements.len(),
+                },
+                effect,
+            ))
         }
         Expr::Tuple { elements } => {
             let mut rendered_elements = Vec::<syn::Expr>::new();

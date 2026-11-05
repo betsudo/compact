@@ -900,6 +900,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-component-product-vector-family-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-component-product-vector-original-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-composite-struct-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2702,6 +2716,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-nested-component-products-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-nested-map-oracle-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2838,6 +2859,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-outer-vector-product-family-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-outer-vector-product-original-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-passport-dogfood-fixture"
 version = "0.1.0"
 dependencies = [
@@ -2932,6 +2967,8 @@ dependencies = [
  "compact-rust-chunked-list-fixture",
  "compact-rust-chunked-map-fixture",
  "compact-rust-chunked-set-observed-fixture",
+ "compact-rust-component-product-vector-family-sdk",
+ "compact-rust-component-product-vector-original-sdk",
  "compact-rust-composite-zswap-transfer-oracle-fixture",
  "compact-rust-constant-valued-vector-indices-source-fixture",
  "compact-rust-constant-vector-projection-source-fixture",
@@ -3015,6 +3052,7 @@ dependencies = [
  "compact-rust-merkle-tree-oracle-fixture",
  "compact-rust-mixed-width-operand-oracle-fixture",
  "compact-rust-native-zswap-intents-oracle-fixture",
+ "compact-rust-nested-component-products-sdk",
  "compact-rust-nested-map-shape-fixture",
  "compact-rust-nested-stateful-ternary-fixture",
  "compact-rust-nested-witness-call-oracle-fixture",
@@ -3022,6 +3060,8 @@ dependencies = [
  "compact-rust-opaque-cell-inputs-source-fixture",
  "compact-rust-opaque-string-map-query-oracle-fixture",
  "compact-rust-opaque-string-set-oracle-fixture",
+ "compact-rust-outer-vector-product-family-sdk",
+ "compact-rust-outer-vector-product-original-sdk",
  "compact-rust-pm-19252-unused-read-eight-a-fixture",
  "compact-rust-pm-19252-unused-read-eight-b-fixture",
  "compact-rust-pm-19252-unused-read-seven-fixture",
@@ -3056,7 +3096,11 @@ dependencies = [
  "compact-rust-tuple-return-wrappers-source-fixture",
  "compact-rust-uints-oracle-fixture",
  "compact-rust-unit-mutation-initializers-source-fixture",
+ "compact-rust-vector-component-products-inner-product-single-sdk",
+ "compact-rust-vector-component-products-witness-after-sdk",
+ "compact-rust-vector-component-products-witness-before-sdk",
  "compact-rust-vector-key-adt-fixture",
+ "compact-rust-vector-product-elements-proof-helper",
  "compact-rust-wide-uint-oracle-fixture",
  "compact-rust-wide-zero-multiplication-source-fixture",
  "compact-rust-widening-arith-oracle-fixture",
@@ -3691,6 +3735,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-vector-component-products-inner-product-single-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-vector-component-products-witness-after-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
+name = "compact-rust-vector-component-products-witness-before-sdk"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
+]
+
+[[package]]
 name = "compact-rust-vector-key-adt-fixture"
 version = "0.1.0"
 dependencies = [
@@ -3712,6 +3777,13 @@ dependencies = [
  "midnight-serialize",
  "midnight-storage",
  "serde_json",
+]
+
+[[package]]
+name = "compact-rust-vector-product-elements-proof-helper"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
 ]
 
 [[package]]

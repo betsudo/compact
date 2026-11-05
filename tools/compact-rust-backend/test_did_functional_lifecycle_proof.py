@@ -24,7 +24,7 @@ import check_did_functional_lifecycle_proof as gate
 
 
 def completed():
-    return {"format":gate.PROOF_RESULT_FORMAT,"status":"passed",
+    return {"format":gate.LEGACY_PROOF_RESULT_FORMAT,"status":"passed",
             "constructor_execution_proved":False,"all_twelve_exports_proved":False,
             "execution":"functional-recorded","circuit":"deactivate","proof_bytes":100,
             "changed_binding_rejected":True,"changed_version_input_rejected":True,
@@ -41,6 +41,38 @@ def completed():
 class ProofReceiptTests(unittest.TestCase):
     def test_complete_selected_receipt(self):
         gate.validate_proof_summary(completed())
+
+    def test_current_receipt_binds_each_requested_case(self):
+        for case, (timestamp, _) in gate.CASES.items():
+            data = completed()
+            data.update(format=gate.PROOF_RESULT_FORMAT, source_case=case,
+                        timestamp_witness=timestamp)
+            gate.validate_proof_summary(data, expected_case=case)
+            other = next(key for key in gate.CASES if key != case)
+            with self.subTest(case=case), self.assertRaises(gate.common.GateError):
+                gate.validate_proof_summary(data, expected_case=other)
+
+    def test_historical_receipt_is_not_current_case_evidence(self):
+        for case in gate.CASES:
+            with self.subTest(case=case), self.assertRaises(gate.common.GateError):
+                gate.validate_proof_summary(completed(), expected_case=case)
+        data = completed()
+        data.update(source_case="did/timestamp-zero", timestamp_witness="0")
+        with self.assertRaises(gate.common.GateError):
+            gate.validate_proof_summary(data)
+
+    def test_current_case_fields_cannot_be_missing_wrong_or_mistyped(self):
+        for source_case, timestamp in [(None, None), ("did/unknown", "0"),
+                                       ("did/valid", "0"), ("did/timestamp-zero", "200"),
+                                       ("did/timestamp-zero", 0), ("did/timestamp-zero", False)]:
+            data = completed()
+            data.update(format=gate.PROOF_RESULT_FORMAT)
+            if source_case is not None:
+                data["source_case"] = source_case
+            if timestamp is not None:
+                data["timestamp_witness"] = timestamp
+            with self.subTest(case=source_case, timestamp=timestamp), self.assertRaises(gate.common.GateError):
+                gate.validate_proof_summary(data)
 
     def test_result_protocol_rejects_incomplete_or_mistyped_fields(self):
         changes = [("applied_transaction_bytes",0),("applied_transaction_bytes",True),

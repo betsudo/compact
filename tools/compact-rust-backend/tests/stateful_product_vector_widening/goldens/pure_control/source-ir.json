@@ -1,0 +1,84 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "unsigned",
+                  "max": "255"
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "65535"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            },
+            {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "parameter",
+          "name": "input"
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              {
+                "kind": "unsigned",
+                "max": "4294967295"
+              }
+            ]
+          }
+        }
+      },
+      "source": {
+        "file": "pure_control.compact",
+        "line": 4,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

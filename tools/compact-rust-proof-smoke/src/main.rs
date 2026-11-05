@@ -42,9 +42,232 @@ mod bboard;
 mod boolean_pair_assert;
 mod canonical_output_order;
 mod closed_pure_field;
+#[cfg(feature = "component-product-vector-models")]
+mod component_product_vector_models;
+#[cfg(all(
+    feature = "component-product-vector-widening",
+    compact_component_product_vector_generated
+))]
+mod component_product_vector_widening;
 mod composite_zswap;
 mod constant_valued_vector_indices;
 mod constant_vector_projection;
+#[cfg(feature = "outer-vector-product-models")]
+mod outer_vector_product_models;
+#[cfg(all(
+    feature = "outer-vector-product-proofs",
+    compact_outer_vector_product_generated
+))]
+mod outer_vector_product_proofs;
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+mod fold_vector_result_fixture {
+    include!(concat!(
+        env!("COMPACT_FOLD_VECTOR_RESULT_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+pub use fold_vector_result_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+mod fold_vector_result_widening;
+
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+pub mod vector_alias_source_fixture {
+    include!(concat!(
+        env!("COMPACT_VECTOR_ALIAS_SOURCE_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+pub use vector_alias_source_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+mod vector_alias_source_widening;
+
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+pub mod aggregate_literal_projection_fixture {
+    include!(concat!(
+        env!("COMPACT_AGGREGATE_LITERAL_PROJECTION_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+pub use aggregate_literal_projection_fixture::{
+    ledger_contract, ledger_slots, pure_circuits, runtime,
+};
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+mod aggregate_literal_projection_widening;
+
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+pub mod struct_member_literal_fixture {
+    include!(concat!(
+        env!("COMPACT_STRUCT_MEMBER_LITERAL_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+pub use struct_member_literal_fixture::{
+    ledger_contract, ledger_slots, pure_circuits, runtime, types,
+};
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+mod struct_member_literal_widening;
+
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub mod direct_stateful_vector_fixture {
+    include!(concat!(
+        env!("COMPACT_DIRECT_STATEFUL_VECTOR_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub use direct_stateful_vector_fixture::{ledger_contract, ledger_slots, runtime, types};
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+mod direct_stateful_vector_literal_returns;
+
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub mod stateful_vector_value_fixture {
+    include!(concat!(
+        env!("COMPACT_STATEFUL_VECTOR_VALUE_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub use stateful_vector_value_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+mod stateful_vector_value_widening;
+
+#[cfg(all(
+    feature = "stateful-local-vector-widening",
+    compact_stateful_local_vector_generated
+))]
+pub mod stateful_local_vector_fixture {
+    include!(concat!(
+        env!("COMPACT_STATEFUL_LOCAL_VECTOR_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "stateful-local-vector-widening",
+    compact_stateful_local_vector_generated
+))]
+pub use stateful_local_vector_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "stateful-local-vector-widening",
+    compact_stateful_local_vector_generated
+))]
+mod stateful_local_vector_widening;
+
+#[cfg(all(
+    feature = "stateful-product-vector-widening",
+    compact_stateful_product_vector_generated
+))]
+pub mod stateful_product_vector_fixture {
+    include!(concat!(
+        env!("COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "stateful-product-vector-widening",
+    compact_stateful_product_vector_generated
+))]
+pub use stateful_product_vector_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "stateful-product-vector-widening",
+    compact_stateful_product_vector_generated
+))]
+mod stateful_product_vector_widening;
+
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+pub mod vector_product_elements_fixture {
+    include!(concat!(
+        env!("COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED"),
+        "/contract/lib.rs"
+    ));
+}
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+pub use compact_rust_vector_product_elements_proof_helper as vector_product_elements_helper_fixture;
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+pub use vector_product_elements_fixture::{ledger_contract, ledger_slots, pure_circuits, runtime};
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+mod vector_product_elements;
+
+#[cfg(all(
+    feature = "nested-component-products",
+    compact_nested_component_products_generated
+))]
+mod nested_component_products;
+#[cfg(all(
+    feature = "vector-component-products",
+    compact_vector_component_products_generated
+))]
+mod vector_component_products;
+
 mod coracle_concede;
 mod coracle_guess;
 #[path = "../../../tests-rust-backend/test-center-coracle/support/guess.rs"]

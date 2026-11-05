@@ -1,0 +1,169 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "step",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "acc",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "680564733841876926926749214863536422911"
+            }
+          }
+        },
+        {
+          "name": "item",
+          "ty": {
+            "kind": "unsigned",
+            "max": "680564733841876926926749214863536422911"
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "680564733841876926926749214863536422911"
+        }
+      },
+      "body": {
+        "kind": "vector",
+        "element": {
+          "kind": "unsigned",
+          "max": "680564733841876926926749214863536422911"
+        },
+        "elements": [
+          {
+            "kind": "parameter",
+            "name": "item"
+          },
+          {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "acc"
+            },
+            "index": 0
+          }
+        ]
+      },
+      "source": {
+        "file": "wide_to_wide.compact",
+        "line": 17,
+        "column": 1
+      }
+    },
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "680564733841876926926749214863536422911"
+            }
+          }
+        },
+        {
+          "name": "seed",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "680564733841876926926749214863536422911"
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "unsigned",
+          "max": "452312848583266388373324160190187140051835877600158453279131187530910662655"
+        }
+      },
+      "body": {
+        "kind": "coerce",
+        "value": {
+          "kind": "vector_fold_call",
+          "name": "step",
+          "initial": {
+            "kind": "coerce",
+            "value": {
+              "kind": "parameter",
+              "name": "seed"
+            },
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "680564733841876926926749214863536422911"
+              }
+            }
+          },
+          "source": {
+            "kind": "coerce",
+            "value": {
+              "kind": "parameter",
+              "name": "input"
+            },
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "680564733841876926926749214863536422911"
+              }
+            }
+          },
+          "accumulator": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "unsigned",
+              "max": "680564733841876926926749214863536422911"
+            }
+          },
+          "element": {
+            "kind": "unsigned",
+            "max": "680564733841876926926749214863536422911"
+          },
+          "length": 2
+        },
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "452312848583266388373324160190187140051835877600158453279131187530910662655"
+          }
+        }
+      },
+      "source": {
+        "file": "wide_to_wide.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

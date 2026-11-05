@@ -1,0 +1,158 @@
+[
+  {
+    "source": "aliases",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "boolean",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "boolean"
+  },
+  {
+    "source": "field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "field"
+  },
+  {
+    "source": "helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "identity_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "narrow"
+  },
+  {
+    "source": "local",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "nested_outer",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "nested"
+  },
+  {
+    "source": "parameter",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "prior_product_control",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "prior"
+  },
+  {
+    "source": "proof_candidate",
+    "stateful": true,
+    "entries": [
+      "run",
+      "run_field"
+    ],
+    "descriptor": {
+      "run": "wide",
+      "run_field": "field"
+    }
+  },
+  {
+    "source": "pure_control",
+    "stateful": false,
+    "entries": [
+      "value"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "witness_after",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "witness_before",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "component_2d",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_2d"
+  },
+  {
+    "source": "component_alias",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  },
+  {
+    "source": "component_boolean",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_boolean"
+  },
+  {
+    "source": "component_field",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "component_field"
+  },
+  {
+    "source": "empty_component",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "empty"
+  },
+  {
+    "source": "checked_helper",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "wide"
+  }
+]

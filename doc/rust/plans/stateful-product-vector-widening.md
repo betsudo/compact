@@ -1,0 +1,410 @@
+# Stateful widening of Vectors of scalar products
+
+Status: reviewed bounded local compiler177 qualification at execution
+`438bf21c9f64b133970f8dadb212c24e54a2873d`. Source/API and selected genuine
+proof/default-strict application gates pass; independent source and separate
+receipt reviews find no P1/P2 within their declared scopes. Unselected/constructor/
+all-input, full CI/Linux/integration and the broader goal remain open. Forge is
+deferred. Documentation successors do not create fresh execution or proof epochs.
+
+## Original gap and source authority
+
+At proposal time, original compiler 173 at U execution `408dd00ee8c35b050ed6f307be0bf89edd839984`,
+accepts the pure product-Vector coercion, same-type stateful product return and
+newly accepted scalar-Vector local conversion controls. Stateful widening of
+Vector elements that are scalar products is still a real source gap.
+
+U evidence `next-stateful-product-vector-characterization-v1/receipt.json`
+retains 13 complete sources / 39 commands. Eleven sources pass TS. Seven fail both
+Rust and independent IR on a nested Cell.write: parameter/helper results,
+Uint-to-Field products, nested Vectors, an unchanged Boolean component, empty
+product Vectors and the complete two-export helper/branch proof candidate.
+The local product initializer emits IR but fails independent native type checking
+because it lacks its declared conversion. Three controls pass all three lanes;
+implicit narrowing and wrong product arity remain frontend refusals. No model,
+key/proof feasibility, new implementation or API acceptance follows from these
+source-only results.
+
+## Owners and intended public API
+
+Reconcile `compiler/rust-ir-passes.ss` supplied aggregate-cast classification,
+existing ordered return selection and U's typed local conversion. Trace actual
+source/target product carriers first. Reuse native/recording Coerce and existing
+typed product/vector AST owners; do not duplicate renderer or validator rules.
+Keep matching dimensions and product arity, original component bounds, intermediate
+casts, lexical/effect/callback order and single evaluation. The classifier chooses
+an evaluation owner; independent native/recording shape/type/layout/resource
+validation remains authoritative. An unchanged Boolean component is identity,
+not a new Boolean-to-number conversion.
+
+Public APIs retain actual complete types, for example
+`FixedVector<(BoundedUint<255>,BoundedUint<65535>),2>` input and
+`FixedVector<(BoundedUint<65535>,BoundedUint<4294967295>),2>` or
+`FixedVector<(Field,Field),2>` output. Preserve ordinary, recorded and consuming
+functional Program/context APIs. No new public flag, helper, ABI or IR primitive.
+
+## Acceptance
+
+1. Inspect exact checkpoint/refs/worktrees, preserve U and all predecessors, admit
+   a separate clean branch from the reviewed U documentation head, and run focused
+   baseline checks. Reconcile accepted roadmap/crosswalk/recording/retirement
+   ownership; pure product coercion and prior scalar/Vector work stay accepted.
+2. Fix every observed valid complete form at the existing owners, retaining source
+   bounds before target conversion. Characterize transparent aliases, checked
+   helper/guard first errors and before/after-write witness variants before adding
+   them to the corpus. Do not infer support from type shape or emission alone.
+3. Execute independent TS and complete unedited generated Rust ordinary/recorded/
+   functional SDKs at their real nested tuple/Vector types. Check element/component
+   order with asymmetric values, both selected branches, state/effects/private
+   outputs, once-only calls/witnesses, Rust-route metering and independent replay.
+   Preserve accepted controls byte-for-byte where the route is unaffected.
+4. Include marked wrong input/result component type/bound, product arity and Vector
+   length compile refusals with independent correct-type twins, plus Program/context
+   reuse. Keep frontend narrowing/arity/kind/nominal refusals and independent
+   malformed Coerce/binding/dead-branch/static-empty-case validation. Changed real
+   producer/component order and result-oracle data must fail actual consumers.
+5. Bind exact complete source/IR/Programs/SDK/default compiler recipe/backend/tool/
+   config/serialization/parameter/verifier identities and physical generated/golden
+   includes. Inventory every export/model/applicability before proof selection.
+   Verify material before fresh keys. Require genuine selected Uint/Field product
+   proof/verification and separate funded default-strict application with immutable
+   wrong-verifier/corruption/binding/real same-geometry result/replay controls.
+   Keep complete over-cap sources under unchanged automatic k<=8; no trimming or
+   assumed feasibility. Constructors/unselected/all-input coverage stays explicit.
+6. Use focused local arm64 iteration and actual Claude-first source/receipt review,
+   actual-limit Codex fallback, signed Conventional DCO/Assisted-by commits, docs
+   and verified Obsidian process/CAS. Retain complete required CI/proof/integration
+   gates; one local slice cannot complete the broad goal.
+
+## Exclusions
+
+No arbitrary Struct/nominal conversion redesign, narrowing relaxation, unchecked
+identity extension to unprobed types, new primitive, cap increase, effect framework,
+backend refactor or CI optimization. Preserve original full source and output
+geometry; no generated-code editing, source extraction or proof/verdict cache.
+No Forge work, publication, shared install or cleanup. Qualification remains bounded to the actual completed gates below.
+
+
+## Admission
+
+V is separately admitted on `codex/rust-ast-stateful-product-vector-widening`
+from reviewed U docs `f10393353065c8d9af142594181ed5b1b0802368`. Exact current
+checkpoint, refs/worktrees and clean canonical/U states were inspected first.
+All predecessor work and evidence are preserved. Focused baseline and actual
+product-cast traces precede implementation; no V compiler/API/model/proof
+acceptance is claimed. Existing pure coercion, typed native/recording validators,
+AST owners and original retirement/crosswalk authorities stay intact.
+
+## Source implementation and qualification boundary
+
+Restart reconciliation found clean admission `1b04a74ce`, all 38 focused baseline
+checks passed and the unchanged original compiler 173 recipe passed. The retained
+trace shows supplied Vector-of-product casts enclosing ordered ledger writes and
+local bindings. Existing native Coerce already owns independent tuple/Vector
+shape, scalar bounds, Boolean identity, conversion work and AST emission.
+
+The frontend classifier now recognizes equal-arity scalar products within
+matching Vector dimensions, including nested Vectors and unchanged Boolean
+components. It retains numeric monotone conversions and alias carriers at this
+owner, and selects the existing ordered evaluation/Coerce path. No native,
+recording, runtime, IR schema, ABI or public option changes are introduced.
+Compiler version 174 names this source change; original recipes are retained.
+
+The complete source corpus contains 23 TS-valid contracts and two original
+frontend refusals. Before implementation, nine valid contracts fail on nested
+ledger evaluation and eleven emit IR but fail native checking; the three existing
+controls pass. Additional forms include transparent aliases, checked helper first
+errors, an observable stateful helper, both witness positions, read-only storage,
+multiple conversions, scalar/Unit results, a three-component product and an intact
+wide local. An earlier development source roster had ten `>=` tokenization errors;
+its files/logs remain retained and the corrected source-only characterization is
+`characterization-original-v2/receipt.json`. Source characterization alone is not
+API execution, model feasibility, proof or application acceptance.
+
+Complete current compiler/API, marked compile refusals with correct-type twins,
+malformed IR and producer controls, selected genuine proofs/default-strict
+applications, independent source/receipt review and integration gates remain open.
+Keep all historical evidence at its actual source head. Do not label emission or
+this source commit as completed slice qualification.
+
+## Maintained API gate
+
+`tools/compact-rust-backend/check_stateful_product_vector_widening.py` runs the
+complete 23-source corpus and 30 declared TS/Rust cases: 116 stateful executions
+across ordinary, recorded and consuming functional routes, plus one pure route.
+The actual development consumer passed all cases with complete unedited compiler
+174 SDKs. The maintained gate adds full independent IR/Program goldens, physical
+local-conversion origins, strict complete SDK roots, ten marked compile refusals
+with independent correct-type twins, seven frontend refusals, nine malformed-IR
+controls, a same-geometry changed result and four regenerated complete producer
+controls. Its acceptance still requires an actual clean-head passing receipt.
+
+The checked helper's declared errors distinguish its guard and each of four
+source component narrowings before outward widening. Asymmetric row/component
+values expose reversals; the stateful helper observes the caller write and
+performs its own write exactly once. Both witness positions read the specified
+ledger value and preserve narrow private transcript geometry. Replay, effects,
+private outputs and gas agreement are checked separately from result equality.
+
+The first unaffected-control byte comparison used different absolute source
+paths and correctly failed on preserved Program origin filenames. No origin or
+JSON normalization was applied. Fresh current generation using the exact
+original source paths produces byte-identical complete IR and Program membership
+for all three controls (five files), retained in
+`accepted-control-comparison-v2/receipt.json`. The failed comparison/diffs remain.
+No proof/application or integration result follows from these API controls.
+
+## Nested public signature lint boundary
+
+The maintained 174 gate at `30f8f1c4a` passed all 30 consumers and the first
+11 strict SDK roots, then failed nested_product's strict root on eight
+`clippy::type_complexity` diagnostics. The generated complete nested product
+signatures are required carriers, not a runtime/type error. The failed receipt
+`source-api-v2/receipt.json` is retained and does not qualify the full gate.
+
+Compiler 175 extends the existing `CompactSignatureLint` AST owner, which already
+scopes the positional-argument style exception to affected functions. It marks
+only individual signatures containing a runtime FixedVector of FixedVector of a
+nontrivial product, including wrapped outcomes, with a reasoned type-complexity
+style exception. It adds no crate/module-wide suppression, type erasure, runtime
+rule, new API alias, dependency, generated-code edit or admission fallback.
+All other strict lint checks and ordinary Rust type/ownership errors remain
+active. Broad alias/API redesign is outside this repair. Semantic validators,
+conversion AST bodies, original source/IR/Programs and ABI remain unchanged;
+the generated signature attributes are an explicit metadata change. Current
+175 clean-head validation and independent review must cover this successor.
+
+## Independent witness interaction finding
+
+Actual read-only Codex source review v1 found no P1/P2 at `0821e88fa`.
+The separate successor review v2 found a real P2 at `1c0623fd4`: nested-product
+Witnesses methods acquire the scoped style attribute, but compact_witness_bridge
+previously accepted only doc attributes. A complete real compiler175 nested
+witness SDK reproduces ordinary compilation failure in
+`witness-style-regression-v1/receipt.json`. Emission and 1,833 backend unit passes
+(seven existing ignored) plus strict backend Clippy did not cover this interaction.
+Those successful receipts retain their original head; the failing SDK is retained.
+
+Compiler176 coordinates the existing witness bridge with the signature owner.
+The bridge permits only the two generated signature style lint names
+(type_complexity/too_many_arguments), with an optional string reason. It still
+rejects cfg/expect/semantic attributes, other lint names/groups, empty allowances,
+malformed or duplicate reasons. The same allowed style attributes propagate to
+the ordinary trait, fallible trait and adapter implementation; docs retain their
+original two public-trait surfaces. Signature/body/parameter validation is intact.
+
+Two complete combined witness/nested-product contracts now exercise before- and
+after-write callbacks, original narrow nested private transcript geometry and
+all four Rust routes against independent TS execution. The maintained roster is
+25 sources / 32 cases (124 stateful route executions plus one pure). Counts are
+expectations until its actual current gate passes. The gate retains its complete
+SDK-root, marked refusal/twin, source/malformed/producer/result controls. Current
+176 build/API, macro parser controls/strict Clippy, fresh independent review and
+selected proof/application qualification remain open; no trimming or disabling
+of the failing combined shape is permitted.
+
+## Three-component signature successor
+
+The 176 maintained gate executes all 32 consumer cases successfully (including
+both combined nested witnesses), then stops at command92 on eight strict
+triple_product SDK signature type-complexity diagnostics. This is retained as
+`source-api-v3/receipt.json`; it is not full gate acceptance. Fresh independent
+source review v3 reports no P1/P2 in the bridge repair at `2508fec89`, with SDK/
+golden/current gate acceptance explicitly pending at review time.
+
+Compiler177 extends the same function-only style marker to the other actually
+observed complex carrier: a Vector of a product of three or more scalar
+components. It retains the nested Vector-of-product case and all independent
+macro/type/semantic/refusal checks. No module/crate-level exception or signature,
+body, source/IR/Program normalization is introduced. The complete triple source
+is retained and must pass strict root Clippy; it is not replaced by a simpler
+source. Current177 clean-head source/API and fresh source-delta review remain
+required. Earlier compiler/native/SDK/review outcomes keep their own epochs.
+
+## Current exact diagnostic and snapshot repair
+
+The 177 source/API gate v4 passes all 25 strict complete SDK roots, all 32
+consumers and all ten marked compile refusals with independent positive twins.
+It then stops at command125 because the new wrong-length oracle expected
+"actual type" whereas the frontend correctly reports "actual return type".
+The compiler/source refusal is correct; that failed gate remains retained.
+All seven complete original177 refusal sources were independently characterized
+before updating this new oracle. `frontend-refusals.json` now binds each exact
+source SHA, nonzero exit and complete stdout/stderr bytes, including both private
+condition disclosure paths. No substring relaxation or diagnostic normalization.
+All nine independent malformed controls also reproduce the intended native
+refusals, including an unreachable bad branch and zero-length Vector element.
+
+Current retained-fixture check actually checked283, with one stale snapshot and
+zero generation failures. The sole current effect_plan_public_products snapshot
+requires seven function-scoped type-complexity attributes; its historical full
+bytes are preserved in Git and an external evidence copy before a targeted
+official --only/--update. Removing exactly those seven full attribute blocks
+restores the complete old bytes. No source, body, signature, IR, Program or
+historical compatibility test changes. Current no-update283fixture verification
+and the complete current V gate still require passing successor receipts.
+
+## Bounded local source/API stage — compiler177
+
+Execution `2da9c2dbc17c19673c3dba9a457cd05cb8e81e3f` has now passed the
+complete maintained source/API gate. Documentation successors do not create a
+new execution or proof epoch. This closes the source/API stage, not V's full
+qualification or the broader goal.
+
+| Actual local gate | Outcome |
+| --- | --- |
+| Original default177 Nix recipe | Passed; native package `ns8yq0izaz811mj0vjqpypym5p92ccbj` |
+| Complete V source/API gate | 153 commands; 25 unedited SDK roots; 32 cases, 124 stateful Rust executions plus one pure route |
+| Ordinary misuse | Ten marked refusals and ten independently compiled correct-type twins |
+| Untrusted boundaries | Seven exact source/SHA/exit/stdout/stderr refusals; nine malformed-IR controls including dead branch and empty Vector element |
+| Mutation controls | Four complete producer regenerations and a same-geometry result oracle fail the intended consumer assertions |
+| Current U predecessor API | 144 commands; 24 complete SDK roots; 34 cases, 132 stateful routes plus one pure; full independent IR/Programs remain exact |
+| Retained current fixtures | 283 checked, zero stale and zero failed after the sole scoped-attribute snapshot repair |
+| Current focused local checks | 31 macro tests and strict macro/backend Clippy at `8a5719324`; source owners unchanged in the execution successor |
+| Earlier full backend tests | 1,833 passed / seven existing ignored at `1c0623fd4`; retained as that epoch, not relabeled current |
+
+Actual Codex CLI source reviews v1/v3/v4/v5 (`gpt-6-astra`, high) report no
+P1/P2 for their exact original/delta scopes. Review v2 is the real witness bridge
+P2 finding; its failed SDK reproduction and all failed gates remain retained.
+The bridge fix is now exercised by complete before/after-write nested witness
+SDKs in the passing gate. Claude's actual prior429 and explicit reset-window
+observation support the authorized fallback; no fresh Claude approval is claimed.
+These are source reviews, not independent cryptographic or receipt acceptance.
+
+Author stage audit verifies all ten signed Conventional DCO/Assisted-by source
+commits, all657 predecessor refs and 2,247 declared source/tool/generated/root/TS
+receipt pins. This is an author audit, not a supply-chain attestation. Rust route
+gas agreement is not TS gas parity; VM replay checks state/effects, not replay gas.
+Canonical, U and all predecessors/Forge remain preserved and local. No hosted
+run, publication, shared install, merge or cleanup occurred.
+
+Evidence root: `rust-ast-stateful-product-vector-widening-20261102` with
+`source-api-v5/receipt.json`, `current-u-api-v1/receipt.json`,
+`retained-fixture-freshness-v2/receipt.json`, `source-stage-audit-v1.json`,
+`current-snapshot-repair-v1/receipt.json`, actual source reviews and all earlier
+failures. Original compiler/model/proof receipts must retain their own heads.
+
+## Remaining work at the source/API checkpoint
+
+At that source/API checkpoint no V model inventory, keys, proofs or ledger
+application had run. Its preserved qualification plan was:
+
+1. Add the bounded opt-in proof adapter at
+   `tools/compact-rust-backend/check_stateful_product_vector_widening_proof.py`
+   and `tools/compact-rust-proof-smoke/src/stateful_product_vector_widening.rs`,
+   with existing guarded build/dispatch owners. Include the complete generated
+   SDK and full source/IR/two Program assets, never extracted or hand-edited code.
+   Preserve default/all-feature builds without SDK configuration.
+2. Pin exact source/backend/tool/Cargo configuration/recipe/generated physical
+   inputs before compilation; retain the actual depfile before shared-target
+   reuse and check each reached worktree input against the prebuild map.
+3. Inventory all26 exports:25 proof-required and one pure. Observe every complete
+   model before selecting `proofs.run` and `run_field`; do not infer k. Retain
+   every complete over-cap source/model. Automatic k<=8 is unchanged; no trim,
+   cap increase, forced generation or proof feasibility claim.
+4. Verify locked proving parameters before any fresh selected keys. Execute both
+   Uint helper branches and the Field product export with genuine standalone
+   proofs and separately proved funded default-strict transactions. Keep immutable
+   wrong-verifier, corruption, binding, real typed same-geometry result and
+   unchanged-state replay refusal controls. Selected proofs do not prove
+   constructors, unselected exports or all inputs.
+5. Obtain independent source and separate receipt/premise reviews of the actual
+   completed epoch, then update signed docs, verified Obsidian process and CAS.
+   Complete required CI/Linux/integration remains a later authorized gate.
+   No Forge, publication or cleanup is admitted by this local stage.
+
+## Full-source proof adapter implementation
+
+The opt-in `stateful-product-vector-widening` runner includes the complete
+selected SDK, both complete Program files, full IR and full corpus definitions.
+Its typed inputs are `FixedVector<(BoundedUint<255>,BoundedUint<65535>),2>`;
+results are the actual widened Uint pair or Field pair Vector. Three scenarios
+use asymmetric rows/components and both branch states. Result corruption uses
+real values within the actual widened types and keeps public output geometry.
+The inherited official proof/independently-proved funded strict application and
+immutable verifier/binding/corruption/replay controls remain separate.
+
+The maintained proof gate first runs the complete current source/API gate. Its
+prebuild map additionally carries every admitted original compiler/API/source
+input (including Compact examples) through the proof epoch. Generated physical
+includes and golden membership are checked in the actual depfile, retained
+before target reuse. Default/all-feature checks without SDK configuration remain
+mandatory. Model-only outputs explicitly say proof_execution=false; selecting
+an export is not a completed proof. All26exports/models precede selection and
+unchanged automatic k<=8 admission. No model size or actual proof acceptance is
+claimed from this implementation or its commit. Fresh original177 build,
+source/API/runner qualification, model observation, material checks and actual
+proof/application execution remain required.
+
+## Reviewed bounded local qualification — execution438bf
+
+The actual original177 Nix recipe was realized at this execution head using the
+exact retained default package `ns8yq0izaz811mj0vjqpypym5p92ccbj`. This is a
+cached realization, not a claim of a fresh compiler rebuild. The whole current
+source/API gate freshly passes at438bf; old predecessor observations keep their
+actual heads.
+
+| Gate / scope | Actual outcome |
+| --- | --- |
+| Current complete source/API | 153 commands;25 complete unedited SDK roots;32 TS/Rust cases,124 stateful routes plus one pure; all misuse/twin, exact frontend, malformed and complete-producer/result controls pass |
+| Outer qualification | 14 zero-exit commands, including that153-command protocol; default runner and all-feature Clippy without SDK configuration plus complete selected-SDK build/Clippy pass |
+| Full model observation | 26 exports:25 proof-required plus one pure, observed before selection |
+| Selected original source models | proofs.run k8/212 keygen rows; run_field k8/161 keygen rows |
+| Proving material / keys | Locked material verified first, then two fresh direct native key generations |
+| Genuine standalone proof/verify | Three fresh2,912-byte proofs: Uint keep/flip branches and Field product |
+| Separate funded strict applications | Independently proved6,604/6,605/6,561-byte transactions pass default-strict validation/application |
+| Immutable negative controls | Different real verifier, corruption, changed binding, genuinely typed same-geometry output commitment/preimage, replay IntentAlreadyExists with unchanged state |
+| Build source identity | Every1,662 admitted protocol input carries into the4,439-entry prebuild map; all860 physical worktree depfile inputs match; raw depfile retained before target reuse |
+
+The other23 required exports remain unproved. In particular checked_helper,
+nested_product and wide_local are intact k9 models; automatic k<=8 is unchanged.
+No source was trimmed or substituted to obtain passing selected proofs.
+Constructor/deployment execution, unenumerated inputs, all-export coverage and
+required arm64/Linux CI/integration are not proved by this local result.
+
+Actual independent Codex CLI source review v6 finds no P1/P2 in the complete
+proof adapter/dispatch/identity/control source. The separate receipt review uses
+its own read-only standard-library Python and Git inspection: all10,980 indexed
+records/6,552 paths match;42 absence observations/14 configuration paths hold;
+all4,463 mapped worktree files match the frozen source;11,165 overlapping primary
+receipt references independently reconcile. It checks the950 depfile dependencies
+and exact860 physical worktree inputs, whole SDKs/IR/Programs,219-file/five-package
+Node production closure and20 external libraries, command/control outcomes,
+model/material/key order and real proof/application premises. It reports bounded
+acceptance/no P1/P2. Host OS library bytes remain unqualified. This is inspection,
+not cryptographic re-execution, a global supply-chain audit or a human security
+audit. Actual preceding Claude429/reset-window evidence supports the authorized
+Codex fallback; no new Claude review is claimed.
+
+The original receipt index remains unchanged. A supplemental author index adds
+two diagnostic source-file paths and one diagnostic ZKIR path already declared
+in primary receipts; it has10,983 records/6,555 paths. Original review counts
+refer to the original index, not a rerun of that supplemental indexing step.
+Closeout log hashes are labeled observations at audit, not retrospective
+execution-time remote attestations.
+
+U's144-command/34-case/24-root API and283-fixture passes remain at2da9, with
+unchanged owner/source/recipe/compiler identity reuse checked by the independent
+review; they are not relabeled fresh438bf executions. Earlier1,833 tests/seven
+ignored remain at1c062. All failures and the real P2 discovery/fix stay retained.
+
+At closeout, two original app-namespace turn-diff ref names were observed absent;
+the actor/cause was not observed. Their common original tree was still present
+and is preserved by a task-owned local-evidence ref, without recreating managed
+names. The other655 original refs, including all source branches/tags, remain
+exact. Earlier657-exact audits retain their original observation scope. No source
+worktree, proof artifact, store, container, snapshot or cache was deleted.
+
+Evidence: `proof-v1/receipt.json`, its complete `protocol/receipt.json`,
+`local-codex-code-review-v6-result.json`,
+`local-codex-receipt-review-v1-result.json`, `receipt-audit-v1.json`,
+`receipt-audit-v2.json`, `review-adjudication-v2.json`,
+`ref-preservation-transient-exception-v1.json`, `qualification-summary-v1.json`
+in the V evidence root. Keep exact source epochs and bounded scope.
+
+The next [Vector-containing product proposal](stateful-vector-product-elements.md)
+is source-only. It first requires repairing its independently observed strict
+identity-control baseline, then tracing the aggregate-cast/evaluation gap. No next
+feature implementation or model/proof feasibility follows from that proposal.
+No publication, hosted trial, shared installation, merge or cleanup occurred;
+local V qualification does not complete the broad goal or deferred Forge.

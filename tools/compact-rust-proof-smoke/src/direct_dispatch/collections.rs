@@ -503,3 +503,185 @@ pub(super) fn unit_mutation_initializers(
     }
     crate::unit_mutation_initializers::run(Path::new(&root))
 }
+
+#[cfg(all(
+    feature = "fold-vector-result-widening",
+    compact_fold_vector_result_generated
+))]
+pub(super) fn fold_vector_result_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --fold-vector-result-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::fold_vector_result_widening::models(Path::new(&root))
+    } else {
+        crate::fold_vector_result_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "vector-alias-source-widening",
+    compact_vector_alias_source_generated
+))]
+pub(super) fn vector_alias_source_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --vector-alias-source-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::vector_alias_source_widening::models(Path::new(&root))
+    } else {
+        crate::vector_alias_source_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "aggregate-literal-projection-widening",
+    compact_aggregate_literal_projection_generated
+))]
+pub(super) fn aggregate_literal_projection_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage =
+        "usage: compact-rust-proof-smoke --aggregate-literal-projection-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::aggregate_literal_projection_widening::models(Path::new(&root))
+    } else {
+        crate::aggregate_literal_projection_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "struct-member-literal-widening",
+    compact_struct_member_literal_generated
+))]
+pub(super) fn struct_member_literal_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --struct-member-literal-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::struct_member_literal_widening::models(Path::new(&root))
+    } else {
+        crate::struct_member_literal_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "direct-stateful-vector-literal-returns",
+    compact_direct_stateful_vector_generated
+))]
+pub(super) fn direct_stateful_vector_literal_returns(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage =
+        "usage: compact-rust-proof-smoke --direct-stateful-vector-literal-returns <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::direct_stateful_vector_literal_returns::models(Path::new(&root))
+    } else {
+        crate::direct_stateful_vector_literal_returns::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "stateful-vector-value-widening",
+    compact_stateful_vector_value_generated
+))]
+pub(super) fn stateful_vector_value_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --stateful-vector-value-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::stateful_vector_value_widening::models(Path::new(&root))
+    } else {
+        crate::stateful_vector_value_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "stateful-local-vector-widening",
+    compact_stateful_local_vector_generated
+))]
+pub(super) fn stateful_local_vector_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --stateful-local-vector-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::stateful_local_vector_widening::models(Path::new(&root))
+    } else {
+        crate::stateful_local_vector_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "stateful-product-vector-widening",
+    compact_stateful_product_vector_generated
+))]
+pub(super) fn stateful_product_vector_widening(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --stateful-product-vector-widening <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::stateful_product_vector_widening::models(Path::new(&root))
+    } else {
+        crate::stateful_product_vector_widening::run(Path::new(&root))
+    }
+}
+
+#[cfg(all(
+    feature = "vector-product-elements",
+    compact_vector_product_elements_generated
+))]
+pub(super) fn vector_product_elements(
+    arguments: &mut impl Iterator<Item = OsString>,
+    models_only: bool,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --vector-product-elements <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    if models_only {
+        crate::vector_product_elements::models(Path::new(&root))
+    } else {
+        crate::vector_product_elements::run(Path::new(&root))
+    }
+}

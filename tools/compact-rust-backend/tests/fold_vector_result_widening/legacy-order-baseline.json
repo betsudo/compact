@@ -1,0 +1,70 @@
+{
+  "scope": "Known original144 legacy named Fold native source-first vs TS seed-first first-error control; not parity acceptance and not new result semantics",
+  "original_compiler": "0.31.144",
+  "source": "source_checked_control.compact",
+  "source_sha256": "9719ca636ee9475dc066e02602349e7e23784fde0bea12379b3ac06b91138d67",
+  "native_error": "items denied",
+  "typescript_error": "seed denied",
+  "case_ids": [
+    "both_denied",
+    "order_control_both_denied"
+  ],
+  "native_observations": [
+    {
+      "error": "items denied",
+      "id": "both_denied"
+    },
+    {
+      "error": "seed denied",
+      "id": "seed_denied"
+    },
+    {
+      "error": "items denied",
+      "id": "items_denied"
+    },
+    {
+      "error": "item denied",
+      "id": "first_item_denied"
+    },
+    {
+      "error": "item denied",
+      "id": "second_item_denied"
+    },
+    {
+      "id": "success",
+      "result": [
+        3,
+        2
+      ]
+    }
+  ],
+  "typescript_observations": [
+    {
+      "id": "both_denied",
+      "error": "failed assert: seed denied"
+    },
+    {
+      "id": "seed_denied",
+      "error": "failed assert: seed denied"
+    },
+    {
+      "id": "items_denied",
+      "error": "failed assert: items denied"
+    },
+    {
+      "id": "first_item_denied",
+      "error": "failed assert: item denied"
+    },
+    {
+      "id": "second_item_denied",
+      "error": "failed assert: item denied"
+    },
+    {
+      "id": "success",
+      "result": [
+        "3",
+        "2"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,11 @@
 # Isolated witnessed functional SDK consumer
 
 The complete maintained Field-witness source generates with default bundled
-runtime and the raw SDK passes clean local qualification with original compiler
-0.31.143 on macOS arm64. This slice still requires published PR review and full
-Linux CI before integration. An external copied testkit needs one explicit source-package adjustment:
+runtime. The [current compiler183 handoff](../../../plans/current-profile-sdk-handoff.md)
+qualifies its raw SDK and documented consumer locally on macOS arm64, including
+actual proof-feature library linting. Accepted compiler143 integration and its
+older receipts retain their original source epochs. Full current Linux CI and
+logical integration remain open. An external copied testkit needs one explicit source-package adjustment:
 change only its copied Cargo manifest runtime path from `../runtime-rs` to
 `../generated/contract/runtime-rs`. Preserve the original manifest separately.
 The original repository manifest and compiler-generated files stay unchanged.
@@ -36,14 +38,14 @@ check all local manifests and registry/Git/checksum identities, then execute:
 cargo +1.99.0 test --locked --offline --manifest-path consumer/Cargo.toml
 cargo +1.99.0 clippy --locked --offline --manifest-path consumer/Cargo.toml \
   --package isolated-functional-sdk-consumer --lib -- -D warnings
-cargo +1.99.0 clippy --locked --offline --manifest-path consumer/Cargo.toml \
-  --package compact-contract-field-witness-proof --lib -- -D warnings
-cargo +1.99.0 clippy --locked --offline --manifest-path consumer/Cargo.toml \
-  --package midnight-compact-testkit --lib -- -D warnings
 ```
 
-These are the graph-selected direct owner commands executed by the gate. They
-share the consumer's qualified lock; no separate SDK or testkit lock is needed.
+These commands exercise the consumer. A `cargo clippy --package` success from
+this workspace does not establish linting of the SDK or testkit: they are
+external dependencies, not workspace members. Use the maintained gate below
+for proof-feature linting of all three libraries. It selects each actual library
+owner with the pinned Clippy driver and validates the unchanged package/feature
+graph through its private lint root. No separate SDK or testkit lock is needed.
 Generated SDK bytes remain raw. The gate runs `rustfmt --edition 2024 --check`
 on every handwritten consumer Rust file, including proof and refusal fixtures.
 The executable consumer computes source and generated-file hashes from the
@@ -110,8 +112,9 @@ The source-built material runner and selected files are hash-bound; this does no
 attest an arbitrary executable's build provenance or a hostile host's effective
 configuration. The complete staged consumer (including its resolved lock) and copied testkit
 (manifest, source, README and license) must have identical inventories at the end.
-Direct Clippy selects each owner from the admitted graph, including
-the copied testkit library without its repository-only development fixtures.
+The maintained gate selects and confirms actual Clippy compilation of each
+library owner from the admitted proof-feature graph, including the copied
+testkit library without its repository-only development fixtures.
 
 The development prototype and actual documented proof program pass locally:
 
@@ -130,7 +133,7 @@ The development prototype and actual documented proof program pass locally:
   statement is source-faithful. A typed callback does not prove an unstated
   algebraic relation or certify arbitrary callback privacy/external effects.
 
-The maintained gate passes clean local qualification on original compiler
+The historical compiler143 gate passed clean local qualification on original compiler
 0.31.143 at source `fb704896bee4abd596ce81f84975e8b2840ac6ef`, including all
 28 commands, genuine malformed-recording refusals, fresh proof execution and
 strict application. The combined branch also passes 401 public Python methods;

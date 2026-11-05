@@ -1,0 +1,39 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+import CompactStandardLibrary;
+export ledger seen: Field;
+type Narrow = Vector<1, [Vector<1, [[Uint<8>, Uint<16>], Uint<8>]>, Uint<16>]>;
+type Wide = Vector<1, [Vector<1, [[Uint<16>, Uint<32>], Uint<16>]>, Uint<32>]>;
+pure circuit keep(input: Narrow): Narrow { return input; }
+pure circuit checked(ok: Boolean, input: Wide): Narrow {
+  assert(ok, "nested helper denied");
+  return [[[[[input[0][0][0][0][0] as Uint<8>, input[0][0][0][0][1] as Uint<16>], input[0][0][0][1] as Uint<8>]], input[0][1] as Uint<16>]];
+}
+witness vector_value(): Narrow;
+export circuit parameter(input: Narrow): Wide { seen = 1; return input; }
+export circuit helper(input: Narrow): Wide { seen = 2; return keep(input); }
+export circuit local(input: Narrow): Wide { const wide: Wide = keep(input); seen = 3; return wide; }
+export circuit checked_helper(ok: Boolean, input: Wide): Wide { seen = 4; const wide: Wide = checked(ok, input); return wide; }
+export circuit witness_before(): Wide { const wide: Wide = disclose(vector_value()); seen = 5; return wide; }
+export circuit witness_after(): Wide { seen = 6; const wide: Wide = disclose(vector_value()); return wide; }
+export circuit branch(pick: Boolean, left: Narrow, right: Narrow): Wide {
+  if (disclose(pick)) { seen = 7; return keep(left); } else { seen = 8; return keep(right); }
+}
+export circuit deep(input: Vector<1, [Vector<1, [[[Uint<8>, Uint<16>], Uint<8>], Uint<16>]>, Uint<8>]>): Vector<1, [Vector<1, [[[Uint<16>, Uint<32>], Uint<16>], Uint<32>]>, Uint<16>]> { seen = 9; return input; }
+export circuit boolean_field(input: Vector<1, [Vector<1, [[Boolean, Uint<8>], Uint<8>]>, Boolean]>): Vector<1, [Vector<1, [[Boolean, Field], Field]>, Boolean]> { seen = 10; return input; }
+export circuit empty(input: Vector<0, [Vector<1, [[Uint<8>, Uint<16>], Uint<8>]>, Uint<16>]>): Vector<0, [Vector<1, [[Uint<16>, Uint<32>], Uint<16>]>, Uint<32>]> { seen = 11; return input; }
+export circuit tuple_empty(input: Vector<1, [Vector<1, [[], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[], Uint<16>]>, Uint<32>]> { seen = 12; return input; }
+export circuit tuple_single(input: Vector<1, [Vector<1, [[[Uint<8>], Uint<16>], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[[Uint<16>], Uint<32>], Uint<16>]>, Uint<32>]> { seen = 13; return input; }
+export circuit field_identity(input: Vector<1, [Vector<1, [[Field, Uint<8>], Uint<8>]>, Uint<16>]>): Vector<1, [Vector<1, [[Field, Uint<16>], Uint<16>]>, Uint<32>]> { seen = 14; return input; }

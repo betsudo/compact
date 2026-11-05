@@ -19,6 +19,54 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{FnArg, GenericParam, ItemTrait, Pat, ReturnType, TraitItem, Type};
 
+// These two generated signature style attributes do not change the method's
+// type or availability. Keep rejecting cfg/semantic attributes and broad lint
+// groups; forward the permitted style exceptions to both companion surfaces.
+fn supported_method_attribute(attribute: &syn::Attribute) -> bool {
+    if attribute.path().is_ident("doc") {
+        return true;
+    }
+    if !attribute.path().is_ident("allow") {
+        return false;
+    }
+    let Ok(entries) = attribute.parse_args_with(
+        syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated,
+    ) else {
+        return false;
+    };
+    let mut lints = 0;
+    let mut reason = false;
+    for entry in entries {
+        match entry {
+            syn::Meta::Path(path)
+                if path.leading_colon.is_none()
+                    && path.segments.len() == 2
+                    && path.segments[0].ident == "clippy"
+                    && matches!(path.segments[0].arguments, syn::PathArguments::None)
+                    && matches!(path.segments[1].arguments, syn::PathArguments::None)
+                    && (path.segments[1].ident == "too_many_arguments"
+                        || path.segments[1].ident == "type_complexity") =>
+            {
+                lints += 1;
+            }
+            syn::Meta::NameValue(value) if value.path.is_ident("reason") && !reason => {
+                if !matches!(
+                    value.value,
+                    syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(_),
+                        ..
+                    })
+                ) {
+                    return false;
+                }
+                reason = true;
+            }
+            _ => return false,
+        }
+    }
+    lints > 0
+}
+
 pub(crate) fn expand(input: ItemTrait) -> syn::Result<TokenStream> {
     if input.ident != "Witnesses"
         || input.generics.params.len() != 1
@@ -60,7 +108,10 @@ pub(crate) fn expand(input: ItemTrait) -> syn::Result<TokenStream> {
             || method.sig.unsafety.is_some()
             || method.sig.abi.is_some()
             || method.sig.variadic.is_some()
-            || method.attrs.iter().any(|attr| !attr.path().is_ident("doc"))
+            || method
+                .attrs
+                .iter()
+                .any(|attr| !supported_method_attribute(attr))
         {
             return Err(syn::Error::new_spanned(
                 method,
@@ -127,8 +178,12 @@ pub(crate) fn expand(input: ItemTrait) -> syn::Result<TokenStream> {
         fallible_signature.output = syn::parse_quote!(-> ::core::result::Result<#output, ::midnight_compact_runtime::CompactError>);
         let name = &method.sig.ident;
         let attrs = &method.attrs;
+        let style_attrs = attrs
+            .iter()
+            .filter(|attribute| attribute.path().is_ident("allow"));
         fallible_methods.push(quote! { #(#attrs)* #fallible_signature; });
         adapter_methods.push(quote! {
+            #(#style_attrs)*
             #fallible_signature {
                 ::core::result::Result::Ok(<W as Witnesses<Private>>::#name(self, #(#argument_names),*))
             }
@@ -150,6 +205,7 @@ pub(crate) fn expand(input: ItemTrait) -> syn::Result<TokenStream> {
 #[cfg(test)]
 mod tests {
     use super::expand;
+    use quote::ToTokens;
     use syn::{ItemTrait, parse_quote};
 
     #[test]
@@ -175,6 +231,71 @@ mod tests {
         ] {
             let trait_item: ItemTrait = syn::parse_str(input).unwrap();
             assert!(expand(trait_item).is_err(), "accepted {input}");
+        }
+    }
+
+    #[test]
+    fn permits_only_narrow_signature_style_exceptions() {
+        for attribute in [
+            "#[allow(clippy::type_complexity, reason = \"preserves Compact carriers\")]",
+            "#[allow(clippy::too_many_arguments)]",
+            "#[allow(clippy::too_many_arguments, clippy::type_complexity)]",
+        ] {
+            let input: ItemTrait = syn::parse_str(&format!(
+                "pub trait Witnesses<Private> {{ {attribute} fn secret(&self, context: u64) -> (Private, u64); }}"
+            )).unwrap();
+            let file: syn::File = syn::parse2(expand(input).unwrap()).unwrap();
+            let [
+                syn::Item::Trait(ordinary),
+                syn::Item::Trait(fallible),
+                syn::Item::Impl(adapter),
+            ] = file.items.as_slice()
+            else {
+                panic!("companion surfaces changed");
+            };
+            let syn::TraitItem::Fn(ordinary) = &ordinary.items[0] else {
+                panic!();
+            };
+            let syn::TraitItem::Fn(fallible) = &fallible.items[0] else {
+                panic!();
+            };
+            let syn::ImplItem::Fn(adapter) = &adapter.items[0] else {
+                panic!();
+            };
+            assert_eq!(ordinary.attrs.len(), 1);
+            let attributes = |attrs: &[syn::Attribute]| {
+                attrs
+                    .iter()
+                    .map(|attribute| attribute.to_token_stream().to_string())
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(attributes(&fallible.attrs), attributes(&ordinary.attrs));
+            assert_eq!(attributes(&adapter.attrs), attributes(&ordinary.attrs));
+            assert_eq!(
+                fallible.sig.inputs.to_token_stream().to_string(),
+                ordinary.sig.inputs.to_token_stream().to_string()
+            );
+            assert_eq!(
+                adapter.sig.to_token_stream().to_string(),
+                fallible.sig.to_token_stream().to_string()
+            );
+        }
+        for attribute in [
+            "#[cfg(any())]",
+            "#[inline]",
+            "#[expect(clippy::type_complexity)]",
+            "#[allow(clippy::all)]",
+            "#[allow(dead_code)]",
+            "#[allow()]",
+            "#[allow(clippy::type_complexity, dead_code)]",
+            "#[allow(clippy::type_complexity, reason = 1)]",
+            "#[allow(clippy::type_complexity, reason = \"a\", reason = \"b\")]",
+            "#[allow(reason = \"no lint\")]",
+        ] {
+            let input: ItemTrait = syn::parse_str(&format!(
+                "pub trait Witnesses<Private> {{ {attribute} fn secret(&self, context: u64) -> (Private, u64); }}"
+            )).unwrap();
+            assert!(expand(input).is_err(), "accepted unsupported {attribute}");
         }
     }
 

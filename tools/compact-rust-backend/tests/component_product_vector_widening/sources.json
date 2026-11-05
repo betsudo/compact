@@ -1,0 +1,57 @@
+[
+  {
+    "source": "original_direct",
+    "path": "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/vector_inside_component_product.compact",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "original_direct"
+  },
+  {
+    "source": "original_nested",
+    "path": "tools/compact-rust-backend/tests/nested_component_products/unsupported/vector_inside_nested_product.compact",
+    "stateful": true,
+    "entries": [
+      "run"
+    ],
+    "descriptor": "original_nested"
+  },
+  {
+    "source": "family",
+    "path": "examples/rust_backend/component_product_vector_widening/component_product_vector_widening.compact",
+    "stateful": true,
+    "entries": [
+      "parameter",
+      "helper",
+      "local",
+      "checked_helper",
+      "witness_before",
+      "witness_after",
+      "branch",
+      "deep",
+      "boolean_field",
+      "empty",
+      "tuple_empty",
+      "tuple_single",
+      "field_identity",
+      "empty_leaf"
+    ],
+    "descriptor": {
+      "parameter": "wide",
+      "helper": "wide",
+      "local": "wide",
+      "checked_helper": "wide",
+      "witness_before": "wide",
+      "witness_after": "wide",
+      "branch": "wide",
+      "deep": "deep",
+      "boolean_field": "boolean_field",
+      "empty": "empty",
+      "tuple_empty": "tuple_empty",
+      "tuple_single": "tuple_single",
+      "field_identity": "field_identity",
+      "empty_leaf": "empty_leaf"
+    }
+  }
+]

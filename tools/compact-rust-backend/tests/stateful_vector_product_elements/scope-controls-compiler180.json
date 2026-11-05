@@ -1,0 +1,20 @@
+{
+  "product_below_component": {
+    "source_sha256": "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c",
+    "lanes": {
+      "ts": {
+        "exit": 0
+      },
+      "rust": {
+        "exit": 255,
+        "stdout": "",
+        "stderr": "Exception: product_below_component.compact line 6 char 126:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+      },
+      "ir": {
+        "exit": 255,
+        "stdout": "",
+        "stderr": "Exception: product_below_component.compact line 6 char 126:\n  Rust backend does not yet support this nested ledger query: __compact_Cell.write\n"
+      }
+    }
+  }
+}

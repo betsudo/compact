@@ -1,0 +1,129 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "value",
+      "parameters": [
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      },
+      "body": {
+        "kind": "vector",
+        "element": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        },
+        "elements": [
+          {
+            "kind": "vector",
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            },
+            "elements": [
+              {
+                "kind": "tuple_index",
+                "value": {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 1
+                },
+                "index": 0
+              },
+              {
+                "kind": "tuple_index",
+                "value": {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 1
+                },
+                "index": 1
+              }
+            ]
+          },
+          {
+            "kind": "vector",
+            "element": {
+              "kind": "unsigned",
+              "max": "255"
+            },
+            "elements": [
+              {
+                "kind": "tuple_index",
+                "value": {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 0
+                },
+                "index": 1
+              },
+              {
+                "kind": "tuple_index",
+                "value": {
+                  "kind": "tuple_index",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "input"
+                  },
+                  "index": 0
+                },
+                "index": 0
+              }
+            ]
+          }
+        ]
+      },
+      "source": {
+        "file": "nested_identity_control.compact",
+        "line": 4,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

@@ -28,6 +28,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import time
 import tomllib
@@ -198,12 +199,93 @@ def validate_result(result):
         raise ValueError("applied Cell does not encode the selected Compact Field value 42")
 
 
+def clippy_library_command(cargo, manifest, package):
+    # These packages are dependencies outside the consumer workspace. Cargo
+    # clippy's workspace wrapper does not lint them, even with --package.
+    # The caller selects the pinned clippy-driver as RUSTC for this command only.
+    return [str(cargo), "rustc", "--locked", "--offline", "--manifest-path", str(manifest),
+            "--package", package, "--lib", "--message-format", "json", "--", "-D", "warnings"]
+
+
+def library_lint_root(consumer_manifest, destination):
+    # Cargo cannot select features for a nonmember with --package. A separate
+    # lint-only root enables the existing consumer's proof feature as a normal
+    # dependency, without editing any qualified manifest or source.
+    destination.mkdir()
+    name = tomllib.loads(consumer_manifest.read_text())["package"]["name"]
+    relative = os.path.relpath(consumer_manifest.parent, destination)
+    manifest = destination / "Cargo.toml"
+    manifest.write_text('[workspace]\n[package]\nname="isolated-sdk-library-lints"\n'
+                        'version="0.0.0"\nedition="2024"\n[lib]\npath="lib.rs"\n'
+                        '[dependencies]\nconsumer={package='+json.dumps(name)+',path='+json.dumps(relative)
+                        +',features=["proof"]}\n')
+    (destination / "lib.rs").write_text("// Private lint root; never a generated contract or execution input.\n")
+    shutil.copyfile(consumer_manifest.with_name("Cargo.lock"), destination / "Cargo.lock")
+    return manifest
+
+
+def check_library_lint_graph(reference, selected, lint_manifest):
+    roots = [p for p in selected["packages"] if Path(p["manifest_path"]) == lint_manifest]
+    if len(roots) != 1 or roots[0]["name"] != "isolated-sdk-library-lints":
+        raise ValueError("one owned library lint root required")
+    root = roots[0]["id"]
+    if selected["workspace_members"] != [root] or selected["resolve"]["root"] != root:
+        raise ValueError("library lint workspace ownership differs")
+    packages = {p["id"]: p for p in selected["packages"] if p["id"] != root}
+    nodes = {n["id"]: n for n in selected["resolve"]["nodes"] if n["id"] != root}
+    if (packages != {p["id"]: p for p in reference["packages"]}
+            or nodes != {n["id"]: n for n in reference["resolve"]["nodes"]}):
+        raise ValueError("library lint dependency identities or features differ from qualified consumer")
+    own = next(n for n in selected["resolve"]["nodes"] if n["id"] == root)
+    if own["dependencies"] != [reference["resolve"]["root"]]:
+        raise ValueError("library lint root must depend only on the qualified consumer")
+    return {"root": root, "unchanged_packages": len(packages), "unchanged_feature_nodes": len(nodes)}
+
+
+def clippy_library_artifact(stdout, metadata, package, *, required_feature=None):
+    owners = [p for p in metadata["packages"] if p["name"] == package]
+    if len(owners) != 1:
+        raise ValueError("one selected Clippy package required")
+    owner = owners[0]
+    targets = [t for t in owner["targets"] if t["kind"] == ["lib"]]
+    if len(targets) != 1:
+        raise ValueError("one selected Clippy library required")
+    source = Path(targets[0]["src_path"]).resolve(strict=True)
+    artifacts = []
+    for line in stdout.splitlines():
+        row = json.loads(line)
+        if (row.get("reason") == "compiler-artifact" and row.get("package_id") == owner["id"]
+                and row.get("target", {}).get("kind") == ["lib"]
+                and Path(row["target"]["src_path"]).resolve(strict=True) == source):
+            artifacts.append(row)
+    if len(artifacts) != 1 or artifacts[0].get("fresh") is not False:
+        raise ValueError("selected Clippy library must actually compile, not reuse a check artifact")
+    features = artifacts[0].get("features", [])
+    if required_feature and required_feature not in features:
+        raise ValueError("selected Clippy library omitted its required proof feature")
+    return {"package_id": owner["id"], "source": str(source), "fresh": False, "features": features}
+
+
+def installed_runtime_source_root(compiler):
+    """Admit the installed prefixes used by the CLI, without its checkout fallback."""
+    for prefix in (compiler.parent, compiler.parent.parent):
+        candidate = prefix / "share/compactc"
+        try:
+            mode = candidate.stat().st_mode
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        if not stat.S_ISDIR(mode):
+            raise ValueError("installed runtime source root is not a directory")
+        return candidate.resolve(strict=True)
+    raise ValueError("selected compiler lacks an installed runtime source bundle")
+
+
 def cargo_configuration(environment):
     # This is selected configuration admission, not a hostile-host attestation.
     forbidden = {"RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC", "RUSTC_WRAPPER",
                  "RUSTC_WORKSPACE_WRAPPER", "RUSTC_BOOTSTRAP", "CARGO_BUILD_RUSTC",
                  "CARGO_BUILD_RUSTFLAGS", "CARGO_BUILD_RUSTC_WRAPPER",
-                 "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_WARNINGS"}
+                 "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_WARNINGS", "CLIPPY_ARGS"}
     def refused(key):
         return (key in forbidden or key.startswith("CARGO_TARGET_") and key.endswith(("_RUSTFLAGS", "_RUNNER"))
                 or key.startswith("CARGO_PROFILE_") and not key.endswith("_DEBUG"))
@@ -276,10 +358,16 @@ def main(argv=None):
                "limits": "selected source/host/configuration and official fixture qualification; not exhaustive semantics, hostile-host attestation, deployment/constructor proof, wallet lifecycle or fully vendored distribution"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", PYTHONDONTWRITEBYTECODE="1", CARGO_INCREMENTAL="0")
     env.setdefault("CARGO_BUILD_JOBS", "4")
-    def run(label, command, *, success=True):
+    def run(label, command, *, success=True, lint_library=False):
         started = time.monotonic()
+        command_env = env
+        if lint_library:
+            # Inherited compiler/wrapper overrides were refused above. This is
+            # an explicit, hash-bound linter selection, never used for execution
+            # or proving builds and never written into env or Cargo config.
+            command_env = dict(env, RUSTC=tools["clippy-driver"]["path"])
         try:
-            result = bounded_command(command, env)
+            result = bounded_command(command, command_env)
         except subprocess.TimeoutExpired as error:
             for stream, value in (("stdout", error.stdout), ("stderr", error.stderr)):
                 (output / f"{label}.{stream}").write_text(value.decode(errors="replace") if isinstance(value, bytes) else value or "")
@@ -288,6 +376,8 @@ def main(argv=None):
         for stream in ("stdout", "stderr"):
             (output / f"{label}.{stream}").write_text(getattr(result, stream))
         receipt["commands"].append({"label": label, "command": list(map(str, command)), "exit": result.returncode, "seconds": time.monotonic()-started})
+        if lint_library:
+            receipt["commands"][-1]["selected_clippy_driver"] = dict(tools["clippy-driver"])
         if success and result.returncode:
             raise RuntimeError(f"isolated SDK command failed: {label}: {result.stderr[-2000:]}")
         return result
@@ -296,6 +386,10 @@ def main(argv=None):
         receipt["source_dirty"] = common.dirty_paths()
         if receipt["source_dirty"] or env.get("COMPACTC_SCHEME"):
             raise ValueError("clean selected source and original packaged compiler without Scheme override required")
+        # Even an empty variable is an override to the CLI: it selects the cwd.
+        # This gate qualifies installed default selection, not a caller's root.
+        if "COMPACT_RUST_RUNTIME_DIR" in env:
+            raise ValueError("default installed SDK qualification forbids COMPACT_RUST_RUNTIME_DIR")
         # Fail before generation or Cargo work when selected material/static
         # locations or the native ZKIR executable are missing.
         prerequisites = receipt["prerequisites"] = did_proof_gate.prerequisites(env)
@@ -315,6 +409,7 @@ def main(argv=None):
                 raise ValueError(f"missing selected executable: {name}")
             tools[name] = {"path": str(path), "sha256": digest(path)}
         compiler = Path(tools["compiler"]["path"])
+        installed_runtime = installed_runtime_source_root(compiler)
         scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
         tools["scheme"] = {"path": str(scheme), "sha256": digest(scheme)}
         for name in ("cargo", "rustc", "rustfmt", "cargo-clippy", "clippy-driver"):
@@ -332,6 +427,16 @@ def main(argv=None):
         for folder in source_folders:
             paths += tracked_source_files(folder)
         expected_runtime = runtime_files(ROOT)
+        installed_hashes = runtime_files(installed_runtime)
+        if installed_hashes != expected_runtime:
+            raise ValueError("installed runtime source bundle differs from selected source")
+        receipt["runtime_source_selection"] = {
+            "mode": "installed-default", "override_present": False,
+            "root": str(installed_runtime),
+            "basis": "admitted CLI installed prefix and absent override; not a consumed-file syscall trace",
+        }
+        receipt["installed_runtime_hashes"] = {
+            str(installed_runtime / path): value for path, value in installed_hashes.items()}
         paths += [ROOT / p for p in expected_runtime]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths}
         receipt["runtime_bundle_hashes"] = expected_runtime
@@ -387,13 +492,21 @@ def main(argv=None):
                     if not lines:
                         raise ValueError("missing intended ordinary misuse location")
                     receipt["typed_controls"][name] = typed_refusal(process, code, path, lines[-1])
-        # Select each owner from the admitted consumer graph, so testkit's
-        # repository-only development fixtures never enter this source package.
-        for name, package in (("consumer", "isolated-functional-sdk-consumer"),
-                              ("raw-sdk", "compact-contract-field-witness-proof"),
-                              ("testkit", "midnight-compact-testkit")):
-            run(name+"-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", manifest,
-                                "--package", package, "--lib", "--", "-D", "warnings"])
+        # Keep the admitted graph and raw manifests: testkit's repository-only
+        # development fixtures must not enter this isolated library package.
+        lint_manifest = library_lint_root(manifest, output / "library-lints")
+        lint_metadata = json.loads(run("library-lint-metadata", [tools["cargo"]["path"], "metadata",
+            "--offline", "--format-version", "1", "--manifest-path", lint_manifest]).stdout)
+        receipt["clippy_graph"] = check_library_lint_graph(metadata, lint_metadata, lint_manifest)
+        receipt["clippy_root_hashes"] = inventory(lint_manifest.parent)
+        receipt["clippy_libraries"] = {}
+        for name, package, feature in (("consumer", "isolated-functional-sdk-consumer", "proof"),
+                                       ("raw-sdk", "compact-contract-field-witness-proof", "ledger-transaction"),
+                                       ("testkit", "midnight-compact-testkit", "proof")):
+            lint = run(name+"-clippy", clippy_library_command(tools["cargo"]["path"], lint_manifest, package),
+                       lint_library=True)
+            receipt["clippy_libraries"][name] = clippy_library_artifact(lint.stdout, metadata, package,
+                                                                      required_feature=feature)
         (generated / "keys").mkdir()
         keygen = run("fresh-direct-keygen", [tools["zkir"]["path"], "compile", generated / "zkir/apply_offset.zkir", generated / "keys/apply_offset.prover", generated / "keys/apply_offset.verifier"])
         match = re.search(r"\(k=(\d+), rows=(\d+)\)", keygen.stdout+keygen.stderr)
@@ -431,11 +544,15 @@ def main(argv=None):
                 raise ValueError("copied testkit library source changed")
         equal_inventory(consumer, receipt["staged_consumer_hashes"])
         equal_inventory(output / "testkit-rs", receipt["staged_testkit_hashes"])
+        equal_inventory(output / "library-lints", receipt["clippy_root_hashes"])
         for folder in source_folders:
             tracked_source_files(folder)
         receipt["consumer_hashes"] = inventory(consumer)
         receipt["testkit_hashes"] = inventory(output / "testkit-rs")
-        for group in (receipt["source_hashes"], receipt["dust_fixture_hashes"], receipt["material_hashes"]):
+        if installed_runtime_source_root(compiler) != installed_runtime:
+            raise ValueError("installed runtime source selection changed")
+        for group in (receipt["source_hashes"], receipt["installed_runtime_hashes"],
+                      receipt["dust_fixture_hashes"], receipt["material_hashes"]):
             for name, expected in group.items():
                 if digest(name) != expected:
                     raise ValueError(f"selected source/material input changed: {name}")

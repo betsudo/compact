@@ -51,6 +51,328 @@ pub(super) fn try_run(
         }
         ("--tuple-return-wrappers", _) => Some(collections::tuple_return_wrappers(arguments)),
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
+        #[cfg(all(
+            feature = "fold-vector-result-widening",
+            compact_fold_vector_result_generated
+        ))]
+        ("--fold-vector-result-widening", _) => {
+            Some(collections::fold_vector_result_widening(arguments, false))
+        }
+        #[cfg(all(
+            feature = "fold-vector-result-widening",
+            compact_fold_vector_result_generated
+        ))]
+        ("--fold-vector-result-widening-models", _) => {
+            Some(collections::fold_vector_result_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "vector-alias-source-widening",
+            compact_vector_alias_source_generated
+        ))]
+        ("--vector-alias-source-widening", _) => {
+            Some(collections::vector_alias_source_widening(arguments, false))
+        }
+        #[cfg(all(
+            feature = "vector-alias-source-widening",
+            compact_vector_alias_source_generated
+        ))]
+        ("--vector-alias-source-widening-models", _) => {
+            Some(collections::vector_alias_source_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "aggregate-literal-projection-widening",
+            compact_aggregate_literal_projection_generated
+        ))]
+        ("--aggregate-literal-projection-widening", _) => Some(
+            collections::aggregate_literal_projection_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "aggregate-literal-projection-widening",
+            compact_aggregate_literal_projection_generated
+        ))]
+        ("--aggregate-literal-projection-widening-models", _) => Some(
+            collections::aggregate_literal_projection_widening(arguments, true),
+        ),
+        #[cfg(all(
+            feature = "struct-member-literal-widening",
+            compact_struct_member_literal_generated
+        ))]
+        ("--struct-member-literal-widening", _) => Some(
+            collections::struct_member_literal_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "struct-member-literal-widening",
+            compact_struct_member_literal_generated
+        ))]
+        ("--struct-member-literal-widening-models", _) => {
+            Some(collections::struct_member_literal_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns", _) => Some(
+            collections::direct_stateful_vector_literal_returns(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns-models", _) => Some(
+            collections::direct_stateful_vector_literal_returns(arguments, true),
+        ),
+        #[cfg(all(
+            feature = "direct-stateful-vector-literal-returns",
+            compact_direct_stateful_vector_generated
+        ))]
+        ("--direct-stateful-vector-literal-returns-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::direct_stateful_vector_literal_returns::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening", _) => Some(
+            collections::stateful_vector_value_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening-models", _) => {
+            Some(collections::stateful_vector_value_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "stateful-vector-value-widening",
+            compact_stateful_vector_value_generated
+        ))]
+        ("--stateful-vector-value-widening-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::stateful_vector_value_widening::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "stateful-local-vector-widening",
+            compact_stateful_local_vector_generated
+        ))]
+        ("--stateful-local-vector-widening", _) => Some(
+            collections::stateful_local_vector_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "stateful-local-vector-widening",
+            compact_stateful_local_vector_generated
+        ))]
+        ("--stateful-local-vector-widening-models", _) => {
+            Some(collections::stateful_local_vector_widening(arguments, true))
+        }
+        #[cfg(all(
+            feature = "stateful-local-vector-widening",
+            compact_stateful_local_vector_generated
+        ))]
+        ("--stateful-local-vector-widening-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::stateful_local_vector_widening::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "stateful-product-vector-widening",
+            compact_stateful_product_vector_generated
+        ))]
+        ("--stateful-product-vector-widening", _) => Some(
+            collections::stateful_product_vector_widening(arguments, false),
+        ),
+        #[cfg(all(
+            feature = "stateful-product-vector-widening",
+            compact_stateful_product_vector_generated
+        ))]
+        ("--stateful-product-vector-widening-models", _) => Some(
+            collections::stateful_product_vector_widening(arguments, true),
+        ),
+        #[cfg(all(
+            feature = "stateful-product-vector-widening",
+            compact_stateful_product_vector_generated
+        ))]
+        ("--stateful-product-vector-widening-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::stateful_product_vector_widening::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements", _) => {
+            Some(collections::vector_product_elements(arguments, false))
+        }
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements-models", _) => {
+            Some(collections::vector_product_elements(arguments, true))
+        }
+        #[cfg(all(
+            feature = "vector-product-elements",
+            compact_vector_product_elements_generated
+        ))]
+        ("--vector-product-elements-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::vector_product_elements::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "vector-component-products",
+            compact_vector_component_products_generated
+        ))]
+        ("--vector-component-products-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::vector_component_products::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "vector-component-products",
+            compact_vector_component_products_generated
+        ))]
+        ("--vector-component-products" | "--vector-component-products-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("proof command requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected proof command argument".into());
+            }
+            if selector == "--vector-component-products-models" {
+                crate::vector_component_products::models(std::path::Path::new(&root))
+            } else {
+                crate::vector_component_products::run(std::path::Path::new(&root))
+            }
+        })(
+        )),
+        #[cfg(all(
+            feature = "nested-component-products",
+            compact_nested_component_products_generated
+        ))]
+        (
+            "--nested-component-products"
+            | "--nested-component-products-models"
+            | "--nested-component-products-inventory",
+            _,
+        ) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("nested product command requires a complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected nested product argument".into());
+            }
+            let root = std::path::Path::new(&root);
+            match selector {
+                "--nested-component-products-inventory" => {
+                    crate::nested_component_products::inventory(root)
+                }
+                "--nested-component-products-models" => {
+                    crate::nested_component_products::models(root)
+                }
+                _ => crate::nested_component_products::run(root),
+            }
+        })()),
+        #[cfg(all(
+            feature = "outer-vector-product-proofs",
+            compact_outer_vector_product_generated
+        ))]
+        ("--outer-vector-product" | "--outer-vector-product-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("component Vector proof command requires a complete root")?;
+            if selector == "--outer-vector-product-models" {
+                if arguments.next().is_some() {
+                    return Err("unexpected selected models argument".into());
+                }
+                crate::outer_vector_product_proofs::models(std::path::Path::new(&root))
+            } else {
+                let ts = arguments
+                    .next()
+                    .ok_or("current independent TS capture required")?;
+                if arguments.next().is_some() {
+                    return Err("unexpected proof argument".into());
+                }
+                crate::outer_vector_product_proofs::run(
+                    std::path::Path::new(&root),
+                    std::path::Path::new(&ts),
+                )
+            }
+        })()),
+        #[cfg(feature = "outer-vector-product-models")]
+        ("--outer-vector-product-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires the complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::outer_vector_product_models::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(feature = "component-product-vector-models")]
+        ("--component-product-vector-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("model inventory requires the complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected model inventory argument".into());
+            }
+            crate::component_product_vector_models::inventory(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "component-product-vector-widening",
+            compact_component_product_vector_generated
+        ))]
+        ("--component-product-vector" | "--component-product-vector-models", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("component Vector proof command requires a complete root")?;
+            if selector == "--component-product-vector-models" {
+                if arguments.next().is_some() {
+                    return Err("unexpected selected models argument".into());
+                }
+                crate::component_product_vector_widening::models(std::path::Path::new(&root))
+            } else {
+                let ts = arguments
+                    .next()
+                    .ok_or("current independent TS capture required")?;
+                if arguments.next().is_some() {
+                    return Err("unexpected proof argument".into());
+                }
+                crate::component_product_vector_widening::run(
+                    std::path::Path::new(&root),
+                    std::path::Path::new(&ts),
+                )
+            }
+        })(
+        )),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
@@ -172,7 +494,16 @@ pub(super) fn try_run(
         ("--did-digest-reducer", _) => Some(identity::did_digest_reducer(arguments)),
         ("--did-digest-verification", _) => Some(identity::did_digest_verification(arguments)),
         ("--did-deactivate", _) => Some(identity::did_deactivate(arguments)),
-        ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(arguments)),
+        ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(
+            arguments,
+            crate::did_functional_lifecycle::Case::Valid,
+        )),
+        ("--did-functional-lifecycle-timestamp-zero", _) => {
+            Some(identity::did_functional_lifecycle(
+                arguments,
+                crate::did_functional_lifecycle::Case::TimestampZero,
+            ))
+        }
         ("--terminal-lexical-return", _) => Some(expressions::terminal_lexical_return(arguments)),
         ("--micro-dao-buy-in", _) => Some(contracts::micro_dao_buy_in(arguments)),
         ("--micro-dao-cash-out", _) => Some(contracts::micro_dao_cash_out(arguments)),

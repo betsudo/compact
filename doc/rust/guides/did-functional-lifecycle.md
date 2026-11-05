@@ -101,3 +101,24 @@ cryptographic measurements. Python receipt tests validate protocol completeness
 and types; real proof, verifier refusals and strict application come from the
 native runner. The historical `--did-deactivate` path retains its original
 capture and ordinary checks without acquiring new output files or controls.
+
+
+## Current zero timestamp extension and profile handoff
+
+The [later compiler183 slice](../plans/did-zero-timestamp.md) preserves the
+original valid case and adds the original `did/timestamp-zero` success through
+all four Rust routes, with every existing state/transcript/gas/replay assertion.
+The zero is a timestamp witness return value, not the ledger wall clock.
+
+The maintained proof gate accepts `--case did/valid` (default) and
+`--case did/timestamp-zero`; use a fresh absent output directory per case.
+Current v2 results bind the exact capture id and timestamp. Historical v1
+receipts remain readable without a case claim but cannot satisfy current
+case-bound validation. Both local cases have fresh standalone proofs and
+separately proved funded strict applications at their recorded source epoch.
+
+The subsequent [profile handoff](native-ledger8-profile.md) wires a separate
+zero-case proof step after the preserved valid step in the required compiler
+workflow, with failure/success diagnostics. Local wiring is not hosted Linux
+acceptance. The PR#693 integration evidence above stays at its own epoch;
+constructor, every-export and network proof/application claims remain excluded.

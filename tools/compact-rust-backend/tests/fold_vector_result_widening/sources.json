@@ -1,0 +1,74 @@
+[
+  {
+    "source": "alias_bool",
+    "stateful": false
+  },
+  {
+    "source": "alias_cast",
+    "stateful": false
+  },
+  {
+    "source": "aliased",
+    "stateful": false
+  },
+  {
+    "source": "checked",
+    "stateful": false
+  },
+  {
+    "source": "field",
+    "stateful": false
+  },
+  {
+    "source": "helper",
+    "stateful": true
+  },
+  {
+    "source": "local_control",
+    "stateful": false
+  },
+  {
+    "source": "nested",
+    "stateful": false
+  },
+  {
+    "source": "product",
+    "stateful": false
+  },
+  {
+    "source": "scalar_control",
+    "stateful": false
+  },
+  {
+    "source": "selected_control",
+    "stateful": false
+  },
+  {
+    "source": "single",
+    "stateful": false
+  },
+  {
+    "source": "small",
+    "stateful": false
+  },
+  {
+    "source": "source_checked",
+    "stateful": false
+  },
+  {
+    "source": "source_checked_control",
+    "stateful": false
+  },
+  {
+    "source": "wide",
+    "stateful": false
+  },
+  {
+    "source": "wide_to_wide",
+    "stateful": false
+  },
+  {
+    "source": "zero",
+    "stateful": false
+  }
+]

@@ -15,6 +15,8 @@
 
 #[path = "tests/calls.rs"]
 mod calls;
+#[path = "tests/component_product_vectors.rs"]
+mod component_product_vectors;
 #[path = "tests/context_queries.rs"]
 mod context_queries;
 #[path = "tests/counter.rs"]
@@ -572,3 +574,6 @@ mod storage_codecs;
 
 #[path = "tests/vector_projection.rs"]
 mod vector_projection;
+
+#[path = "tests/outer_vector_products.rs"]
+mod outer_vector_products;
