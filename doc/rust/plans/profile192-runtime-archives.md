@@ -80,3 +80,11 @@ receives the selected `RUSTC`. This is selected-input admission, not exhaustive
 or continuous consumed-source attestation. The default temporary command and
 all prior behavior/refusal assertions stay intact. Fresh clean package/consumer
 execution and independent source/receipt review remain required after correction.
+
+The follow-up review confirms those four fixes and finds an initial manifest
+pin being replaced during preflight. The next correction extends the pin map
+without replacing any first observation and rejects disagreement before vendor/
+generation/build commands. A regression mutates the manifest during tool
+selection and requires a failed receipt that preserves the original hash.
+The successful `37f1eb079` runtime remains retained with qualification withheld;
+its package/consumer results are not relabelled as the corrected source.

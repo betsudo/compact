@@ -273,9 +273,13 @@ def qualify(args, temporary):
             path = selected_rust_tool(name)
             paths.append(path)
             tools[name] = {"path": str(path), "sha256": sha256(path)}
+        for path in paths:
+            key, actual = str(path), sha256(path)
+            if key in inputs["sha256"] and inputs["sha256"][key] != actual:
+                raise RuntimeError(f"qualification input changed during preflight: {path}")
+            inputs["sha256"].setdefault(key, actual)
         inputs.update(head=run(["git", "rev-parse", "HEAD"]).strip(),
                       tree=run(["git", "rev-parse", "HEAD^{tree}"]).strip(),
-                      sha256={str(path): sha256(path) for path in paths},
                       tools=tools, release=release,
                       scope="Local ordinary archive consumption; selected input checks, not exhaustive consumed-source or host attestation. No publication, proof or wallet execution.")
         for name, tool in tools.items():

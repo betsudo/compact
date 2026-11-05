@@ -100,7 +100,7 @@ class RetainedArchiveTests(unittest.TestCase):
         self.assertEqual(self.receipt()["status"], "failed")
         self.assertEqual(self.receipt()["inputs"]["sha256"][str(manifest)], archive.sha256(manifest))
 
-    def test_preflight_snapshot_includes_every_safety_fixture(self):
+    def release_manifest(self):
         entries = []
         for name in archive.PACKAGE_NAMES:
             path = self.root / (name + ".crate")
@@ -108,6 +108,10 @@ class RetainedArchiveTests(unittest.TestCase):
             entries.append(dict(name=name, version="0.2.0", archive=str(path), sha256=archive.sha256(path)))
         manifest = self.root / "manifest.json"
         manifest.write_text(json.dumps(dict(schema=1, source=dict(commit="head", tree="tree"), packages=entries)))
+        return manifest
+
+    def test_preflight_snapshot_includes_every_safety_fixture(self):
+        manifest = self.release_manifest()
 
         def run(command, **kwargs):
             if command == ["git", "rev-parse", "HEAD"]:
@@ -128,6 +132,33 @@ class RetainedArchiveTests(unittest.TestCase):
         for name in (*archive.POSITIVES, *archive.NEGATIVES):
             path = archive.FIXTURES / f"{name}.rs"
             self.assertEqual(pins[str(path)], archive.sha256(path))
+
+    def test_manifest_changed_during_preflight_cannot_be_repinned(self):
+        manifest = self.release_manifest()
+        original = archive.sha256(manifest)
+
+        def select_tool(name):
+            if name == "cargo":
+                manifest.write_text(manifest.read_text() + " ")
+            return Path(sys.executable).resolve()
+
+        def run(command, **kwargs):
+            if command == ["git", "rev-parse", "HEAD"]:
+                return "head"
+            if command == ["git", "rev-parse", "HEAD^{tree}"]:
+                return "tree"
+            self.fail("must reject the changed manifest before any build")
+
+        with self.assertRaisesRegex(RuntimeError, "input changed during preflight"), archive.qualification_directory(
+            self.output, {}
+        ), patch.object(archive, "run", side_effect=run), patch.object(
+            archive, "selected_rust_tool", side_effect=select_tool
+        ):
+            archive.qualify(SimpleNamespace(manifest=manifest, compiler=sys.executable), self.output / "scratch")
+        result = self.receipt()
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["inputs"]["sha256"][str(manifest)], original)
+        self.assertNotEqual(archive.sha256(manifest), original)
 
     def test_rustup_proxy_records_selected_binary(self):
         proxy = self.root / "rustup"
