@@ -312,5 +312,16 @@
     "trace": [],
     "error": "iterable-helper-denied",
     "failWitness": null
+  },
+  {
+    "id": "nested_capture",
+    "role": "nested_capture",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
   }
 ]

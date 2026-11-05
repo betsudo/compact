@@ -480,3 +480,33 @@ test state. Constructor insertion and Night/Dust fee funding are privileged test
 setup. Constructor cryptography/total cost, wallet lifecycle, native Linux,
 new-head required CI, full supported-profile handoff and canonical integration
 remain open. The broad Rust AST goal is incomplete; Forge remains deferred.
+
+
+## Canonical reconciliation review repair — 2026-11-05
+
+Forward merge `88878b068` preserves both the constructor192 history and canonical
+`cb39def70`, with unreleased compiler194 and unchanged 473 external Cargo records.
+Its original 13-source gate passes 122 commands, but independent source review
+finds a P2 gap outside that cohort: nested loops lose an outer local Vector binding
+when fold-body lowering discards the binding environment. The original194 compiler
+accepts a complete nested source for TS but refuses independent Rust IR and Rust
+with the intended scope diagnostic. This is a reproduced frontend gap, not a
+successful proof or a claim that nested lexical support was already accepted.
+
+Thread the existing lexical bindings through fold-body recursion, including
+sequences and both conditional arms. Keep constructor parameters/item bindings,
+lexical exit, public APIs, IR schema and runtime unchanged. Retain all thirteen
+original complete source files and their hashes; add a separate fourteenth
+`nested_capture` source exercising both conditional arms inside an outer loop.
+The intended current cohort is 23 constructor cases, 16 successes and seven
+errors, with 42 intact models and 16 selected later-entrypoint proofs. Earlier
+13/22/39/15 receipts remain literal and are not relabeled as this extension.
+Current clean original194 recipe, complete API/TS/refusal execution, preflight,
+fresh proofs/strict applications and renewed independent reviews remain required.
+
+The initial194 model preparation also refuses a shared registry source containing
+an extra Cargo.lock not present in its locked archive. All archive source bytes
+match; no source repair, deletion or exclusion is authorized by that observation.
+Preserve the global cache and failed receipt. Use an isolated Cargo home populated
+by Cargo from the original locked archives before full dependency authentication;
+retain the same source/checksum identities and exact source-inventory guards.

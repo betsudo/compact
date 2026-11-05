@@ -11,6 +11,10 @@ Unreleased constructor reconciliation checkpoint; qualification is pending.
 
 ### Fixed
 
+- Preserve outer lexical Vector bindings through nested constructor loop,
+  sequence and conditional lowering; retain original source/proof fixtures and
+  add a separate complete nested-capture regression.
+
 - Preserve the checked constructor Vector operand extension alongside canonical
   wide-zero and outer-Vector behavior through a forward source reconciliation.
   Earlier compiler192 and compiler193 evidence retains its original identity.

@@ -2953,18 +2953,18 @@
                [else (source-errorf src "Rust constructor value must be a parameter or typed literal")]))]
           [else (constructor-typed-expression-ir expr expected-type owner-src witness-ids)]))
 
-      (define (constructor-fold-body-ir expr accumulator parameters owner-src witness-ids)
+      (define (constructor-fold-body-ir expr accumulator parameters bindings owner-src witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
           (expression-origin-preserve? expr)
-          (lambda () (constructor-fold-body-ir-value expr accumulator parameters owner-src witness-ids)) (expression-operation-origin expr)))
+          (lambda () (constructor-fold-body-ir-value expr accumulator parameters bindings owner-src witness-ids)) (expression-operation-origin expr)))
 
-      (define (constructor-fold-body-ir-value expr accumulator parameters owner-src witness-ids)
+      (define (constructor-fold-body-ir-value expr accumulator parameters bindings owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) expr
           [(seq ,src ,expr* ... ,expr)
            (append
              (apply append
-               (map (lambda (step) (constructor-fold-body-ir step accumulator parameters src witness-ids)) expr*))
-             (constructor-fold-body-ir expr accumulator parameters src witness-ids))]
+               (map (lambda (step) (constructor-fold-body-ir step accumulator parameters bindings src witness-ids)) expr*))
+             (constructor-fold-body-ir expr accumulator parameters bindings src witness-ids))]
           [(tuple ,src ,tuple-arg* ...)
            (if (null? tuple-arg*)
                '()
@@ -2977,10 +2977,10 @@
            (list (object (cons "kind" "if")
                          (cons "condition" (expression-ir expr0 src))
                          (cons "then_steps"
-                               (list->vector (constructor-fold-body-ir expr1 accumulator parameters src witness-ids)))
+                               (list->vector (constructor-fold-body-ir expr1 accumulator parameters bindings src witness-ids)))
                          (cons "otherwise_steps"
-                               (list->vector (constructor-fold-body-ir expr2 accumulator parameters src witness-ids)))))]
-          [else (list (constructor-step-ir expr parameters '() owner-src witness-ids))]))
+                               (list->vector (constructor-fold-body-ir expr2 accumulator parameters bindings src witness-ids)))))]
+          [else (list (constructor-step-ir expr parameters bindings owner-src witness-ids))]))
 
       ;; Both literal ranges and array iteration arrive here as a unit-accumulator fold.
       ;; Preserve its item binding and ordered effects instead of emitting Rust syntax.
@@ -3048,7 +3048,7 @@
                                   (cons "steps"
                                         (list->vector
                                           (constructor-fold-body-ir expr1 acc-name
-                                                                    (cons item-name parameters)
+                                                                    (cons item-name parameters) bindings
                                                                     src1 witness-ids))))]
                          [(var-ref ,src2 ,var-name)
                           (unless (or (memq var-name parameters) (assq var-name bindings))
@@ -3062,7 +3062,7 @@
                                   (cons "steps"
                                         (list->vector
                                           (constructor-fold-body-ir expr1 acc-name
-                                                                    (cons item-name parameters)
+                                                                    (cons item-name parameters) bindings
                                                                     src1 witness-ids))))]
                          [else (object (cons "kind" "for_each_vector")
                                   (cons "binding"
@@ -3073,7 +3073,7 @@
                                   (cons "steps"
                                         (list->vector
                                           (constructor-fold-body-ir expr1 acc-name
-                                                                    (cons item-name parameters)
+                                                                    (cons item-name parameters) bindings
                                                                     src1 witness-ids))))])]))]))])]
              [else (source-errorf src "Rust constructor fold needs an inline circuit body")])]
           [(let* ,src ([,local* ,expr*] ...) ,expr)

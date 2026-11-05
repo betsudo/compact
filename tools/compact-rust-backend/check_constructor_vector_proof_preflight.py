@@ -244,7 +244,7 @@ def main():
             frozen[str(p)] = sdk.digest(p)
         specs = json.loads((FIXTURE / "sources.json").read_text())
         cases = json.loads((FIXTURE / "cases.json").read_text())
-        require(len(specs)==13 and len([c for c in cases if c["error"] is None])==15, "complete source/case membership differs")
+        require(len(specs)==14 and len([c for c in cases if c["error"] is None])==16, "complete source/case membership differs")
         cohort = {(p["name"],p["version"],p.get("source")):p.get("checksum") for p in tomllib.loads((ROOT/"Cargo.lock").read_text())["package"]}
         for spec in specs:
             role=spec["role"]
@@ -296,8 +296,8 @@ def main():
             report["sources"][role]=dict(raw_sdk=raw,testkit_recipe=recipe,dependency_graph=graph,binary=executable,native_preflight=native)
             save()
         unchanged()
-        require(len(report["sources"])==13, "all sources must pass")
-        report.update(status="passed", selected_cases=15, input_bytes_unchanged=True)
+        require(len(report["sources"])==14, "all sources must pass")
+        report.update(status="passed", selected_cases=16, input_bytes_unchanged=True)
     except BaseException as error:
         report.update(status="failed",error=repr(error))
         raise

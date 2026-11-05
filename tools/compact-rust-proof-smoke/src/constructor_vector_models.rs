@@ -23,7 +23,7 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
     let declarations = declarations
         .as_array()
         .ok_or("invalid constructor source roster")?;
-    if declarations.len() != 13 {
+    if declarations.len() != 14 {
         return Err("complete constructor source roster differs".into());
     }
     let mut expected_roles = declarations
@@ -125,7 +125,7 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
             );
         }
     }
-    if rows.len() != 39 {
+    if rows.len() != 42 {
         return Err("complete constructor model count differs".into());
     }
     println!(
