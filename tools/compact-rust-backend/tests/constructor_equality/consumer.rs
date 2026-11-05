@@ -40,7 +40,7 @@ fn constructors_match_independent_typescript_and_literal_branch_results() {
     use $sdk::{ledger_contract as c,ledger_slots as slots};
     let constructor=|| c::initial_state(r::context::ConstructorContext::new(42u64),$($args),*).unwrap();
     let initial=constructor();
-    assert_eq!(slots::stored.inspect(&initial.ledger_state).unwrap(),field(expected));
+    assert_eq!(slots::stored.inspect(initial.ledger_state.get_ref()).unwrap(),field(expected));
     let context=||constructor().into_circuit_context(Default::default());
     let native=c::advance(context(),field(4)).unwrap();
     let recorded=c::recorded::advance(context(),field(4)).unwrap();
