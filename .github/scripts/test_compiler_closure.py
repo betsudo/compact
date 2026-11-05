@@ -18,6 +18,9 @@ import copy
 import argparse
 import base64
 import json
+import os
+import tarfile
+import textwrap
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -306,7 +309,7 @@ class NestedProductWiringTests(unittest.TestCase):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  build:\n', 1)[1]
         before, step = linux.split('      - name: Check complete Counter source-map publication\n', 1)
-        step = step.split('      - name: Retain source-map publication diagnostics', 1)[0]
+        step = step.split('      - name: Package source-map publication diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
         self.assertIn('check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json"', step)
@@ -316,9 +319,57 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertIn("if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')", upload)
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertLess(linux.index('Retain source-map publication diagnostics'), linux.index('Check complete outer-Vector product semantics and boundaries'))
-        for role in ('recipe', 'publication'):
-            self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-source-map-' + role + '/'), 1)
+        self.assertIn('path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz', upload)
+        self.assertNotIn('compact-source-map-publication/', upload)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
+
+    def test_literal_source_map_packaging_preserves_names_bytes_and_partial_failures(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        step = workflow.split('      - name: Package source-map publication diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        self.assertIn("if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')", step)
+        self.assertNotIn('continue-on-error', step)
+        script = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        # Execute the literal workflow shell on physical adversarial paths. The
+        # archive transports diagnostics; it does not normalize test inputs.
+        with tempfile.TemporaryDirectory(prefix='archive quote" β ') as temporary:
+            root = Path(temporary)
+            env = dict(os.environ, RUNNER_TEMP=str(root))
+            archive = root / 'compact-source-map-diagnostics.tar.gz'
+            result = owner.subprocess.run(['bash', '-e', '-c', script], env=env, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(archive.exists())
+            recipe = root / 'compact-source-map-recipe/receipt.json'
+            recipe.parent.mkdir()
+            recipe.write_bytes(b'{"partial":true}\n')
+            result = owner.subprocess.run(['bash', '-e', '-c', script], env=env, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with tarfile.open(archive) as retained:
+                self.assertEqual(retained.extractfile(recipe.relative_to(root).as_posix()).read(), recipe.read_bytes())
+            publication = root / 'compact-source-map-publication'
+            publication.mkdir()
+            names = ['combined-literal"quote β space-relative-absolute.stderr', 'line\nbreak:*.stdout', 'maps/quote" β /main.js.map', 'nested/cargo-target/retain.txt']
+            expected = {recipe.relative_to(root).as_posix(): recipe.read_bytes()}
+            for name in names:
+                path = publication / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'raw\r\n\xff\x00')
+                expected[path.relative_to(root).as_posix()] = path.read_bytes()
+            excluded = publication / 'cargo-target/debug/build-output'
+            excluded.parent.mkdir(parents=True)
+            excluded.write_bytes(b'reproducible build material')
+            result = owner.subprocess.run(['bash', '-e', '-c', script], env=env, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with tarfile.open(archive) as retained:
+                files = {item.name: retained.extractfile(item).read() for item in retained if item.isfile()}
+            self.assertEqual(files, expected)
+            # A packaging error remains a real CI failure.
+            mock_bin = root / 'mock-bin'
+            mock_bin.mkdir()
+            tar = mock_bin / 'tar'
+            tar.write_text('#!/bin/sh\nexit 7\n')
+            tar.chmod(0o755)
+            result = owner.subprocess.run(['bash', '-e', '-c', script], env=dict(env, PATH=str(mock_bin) + os.pathsep + env['PATH']), capture_output=True)
+            self.assertEqual(result.returncode, 7)
 
     def test_nested_component_gate_keeps_required_material_and_fresh_proof_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()

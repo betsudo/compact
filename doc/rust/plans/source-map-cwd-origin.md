@@ -140,3 +140,24 @@ attributes differ. Historical SDK maps and failed comparisons remain untouched.
 Semantic runtime/API qualification continues on the separate local branch
 codex/rust-ast-outer-vector-product-qualification; its remaining proof obligations
 are described in outer-vector-product-semantics.md.
+
+
+## PR #701 diagnostic transport repair
+
+The Linux source-map gate passed its 28 genuine invocations and three private
+controls in run 41889665852. The following artifact upload failed because GitHub
+rejects the intentional double quote in a diagnostic filename. Preserve these
+adversarial paths and raw bytes unchanged inside a tar.gz archive; upload the
+portable archive name. The recipe and available publication output are retained
+on success or failure, including a partial recipe-only failure. Only the same
+reproducible top-level cargo-target subtree is excluded. Packaging errors remain
+failures. A physical test executes the literal workflow shell and verifies exact
+member names and bytes, partial output, missing output, and tar error propagation.
+This transport repair does not change compiler source or expand proof acceptance.
+
+Local focused validation: all 18 compiler-closure/workflow controls pass with
+both the native macOS shell and the compiler Nix environment; all three existing
+source-map byte-retention controls pass. The first local packaging check exposed
+macOS AppleDouble metadata entries; `COPYFILE_DISABLE=1` suppresses those transport
+extras. The strict member-name/byte comparison remains in place. Full hosted
+CI, the macOS producer retry and canonical integration remain open.
