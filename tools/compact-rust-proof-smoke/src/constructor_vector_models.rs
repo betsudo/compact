@@ -17,13 +17,37 @@
 use super::*;
 
 pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
-    let roster =
-        include_bytes!("../../compact-rust-backend/tests/constructor_vector_operands/sources.json");
+    observe(
+        root,
+        include_bytes!("../../compact-rust-backend/tests/constructor_vector_operands/sources.json"),
+        14,
+        42,
+        "compact-constructor-vector-model-inventory/v1",
+    )
+}
+
+pub(super) fn equality_inventory(root: &Path) -> Result<(), Box<dyn Error>> {
+    observe(
+        root,
+        include_bytes!("../../compact-rust-backend/tests/constructor_equality/sources.json"),
+        8,
+        24,
+        "compact-constructor-equality-model-inventory/v1",
+    )
+}
+
+fn observe(
+    root: &Path,
+    roster: &[u8],
+    source_count: usize,
+    model_count: usize,
+    format: &str,
+) -> Result<(), Box<dyn Error>> {
     let declarations: serde_json::Value = serde_json::from_slice(roster)?;
     let declarations = declarations
         .as_array()
         .ok_or("invalid constructor source roster")?;
-    if declarations.len() != 14 {
+    if declarations.len() != source_count {
         return Err("complete constructor source roster differs".into());
     }
     let mut expected_roles = declarations
@@ -125,12 +149,12 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
             );
         }
     }
-    if rows.len() != 42 {
+    if rows.len() != model_count {
         return Err("complete constructor model count differs".into());
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-constructor-vector-model-inventory/v1",
+        serde_json::json!({"format":format,
         "source_roster_bytes":roster.len(),"circuits":rows,
         "key_generation":false,"proof_execution":false,"selection_made":false,
         "scope":"complete intact model k observation only; cap classification is not proof eligibility, constructor proof or integration acceptance"})

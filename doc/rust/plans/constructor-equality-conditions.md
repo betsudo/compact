@@ -83,3 +83,21 @@ controls), the complete render suite, formatting and library Clippy. A real
 ForEachVector AST regression checks typed value normalization for borrowed Field,
 Boolean, Uint and Bytes elements before comparison, complementing the complete
 current generated-SDK consumer gate. Failed predecessor tests remain retained.
+
+## Accepted source/API epoch and model continuation
+
+At clean `71fe8d7db`, the current original compiler recipe and complete source/API
+gate pass nineteen commands: eight complete SDK generations, sixteen independent
+TypeScript/native cases with four later-call routes, four source refusals, three
+marked E0308 refusals and a changed-reference actual assertion failure. Independent
+Codex CLI source/API review accepts this bounded result after checking all 1,633
+input pins, eighteen fixture hashes, complete SDK membership and 219 runtime files.
+The sole fixture correction since `cac317bd` uses the existing charged-state
+`get_ref()` accessor; all expectations and cases remain unchanged.
+
+The next maintained local command observes all 24 intact models across the eight
+complete sources, with the existing five membership refusals. A separate static
+equality roster reuses the existing private model parser; the original constructor
+14-source/42-model entry contract remains unchanged. Model k classification is not
+proof eligibility or cryptographic acceptance. No equality keys, proofs, strict
+applications, hosted CI or integration are accepted by this paragraph.
