@@ -15,6 +15,9 @@ Unreleased Rust-backend source checkpoint; no release or hosted-CI result is imp
   helpers, witnesses and conditional expressions. Prepare nonparameter operands
   once before iteration while retaining the existing borrowed parameter route,
   lexical/type/layout/resource validation and earlier invalid-kind refusals.
+- Bind borrowed constructor Vector elements as typed values before their use in
+  ledger operations, copying Copy elements and cloning owned elements without
+  cloning or moving the input Vector.
 
 ## [Toolchain 0.31.191, language 0.23.105, runtime 0.16.102]
 

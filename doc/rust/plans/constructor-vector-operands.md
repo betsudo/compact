@@ -201,3 +201,24 @@ render methods; old controls remain present. Fresh corrected-head recipe,
 source admission and review are required; `d3e91d0e7` is not silently relabelled.
 Generated API behavior/compile-fail, owned and fallible operand ordering, broader
 ingress controls and fresh proof/application acceptance remain open.
+
+
+## Generated-SDK ownership correction
+
+The corrected guard source `8fc0100d3` passes its clean original compiler build,
+recipe recording, all 27 complete-source admission commands and independent
+source review. The next gate compiles entire unedited generated SDKs with strict
+all-target/all-feature Clippy. It found a real `E0277` in the conditional fixture:
+the borrowed loop item `&Field` reached a Cell write requiring an owned Field.
+Admission and rendering tests alone did not establish generated Rust validity.
+
+Keep borrowed iteration of the whole Vector, but introduce a typed per-element
+value before rendering the body: copy Copy elements and clone owned elements
+through the existing ownership owner. This also corrects the same latent problem
+for the old parameter route. Therefore its earlier byte-identical constructor
+observation stays specific to the earlier epoch; byte identity is superseded by
+this explicit correctness repair. The whole input Vector is not cloned or moved.
+The caller can reuse it; owned element support gains no Copy requirement.
+A focused AST regression covers Copy and owned bindings, while complete untouched
+SDK compilation remains the controlling compiler check. SDK runtime, misuse,
+model and genuine proof/application qualification remain open.

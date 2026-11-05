@@ -2615,7 +2615,14 @@ fn render_constructor_vm_steps_observed<'a>(
                         next_temp,
                     },
                 )?;
-                actions.push(syn::parse_quote!(for #item in #iterable.0.iter() { #(#body)* }));
+                // The expression environment carries values, not references. Borrow
+                // the Vector but copy/clone each element into that value scope.
+                let ty = native_header::carrier(&binding.ty, environment.observer)?;
+                let value = retained_value(syn::parse_quote!(*#item), &binding.ty);
+                actions.push(syn::parse_quote!(for #item in #iterable.0.iter() {
+                    let #item: #ty = #value;
+                    #(#body)*
+                }));
             }
             ConstructorStep::If {
                 condition,
