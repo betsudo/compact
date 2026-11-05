@@ -15,12 +15,27 @@
 
 """Prove that the public gate cannot turn failed/skipped/incomplete work green."""
 import io
+from pathlib import Path
 import unittest
 
 import ci_python_checks as gate
 
 
 class PublicGateTests(unittest.TestCase):
+    def test_public_workflow_provisions_real_clippy_before_strict_accounting(self):
+        workflow = (Path(__file__).resolve().parents[2] /
+                    '.github/workflows/rust-backend-checks.yml').read_text()
+        public = workflow.split('  public-python:\n', 1)[1].split('  required:\n', 1)[0]
+        before, execution = public.split('      - name: Run public unit and sidecar controls\n', 1)
+        setup = before.split('      - name: Install pinned Rust for real Python Clippy regression\n', 1)[1]
+        self.assertIn('uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7', setup)
+        self.assertIn('toolchain: 1.99.0', setup)
+        self.assertIn('components: clippy', setup)
+        self.assertNotIn('if:', setup)
+        self.assertNotIn('continue-on-error', public)
+        self.assertIn('ci_python_checks.py', execution)
+        self.assertFalse(any('test_external_library_clippy' in name for name in gate.MANUAL_GRAPH_METHODS))
+
     def execute(self, action, expected_skips=frozenset()):
         class Probe(unittest.TestCase):
             def runTest(self):

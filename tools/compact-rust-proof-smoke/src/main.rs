@@ -55,6 +55,11 @@ mod constant_vector_projection;
 #[cfg(feature = "outer-vector-product-models")]
 mod outer_vector_product_models;
 #[cfg(all(
+    feature = "outer-vector-product-proofs",
+    compact_outer_vector_product_generated
+))]
+mod outer_vector_product_proofs;
+#[cfg(all(
     feature = "fold-vector-result-widening",
     compact_fold_vector_result_generated
 ))]

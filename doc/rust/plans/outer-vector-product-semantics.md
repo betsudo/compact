@@ -1,9 +1,10 @@
 # Outer Vector product semantic continuation
 
-Status: selector implemented; complete source/SDK and development runtime/API
-controls pass locally. Maintained untrusted-boundary, model and genuine proof/
-application qualification is incomplete. The preceding metadata prerequisite is
-locally accepted at d18fe6b78 and preserved on its original branch and backup.
+Status: bounded local compiler191 native/API/ingress, complete model inventory,
+all15 eligible direct proofs and separately proved funded DEFAULT-strict
+applications/replay refusals are accepted at cc7c50beb. All16 exports are observed;
+the intact family branch remains k9 and unproved. Full required CI/Linux,
+reviewed integration and the broader backend goal remain open.
 
 Implementation branch preserved: codex/rust-ast-outer-vector-product-semantics
 at aa2be69c9. Continuation: codex/rust-ast-outer-vector-product-qualification,
@@ -361,3 +362,135 @@ replay refusals for the same cohort. Retain empty-result applicability honestly.
 Keep existing typed public APIs and runtime/compiler/lowering semantics unchanged;
 exclude constructors/deployment/wallet, source trimming, cap changes, Forge,
 remote execution and implied fullCI/Linux/integration or broader completion.
+
+
+## Fifteen-export proof owner: implementation pending qualification
+
+The continuation preserves the accepted model/documentation baseline5007bf56a
+on codex/rust-ast-outer-vector-product-model-inventory. Two opt-in generated-SDK
+adapter crates compile the complete original1/family15 raw SDKs at their own crate
+roots, with every Program included. The existing proof-smoke proof/verification
+and separately funded DEFAULT-strict application owners are reused for all15
+actual in-cap exports, retaining exact bounds/carriers and source Cell writes.
+The intact family branch remains k9/unproved. No runtime/compiler/lowering change.
+
+The maintained check_outer_vector_product_proof.py first reruns the complete91
+native/API gate with a fresh current original recipe. It binds source/dependency/
+physical generated includes, Cargo-reported executable and immutable SDK/runner/
+verifier/material identities; all16 models are reobserved before every k<=8 export
+is selected. Raw IR/Program identity and actual over-cap controls run before keys.
+Verified locked material precedes fresh direct keys and separate proof/application
+execution. Empty output has no invented changed-result negative; its fixed source
+CellWrite still supplies an independent statement/preimage refusal.
+
+Development only: new adapter Cargo check passes17.11s and strict Clippy62.42s
+against an exact copied58-file accepted SDK. Three raw command-evidence tests
+exercise separate CRLF/CR streams, undecodable bytes and timeout partial output.
+Only two new local package nodes and two proof-runner dependency edges change in
+the root lock; all prior registry/Git/checksum records remain exact. These checks
+are not current-head source generation, proof preparation, keys or proof results.
+Original recipe, complete maintained preparation, independent source review,
+actual15proofs/verification and15separate strict applications/replay controls and
+separate receipt review remain required. Full required Linux/CI/integration stays
+open. Preserve every failed attempt and all predecessor evidence; no cap changes,
+source trimming, Forge, remote publication or cleanup follows from this work.
+
+
+## Reviewed pre-key roster correction
+
+At e06bf3e6b the maintained prepare-only execution completes299.12s, including
+all91 native commands, all16 models, complete physical input binding,21 raw
+IR/Program refusals plus one over-cap refusal, and locked material verification.
+No keys/proofs/apps run. Independent high source review238.05s identifies one P2:
+the full execution path retained an old hardcoded21-invocation assertion even
+though this source cohort needs22. Prepare-only bypassed that old assertion.
+Preserve this source/review/preparation epoch; it is not accepted as a corrected
+full proof protocol and no actual key-generation failure is claimed.
+
+The corrected gate derives the complete ordered raw/member/over-cap roster,
+checks actual labels, membership, runner identity and timing before any key
+creation in both preparation and full modes, then retains the before-key timing
+check after keygen. Missing, duplicate, reordered, incomplete raw membership,
+wrong-runner and reversed-time unit controls accompany the concrete22-member
+positive. Original raw-capture tests remain unchanged. Fresh current recipe,
+complete corrected preparation and corrected source/receipt reviews remain
+required before the new full proof/application execution.
+
+
+## Reviewed local fifteen-export proof/application result — 2026-11-04
+
+Exact signed source cc7c50beb passes the complete maintained gate in317.67s:
+all91 native commands, complete original1/family15 raw SDKs and16golden Programs,
+all16 models before all15 in-cap selections,22 pre-key refusals,958 physically
+bound runner inputs, and verified locked built-ins/parameters/Dust material.
+Fifteen fresh direct keypairs produce fifteen2,912-byte standalone proofs that
+verify independently. Fifteen separately proved funded DEFAULT-strict
+transactions apply expected state and refuse replay as IntentAlreadyExists
+without ledger mutation (6,555–6,566 bytes). No proof or verdict is cached.
+
+Fourteen nonempty outputs have actual typed same-geometry changed result/
+communication-commitment/preimage refusals. The unique empty output honestly
+has no changed-result/preimage negative; all15 still refuse the fixed source
+CellWrite preimage, corruption, changed binding and a distinct-relation verifier.
+Current TS/private-state/witness/order/public-transcript/gas and four-route native
+checks remain part of the complete protocol. Each eligible export has one selected
+proved call; this is not universal all-input coverage. The intact family branch
+remains k9, unproved and without keys. Constructor/prestate insertion and fee/Dust
+fixtures do not prove constructor/deployment or a production wallet lifecycle.
+
+Fresh independent Codex high source review234.95s and separate actual receipt
+review416.70s report no actionable P1/P2/P3. The latter rehashes exact key/binaryIR/
+proof/preimage/transaction/state/progress membership and confirms separate strict
+transaction proving. Its read-only inspection does not independently reexecute
+cryptography. Actual local GPG verification confirms both signed source commits.
+The earlier e06 prepare-only result and inherited count-21 P2 remain unchanged;
+no actual e06 key/proof failure is invented. Corrected prepare-only passed272.16s
+before the full fresh execution. Exact full-record775-to777 lock changes remain
+only two local SDK nodes and two runner dependency edges.
+
+Provenance limit: three historical shared Cargo build-script output logs now
+contain later pool paths; the independent review confirms exact path substitution.
+Retained raw gate streams, receipts, immutable SDK/runner snapshots and actual
+proof artifacts remain unchanged. Old mutable-log bytes are not reconstructed or
+relabelled. After the final full run, all634 generated physical inputs (16,016,821
+bytes) are copied only after exact current hash matches, before later builds.
+This is not transitive consumed-byte or continuous/atomic host attestation.
+
+The preserved proof-qualified branch points at the actual cc7 source. Later
+documentation-only commits retain that literal execution epoch. Full required
+hosted CI/Linux and reviewed integration remain open. The
+[next bounded CI wiring slice](outer-vector-product-proof-ci.md) changes no public
+API, compiler/runtime semantics, proof cap or source cohort. Forge stays deferred;
+no cleanup, backend push/merge or broader-goal completion follows from this result.
+
+
+## Published bounded proof slice and inherited CI prerequisites
+
+PR #701 preserves the three proof commits against model baseline5007bf56a.
+Its stable delivery target remains codex/rust-backend-ast; the193 earlier local
+prerequisite commits are preserved, not implicitly reviewed or merged. Full
+Linux/integration acceptance remains open. The proof workflow follow-up stays
+separate and local.
+
+The first hosted checks exposed two inherited prerequisite defects: public
+Python accounting correctly refused an unexpectedly skipped real Clippy
+regression because its job did not provision pinned Rust1.99 Clippy; workspace
+rustfmt also required ordering one component-product test module declaration.
+Provision the actual tool, retain strict skip accounting and every test, and
+correct only declaration ordering. These repairs do not change compiler/runtime
+semantics or relabel the accepted cc7 proof execution as a new-head proof run.
+
+
+The next hosted core run passed all1878 backend unit tests, then exposed one
+historical render test with two obsolete shape refusals: a Boolean ledger query
+as a Vector-child predicate and a scalar Field witness in its arm now compose.
+Keep the original schema13 fixture bytes unchanged. Assert admitted recording,
+read-before-write order and one branch-local witness call; retain real rejection
+of a Field-valued predicate and a Vector-valued witness supplied as one Field.
+All154 render tests pass with those controls. No compiler, proof fixture,
+Program, source/verifier binding or runtime behavior changes in this repair.
+
+Complete local follow-up validation passes: four-owner all-feature tests276.69s,
+readability tests1.27s and unchanged corpus policy1.43s, all-target/all-feature
+Clippy with warnings denied41.32s, and changed-file rustfmt. The separate local
+CI-wiring branch remains held until this published baseline repair is settled.

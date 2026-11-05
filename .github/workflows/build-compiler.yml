@@ -473,15 +473,29 @@ jobs:
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-source-map-recipe"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json" --output "$RUNNER_TEMP/compact-source-map-publication"
 
+      - name: Package source-map publication diagnostics
+        if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')
+        shell: bash
+        run: |
+          # Preserve literal quote-containing test paths inside one portable upload.
+          diagnostics=()
+          for directory in compact-source-map-recipe compact-source-map-publication; do
+            if [ -d "$RUNNER_TEMP/$directory" ]; then
+              diagnostics+=("$directory")
+            fi
+          done
+          if [ "${#diagnostics[@]}" -gt 0 ]; then
+            COPYFILE_DISABLE=1 tar --exclude='compact-source-map-publication/cargo-target' \
+              -czf "$RUNNER_TEMP/compact-source-map-diagnostics.tar.gz" \
+              -C "$RUNNER_TEMP" "${diagnostics[@]}"
+          fi
+
       - name: Retain source-map publication diagnostics
         if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: source-map-publication-${{ github.sha }}-attempt-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/compact-source-map-recipe/
-            ${{ runner.temp }}/compact-source-map-publication/
-            !${{ runner.temp }}/compact-source-map-publication/cargo-target/**
+          path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz
           if-no-files-found: ignore
           retention-days: 14
 
