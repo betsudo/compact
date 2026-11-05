@@ -101,3 +101,23 @@ equality roster reuses the existing private model parser; the original construct
 14-source/42-model entry contract remains unchanged. Model k classification is not
 proof eligibility or cryptographic acceptance. No equality keys, proofs, strict
 applications, hosted CI or integration are accepted by this paragraph.
+
+## Intact model epoch and native proof preflight
+
+At clean `ee402a6a2`, a fresh same-head original-recipe/source/API run passes,
+and the source-authenticated immutable observer admits all 24 intact models as
+k6. Its twelve commands include five actual membership refusals. Independent
+Codex review authenticates all model hashes, 457 registry packages and the pinned
+Git source closure. The original 14/42 observer command produces byte-identical
+output on its retained SDKs; this is compatibility, not renewed historical trust.
+
+The maintained equality proof preflight reuses the unchanged #705 proof consumer
+with eight ordinary typed constructor adapters. It emits fresh default bundled
+SDKs from the original compiler, checks exact native code/Programs/models against
+the admitted current API/model output, and checks all 105 runtime source files
+and complete runtime membership against the current source. It then freezes the
+complete SDK/testkit, locked physical dependencies, tools, material and private
+immutable consumer binaries before native execution. No generated output is
+edited or spliced. Actual native preflight, independent pre-key review and parent
+admission remain required before fresh keys/proofs; constructor/deployment and
+wallet/total-cost claims remain excluded.

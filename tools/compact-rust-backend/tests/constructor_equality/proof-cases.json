@@ -1,0 +1,278 @@
+[
+  {
+    "role": "boolean_parameter",
+    "case": "boolean_parameter_true",
+    "args": [
+      [
+        1,
+        2
+      ],
+      true
+    ],
+    "expected": 7,
+    "id": "boolean_parameter_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "boolean_parameter",
+    "case": "boolean_parameter_false",
+    "args": [
+      [
+        1,
+        2
+      ],
+      false
+    ],
+    "expected": 11,
+    "id": "boolean_parameter_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_literal_eq",
+    "case": "field_literal_eq_true",
+    "args": [
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 7,
+    "id": "field_literal_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_literal_eq",
+    "case": "field_literal_eq_false",
+    "args": [
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11,
+    "id": "field_literal_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_pair_eq",
+    "case": "field_pair_eq_true",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 7,
+    "id": "field_pair_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_pair_eq",
+    "case": "field_pair_eq_false",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 11,
+    "id": "field_pair_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_pair_ne",
+    "case": "field_pair_ne_true",
+    "args": [
+      [
+        1,
+        3
+      ],
+      2
+    ],
+    "expected": 7,
+    "id": "field_pair_ne_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "field_pair_ne",
+    "case": "field_pair_ne_false",
+    "args": [
+      [
+        3,
+        2
+      ],
+      2
+    ],
+    "expected": 11,
+    "id": "field_pair_ne_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "bool_pair_eq",
+    "case": "bool_pair_eq_true",
+    "args": [
+      [
+        false,
+        true
+      ],
+      true
+    ],
+    "expected": 7,
+    "id": "bool_pair_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "bool_pair_eq",
+    "case": "bool_pair_eq_false",
+    "args": [
+      [
+        true,
+        false
+      ],
+      true
+    ],
+    "expected": 11,
+    "id": "bool_pair_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "uint_pair_eq",
+    "case": "uint_pair_eq_true",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 7,
+    "id": "uint_pair_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "uint_pair_eq",
+    "case": "uint_pair_eq_false",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 11,
+    "id": "uint_pair_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "bytes_pair_eq",
+    "case": "bytes_pair_eq_true",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 7,
+    "id": "bytes_pair_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "bytes_pair_eq",
+    "case": "bytes_pair_eq_false",
+    "args": [
+      [
+        [
+          3,
+          4
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11,
+    "id": "bytes_pair_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "nested_eq",
+    "case": "nested_eq_true",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2,
+      3,
+      3
+    ],
+    "expected": 7,
+    "id": "nested_eq_true",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "nested_eq",
+    "case": "nested_eq_false",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2,
+      3,
+      3
+    ],
+    "expected": 11,
+    "id": "nested_eq_false",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  }
+]
