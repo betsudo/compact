@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import historical_source_licenses as owner
 
@@ -35,6 +36,10 @@ class HistoricalSourceLicenseTests(unittest.TestCase):
         name = next(iter(rows))
         actual_raw = (owner.ROOT / (name + '.raw')).read_bytes()
         notice = (owner.ROOT / name).read_bytes()[len(actual_raw):]
+        self.assertEqual(hashlib.sha256(notice).hexdigest(), owner.LICENSE_SUFFIX_SHA256)
+        roster = patch.object(owner, "LICENSED_SOURCES", frozenset({"source.compact"}))
+        roster.start()
+        self.addCleanup(roster.stop)
         self.current = self.old + notice
         self.raw.write_bytes(self.old)
         self.source.write_bytes(self.current)
@@ -85,7 +90,9 @@ class HistoricalSourceLicenseTests(unittest.TestCase):
             owner.verify_source(self.source, self.sha, root=self.root)
 
     def test_changed_body_and_repinned_current_manifest_still_refuse(self):
-        changed = self.current.replace(b'return true', b'return false')
+        changed = self.current.replace(b'true', b'eurt')
+        self.assertNotEqual(changed, self.current)
+        self.assertEqual(len(changed), len(self.current))
         self.source.write_bytes(changed)
         self.repin_current(changed)
         with self.assertRaisesRegex(ValueError, 'identities differ'):
@@ -103,3 +110,19 @@ class HistoricalSourceLicenseTests(unittest.TestCase):
         rows = json.loads(manifest.read_text())
         rows['source.compact']['current_sha256'] = hashlib.sha256(changed).hexdigest()
         manifest.write_text(json.dumps(rows))
+
+    def test_removed_manifest_row_and_reverted_current_source_refuse(self):
+        (self.root / owner.MANIFEST).write_text('{}')
+        self.source.write_bytes(self.old)
+        with self.assertRaisesRegex(ValueError, 'membership differs'):
+            owner.verify_source(self.source, self.sha, root=self.root)
+        with self.assertRaisesRegex(ValueError, 'membership differs'):
+            owner.inputs(self.root)
+
+    def test_extra_manifest_member_refuses_before_input_admission(self):
+        manifest = self.root / owner.MANIFEST
+        rows = json.loads(manifest.read_text())
+        rows['unexpected.compact'] = rows['source.compact']
+        manifest.write_text(json.dumps(rows))
+        with self.assertRaisesRegex(ValueError, 'membership differs'):
+            owner.inputs(self.root)

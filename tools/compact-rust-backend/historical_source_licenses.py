@@ -23,10 +23,31 @@ MANIFEST = Path('tools/compact-rust-backend/tests/historical-source-licenses.jso
 # Exact existing full Apache2 notice, including its leading blank separator.
 LICENSE_SUFFIX_SHA256 = '4906602aadff587ad78e2d85a644cac1f3935978d0b694f29867ee2a5bb1ba01'
 
+LICENSED_SOURCES = frozenset({
+    'examples/rust_backend/stateful_vector_product_elements/refused_inner_dimension.compact',
+    'examples/rust_backend/stateful_vector_product_elements/refused_narrow.compact',
+    'examples/rust_backend/vector_component_products/original_regression.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/boolean_numeric.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/explicit_narrow.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/nominal_implicit.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/private_condition.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/refused_narrow.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/refused_wrong_arity.compact',
+    'tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/wrong_length.compact',
+    'tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact',
+})
+
+
+def manifest_rows(root):
+    rows = json.loads((root / MANIFEST).read_text())
+    if set(rows) != LICENSED_SOURCES:
+        raise ValueError("historical/current manifest membership differs")
+    return rows
+
 
 def inputs(root=ROOT):
     manifest = root / MANIFEST
-    rows = json.loads(manifest.read_text())
+    rows = manifest_rows(root)
     return [manifest, *[root / name for source in rows
                         for name in (source, source + '.raw')]]
 
@@ -38,7 +59,7 @@ def verify_source(source, historical_sha256, *, root=ROOT):
         raise ValueError('historical/current source symlink refused: ' + name)
     current_bytes = source.read_bytes()
     current = hashlib.sha256(current_bytes).hexdigest()
-    rows = json.loads((root / MANIFEST).read_text())
+    rows = manifest_rows(root)
     row = rows.get(name)
     if row is None and current == historical_sha256:
         return

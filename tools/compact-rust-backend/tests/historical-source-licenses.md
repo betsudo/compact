@@ -24,3 +24,8 @@ The complete manifest/current/raw inputs are pinned before execution by each
 affected gate. Unknown current paths, changed historical or current bytes and
 symlinks refuse. New proofs keep their actual current whole source/IR/Program
 and immutable verifier identities. No historical proof receipt is relabeled.
+
+The eleven permitted manifest paths are also a code-literal roster. Missing or
+extra manifest entries refuse before input admission, including removal of a
+row combined with reverting its current source to old bytes. Historical
+unchanged sources outside that roster retain their original literal hash check.
