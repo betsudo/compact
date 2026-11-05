@@ -2606,36 +2606,16 @@ fn render_constructor_vm_steps_observed<'a>(
                     &format!("__compact_constructor_item_{loop_index}"),
                     Span::call_site(),
                 );
-                let Expr::Parameter { name } = source else {
-                    constructor_vm::refused(
-                        RefusalSite::node(Owner::Expr(source)),
-                        environment.observer,
-                    );
-                    return Err(RenderError::InvalidConstructorInitializer(
-                        binding.name.clone(),
-                    ));
-                };
-                let (actual, iterable) = parameters.get(name.as_str()).ok_or_else(|| {
-                    constructor_vm::refused(
-                        RefusalSite::node(Owner::Expr(source)),
-                        environment.observer,
-                    );
-                    RenderError::UnknownParameter(name.clone())
-                })?;
-                let expected = Type::Vector {
-                    element: Box::new(binding.ty.clone()),
-                    length: *length,
-                };
-                if **actual != expected {
-                    constructor_vm::refused(
-                        RefusalSite::node(Owner::Expr(source)),
-                        environment.observer,
-                    );
-                    return Err(RenderError::TypeMismatch {
-                        expected,
-                        actual: (*actual).clone(),
-                    });
-                }
+                let (iterable, preparation) = constructor_vm::vector_source(
+                    source,
+                    binding,
+                    *length,
+                    parameters,
+                    environment,
+                    next_temp,
+                    loop_index,
+                )?;
+                actions.extend(preparation);
                 let mut body_parameters = parameters.clone();
                 body_parameters.insert(binding.name.as_str(), (&binding.ty, item.clone()));
                 let body = render_constructor_vm_steps_observed(
@@ -2647,7 +2627,14 @@ fn render_constructor_vm_steps_observed<'a>(
                         next_temp,
                     },
                 )?;
-                actions.push(syn::parse_quote!(for #item in #iterable.0.iter() { #(#body)* }));
+                // The expression environment carries values, not references. Borrow
+                // the Vector but copy/clone each element into that value scope.
+                let ty = native_header::carrier(&binding.ty, environment.observer)?;
+                let value = retained_value(syn::parse_quote!(*#item), &binding.ty);
+                actions.push(syn::parse_quote!(for #item in #iterable.0.iter() {
+                    let #item: #ty = #value;
+                    #(#body)*
+                }));
             }
             ConstructorStep::If {
                 condition,

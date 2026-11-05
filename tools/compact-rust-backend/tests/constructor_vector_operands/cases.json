@@ -1,0 +1,338 @@
+[
+  {
+    "id": "conditional_true",
+    "role": "conditional",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "conditional_false",
+    "role": "conditional",
+    "flag": false,
+    "helperOk": true,
+    "expected": 8,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "direct_helper",
+    "role": "direct_helper",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "direct_witness",
+    "role": "direct_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "direct_witness_witness_error",
+    "role": "direct_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "items"
+  },
+  {
+    "id": "empty_local",
+    "role": "empty_local",
+    "flag": true,
+    "helperOk": true,
+    "expected": 99,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "local_alias",
+    "role": "local_alias",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "local_helper",
+    "role": "local_helper",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "local_literal",
+    "role": "local_literal",
+    "flag": true,
+    "helperOk": true,
+    "expected": 2,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "local_witness",
+    "role": "local_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "local_witness_witness_error",
+    "role": "local_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "items"
+  },
+  {
+    "id": "parameter",
+    "role": "parameter",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "owned_reuse",
+    "role": "owned_reuse",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "conditional_witness_true",
+    "role": "conditional_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "first",
+        "privateState": 5,
+        "seen": 1
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "conditional_witness_true_witness_error",
+    "role": "conditional_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "first",
+        "privateState": 5,
+        "seen": 1
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "first"
+  },
+  {
+    "id": "conditional_witness_false",
+    "role": "conditional_witness",
+    "flag": false,
+    "helperOk": true,
+    "expected": 8,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "second",
+        "privateState": 5,
+        "seen": 1
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "conditional_witness_false_witness_error",
+    "role": "conditional_witness",
+    "flag": false,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "second",
+        "privateState": 5,
+        "seen": 1
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "second"
+  },
+  {
+    "id": "empty_witness",
+    "role": "empty_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": 99,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "empty_witness_witness_error",
+    "role": "empty_witness",
+    "flag": true,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "items",
+        "privateState": 5,
+        "seen": 99
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "items"
+  },
+  {
+    "id": "checked_helper",
+    "role": "checked_helper",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 6,
+    "trace": [
+      {
+        "name": "after",
+        "privateState": 5,
+        "seen": 3
+      }
+    ],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "checked_helper_witness_error",
+    "role": "checked_helper",
+    "flag": true,
+    "helperOk": true,
+    "expected": null,
+    "privateState": null,
+    "trace": [
+      {
+        "name": "after",
+        "privateState": 5,
+        "seen": 3
+      }
+    ],
+    "error": "constructor-witness-stop",
+    "failWitness": "after"
+  },
+  {
+    "id": "checked_helper_error",
+    "role": "checked_helper",
+    "flag": true,
+    "helperOk": false,
+    "expected": null,
+    "privateState": null,
+    "trace": [],
+    "error": "iterable-helper-denied",
+    "failWitness": null
+  },
+  {
+    "id": "nested_capture_true",
+    "role": "nested_capture",
+    "flag": true,
+    "helperOk": true,
+    "expected": 3,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  },
+  {
+    "id": "nested_capture_false",
+    "role": "nested_capture",
+    "flag": false,
+    "helperOk": true,
+    "expected": 7,
+    "privateState": 5,
+    "trace": [],
+    "error": null,
+    "failWitness": null
+  }
+]

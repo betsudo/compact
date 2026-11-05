@@ -591,6 +591,252 @@ fn constructor_validates_each_direct_cell_rhs_before_the_next_assignment() {
 }
 
 #[test]
+fn constructor_vector_loop_accepts_checked_expression_operands_and_keeps_shape_guards() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Vector {
+                element: Type::Boolean,
+                elements: vec![
+                    Expr::Boolean { value: true },
+                    Expr::Boolean { value: false },
+                ],
+            },
+            length: 2,
+            steps: vec![],
+        }],
+    });
+    render(&contract).expect("a checked Vector expression is a valid constructor iterable");
+    let ConstructorStep::ForEachVector { length, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 3;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+    let ConstructorStep::ForEachVector {
+        length, binding, ..
+    } = &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 2;
+    binding.ty = Type::Field;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+}
+
+#[test]
+fn empty_constructor_vector_checks_its_source_then_static_body() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Sequence {
+                steps: vec![Expr::Assert {
+                    condition: Box::new(Expr::Boolean { value: false }),
+                    message: "iterable-before-empty-loop".into(),
+                }],
+                value: Box::new(Expr::Vector {
+                    element: Type::Boolean,
+                    elements: vec![],
+                }),
+            },
+            length: 0,
+            steps: vec![],
+        }],
+    });
+    let source = render(&contract).unwrap();
+    assert!(source.contains("iterable-before-empty-loop"));
+    let ConstructorStep::ForEachVector { steps, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    steps.push(ConstructorStep::Expression {
+        value: Expr::Parameter {
+            name: "not_in_scope".into(),
+        },
+    });
+    assert_eq!(
+        render(&contract),
+        Err(RenderError::UnknownParameter("not_in_scope".into()))
+    );
+    let ConstructorStep::ForEachVector { source, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *source = Expr::Sequence {
+        steps: vec![Expr::Parameter {
+            name: "source_first".into(),
+        }],
+        value: Box::new(Expr::Vector {
+            element: Type::Boolean,
+            elements: vec![],
+        }),
+    };
+    assert_eq!(
+        render(&contract),
+        Err(RenderError::UnknownParameter("source_first".into()))
+    );
+}
+
+#[test]
+fn constructor_vector_default_is_checked_as_a_vector_operand() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Default {
+                ty: Type::Vector {
+                    element: Box::new(Type::Boolean),
+                    length: 2,
+                },
+            },
+            length: 2,
+            steps: vec![],
+        }],
+    });
+    render(&contract).expect("Vector defaults retain the checked operand path");
+    let ConstructorStep::ForEachVector { length, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 3;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+}
+
+#[test]
+fn constructor_vector_loop_binds_owned_items_without_moving_the_vector() {
+    for element in [Type::Field, Type::OpaqueString] {
+        let mut contract = identity(
+            Type::Field,
+            Expr::Parameter {
+                name: "value".into(),
+            },
+        );
+        contract.ledger_fields = vec![LedgerField {
+            source: None,
+            id: "stored".into(),
+            index: 0,
+            path: vec![],
+            declaration: LedgerFieldKind::Cell {
+                ty: element.clone(),
+            },
+        }];
+        contract.constructor = Some(Constructor {
+            source: None,
+            parameters: vec![Parameter {
+                name: "items".into(),
+                ty: Type::Vector {
+                    element: Box::new(element.clone()),
+                    length: 2,
+                },
+            }],
+            steps: vec![ConstructorStep::ForEachVector {
+                binding: Parameter {
+                    name: "item".into(),
+                    ty: element.clone(),
+                },
+                source: Expr::Parameter {
+                    name: "items".into(),
+                },
+                length: 2,
+                steps: vec![ConstructorStep::CellWrite {
+                    field: "stored".into(),
+                    index: 0,
+                    value: Expr::Parameter {
+                        name: "item".into(),
+                    },
+                }],
+            }],
+        });
+        let source = render(&contract).unwrap();
+        let constructor = source.split("pub fn initial_state").nth(1).unwrap();
+        assert!(constructor.contains(".0.iter()"));
+        assert!(!constructor.contains("__compact_constructor_param_0.clone()"));
+        use syn::visit_mut::VisitMut;
+        #[derive(Default)]
+        struct ItemValue {
+            copied: usize,
+            cloned: usize,
+        }
+        impl VisitMut for ItemValue {
+            fn visit_local_mut(&mut self, local: &mut syn::Local) {
+                if let syn::Pat::Type(typed) = &local.pat
+                    && let syn::Pat::Ident(binding) = typed.pat.as_ref()
+                    && binding.ident == "__compact_constructor_item_0"
+                    && let Some(init) = &local.init
+                {
+                    match init.expr.as_ref() {
+                        syn::Expr::Unary(value) if matches!(value.op, syn::UnOp::Deref(_)) => {
+                            self.copied += 1;
+                        }
+                        syn::Expr::MethodCall(call) if call.method == "clone" => {
+                            self.cloned += 1;
+                        }
+                        _ => panic!("unexpected item-value preparation"),
+                    }
+                }
+                syn::visit_mut::visit_local_mut(self, local);
+            }
+        }
+        let mut syntax = syn::parse_file(&source).unwrap();
+        let mut item = ItemValue::default();
+        item.visit_file_mut(&mut syntax);
+        assert_eq!(
+            (item.copied, item.cloned),
+            if element == Type::Field {
+                (1, 0)
+            } else {
+                (0, 1)
+            }
+        );
+    }
+}
+
+#[test]
 fn constructor_equality_predicates_keep_public_preflight_and_value_initializer_boundary() {
     let mut contract = identity(
         Type::Field,

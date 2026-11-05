@@ -23,6 +23,7 @@ description = "Ledger-8 proof compatibility gate for Rust Compact output"
 
 [features]
 default = []
+constructor-vector-models = ["ledger-transaction"]
 outer-vector-product-models = ["ledger-transaction"]
 outer-vector-product-proofs = ["outer-vector-product-models", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-outer-vector-product-family-sdk", "dep:compact-rust-outer-vector-product-original-sdk", "compact-rust-outer-vector-product-family-sdk/generated-sdk", "compact-rust-outer-vector-product-original-sdk/generated-sdk"]
 component-product-vector-models = ["ledger-transaction"]

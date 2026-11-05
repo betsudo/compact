@@ -3,6 +3,12 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
+    inputs:
+      run_macos:
+        description: 'Also qualify macOS arm64 (requires hosted runner capacity)'
+        type: boolean
+        required: false
+        default: false
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -27,6 +33,7 @@ jobs:
       system: x86_64-linux
 
   compiler-darwin:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_macos }}
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
       contents: read
@@ -35,7 +42,7 @@ jobs:
 
   build-macos:
     needs: compiler-darwin
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}
     name: Build Rust target on Apple Silicon
     runs-on: macos-latest
     permissions:
@@ -499,25 +506,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Check complete outer-Vector product semantics and boundaries
-        id: outer_vector_product_semantics
-        run: |
-          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-outer-vector-product-recipe"
-          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_semantics.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --output "$RUNNER_TEMP/compact-outer-vector-product-semantics"
-
-      - name: Retain outer-Vector product semantic diagnostics
-        if: always() && (steps.outer_vector_product_semantics.outcome == 'success' || steps.outer_vector_product_semantics.outcome == 'failure')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: outer-vector-product-semantics-${{ github.sha }}-attempt-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/compact-outer-vector-product-recipe/
-            ${{ runner.temp }}/compact-outer-vector-product-semantics/
-            !${{ runner.temp }}/compact-outer-vector-product-semantics/cargo-target/**
-          if-no-files-found: ignore
-          retention-days: 14
-
       - name: Check generated functional Ledger8 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
@@ -588,6 +576,46 @@ jobs:
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
           cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
+
+      - name: Qualify outer-Vector product APIs and fifteen selected proofs
+        id: outer_vector_product_proof
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-outer-vector-product-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_proof.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-outer-vector-product-proof"
+
+      - name: Retain outer-Vector product proof diagnostics
+        if: always() && (steps.outer_vector_product_proof.outcome == 'success' || steps.outer_vector_product_proof.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: outer-vector-product-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-outer-vector-product-recipe/
+            ${{ runner.temp }}/compact-outer-vector-product-proof/
+            !${{ runner.temp }}/compact-outer-vector-product-proof/**/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Qualify constructor Vector APIs and seventeen selected proof cases
+        id: constructor_vector_proof
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-vector-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-vector-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-vector-proof"
+
+      - name: Retain constructor Vector proof diagnostics
+        if: always() && (steps.constructor_vector_proof.outcome == 'success' || steps.constructor_vector_proof.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: constructor-vector-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-constructor-vector-recipe/
+            ${{ runner.temp }}/compact-constructor-vector-proof/
+            !${{ runner.temp }}/compact-constructor-vector-proof/**/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Qualify isolated witnessed functional SDK
         id: functional_sdk
