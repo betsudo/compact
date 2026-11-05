@@ -70,7 +70,9 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(workflow.count(command), 1)
         first = workflow.index(command)
         self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), first)
-        self.assertLess(first, workflow.index("- name: Run compiler tests"))
+        compiler_tests = workflow.split('  compiler-tests:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertIn('- name: Run compiler tests', compiler_tests)
+        self.assertIn('needs: compiler-linux', compiler_tests)
         self.assertLess(first, workflow.index("--prepare-proof-material"))
         live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
         self.assertEqual(native.count(live), 1)

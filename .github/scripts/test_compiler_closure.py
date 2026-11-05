@@ -227,11 +227,21 @@ class WorkflowOwnershipTests(unittest.TestCase):
         apple = workflow.split('  build-macos:\n', 1)[1].split('  license-check:', 1)[0]
         self.assertNotIn('nix build', apple)
         self.assertIn('check_compactc_target.py --consumer', apple)
+        compiler_tests = workflow.split('  compiler-tests:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertIn('needs: compiler-linux', compiler_tests)
+        for retained in ('./compiler/go', './srcMaps/test.sh', 'Check doc/compact-reference.mdx',
+                         'Merge report as ZIP', 'name: Coverage Report'):
+            self.assertIn(retained, compiler_tests)
         linux = workflow.split('  build:\n', 1)[1]
-        for retained in ('nix build', './compiler/go', './srcMaps/test.sh', 'check_rejections.py',
+        for retained in ('nix build', 'check_rejections.py',
                          'check_functional_effects.py', 'check_archive_consumer.py', 'cargo clippy',
                          'check_native_ci.sh', 'yarn test'):
             self.assertIn(retained, linux)
+        self.assertNotIn('./compiler/go', linux)
+        complete = workflow.split('  complete:\n', 1)[1]
+        self.assertIn('name: Build and test compiler', complete)
+        self.assertIn('compiler-tests', complete)
+        self.assertIn('test "$COMPILER_TESTS_RESULT" = success', complete)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
         self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)

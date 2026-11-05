@@ -377,8 +377,138 @@ jobs:
         run: |
           python3 -X faulthandler -u tools/compact-rust-backend/check_fixture_outputs.py
 
+  compiler-tests:
+    name: Scheme compiler, source maps and coverage
+    needs: compiler-linux
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 90
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+
+      - name: Checkout exact source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Snapshot doc/compact-reference.mdx before running compiler/go
+        run: |
+          cp doc/compact-reference.mdx /tmp/compact-reference.before.mdx
+          cp compiler/compact-reference-proto.mdx /tmp/compact-reference-proto.before.mdx
+
+      - name: Run compiler tests
+        run: |
+          if ! nix develop --command ./compiler/go; then
+            echo "::error::./compiler/go failed. Fix any warnings or errors produced by running './compiler/go' inside a nix shell ('nix develop .#compiler'), then commit the result."
+            exit 1
+          fi
+          nix develop --command ./srcMaps/test.sh
+          nix develop --command scheme --compile-imported-libraries --program \
+            compiler/test-rust-vector-indices.ss "$RUNNER_TEMP/vector-index-occurrences"
+          test -d coverage
+
+      - name: Check doc/compact-reference.mdx is consistent with compiler/go
+        run: |
+          FAILED=0
+
+          PROTO_CHANGED=false
+          REF_CHANGED=false
+
+          if ! diff -q /tmp/compact-reference-proto.before.mdx compiler/compact-reference-proto.mdx > /dev/null 2>&1; then
+            PROTO_CHANGED=true
+          fi
+
+          if ! diff -q /tmp/compact-reference.before.mdx doc/compact-reference.mdx > /dev/null 2>&1; then
+            REF_CHANGED=true
+          fi
+
+          # Case 1: doc/compact-reference.mdx changed before ./compiler/go but proto didn't
+          # This means someone edited the generated file directly instead of the source
+          if [ "$REF_CHANGED" = "true" ] && [ "$PROTO_CHANGED" = "false" ]; then
+            echo "::error::doc/compact-reference.mdx has been edited directly, but compiler/compact-reference-proto.mdx has not changed. Do not edit doc/compact-reference.mdx by hand — make your changes in compiler/compact-reference-proto.mdx instead and run './compiler/go' inside a nix shell ('nix develop .#compiler') to regenerate it."
+            FAILED=1
+          fi
+
+          # Case 2: doc/compact-reference.mdx differs before vs after running ./compiler/go
+          # This means the committed file is out of date with what ./compiler/go would produce
+          AFTER_CONTENT=$(cat doc/compact-reference.mdx)
+          BEFORE_CONTENT=$(cat /tmp/compact-reference.before.mdx)
+
+          if [ "$AFTER_CONTENT" != "$BEFORE_CONTENT" ]; then
+            echo "::error::doc/compact-reference.mdx is out of date. Run './compiler/go' inside a nix shell ('nix develop .#compiler') and commit the updated doc/compact-reference.mdx."
+            echo ""
+            echo "Diff (before vs after running ./compiler/go):"
+            diff /tmp/compact-reference.before.mdx doc/compact-reference.mdx || true
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "doc/compact-reference.mdx is consistent."
+
+      - name: Run src-maps tests
+        run: |
+          cd test-src-maps
+          nix develop .#compiler --command yarn install
+          nix develop .#compiler --command yarn test
+
+      - name: Execute binary - smoke test
+        run: |
+          nix develop .#compiler --command compactc --version
+          nix develop .#compiler --command compactc --help
+          nix develop .#compiler --command compactc ./test-center/compact/test.compact "$RUNNER_TEMP/compact-output/"
+          nix develop .#compiler --command compactc ./examples/tiny.compact "$RUNNER_TEMP/tiny-output/"
+
+      - name: Merge report as ZIP
+        run: |
+          mv coverage "coverage_$(date +"%Y%m%d%H%M%S")"
+          zip -r compiler-coverage.zip coverage*
+
+      - name: Upload Artifact - coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Coverage Report
+          path: compiler-coverage.zip
+
   build:
-    name: Build and test compiler
+    name: Native, proof and package qualification
     runs-on: ubuntu-latest
     env:
       # Share heavy dependencies with generated consumers and preserve target/package.
@@ -457,76 +587,6 @@ jobs:
       - name: Check Rust capability refusals before expensive qualification
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC=compactc python3 -X faulthandler -u tools/compact-rust-backend/check_rejections.py
-
-      - name: Snapshot doc/compact-reference.mdx before running compiler/go
-        run: |
-          cp doc/compact-reference.mdx /tmp/compact-reference.before.mdx
-          cp compiler/compact-reference-proto.mdx /tmp/compact-reference-proto.before.mdx
-
-      - name: Run compiler tests
-        run: |
-          if ! nix develop --command ./compiler/go; then
-            echo "::error::./compiler/go failed. Fix any warnings or errors produced by running './compiler/go' inside a nix shell ('nix develop .#compiler'), then commit the result."
-            exit 1
-          fi
-          nix develop --command ./srcMaps/test.sh
-          nix develop --command scheme --compile-imported-libraries --program \
-            compiler/test-rust-vector-indices.ss "$RUNNER_TEMP/vector-index-occurrences"
-          test -d coverage
-
-      - name: Check doc/compact-reference.mdx is consistent with compiler/go
-        run: |
-          FAILED=0
-
-          PROTO_CHANGED=false
-          REF_CHANGED=false
-
-          if ! diff -q /tmp/compact-reference-proto.before.mdx compiler/compact-reference-proto.mdx > /dev/null 2>&1; then
-            PROTO_CHANGED=true
-          fi
-
-          if ! diff -q /tmp/compact-reference.before.mdx doc/compact-reference.mdx > /dev/null 2>&1; then
-            REF_CHANGED=true
-          fi
-
-          # Case 1: doc/compact-reference.mdx changed before ./compiler/go but proto didn't
-          # This means someone edited the generated file directly instead of the source
-          if [ "$REF_CHANGED" = "true" ] && [ "$PROTO_CHANGED" = "false" ]; then
-            echo "::error::doc/compact-reference.mdx has been edited directly, but compiler/compact-reference-proto.mdx has not changed. Do not edit doc/compact-reference.mdx by hand — make your changes in compiler/compact-reference-proto.mdx instead and run './compiler/go' inside a nix shell ('nix develop .#compiler') to regenerate it."
-            FAILED=1
-          fi
-
-          # Case 2: doc/compact-reference.mdx differs before vs after running ./compiler/go
-          # This means the committed file is out of date with what ./compiler/go would produce
-          AFTER_CONTENT=$(cat doc/compact-reference.mdx)
-          BEFORE_CONTENT=$(cat /tmp/compact-reference.before.mdx)
-
-          if [ "$AFTER_CONTENT" != "$BEFORE_CONTENT" ]; then
-            echo "::error::doc/compact-reference.mdx is out of date. Run './compiler/go' inside a nix shell ('nix develop .#compiler') and commit the updated doc/compact-reference.mdx."
-            echo ""
-            echo "Diff (before vs after running ./compiler/go):"
-            diff /tmp/compact-reference.before.mdx doc/compact-reference.mdx || true
-            FAILED=1
-          fi
-
-          if [ "$FAILED" -eq 1 ]; then
-            exit 1
-          fi
-
-          echo "doc/compact-reference.mdx is consistent."
-
-      - name: Run src-maps tests
-        run: |
-          cd test-src-maps
-          nix develop .#compiler --command yarn install
-          nix develop .#compiler --command yarn test
-
-      - name: Execute binary - smoke test
-        run: |
-          nix develop .#compiler --command compactc --version
-          nix develop .#compiler --command compactc --help
-          nix develop .#compiler --command compactc ./test-center/compact/test.compact "$RUNNER_TEMP/compact-output/"
-          nix develop .#compiler --command compactc ./examples/tiny.compact "$RUNNER_TEMP/tiny-output/"
 
       - name: Resolve locked ledger proof fixtures
         run: |
@@ -940,17 +1000,6 @@ jobs:
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error
 
-      - name: Merge report as ZIP
-        run: |
-          mv coverage "coverage_$(date +"%Y%m%d%H%M%S")"
-          zip -r compiler-coverage.zip coverage*
-
-      - name: Upload Artifact - coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: Coverage Report
-          path: compiler-coverage.zip
-
       - name: Test E2E
         run: |
           cd tests-e2e
@@ -983,3 +1032,26 @@ jobs:
         with:
           name: event-file
           path: ${{ github.event_path }}
+
+  complete:
+    name: Build and test compiler
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require every Linux qualification owner
+        env:
+          LICENSE_RESULT: ${{ needs.license-check.result }}
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
+          COMPILER_TESTS_RESULT: ${{ needs.compiler-tests.result }}
+          NATIVE_RESULT: ${{ needs.build.result }}
+        run: |
+          test "$LICENSE_RESULT" = success
+          test "$PREFLIGHT_RESULT" = success
+          test "$PRODUCER_RESULT" = success
+          test "$FIXTURES_RESULT" = success
+          test "$COMPILER_TESTS_RESULT" = success
+          test "$NATIVE_RESULT" = success
