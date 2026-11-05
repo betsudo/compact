@@ -1,7 +1,10 @@
 # Constructor fixed-Vector iterable expressions
 
-Status: source-characterized proposal; implementation and execution qualification
-are not accepted. Local continuation of the primary Rust AST goal, 2026-11-05.
+Status: bounded functional qualification accepted at frozen producer `f09900533`;
+complete model sizing accepted at separate qualifier `775b662ed`. Fresh selected
+proofs, strict applications, constructor total cost and integration remain open.
+Local continuation of the primary Rust AST goal, 2026-11-05. Earlier sections
+retain their historical execution epochs; the current results are below.
 
 ## Proven gap and baseline
 
@@ -22,10 +25,12 @@ operand preparation as well. Merely changing the frontend guard is insufficient.
 
 Focused clean baseline: 60 constructor-related unit methods and nine render
 methods pass with Rust 1.99, unchanged limits and the existing Cargo target.
-PR #701 has separately passed Rust required checks, both compiler producers and
-the macOS consumer; its full Linux consumer remains running. Do not interpret
-these local checks as full CI. Preserve the published proof repair and the
-separate reviewed local proof-CI successor `58c1e5083`.
+At characterization time, PR #701 had separately passed Rust required checks,
+both compiler producers and the macOS consumer while Linux remained running.
+The later read-only observation confirms all 11 configured checks succeeded at
+published `8d100a1b5`; the PR remains open and mergeable. That hosted result does
+not qualify the subsequent constructor changes. Preserve the published proof
+repair and separate reviewed local proof-CI successor `58c1e5083`.
 
 A possible Counter operand gap was independently eliminated: all 27 source
 admission commands for nine Counter cases pass. Existing normalization hoists
@@ -337,3 +342,34 @@ observer requires exactly these named regular sidecars and real SDK directories,
 without opening, deleting or modifying the locks. Unknown root entries, missing
 members and directory/symlink substitutions still refuse. This does not establish
 lock ownership or liveness. The failed observation remains separate evidence.
+
+## Accepted intact-model observation
+
+At clean qualifier `775b662ed`, the corrected observer builds and passes strict
+Clippy locally. It reads all 39 retained models across all 13 complete SDKs;
+every model reports `k = 6`, within the unchanged automatic cap of 8. All 1,573
+declared producer assets remain bound to the accepted functional receipt and
+unchanged. The controller records qualifier source/tree, Cargo metadata and the
+actual build artifact, binary and tool identities. These are observation records,
+not complete proof toolchain or parameter admission.
+
+An isolated minimal HOST fixture passes, then refuses five relevant mutations:
+an extra SDK directory, a lock replaced by a directory, an SDK replaced by a
+symlink, a missing model and an extra model. The original generated SDKs and
+lock files stay untouched; all failed predecessor and HOST evidence is retained.
+Independent Codex CLI review, used after a genuine Claude quota failure, confirms
+the P2 correction and recomputes input/log/artifact bindings with no new finding.
+
+The next selection remains the 15 successful constructor cases across 13 full
+sources, calling `advance` with delta 4 and checking the independently expected
+stored value plus 4. Both conditional choices stay selected. Preserve `read` and
+`advance_other` in every SDK; `advance_other` is a distinct relation available
+for wrong-verifier controls. Numeric sizing alone authorizes no key generation:
+first bind the exact source, IR, all exported Programs, isolated dependency graph,
+tools and verified parameters. Then generate fresh direct proofs and independently
+verify them, followed by separately proved funded DEFAULT-strict application and
+unchanged-ledger replay refusal. Constructor initialization itself is not proved
+by a later entrypoint proof. No new keys or proofs have run in this phase.
+
+Retained observation: `model-observation-v2/receipt.json`; independent review:
+`model-source-review-v2.json`, under the evidence directory named above.
