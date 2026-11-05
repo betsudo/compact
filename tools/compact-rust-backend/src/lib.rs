@@ -1662,6 +1662,18 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
     }
 }
 
+// Only conditional predicates gain equality; value initializers keep their
+// existing infallibility boundary. The typed pure fold owns comparability,
+// child diagnostics and structured Rust expression emission.
+fn infallible_constructor_condition(value: &Expr) -> bool {
+    match value {
+        Expr::Equal { left, right } | Expr::NotEqual { left, right } => {
+            infallible_constructor_condition(left) && infallible_constructor_condition(right)
+        }
+        _ => infallible_constructor_expr(value),
+    }
+}
+
 fn collect_constructor_step_types<'ir>(
     step: &'ir ConstructorStep,
     structs: &mut BTreeMap<String, Vec<StructField>>,
@@ -2642,7 +2654,7 @@ fn render_constructor_vm_steps_observed<'a>(
                 then_steps,
                 otherwise_steps,
             } => {
-                if !infallible_constructor_expr(condition) {
+                if !infallible_constructor_condition(condition) {
                     constructor_vm::refused(
                         RefusalSite::node(Owner::Expr(condition)),
                         environment.observer,

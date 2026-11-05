@@ -15,6 +15,28 @@ The latter two execute canonical ledger-8 VM queries and contribute their cost
 to Rust circuit results. TypeScript currently reports zero wrapper gas for
 witness-only VM queries; the Rust result sums the observed query costs.
 
+
+## Local constructor equality qualification
+
+The bounded `0.31.195` slice admits equality and inequality predicates in
+existing constructor control flow through the existing typed pure lowering.
+Value initializers retain their previous expression boundary. Top-level
+constructor `if` frontend admission is a separate gap.
+
+```sh
+python3 tools/compact-rust-backend/check_constructor_equality.py \
+  --compiler-receipt ORIGINAL_CURRENT_RECIPE_RECEIPT \
+  --ts-runtime COMPACT_TS_RUNTIME --output FRESH_OUTPUT
+```
+
+This finite gate tests eight complete current compiler SDKs, sixteen independent
+TypeScript/native branch observations and three marked Rust compile failures.
+It also checks witness/arithmetic/privacy/type refusals and rejects a changed
+reference. It performs no key generation or proofs. Dependency lock checks are
+not transitive consumed-source attestation. Model/proof/application qualification,
+full required Linux CI and independent review remain separate acceptance gates;
+see [the plan](../../doc/rust/plans/constructor-equality-conditions.md).
+
 ## Current recording architecture
 
 The default recorder lowers supported typed operations and composition into a checked plan. Ordinary roots use the checked route; Effectful roots retain their earlier checked boundary. Unsupported operations return checked refusals; invalid plans are fatal. The former StartFunding and generic/profile fallback paths are test history. They do not accept rejected production plans. Profile names describe retained examples and tests, not formal algebraic theorems or production admission authority.

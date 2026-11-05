@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.195, language 0.23.105, runtime 0.16.102]
+
+Unreleased local Rust-backend slice; qualification remains in progress.
+
+### Added
+
+- Support typed equality and inequality conditions in existing constructor
+  control flow. Reuse the checked pure lowering and structured Rust AST emitter;
+  keep value initializer restrictions and fallible operand refusals unchanged.
+
 ## [Toolchain 0.31.193, language 0.23.105, runtime 0.16.102]
 
 Unreleased reconciliation checkpoint; no release or completed qualification is implied.
