@@ -37,6 +37,8 @@ def git(root, *arguments):
 
 
 def git_extras(root):
+    require(not git(root, "diff", "--cached", "--name-only", "HEAD", "--"),
+            "dependency index differs from admitted commit")
     ordinary = git(root, "ls-files", "--others", "--exclude-standard", "-z")
     ignored = git(root, "ls-files", "--others", "--ignored", "--exclude-standard", "-z")
     return {os.fsdecode(p) for p in (ordinary + ignored).split(b"\0") if p}

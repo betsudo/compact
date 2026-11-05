@@ -87,6 +87,16 @@ class DependencySourceControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "physical dependency bytes changed"):
             deps.unchanged({str(root): record})
 
+    def test_git_staged_build_script_cannot_hide_from_membership(self):
+        root, revision = self.git_fixture()
+        record = deps.git_source(root, revision)
+        (root / "build.rs").write_text('fn main() { panic!("staged"); }')
+        subprocess.run(["git", "-C", str(root), "add", "build.rs"], check=True)
+        with self.assertRaisesRegex(ValueError, "dependency index differs"):
+            deps.git_source(root, revision)
+        with self.assertRaisesRegex(ValueError, "dependency index differs"):
+            deps.unchanged({str(root): record})
+
     def test_registry_locked_archive_without_optional_checksum_table(self):
         root, archive, checksum, _ = self.registry_fixture()
         package = {"manifest_path": str(root / "Cargo.toml")}

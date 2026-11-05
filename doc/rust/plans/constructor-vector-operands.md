@@ -412,9 +412,16 @@ locked checksum; an optional local checksum table cannot rebind altered source.
 Admitted source bytes and membership are rechecked before builds and completion.
 Preparation observes one Git root and 337 registry roots, totaling 24,230 files.
 Isolated HOST controls reject modified Git source, modified registry source and
-modified archives. Five maintained unit methods also cover untracked build
+modified archives. Six maintained unit methods also cover untracked build
 scripts, wrong revisions, post-admission drift and rewritten checksum tables.
 An initial test caught macOS `/var` path alias handling; normalization fixes it.
+
+Source inspection also identified a staged-file bypass: a new build script
+added to the dependency index is absent from both HEAD and untracked-file lists.
+A new control reproduces that refusal gap before correction. Admission and
+post-admission checks now require the dependency index to match HEAD. The v3
+preflight was safely stopped between child commands before this source fix;
+its interrupted receipt remains diagnostic, with no keys or proofs generated.
 
 The external executor must be reviewed as a read-only content-addressed copy.
 Parent triage records that exact digest and path, and the trusted launch checks
