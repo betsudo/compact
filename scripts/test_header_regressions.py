@@ -15,6 +15,7 @@
 
 """PR license scope controls; the original full-header validator remains strict."""
 from pathlib import Path
+import hashlib
 import subprocess
 import tempfile
 import unittest
@@ -86,7 +87,8 @@ class PinnedHistoricalCopyTests(unittest.TestCase):
     def setUp(self):
         HeaderRegressionTests.setUp(self)
         self.copy_name, (self.authority_name, self.expected) = next(iter(gate.RETAINED_SOURCE_COPIES.items()))
-        raw = (gate.ROOT / self.authority_name).read_bytes()
+        raw = (gate.ROOT / (self.authority_name + '.raw')).read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), self.expected)
         self.authority = self.root / self.authority_name
         self.authority.parent.mkdir(parents=True)
         self.authority.write_bytes(raw)
