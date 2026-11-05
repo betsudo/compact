@@ -66,9 +66,18 @@ def main():
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "Rust1.99.0 required")
     env["CARGO_TARGET_DIR"] = str(cargo_target(env, out))
     env.pop("LD_LIBRARY_PATH", None)
+    rustup = Path(shutil.which("rustup")).resolve(strict=True)
+    rust = {name: Path(subprocess.check_output([str(rustup), "which", "--toolchain", "1.99.0", name],
+            text=True).strip()).resolve(strict=True) for name in ("cargo", "rustc")}
+    require(subprocess.check_output([str(rust["rustc"]), "--version"], text=True).startswith("rustc 1.99.0 "),
+            "actual Rust compiler version differs")
+    require(subprocess.check_output([str(rust["cargo"]), "--version"], text=True).startswith("cargo 1.99.0 "),
+            "actual Cargo version differs")
+    env.update(RUSTC=str(rust["rustc"]), CARGO=str(rust["cargo"]))
+    env["PATH"] = str(rust["cargo"].parent) + os.pathsep + env["PATH"]
     runtime = args.ts_runtime.resolve(strict=True)
     node = Path(shutil.which("node")).resolve(strict=True)
-    paths = [Path(__file__), args.compiler_receipt, compiler, scheme, node, ROOT / "Cargo.lock"]
+    paths = [Path(__file__), args.compiler_receipt, compiler, scheme, node, rustup, *rust.values(), ROOT / "Cargo.lock"]
     paths.extend(FIXTURES.rglob("*"))
     paths.extend(Path(__file__).parent.glob("*.py"))
     for directory in ("compiler", "runtime-rs", "runtime-rs-macros", "tools/compact-rust-backend/src"):
@@ -88,6 +97,8 @@ def main():
     def run(label, argv, success=True, extra=None):
         unchanged()
         argv = list(map(str, argv))
+        if argv[0] == "cargo":
+            argv[0] = str(rust["cargo"])
         start = time.monotonic()
         try:
             result = subprocess.run(argv, cwd=ROOT, env=env if extra is None else dict(env, **extra),

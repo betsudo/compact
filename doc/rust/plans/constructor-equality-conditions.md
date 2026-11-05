@@ -1,6 +1,6 @@
 # Constructor equality conditions
 
-Status: local implementation against accepted canonical `90cd758c`; current compiler source/API and proof qualification remain pending.
+Status: local follow-up to PR #705, reconciled by a signed forward merge. Current compiler source/API and proof qualification remain pending. The original accepted canonical baseline was `90cd758c`.
 Unreleased toolchain `0.31.195` is reserved for this independent slice.
 
 ## Gap and evidence
@@ -59,3 +59,27 @@ warnings denied. Focused coverage includes 63 constructor unit tests and nine
 constructor render tests. These are owner checks, not current compiler SDK or
 cryptographic qualification. The generated ledger documentation was regenerated
 through its maintained Scheme owner for compiler `0.31.195`.
+
+## Constructor owner reconciliation
+
+The first independent195 run at `8ee538a8` admitted source emission and all
+sixteen TypeScript observations, then failed native compilation with E0277:
+a borrowed Field loop element was compared with an owned Field argument. Native
+behavior and marked compile failures were not reached. Preserve that run.
+
+PR #705 already owns the typed element normalization required at the existing
+borrowed Vector loop boundary. Reuse that independently locally qualified owner
+through forward merge `5ff482536`; do not introduce a second ownership framework.
+Both complete test cohorts are retained. This makes equality a local follow-up
+to #705; its hosted CI and human integration gates remain separate.
+
+The independent source review also identified unbound Rust tools in the new
+qualifier. Resolve actual Rust1.99 Cargo/rustc paths, verify versions and pin/recheck
+their hashes before invocation. Repeat current original-recipe and whole-SDK
+qualification after these changes; earlier source or proof epochs do not substitute.
+
+The reconciled candidate passes 1,890 backend unit tests (seven existing ignored
+controls), the complete render suite, formatting and library Clippy. A real
+ForEachVector AST regression checks typed value normalization for borrowed Field,
+Boolean, Uint and Bytes elements before comparison, complementing the complete
+current generated-SDK consumer gate. Failed predecessor tests remain retained.

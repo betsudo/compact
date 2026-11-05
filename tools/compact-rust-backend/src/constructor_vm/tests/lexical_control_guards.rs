@@ -715,3 +715,64 @@ fn constructor_equality_retains_comparable_types_nested_grouping_and_borrowed_op
         assert!(!infallible_constructor_expr(&condition));
     }
 }
+
+#[test]
+fn constructor_equality_uses_actual_vector_element_value_scope() {
+    for ty in [
+        Type::Field,
+        Type::Boolean,
+        Type::Unsigned { max: "255".into() },
+        Type::Bytes { length: 2 },
+    ] {
+        let vector = Type::Vector {
+            element: Box::new(ty.clone()),
+            length: 2,
+        };
+        let parameters = HashMap::from([
+            ("values", (&vector, syn::parse_quote!(values))),
+            ("right", (&ty, syn::parse_quote!(right))),
+        ]);
+        let step = ConstructorStep::ForEachVector {
+            binding: binding(ty.clone()),
+            source: parameter("values"),
+            length: 2,
+            steps: vec![ConstructorStep::If {
+                condition: Expr::Equal {
+                    left: Box::new(parameter("item")),
+                    right: Box::new(parameter("right")),
+                },
+                then_steps: vec![],
+                otherwise_steps: vec![],
+            }],
+        };
+        let trace = GuardTrace::default();
+        let observed = execute(std::slice::from_ref(&step), &parameters, Some(&trace));
+        assert_eq!(
+            observed,
+            execute(std::slice::from_ref(&step), &parameters, None)
+        );
+        let source = observed.0.unwrap();
+        let syntax: syn::Block = syn::parse_str(&format!("{{{source}}}")).unwrap();
+        let syn::Stmt::Expr(syn::Expr::ForLoop(loop_), _) = &syntax.stmts[0] else {
+            panic!("borrowed loop")
+        };
+        let syn::Stmt::Local(value) = &loop_.body.stmts[0] else {
+            panic!("typed value scope")
+        };
+        assert!(matches!(value.pat, syn::Pat::Type(_)));
+        assert!(
+            matches!(value.init.as_ref().unwrap().expr.as_ref(),syn::Expr::Unary(unary) if matches!(unary.op,syn::UnOp::Deref(_)))
+        );
+        let syn::Stmt::Expr(syn::Expr::If(branch), _) = &loop_.body.stmts[1] else {
+            panic!("comparison")
+        };
+        assert!(
+            matches!(branch.cond.as_ref(),syn::Expr::Binary(binary) if matches!(binary.op,syn::BinOp::Eq(_)))
+        );
+        assert!(
+            !source.contains("clone"),
+            "Copy element normalization retains the borrowed caller Vector"
+        );
+        assert!(trace.0.borrow().is_empty());
+    }
+}
