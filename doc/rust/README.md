@@ -38,6 +38,8 @@ These records retain their exact source/evidence revisions. They do not claim PR
 
 - [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): next bounded integration proposal for the complete maintained native/proof/application gate, with all prior required gates and independent diagnostics retained. No hosted result is claimed.
 
+- [Constructor Vector iterable operands](plans/constructor-vector-operands.md): nine genuine source probes expose a bounded local source gap; constructor baseline checks pass. Implementation, behavior and proof qualification remain open.
+
 ## Checked recording checkpoint
 
 The current recording-effect branch is documented in [Checked recording and source diagnostics](guides/checked-recording.md) and the [capability and retirement book](recording-effect-algebra/capability-and-retirement-book.md). The compiler/runtime ABI is **53**, private Rust IR is **20**, finalized capability reports use **3**, and private source-origin transport uses **3**. Package versions remain separate.
