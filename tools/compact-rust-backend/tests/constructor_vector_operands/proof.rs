@@ -15,6 +15,7 @@
 
 //! Constructor-derived state, later-entrypoint proof and strict application.
 //! Constructor-state insertion and fee funding are privileged fixture setup.
+use contract as generated;
 use contract::{ledger_contract as c, runtime as r};
 use midnight_base_crypto::{
     data_provider::{FetchMode, MidnightDataProvider, OutputMode},
@@ -238,7 +239,7 @@ fn initialized(case: &Value) -> Result<ConstructorResult<u64>, Box<dyn Error>> {
         case["privateState"].as_u64().unwrap()
     );
     assert_eq!(
-        contract::ledger_slots::stored.inspect(initial.ledger_state.get_ref())?,
+        generated::ledger_slots::stored.inspect(initial.ledger_state.get_ref())?,
         Field::from(case["expected"].as_u64().unwrap())
     );
     let trace = case["trace"]
@@ -319,7 +320,7 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
     assert!(recorded.execution.private_transcript_outputs.is_empty());
     let expected = recorded.execution.context.query.state.get_ref().clone();
     assert_eq!(
-        contract::ledger_slots::stored.inspect(&expected)?,
+        generated::ledger_slots::stored.inspect(&expected)?,
         expected_value
     );
     let prepared = prepare_call(
@@ -455,7 +456,7 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         .ok_or("missing applied contract")?;
     assert_eq!(actual.data.get_ref(), &expected);
     assert_eq!(
-        contract::ledger_slots::stored.inspect(actual.data.get_ref())?,
+        generated::ledger_slots::stored.inspect(actual.data.get_ref())?,
         expected_value
     );
     let context = TransactionContext {

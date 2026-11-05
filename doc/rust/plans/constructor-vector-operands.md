@@ -373,3 +373,28 @@ by a later entrypoint proof. No new keys or proofs have run in this phase.
 
 Retained observation: `model-observation-v2/receipt.json`; independent review:
 `model-source-review-v2.json`, under the evidence directory named above.
+
+## Isolated proof-consumer preflight
+
+The new maintained `check_constructor_vector_proof_preflight.py` copies each
+complete frozen SDK into its own external consumer closure. It reuses the
+existing copied-testkit dependency recipe and admits exactly five local packages
+and one bundled runtime per SDK. Its native mode checks the original generated
+constructor, private state and witness trace, all exported Program associations,
+and the selected later `advance` result. This phase generates no keys or proofs.
+
+The first run at `a391316bb` passed nine SDK lanes and then found a test-consumer
+alias error in the owned-value constructor fixture. The fixture uses `generated`
+for its additional typed ledger slots; the proof consumer now supplies that alias
+without editing the fixture or generated SDK. Independent source review also
+found two P2 identity gaps: undeclared SDK files could enter Cargo, and inherited
+PATH could select tools other than the hashed rustup executables. That run remains
+failed evidence and supplies no proof admission.
+
+The correction requires exact full SDK membership, including the compiler
+manifest's retained hash, before copying. Complete source and SDK inventories are
+rechecked before children and at completion. HOST controls refuse an extra build
+script, changed manifest, changed IR, swapped Programs and changed source before
+staging. Cargo commands use resolved executable paths and its child toolchain is
+selected explicitly. A fresh complete preflight and independent review remain
+required before the later proof consumer may generate keys or prove.
