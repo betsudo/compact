@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Toolchain 0.31.194, language 0.23.105, runtime 0.16.102]
 
-Unreleased constructor reconciliation checkpoint; qualification is pending.
+Unreleased constructor reconciliation checkpoint; required CI and integration
+remain pending. Bounded local execution retains its exact source identities.
 
 ### Fixed
 
 - Preserve outer lexical Vector bindings through nested constructor loop,
   sequence and conditional lowering; retain original source/proof fixtures and
   add a separate complete nested-capture regression.
+
+- Add a maintained constructor qualification command to the required Linux gate:
+  complete source/API controls, all 42 intact models, and 17 selected fresh
+  later-entrypoint proof cases with separate strict applications and replays.
+  Reuse one bounded external Cargo target across its stages and preserve all
+  other gates. These proofs do not prove constructor initialization.
 
 - Preserve the checked constructor Vector operand extension alongside canonical
   wide-zero and outer-Vector behavior through a forward source reconciliation.

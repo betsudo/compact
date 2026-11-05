@@ -1,9 +1,10 @@
 # Constructor fixed-Vector iterable expressions
 
-Status: bounded functional qualification accepted at frozen producer `f09900533`;
-complete model sizing accepted at `775b662ed`; selected later-entrypoint proofs
-and strict applications accepted at separate qualifier `a8133996b`. Constructor
-cryptography/total cost, new-head CI/Linux and integration remain open.
+Status: bounded compiler194 source/API/model and selected later-entrypoint
+proof/application qualification accepted at frozen `847758e3`. Its maintained
+combined CI command is being qualified separately. Constructor cryptography/total
+cost, new-head CI/Linux and integration remain open. Earlier `f09900533`,
+`775b662ed` and `a8133996b` results retain their separate identities below.
 Local continuation of the primary Rust AST goal, 2026-11-05. Earlier sections
 retain their historical execution epochs; the current results are below.
 
@@ -547,3 +548,87 @@ independent native state assertions against the original TS oracle. Neither case
 is satisfied by always choosing one branch. Counts remain14/24/17/7/42; original
 thirteen sources and twenty-two cases stay exact. This is fixture coverage within
 the same lexical repair, not new conditional support or old-proof relabeling.
+
+## Current compiler194 bounded qualification accepted — 2026-11-05
+
+Frozen execution source: `847758e3cbfac04597748f7d23a49e88ee6797b1`.
+The current original recipe admits the repaired compiler194 package; realization
+reuses the existing package and is not another compiler build. The complete
+source/API gate passes 132 commands across fourteen complete SDKs and all
+twenty-four constructor cases. Five intended generated-API compile refusals,
+their positive behavior, static malformed-IR controls and all four complete-source
+semantic mutations remain active. The new 7-to-8 mutation fails the intended
+native state assertion, not source/Program binding. TS and native execution
+distinguish nested true 3 from false 7; subsequent `advance` yields 7 and 11.
+
+The source-built immutable observer passes twelve commands and inventories all
+forty-two intact models at k6. Authenticated preflight passes sixty-one commands,
+all fourteen complete SDK/consumer lanes and seventeen selected native cases.
+Strict source authentication covers 338 proof dependency roots and 458 combined
+observer roots. Registry archive membership/checksums and Git content/index/extras
+guards remain unchanged. The isolated Cargo home resolves the retained global
+source anomaly through normal locked archive unpacking; no file is excluded,
+repaired or deleted from the original shared cache.
+
+A separate authentic pre-key source/preparation review accepts the exact
+read-only executor after checking the current source, SDKs, streams, dependencies,
+material and immutable binaries. Independent parent artifact triage/admission
+precedes launch. Actual fresh execution passes 43 commands: 28 direct keypairs,
+seventeen independently verified standalone proof cases and seventeen separately
+proved funded DEFAULT-strict applications with unchanged-ledger
+`IntentAlreadyExists` replay refusals. All seven binding/input/output/preimage/
+corruption/wrong-verifier controls remain enforced. A separate actual receipt
+review independently checks the resulting artifacts and raw streams; the trusted
+launcher propagates actual exit0 and source/head bytes remain unchanged.
+
+These seventeen cases cover fourteen unique `advance` exports. `read` remains
+model-only and `advance_other` is keyed solely for wrong-verifier controls. All
+original thirteen sources/source records and twenty-two cases remain exact.
+Privileged constructor-state insertion and fee funding are fixture setup, not
+constructor/deployment cryptography, total constructor cost or wallet/network
+acceptance. This local result does not establish later-head CI or integration.
+
+Evidence locators: `rust-ast-autonomous-publication-20261105`, including
+`constructor-functional194-v4`, `constructor-model194-v3`,
+`constructor-preflight194-v1`, `constructor-fresh-proofs194-v1`, the actual
+pre-key/receipt CLI reviews and separate parent admission/triage records. These
+are local navigation references, not a portable public provenance bundle.
+
+## Maintained qualification and required CI continuation
+
+Preserve `847758e3` and its results. Signed forward merges reconcile the owner's
+merged PR #703 baseline `90cd758c7` and PR #704's complete outer-Vector proof gate
+and explicit optional-macOS policy. No constructor compiler/backend/runtime or
+fixture tree changes are introduced by those merges. The canonical delivery
+target remains `codex/rust-backend-ast`.
+
+The maintained command is:
+
+```sh
+python3 tools/compact-rust-backend/check_constructor_vector_proof.py \
+  --compiler-receipt ORIGINAL_RECIPE_RECEIPT \
+  --ts-runtime COMPACT_TS_RUNTIME --zkir NATIVE_ZKIR --output FRESH_OUTPUT
+```
+
+It invokes the existing complete source/API owner once, the source-authenticated
+intact-model owner, the existing authenticated native preflight, and then fresh
+direct keys, independent verification and separate strict applications through
+the unchanged proof consumer. Each stage retains raw diagnostics and fails closed.
+The compiler schema descriptor is only an adapter after actual original-recipe
+source admission; it creates no new build/trust authority. No proof/verdict cache
+or resumed old qualification output is accepted.
+
+The required Linux workflow calls this combined command after verified material
+and the existing full outer-Vector gate. One bounded external Cargo target is
+reused across all constructor stages, preserving the preflight's outside-source
+target guard and the rest of the job's existing target. Every selected executable
+is privately snapshotted. All prior compiler/proof/E2E gates remain unchanged;
+success/failure diagnostics are retained independently of later job outcomes.
+Mac remains explicit manual opt-in. HOST orchestration, literal-shell and refusal
+controls confer no source/material/proof authority.
+
+The new command needs fresh clean-head literal execution and independent source
+and actual receipt reviews before publication; the old 847 proof epoch is not
+relabeled. Required native Linux GitHub CI and human integration review remain
+open. The separate Field-equality constructor-condition refusal remains a future
+semantic gap; no broader condition language or framework is introduced here.
