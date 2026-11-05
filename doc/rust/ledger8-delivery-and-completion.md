@@ -26,6 +26,15 @@ Independent source/receipt review finds no actionable defect. Earlier compiler18
 and constructor epochs stay separate; this closes a local application baseline
 obligation and leaves full profile/CI/Linux/distribution/integration open.
 
+The [ordinary runtime archive handoff](plans/profile192-runtime-archives.md)
+now passes locally at clean signed `21d4f9e9a`: exact two-crate rehearsal/repeat,
+six complete raw archive-only SDK consumers, six native plus two safety methods,
+nine intended compile refusals and all 19 focused controls. Independent source
+and actual receipt reviews accept the bounded result after five recorder fixes;
+all failed/withheld predecessors stay retained. This is current ordinary archive
+consumption, not functional registry support, new proofs, wallet/network
+acceptance, release or full CI/Linux/canonical integration.
+
 The statement-action follow-up is verified merged as PR #696 at signed canonical
 `f0e4ba788`, with the same complete tree as reviewed `9667072e7` and actual CI
 checkout `b7c15323b`. All eleven checks, actual Claude review and retained runtime

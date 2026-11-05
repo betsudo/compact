@@ -1,6 +1,6 @@
 # Compiler192 runtime archive consumer handoff
 
-Status: local bounded qualification in progress. Parent `0b1050a4d` preserves
+Status: reviewed bounded local qualification passes at `21d4f9e9a`. Parent `0b1050a4d` preserves
 the accepted current-package source-SDK/Passport/DID baseline; historical archive
 acceptance and accepted semantic capabilities are not reopened.
 
@@ -88,3 +88,60 @@ generation/build commands. A regression mutates the manifest during tool
 selection and requires a failed receipt that preserves the original hash.
 The successful `37f1eb079` runtime remains retained with qualification withheld;
 its package/consumer results are not relabelled as the corrected source.
+
+## Reviewed local result — 2026-11-05
+
+Clean signed `21d4f9e9a03c9a290869780b1b846edc570b1d1a` passes all seven outer
+qualification phases on Darwin arm64 / Rust 1.99.0. Nineteen focused methods
+(nine archive, four safety and six package controls) pass. The build-disabled
+original-recipe recorder resolves the same compiler192 package `pwb8lhc5ni8r9x2f9mnkbjpx9sh44bi7`,
+executable SHA256 `e23cccf270c86f0af8840eabb6adacee3d71f42de3f9a70c539c2aacac7d2f54`.
+This is an existing package realization, not another compiler build.
+
+The unchanged original package rehearsal and exact repeat pass. Both archives
+bind clean source `21d4f9e9a` and its tree: macros 18,755 bytes / 15 members;
+runtime 884,380 bytes / 523 members. Every non-Cargo-generated member matches
+source (12 macro and 520 runtime files), including the original manifest via
+`Cargo.toml.orig`. Normalized Cargo manifests, generated locks and VCS metadata
+are separate; VCS metadata names the actual execution commit. No prior archive
+is overwritten or relabelled.
+
+The full ordinary archive gate passes 22 outer commands and six safety commands.
+Six complete raw generated crates use exact version-only dependencies, no
+bundled runtime, and one shared registry-resolved runtime/macros pair from the
+archive vendor directory. Six original native methods and two safety runtime
+methods pass. Nine intended E0308/E0599/E0382/E0423 refusals retain their actual
+consumer source and diagnostics. All original archive-install/graph checks,
+negative maps and six-method generated test source remain unchanged.
+
+Thirteen external control/audit rows cover the actual graph positive, four graph
+corruptions, a copied bit-flipped archive rejected before generation/build, and
+seven exact original diagnostic checks. Raw SDKs, vendor/consumer files,
+negative sources, four safety fixture originals, Cargo metadata, locks and all
+command streams remain retained. Parent and independent receipt audits rehash
+29,116 recorded artifacts, 18 declared inputs and the streams without mismatch.
+Selected input checks do not establish continuous or exhaustive consumed-source
+attestation, external callback security or a hostile-host guarantee.
+
+Fresh independent source review and separate actual receipt review report no
+actionable P1/P2 or unsupported success claim. Both use authorized Codex CLI
+fallback after retained genuine Claude quota; neither is a build/test/proof
+rerun. Source review resolves all five recorded P2 findings. Earlier runtime
+v1/v3 results remain withheld for new retention-mode acceptance; the v2 outer
+log collision failed before children. Failed comparison harness assumptions and
+malformed metadata serialization are preserved separately from the successful
+final comparison; neither was a compiler/archive-content failure.
+
+Evidence includes `qualification-v4.json`, `runtime-release-v4.json`,
+`existing-recipe-v4/receipt.json`, `archive-consumer-v4/receipt.json`,
+`archive-source-comparison-v4.json`, `adversarial-controls-v4.json`,
+`parent-audit-v4.json`, `source-review-v3.json`, `receipt-review-v1.json` and
+`bounded-closeout-v4.json` under the local evidence root above.
+
+This closes the selected current ordinary archive baseline obligation. Proofs
+and ledger application are N/A for this `--skip-zk` consumer. Functional registry
+mode, public registry publication, a fully vendored release, current wallet
+handoff/network acceptance, complete CI/Linux/profile freeze and canonical
+integration remain open. The broader Rust AST goal stays incomplete; Forge
+remains deferred. Documentation successors keep the literal `21d4f9e9a` archive
+and execution identities.

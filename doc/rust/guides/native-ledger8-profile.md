@@ -70,6 +70,7 @@ completion percentage. Compiling a whole contract does not prove every export.
 | [Compiler192 DID selected lifecycle](../plans/profile192-application-reconciliation.md), `214acb658`; preceding compiler183 `4e49b59e5` / `51616d5ce` stay literal | Intact two-file source, complete IR and twelve Programs; twelve live DID TS rows plus auxiliary crypto; seven Rust methods, eight success routes and forty error routes, late-witness/checkpoint/metering and typed controls | Timestamp witnesses 200 and 0 of the same `deactivate` export: separate fresh k11/1,804-row proof runs and independently proved funded DEFAULT-strict transactions; constructor and all-export proofs unclaimed |
 | [Products below Vector components](../plans/vector-component-products.md), `5ef204e8e`; later documentation-only successors retain their own bridges | 24 complete generated SDKs, 35 sampled cases and typed/static/ingress/ordering controls | Three selected complete sources have fresh proofs and separate funded strict applications; 21 required exports remain unproved, including 18 over-limit models |
 | [Constructor Vector operands](../plans/constructor-vector-operands.md), compiler192 producer `f09900533`, proof qualifier `a8133996b` | Thirteen complete SDKs, 22 TS cases, typed/static/ingress/identity/order controls and 15 selected constructor-derived success cases; all 39 models retained | Fifteen fresh later-entrypoint proofs and separately proved funded DEFAULT-strict applications/replay; not constructor cryptography or total-cost acceptance |
+| [Compiler192 ordinary runtime archives](../plans/profile192-runtime-archives.md), `21d4f9e9a`, same `pwb` compiler package | Two-crate rehearsal/exact repeat; six complete raw registry-mode SDKs with one archive-vendored runtime/macros pair, six native and two safety methods, nine intended compile refusals; 19 focused methods and retained source/tool/graph/output controls | Proof/application N/A for this ordinary `--skip-zk` consumer; no functional registry mode, public registry or fully vendored release claim |
 
 The preceding [DID package-specific check](../plans/current-supported-profile-handoff.md#actual-final-package-local-result)
 at `51616d5ce` rebuilds and records the exact README-bound compiler package,
@@ -150,6 +151,11 @@ the complete configured workflows, including:
 5. Runtime package rehearsal, archive consumers, wallet handoff, normal E2E,
    version/header checks and retained artifacts. Success of a small proof cohort
    does not substitute for these integration obligations.
+
+The ordinary package/archive stage now has reviewed local evidence at
+`21d4f9e9a`, with full retained outputs and its own clean archive VCS identity.
+That result does not establish the current wallet handoff, renew hosted
+package/archive checks or replace the complete required integration gate.
 
 See `.github/workflows/build-compiler.yml`, `rust-backend-checks.yml`,
 `compiler-producer.yml` and `tools/compact-rust-backend/check_native_ci.sh` for the
