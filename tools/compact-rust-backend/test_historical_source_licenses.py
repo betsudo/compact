@@ -31,7 +31,11 @@ class HistoricalSourceLicenseTests(unittest.TestCase):
         self.source = self.root / 'source.compact'
         self.raw = self.root / 'source.compact.raw'
         self.old = b'export circuit value(): Boolean { return true; }\n'
-        self.current = self.old + b'// retained license notice\n'
+        rows = json.loads((owner.ROOT / owner.MANIFEST).read_text())
+        name = next(iter(rows))
+        actual_raw = (owner.ROOT / (name + '.raw')).read_bytes()
+        notice = (owner.ROOT / name).read_bytes()[len(actual_raw):]
+        self.current = self.old + notice
         self.raw.write_bytes(self.old)
         self.source.write_bytes(self.current)
         self.sha = hashlib.sha256(self.old).hexdigest()
@@ -79,3 +83,23 @@ class HistoricalSourceLicenseTests(unittest.TestCase):
         self.source.write_bytes(self.old)
         with self.assertRaisesRegex(ValueError, 'identities differ'):
             owner.verify_source(self.source, self.sha, root=self.root)
+
+    def test_changed_body_and_repinned_current_manifest_still_refuse(self):
+        changed = self.current.replace(b'return true', b'return false')
+        self.source.write_bytes(changed)
+        self.repin_current(changed)
+        with self.assertRaisesRegex(ValueError, 'identities differ'):
+            owner.verify_source(self.source, self.sha, root=self.root)
+
+    def test_changed_notice_and_repinned_current_manifest_still_refuse(self):
+        changed = self.current + b'// another comment\n'
+        self.source.write_bytes(changed)
+        self.repin_current(changed)
+        with self.assertRaisesRegex(ValueError, 'identities differ'):
+            owner.verify_source(self.source, self.sha, root=self.root)
+
+    def repin_current(self, changed):
+        manifest = self.root / owner.MANIFEST
+        rows = json.loads(manifest.read_text())
+        rows['source.compact']['current_sha256'] = hashlib.sha256(changed).hexdigest()
+        manifest.write_text(json.dumps(rows))

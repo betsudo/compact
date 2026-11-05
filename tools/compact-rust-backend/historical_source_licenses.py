@@ -20,6 +20,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = Path('tools/compact-rust-backend/tests/historical-source-licenses.json')
+# Exact existing full Apache2 notice, including its leading blank separator.
+LICENSE_SUFFIX_SHA256 = '4906602aadff587ad78e2d85a644cac1f3935978d0b694f29867ee2a5bb1ba01'
 
 
 def inputs(root=ROOT):
@@ -34,13 +36,18 @@ def verify_source(source, historical_sha256, *, root=ROOT):
     name = source.relative_to(root).as_posix()
     if source.is_symlink():
         raise ValueError('historical/current source symlink refused: ' + name)
-    current = hashlib.sha256(source.read_bytes()).hexdigest()
+    current_bytes = source.read_bytes()
+    current = hashlib.sha256(current_bytes).hexdigest()
     rows = json.loads((root / MANIFEST).read_text())
     row = rows.get(name)
     if row is None and current == historical_sha256:
         return
     raw = source.with_name(source.name + '.raw')
     if (row is None or row['historical_sha256'] != historical_sha256
-            or row['current_sha256'] != current or raw.is_symlink()
-            or hashlib.sha256(raw.read_bytes()).hexdigest() != historical_sha256):
+            or row['current_sha256'] != current or raw.is_symlink()):
+        raise ValueError('exact historical/current source identities differ: ' + name)
+    raw_bytes = raw.read_bytes()
+    if (hashlib.sha256(raw_bytes).hexdigest() != historical_sha256
+            or not current_bytes.startswith(raw_bytes)
+            or hashlib.sha256(current_bytes[len(raw_bytes):]).hexdigest() != LICENSE_SUFFIX_SHA256):
         raise ValueError('exact historical/current source identities differ: ' + name)
