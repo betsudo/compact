@@ -52,6 +52,8 @@ mod component_product_vector_widening;
 mod composite_zswap;
 mod constant_valued_vector_indices;
 mod constant_vector_projection;
+#[cfg(feature = "constructor-vector-models")]
+mod constructor_vector_models;
 #[cfg(feature = "outer-vector-product-models")]
 mod outer_vector_product_models;
 #[cfg(all(

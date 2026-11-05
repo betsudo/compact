@@ -297,3 +297,34 @@ changed bytes must fail against the retained digest. Current source review and
 a fresh clean-head original recipe plus full gate run remain required for this
 correction. Earlier results retain their source identities; proof, constructor
 cost and integration boundaries remain open.
+
+
+## Separate proof qualification producer and consumer
+
+The producer branch is frozen at `f09900533`: the original compiler, corrected
+122-command functional gate and independent source/receipt reviews pass within
+that bounded scope. A separate local `codex/rust-ast-constructor-vector-proofs`
+branch starts at that actual head. Compiler/SDK producer identity and subsequent
+proof-qualifier source identity stay distinct. No later code or platform run is
+inferred from the producer receipt; full combined integration remains open.
+
+Before generating keys, the opt-in proof-smoke feature
+`constructor-vector-models` and selector `--constructor-vector-inventory ROOT`
+load every intact emitted model with the existing `IrSource::load/model().k`
+owner. The observer requires all 13 source directories, exact export/model
+membership and matching proof-required capabilities, and reports all 39 `k`
+values. It opens no keys, generates no proof and makes no selection. A model's
+numeric `k <= 8` classification is not full proof eligibility. Do not replace
+this observation with metadata guesses, trim sources or raise the tiny cap.
+The forthcoming qualifying controller binds actual model bytes, producer receipt,
+observer source/binary and upstream/tool identities independently.
+
+The 15 positive constructor cases are candidate `advance` calls across 13
+complete sources. The next proof lane uses the existing isolated default-bundled
+SDK and source-testkit/ProofLab owner. Each SDK gets one physical runtime and a
+separate consumer; generated source and its manifest remain unedited. After
+pre-key IR/all-Program/source bindings and verified material admission, require
+fresh selected standalone proofs, immutable verification and separately proved
+funded DEFAULT-strict transactions with replay and relation/identity negatives.
+There is no constructor/deployment cryptographic or wallet-lifecycle claim.
+The observer and this proof preparation still require actual execution and review.
