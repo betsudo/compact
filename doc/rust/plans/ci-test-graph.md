@@ -24,8 +24,8 @@ of whole steps, not isolated key generation or CPU profiles.
 The compiler producer is **already** a reusable workflow with a same-run,
 SHA-bound Nix closure artifact. The consumer imports it in about one minute.
 The default `nix build` still realizes `compactc`, ZKIR2, ZKIR3 and the VS Code
-extension together. The compiler lane should instead request only the outputs
-it needs; editor and ZKIR3 validation keep separate owners.
+extension together. Each consumer should request only its demonstrated
+prerequisites; existing packaging checks retain an explicit owner.
 
 Two local spikes on this branch used the existing realized compiler
 `/nix/store/j6yi0krjr0vqhrbwn090mqik7k4cxwd1-compactc` (version 0.31.193):
@@ -49,18 +49,15 @@ flowchart LR
     S[Source checks: headers, metadata, manifest] --> G[Required result aggregator]
     C[Exact compiler producer, same-run artifact] --> F[Fixture freshness: all 284]
     C --> A[Compiler, src-maps and API tests]
-    C --> P1[Ledger8 proof shard: Counter and wallet]
-    C --> P2[Ledger8 proof shard: microDAO and Coracle]
-    C --> P3[Ledger8 proof shard: DID, Passport and vectors]
+    C --> P1[Proof shard A: measured case set]
+    C --> P2[Proof shard B: measured case set]
     C --> E[E2E and generated runtime consumers]
-    Z[Explicit ZKIR2 and runtime prerequisites] --> P1
+    Z[Verified proof tools and parameters] --> P1
     Z --> P2
-    Z --> P3
     F --> G
     A --> G
     P1 --> G
     P2 --> G
-    P3 --> G
     E --> G
 ```
 
@@ -70,20 +67,22 @@ get a `needs` edge. Use named jobs or small reusable workflows for owners;
 keep the final aggregator tiny and require each owner to report success. Use
 `fail-fast: false` for proof matrices so an unrelated shard still reports.
 
-## Test manifest and categories
+## Test inventory and scheduling
 
-Create a checked-in manifest with one row per suite or contract, containing
-stable ID, command, source/fixture paths, owner, prerequisite outputs, tags,
-expected duration, memory class and artifact policy. Reject duplicate IDs,
-unknown tags, unowned tests and coverage drift in a fast manifest check.
-Tags are orthogonal, not a single mutually exclusive bucket:
+First inventory the commands and cases that actually run. Create a checked-in
+manifest only where it improves selection and parity checking. Each entry needs
+a stable ID, exact command/selector, source and fixture paths, owning lane,
+actual prerequisite artifacts, mutable outputs, and measured P90 duration and
+peak memory. Reject duplicate IDs, unowned cases and coverage drift. Record
+tool versions and ledger protocol as exact environment requirements where they
+matter, without making speculative version tags part of the scheduler.
 
-| Axis | Initial values | Rule |
-| --- | --- | --- |
-| Ledger | `ledger8`, `ledger9` | Current proof work is `ledger8`; add `ledger9` only with an actual fixture/toolchain. |
-| ZKIR | `zkir2`, `zkir3` | Current proof lane uses actual `zkir`; distinguish the selected version explicitly. ZKIR3 gets its own qualification lane. |
-| Surface | `compiler`, `api`, `source-map`, `fixture`, `proof`, `runtime`, `e2e`, `editor` | A contract may have API, freshness and proof rows with distinct commands. |
-| Duration | `quick`, `long` | Set by measured P90, e.g. quick under 2 min, then rebalance from timings. |
+Choose job boundaries by shared setup, artifact handoff and failure domain:
+source consistency, compiler/Scheme, generated API and fixture freshness,
+proof/application, and runtime/E2E. A contract can have several distinct
+checks. Balance proof shards using measured duration and memory within their
+real dependencies. Numeric durations are more useful than `quick`/`long` tags;
+no `ledger8`/`ledger9` or `zkir2`/`zkir3` taxonomy is adopted by this plan.
 
 Start with the existing `--only` fixture selector and the existing
 `check_compactc_target.py` contract selectors. Keep one full inventory lane to
@@ -92,7 +91,8 @@ exact command list into owned phases, with explicit wallet handoff artifacts
 and private output directories. Do not split the script by invoking it in
 several jobs unchanged: it would repeat the entire gate and share mutable
 targets. Proof shards need isolated `CARGO_TARGET_DIR`, output roots and
-parameters, or one prebuilt proof-runner artifact with verified identity.
+parameters, or one prebuilt proof-runner artifact with verified identity. The
+illustrated shard count is a candidate to test, not a fixed contract grouping.
 
 ## Cache and artifact policy
 
@@ -105,8 +105,7 @@ lockfile and profile/features as applicable. Cache compiled Cargo outputs only
 after comparing restore/upload time and size against rebuilding. Never cache
 test verdicts, generated mutable fixtures, secrets or proof success. Every
 restored binary or parameter used for proof qualification must retain its
-current hash/provenance check. Keep the uncached key-generation qualification
-while measuring Forge or other key reuse separately.
+current hash/provenance check. Preserve the existing uncached qualification.
 
 ## Delivery and acceptance
 
@@ -117,8 +116,8 @@ while measuring Forge or other key reuse separately.
    Add a changed-source `--only` preflight for faster diagnosis, but keep the
    full scan. Separate the broad Nix output realization from compiler tests.
 3. Extract a native API/fixtures/proof split and prove command/case parity
-   against the current script. Start with 2–3 proof shards; rebalance by P90
-   wall time and memory, not source count. Keep Ledger8 proof/strict application
+   against the current script. Trial 2–3 proof shards only after measuring
+   shared setup, P90 wall time and memory. Keep current proof/strict application
    and negative controls intact.
 4. Run the owner jobs in parallel, preserve named required checks and a strict
    aggregator. Compare at least three warm and one cold hosted runs at the
