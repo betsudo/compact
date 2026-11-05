@@ -20,7 +20,7 @@ constructor(input: Vector<2, Field>) {
   const items = input;
   for (const item of items) {
     stored = disclose(item);
-    if (item == 2) {
+    if (disclose(item == 2)) {
       for (const inner of items) { stored = disclose(inner); }
     } else {
       for (const inner of items) { stored = disclose(inner); }

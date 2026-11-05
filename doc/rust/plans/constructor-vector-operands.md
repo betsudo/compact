@@ -510,3 +510,13 @@ match; no source repair, deletion or exclusion is authorized by that observation
 Preserve the global cache and failed receipt. Use an isolated Cargo home populated
 by Cargo from the original locked archives before full dependency authentication;
 retain the same source/checksum identities and exact source-inventory guards.
+
+
+The first expanded conditional regression candidate correctly triggered privacy
+refusals because its branch condition lacked explicit disclosure. Preserve that
+failed candidate and diagnostic. The corrected new fixture explicitly uses
+`disclose(item == 2)`; the original194 compiler accepts its full TS source and
+then refuses independent Rust IR at the nested captured Vector. No privacy check
+is weakened. Original thirteen source hashes and twenty-two case records remain
+unchanged. The unreleased194 source-repair commits retain separate exact recipes;
+matching version strings do not renew the first194 package or its receipts.
