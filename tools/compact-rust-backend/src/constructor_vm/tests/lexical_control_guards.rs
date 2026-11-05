@@ -243,6 +243,12 @@ fn vector_source_shape_lookup_and_type_keep_actual_source_without_new_fold() {
             RenderError::InvalidConstructorInitializer("item".into()),
         ),
         (
+            Expr::Default {
+                ty: Type::Unsigned { max: "bad".into() },
+            },
+            RenderError::InvalidConstructorInitializer("item".into()),
+        ),
+        (
             parameter("absent"),
             RenderError::UnknownParameter("absent".into()),
         ),

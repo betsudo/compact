@@ -707,3 +707,42 @@ fn empty_constructor_vector_checks_its_source_then_static_body() {
         Err(RenderError::UnknownParameter("source_first".into()))
     );
 }
+
+#[test]
+fn constructor_vector_default_is_checked_as_a_vector_operand() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Default {
+                ty: Type::Vector {
+                    element: Box::new(Type::Boolean),
+                    length: 2,
+                },
+            },
+            length: 2,
+            steps: vec![],
+        }],
+    });
+    render(&contract).expect("Vector defaults retain the checked operand path");
+    let ConstructorStep::ForEachVector { length, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 3;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+}

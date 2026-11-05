@@ -67,7 +67,8 @@ pub(crate) fn vector_source<'a>(
                 | Expr::EnumVariant { .. }
                 | Expr::Tuple { .. }
                 | Expr::StructLiteral { .. }
-        ) {
+        ) || matches!(source, Expr::Default { ty } if !matches!(ty, Type::Vector { .. }))
+        {
             super::refused(RefusalSite::node(Owner::Expr(source)), environment.observer);
             return Err(RenderError::InvalidConstructorInitializer(
                 binding.name.clone(),

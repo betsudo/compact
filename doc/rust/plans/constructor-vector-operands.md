@@ -178,3 +178,26 @@ hashes/three-export membership are explicit; the original one-export sources and
 failed receipts remain untouched. Source admission, generated runtime behavior,
 compile-fail/refusal controls, model inventory, fresh selected proof/application
 and independent review remain open. All new work stays local.
+
+
+## Clean-source admission and first independent review
+
+At candidate `d3e91d0e7`, the clean original recipe realizes compiler192 package
+`55gcpn0wdrvnsy2rsmx3q24mip2mw64f` and the maintained recorder accepts it.
+The 8.76-second realization reuses the package built during the preceding
+compiler-devShell setup; it is not another compiler rebuild. All 27 source
+commands pass for the nine complete three-export fixtures. All nine Rust IR
+and raw-origin outputs equal the independent Scheme outputs. The parameter
+constructor function remains byte-identical to the original191 control.
+This establishes admission, not generated consumer compilation or runtime/proof
+acceptance.
+
+Independent source review found one P2: a known non-Vector `Default` could parse
+an invalid Uint maximum before the preserved constructor-kind refusal. A new
+independent guard case reproduces it. The correction rejects non-Vector defaults
+before lowering and retains the valid Vector-default path, with a separate
+positive/shape control. Focused constructor checks now pass 60 unit and twelve
+render methods; old controls remain present. Fresh corrected-head recipe,
+source admission and review are required; `d3e91d0e7` is not silently relabelled.
+Generated API behavior/compile-fail, owned and fallible operand ordering, broader
+ingress controls and fresh proof/application acceptance remain open.
