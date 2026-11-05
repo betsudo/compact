@@ -211,7 +211,10 @@ class WorkflowOwnershipTests(unittest.TestCase):
             section = workflow.split('  '+job+':\n', 1)[1]
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
-            self.assertIn('if: ${{ !cancelled() }}', section)
+            if job == 'build':
+                self.assertIn('if: ${{ !cancelled() }}', section)
+            else:
+                self.assertIn("if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}", section)
             first_step = section.split('    steps:\n', 1)[1].split('      - name: Checkout', 1)[0]
             self.assertIn('needs.'+producer+'.result', first_step)
             self.assertIn('test "$PRODUCER_RESULT" = success', first_step)
@@ -234,6 +237,52 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)
         self.assertIn('id: runtime-packages', linux)
         self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", linux)
+
+    def test_macos_is_manual_opt_in_without_weakening_linux(self):
+        from types import SimpleNamespace
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        dispatch = workflow.split('  workflow_dispatch:\n', 1)[1].split('  pull_request:', 1)[0]
+        for setting in ('run_macos:', 'type: boolean', 'required: false', 'default: false'):
+            self.assertIn(setting, dispatch)
+        producer = workflow.split('  compiler-darwin:\n', 1)[1].split('  build-macos:', 1)[0]
+        consumer = workflow.split('  build-macos:\n', 1)[1].split('  license-check:', 1)[0]
+        conditions = [section.split('    if: ${{ ', 1)[1].split(' }}', 1)[0]
+                      for section in (producer, consumer)]
+        # Evaluate the literal configured job conditions over event/input/status
+        # combinations. Explicit !cancelled() keeps an opted-in failed producer
+        # from silently skipping its consumer's material-admission guard.
+        for event in ('pull_request', 'schedule', 'workflow_dispatch'):
+            for selected in (False, True):
+                for cancelled in (False, True):
+                    context = dict(github=SimpleNamespace(event_name=event),
+                                   inputs=SimpleNamespace(run_macos=selected),
+                                   cancelled=lambda: cancelled)
+                    actual = [eval(condition.replace('&&', ' and ').replace('!', 'not '),
+                                   {'__builtins__': {}}, context) for condition in conditions]
+                    requested = event == 'workflow_dispatch' and selected
+                    self.assertEqual(actual, [requested, requested and not cancelled])
+        linux_producer = workflow.split('  compiler-linux:\n', 1)[1].split('  compiler-darwin:', 1)[0]
+        linux = workflow.split('  build:\n', 1)[1]
+        self.assertNotIn('if:', linux_producer)
+        self.assertIn('needs: [license-check, compiler-linux]', linux)
+        self.assertNotIn('run_macos', linux)
+        self.assertNotIn('compiler-darwin', linux)
+        self.assertNotIn('continue-on-error', workflow)
+
+    def test_opted_in_macos_refuses_missing_or_failed_material(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        consumer = workflow.split('  build-macos:\n', 1)[1].split('  license-check:', 1)[0]
+        step = consumer.split('      - name: Require successful compiler producer\n', 1)[1].split('      - name:', 1)[0]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        for result, artifact, attempt, success in (
+                ('success', '42', '1', True), ('failure', '42', '1', False),
+                ('abandoned', '', '', False), ('skipped', '', '', False),
+                ('success', '', '1', False), ('success', '42', '', False)):
+            env = dict(os.environ, PRODUCER_RESULT=result, PRODUCER_ARTIFACT=artifact,
+                       PRODUCER_ATTEMPT=attempt)
+            run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                       env=env, capture_output=True, timeout=10)
+            self.assertEqual(run.returncode == 0, success, (result, artifact, attempt))
 
     def test_reusable_output_is_upload_service_id_not_a_manifest_claim(self):
         producer = (owner.ROOT/'.github/workflows/compiler-producer.yml').read_text()

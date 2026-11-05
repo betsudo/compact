@@ -144,3 +144,24 @@ The fresh PR #703 local qualification at `cb39def70` separately passes the same
 maintained outer-Vector gate, including all 15 eligible exports. Neither that
 receipt nor the older literal-shell execution is relabeled as a new execution
 of this publication candidate. The intact over-cap export remains unproved.
+
+
+## Optional hosted macOS qualification — 2026-11-05
+
+The owner explicitly makes hosted macOS arm64 qualification opt-in because runner
+allocation can block PRs before any source executes. Pull requests and scheduled
+runs retain the complete required Linux x86_64 compiler, proof/application and
+E2E gates. They do not schedule the Darwin producer or Apple Silicon consumer.
+Use **Actions → Compiler Build → Run workflow → run_macos = true** for explicit
+macOS qualification on a branch containing this policy. The boolean defaults to
+false; a manual run without opting in also runs only the required Linux path.
+
+An opted-in macOS run still requires its authenticated same-run Darwin compiler
+artifact and original Rust consumers. Producer failure or absent material fails
+the consumer; no continue-on-error or fallback artifact is introduced. Skipped
+macOS jobs establish no platform qualification. Previously retained local arm64
+receipts and historical hosted runs retain their exact source identities.
+Linux producer, consumer, proof steps, diagnostics and E2E dependencies are
+unchanged. This is a scheduling decision, not evidence of a macOS source fix or
+whole-goal completion. Focused controls cover event/input/cancellation conditions
+and actual material-guard success/failure behavior.

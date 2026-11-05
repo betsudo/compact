@@ -11,6 +11,9 @@ Unreleased reconciliation checkpoint; no release or completed qualification is i
 
 ### Fixed
 
+- Make hosted macOS arm64 compiler qualification an explicit manual opt-in;
+  preserve complete required Linux gates and fail closed on requested Mac runs.
+
 - Run the complete outer-Vector API and fifteen-proof qualification in the
   required Linux consumer, retaining native checks and failure diagnostics.
 - Reconcile the preserved outer-Vector product stack with the canonical wide-Uint

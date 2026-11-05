@@ -3,6 +3,12 @@ name: Compiler Build
 
 on:
   workflow_dispatch:
+    inputs:
+      run_macos:
+        description: 'Also qualify macOS arm64 (requires hosted runner capacity)'
+        type: boolean
+        required: false
+        default: false
   pull_request:
   schedule:
     - cron: '0 1 * * *'
@@ -27,6 +33,7 @@ jobs:
       system: x86_64-linux
 
   compiler-darwin:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_macos }}
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
       contents: read
@@ -35,7 +42,7 @@ jobs:
 
   build-macos:
     needs: compiler-darwin
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}
     name: Build Rust target on Apple Silicon
     runs-on: macos-latest
     permissions:
