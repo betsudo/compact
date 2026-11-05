@@ -1,0 +1,31 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export ledger stored: Field;
+pure circuit checked(input: Vector<2, Field>, ok: Boolean): Vector<2, Field> {
+ assert(ok, "iterable-helper-denied");
+ return input;
+}
+witness after(): Field;
+constructor(input: Vector<2, Field>, ok: Boolean) {
+ stored = 99;
+ for (const item of checked(input, ok)) { stored = disclose(item); }
+ stored = disclose(after());
+}
+
+export circuit read(): Field { return stored.read(); }
+export circuit advance(delta: Field): Field { stored = disclose(stored.read() + delta); return stored.read(); }
+export circuit advance_other(delta: Field): Field { stored = disclose(stored.read() + delta + 1); return stored.read(); }

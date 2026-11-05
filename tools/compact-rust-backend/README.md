@@ -38,6 +38,26 @@ refusal. Neither metadata nor this one selected proof proves all twelve exports.
 See the [bounded plan](../../doc/rust/plans/did-functional-lifecycle-current-profile.md)
 for the development versus integration acceptance boundary.
 
+## Constructor Vector operand qualification
+
+The unreleased 0.31.192 source candidate admits one fixed-Vector constructor
+iterable from parameters, lexical bindings, helpers, witnesses and conditionals.
+The private checked operand owner prepares expressions once, including empty
+iterables. Borrowed iteration binds typed per-element values without cloning or
+moving the whole input Vector. This is not a new constructor Program or runtime
+ABI. See the [bounded plan](../../doc/rust/plans/constructor-vector-operands.md).
+
+`check_constructor_vector_operands.py --compiler-receipt RECEIPT --ts-runtime
+RUNTIME --output NEW_DIRECTORY` requires an original current clean-head compiler
+receipt. Its complete 13-source/22-case fixture checks unedited bundled SDKs,
+independent IR/origins, live TS, constructor state/owned reuse/witness and error
+order, four later Rust routes, complete replay state, typed misuse, malformed IR
+and same-type source mutations. The maintained gate is a qualification candidate
+until its actual receipt passes; earlier external evidence keeps its own source
+identity. It generates no keys or proofs. Constructor total-cost observability,
+fresh selected entrypoint proofs, strict application and full integration remain
+separate open acceptance boundaries.
+
 ## Historical Effectful return checkpoint
 
 `StateReturn::Effectful` roots now lower directly through the checked recording

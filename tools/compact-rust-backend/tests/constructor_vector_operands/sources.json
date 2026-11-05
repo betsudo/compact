@@ -9,7 +9,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "f67e83cfb1c4ce3c548ada76055d8eaf201ad79b5747fdfb1ee575df682d0be5",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "conditional"
   },
   {
     "role": "direct_helper",
@@ -21,7 +22,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "f8fdd7da72d5e2a3cfd29de1a6af95cae66604cc90c7c680f67f763ba2f19161",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "parameter"
   },
   {
     "role": "direct_witness",
@@ -33,7 +35,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "783891d62811227e11a4cdbe79b4f03fbcee8547a7d39b69cb2d40f54f606a44",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "witness"
   },
   {
     "role": "empty_local",
@@ -45,7 +48,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "1e19ca7c92569f62fc32e253f18e16df9ffbdc77b07264ace53cc3d4d59c9040",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "empty"
   },
   {
     "role": "local_alias",
@@ -57,7 +61,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "34849ad44c99bd1d4f626ec417b1bfddc06fb77a9a595c47f1d3f51d4057a6de",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "parameter"
   },
   {
     "role": "local_helper",
@@ -69,7 +74,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "1310f9ff13b46478176b98e4ea8bc1c9ac2d768954b583180dfbffe259e9ab8e",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "parameter"
   },
   {
     "role": "local_literal",
@@ -81,7 +87,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "f4a49afb8c7698223f33b4957fba329428c6d0275feec9ce3cc7c7797f719898",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "literal"
   },
   {
     "role": "local_witness",
@@ -93,7 +100,8 @@
       "advance_other"
     ],
     "characterized_original_sha256": "028f90a144b3bb16fd301fc3738d6787474a9a5f8a4dee130f6f157c04331986",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "witness"
   },
   {
     "role": "parameter",
@@ -105,6 +113,55 @@
       "advance_other"
     ],
     "characterized_original_sha256": "9003f3d02afce58cccc1a077533489bf203abed1190235923545e99f6d939611",
-    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization",
+    "constructor_consumer": "parameter"
+  },
+  {
+    "role": "owned_reuse",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/owned_reuse.compact",
+    "sha256": "62d5d564758b3238209eb6806fb97acc49f76c6c86c570b7f2d7548412bd7601",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "source_epoch": "Additional whole source admitted/strict SDK compiled at1320b9855; no runtime or proof acceptance from admission.",
+    "constructor_consumer": "owned_reuse"
+  },
+  {
+    "role": "conditional_witness",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/conditional_witness.compact",
+    "sha256": "1b3bd315c3631e19707119637fe1c6a58771ed717027ddc99a8a43879a9a26bf",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "source_epoch": "Additional whole source admitted/strict SDK compiled at1320b9855; no runtime or proof acceptance from admission.",
+    "constructor_consumer": "conditional_witness"
+  },
+  {
+    "role": "empty_witness",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/empty_witness.compact",
+    "sha256": "5d01b658b8f2065621c88cca7daa5c5dc6619c6cd6234a4599b9bfcc060bced0",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "source_epoch": "Additional whole source admitted/strict SDK compiled at1320b9855; no runtime or proof acceptance from admission.",
+    "constructor_consumer": "empty_witness"
+  },
+  {
+    "role": "checked_helper",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/checked_helper.compact",
+    "sha256": "e729a32fbaf33cea48cc712fab7fb6dc4950953e79fe39ab75d6719441927dbb",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "source_epoch": "Additional whole source admitted/strict SDK compiled at1320b9855; no runtime or proof acceptance from admission.",
+    "constructor_consumer": "checked_helper"
   }
 ]

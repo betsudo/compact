@@ -222,3 +222,49 @@ The caller can reuse it; owned element support gains no Copy requirement.
 A focused AST regression covers Copy and owned bindings, while complete untouched
 SDK compilation remains the controlling compiler check. SDK runtime, misuse,
 model and genuine proof/application qualification remain open.
+
+
+## Maintained whole-source gate candidate
+
+At clean `1320b9855`, the original compiler, 27 complete-source admissions,
+nine unedited SDK strict Clippy checks, external Rust and TS behavior, typed
+misuse and independent source/receipt reviews pass within their stated scopes.
+Receipt review found that early replay consumers compared effects only. The
+corrected consumers compare full replayed state and independently expected typed
+Cell values; a genuine changed-expectation assertion fails. All old failures and
+reviews remain retained. None of these external checks is relabelled as a
+maintained source gate or a proof of constructor initialization.
+
+Four additional complete sources admit and compile as untouched SDKs at that
+same compiler epoch: a non-Copy String Vector temporary with later input reuse,
+a conditional witness iterable, a zero-length witness iterable and a fallible
+helper followed by a witness. They retain all three post-initialization exports.
+The maintained fixture now has 13 complete sources and 22 cases (15 successful
+constructors and seven ordered errors). These are new source identities; the
+original nine files and original one-export counterexamples remain intact.
+
+The new `check_constructor_vector_operands.py` candidate checks current original
+recipe and compiler identity, full manifests, all three models/Programs per
+source, independent IR and raw origins, unchanged bundled runtime sources and
+SDK Clippy, actual TS and four later Rust APIs. It compares complete replay state,
+effects, typed results, private state and constructor witness prefixes; it also
+compares native later-call gas across the four Rust routes. Five ordinary misuse
+controls require executing correct twins and exact marked primary diagnostics.
+Eight independent IR mutations retain scope/type/static branch/body and resource
+refusals. Three complete source mutations change owned projection, helper failure
+and conditional witness selection without editing generated Rust. A separate
+wrong replay expectation must fail the actual consumer assertion.
+
+A first resource probe used Vector length 131073 and was admitted: native borrowed
+iteration does not statically unroll the loop. This is not a resource defect and
+no new length restriction is introduced. The maintained control instead tests
+actual nested source depth against the unchanged syntax-depth limit of 48.
+
+The gate candidate has not yet executed from its own clean source epoch. Its
+current source and receipt review, original compiler recording and complete gate
+run are required next. It creates no keys/proofs and makes no Linux or integration
+claim. `ConstructorResult` exposes state/private/Zswap results without cumulative
+constructor gas. Constructor total-cost acceptance therefore remains open; later
+Rust route-cost equality cannot substitute for it. Fresh applicable entrypoint
+proofs, independent verification, separate funded strict applications, immutable
+identity negatives and full integration remain required. Forge stays deferred.
