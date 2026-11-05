@@ -25,6 +25,7 @@ constructor(flag: Boolean, input: Vector<2, Field>) {
     } else {
       for (const inner of items) { stored = disclose(inner); }
       stored = disclose(item);
+      stored = 7;
     }
   }
 }

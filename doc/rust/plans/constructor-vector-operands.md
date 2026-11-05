@@ -536,3 +536,14 @@ The current intended cohort is fourteen complete sources, twenty-four cases,
 seventeen successes/seven errors, forty-two intact models and seventeen selected
 later-entrypoint proof/application cases. All original thirteen source records
 and twenty-two cases remain unchanged. Full current qualification remains open.
+
+
+Before proof qualification, strengthen the new Boolean regression so branch
+selection is observable: the true case retains stored3 and the false case stores7,
+while retaining its enclosing-item use after the inner loop. Keep c0 raw pre-edit
+inputs and its 129-command/42-model stage literal. Add a full-source false-branch
+7-to-8 mutation that must compile with its own intact manifest and then fail the
+independent native state assertions against the original TS oracle. Neither case
+is satisfied by always choosing one branch. Counts remain14/24/17/7/42; original
+thirteen sources and twenty-two cases stay exact. This is fixture coverage within
+the same lexical repair, not new conditional support or old-proof relabeling.

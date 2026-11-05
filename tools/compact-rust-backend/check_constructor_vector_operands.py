@@ -368,7 +368,8 @@ def main():
         for role, old, new in [
                 ("owned_reuse", "return input;", "return [input[1], input[0]];"),
                 ("checked_helper", 'assert(ok, "iterable-helper-denied");', ""),
-                ("conditional_witness", "flag ? first() : second()", "flag ? second() : first()")]:
+                ("conditional_witness", "flag ? first() : second()", "flag ? second() : first()"),
+                ("nested_capture", "stored = 7;", "stored = 8;")]:
             # Regenerate complete source mutations. Never edit generated Rust,
             # trim exports, or substitute native failures for TS observations.
             spec = next(row for row in definitions if row["role"] == role)

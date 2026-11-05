@@ -329,7 +329,7 @@
     "role": "nested_capture",
     "flag": false,
     "helperOk": true,
-    "expected": 3,
+    "expected": 7,
     "privateState": 5,
     "trace": [],
     "error": null,
