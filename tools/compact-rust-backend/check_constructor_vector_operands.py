@@ -220,7 +220,7 @@ def main():
         cases = json.loads((FIXTURES / "cases.json").read_text())
         require(len(definitions) == 14 and len({s["role"] for s in definitions}) == 14, "complete source roster differs")
         require({s["role"] for s in definitions} == {p.stem for p in (FIXTURES / "sources").glob("*.compact")} == {c["role"] for c in cases}, "uncovered or missing source")
-        require(len(cases) == len({c["id"] for c in cases}) == 23, "case roster differs")
+        require(len(cases) == len({c["id"] for c in cases}) == 24, "case roster differs")
         root_lock = (ROOT / "Cargo.lock").read_bytes()
         root = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads(root_lock.decode())["package"]}
         generated, irs, snapshots, consumers = output / "generated", {}, {}, {}
@@ -403,7 +403,7 @@ def main():
         admit_oracle(ts, generated, runtime, definitions)
         require({p: digest(ROOT / p) for p in pins} == pins and all(digest(p) == sha for p, sha in tools.items()), "source/tool bytes changed")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
-        report.update(status="passed", complete_sources=14, cases=23, successful_constructor_cases=16, constructor_error_cases=7, post_initialization_routes=64, public_replays=32, fresh_proofs=0)
+        report.update(status="passed", complete_sources=14, cases=24, successful_constructor_cases=17, constructor_error_cases=7, post_initialization_routes=68, public_replays=34, fresh_proofs=0)
     except Exception as e:
         report.update(status="failed", error=str(e))
         raise

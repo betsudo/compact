@@ -167,14 +167,14 @@
   {
     "role": "nested_capture",
     "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/nested_capture.compact",
-    "sha256": "19ecf7b383f825e14fbac521a31d9c24ab9039075acc33cfb1106a150758e887",
+    "sha256": "90d14eb9dd5b983ead14b5ce301bc6adc4af7a09da3f4df9e17172313a0f6222",
     "entries": [
       "read",
       "advance",
       "advance_other"
     ],
-    "characterized_original_sha256": "19ecf7b383f825e14fbac521a31d9c24ab9039075acc33cfb1106a150758e887",
-    "source_epoch": "new complete nested lexical-capture regression; original thirteen sources and their identities retained",
-    "constructor_consumer": "parameter"
+    "characterized_original_sha256": "90d14eb9dd5b983ead14b5ce301bc6adc4af7a09da3f4df9e17172313a0f6222",
+    "source_epoch": "new complete nested lexical-capture regression with supported Boolean condition and two branch cases; original thirteen source identities retained",
+    "constructor_consumer": "nested_capture"
   }
 ]

@@ -15,12 +15,12 @@
 
 import CompactStandardLibrary;
 export ledger stored: Field;
-constructor(input: Vector<2, Field>) {
+constructor(flag: Boolean, input: Vector<2, Field>) {
   stored = 99;
   const items = input;
   for (const item of items) {
     stored = disclose(item);
-    if (disclose(item == 2)) {
+    if (disclose(flag)) {
       for (const inner of items) { stored = disclose(inner); }
     } else {
       for (const inner of items) { stored = disclose(inner); }

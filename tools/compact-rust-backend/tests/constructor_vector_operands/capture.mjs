@@ -76,6 +76,7 @@ for(const spec of cases){
  const c=new m.Contract(callbacks);
  const input=[2n,3n];
  const args=spec.role==='conditional'?[spec.flag,input,[7n,8n]]:
+  spec.role==='nested_capture'?[spec.flag,input]:
   spec.role==='conditional_witness'?[spec.flag]:
   spec.role==='checked_helper'?[input,spec.helperOk]:
   spec.role==='owned_reuse'?[['first','β🚀']]:

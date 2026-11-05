@@ -520,3 +520,19 @@ then refuses independent Rust IR at the nested captured Vector. No privacy check
 is weakened. Original thirteen source hashes and twenty-two case records remain
 unchanged. The unreleased194 source-repair commits retain separate exact recipes;
 matching version strings do not renew the first194 package or its receipts.
+
+
+The fresh669 repair review and actual source gate both identify a separate existing
+boundary in the first new fixture: constructor condition equality is not admitted
+by the current infallible-condition owner. The full new source passes TS and
+independent IR, then Rust correctly refuses its unsupported `if` condition. Keep
+that exact source/diagnostic as a separate future semantic characterization;
+this lexical-scope repair does not expand conditional-expression support.
+
+The bounded regression now uses an explicitly disclosed Boolean constructor
+parameter, with distinct true/false cases exercising both branches and nested
+outer-Vector capture. It has its own constructor consumer and TS argument path.
+The current intended cohort is fourteen complete sources, twenty-four cases,
+seventeen successes/seven errors, forty-two intact models and seventeen selected
+later-entrypoint proof/application cases. All original thirteen source records
+and twenty-two cases remain unchanged. Full current qualification remains open.
