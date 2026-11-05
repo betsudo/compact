@@ -1,6 +1,6 @@
 # Constructor equality conditions
 
-Status: local follow-up to PR #705, reconciled by a signed forward merge. Current compiler source/API and proof qualification remain pending. The original accepted canonical baseline was `90cd758c`.
+Status: local follow-up to PR #705, tracked in #707 and reconciled by a signed forward merge. Bounded local source/API, native preflight and selected proof/application results are independently accepted at `2a6a54799521c4cf8f6904a2e1663b85887ffa28`. The maintained composed gate and required Linux CI remain pending. The original accepted canonical baseline was `90cd758c`.
 Unreleased toolchain `0.31.195` is reserved for this independent slice.
 
 ## Gap and evidence
@@ -121,3 +121,45 @@ immutable consumer binaries before native execution. No generated output is
 edited or spliced. Actual native preflight, independent pre-key review and parent
 admission remain required before fresh keys/proofs; constructor/deployment and
 wallet/total-cost claims remain excluded.
+
+## Accepted local proof epoch and maintained gate
+
+At clean `2a6a54799521c4cf8f6904a2e1663b85887ffa28`, the original compiler195
+recipe, nineteen source/API commands, 24 intact k6 models and 45 native
+preflight commands pass for all eight complete SDKs and sixteen cases.
+Independent pre-key review authenticates the current physical source closure,
+immutable consumers, tools and locked proof material before actual execution.
+
+The exact frozen executor then passes 25 commands: sixteen fresh direct
+key-generation invocations, sixteen independently verified standalone proofs
+and sixteen separately proved funded DEFAULT-strict transactions. Both
+constructor outcomes retain stored values 7/11, later values 11/15, private
+state42, empty trace and one root Cell. All seven negative controls and
+unchanged-ledger replay refusals pass. Each standalone proof is 2,912 bytes;
+all sixteen proof hashes and all sixteen transaction hashes are distinct.
+Independent actual-output review authenticates 4,815 frozen-input pins,
+120 role artifacts, fifty command streams and the complete dependency/material
+closure, with no actionable P1/P2 or acceptance-critical finding.
+
+This accepts only eight role-specific later `advance` exports across sixteen
+cases. `read` remains model-only; `advance_other` supplies wrong-verifier keys
+only. Privileged constructor-state insertion and funding remain fixtures. No
+constructor/deployment proof, wallet/network lifecycle, total constructor cost,
+hosted Linux/full-CI/integration or milestone completion is implied.
+
+The maintained `check_constructor_equality_proof.py` composes the existing
+source/API, model and native-preflight owners, followed by the exact executed
+proving function. It retains the original compiler-recipe identity and all
+proof/application/refusal assertions; no generated SDK or model is edited.
+A new source epoch must run and review this literal maintained command before
+its results are accepted or added to required Linux qualification:
+
+```sh
+python3 -B tools/compact-rust-backend/check_constructor_equality_proof.py \
+  --compiler-receipt "$COMPILER_RECEIPT" \
+  --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$FRESH_OUTPUT"
+```
+
+Its CLI/source composition is prepared locally; the full command has not yet
+run. Earlier accepted results remain bound to `2a6a5479`, rather than being
+relabeled as execution of the later composition/documentation commit.
