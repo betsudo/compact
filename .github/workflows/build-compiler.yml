@@ -19,6 +19,7 @@ env:
   RUSTUP_TOOLCHAIN: 1.99.0
   CARGO_INCREMENTAL: 0
   PYTHONDONTWRITEBYTECODE: 1
+  COMPACT_CI_TIMINGS: 1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

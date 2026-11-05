@@ -17,9 +17,12 @@
 
 """Proof-profile selection must preserve workload and failure propagation."""
 import os
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 import tomllib
@@ -277,6 +280,20 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][-5:],
                          ["--profile", "dev", "--", "--effect-plan-jubjub", "output"])
         self.assertIsNone(run.call_args.kwargs["env"])
+
+    def test_scenario_timing_reports_failure_without_hiding_it(self):
+        command = (sys.executable, str(ROOT / "tools/compact-rust-backend/check_compactc_target.py"),
+                   "--coracle-start", "--proof")
+        failure = subprocess.CalledProcessError(23, command)
+        output = io.StringIO()
+        with patch.dict(os.environ, {"COMPACT_CI_TIMINGS": "1"}), \
+                patch.object(cli.subprocess, "run", side_effect=failure), \
+                redirect_stdout(output):
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                cli.run(*command)
+        self.assertIs(raised.exception, failure)
+        self.assertIn("CI scenario start: --coracle-start", output.getvalue())
+        self.assertIn("CI scenario failed: --coracle-start; elapsed=", output.getvalue())
 
 
 if __name__ == "__main__":

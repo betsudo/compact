@@ -25,6 +25,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 
 import proof_commands
@@ -108,8 +109,23 @@ FIELD_TO_BYTES32_SOURCE = ROOT / "examples/rust_backend/field_to_bytes32_oracle.
 def run(*arguments: str, cwd: Path = ROOT, env: dict[str, str] | None = None) -> None:
     environment = os.environ if env is None else env
     command = proof_commands.command(arguments, environment)
-    subprocess.run(command,
-                   cwd=cwd, env=env, check=True)
+    scenario = (next((argument for argument in arguments[2:]
+                      if argument.startswith("--")), None)
+                if len(arguments) > 2 and Path(arguments[1]).name == "check_compactc_target.py"
+                else None)
+    timed = scenario is not None and environment.get("COMPACT_CI_TIMINGS") == "1"
+    started = time.monotonic()
+    if timed:
+        print(f"CI scenario start: {scenario}", flush=True)
+    try:
+        subprocess.run(command, cwd=cwd, env=env, check=True)
+    except BaseException:
+        if timed:
+            print(f"CI scenario failed: {scenario}; elapsed={time.monotonic() - started:.3f}s", flush=True)
+        raise
+    else:
+        if timed:
+            print(f"CI scenario passed: {scenario}; elapsed={time.monotonic() - started:.3f}s", flush=True)
 
 
 def check_manifest(output: Path, *, require_zkir: bool = True) -> None:
