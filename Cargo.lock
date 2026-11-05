@@ -3102,6 +3102,7 @@ dependencies = [
  "compact-rust-vector-key-adt-fixture",
  "compact-rust-vector-product-elements-proof-helper",
  "compact-rust-wide-uint-oracle-fixture",
+ "compact-rust-wide-zero-multiplication-source-fixture",
  "compact-rust-widening-arith-oracle-fixture",
  "compact-rust-witness-cell-write-fixture",
  "compact-rust-witness-list-shapes-fixture",
@@ -3844,6 +3845,14 @@ dependencies = [
  "midnight-onchain-vm",
  "midnight-serialize",
  "midnight-storage",
+ "serde_json",
+]
+
+[[package]]
+name = "compact-rust-wide-zero-multiplication-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "midnight-compact-runtime",
  "serde_json",
 ]
 

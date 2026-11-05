@@ -20,6 +20,7 @@ Requires a clean source and its original compiler recipe receipt. Every run writ
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
 """
 import argparse
+import historical_source_licenses
 import copy
 import json
 import os
@@ -145,6 +146,7 @@ def main():
                       ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
         paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
     paths.extend(Path(__file__).parent.glob("*.py"))
+    paths.extend(historical_source_licenses.inputs())
     pins = {str(p.relative_to(ROOT)): digest(p) for p in paths}
     tools = {str(p): digest(p) for p in [compiler, scheme, args.compiler_receipt.resolve(), Path(shutil.which("node")).resolve()]}
     for key, path in [("compactc", compiler), ("compactc-scheme", scheme)]:
@@ -396,7 +398,7 @@ def main():
         report["frontend_refusals"] = {}
         for name, expected in refusals.items():
             source = SOURCES / (name + ".compact")
-            require(digest(source) == expected["source_sha256"], "refusal source changed")
+            historical_source_licenses.verify_source(source, expected["source_sha256"])
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
                            source.relative_to(ROOT), output / ("refused-" + name)], success=False)
             require(rejected.returncode == expected["exit"] != 0 and rejected.stdout == expected["stdout"]
@@ -410,7 +412,7 @@ def main():
                 "scope control roster differs")
         for name, expected in scope_controls.items():
             source = FIXTURES / "unsupported" / (name + ".compact")
-            require(digest(source) == expected["source_sha256"], "scope control source changed")
+            historical_source_licenses.verify_source(source, expected["source_sha256"])
             for lane, outcome in expected["lanes"].items():
                 command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
                            else [compiler, "--target", lane, "--skip-zk"])

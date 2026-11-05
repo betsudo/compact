@@ -5,3 +5,18 @@ export struct Input { left:Uint<8>; right:Uint<8>; }
 pure circuit first_source(ok:Boolean,input:Input):Input{assert(ok,"first denied");return input;}
 pure circuit second_source(ok:Boolean,input:Input):Input{assert(ok,"second denied");return input;}
 export pure circuit value(first:Boolean,second:Boolean,input:Input,other:Input):Vector<2,Uint<16>>{return [first_source(first,input).right,second_source(second,other).left];}
+
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.

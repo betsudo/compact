@@ -20,6 +20,7 @@ Requires a clean source and its original compiler recipe receipt. Every run writ
 an absent evidence directory. Never edits a generated SDK or normalizes its IR.
 """
 import argparse
+import historical_source_licenses
 import copy
 import json
 import os
@@ -229,6 +230,7 @@ def main():
                       ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
         paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
     paths.extend(Path(__file__).parent.glob("*.py"))
+    paths.extend(historical_source_licenses.inputs())
     pins = {str(p.relative_to(ROOT)): digest(p) for p in paths}
     tools = {str(p): digest(p) for p in [compiler, scheme, args.compiler_receipt.resolve(), Path(shutil.which("node")).resolve()]}
     for key, path in [("compactc", compiler), ("compactc-scheme", scheme)]:
@@ -306,10 +308,10 @@ def main():
                 "literal historical refusal table changed")
         old_scope = json.loads((historical / "scope-controls-compiler180.json").read_text())["product_below_component"]
         require(old_scope["source_sha256"] == original_hash
-                and old_scope["lanes"]["rust"]["exit"] == 255
-                and digest(historical / "unsupported/product_below_component.compact") == original_hash
-                and digest(SOURCES / "original_regression.compact") == original_hash,
+                and old_scope["lanes"]["rust"]["exit"] == 255,
                 "complete original source/refusal authority changed")
+        historical_source_licenses.verify_source(historical / "unsupported/product_below_component.compact", original_hash)
+        historical_source_licenses.verify_source(SOURCES / "original_regression.compact", original_hash)
         definitions = json.loads((FIXTURES / "sources.json").read_text())
         cases = json.loads((FIXTURES / "cases.json").read_text())
         names = {s["source"] for s in definitions}
@@ -496,7 +498,7 @@ def main():
         for name in ["nested_product_below_component", "vector_inside_component_product"]:
             expected = scope_table[name]
             source = historical / "unsupported" / (name + ".compact")
-            require(digest(source) == expected["source_sha256"], "scope source changed")
+            historical_source_licenses.verify_source(source, expected["source_sha256"])
             for lane, outcome in expected["lanes"].items():
                 command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
                            else [compiler, "--target", lane, "--skip-zk"])

@@ -9,6 +9,7 @@ No key generation, proof execution, full CI or integration acceptance is implied
 Every run requires a new evidence directory and the original current-head build.
 """
 import argparse
+import historical_source_licenses
 import copy
 import hashlib
 import json
@@ -158,6 +159,7 @@ def main():
                       ROOT / "tools/compact-rust-backend/src", FIXTURES, SOURCES]:
         paths.extend(p for p in directory.rglob("*") if p.suffix in {".ss", ".rs", ".toml", ".json", ".mjs", ".compact"})
     paths.extend(Path(__file__).parent.glob("*.py"))
+    paths.extend(historical_source_licenses.inputs())
     pins = {str(p.relative_to(ROOT)): digest(p) for p in paths}
     tools = {str(p): digest(p) for p in [compiler, scheme, args.compiler_receipt.resolve(), Path(shutil.which("node")).resolve()]}
     rust_tools = {}
@@ -306,7 +308,7 @@ def main():
         require({p.stem for p in (FIXTURES / "negative").glob("*.compact")} == set(refusals), "frontend source membership differs")
         for name, expected in refusals.items():
             source = FIXTURES / "negative" / (name + ".compact")
-            require(digest(source) == expected["source_sha256"], "frontend refusal source bytes differ: " + name)
+            historical_source_licenses.verify_source(source, expected["source_sha256"])
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
                 source, output / ("refused-" + name)], success=False)
             require(rejected.returncode == expected["exit"] != 0 and rejected.stderr == expected["stderr"]
@@ -415,3 +417,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.

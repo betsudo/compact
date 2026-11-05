@@ -1,0 +1,46 @@
+{
+  "examples/rust_backend/stateful_vector_product_elements/refused_inner_dimension.compact": {
+    "historical_sha256": "4370080839f6614954c2c7f1b739363fa5e7f5be3206d06fe317245a97f514ee",
+    "current_sha256": "d275878615c9eea1db8f078a3e7798327e2f6e5be9c36f353568e5cfcb68f813"
+  },
+  "examples/rust_backend/stateful_vector_product_elements/refused_narrow.compact": {
+    "historical_sha256": "8b0534799660c5888171e41fa99ef3525b7f531e3fac79043d39c799ede8c31d",
+    "current_sha256": "fbfa77bffa82b4516808dc00ba7c3b84acfe8922e6e4626209f0d839252f81e9"
+  },
+  "examples/rust_backend/vector_component_products/original_regression.compact": {
+    "historical_sha256": "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c",
+    "current_sha256": "8b701504c47243724748848099e3a25836ce10f7a9984b46490d94b168ae9f99"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/boolean_numeric.compact": {
+    "historical_sha256": "94e37127fdbe8331f49014a370631e7f69fc9c58a63213d29fb7fcc0b6d19d43",
+    "current_sha256": "2dabbb3dd5864a60d727a48fad76efb892c98f14e79de7b5f9e5e12bd13226ec"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/explicit_narrow.compact": {
+    "historical_sha256": "ee885a2ebbfd9f9a3e718841db1dd4cf4c4285a13a05e4f00ad3f13a9918d68d",
+    "current_sha256": "dd73c6c82166b2f35ea5f0c95d332b3f71b498dc650cef1575a984b33b32fd2a"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/nominal_implicit.compact": {
+    "historical_sha256": "df53b3e26d647b027aa15e785989e2afc86b34b38cc028bf1c43d7ba3ebe6f4c",
+    "current_sha256": "29e4ccc653c49434a4a672d5f9cde68ae006ce8f6235fa5017d991481f7d2751"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/private_condition.compact": {
+    "historical_sha256": "408fbb154f398f0be14df41640a685f9fff52e1f7fb29daa59e863bf6e4162a1",
+    "current_sha256": "bf84cab5e2143b0039c9a9c227774f354520cdd9265f7e3ded95b95c0e0a0869"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/refused_narrow.compact": {
+    "historical_sha256": "57dd904ad6f2b9b41ca7c0c7862b75188b9b2d0becc981adfee16557b1f6a9a0",
+    "current_sha256": "5f299fe19e4f26acf87595659c2c776f203470d15c8c03bb7a525a971770cdfe"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/refused_wrong_arity.compact": {
+    "historical_sha256": "c53936c952492c6d16831f8287000530100526e2a92ceb6975ef3d85794a689c",
+    "current_sha256": "94b70e4020eb22b003010ec04832d0a2e46393e0ac228d8766c808dc465a1eaa"
+  },
+  "tools/compact-rust-backend/tests/stateful_product_vector_widening/negative/wrong_length.compact": {
+    "historical_sha256": "2ce7b2ee4e49109d21f71e72b1e07b2925edfd1abe44569f9fcd11b48560b5a0",
+    "current_sha256": "355828c51ebea11c8b13aceaece950823d653f9119d9c07848e7a600cc1cdf3b"
+  },
+  "tools/compact-rust-backend/tests/stateful_vector_product_elements/unsupported/product_below_component.compact": {
+    "historical_sha256": "6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c",
+    "current_sha256": "8b701504c47243724748848099e3a25836ce10f7a9984b46490d94b168ae9f99"
+  }
+}

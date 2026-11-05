@@ -1,4 +1,7 @@
-# Outer-Vector product proof CI wiring (local implementation)
+# Outer-Vector product proof CI wiring
+
+Current status: publication candidate reconciled with PR #703. Historical local
+qualification and publication restrictions below retain their original dates.
 
 Gap: the full outer-Vector proof/application gate now executes locally, while the
 required Linux compiler workflow previously invoked only the native91-command
@@ -121,3 +124,23 @@ pass; the macOS capacity problem from the older run is resolved in this run.
 PR #701 is currently non-draft but remains unaccepted for integration. No gates
 are waived, no predecessor is overwritten, and the 193-commit prerequisite
 integration and zero-width follow-up #702 remain separate obligations.
+
+## Publication reconciliation — 2026-11-05
+
+The owner now authorizes publication and stabilization of the available Rust AST
+slices. Preserve `58c1e5083` and PR #703 repair `cb39def70` through a forward merge.
+The comparison base is PR #703's branch; the stable delivery target remains
+`codex/rust-backend-ast`. No Forge work, release, shared installation, history
+rewrite or merge is implied by publishing this follow-up.
+
+This slice changes only workflow forwarding, its controls and documentation.
+The complete proof gate still owns all 91 native commands before its 15 proofs,
+strict applications and replay controls; built-in material must be ready first.
+Preserve the canonical wide-zero gate and every other required qualification.
+Nineteen focused workflow controls pass on the reconciled candidate. Current-head
+Codex CLI review and all required hosted checks remain required for integration.
+
+The fresh PR #703 local qualification at `cb39def70` separately passes the same
+maintained outer-Vector gate, including all 15 eligible exports. Neither that
+receipt nor the older literal-shell execution is relabeled as a new execution
+of this publication candidate. The intact over-cap export remains unproved.

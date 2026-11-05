@@ -503,6 +503,12 @@ jobs:
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
+      - name: Check generated wide-zero multiplication APIs
+        id: wide_zero_api
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero" --report "$RUNNER_TEMP/compact-wide-zero.json" --ts-runtime "$TS_RUNTIME"
+
       - name: Check generated constant vector projection APIs
         run: |
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
@@ -605,6 +611,11 @@ jobs:
       - name: Qualify constant vector projection proofs
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constant_vector_projection_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-vector-projection-proof"
+
+      - name: Qualify wide-zero multiplication proofs
+        id: wide_zero_proof
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero-proof"
 
       - name: Qualify constant-valued Vector index proofs
         run: |
@@ -727,6 +738,21 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-proof/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Retain failed wide-zero qualification diagnostics
+        if: failure() && (steps.wide_zero_api.outcome == 'failure' || steps.wide_zero_proof.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wide-zero-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-wide-zero.json
+            ${{ runner.temp }}/compact-wide-zero/*.stdout
+            ${{ runner.temp }}/compact-wide-zero/*.stderr
+            ${{ runner.temp }}/compact-wide-zero/generated/
+            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
+            ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
+            ${{ runner.temp }}/compact-wide-zero-proof/logs/
+            ${{ runner.temp }}/compact-wide-zero-proof/generated/
+          if-no-files-found: ignore
 
       - name: Rehearse Rust runtime packages
         id: runtime-packages
@@ -766,6 +792,14 @@ jobs:
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
+            ${{ runner.temp }}/compact-wide-zero.json
+            ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-wide-zero/typescript.json
+            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
+            ${{ runner.temp }}/compact-wide-zero/*.stdout
+            ${{ runner.temp }}/compact-wide-zero/*.stderr
+            ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
+            ${{ runner.temp }}/compact-wide-zero-proof/generated/
             ${{ runner.temp }}/compact-vector-projection.json
             ${{ runner.temp }}/compact-constant-valued-vector.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json

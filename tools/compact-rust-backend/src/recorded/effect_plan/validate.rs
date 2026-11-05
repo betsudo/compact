@@ -54,7 +54,8 @@ pub(super) fn uint(max: &str) -> Type {
     Type::Unsigned { max: max.into() }
 }
 /// Canonical unsigned bounds for values, explicit casts and wide-result addition.
-/// Subtraction and multiplication retain the u128-only `bound` policy.
+/// Subtraction retains the u128-only `bound` policy; multiplication also admits
+/// the independently checked wide-times-zero law below.
 pub(super) fn unsigned_bound(ty: &Type) -> Option<crate::UnsignedMaximum> {
     let Type::Unsigned { max } = ty else {
         return None;
@@ -82,6 +83,21 @@ pub(super) fn unsigned_add_type(left: &Type, right: &Type, result: &Type) -> boo
                 Some(crate::UnsignedMaximum::Small(_)),
                 Some(crate::UnsignedMaximum::Small(_)),
             )
+    )
+}
+/// Independently check the multiplication carrier law, including zero's exact
+/// singleton bound. A small result alone never licenses a wide operand.
+pub(super) fn unsigned_multiply_type(left: &Type, right: &Type, result: &Type) -> bool {
+    use crate::UnsignedMaximum::{Small, Wide};
+    matches!(
+        (
+            unsigned_bound(left),
+            unsigned_bound(right),
+            unsigned_bound(result)
+        ),
+        (Some(Small(_)), Some(Small(_)), Some(Small(_)))
+            | (Some(Wide { .. }), Some(Small(0)), Some(Small(_)))
+            | (Some(Small(0)), Some(Wide { .. }), Some(Small(_)))
     )
 }
 pub(super) fn scalar(ty: &Type) -> bool {

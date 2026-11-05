@@ -92,6 +92,14 @@ pub(crate) fn render_unsigned_arithmetic(
     right: syn::Expr,
 ) -> syn::Expr {
     match strategy {
+        UnsignedArithmeticStrategy::WideZeroProduct { result } => {
+            let result = syn::LitInt::new(&result.to_string(), Span::call_site());
+            syn::parse_quote!({
+                let _ = #left;
+                let _ = #right;
+                runtime::BoundedUint::<#result>::new(0)?
+            })
+        }
         UnsignedArithmeticStrategy::WideAdd { high, low } => {
             let high = syn::LitInt::new(&format!("{high}u128"), Span::call_site());
             let low = syn::LitInt::new(&format!("{low}u128"), Span::call_site());
