@@ -62,3 +62,21 @@ remain open. All new work stays LOCAL ONLY; no push, merge, hosted trial, releas
 shared installation or cleanup.
 
 Evidence: `rust-ast-profile192-archives-20261105` (local locator).
+
+## Initial execution and review correction
+
+At `40fb07e57`, the original package rehearsal/repeat and six-contract consumer
+finish successfully, but independent source review finds four P2 gaps in the
+new retention mode. Its qualification remains withheld: safety fixture inputs
+were omitted from the initial pins, preflight preceded receipt creation,
+failed safety runs lost fixture bytes/partial command records, and Rustup proxy
+hashes could describe the dispatcher rather than selected Cargo/rustc.
+
+The correction starts retention before manifest/tool preflight, snapshots all
+four safety fixtures, preserves the helper's original fixture bytes and partial
+command receipt on failure, and resolves/invokes the selected Cargo/rustc paths.
+Their bytes are checked before archive commands and at completion; child Cargo
+receives the selected `RUSTC`. This is selected-input admission, not exhaustive
+or continuous consumed-source attestation. The default temporary command and
+all prior behavior/refusal assertions stay intact. Fresh clean package/consumer
+execution and independent source/receipt review remain required after correction.

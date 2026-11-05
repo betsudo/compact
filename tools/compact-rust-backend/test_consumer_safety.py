@@ -76,6 +76,23 @@ class ConsumerSafetyTests(unittest.TestCase):
             run.assert_not_called()
             self.assertEqual(target.read_text(), "retained")
 
+    def test_failed_safety_run_retains_sources_and_partial_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            consumer = root / "consumer"
+            consumer.mkdir()
+            logs = root / "logs"
+            with patch("consumer_safety.subprocess.run", return_value=subprocess.CompletedProcess(
+                [], 101, "", "missing dependency"
+            )), self.assertRaisesRegex(RuntimeError, "valid consumer failed"):
+                check_consumer_safety(consumer, {}, logs=logs)
+            receipt = json.loads((logs / "receipt.json").read_text())
+            self.assertEqual(receipt["status"], "failed")
+            self.assertEqual(receipt["commands"][0]["exit_code"], 101)
+            self.assertEqual((logs / "00.stderr").read_text(), "missing dependency")
+            self.assertEqual(len(list((logs / "fixtures").glob("*.rs"))), 4)
+            self.assertEqual(list((consumer / "tests").iterdir()), [])
+
 
 if __name__ == "__main__":
     unittest.main()

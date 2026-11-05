@@ -20,9 +20,12 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location(
     "archive_consumer", Path(__file__).with_name("check_archive_consumer.py")
@@ -35,7 +38,7 @@ class RetainedArchiveTests(unittest.TestCase):
     def setUp(self):
         self.scratch = tempfile.TemporaryDirectory()
         self.addCleanup(self.scratch.cleanup)
-        self.root = Path(self.scratch.name)
+        self.root = Path(self.scratch.name).resolve()
         self.output = self.root / "retained"
         self.source = self.root / "source"
         self.source.write_text("original source")
@@ -85,6 +88,74 @@ class RetainedArchiveTests(unittest.TestCase):
                 self.source.write_text("changed source")
         self.assertEqual(self.receipt()["status"], "failed")
         self.assertEqual(self.receipt()["inputs"], self.inputs)
+
+    def test_preflight_failure_has_receipt_before_manifest_parsing(self):
+        manifest = self.root / "manifest.json"
+        manifest.write_text("not JSON")
+        with patch.object(archive, "ROOT", self.root), patch.object(sys, "argv", [
+            "archive", "--manifest", str(manifest), "--output", str(self.output),
+        ]), patch.object(archive.subprocess, "run") as run, self.assertRaises(json.JSONDecodeError):
+            archive.main()
+        run.assert_not_called()
+        self.assertEqual(self.receipt()["status"], "failed")
+        self.assertEqual(self.receipt()["inputs"]["sha256"][str(manifest)], archive.sha256(manifest))
+
+    def test_preflight_snapshot_includes_every_safety_fixture(self):
+        entries = []
+        for name in archive.PACKAGE_NAMES:
+            path = self.root / (name + ".crate")
+            path.write_bytes(b"archive placeholder; no extraction reached")
+            entries.append(dict(name=name, version="0.2.0", archive=str(path), sha256=archive.sha256(path)))
+        manifest = self.root / "manifest.json"
+        manifest.write_text(json.dumps(dict(schema=1, source=dict(commit="head", tree="tree"), packages=entries)))
+
+        def run(command, **kwargs):
+            if command == ["git", "rev-parse", "HEAD"]:
+                return "head"
+            if command == ["git", "rev-parse", "HEAD^{tree}"]:
+                return "tree"
+            if "vendor" in command:
+                raise RuntimeError("stop before vendor")
+            return "tool version"
+
+        with self.assertRaisesRegex(RuntimeError, "stop before vendor"), archive.qualification_directory(self.output, {}), patch.object(archive, "run", side_effect=run), patch.object(
+            archive, "selected_rust_tool", return_value=Path(sys.executable).resolve()
+        ):
+            archive.qualify(SimpleNamespace(manifest=manifest, compiler=sys.executable), self.output / "scratch")
+            self.fail("vendor must not run")
+        self.assertEqual(self.receipt()["status"], "failed")
+        pins = self.receipt()["inputs"]["sha256"]
+        for name in (*archive.POSITIVES, *archive.NEGATIVES):
+            path = archive.FIXTURES / f"{name}.rs"
+            self.assertEqual(pins[str(path)], archive.sha256(path))
+
+    def test_rustup_proxy_records_selected_binary(self):
+        proxy = self.root / "rustup"
+        proxy.write_text("dispatcher")
+        actual = self.root / "selected-cargo"
+        actual.write_text("actual Cargo")
+        with patch.object(archive.shutil, "which", return_value=str(proxy)), patch.object(
+            archive, "run", return_value=str(actual)
+        ) as run:
+            self.assertEqual(archive.selected_rust_tool("cargo"), actual)
+        run.assert_called_once_with([str(proxy), "which", "cargo"])
+
+    def test_recorded_tools_are_invoked_and_drift_refuses_before_child(self):
+        cargo = self.root / "cargo"
+        rustc = self.root / "rustc"
+        cargo.write_text("Cargo")
+        rustc.write_text("rustc")
+        tools = {name: dict(path=str(path), sha256=archive.sha256(path))
+                 for name, path in (("cargo", cargo), ("rustc", rustc))}
+        with archive.qualification_directory(self.output, dict(tools=tools)):
+            with patch.object(archive.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run:
+                archive.execute(["cargo", "--version"])
+                self.assertEqual(run.call_args.args[0], [str(cargo), "--version"])
+                self.assertEqual(run.call_args.kwargs["env"]["RUSTC"], str(rustc))
+                rustc.write_text("changed compiler")
+                with self.assertRaisesRegex(RuntimeError, "tool changed"):
+                    archive.execute(["cargo", "--version"])
+                self.assertEqual(run.call_count, 1)
 
 
 if __name__ == "__main__":

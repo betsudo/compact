@@ -72,6 +72,26 @@ def check_consumer_safety(
     commands = []
     if logs is not None:
         logs.mkdir(parents=True, exist_ok=False)
+    fixture_bytes = {name: (FIXTURES / f"{name}.rs").read_bytes()
+                     for name in (*POSITIVES, *NEGATIVES)}
+    receipt = {
+        "format": "compact-typed-consumer-safety/v1", "status": "running",
+        "positive_tests": list(POSITIVES.values()), "negative_codes": NEGATIVES,
+        "diagnostic_scope": "Every reported error has the expected code and a primary span in the installed consumer target.",
+        "commands": commands,
+        "fixture_sha256": {name: hashlib.sha256(data).hexdigest()
+                           for name, data in fixture_bytes.items()},
+    }
+
+    def save():
+        if logs is not None:
+            (logs / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
+
+    if logs is not None:
+        (logs / "fixtures").mkdir()
+        for name, data in fixture_bytes.items():
+            (logs / "fixtures" / f"{name}.rs").write_bytes(data)
+    save()
 
     def execute(arguments):
         command = [*cargo, *arguments]
@@ -85,6 +105,7 @@ def check_consumer_safety(
             "stdout_sha256": hashlib.sha256(result.stdout.encode()).hexdigest(),
             "stderr_sha256": hashlib.sha256(result.stderr.encode()).hexdigest(),
         })
+        save()
         return result
 
     def install(name):
@@ -92,7 +113,7 @@ def check_consumer_safety(
         path = tests / f"{target}.rs"
         with path.open("x") as output:
             created.append(path)
-            output.write((FIXTURES / f"{name}.rs").read_text())
+            output.write(fixture_bytes[name].decode())
         return target
 
     try:
@@ -112,18 +133,16 @@ def check_consumer_safety(
             rejected = execute(["check", "--locked", "--offline", "--test", target, "--message-format=json"])
             require_expected_rejection(rejected, code, target)
             created.pop().unlink()
-        return {
-            "format": "compact-typed-consumer-safety/v1",
-            "positive_tests": list(POSITIVES.values()),
-            "negative_codes": NEGATIVES,
-            "diagnostic_scope": "Every reported error has the expected code and a primary span in the installed consumer target.",
-            "commands": commands,
-            "fixture_sha256": {
-                name: hashlib.sha256((FIXTURES / f"{name}.rs").read_bytes()).hexdigest()
-                for name in (*POSITIVES, *NEGATIVES)
-            },
-        }
+        if any((FIXTURES / f"{name}.rs").read_bytes() != data
+               for name, data in fixture_bytes.items()):
+            raise RuntimeError("typed consumer safety fixture changed during execution")
+        receipt["status"] = "passed"
+        return receipt
+    except BaseException as error:
+        receipt.update(status="failed", error=f"{type(error).__name__}: {error}")
+        raise
     finally:
+        save()
         for path in reversed(created):
             path.unlink()
 

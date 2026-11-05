@@ -29,7 +29,7 @@ import tarfile
 import tempfile
 import tomllib
 
-from consumer_safety import check_consumer_safety
+from consumer_safety import FIXTURES, NEGATIVES, POSITIVES, check_consumer_safety
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +46,15 @@ RETAINED = None
 
 
 def execute(arguments, *, cwd=ROOT, env=None):
+    if RETAINED is not None:
+        tools = RETAINED["inputs"].get("tools", {})
+        for tool in tools.values():
+            if sha256(Path(tool["path"])) != tool["sha256"]:
+                raise RuntimeError("selected Rust tool changed before execution")
+        if arguments[0] in tools:
+            arguments = [tools[arguments[0]]["path"], *arguments[1:]]
+        if "rustc" in tools:
+            env = dict(os.environ if env is None else env, RUSTC=tools["rustc"]["path"])
     result = subprocess.run(arguments, cwd=cwd, env=env, capture_output=True, text=True)
     if RETAINED is not None:
         index = len(RETAINED["commands"])
@@ -57,6 +66,9 @@ def execute(arguments, *, cwd=ROOT, env=None):
         RETAINED["commands"].append({
             "command": arguments, "cwd": str(cwd), "exit": result.returncode, **streams,
         })
+        (Path(RETAINED["output"]) / "receipt.json").write_text(
+            json.dumps(RETAINED, indent=2) + "\n"
+        )
     return result
 
 
@@ -91,6 +103,7 @@ def qualification_directory(output: Path | None, inputs: dict):
     receipt = {"format": "compact-archive-consumer/v1", "status": "running",
                "output": str(output), "commands": [], "inputs": inputs}
     RETAINED = receipt
+    (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     try:
         yield scratch
         for path, digest in inputs.get("sha256", {}).items():
@@ -101,9 +114,12 @@ def qualification_directory(output: Path | None, inputs: dict):
         receipt.update(status="failed", error=f"{type(error).__name__}: {error}")
         raise
     finally:
+        safety = output / "safety-commands/receipt.json"
+        if safety.is_file():
+            receipt["consumer_safety"] = json.loads(safety.read_text())
         receipt["artifacts"] = {
             path.relative_to(output).as_posix(): sha256(path)
-            for path in sorted(output.rglob("*")) if path.is_file()
+            for path in sorted(output.rglob("*")) if path.is_file() and path != output / "receipt.json"
         }
         (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
         RETAINED = None
@@ -114,6 +130,18 @@ def retain_control(path: Path) -> None:
         directory = Path(RETAINED["output"]) / "controls"
         directory.mkdir(exist_ok=True)
         shutil.copyfile(path, directory / path.name)
+
+
+def selected_rust_tool(name: str) -> Path:
+    path = shutil.which(name)
+    if path is None:
+        raise RuntimeError(f"missing qualification tool: {name}")
+    selected = Path(path).resolve(strict=True)
+    if selected.name == "rustup":
+        selected = Path(run([str(selected), "which", name]).strip()).resolve(strict=True)
+        if selected.name == "rustup":
+            raise RuntimeError(f"Rustup did not select an actual {name} executable")
+    return selected
 
 
 def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
@@ -195,6 +223,15 @@ def main() -> None:
     parser.add_argument("--output", type=Path,
                         help="new directory retaining scratch, commands and success/failure receipt")
     args = parser.parse_args()
+    (ROOT / "target").mkdir(exist_ok=True)
+    with qualification_directory(args.output, {}) as temporary:
+        qualify(args, temporary)
+
+
+def qualify(args, temporary):
+    if RETAINED is not None:
+        RETAINED["inputs"]["manifest"] = str(args.manifest.resolve())
+        RETAINED["inputs"]["sha256"] = {str(args.manifest.resolve()): sha256(args.manifest)}
     release = json.loads(args.manifest.read_text())
     if release.get("schema") != 1 or release.get("source", {}).get("commit") != run(
         ["git", "rev-parse", "HEAD"]
@@ -212,226 +249,242 @@ def main() -> None:
         if not archive.is_file() or sha256(archive) != entry["sha256"]:
             raise RuntimeError(f"{archive}: missing or different from release manifest")
 
-    inputs = {}
-    if args.output is not None:
+    if RETAINED is not None:
+        inputs = RETAINED["inputs"]
         paths = [args.manifest.resolve(), Path(__file__).resolve(),
                  Path(__file__).with_name("consumer_safety.py"),
                  *(source for _, source in CONTRACTS),
+                 *(FIXTURES / f"{name}.rs" for name in (*POSITIVES, *NEGATIVES)),
                  *(ROOT / entry["archive"] for entry in entries)]
-        for name in (args.compiler, "cargo", "rustc"):
-            tool = shutil.which(name)
-            if tool is None:
-                raise RuntimeError(f"missing qualification tool: {name}")
-            paths.append(Path(tool).resolve())
-        inputs = {"head": run(["git", "rev-parse", "HEAD"]).strip(),
-                  "tree": run(["git", "rev-parse", "HEAD^{tree}"]).strip(),
-                  "sha256": {str(path): sha256(path) for path in paths},
-                  "release": release,
-                  "scope": "Local ordinary archive consumption; no publication, proof or wallet execution."}
-    (ROOT / "target").mkdir(exist_ok=True)
-    with qualification_directory(args.output, inputs) as temporary:
-        vendor = temporary / "vendor"
-        run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
-             "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
-        for entry in entries:
-            install_archive(vendor, entry, macro_version)
+        forbidden = {"RUSTC", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "RUSTFLAGS",
+                     "CARGO_ENCODED_RUSTFLAGS", "RUSTC_BOOTSTRAP", "CARGO_BUILD_RUSTC",
+                     "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER",
+                     "CARGO_BUILD_RUSTFLAGS"}
+        if any(os.environ.get(name) for name in forbidden):
+            raise RuntimeError("unsupported Cargo compiler override")
+        compiler = shutil.which(args.compiler)
+        if compiler is None:
+            raise RuntimeError(f"missing qualification tool: {args.compiler}")
+        compiler = Path(compiler).resolve(strict=True)
+        args.compiler = str(compiler)
+        paths.append(compiler)
+        tools = {}
+        for name in ("cargo", "rustc"):
+            path = selected_rust_tool(name)
+            paths.append(path)
+            tools[name] = {"path": str(path), "sha256": sha256(path)}
+        inputs.update(head=run(["git", "rev-parse", "HEAD"]).strip(),
+                      tree=run(["git", "rev-parse", "HEAD^{tree}"]).strip(),
+                      sha256={str(path): sha256(path) for path in paths},
+                      tools=tools, release=release,
+                      scope="Local ordinary archive consumption; selected input checks, not exhaustive consumed-source or host attestation. No publication, proof or wallet execution.")
+        for name, tool in tools.items():
+            tool["version"] = run([tool["path"], "--version"]).strip()
+    vendor = temporary / "vendor"
+    run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
+         "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
+    for entry in entries:
+        install_archive(vendor, entry, macro_version)
 
-        contracts = {}
-        for name, source in CONTRACTS:
-            artifact = temporary / name
-            run([args.compiler, "--target", "rust", "--rust-runtime-registry",
-                 "--skip-zk", str(source), str(artifact)])
-            contract = artifact / "contract"
-            manifest_path = contract / "Cargo.toml"
-            generated = tomllib.loads(manifest_path.read_text())
-            dependency = generated["dependencies"]["midnight-compact-runtime"]
-            if dependency != {
-                "version": f"={runtime_version}",
-                "package": "midnight-compact-runtime",
-            }:
-                raise RuntimeError(f"generated {name} manifest has an unexpected runtime dependency")
-            if (contract / "runtime-rs").exists() or (contract / "runtime-rs-macros").exists():
-                raise RuntimeError(f"generated {name} contract copied runtime sources in registry mode")
-            output_manifest = json.loads(
-                (artifact / "compiler/contract-manifest.json").read_text()
-            )
-            recorded = output_manifest["contract"]["Cargo.toml"]
-            if recorded["hash"] != sha256(manifest_path) or recorded["size"] != manifest_path.stat().st_size:
-                raise RuntimeError(f"generated {name} Cargo manifest was not recorded accurately")
-            contracts[name] = contract
+    contracts = {}
+    for name, source in CONTRACTS:
+        artifact = temporary / name
+        run([args.compiler, "--target", "rust", "--rust-runtime-registry",
+             "--skip-zk", str(source), str(artifact)])
+        contract = artifact / "contract"
+        manifest_path = contract / "Cargo.toml"
+        generated = tomllib.loads(manifest_path.read_text())
+        dependency = generated["dependencies"]["midnight-compact-runtime"]
+        if dependency != {
+            "version": f"={runtime_version}",
+            "package": "midnight-compact-runtime",
+        }:
+            raise RuntimeError(f"generated {name} manifest has an unexpected runtime dependency")
+        if (contract / "runtime-rs").exists() or (contract / "runtime-rs-macros").exists():
+            raise RuntimeError(f"generated {name} contract copied runtime sources in registry mode")
+        output_manifest = json.loads(
+            (artifact / "compiler/contract-manifest.json").read_text()
+        )
+        recorded = output_manifest["contract"]["Cargo.toml"]
+        if recorded["hash"] != sha256(manifest_path) or recorded["size"] != manifest_path.stat().st_size:
+            raise RuntimeError(f"generated {name} Cargo manifest was not recorded accurately")
+        contracts[name] = contract
 
-        consumer = temporary / "consumer"
-        (consumer / "tests").mkdir(parents=True)
-        (consumer / ".cargo").mkdir()
-        (consumer / "Cargo.toml").write_text(
-            '[package]\nname = "compact-rust-archive-consumer"\nversion = "0.1.0"\n'
-            'edition = "2024"\n\n[workspace]\n\n[dependencies]\n'
-            + "".join(
-                f'compact-contract-{name} = {{ path = "{contract}", features = ["ledger-transaction"] }}\n'
-                for name, contract in contracts.items()
-            )
+    consumer = temporary / "consumer"
+    (consumer / "tests").mkdir(parents=True)
+    (consumer / ".cargo").mkdir()
+    (consumer / "Cargo.toml").write_text(
+        '[package]\nname = "compact-rust-archive-consumer"\nversion = "0.1.0"\n'
+        'edition = "2024"\n\n[workspace]\n\n[dependencies]\n'
+        + "".join(
+            f'compact-contract-{name} = {{ path = "{contract}", features = ["ledger-transaction"] }}\n'
+            for name, contract in contracts.items()
         )
-        (consumer / ".cargo/config.toml").write_text(
-            '[source.crates-io]\nreplace-with = "archive-vendor"\n'
-            f'[source.archive-vendor]\ndirectory = "{vendor}"\n'
-        )
-        (consumer / "tests/counter.rs").write_text(
-            'use compact_contract_counter as counter;\n'
-            'use compact_contract_cell_boolean as cell;\n'
+    )
+    (consumer / ".cargo/config.toml").write_text(
+        '[source.crates-io]\nreplace-with = "archive-vendor"\n'
+        f'[source.archive-vendor]\ndirectory = "{vendor}"\n'
+    )
+    (consumer / "tests/counter.rs").write_text(
+        'use compact_contract_counter as counter;\n'
+        'use compact_contract_cell_boolean as cell;\n'
+        'use compact_contract_set_boolean as set;\n'
+        'use compact_contract_map_boolean_field as map;\n'
+        'use compact_contract_list_field as list;\n'
+        'use compact_contract_merkle_path_witness as merkle;\n'
+        'use compact_contract_counter::runtime::context::ConstructorContext;\n'
+        'use compact_contract_counter::runtime::ledger::{ContractAddress, StateValue, read_cell};\n'
+        '#[test]\nfn archived_runtime_executes_generated_counter() {\n'
+        '    let state = counter::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    assert_eq!(counter::ledger_contract::PublicStateView::from(&state).round().unwrap().value(), 0);\n'
+        '    let context = state.into_circuit_context(ContractAddress::default());\n'
+        '    let call = counter::ledger_contract::Contract::default().increment(context).unwrap();\n'
+        '    assert_eq!(counter::ledger_contract::PublicStateView::from(&call).round().unwrap().value(), 1);\n'
+        '    let read = counter::ledger_contract::Contract::default().read_round(call.context).unwrap();\n'
+        '    assert_eq!(read.result.value(), 1);\n}\n'
+        '#[test]\nfn archived_runtime_executes_generated_cell() {\n'
+        '    let address: counter::runtime::ledger::ContractAddress =\n'
+        '        cell::runtime::ledger::ContractAddress::default();\n'
+        '    let state = cell::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    let context = state.into_circuit_context(address);\n'
+        '    let call = cell::ledger_contract::Contract::default().set_flag(context).unwrap();\n'
+        '    assert!(cell::ledger_contract::PublicStateView::from(&call).flag().unwrap());\n'
+        '    let StateValue::Array(fields) = call.context.query.state.get_ref() else {\n'
+        '        panic!("expected generated Cell field array");\n'
+        '    };\n'
+        '    assert!(read_cell::<bool, _>(&fields.get(0).unwrap()).unwrap());\n}\n'
+        '#[test]\nfn archived_runtime_executes_generated_set() {\n'
+        '    let state = set::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    let initial = set::ledger_contract::PublicStateView::from(&state);\n'
+        '    assert!(initial.seen().unwrap().is_empty());\n'
+        '    let context = state.into_circuit_context(ContractAddress::default());\n'
+        '    let call = set::ledger_contract::Contract::default().add(context, true).unwrap();\n'
+        '    let view = set::ledger_contract::PublicStateView::from(&call);\n'
+        '    assert!(view.seen().unwrap().member(true));\n'
+        '    assert_eq!(view.seen().unwrap().size().unwrap().value(), 1);\n}\n'
+        '#[test]\nfn archived_runtime_executes_generated_map() {\n'
+        '    let state = map::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    let initial = map::ledger_contract::PublicStateView::from(&state);\n'
+        '    assert!(initial.table().unwrap().is_empty());\n'
+        '    let context = state.into_circuit_context(ContractAddress::default());\n'
+        '    let call = map::ledger_contract::Contract::default().put('
+        'context, true, map::runtime::Field::from(7_u64)).unwrap();\n'
+        '    let view = map::ledger_contract::PublicStateView::from(&call);\n'
+        '    assert_eq!(view.table().unwrap().lookup(true).unwrap(), '
+        'map::runtime::Field::from(7_u64));\n}\n'
+        '#[test]\nfn archived_runtime_executes_generated_list() {\n'
+        '    let state = list::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    let initial = list::ledger_contract::PublicStateView::from(&state);\n'
+        '    assert_eq!(initial.items().unwrap().head().unwrap(), None);\n'
+        '    assert_eq!(initial.items().unwrap().length().unwrap().value(), 0);\n'
+        '    let context = state.into_circuit_context(ContractAddress::default());\n'
+        '    let call = list::ledger_contract::prepend(context, list::runtime::Field::from(7_u64)).unwrap();\n'
+        '    let view = list::ledger_contract::PublicStateView::from(&call);\n'
+        '    assert_eq!(view.items().unwrap().head().unwrap(), Some(list::runtime::Field::from(7_u64)));\n'
+        '    assert_eq!(view.items().unwrap().length().unwrap().value(), 1);\n}\n'
+        '#[test]\nfn archived_runtime_executes_generated_merkle_views() {\n'
+        '    let state = merkle::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
+        '    let initial = merkle::ledger_contract::PublicStateView::from(&state);\n'
+        '    assert_eq!(initial.t().unwrap().first_free().unwrap().value(), 0);\n'
+        '    assert_eq!(initial.h().unwrap().first_free().unwrap().value(), 0);\n'
+        '    let context = state.into_circuit_context(ContractAddress::default());\n'
+        '    let call = merkle::ledger_contract::append('
+        'context, merkle::runtime::BoundedUint::<255>::new(7).unwrap()).unwrap();\n'
+        '    let view = merkle::ledger_contract::PublicStateView::from(&call);\n'
+        '    assert_eq!(view.t().unwrap().first_free().unwrap().value(), 1);\n'
+        '    let next = merkle::ledger_contract::append_h('
+        'call.context, merkle::runtime::BoundedUint::<255>::new(7).unwrap()).unwrap();\n'
+        '    let historic = merkle::ledger_contract::PublicStateView::from(&next);\n'
+        '    assert_eq!(historic.h().unwrap().first_free().unwrap().value(), 1);\n'
+        '    assert_eq!(historic.h().unwrap().history().unwrap().len(), 2);\n}\n'
+    )
+    environment = os.environ.copy()
+    environment.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
+    environment.setdefault("CARGO_INCREMENTAL", "0")
+    environment.setdefault("CARGO_BUILD_JOBS", "2")
+    run(["cargo", "test", "--offline", "--quiet"], cwd=consumer, env=environment)
+    if RETAINED is not None:
+        environment["RUSTC"] = RETAINED["inputs"]["tools"]["rustc"]["path"]
+    safety = check_consumer_safety(
+        consumer, environment,
+        cargo=(RETAINED["inputs"]["tools"]["cargo"]["path"],) if RETAINED is not None else ("cargo",),
+        logs=Path(RETAINED["output"]) / "safety-commands" if RETAINED is not None else None,
+    )
+    if RETAINED is not None:
+        RETAINED["consumer_safety"] = safety
+    compile_rejections = {
+        "wrong_set_key": (
             'use compact_contract_set_boolean as set;\n'
+            'fn main() {\n'
+            '    let state = set::ledger_contract::initial_state('
+            'set::runtime::context::ConstructorContext::new(())).unwrap();\n'
+            '    let view = set::ledger_contract::PublicStateView::from(&state);\n'
+            '    view.seen().unwrap().member(set::runtime::Field::from(42_u64));\n}\n'
+        ),
+        "wrong_map_key": (
             'use compact_contract_map_boolean_field as map;\n'
+            'fn main() {\n'
+            '    let state = map::ledger_contract::initial_state('
+            'map::runtime::context::ConstructorContext::new(())).unwrap();\n'
+            '    let view = map::ledger_contract::PublicStateView::from(&state);\n'
+            '    view.table().unwrap().member(map::runtime::Field::from(42_u64));\n}\n'
+        ),
+        "wrong_list_element": (
             'use compact_contract_list_field as list;\n'
+            'fn main() {\n'
+            '    let state = list::ledger_contract::initial_state('
+            'list::runtime::context::ConstructorContext::new(())).unwrap();\n'
+            '    let view = list::ledger_contract::PublicStateView::from(&state);\n'
+            '    let _: Option<bool> = view.items().unwrap().head().unwrap();\n}\n'
+        ),
+        "wrong_merkle_leaf": (
             'use compact_contract_merkle_path_witness as merkle;\n'
-            'use compact_contract_counter::runtime::context::ConstructorContext;\n'
-            'use compact_contract_counter::runtime::ledger::{ContractAddress, StateValue, read_cell};\n'
-            '#[test]\nfn archived_runtime_executes_generated_counter() {\n'
-            '    let state = counter::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    assert_eq!(counter::ledger_contract::PublicStateView::from(&state).round().unwrap().value(), 0);\n'
-            '    let context = state.into_circuit_context(ContractAddress::default());\n'
-            '    let call = counter::ledger_contract::Contract::default().increment(context).unwrap();\n'
-            '    assert_eq!(counter::ledger_contract::PublicStateView::from(&call).round().unwrap().value(), 1);\n'
-            '    let read = counter::ledger_contract::Contract::default().read_round(call.context).unwrap();\n'
-            '    assert_eq!(read.result.value(), 1);\n}\n'
-            '#[test]\nfn archived_runtime_executes_generated_cell() {\n'
-            '    let address: counter::runtime::ledger::ContractAddress =\n'
-            '        cell::runtime::ledger::ContractAddress::default();\n'
-            '    let state = cell::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    let context = state.into_circuit_context(address);\n'
-            '    let call = cell::ledger_contract::Contract::default().set_flag(context).unwrap();\n'
-            '    assert!(cell::ledger_contract::PublicStateView::from(&call).flag().unwrap());\n'
-            '    let StateValue::Array(fields) = call.context.query.state.get_ref() else {\n'
-            '        panic!("expected generated Cell field array");\n'
-            '    };\n'
-            '    assert!(read_cell::<bool, _>(&fields.get(0).unwrap()).unwrap());\n}\n'
-            '#[test]\nfn archived_runtime_executes_generated_set() {\n'
-            '    let state = set::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    let initial = set::ledger_contract::PublicStateView::from(&state);\n'
-            '    assert!(initial.seen().unwrap().is_empty());\n'
-            '    let context = state.into_circuit_context(ContractAddress::default());\n'
-            '    let call = set::ledger_contract::Contract::default().add(context, true).unwrap();\n'
-            '    let view = set::ledger_contract::PublicStateView::from(&call);\n'
-            '    assert!(view.seen().unwrap().member(true));\n'
-            '    assert_eq!(view.seen().unwrap().size().unwrap().value(), 1);\n}\n'
-            '#[test]\nfn archived_runtime_executes_generated_map() {\n'
-            '    let state = map::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    let initial = map::ledger_contract::PublicStateView::from(&state);\n'
-            '    assert!(initial.table().unwrap().is_empty());\n'
-            '    let context = state.into_circuit_context(ContractAddress::default());\n'
-            '    let call = map::ledger_contract::Contract::default().put('
-            'context, true, map::runtime::Field::from(7_u64)).unwrap();\n'
-            '    let view = map::ledger_contract::PublicStateView::from(&call);\n'
-            '    assert_eq!(view.table().unwrap().lookup(true).unwrap(), '
-            'map::runtime::Field::from(7_u64));\n}\n'
-            '#[test]\nfn archived_runtime_executes_generated_list() {\n'
-            '    let state = list::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    let initial = list::ledger_contract::PublicStateView::from(&state);\n'
-            '    assert_eq!(initial.items().unwrap().head().unwrap(), None);\n'
-            '    assert_eq!(initial.items().unwrap().length().unwrap().value(), 0);\n'
-            '    let context = state.into_circuit_context(ContractAddress::default());\n'
-            '    let call = list::ledger_contract::prepend(context, list::runtime::Field::from(7_u64)).unwrap();\n'
-            '    let view = list::ledger_contract::PublicStateView::from(&call);\n'
-            '    assert_eq!(view.items().unwrap().head().unwrap(), Some(list::runtime::Field::from(7_u64)));\n'
-            '    assert_eq!(view.items().unwrap().length().unwrap().value(), 1);\n}\n'
-            '#[test]\nfn archived_runtime_executes_generated_merkle_views() {\n'
-            '    let state = merkle::ledger_contract::initial_state(ConstructorContext::new(())).unwrap();\n'
-            '    let initial = merkle::ledger_contract::PublicStateView::from(&state);\n'
-            '    assert_eq!(initial.t().unwrap().first_free().unwrap().value(), 0);\n'
-            '    assert_eq!(initial.h().unwrap().first_free().unwrap().value(), 0);\n'
-            '    let context = state.into_circuit_context(ContractAddress::default());\n'
-            '    let call = merkle::ledger_contract::append('
-            'context, merkle::runtime::BoundedUint::<255>::new(7).unwrap()).unwrap();\n'
-            '    let view = merkle::ledger_contract::PublicStateView::from(&call);\n'
-            '    assert_eq!(view.t().unwrap().first_free().unwrap().value(), 1);\n'
-            '    let next = merkle::ledger_contract::append_h('
-            'call.context, merkle::runtime::BoundedUint::<255>::new(7).unwrap()).unwrap();\n'
-            '    let historic = merkle::ledger_contract::PublicStateView::from(&next);\n'
-            '    assert_eq!(historic.h().unwrap().first_free().unwrap().value(), 1);\n'
-            '    assert_eq!(historic.h().unwrap().history().unwrap().len(), 2);\n}\n'
+            'fn main() {\n'
+            '    let state = merkle::ledger_contract::initial_state('
+            'merkle::runtime::context::ConstructorContext::new(())).unwrap();\n'
+            '    let view = merkle::ledger_contract::PublicStateView::from(&state);\n'
+            '    let _ = view.t().unwrap().path_for_leaf(0, true);\n}\n'
+        ),
+    }
+    for name, source in compile_rejections.items():
+        negative = consumer / f"tests/{name}.rs"
+        negative.write_text(source)
+        retain_control(negative)
+        rejection = execute(
+            ["cargo", "check", "--offline", "--test", name, "--quiet"],
+            cwd=consumer, env=environment,
         )
-        environment = os.environ.copy()
-        environment.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
-        environment.setdefault("CARGO_INCREMENTAL", "0")
-        environment.setdefault("CARGO_BUILD_JOBS", "2")
-        run(["cargo", "test", "--offline", "--quiet"], cwd=consumer, env=environment)
-        safety = check_consumer_safety(
-            consumer, environment,
-            logs=Path(RETAINED["output"]) / "safety-commands" if RETAINED is not None else None,
+        negative.unlink()
+        if rejection.returncode == 0 or "mismatched types" not in rejection.stderr:
+            raise RuntimeError(f"{name} was not rejected by the archive-only consumer: {rejection.stderr[-1200:]}")
+    unavailable_methods = {
+        "plain_merkle_history": "view.t().unwrap().history()",
+        "local_merkle_check_root": "view.t().unwrap().check_root(merkle::runtime::Field::from(0_u64))",
+        "local_historic_merkle_is_full": "view.h().unwrap().is_full()",
+    }
+    for name, expression in unavailable_methods.items():
+        negative = consumer / f"tests/{name}.rs"
+        negative.write_text(
+            'use compact_contract_merkle_path_witness as merkle;\n'
+            'fn main() {\n'
+            '    let state = merkle::ledger_contract::initial_state('
+            'merkle::runtime::context::ConstructorContext::new(())).unwrap();\n'
+            '    let view = merkle::ledger_contract::PublicStateView::from(&state);\n'
+            f'    let _ = {expression};\n}}\n'
         )
-        if RETAINED is not None:
-            RETAINED["consumer_safety"] = safety
-        compile_rejections = {
-            "wrong_set_key": (
-                'use compact_contract_set_boolean as set;\n'
-                'fn main() {\n'
-                '    let state = set::ledger_contract::initial_state('
-                'set::runtime::context::ConstructorContext::new(())).unwrap();\n'
-                '    let view = set::ledger_contract::PublicStateView::from(&state);\n'
-                '    view.seen().unwrap().member(set::runtime::Field::from(42_u64));\n}\n'
-            ),
-            "wrong_map_key": (
-                'use compact_contract_map_boolean_field as map;\n'
-                'fn main() {\n'
-                '    let state = map::ledger_contract::initial_state('
-                'map::runtime::context::ConstructorContext::new(())).unwrap();\n'
-                '    let view = map::ledger_contract::PublicStateView::from(&state);\n'
-                '    view.table().unwrap().member(map::runtime::Field::from(42_u64));\n}\n'
-            ),
-            "wrong_list_element": (
-                'use compact_contract_list_field as list;\n'
-                'fn main() {\n'
-                '    let state = list::ledger_contract::initial_state('
-                'list::runtime::context::ConstructorContext::new(())).unwrap();\n'
-                '    let view = list::ledger_contract::PublicStateView::from(&state);\n'
-                '    let _: Option<bool> = view.items().unwrap().head().unwrap();\n}\n'
-            ),
-            "wrong_merkle_leaf": (
-                'use compact_contract_merkle_path_witness as merkle;\n'
-                'fn main() {\n'
-                '    let state = merkle::ledger_contract::initial_state('
-                'merkle::runtime::context::ConstructorContext::new(())).unwrap();\n'
-                '    let view = merkle::ledger_contract::PublicStateView::from(&state);\n'
-                '    let _ = view.t().unwrap().path_for_leaf(0, true);\n}\n'
-            ),
-        }
-        for name, source in compile_rejections.items():
-            negative = consumer / f"tests/{name}.rs"
-            negative.write_text(source)
-            retain_control(negative)
-            rejection = execute(
-                ["cargo", "check", "--offline", "--test", name, "--quiet"],
-                cwd=consumer, env=environment,
-            )
-            negative.unlink()
-            if rejection.returncode == 0 or "mismatched types" not in rejection.stderr:
-                raise RuntimeError(f"{name} was not rejected by the archive-only consumer: {rejection.stderr[-1200:]}")
-        unavailable_methods = {
-            "plain_merkle_history": "view.t().unwrap().history()",
-            "local_merkle_check_root": "view.t().unwrap().check_root(merkle::runtime::Field::from(0_u64))",
-            "local_historic_merkle_is_full": "view.h().unwrap().is_full()",
-        }
-        for name, expression in unavailable_methods.items():
-            negative = consumer / f"tests/{name}.rs"
-            negative.write_text(
-                'use compact_contract_merkle_path_witness as merkle;\n'
-                'fn main() {\n'
-                '    let state = merkle::ledger_contract::initial_state('
-                'merkle::runtime::context::ConstructorContext::new(())).unwrap();\n'
-                '    let view = merkle::ledger_contract::PublicStateView::from(&state);\n'
-                f'    let _ = {expression};\n}}\n'
-            )
-            retain_control(negative)
-            rejection = execute(
-                ["cargo", "check", "--offline", "--test", name, "--quiet"],
-                cwd=consumer, env=environment,
-            )
-            negative.unlink()
-            if rejection.returncode == 0 or "no method named" not in rejection.stderr:
-                raise RuntimeError(f"{name} was not rejected by the archive-only consumer: {rejection.stderr[-1200:]}")
-        metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
-                                  cwd=consumer, env=environment))
-        check_graph(metadata, consumer, vendor, entries)
-        if RETAINED is not None:
-            (temporary / "cargo-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+        retain_control(negative)
+        rejection = execute(
+            ["cargo", "check", "--offline", "--test", name, "--quiet"],
+            cwd=consumer, env=environment,
+        )
+        negative.unlink()
+        if rejection.returncode == 0 or "no method named" not in rejection.stderr:
+            raise RuntimeError(f"{name} was not rejected by the archive-only consumer: {rejection.stderr[-1200:]}")
+    metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
+                              cwd=consumer, env=environment))
+    check_graph(metadata, consumer, vendor, entries)
+    if RETAINED is not None:
+        (temporary / "cargo-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
     print("archive-only Counter + Cell + Set + Map + List + Merkle consumer passed with one shared runtime; public registry publication remains unverified")
 
 
