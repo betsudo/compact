@@ -398,3 +398,27 @@ script, changed manifest, changed IR, swapped Programs and changed source before
 staging. Cargo commands use resolved executable paths and its child toolchain is
 selected explicitly. A fresh complete preflight and independent review remain
 required before the later proof consumer may generate keys or prove.
+
+The corrected preflight at `ecd227b8b` subsequently passes all 13 builds, strict
+Clippy runs and 15 native cases, including the owned-value fixture. Acceptance
+for key generation is still withheld: fresh review confirms those fixes but
+requires physical dependency-source authentication and binding the reviewed
+external executor's exact bytes. No cryptography has run.
+
+The next correction authenticates each Git dependency's actual checkout commit,
+tracked blob contents, symlink targets and unexpected inputs. Registry source
+contents are compared to the cached crate archive whose SHA256 matches the
+locked checksum; an optional local checksum table cannot rebind altered source.
+Admitted source bytes and membership are rechecked before builds and completion.
+Preparation observes one Git root and 337 registry roots, totaling 24,230 files.
+Isolated HOST controls reject modified Git source, modified registry source and
+modified archives. Five maintained unit methods also cover untracked build
+scripts, wrong revisions, post-admission drift and rewritten checksum tables.
+An initial test caught macOS `/var` path alias handling; normalization fixes it.
+
+The external executor must be reviewed as a read-only content-addressed copy.
+Parent triage records that exact digest and path, and the trusted launch checks
+them before execution. Repository head and launch-time self-hashing alone do not
+bind external source to its earlier review. All failed/withheld predecessor
+receipts remain retained. Full preflight, fresh review and actual proof/application
+execution remain required; these preparation checks do not imply completion.

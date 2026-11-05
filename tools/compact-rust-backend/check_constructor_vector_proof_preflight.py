@@ -25,10 +25,12 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 import tomllib
 
 import check_functional_source_sdk as sdk
+import constructor_proof_dependencies as dependencies
 import did_proof_gate
 import local_parity_gate as common
 
@@ -138,11 +140,13 @@ def main():
     env.setdefault("CARGO_BUILD_JOBS", "2")
     frozen = {}
     frozen_roots = {}
+    dependency_sources = {}
     def unchanged():
         for name, digest in frozen.items():
             require(sdk.digest(name) == digest, f"frozen input changed: {name}")
         for name, expected in frozen_roots.items():
             sdk.equal_inventory(Path(name), expected)
+        dependencies.unchanged(dependency_sources)
         require(common.git_head() == report["qualifier_head"] and not common.dirty_paths(),
                 "proof qualifier source changed")
         require(sdk.cargo_configuration(env) == report["cargo_configuration"], "Cargo configuration changed")
@@ -191,7 +195,7 @@ def main():
         require(subprocess.run(["git","merge-base","--is-ancestor",producer["head"],report["qualifier_head"]],cwd=ROOT).returncode == 0,
                 "producer is not an ancestor")
         paths = [args.producer_receipt, args.compiler_receipt, args.model_receipt, Path(__file__),
-                 Path(sdk.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
+                 Path(sdk.__file__), Path(dependencies.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
                  ROOT / "Cargo.toml", ROOT / "Cargo.lock", sdk.EXAMPLE / "consumer/Cargo.toml"]
         paths += sdk.tracked_source_files(FIXTURE)
         paths += sdk.tracked_source_files(ROOT / "testkit-rs")
@@ -201,6 +205,11 @@ def main():
                 require(sdk.digest(p) == digest, f"compiler producer source differs: {relative}")
                 paths.append(p)
         frozen.update({str(p.resolve()):sdk.digest(p) for p in paths})
+        python = Path(sys.executable).resolve()
+        frozen[str(python)] = sdk.digest(python)
+        frozen[dependencies.GIT] = sdk.digest(dependencies.GIT)
+        report["controller_tools"] = dict(python=str(python), python_version=sys.version,
+                                          git=dependencies.GIT)
         binary = Path(models["binary"]["path"])
         require(sdk.digest(binary) == models["binary"]["sha256"], "selected source-built material runner changed")
         frozen[str(binary)] = sdk.digest(binary)
@@ -266,6 +275,7 @@ def main():
             shutil.copyfile(ROOT/"Cargo.lock",consumer/"Cargo.lock")
             metadata=json.loads(run(role+"-metadata",[cargo,"metadata","--offline","--format-version","1","--features","proof","--manifest-path",manifest]).stdout)
             graph=sdk.dependency_graph(metadata,consumer/"Cargo.lock",lane,cohort)
+            dependencies.authenticate(metadata,cohort,dependency_sources)
             frozen.update({str(consumer/rel):digest for rel,digest in sdk.inventory(consumer).items()})
             frozen.update({str(lane/"testkit-rs"/rel):digest for rel,digest in sdk.inventory(lane/"testkit-rs").items()})
             frozen_roots[str(consumer)]=sdk.inventory(consumer)
@@ -294,8 +304,9 @@ def main():
     finally:
         report["frozen_inputs"] = frozen
         report["frozen_directories"] = frozen_roots
+        report["dependency_sources"] = dependency_sources
         save()
-        print(json.dumps({k:v for k,v in report.items() if k not in ("sources","frozen_inputs","commands","dust_fixture_hashes","verified_material","cargo_configuration")},indent=2))
+        print(json.dumps({k:report[k] for k in ("format","status","qualifier_head","producer_head","key_generation","proof_execution","selected_cases","error") if k in report},indent=2))
 
 
 if __name__ == "__main__":
