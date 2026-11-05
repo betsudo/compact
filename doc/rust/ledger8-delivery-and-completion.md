@@ -18,6 +18,14 @@ source and receipt reviews. This is local arm64 evidence; constructor cryptograp
 and total cost, new-head CI/Linux, the supported-profile handoff and canonical
 integration remain open. It does not change the historical integration epochs.
 
+The subsequent [compiler192 application baseline](plans/profile192-application-reconciliation.md)
+at `214acb658` builds the exact current package and passes the unchanged
+installed-default SDK, intact pure Passport and selected DID API/valid/zero
+proof gates, with fresh proofs and separate strict applications where applicable.
+Independent source/receipt review finds no actionable defect. Earlier compiler183
+and constructor epochs stay separate; this closes a local application baseline
+obligation and leaves full profile/CI/Linux/distribution/integration open.
+
 The statement-action follow-up is verified merged as PR #696 at signed canonical
 `f0e4ba788`, with the same complete tree as reviewed `9667072e7` and actual CI
 checkout `b7c15323b`. All eleven checks, actual Claude review and retained runtime

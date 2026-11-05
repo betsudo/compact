@@ -5,16 +5,18 @@ acceptance, or a claim that the primary Rust AST goal is complete. Each result
 below retains its literal execution revision. The current local contribution
 train has not been merged into the canonical branch by this handoff.
 
-The compiler183 application and proof epochs below remain literal. A later
-[compiler184 request-field metadata repair](../plans/nested-product-request-field.md)
-has focused local source/SDK qualification only; it does not renew every
-application, proof or supported-profile gate.
+The [compiler192 application reconciliation](../plans/profile192-application-reconciliation.md)
+qualifies one exact current package at `214acb658` for the original witnessed SDK,
+pure Passport and selected DID cases. Earlier compiler183 application epochs,
+the compiler184 request-field repair and later constructor/product qualifications
+keep their literal source/package identities. This is per-stage evidence, not a
+renewed monolithic profile or integration gate.
 
 ## Versions and hosts
 
 | Identity | Selected value and boundary |
 | --- | --- |
-| Compact compiler / language | 0.31.183 / 0.23.105; exact package and executable hashes belong to each recipe receipt |
+| Compact compiler / language | 0.31.192 / 0.23.105 for the selected SDK/Passport/DID baseline at `214acb658`, package `pwb8lhc5ni8r9x2f9mnkbjpx9sh44bi7`; other cohorts retain their literal recipe/execution epochs |
 | Rust runtime / macros | `midnight-compact-runtime` 0.2.0 / macros 0.2.0 |
 | Optional source testkit | `midnight-compact-testkit` 0.1.0; unpublished paired source recipe |
 | Runtime ABI / private IR / finalized capability schema | 53 / 20 / 3; package versions are separate |
@@ -63,10 +65,11 @@ completion percentage. Compiling a whole contract does not prove every export.
 
 | Cohort and literal execution epoch | Local behavior and controls | Genuine proof/application scope |
 | --- | --- | --- |
-| [Exact-package installed-default SDK](../plans/current-package-bundled-sdk.md), `026f1109b`; prior SDK epochs `cd3f432c6` / `7baa4b774` remain separate | Three ContractLab methods, three positive/misuse pairs, three actual proof-feature library lints, installed-prefix/override/byte-identity and recording/snapshot refusals | One witnessed Cell call: fresh k6 proof and independently proved funded DEFAULT-strict application; no constructor or wallet lifecycle |
-| [Current Passport](../plans/current-passport-handoff.md), `9286fe749`; documentation successor `940183cbb` | Intact 17-file source, all 75 pure exports compile, 202 sampled TS rows plus codec comparison, 16 adoption and two guide methods, Clippy and intended refusals | Recording/proof/application **not applicable** to this original pure library |
-| [Current DID zero timestamp extension](../plans/did-zero-timestamp.md), `4e49b59e5`; documentation successor `90c517f55` | Intact two-file source, complete IR and twelve Programs; twelve live TS rows; seven Rust methods, eight success routes and forty error routes, plus late-witness controls | Two original cases of the same `deactivate` export, timestamp witness 200 and 0: separate fresh k11/1,804-row proof runs and independently proved funded DEFAULT-strict transactions; constructor and all-export proofs unclaimed |
+| [Compiler192 installed-default SDK](../plans/profile192-application-reconciliation.md), `214acb658`; preceding compiler183 `026f1109b` / `cd3f432c6` / `7baa4b774` stay separate | Three ContractLab methods, three positive/misuse pairs, three actual proof-feature library lints, installed-prefix/override/byte-identity and recording/snapshot refusals; 29-command gate plus 16 focused controls and three real selection refusals | One witnessed Cell call: fresh k6/49-row proof and independently proved funded DEFAULT-strict application; no constructor or wallet lifecycle |
+| [Compiler192 Passport](../plans/profile192-application-reconciliation.md), `214acb658`; preceding compiler183 `9286fe749` stays literal | Intact 17-file source, all 75 pure exports/89 internal circuits, 202 sampled TS rows plus codec comparison, 16 adoption and two guide methods, Clippy, intended refusals and changed-oracle/restored controls | Recording/proof/application **not applicable** to this original pure library |
+| [Compiler192 DID selected lifecycle](../plans/profile192-application-reconciliation.md), `214acb658`; preceding compiler183 `4e49b59e5` / `51616d5ce` stay literal | Intact two-file source, complete IR and twelve Programs; twelve live DID TS rows plus auxiliary crypto; seven Rust methods, eight success routes and forty error routes, late-witness/checkpoint/metering and typed controls | Timestamp witnesses 200 and 0 of the same `deactivate` export: separate fresh k11/1,804-row proof runs and independently proved funded DEFAULT-strict transactions; constructor and all-export proofs unclaimed |
 | [Products below Vector components](../plans/vector-component-products.md), `5ef204e8e`; later documentation-only successors retain their own bridges | 24 complete generated SDKs, 35 sampled cases and typed/static/ingress/ordering controls | Three selected complete sources have fresh proofs and separate funded strict applications; 21 required exports remain unproved, including 18 over-limit models |
+| [Constructor Vector operands](../plans/constructor-vector-operands.md), compiler192 producer `f09900533`, proof qualifier `a8133996b` | Thirteen complete SDKs, 22 TS cases, typed/static/ingress/identity/order controls and 15 selected constructor-derived success cases; all 39 models retained | Fifteen fresh later-entrypoint proofs and separately proved funded DEFAULT-strict applications/replay; not constructor cryptography or total-cost acceptance |
 
 The preceding [DID package-specific check](../plans/current-supported-profile-handoff.md#actual-final-package-local-result)
 at `51616d5ce` rebuilds and records the exact README-bound compiler package,
@@ -74,8 +77,9 @@ then passes the DID API gate and both fresh proof/application cases. The zero
 case uses the literal workflow shell locally under Nix; the valid case is a
 separate maintained invocation. Nix and Rustup runner snapshots retain their own
 identities. That DID check did not rerun the SDK, Passport or products. The later
-`026f1109b` SDK row above has its own current-package run; Passport/product rows
-retain their earlier literal epochs.
+compiler183 `026f1109b` SDK epoch has its own package run. The compiler192 baseline
+separately reruns the SDK, Passport and selected DID cases at `214acb658`; it does
+not relabel those earlier results, the product cohort or constructor proof epoch.
 
 The current SDK qualification gate refuses `COMPACT_RUST_RUNTIME_DIR`, including
 an empty value. Use an installed package for this gate. It admits the CLI's

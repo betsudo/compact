@@ -1,8 +1,9 @@
 # Compiler192 application and source-SDK reconciliation
 
-Status: source-premise inventory complete; current package and application
-qualification pending. Local branch `codex/rust-ast-profile192-reconciliation`
-starts from clean constructor documentation head `80d3f8b19`.
+Status: reviewed bounded local current-package baseline passes at
+`214acb65808be670a064bde26a50acf267b9fb0a`. Full profile freeze, CI/Linux and
+integration remain open. Local branch `codex/rust-ast-profile192-reconciliation`
+starts from preserved constructor documentation head `80d3f8b19`.
 
 ## Concrete obligation
 
@@ -77,3 +78,48 @@ hosted trial, release, shared installation or cleanup is authorized here.
 Evidence root: `rust-ast-profile192-reconciliation-20261105`; initial inventory:
 `source-premise-inventory-v1.json`. This is a local locator, not public evidence
 distribution or a completion declaration for the broader Rust AST goal.
+
+## Accepted local results — 2026-11-05
+
+The actual original unmodified recipe builds compiler192 package
+`pwb8lhc5ni8r9x2f9mnkbjpx9sh44bi7` in 200.7077 seconds. Its executable SHA256 is
+`e23cccf270c86f0af8840eabb6adacee3d71f42de3f9a70c539c2aacac7d2f54`.
+The existing-only recorder separately resolves that exact package. Both retain
+clean source `214acb658`; neither old f099 nor compiler183 tools are relabelled.
+
+| Existing cohort | Actual bounded result at this package |
+| --- | --- |
+| Installed-default witnessed SDK | All 29 commands pass, plus 16 focused unit controls and three real override/runtime-byte refusals. Three ContractLab methods, typed positive/refusal twins and actual proof-feature Clippy artifacts remain intact. Fresh k6/49-row standalone proof verifies; a separately proved funded DEFAULT-strict transaction applies and replay leaves the ledger unchanged. |
+| Original pure Passport | All 40 commands pass. All 17 source files, 75 public exports/89 internal circuits, 202 live TS rows, 16 adoption and two guide methods, Clippy, intended E0308 twins and changed-oracle assertion failure/restored success pass. Historical provenance and 39 oracle authorities are unchanged. Proof/application remain N/A. |
+| Original DID API | All ten commands pass. Full IR/origins/capabilities and all twelve Programs match the fixture; seven Rust methods retain eight successful and forty failing routes, twelve DID TS rows plus twelve auxiliary crypto rows, witness/order/checkpoint/metering and ordinary API refusals. |
+| DID valid deactivation | All nine commands pass. Fresh k11/1,804-row 3,296-byte proof verifies; a separately proved funded DEFAULT-strict transaction is 7,413 bytes. Binding/version, pre-key IR/Program, stale-version and unchanged replay controls remain active. |
+| DID zero timestamp deactivation | Separate nine-command run passes with timestamp witness 0, fresh k11/1,804-row 3,296-byte proof and independently proved 7,412-byte strict transaction. The original valid case is preserved; the automatic tiny cap remains 8. |
+
+No application source, fixture, historical oracle, compatibility test, gate,
+runtime, testkit or production implementation was edited. A diagnostic probe's
+first outer regex assumed a different entry-variable spelling and stopped
+before generation; its failed source/receipt is retained. Corrected probes use
+the maintained entry and complete source closure. They confirm exact DID
+IR/origins/capabilities/twelve Programs and matching separate formatting-copy
+Rust for DID and Passport. Generated source stays raw.
+
+Parent controllers recheck the previously authenticated 338-root external
+source cohort before/after gates. This is not per-command, continuous or exhaustive
+consumed-source attestation. Source, tool, package, runtime, dependency, parameter,
+key, binary, log and result bindings retain each gate's stated limits.
+
+Fresh independent Codex CLI review, used after the retained genuine Claude quota
+failure, inspects actual controls and rehashes recorded bindings. It reports no
+actionable defect or unsupported success claim. This read-only review is not a
+new cryptographic execution. Evidence includes `original192-v1/receipt.json`,
+`original-recipe192-v1/receipt.json`, `sdk-controller-v1.json`,
+`application-controller-v1.json`, each named cohort's `receipt.json`,
+`cohort-results-summary-v1.json`, `independent-review-v1.json` and
+`baseline-closeout-v1.json` under the evidence directory above.
+
+The constructor proof qualification keeps its separate f099 producer/a813
+qualifier epochs. This reconciliation establishes the current package's selected
+application baseline; it does not renew every product cohort, prove constructors,
+complete wallet/network acceptance or substitute for required CI/Linux, archive
+consumers, final profile freeze or canonical integration. The broader Rust AST
+goal remains incomplete and Forge remains deferred.
