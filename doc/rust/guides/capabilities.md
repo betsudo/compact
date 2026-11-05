@@ -36,6 +36,24 @@ The Rust report lists exported **stateful** circuits. Pure functions live in `pu
 
 Enable the generated crate's **`ledger-transaction` Cargo feature** to compile its observed-call methods. The report describes what the emitter can provide; it does not override Cargo feature selection. See [Version and runtime selection](version-selection.md) for dependency identity and version pairing, and [Testing generated contracts with ContractLab](contract-lab.md) for local execution/replay.
 
+## Wide multiplication by a statically zero operand
+
+The checked numeric owner admits a canonical zero-typed operand times a wide
+unsigned operand, in either order. Both operands still execute once in source
+order, including failed casts/assertions and witness effects. A wide value that
+happens to be zero does not admit a general wide product. See the bounded
+[wide-zero slice and qualification limits](../plans/wide-zero-multiplication.md).
+
+The source-owned pure APIs retain an exact `BoundedUint<0>` result. Selected
+stateful proof APIs explicitly return `Uint<8>` / `BoundedUint<255>` with value
+zero and keep their fresh proof/verification/application gate separate. The
+zero-singleton stateful result was observed to fail the original frontend/ZKIR
+communication-commitment check: its zero-width output descriptor contributes no
+field while that relation emits one. It has behavior/recording controls, **no
+successful proof receipt**. The source/IR/program binding is never normalized
+or waived to accept that route. An available API row alone cannot establish
+that a particular zero-width result successfully proves.
+
 ## Understand the fields
 
 | Field | Meaning |

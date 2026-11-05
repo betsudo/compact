@@ -38,6 +38,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         current = json.loads((directory / 'fixture_registry.json').read_text())
         names = {'examples/rust_backend/constant_vector_projection.compact',
                  'examples/rust_backend/constant_valued_vector_indices.compact',
+                 'examples/rust_backend/wide_zero_multiplication.compact',
                  'examples/rust_backend/map_size_expression.compact',
                  'examples/rust_backend/field_return_wrappers.compact',
                  'examples/rust_backend/tuple_return_wrappers.compact',
@@ -47,7 +48,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                      for row in json.loads((directory / 'tests/direct_fold/sources.json').read_text()))
         extension = [row for row in current['sources'] if row['source'] in names]
         self.assertEqual({row['source'] for row in extension}, names)
-        self.assertEqual(len(extension), 28)
+        self.assertEqual(len(extension), 29)
         current['sources'] = [row for row in current['sources'] if row not in extension]
         # Stateful arithmetic now keeps the analyzed result maximum instead of
         # its rounded bit carrier. Only these complete generated IR inputs were
@@ -94,6 +95,24 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(current.library, current.generated_library)
         self.assertNotEqual(current.library, original.library)
         self.assertEqual(len(list((current.library.parent / 'checked-programs').glob('*.json'))), 5)
+
+    def test_wide_zero_registers_complete_source_and_explicit_proof_result_carriers(self):
+        row = next(row for row in inventory.source_registry()
+                   if row.source.name == 'wide_zero_multiplication.compact')
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
+        self.assertEqual(row.library, row.generated_library)
+        fixture = row.library.parent
+        self.assertEqual({p.name for p in (fixture / 'checked-programs').glob('*.json')},
+                         {f'program-{i}.json' for i in range(4)})
+        ir = json.loads((fixture / 'original-ir.json').read_text())
+        rows = {c['name']: c['result'] for c in ir['stateful_circuits']}
+        self.assertEqual(rows, {
+            'multiplyRight': {'kind': 'unsigned', 'max': '255'},
+            'multiplyLeft': {'kind': 'unsigned', 'max': '255'},
+            'witnessedRight': {'kind': 'unsigned', 'max': '0'},
+            'witnessedLeft': {'kind': 'unsigned', 'max': '0'},
+        })
 
     def test_map_size_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
@@ -253,7 +272,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_generated_wrappers_are_consumers_and_special_targets_stay_exact(self):
         registrations = inventory.source_registry()
         self.assertEqual(Counter(row.role for row in registrations), {
-            inventory.SourceRole.FLAT_LIBRARY: 197,
+            inventory.SourceRole.FLAT_LIBRARY: 198,
             inventory.SourceRole.GENERATED_CONSUMER: 86,
             inventory.SourceRole.COMPILER_PROBE: 2,
         })

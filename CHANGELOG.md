@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.194, language 0.23.105, runtime 0.16.102]
+
+Unreleased constructor reconciliation checkpoint; qualification is pending.
+
+### Fixed
+
+- Preserve the checked constructor Vector operand extension alongside canonical
+  wide-zero and outer-Vector behavior through a forward source reconciliation.
+  Earlier compiler192 and compiler193 evidence retains its original identity.
+
+## [Toolchain 0.31.193, language 0.23.105, runtime 0.16.102]
+
+Unreleased reconciliation checkpoint; no release or completed qualification is implied.
+
+### Fixed
+
+- Reconcile the preserved outer-Vector product stack with the canonical wide-Uint
+  multiplication-by-zero backend. Retain both typed lowering paths, generated
+  consumers, proof suites and CI diagnostics without rewriting either history.
+
 ## [Toolchain 0.31.192, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
@@ -203,6 +223,20 @@ Unreleased Rust-backend source checkpoint; no release or hosted-CI result is imp
   Preserve the original accumulator/reducer bounds and legacy operand order.
 - Resolve Vector alias carriers at expected-type and pure cast ingress,
   including reducer Vector literals; unrelated alias families keep their owners.
+## [Toolchain 0.31.145, language 0.23.105, runtime 0.16.102]
+
+### Added
+
+- Checked Rust emission for wide-Uint multiplication with a zero-typed operand.
+  Both operands still execute once in source order; other wide products remain
+  explicitly unsupported. Existing generated carriers and runtime checks are
+  retained, including the exact zero result type.
+
+### Fixed
+
+- Use the declared singleton-zero result bound for ordinary stateful zero
+  multiplication returns, including conditional arms and lexical bindings,
+  through the existing typed expression owner.
 
 ## [Toolchain 0.31.144, language 0.23.105, runtime 0.16.102]
 

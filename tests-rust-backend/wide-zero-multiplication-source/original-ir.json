@@ -1,0 +1,815 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "calls",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "counter"
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "wide",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "1606938044258990275541962092341162602522202993782792835301375"
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "rightZero",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "parameter",
+          "name": "x"
+        },
+        "right": {
+          "kind": "unsigned_literal",
+          "value": "0",
+          "max": "0"
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 20,
+        "column": 1
+      }
+    },
+    {
+      "name": "leftZero",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "unsigned_literal",
+          "value": "0",
+          "max": "0"
+        },
+        "right": {
+          "kind": "parameter",
+          "name": "x"
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 21,
+        "column": 1
+      }
+    },
+    {
+      "name": "rightParameter",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        },
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "0"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "parameter",
+          "name": "x"
+        },
+        "right": {
+          "kind": "parameter",
+          "name": "z"
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 22,
+        "column": 1
+      }
+    },
+    {
+      "name": "leftParameter",
+      "parameters": [
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "0"
+          }
+        },
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "parameter",
+          "name": "z"
+        },
+        "right": {
+          "kind": "parameter",
+          "name": "x"
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 23,
+        "column": 1
+      }
+    },
+    {
+      "name": "nested",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        },
+        {
+          "name": "active",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "alias",
+            "ty": {
+              "kind": "unsigned",
+              "max": "1606938044258990275541962092341162602522202993782792835301375"
+            },
+            "value": {
+              "kind": "unsigned_add",
+              "max": "1606938044258990275541962092341162602522202993782792835301375",
+              "left": {
+                "kind": "parameter",
+                "name": "x"
+              },
+              "right": {
+                "kind": "unsigned_literal",
+                "value": "0",
+                "max": "1606938044258990275541962092341162602522202993782792835301375"
+              }
+            }
+          }
+        ],
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "z",
+              "ty": {
+                "kind": "unsigned",
+                "max": "0"
+              },
+              "value": {
+                "kind": "if",
+                "condition": {
+                  "kind": "parameter",
+                  "name": "active"
+                },
+                "then": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "unsigned_literal",
+                    "value": "0",
+                    "max": "0"
+                  },
+                  "ty": {
+                    "kind": "unsigned",
+                    "max": "0"
+                  }
+                },
+                "otherwise": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "unsigned_literal",
+                    "value": "0",
+                    "max": "0"
+                  },
+                  "ty": {
+                    "kind": "unsigned",
+                    "max": "0"
+                  }
+                }
+              }
+            }
+          ],
+          "body": {
+            "kind": "unsigned_multiply",
+            "max": "0",
+            "left": {
+              "kind": "parameter",
+              "name": "alias"
+            },
+            "right": {
+              "kind": "parameter",
+              "name": "z"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 24,
+        "column": 1
+      }
+    },
+    {
+      "name": "checkedLeft",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        },
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "unsigned_cast",
+          "max": "1606938044258990275541962092341162602522202993782792835301375",
+          "value": {
+            "kind": "unsigned_cast",
+            "max": "340282366920938463463374607431768211455",
+            "value": {
+              "kind": "parameter",
+              "name": "x"
+            }
+          }
+        },
+        "right": {
+          "kind": "unsigned_cast",
+          "max": "0",
+          "value": {
+            "kind": "parameter",
+            "name": "z"
+          }
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 29,
+        "column": 1
+      }
+    },
+    {
+      "name": "checkedRight",
+      "parameters": [
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        },
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "unsigned_cast",
+          "max": "0",
+          "value": {
+            "kind": "parameter",
+            "name": "z"
+          }
+        },
+        "right": {
+          "kind": "unsigned_cast",
+          "max": "1606938044258990275541962092341162602522202993782792835301375",
+          "value": {
+            "kind": "unsigned_cast",
+            "max": "340282366920938463463374607431768211455",
+            "value": {
+              "kind": "parameter",
+              "name": "x"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 32,
+        "column": 1
+      }
+    },
+    {
+      "name": "guardedZero",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "equal",
+              "left": {
+                "kind": "parameter",
+                "name": "z"
+              },
+              "right": {
+                "kind": "unsigned_literal",
+                "value": "0",
+                "max": "255"
+              }
+            },
+            "message": "zero operand guard"
+          }
+        ],
+        "value": {
+          "kind": "unsigned_literal",
+          "value": "0",
+          "max": "0"
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 35,
+        "column": 1
+      }
+    },
+    {
+      "name": "firstErrorLeft",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        },
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "unsigned_cast",
+          "max": "1606938044258990275541962092341162602522202993782792835301375",
+          "value": {
+            "kind": "unsigned_cast",
+            "max": "340282366920938463463374607431768211455",
+            "value": {
+              "kind": "parameter",
+              "name": "x"
+            }
+          }
+        },
+        "right": {
+          "kind": "call",
+          "name": "guardedZero",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "z"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 39,
+        "column": 1
+      }
+    },
+    {
+      "name": "firstErrorRight",
+      "parameters": [
+        {
+          "name": "z",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        },
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "body": {
+        "kind": "unsigned_multiply",
+        "max": "0",
+        "left": {
+          "kind": "call",
+          "name": "guardedZero",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "z"
+            }
+          ]
+        },
+        "right": {
+          "kind": "unsigned_cast",
+          "max": "1606938044258990275541962092341162602522202993782792835301375",
+          "value": {
+            "kind": "unsigned_cast",
+            "max": "340282366920938463463374607431768211455",
+            "value": {
+              "kind": "parameter",
+              "name": "x"
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 42,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "multiplyRight",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "255"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "unsigned_cast",
+          "max": "255",
+          "value": {
+            "kind": "unsigned_multiply",
+            "max": "1",
+            "left": {
+              "kind": "parameter",
+              "name": "x"
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "0"
+            }
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_3",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "calls",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_3"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 45,
+        "column": 1
+      }
+    },
+    {
+      "name": "multiplyLeft",
+      "parameters": [
+        {
+          "name": "x",
+          "ty": {
+            "kind": "unsigned",
+            "max": "1606938044258990275541962092341162602522202993782792835301375"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "255"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "unsigned_cast",
+          "max": "255",
+          "value": {
+            "kind": "unsigned_multiply",
+            "max": "1",
+            "left": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "0"
+            },
+            "right": {
+              "kind": "parameter",
+              "name": "x"
+            }
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_2",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "calls",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_2"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 49,
+        "column": 1
+      }
+    },
+    {
+      "name": "witnessedRight",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "unsigned_multiply",
+          "max": "0",
+          "left": {
+            "kind": "witness_call",
+            "name": "wide",
+            "arguments": [
+            ]
+          },
+          "right": {
+            "kind": "unsigned_literal",
+            "value": "0",
+            "max": "0"
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_1",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "calls",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_1"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 53,
+        "column": 1
+      }
+    },
+    {
+      "name": "witnessedLeft",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unsigned",
+        "max": "0"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "unsigned_multiply",
+          "max": "0",
+          "left": {
+            "kind": "unsigned_literal",
+            "value": "0",
+            "max": "0"
+          },
+          "right": {
+            "kind": "witness_call",
+            "name": "wide",
+            "arguments": [
+            ]
+          }
+        }
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_0",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "1",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "calls",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_0"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "wide_zero_multiplication.compact",
+        "line": 57,
+        "column": 1
+      }
+    }
+  ]
+}
