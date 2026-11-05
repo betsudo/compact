@@ -589,3 +589,121 @@ fn constructor_validates_each_direct_cell_rhs_before_the_next_assignment() {
         ]
     );
 }
+
+#[test]
+fn constructor_vector_loop_accepts_checked_expression_operands_and_keeps_shape_guards() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Vector {
+                element: Type::Boolean,
+                elements: vec![
+                    Expr::Boolean { value: true },
+                    Expr::Boolean { value: false },
+                ],
+            },
+            length: 2,
+            steps: vec![],
+        }],
+    });
+    render(&contract).expect("a checked Vector expression is a valid constructor iterable");
+    let ConstructorStep::ForEachVector { length, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 3;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+    let ConstructorStep::ForEachVector {
+        length, binding, ..
+    } = &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *length = 2;
+    binding.ty = Type::Field;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+}
+
+#[test]
+fn empty_constructor_vector_checks_its_source_then_static_body() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::ForEachVector {
+            binding: Parameter {
+                name: "item".into(),
+                ty: Type::Boolean,
+            },
+            source: Expr::Sequence {
+                steps: vec![Expr::Assert {
+                    condition: Box::new(Expr::Boolean { value: false }),
+                    message: "iterable-before-empty-loop".into(),
+                }],
+                value: Box::new(Expr::Vector {
+                    element: Type::Boolean,
+                    elements: vec![],
+                }),
+            },
+            length: 0,
+            steps: vec![],
+        }],
+    });
+    let source = render(&contract).unwrap();
+    assert!(source.contains("iterable-before-empty-loop"));
+    let ConstructorStep::ForEachVector { steps, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    steps.push(ConstructorStep::Expression {
+        value: Expr::Parameter {
+            name: "not_in_scope".into(),
+        },
+    });
+    assert_eq!(
+        render(&contract),
+        Err(RenderError::UnknownParameter("not_in_scope".into()))
+    );
+    let ConstructorStep::ForEachVector { source, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        unreachable!()
+    };
+    *source = Expr::Sequence {
+        steps: vec![Expr::Parameter {
+            name: "source_first".into(),
+        }],
+        value: Box::new(Expr::Vector {
+            element: Type::Boolean,
+            elements: vec![],
+        }),
+    };
+    assert_eq!(
+        render(&contract),
+        Err(RenderError::UnknownParameter("source_first".into()))
+    );
+}

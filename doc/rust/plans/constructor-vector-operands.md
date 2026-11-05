@@ -142,3 +142,39 @@ Retained evidence: `rust-ast-constructor-vector-operands-20261105`, including
 Original package/recipe identity is separately retained by
 `rust-ast-counter-amount-expressions-20261105/original-recipe-v1/receipt.json`.
 These local locators are navigation, not portable provenance or new acceptance.
+
+
+## Paired source candidate — 2026-11-05
+
+The candidate admits lexical Vector operands in the frontend and emits direct
+expressions through the existing stateful expression owner. A private
+`constructor_vm/vector_source.rs` prepares and checks the source before the
+borrowed loop. The old parameter path remains borrowed and unchanged; the new
+expression result is bound once, including for length zero. No IR variant,
+serialized member, runtime ABI or public executor is added.
+
+An independent IR render regression fails on the original parameter-only guard
+and passes with the candidate. The first test filter selected zero methods and
+is not qualification. The first unit run caught changed priority for a malformed
+Field literal. The known non-Vector literal/constructor guard is restored before
+payload parsing; all 60 existing constructor unit methods pass, with an added
+bad-Uint guard case. Eleven constructor render methods, strict all-target and
+all-feature backend Clippy, and the maintained readability corpus pass locally.
+These are focused source checks, not execution/proof acceptance of the new APIs.
+
+Compiler version 0.31.192 is an unreleased source candidate. Its maintained
+ledger documentation owner generates the one-line version change. The first
+Nix setup attempt excluded an unstaged new module; the second caught an unbound
+frontend source-location variable. Both failures remain retained. After staging
+the module and fixing the source location, the third compiler-devShell setup and
+documentation invocation pass. This dirty-candidate dependency build does not
+replace clean-head original-recipe recording or current source qualification.
+
+The maintained fixture roster is
+`tools/compact-rust-backend/tests/constructor_vector_operands/sources.json`.
+It keeps nine full header-bearing sources and adds `advance` plus a distinct
+`advance_other` relation for later post-initialization proof controls. Their new
+hashes/three-export membership are explicit; the original one-export sources and
+failed receipts remain untouched. Source admission, generated runtime behavior,
+compile-fail/refusal controls, model inventory, fresh selected proof/application
+and independent review remain open. All new work stays local.

@@ -1,0 +1,110 @@
+[
+  {
+    "role": "conditional",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/conditional.compact",
+    "sha256": "0fff5485500940e562327829b71b20d890fd844312550798fe6373817c51c6cd",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "f67e83cfb1c4ce3c548ada76055d8eaf201ad79b5747fdfb1ee575df682d0be5",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "direct_helper",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/direct_helper.compact",
+    "sha256": "98e33f99ead5a35725ea1a626e35fc15e319365ba058b2bc6d9298c4195893e6",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "f8fdd7da72d5e2a3cfd29de1a6af95cae66604cc90c7c680f67f763ba2f19161",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "direct_witness",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/direct_witness.compact",
+    "sha256": "1496fade6f598960e792956a52f6b4764ab652566c35e2f0e8e589e0c45344a5",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "783891d62811227e11a4cdbe79b4f03fbcee8547a7d39b69cb2d40f54f606a44",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "empty_local",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/empty_local.compact",
+    "sha256": "9d8ea27696e24af742bedcc665c4a5243a6006150d9a16ee07dddb7bca52cb04",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "1e19ca7c92569f62fc32e253f18e16df9ffbdc77b07264ace53cc3d4d59c9040",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "local_alias",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/local_alias.compact",
+    "sha256": "47ddb5b07b77a8c49689f67eef782dbfda3fe82fff7c28d10bb3ea2ce20498af",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "34849ad44c99bd1d4f626ec417b1bfddc06fb77a9a595c47f1d3f51d4057a6de",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "local_helper",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/local_helper.compact",
+    "sha256": "41f9f57be3e5913678f11d3b4737a8b1a8de7da5740e58ac7422d763c2f3bc2e",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "1310f9ff13b46478176b98e4ea8bc1c9ac2d768954b583180dfbffe259e9ab8e",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "local_literal",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/local_literal.compact",
+    "sha256": "5a6f6fcceadb140760768f6414719d619db66a60f52801f2d62a570ab10d2933",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "f4a49afb8c7698223f33b4957fba329428c6d0275feec9ce3cc7c7797f719898",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "local_witness",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/local_witness.compact",
+    "sha256": "90eceb5e7cba3a465ce006ca5a33bf6d96cb4c09c82b26c9d03d3eea09b20d35",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "028f90a144b3bb16fd301fc3738d6787474a9a5f8a4dee130f6f157c04331986",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  },
+  {
+    "role": "parameter",
+    "path": "tools/compact-rust-backend/tests/constructor_vector_operands/sources/parameter.compact",
+    "sha256": "515807eff36873aaa9c80c6df80813af042d08aee2a3799455ad4f8966127503",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "characterized_original_sha256": "9003f3d02afce58cccc1a077533489bf203abed1190235923545e99f6d939611",
+    "source_epoch": "header-bearing expanded whole source; distinct from original one-export characterization"
+  }
+]

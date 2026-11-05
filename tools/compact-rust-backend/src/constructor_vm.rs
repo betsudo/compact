@@ -39,3 +39,6 @@ mod tests;
 
 #[cfg(test)]
 mod collection_guard_tests;
+
+mod vector_source;
+pub(crate) use vector_source::vector_source;

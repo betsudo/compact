@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.192, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Admit checked single-Vector constructor loop operands from local values,
+  helpers, witnesses and conditional expressions. Prepare nonparameter operands
+  once before iteration while retaining the existing borrowed parameter route,
+  lexical/type/layout/resource validation and earlier invalid-kind refusals.
+
 ## [Toolchain 0.31.191, language 0.23.105, runtime 0.16.102]
 
 Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.

@@ -3039,8 +3039,8 @@
                                                                     (cons item-name parameters)
                                                                     src1 witness-ids))))]
                          [(var-ref ,src2 ,var-name)
-                          (unless (memq var-name parameters)
-                            (source-errorf src2 "Rust constructor Vector iterable must be a constructor parameter"))
+                          (unless (or (memq var-name parameters) (assq var-name bindings))
+                            (source-errorf src2 "Rust constructor Vector iterable must be in scope"))
                           (object (cons "kind" "for_each_vector")
                                   (cons "binding"
                                         (object (cons "name" (sourced-rust-var-name item-name))
@@ -3052,7 +3052,17 @@
                                           (constructor-fold-body-ir expr1 acc-name
                                                                     (cons item-name parameters)
                                                                     src1 witness-ids))))]
-                         [else (source-errorf src "Rust constructor fold needs a literal or parameter Vector iterable")])]))]))])]
+                         [else (object (cons "kind" "for_each_vector")
+                                  (cons "binding"
+                                        (object (cons "name" (sourced-rust-var-name item-name))
+                                                (cons "ty" (type-ir item-type src))))
+                                  (cons "source" (stateful-typed-expression-ir expr2 type src witness-ids))
+                                  (cons "length" len)
+                                  (cons "steps"
+                                        (list->vector
+                                          (constructor-fold-body-ir expr1 acc-name
+                                                                    (cons item-name parameters)
+                                                                    src1 witness-ids))))])]))]))])]
              [else (source-errorf src "Rust constructor fold needs an inline circuit body")])]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (let ([bindings^
