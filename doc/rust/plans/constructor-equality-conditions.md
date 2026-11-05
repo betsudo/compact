@@ -1,6 +1,6 @@
 # Constructor equality conditions
 
-Status: local follow-up to PR #705, tracked in #707 and reconciled by a signed forward merge. Bounded local source/API, native preflight and selected proof/application results are independently accepted at `2a6a54799521c4cf8f6904a2e1663b85887ffa28`. The maintained composed gate and required Linux CI remain pending. The original accepted canonical baseline was `90cd758c`.
+Status: local follow-up to PR #705, tracked in #707 and reconciled by a signed forward merge. Bounded local source/API, native preflight and selected proof/application results are independently accepted at `2a6a54799521c4cf8f6904a2e1663b85887ffa28`. The maintained composed gate subsequently passes at `041b74e47`; required Linux CI and integration remain pending. The original accepted canonical baseline was `90cd758c`.
 Unreleased toolchain `0.31.195` is reserved for this independent slice.
 
 ## Gap and evidence
@@ -160,6 +160,38 @@ python3 -B tools/compact-rust-backend/check_constructor_equality_proof.py \
   --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$FRESH_OUTPUT"
 ```
 
-Its CLI/source composition is prepared locally; the full command has not yet
-run. Earlier accepted results remain bound to `2a6a5479`, rather than being
-relabeled as execution of the later composition/documentation commit.
+At the source-composition checkpoint the full command had not yet run.
+The subsequent current041 execution is recorded below; the earlier accepted
+results remain bound to `2a6a5479` with their own separate receipts.
+
+## Maintained local qualification and Linux wiring
+
+At clean `041b74e47a8f5e22d23967f01221e67febe0b0a1`, the literal maintained
+command passes with its same-head original existing-compiler recipe. Its source
+API stage runs nineteen commands; its model stage observes all 24 intact k6
+models and five membership refusals in twelve commands. All 45 native
+preflight commands and 25 proof commands pass. Fresh direct generation produces
+sixteen keypairs, followed by sixteen independently verified standalone proofs
+and sixteen separately proved funded DEFAULT-strict applications/replays with
+all seven negatives. Parent inspection rehashes 216 command streams, 4,815
+frozen inputs and 120 role artifacts. Independent actual-result review accepts this exact local scope with no
+actionable P1/P2 or acceptance-critical gap. It authenticates complete physical
+source/material closure and confirms the sixteen proof and transaction hashes
+are each distinct and disjoint from the earlier accepted `2a6a5479` epoch.
+
+The required Linux step runs this complete maintained command after
+the unchanged constructor Vector gate. It uses the existing authenticated
+same-run compiler, records its original recipe, resolves ZKIR from the compiler
+dev shell and preserves the exact TypeScript runtime resolution. Its bounded
+external Cargo target is separate from source. Diagnostic uploads retain
+recipe and complete gate outputs on success or failure, excluding only Cargo
+targets. Focused controls execute the literal configured shell with success
+and each upstream failure, including paths containing spaces, environment
+forwarding and stop-on-failure behavior. They also require material ordering,
+unconditional complete execution, unchanged preceding gates and diagnostic
+retention. These shell controls do not claim real proofs.
+
+The workflow addition is implemented locally; no hosted run or integration is
+claimed. Future whole-source CI must qualify the final integration head.
+Constructor/deployment cryptography, wallet/network lifecycle and total
+constructor cost remain outside the selected later-entrypoint result.
