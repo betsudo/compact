@@ -36,7 +36,7 @@ These records retain their exact source/evidence revisions. They do not claim PR
 
 - [Outer Vector product semantics](plans/outer-vector-product-semantics.md): reviewed local compiler191 qualification of the complete91-command native/API/ingress protocol, all16 models and all15 eligible fresh direct proofs with separate funded DEFAULT-strict applications/replay refusals. The intact family branch remains k9 and unproved. Earlier application/proof epochs are not relabelled; full CI/Linux and integration remain open.
 
-- [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): next bounded integration proposal for the complete maintained native/proof/application gate, with all prior required gates and independent diagnostics retained. No hosted result is claimed.
+- [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): locally implemented and independently reviewed; the literal Nix step passes all 91 native checks, 15 fresh verified proofs and 15 separately proved strict applications. All prior gates and independent diagnostics remain. PR #704 publishes this wiring; full hosted Linux qualification and integration remain open. Hosted macOS arm64 is opt-in via the `Compiler Build` manual `run_macos` input; PRs and schedules keep the full required Linux gates.
 
 - [Constructor Vector iterable operands](plans/constructor-vector-operands.md): reviewed local compiler192 qualification covers 13 complete SDKs, constructor state/witness/owned-value behavior and 15 selected fresh later-entrypoint proofs with separate funded DEFAULT-strict applications and replay controls. Constructor cryptography/total cost, new-head CI/Linux and integration remain open.
 
