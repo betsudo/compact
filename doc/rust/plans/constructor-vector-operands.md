@@ -1,8 +1,9 @@
 # Constructor fixed-Vector iterable expressions
 
 Status: bounded compiler194 source/API/model and selected later-entrypoint
-proof/application qualification accepted at frozen `847758e3`. Its maintained
-combined CI command is being qualified separately. Constructor cryptography/total
+proof/application qualification accepted at frozen `847758e3`. The maintained
+combined CI command also passed fresh native arm64 execution at `07327f476`,
+with independent source and actual-receipt reviews. Constructor cryptography/total
 cost, new-head CI/Linux and integration remain open. Earlier `f09900533`,
 `775b662ed` and `a8133996b` results retain their separate identities below.
 Local continuation of the primary Rust AST goal, 2026-11-05. Earlier sections
@@ -627,8 +628,18 @@ success/failure diagnostics are retained independently of later job outcomes.
 Mac remains explicit manual opt-in. HOST orchestration, literal-shell and refusal
 controls confer no source/material/proof authority.
 
-The new command needs fresh clean-head literal execution and independent source
-and actual receipt reviews before publication; the old 847 proof epoch is not
-relabeled. Required native Linux GitHub CI and human integration review remain
-open. The separate Field-equality constructor-condition refusal remains a future
+At clean `07327f476`, the exact configured workflow Bash passed in 1,781.912
+seconds on native arm64 with one fresh physical external target. It executed 132
+source/API commands, 42 intact k6 models, 61 preflight commands, 28 fresh direct
+keypairs and seventeen independently verified standalone proof cases plus
+seventeen separately proved funded DEFAULT-strict applications and replay
+refusals. Expected negative commands retain their original nonzero exits. Fresh
+source and actual-receipt Codex CLI reviews found no actionable P1/P2 defects;
+parent triage verified their actual terminal artifacts. The receipt review
+independently rehashed 7,280 frozen inputs, 177 role artifacts and 502 retained
+streams. The previous 847 proof epoch is not relabeled.
+
+This result paragraph is a documentation-only follow-up to the exact executed
+073 source epoch. Required native Linux GitHub CI and human integration review
+remain open. The separate Field-equality constructor-condition refusal remains a future
 semantic gap; no broader condition language or framework is introduced here.
