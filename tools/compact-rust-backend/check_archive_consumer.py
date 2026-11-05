@@ -18,10 +18,12 @@
 """Build six generated contracts together using only the runtime archives."""
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -40,10 +42,26 @@ CONTRACTS = (
     ("merkle-path-witness", ROOT / "examples/rust_backend/merkle_path_witness.compact"),
 )
 PACKAGE_NAMES = ("midnight-compact-runtime-macros", "midnight-compact-runtime")
+RETAINED = None
+
+
+def execute(arguments, *, cwd=ROOT, env=None):
+    result = subprocess.run(arguments, cwd=cwd, env=env, capture_output=True, text=True)
+    if RETAINED is not None:
+        index = len(RETAINED["commands"])
+        streams = {}
+        for name in ("stdout", "stderr"):
+            path = Path(RETAINED["output"]) / "commands" / f"{index:02d}.{name}"
+            path.write_text(getattr(result, name))
+            streams[name] = {"path": str(path), "sha256": sha256(path)}
+        RETAINED["commands"].append({
+            "command": arguments, "cwd": str(cwd), "exit": result.returncode, **streams,
+        })
+    return result
 
 
 def run(arguments: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None) -> str:
-    result = subprocess.run(arguments, cwd=cwd, env=env, capture_output=True, text=True)
+    result = execute(arguments, cwd=cwd, env=env)
     if result.returncode:
         raise RuntimeError(
             f"{' '.join(arguments)} failed with {result.returncode}:\n"
@@ -55,6 +73,47 @@ def run(arguments: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = 
 def sha256(path: Path) -> str:
     with path.open("rb") as content:
         return hashlib.file_digest(content, "sha256").hexdigest()
+
+
+@contextmanager
+def qualification_directory(output: Path | None, inputs: dict):
+    """Retain one invocation without changing the default temporary workflow."""
+    global RETAINED
+    if output is None:
+        with tempfile.TemporaryDirectory(prefix="rust-archive-consumer-", dir=ROOT / "target") as scratch:
+            yield Path(scratch)
+        return
+    output = output.resolve()
+    output.mkdir(parents=True, exist_ok=False)
+    (output / "commands").mkdir()
+    scratch = output / "scratch"
+    scratch.mkdir()
+    receipt = {"format": "compact-archive-consumer/v1", "status": "running",
+               "output": str(output), "commands": [], "inputs": inputs}
+    RETAINED = receipt
+    try:
+        yield scratch
+        for path, digest in inputs.get("sha256", {}).items():
+            if sha256(Path(path)) != digest:
+                raise RuntimeError(f"qualification input changed: {path}")
+        receipt["status"] = "passed"
+    except BaseException as error:
+        receipt.update(status="failed", error=f"{type(error).__name__}: {error}")
+        raise
+    finally:
+        receipt["artifacts"] = {
+            path.relative_to(output).as_posix(): sha256(path)
+            for path in sorted(output.rglob("*")) if path.is_file()
+        }
+        (output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        RETAINED = None
+
+
+def retain_control(path: Path) -> None:
+    if RETAINED is not None:
+        directory = Path(RETAINED["output"]) / "controls"
+        directory.mkdir(exist_ok=True)
+        shutil.copyfile(path, directory / path.name)
 
 
 def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
@@ -133,6 +192,8 @@ def main() -> None:
     parser.add_argument("--manifest", required=True, type=Path,
                         help="release manifest produced by check_release_packages.py")
     parser.add_argument("--compiler", default="compactc", help="packaged compactc executable")
+    parser.add_argument("--output", type=Path,
+                        help="new directory retaining scratch, commands and success/failure receipt")
     args = parser.parse_args()
     release = json.loads(args.manifest.read_text())
     if release.get("schema") != 1 or release.get("source", {}).get("commit") != run(
@@ -151,9 +212,24 @@ def main() -> None:
         if not archive.is_file() or sha256(archive) != entry["sha256"]:
             raise RuntimeError(f"{archive}: missing or different from release manifest")
 
+    inputs = {}
+    if args.output is not None:
+        paths = [args.manifest.resolve(), Path(__file__).resolve(),
+                 Path(__file__).with_name("consumer_safety.py"),
+                 *(source for _, source in CONTRACTS),
+                 *(ROOT / entry["archive"] for entry in entries)]
+        for name in (args.compiler, "cargo", "rustc"):
+            tool = shutil.which(name)
+            if tool is None:
+                raise RuntimeError(f"missing qualification tool: {name}")
+            paths.append(Path(tool).resolve())
+        inputs = {"head": run(["git", "rev-parse", "HEAD"]).strip(),
+                  "tree": run(["git", "rev-parse", "HEAD^{tree}"]).strip(),
+                  "sha256": {str(path): sha256(path) for path in paths},
+                  "release": release,
+                  "scope": "Local ordinary archive consumption; no publication, proof or wallet execution."}
     (ROOT / "target").mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="rust-archive-consumer-", dir=ROOT / "target") as scratch:
-        temporary = Path(scratch)
+    with qualification_directory(args.output, inputs) as temporary:
         vendor = temporary / "vendor"
         run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
              "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
@@ -277,7 +353,12 @@ def main() -> None:
         environment.setdefault("CARGO_INCREMENTAL", "0")
         environment.setdefault("CARGO_BUILD_JOBS", "2")
         run(["cargo", "test", "--offline", "--quiet"], cwd=consumer, env=environment)
-        check_consumer_safety(consumer, environment)
+        safety = check_consumer_safety(
+            consumer, environment,
+            logs=Path(RETAINED["output"]) / "safety-commands" if RETAINED is not None else None,
+        )
+        if RETAINED is not None:
+            RETAINED["consumer_safety"] = safety
         compile_rejections = {
             "wrong_set_key": (
                 'use compact_contract_set_boolean as set;\n'
@@ -315,9 +396,10 @@ def main() -> None:
         for name, source in compile_rejections.items():
             negative = consumer / f"tests/{name}.rs"
             negative.write_text(source)
-            rejection = subprocess.run(
+            retain_control(negative)
+            rejection = execute(
                 ["cargo", "check", "--offline", "--test", name, "--quiet"],
-                cwd=consumer, env=environment, capture_output=True, text=True,
+                cwd=consumer, env=environment,
             )
             negative.unlink()
             if rejection.returncode == 0 or "mismatched types" not in rejection.stderr:
@@ -337,9 +419,10 @@ def main() -> None:
                 '    let view = merkle::ledger_contract::PublicStateView::from(&state);\n'
                 f'    let _ = {expression};\n}}\n'
             )
-            rejection = subprocess.run(
+            retain_control(negative)
+            rejection = execute(
                 ["cargo", "check", "--offline", "--test", name, "--quiet"],
-                cwd=consumer, env=environment, capture_output=True, text=True,
+                cwd=consumer, env=environment,
             )
             negative.unlink()
             if rejection.returncode == 0 or "no method named" not in rejection.stderr:
@@ -347,6 +430,8 @@ def main() -> None:
         metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
                                   cwd=consumer, env=environment))
         check_graph(metadata, consumer, vendor, entries)
+        if RETAINED is not None:
+            (temporary / "cargo-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
     print("archive-only Counter + Cell + Set + Map + List + Merkle consumer passed with one shared runtime; public registry publication remains unverified")
 
 
