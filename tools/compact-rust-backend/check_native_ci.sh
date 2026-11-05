@@ -16,7 +16,8 @@
 # limitations under the License.
 
 # Complete ordinary native CI command list.
-# Proofs, wallet application, fixtures, rejections, workspace tests and Clippy run.
+# Proofs, wallet application, rejections, workspace tests and Clippy run.
+# The complete fixture freshness check is owned by the parallel CI job.
 set -e -o pipefail
 
 df -h "$GITHUB_WORKSPACE"
@@ -25,7 +26,6 @@ cargo fmt --all -- --check
 env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC="${COMPACTC:-compactc}" COMPACT_RUST_WALLET_HANDOFF="$RUNNER_TEMP/compact-counter-wallet-handoff.bin" COMPACT_RUST_DEPLOY_HANDOFF="$RUNNER_TEMP/compact-counter-deploy-handoff.bin" python3 -X faulthandler -u tools/compact-rust-backend/check_compactc_target.py --consumer --proof
 nix develop .#compiler --command npm ci --prefix tools/compact-rust-backend/wallet-handoff --ignore-scripts
 nix develop .#compiler --command node tools/compact-rust-backend/check_wallet_handoff.mjs "$RUNNER_TEMP/compact-counter-deploy-handoff.bin" "$RUNNER_TEMP/compact-counter-wallet-handoff.bin" tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v8
-env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC="${COMPACTC:-compactc}" python3 -X faulthandler -u tools/compact-rust-backend/check_fixture_outputs.py
 python3 tools/compact-rust-backend/check_oracle_acceptance.py
 env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC="${COMPACTC:-compactc}" python3 -X faulthandler -u tools/compact-rust-backend/check_rejections.py
 df -h "$GITHUB_WORKSPACE"
