@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PR license scope controls; the original full-header validator remains strict."""
+"""Full-header placement, safe writing and exact PR license-debt controls."""
 from pathlib import Path
 import hashlib
 import subprocess
@@ -123,6 +123,81 @@ class HeaderRegressionTests(unittest.TestCase):
         self.path.write_text('print("modified debt")\n' + header)
         self.assertIn(self.path, manager.validate_headers())
         self.assertFalse(gate.classify(self.root, self.base, [self.path])['passed'])
+
+    def test_rust_attributes_with_whitespace_cannot_precede_header(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('//', '2026') + '\n'
+        for attribute in ['#! [allow(dead_code)]\n', '#!\t[allow(dead_code)]\n',
+                          '#!\n[allow(dead_code)]\n']:
+            with self.subTest(attribute=attribute):
+                self.assertEqual(manager._get_insert_index(attribute.splitlines(keepends=True)), 0)
+                self.assertFalse(manager._scan_for_header('//', attribute + header))
+
+    def test_unchanged_compact_execution_directives_remain_valid_preambles(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        for name in ['counter_failing.compact', 'map_failing.compact', 'map_field_field.compact']:
+            with self.subTest(name=name):
+                source = gate.ROOT / 'examples/adt/negative' / name
+                self.assertTrue(manager._scan_for_header('//', source.read_text()))
+        header = manager._format_license_header('//', '2026') + '\n'
+        self.assertFalse(manager._scan_for_header('//', '//EXECUTION_FAIL\nledger x: Field;\n' + header))
+
+    def test_encoding_and_docker_directives_precede_header_not_code(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('#', '2026') + '\n'
+        for preamble in ['# -*- coding: latin-1 -*-\n', '# comment\n# coding=utf-8\n',
+                         '#!/usr/bin/env python3\n# coding: utf-8\n',
+                         '# syntax=docker/dockerfile:1\n# escape=`\n']:
+            with self.subTest(preamble=preamble):
+                self.assertTrue(manager._scan_for_header('#', preamble + '\n' + header))
+                self.assertFalse(manager._scan_for_header('#', preamble + 'RUN true\n' + header))
+
+    def test_writer_preserves_existing_full_headers_including_footers(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        header = manager._format_license_header('//', '2026') + '\n'
+        path = self.root / 'existing.rs'
+        for content in [header + 'fn main() {}\n', 'fn main() {}\n' + header]:
+            with self.subTest(content=content):
+                path.write_text(content)
+                manager._save_header_to_file('//', path, header)
+                self.assertEqual(path.read_text(), content)
+                manager._save_header_to_file('//', path, header)
+                self.assertEqual(path.read_text(), content)
+        self.assertEqual(manager.processed_files, 0)
+
+    def test_writer_preserves_byte_pinned_historical_source_copy(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        source = gate.ROOT / ('tools/compact-rust-backend/tests/retained-conformance-6e37443b/'
+                              'tools/compact-rust-backend/src/lib.rs')
+        original = source.read_bytes()
+        path = self.root / 'historical.rs'
+        path.write_bytes(original)
+        manager._save_header_to_file('//', path, manager._format_license_header('//', '2026'))
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(source.read_bytes(), original)
+        self.assertEqual(manager.processed_files, 0)
+
+    def test_writer_inserts_once_without_disabling_directives_or_rust_attributes(self):
+        manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        for index, (prefix, preamble, body) in enumerate([
+                ('#', '# syntax=docker/dockerfile:1\n', 'FROM scratch\n'),
+                ('#', '#!/usr/bin/env python3\n# coding: utf-8\n', 'print(1)\n'),
+                ('//', '#!/usr/bin/env node\n', 'console.log(1);\n'),
+                (';;;', '#!chezscheme\n', '(library ())\n'),
+                ('//', '//EXECUTION_FAIL\n//CompactError: expected\n', 'ledger x: Field;\n'),
+                ('//', '', '#! [allow(dead_code)]\nfn main() {}\n')]):
+            with self.subTest(prefix=prefix, preamble=preamble):
+                path = self.root / f'new-{index}'
+                path.write_text(preamble + body)
+                header = manager._format_license_header(prefix, '2026')
+                manager._save_header_to_file(prefix, path, header)
+                result = path.read_text()
+                self.assertTrue(result.startswith(preamble))
+                self.assertIn(body, result)
+                self.assertTrue(manager._scan_for_header(prefix, result))
+                self.assertEqual(result.count('This file is part of Compact.'), 1)
+                manager._save_header_to_file(prefix, path, header)
+                self.assertEqual(path.read_text(), result)
 
 
 class PinnedHistoricalCopyTests(unittest.TestCase):

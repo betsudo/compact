@@ -665,7 +665,7 @@ full-header or exact historical-copy checks.
 
 Only long statements in this PR's new Python tooling are wrapped. All seven
 module syntax trees, including literal receipt strings, remain identical; all
-62 lines over150 characters are removed. This is formatting, not a proof protocol
+62 lines over 150 characters are removed. This is formatting, not a proof protocol
 or source-binding change. Prior local and hosted proof epochs retain their exact
 identities; the repaired head still requires the complete configured PR gates.
 
@@ -673,3 +673,21 @@ The missing canonical push trigger and serial CI cost remain tracked in #706.
 Restoring duplicate post-merge qualification changes the deliberate cost policy;
 this fixture/header repair preserves current triggers, optional macOS behavior,
 all proof/E2E gates and diagnostic retention. No CI optimization is introduced.
+
+### Fresh-review header follow-up
+
+Fresh Claude CLI review of `d82be3f7` confirms the generated welcome repair and
+Python AST equivalence, then identifies header-policy edge cases. The follow-up
+preserves the existing Compact negative-test directives, Docker parser directives,
+PEP263 cookies and script/reader preambles. Spaced or split Rust inner attributes
+still cannot precede a header. Write mode leaves any already complete header
+byte-for-byte unchanged, including exact historical copies with a footer;
+validation continues reporting misplaced-header debt rather than silently
+rewriting or duplicating historical source. New controls exercise actual writes,
+repeat-write idempotence and an isolated copy of the retained conformance source.
+The lexical test keeps its original authored 2026 copyright year.
+
+The extra clones in generated welcome field projections are unchanged emitter
+behavior. Minimizing them is a separate measured optimization, requiring checked
+ownership and error-order controls; this repair does not hand-edit fresh output
+or broaden the compiler/proof scope. Full new-head hosted CI remains required.

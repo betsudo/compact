@@ -130,9 +130,22 @@ class HeaderManager:
 
     @staticmethod
     def _get_insert_index(lines: list[str]) -> int:
+        coding = re.compile(r"[ \t\f]*\#.*?coding[:=][ \t]*[-\w.]+")
         index = 0
-        while (index < len(lines) and lines[index].startswith("#!")
-               and not lines[index].startswith("#![")):
+        # PEP 263 also permits an encoding cookie on line two after an empty
+        # line or a comment. Never mistake a Rust inner attribute for that comment.
+        if (len(lines) > 1 and coding.match(lines[1])
+                and (not lines[0].strip() or lines[0].lstrip().startswith('#'))
+                and not re.match(r"#!\s*\[", ''.join(lines))):
+            index = 2
+        while index < len(lines):
+            line = lines[index]
+            shebang = line.startswith("#!") and not re.match(r"#!\s*\[", ''.join(lines[index:]))
+            encoding = index < 2 and coding.match(line)
+            docker = re.match(r"#\s*(?:syntax|escape|check)\s*=", line)
+            compact = line.rstrip() == '//EXECUTION_FAIL' or line.startswith('//CompactError:')
+            if not (shebang or encoding or docker or compact):
+                break
             index += 1
         return index
 
@@ -140,7 +153,10 @@ class HeaderManager:
         try:
             content = file_path.read_text(encoding='utf-8', errors='ignore')
 
-            if self._scan_for_header(prefix, content):
+            # Preserve an existing complete header wherever it is, including
+            # byte-pinned historical sources. Validation reports placement debt;
+            # write mode must not duplicate or silently relocate that header.
+            if self._get_header_pattern(prefix).search(content):
                 logging.debug(f"-> header already exists: {file_path}")
                 return
 
