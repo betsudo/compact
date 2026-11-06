@@ -619,8 +619,8 @@ The compiler schema descriptor is only an adapter after actual original-recipe
 source admission; it creates no new build/trust authority. No proof/verdict cache
 or resumed old qualification output is accepted.
 
-The required Linux workflow calls this combined command after verified material
-and the existing full outer-Vector gate. One bounded external Cargo target is
+The initial serial Linux workflow called this combined command after verified
+material and the existing full outer-Vector gate. One bounded external Cargo target is
 reused across all constructor stages, preserving the preflight's outside-source
 target guard and the rest of the job's existing target. Every selected executable
 is privately snapshotted. All prior compiler/proof/E2E gates remain unchanged;
@@ -694,3 +694,36 @@ make the migration-on-edit policy explicit: unchanged bytes remain preserved;
 future edits need a leading license in that PR, and the unchanged shared writer
 cannot perform that move automatically. This bounded decision avoids rewriting
 unrelated backend tests or historical generator data in the constructor repair.
+
+
+## PR #705 job-limit repair — 6 November 2026
+
+At `281949b2`, the Linux native backend gate passed, including the repaired
+fixture comparison. The new constructor gate also passed all seventeen selected
+proof cases and retained its artifact. The main consumer then exceeded its
+configured three-hour execution limit in run `42132301959`, job `127618693829`:
+00:06:35–03:06:58 UTC. GitHub reports “The job has exceeded the maximum execution
+time of 3h0m0s”. The constructor gate occupied 34m37s of that serial job; the
+interrupted nested-component gate and later packaging/E2E gates are not accepted.
+
+The bounded scheduling repair moves only this PR's constructor gate to a
+parallel Linux consumer. Both consumers require successful license checking and
+import the exact same-run, same-source, same-platform authenticated compiler
+artifact from the single Linux producer. The constructor consumer resolves its
+own locked ledger fixtures, verifies its toolchain and official parameters,
+uses private external Cargo targets, runs the identical whole-source API/model/
+preflight/fresh proof/application protocol, and retains success/failure evidence.
+It has no cache-write secret. Every existing compiler, backend, proof, package
+and E2E step remains in the legacy consumer.
+
+`Build and test compiler` remains the required status name. It now aggregates
+license, producer, legacy consumer and constructor consumer results and fails
+unless all four are exactly `success`, including when a dependency is skipped
+or cancelled. Both execution jobs retain the 180-minute bound. The focused
+controls execute the configured aggregate shell across all 625 combinations of
+success/failure/skipped/cancelled/empty dependency results; only all-success is
+accepted. Existing literal proof-command failure controls and artifact guards
+are retained. Triggers and optional macOS policy are unchanged; #706's separate
+push-trigger/cost policy is still open. This repair does not claim a whole-CI
+speedup or completion of gates skipped in the timed-out run. Fresh exact-head
+CI and human integration review remain required.

@@ -207,11 +207,12 @@ class WorkflowOwnershipTests(unittest.TestCase):
         workflow = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         for job, next_job, producer, system in (
             ('build-macos', 'license-check', 'compiler-darwin', 'aarch64-darwin'),
-            ('build', None, 'compiler-linux', 'x86_64-linux')):
+            ('constructor-vector', 'build', 'compiler-linux', 'x86_64-linux'),
+            ('build', 'compiler-required', 'compiler-linux', 'x86_64-linux')):
             section = workflow.split('  '+job+':\n', 1)[1]
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
-            if job == 'build':
+            if job in ('build', 'constructor-vector'):
                 self.assertIn('if: ${{ !cancelled() }}', section)
             else:
                 self.assertIn("if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}", section)
@@ -464,11 +465,12 @@ if stage == 'zkir': print('/mock/bin/zkir')
 
     def test_constructor_gate_requires_material_full_execution_and_diagnostics(self):
         workflow=(owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
-        linux=workflow.split('  build:\n',1)[1]
+        linux=workflow.split('  constructor-vector:\n',1)[1].split('  build:\n',1)[0]
         before,step=linux.split('      - name: Qualify constructor Vector APIs and seventeen selected proof cases\n',1)
         step=step.split('      - name:',1)[0]
         self.assertIn('Prepare verified built-in proof material',before)
-        self.assertIn('Qualify outer-Vector product APIs and fifteen selected proofs',before)
+        self.assertIn('Import authenticated same-run compiler closure',before)
+        self.assertIn('Resolve locked ledger proof fixtures',before)
         self.assertIn('id: constructor_vector_proof',step)
         self.assertIn('check_constructor_vector_proof.py --compiler-receipt',step)
         self.assertIn('CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-vector-target" env -u LD_LIBRARY_PATH',step)
@@ -484,9 +486,11 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('${{ runner.temp }}/compact-constructor-vector-recipe/',upload)
         self.assertIn('${{ runner.temp }}/compact-constructor-vector-proof/',upload)
         self.assertIn('!${{ runner.temp }}/compact-constructor-vector-proof/**/cargo-target/**',upload)
-        self.assertLess(linux.index('Retain constructor Vector proof diagnostics'),linux.index('Qualify isolated witnessed functional SDK'))
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',linux)
-        self.assertIn('Qualify wide-zero multiplication proofs',linux)
+        legacy=workflow.split('  build:\n',1)[1].split('  compiler-required:\n',1)[0]
+        self.assertNotIn('constructor_vector_proof', legacy)
+        self.assertIn('Qualify isolated witnessed functional SDK',legacy)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',legacy)
+        self.assertIn('Qualify wide-zero multiplication proofs',legacy)
 
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
@@ -505,6 +509,45 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz', upload)
         self.assertNotIn('compact-source-map-publication/', upload)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
+
+    def test_required_compiler_status_fails_closed_for_every_dependency_outcome(self):
+        import itertools
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        required = workflow.split('  compiler-required:\n', 1)[1]
+        self.assertIn('name: Build and test compiler', required)
+        self.assertEqual(workflow.count('name: Build and test compiler\n'), 1)
+        self.assertIn('needs: [license-check, compiler-linux, build, constructor-vector]', required)
+        self.assertIn('if: ${{ always() }}', required)
+        self.assertNotIn('continue-on-error', workflow)
+        shell = textwrap.dedent(required.split('        run: |\n', 1)[1])
+        names = ('LICENSE_RESULT', 'PRODUCER_RESULT', 'BUILD_RESULT', 'CONSTRUCTOR_RESULT')
+        for outcomes in itertools.product(('success', 'failure', 'skipped', 'cancelled', ''), repeat=4):
+            with self.subTest(outcomes=outcomes):
+                env = dict(os.environ, **dict(zip(names, outcomes)))
+                run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                           env=env, capture_output=True, timeout=10)
+                self.assertEqual(run.returncode == 0, all(x == 'success' for x in outcomes))
+
+    def test_constructor_is_an_independent_required_same_producer_consumer(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  build:\n', 1)[0]
+        legacy = workflow.split('  build:\n', 1)[1].split('  compiler-required:\n', 1)[0]
+        for consumer in (constructor, legacy):
+            self.assertIn('needs: [license-check, compiler-linux]', consumer)
+            self.assertIn('timeout-minutes: 180', consumer)
+            self.assertIn('if: ${{ !cancelled() }}', consumer)
+            self.assertIn('needs.compiler-linux.outputs.artifact-id', consumer)
+            self.assertIn('needs.compiler-linux.outputs.producer-attempt', consumer)
+            self.assertIn('--source-sha "$SOURCE_SHA" --system x86_64-linux', consumer)
+            self.assertIn('--run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT"', consumer)
+            self.assertIn('ref: ${{ github.sha }}', consumer)
+        self.assertIn("skip_cache: 'true'", constructor)
+        self.assertNotIn('secrets.', constructor)
+        self.assertIn('CARGO_TARGET_DIR: ${{ runner.temp }}/constructor-vector-bootstrap-target', constructor)
+        self.assertNotIn('Qualify outer-Vector product APIs', constructor)
+        self.assertIn('Check and test native Rust backend', legacy)
+        self.assertIn('Rehearse Rust runtime packages', legacy)
+        self.assertIn('Test E2E', legacy)
 
     def test_literal_source_map_packaging_preserves_names_bytes_and_partial_failures(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()

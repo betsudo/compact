@@ -45,21 +45,24 @@ class ProofCommands(unittest.TestCase):
 
     def test_workflow_preparation_uses_the_same_checked_proof_profile(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
-        preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
-                       if line.lstrip().startswith("cargo run ")
-                       and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 1, "expected one direct proof-material preparation")
-        command = preparation[0]
-        boundary = command.index("--")
-        options = command[:boundary]
-        self.assertEqual(options[options.index("--profile") + 1], "proof-checks")
-        self.assertEqual(options[options.index("-p") + 1], "compact-rust-proof-smoke")
-        self.assertIn("--locked", options)
-        self.assertIn("--offline", options)
-        self.assertNotIn("--release", options)
-        self.assertNotIn("-r", options)
-        self.assertEqual(options.count("--profile"), 1)
-        self.assertEqual(command[boundary + 1], "--prepare-proof-material")
+        for job, end in (("constructor-vector", "build"), ("build", "compiler-required")):
+            with self.subTest(job=job):
+                consumer = workflow.split("  " + job + ":\n", 1)[1].split("  " + end + ":\n", 1)[0]
+                preparation = [shlex.split(line.strip()) for line in consumer.splitlines()
+                               if line.lstrip().startswith("cargo run ")
+                               and "--prepare-proof-material" in line]
+                self.assertEqual(len(preparation), 1, "one direct preparation per isolated consumer")
+                command = preparation[0]
+                boundary = command.index("--")
+                options = command[:boundary]
+                self.assertEqual(options[options.index("--profile") + 1], "proof-checks")
+                self.assertEqual(options[options.index("-p") + 1], "compact-rust-proof-smoke")
+                self.assertIn("--locked", options)
+                self.assertIn("--offline", options)
+                self.assertNotIn("--release", options)
+                self.assertNotIn("-r", options)
+                self.assertEqual(options.count("--profile"), 1)
+                self.assertEqual(command[boundary + 1], "--prepare-proof-material")
 
     def test_capability_preflight_precedes_proofs_and_retains_later_live_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
@@ -67,33 +70,42 @@ class ProofCommands(unittest.TestCase):
         command = ("env -u LD_LIBRARY_PATH nix develop .#compiler --command env "
                    "COMPACTC=compactc python3 -X faulthandler -u "
                    "tools/compact-rust-backend/check_rejections.py")
-        self.assertEqual(workflow.count(command), 1)
-        first = workflow.index(command)
-        self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), first)
-        self.assertLess(first, workflow.index("- name: Run compiler tests"))
-        self.assertLess(first, workflow.index("--prepare-proof-material"))
+        self.assertEqual(workflow.count(command), 2)
+        for job, end in (("constructor-vector", "build"), ("build", "compiler-required")):
+            with self.subTest(job=job):
+                consumer = workflow.split("  " + job + ":\n", 1)[1].split("  " + end + ":\n", 1)[0]
+                self.assertEqual(consumer.count(command), 1)
+                first = consumer.index(command)
+                self.assertLess(consumer.index("- name: Import authenticated same-run compiler closure"), first)
+                self.assertLess(first, consumer.index("--prepare-proof-material"))
+                if job == "build":
+                    self.assertLess(first, consumer.index("- name: Run compiler tests"))
         live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
         self.assertEqual(native.count(live), 1)
         self.assertLess(native.index("--consumer --proof"), native.index(live))
 
     def test_workspace_clippy_runs_before_proofs_and_remains_in_the_final_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
-        toolchain = workflow.index("      - name: Verify consumer toolchain inside Nix\n")
-        early = workflow.index("      - name: Check workspace Clippy before proof qualification\n")
-        prepare = workflow.index("      - name: Prepare verified built-in proof material\n")
-        final = workflow.index("      - name: Check and test native Rust backend\n")
-        self.assertLess(toolchain, early)
-        self.assertLess(early, prepare)
-        self.assertLess(prepare, final)
         expected = "cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings"
-        commands = [line.strip() for line in workflow.splitlines()
-                    if line.lstrip().startswith("cargo clippy --workspace ")]
-        self.assertEqual(commands, [expected])
-        early_step = workflow[early:prepare]
-        self.assertEqual(early_step.count(expected), 1)
-        self.assertNotIn("continue-on-error", early_step)
-        self.assertNotIn("MIDNIGHT_PP", early_step)
-        final_step = workflow[final:workflow.index("      - name: Rehearse Rust runtime packages\n", final)]
+        for job, end in (("constructor-vector", "build"), ("build", "compiler-required")):
+            with self.subTest(job=job):
+                consumer = workflow.split("  " + job + ":\n", 1)[1].split("  " + end + ":\n", 1)[0]
+                toolchain = consumer.index("      - name: Verify consumer toolchain inside Nix\n")
+                early = consumer.index("      - name: Check workspace Clippy before proof qualification\n")
+                prepare = consumer.index("      - name: Prepare verified built-in proof material\n")
+                self.assertLess(toolchain, early)
+                self.assertLess(early, prepare)
+                commands = [line.strip() for line in consumer.splitlines()
+                            if line.lstrip().startswith("cargo clippy --workspace ")]
+                self.assertEqual(commands, [expected])
+                early_step = consumer[early:prepare]
+                self.assertEqual(early_step.count(expected), 1)
+                self.assertNotIn("continue-on-error", early_step)
+                self.assertNotIn("MIDNIGHT_PP", early_step)
+        legacy = workflow.split("  build:\n", 1)[1].split("  compiler-required:\n", 1)[0]
+        final = legacy.index("      - name: Check and test native Rust backend\n")
+        self.assertLess(legacy.index("      - name: Prepare verified built-in proof material\n"), final)
+        final_step = legacy[final:legacy.index("      - name: Rehearse Rust runtime packages\n", final)]
         invocation = "run: bash tools/compact-rust-backend/check_native_ci.sh"
         self.assertEqual(final_step.count(invocation), 1)
         self.assertEqual(workflow.count(invocation), 1)
@@ -105,7 +117,7 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("cargo test --workspace --exclude compact --locked", native)
 
     def test_passport_failure_receipts_do_not_wait_for_runtime_package_success(self):
-        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text().split("  build:\n", 1)[1].split("  compiler-required:\n", 1)[0]
         gate = workflow.index("      - name: Check standalone original Passport pure consumers\n")
         retain = workflow.index("      - name: Retain failed Passport qualification diagnostics\n")
         prepare = workflow.index("      - name: Prepare verified built-in proof material\n")
