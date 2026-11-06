@@ -72,7 +72,9 @@ class ProofCommands(unittest.TestCase):
                    "tools/compact-rust-backend/check_rejections.py")
         self.assertEqual(workflow.count(command), 1)
         first = workflow.index(command)
-        self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), first)
+        native_job = workflow.split('  build:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
+        self.assertLess(native_job.index("- name: Import authenticated same-run compiler closure"),
+                        native_job.index(command))
         compiler_tests = workflow.split('  compiler-tests:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertIn('- name: Run compiler tests', compiler_tests)
         self.assertIn('needs: compiler-linux', compiler_tests)
@@ -135,7 +137,9 @@ class ProofCommands(unittest.TestCase):
         valid = workflow.index("      - name: Qualify selected original DID functional proof\n")
         zero = workflow.index("      - name: Qualify original DID zero timestamp proof\n")
         retain = workflow.index("      - name: Retain failed DID zero timestamp proof diagnostics\n")
-        self.assertLess(workflow.rindex("- name: Import authenticated same-run compiler closure"), zero)
+        native_job = workflow.split('  build:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
+        self.assertLess(native_job.index("- name: Import authenticated same-run compiler closure"),
+                        native_job.index("- name: Qualify original DID zero timestamp proof"))
         self.assertLess(workflow.index("- name: Prepare verified built-in proof material"), valid)
         self.assertLess(valid, zero)
         self.assertLess(zero, retain)

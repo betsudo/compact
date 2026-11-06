@@ -235,7 +235,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
         linux = workflow.split('  build:\n', 1)[1]
         for retained in ('nix build', 'check_rejections.py',
                          'check_functional_effects.py', 'check_archive_consumer.py', 'cargo clippy',
-                         'check_native_ci.sh', 'yarn test'):
+                         'check_native_ci.sh'):
             self.assertIn(retained, linux)
         self.assertNotIn('./compiler/go', linux)
         packages = workflow.split('  package-outputs:\n', 1)[1].split('  build:\n', 1)[0]
@@ -248,6 +248,14 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertIn('compiler-tests', complete)
         self.assertIn('test "$COMPILER_TESTS_RESULT" = success', complete)
         self.assertIn('test "$PACKAGES_RESULT" = success', complete)
+        e2e = workflow.split('  e2e-tests:\n', 1)[1].split('  complete:\n', 1)[0]
+        self.assertIn('needs: compiler-linux', e2e)
+        self.assertIn('nix build .#compactc', e2e)
+        self.assertIn('nix develop .#compiler --command yarn test', e2e)
+        self.assertIn('name: test-results-ctrf-summary', e2e)
+        self.assertIn('name: event-file', e2e)
+        self.assertNotIn('- name: Test E2E', workflow.split('  build:\n', 1)[1].split('  e2e-tests:\n', 1)[0])
+        self.assertIn('test "$E2E_RESULT" = success', complete)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
         self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)

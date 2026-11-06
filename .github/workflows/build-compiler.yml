@@ -1054,6 +1054,58 @@ jobs:
             target/package/midnight-compact-runtime-*.crate
           if-no-files-found: error
 
+  e2e-tests:
+    name: Compiler E2E and test reports
+    needs: compiler-linux
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 90
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+
+      - name: Checkout exact source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Realize compiler package for relative E2E binary paths
+        run: nix build .#compactc
+
       - name: Test E2E
         run: |
           cd tests-e2e
@@ -1089,7 +1141,7 @@ jobs:
 
   complete:
     name: Build and test compiler
-    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, build]
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, e2e-tests, build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions: {}
@@ -1103,6 +1155,7 @@ jobs:
           COMPILER_TESTS_RESULT: ${{ needs.compiler-tests.result }}
           PACKAGES_RESULT: ${{ needs.package-outputs.result }}
           NATIVE_RESULT: ${{ needs.build.result }}
+          E2E_RESULT: ${{ needs.e2e-tests.result }}
         run: |
           test "$LICENSE_RESULT" = success
           test "$PREFLIGHT_RESULT" = success
@@ -1111,3 +1164,4 @@ jobs:
           test "$COMPILER_TESTS_RESULT" = success
           test "$PACKAGES_RESULT" = success
           test "$NATIVE_RESULT" = success
+          test "$E2E_RESULT" = success
