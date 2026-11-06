@@ -353,7 +353,8 @@ class NestedProductWiringTests(unittest.TestCase):
 
     def test_outer_vector_gate_keeps_full_current_source_and_boundary_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        linux = workflow.split('  build:\n', 1)[1]
+        linux = workflow.split('  outer-vector-proof:\n', 1)[1].split('  native-backend:\n', 1)[0]
+        main = workflow.split('  build:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
         before, step = linux.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)
         step = step.split('      - name: Retain outer-Vector product proof diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
@@ -384,11 +385,13 @@ class NestedProductWiringTests(unittest.TestCase):
                 expression = condition.replace('always()', 'True').replace('steps.outer_vector_product_proof.outcome', repr(outcome)).replace('&&', 'and').replace('||', 'or')
                 self.assertEqual(eval(expression, {"__builtins__": {}}, {}), expected)
         self.assertNotIn('steps.runtime-packages', upload)
-        self.assertLess(linux.index('Retain outer-Vector product proof diagnostics'), linux.index('Qualify isolated witnessed functional SDK'))
+        self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
+        self.assertIn('Qualify isolated witnessed functional SDK', main)
+        self.assertIn('outer-vector-proof, native-backend, e2e-tests, build]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
-        self.assertIn('Qualify constant vector projection proofs', linux)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
+        self.assertIn('Qualify constant vector projection proofs', main)
 
     def test_outer_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
         import os
