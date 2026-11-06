@@ -187,6 +187,12 @@ test verdicts, generated mutable fixtures, secrets or proof success. Every
 restored binary or parameter used for proof qualification must retain its
 current hash/provenance check. Preserve the existing uncached qualification.
 
+Large Linux proof consumers free the hosted image's unused Android, .NET and
+Haskell SDKs before installing Nix. The shared setup action records free disk
+before and after cleanup. This protects the Nix development-environment
+download and proof compilation on standard runners with limited storage;
+the same-run compiler closure and proof inputs retain their verification.
+
 ## Delivery and acceptance
 
 1. Emit per-phase and per-contract timing, peak RSS and cache hit/transfer

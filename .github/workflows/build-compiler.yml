@@ -942,6 +942,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
@@ -1182,6 +1183,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
@@ -1369,6 +1371,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
@@ -1513,6 +1516,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
@@ -1650,6 +1654,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
@@ -1773,6 +1778,7 @@ jobs:
         uses: ./.github/actions/setup-nix-cache
         with:
           attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
 
       - name: Import authenticated same-run compiler closure
         env:
