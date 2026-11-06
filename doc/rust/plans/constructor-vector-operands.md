@@ -727,3 +727,14 @@ are retained. Triggers and optional macOS policy are unchanged; #706's separate
 push-trigger/cost policy is still open. This repair does not claim a whole-CI
 speedup or completion of gates skipped in the timed-out run. Fresh exact-head
 CI and human integration review remain required.
+
+
+The first scheduling commit `ed9c8b9aa` exposed an Actions-specific validation
+error before job execution: `runner.temp` is not available in job-level `env`.
+Its failed run `42155257278` is retained. YAML parsing and the first source
+review did not catch this. The correction selects the external bootstrap target
+through a quoted `$RUNNER_TEMP`/`$GITHUB_ENV` setup step before Cargo. A literal
+shell control covers spaces and dollar signs in that path. The actual pinned
+actionlint 1.7.12 binary reproduces the old context error and accepts the
+corrected workflow; shell command controls remain separate. No key/proof gate,
+identity, limit, trigger or required-result condition changes in this correction.

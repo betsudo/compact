@@ -543,11 +543,29 @@ if stage == 'zkir': print('/mock/bin/zkir')
             self.assertIn('ref: ${{ github.sha }}', consumer)
         self.assertIn("skip_cache: 'true'", constructor)
         self.assertNotIn('secrets.', constructor)
-        self.assertIn('CARGO_TARGET_DIR: ${{ runner.temp }}/constructor-vector-bootstrap-target', constructor)
+        self.assertNotIn('CARGO_TARGET_DIR: ${{ runner.', constructor)
+        self.assertIn('Select external Cargo bootstrap target', constructor)
         self.assertNotIn('Qualify outer-Vector product APIs', constructor)
         self.assertIn('Check and test native Rust backend', legacy)
         self.assertIn('Rehearse Rust runtime packages', legacy)
         self.assertIn('Test E2E', legacy)
+
+    def test_constructor_bootstrap_target_uses_runtime_environment(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  build:\n', 1)[0]
+        start = constructor.index('      - name: Select external Cargo bootstrap target\n')
+        self.assertLess(start, constructor.index('      - name: Resolve locked ledger proof fixtures'))
+        step = constructor[start:].split('      - name:', 2)[1]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        with tempfile.TemporaryDirectory(prefix='runner temp $quote with spaces ') as directory:
+            root = Path(directory)
+            exported = root / 'github-env'
+            run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                       env=dict(os.environ, RUNNER_TEMP=str(root), GITHUB_ENV=str(exported)),
+                                       capture_output=True, timeout=10)
+            self.assertEqual(run.returncode, 0, run.stderr)
+            self.assertEqual(exported.read_text(),
+                             'CARGO_TARGET_DIR=' + str(root / 'constructor-vector-bootstrap-target') + '\n')
 
     def test_literal_source_map_packaging_preserves_names_bytes_and_partial_failures(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()

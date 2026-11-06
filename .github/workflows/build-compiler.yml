@@ -160,7 +160,6 @@ jobs:
       actions: read
     timeout-minutes: 180
     env:
-      CARGO_TARGET_DIR: ${{ runner.temp }}/constructor-vector-bootstrap-target
       CARGO_PROFILE_DEV_DEBUG: 0
       CARGO_PROFILE_TEST_DEBUG: 0
     steps:
@@ -218,6 +217,10 @@ jobs:
       - name: Check Rust capability refusals before expensive qualification
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC=compactc python3 -X faulthandler -u tools/compact-rust-backend/check_rejections.py
+
+      - name: Select external Cargo bootstrap target
+        run: |
+          printf 'CARGO_TARGET_DIR=%s/constructor-vector-bootstrap-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
 
       - name: Resolve locked ledger proof fixtures
         run: |
