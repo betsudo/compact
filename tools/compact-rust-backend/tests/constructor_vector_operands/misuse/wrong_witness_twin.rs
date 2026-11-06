@@ -16,7 +16,7 @@
 use generated::{ledger_contract as c,runtime as r};
 struct Items;
 impl c::Witnesses<u64> for Items {
- fn items(&self,context:r::context::WitnessContext<'_,u64,c::LedgerView<'_>>) -> (u64,r::FixedVector<r::Field,2>) { 
+ fn items(&self,context:r::context::WitnessContext<'_,u64,c::LedgerView<'_>>) -> (u64,r::FixedVector<r::Field,2>) {
   assert_eq!(*context.private_state,5);
   assert_eq!(context.ledger.stored().unwrap(),r::Field::from(99u64));
   (6,r::FixedVector([r::Field::from(3u64);2]))

@@ -773,3 +773,20 @@ This local reconciliation is not current-head hosted CI or human integration
 acceptance. The old green #705 results stay historical. Obtain a fresh independent
 review of the reconciliation, then fresh CI after any authorized publication.
 No canonical branch or GitHub PR is merged by preparing this local candidate.
+
+
+## Published reconciliation review — 6 November 2026
+
+The signed merge `83646b5ec` was published to the existing #705 branch with both
+parent histories preserved. Fresh Claude CLI review found no actionable P1/P2
+findings, consistent with the earlier Codex CLI reconciliation review. The
+50 focused ownership controls and actionlint 1.7.12 passed; the complete Python
+control suite passed 470 tests with 20 expected skips. These are source and local
+control results for that merge revision.
+
+PR qualification remains required for the final published head. A direct manual
+Compiler Build dispatch exercises the separate full-tree license policy and
+encountered historical header debt; it does not establish the PR's changed-file
+license result. Retain that failure and the existing migration-on-edit policy.
+The follow-up removes trailing whitespace from three constructor compile-fail
+twins without changing their Rust tokens, source roles or expected behavior.
