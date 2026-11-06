@@ -387,7 +387,7 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
         self.assertIn('Qualify isolated witnessed functional SDK', main)
-        self.assertIn('outer-vector-proof, native-backend, e2e-tests, build]', workflow)
+        self.assertIn('outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', main)

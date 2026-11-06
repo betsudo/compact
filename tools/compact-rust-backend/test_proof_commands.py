@@ -90,7 +90,7 @@ class ProofCommands(unittest.TestCase):
         preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
                        if line.lstrip().startswith("cargo run ")
                        and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 3, "each independent proof owner prepares verified material")
+        self.assertEqual(len(preparation), 4, "each independent proof owner prepares verified material")
         for command in preparation:
             boundary = command.index("--")
             options = command[:boundary]
@@ -147,11 +147,13 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(final_step.count(invocation), 1)
         self.assertEqual(workflow.count(invocation), 1)
         self.assertNotIn("continue-on-error", final_step)
-        self.assertIn('native-backend, e2e-tests, build]', workflow)
+        self.assertIn('native-scenarios, native-backend, e2e-tests, build]', workflow)
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         self.assertIn("set -e -o pipefail", native)
         self.assertEqual(native.count(expected), 1)
-        self.assertIn("check_compactc_target.py --consumer --proof", native)
+        self.assertIn("check_compactc_target.py --consumer --proof --core-only", native)
+        self.assertIn("--proof --scenario-shard \"$SHARD\"", workflow)
+        self.assertIn("fail-fast: false", workflow)
         self.assertIn("cargo test --workspace --exclude compact --locked", native)
 
     def test_passport_failure_receipts_do_not_wait_for_runtime_package_success(self):
@@ -268,8 +270,8 @@ class ProofCommands(unittest.TestCase):
                           commands[3])
             self.assertIn("COMPACT_RUST_DEPLOY_HANDOFF=" + str(root / "compact-counter-deploy-handoff.bin"),
                           commands[3])
-            self.assertEqual(commands[3][-3:], ["tools/compact-rust-backend/check_compactc_target.py",
-                                               "--consumer", "--proof"])
+            self.assertEqual(commands[3][-4:], ["tools/compact-rust-backend/check_compactc_target.py",
+                                               "--consumer", "--proof", "--core-only"])
 
     def test_existing_run_options_and_all_executable_arguments_survive(self):
         for prefix in (["cargo", "run"], ["cargo", "+1.99.0", "run"]):

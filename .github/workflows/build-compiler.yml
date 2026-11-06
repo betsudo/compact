@@ -1175,6 +1175,133 @@ jobs:
           retention-days: 14
 
 
+  native-scenarios:
+    name: Named native proof scenarios / shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    permissions:
+      contents: read
+      actions: read
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
+    if: ${{ !cancelled() }}
+    timeout-minutes: 120
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+          LICENSE_RESULT: ${{ needs.license-check.result }}
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+          test "$LICENSE_RESULT" = success
+          test "$PREFLIGHT_RESULT" = success
+          test "$FIXTURES_RESULT" = success
+      - name: Checkout compactc repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Setup Rust toolchain for native backend
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
+
+      - name: Setup Python for Rust backend checks
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Restore Cargo registry and git downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+
+      - name: Resolve locked ledger proof fixtures
+        run: |
+          python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
+          cargo fetch --locked
+          cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
+          python3 tools/compact-rust-backend/resolve_ledger_test_static.py --metadata "$RUNNER_TEMP/compact-cargo-metadata.json" --lock Cargo.lock --provenance "$RUNNER_TEMP/ledger-static-provenance.json" --github-env "$GITHUB_ENV"
+
+      - name: Verify consumer toolchain inside Nix
+        run: |
+          # setup-python exports its own libpython search path. Keep that host
+          # runtime out of the Nix interpreter and retain crash diagnostics.
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u - <<'PY'
+          import importlib, shutil, subprocess, sys
+          print("Nix Python:", sys.executable, sys.version)
+          sys.path.insert(0, "tools/compact-rust-backend")
+          for module in ("hashlib", "tomllib", "unittest.mock", "target_checks"):
+              importlib.import_module(module)
+              print("Imported:", module)
+          print(shutil.which("cargo"))
+          versions = [subprocess.check_output([tool, "--version"], text=True).strip()
+                      for tool in ("cargo", "rustc")]
+          print(*versions, sep="; ")
+          assert all(version.split()[1] == "1.99.0" for version in versions)
+          PY
+
+      - name: Prepare verified built-in proof material
+        run: |
+          export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
+          printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
+          cat "$RUNNER_TEMP/compact-proof-material.json"
+
+      - name: Run assigned named native scenarios with proofs
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command env \
+            COMPACTC="$COMPACTC" \
+            COMPACT_RUST_WALLET_HANDOFF="$RUNNER_TEMP/compact-counter-wallet-handoff.bin" \
+            COMPACT_RUST_DEPLOY_HANDOFF="$RUNNER_TEMP/compact-counter-deploy-handoff.bin" \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_compactc_target.py \
+            --proof --scenario-shard "$SHARD"
+
   native-backend:
     name: Native Rust backend and wallet qualification
     runs-on: ubuntu-latest
@@ -1384,7 +1511,7 @@ jobs:
 
   complete:
     name: Build and test compiler
-    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, outer-vector-proof, native-backend, e2e-tests, build]
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions: {}
@@ -1399,6 +1526,7 @@ jobs:
           PACKAGES_RESULT: ${{ needs.package-outputs.result }}
           NATIVE_RESULT: ${{ needs.build.result }}
           NATIVE_BACKEND_RESULT: ${{ needs.native-backend.result }}
+          NATIVE_SCENARIOS_RESULT: ${{ needs.native-scenarios.result }}
           OUTER_VECTOR_RESULT: ${{ needs.outer-vector-proof.result }}
           E2E_RESULT: ${{ needs.e2e-tests.result }}
         run: |
@@ -1410,5 +1538,6 @@ jobs:
           test "$PACKAGES_RESULT" = success
           test "$NATIVE_RESULT" = success
           test "$NATIVE_BACKEND_RESULT" = success
+          test "$NATIVE_SCENARIOS_RESULT" = success
           test "$OUTER_VECTOR_RESULT" = success
           test "$E2E_RESULT" = success
