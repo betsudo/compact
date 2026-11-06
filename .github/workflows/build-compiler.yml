@@ -560,8 +560,8 @@ jobs:
       - name: Realize complete default package
         run: nix build
 
-  build:
-    name: Native, proof and package qualification
+  generated-api:
+    name: Generated Rust APIs and capability controls
     runs-on: ubuntu-latest
     env:
       # Share heavy dependencies with generated consumers and preserve target/package.
@@ -574,8 +574,7 @@ jobs:
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
     if: ${{ !cancelled() }}
-    # It takes 90+ minutes to build without Nix caching
-    timeout-minutes: 180
+    timeout-minutes: 120
     steps:
       - name: Require successful compiler producer
         env:
@@ -649,10 +648,6 @@ jobs:
           # Keep result/bin/compactc for existing consumer commands.
           nix build .#compactc
 
-      - name: Check Rust capability refusals before expensive qualification
-        run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC=compactc python3 -X faulthandler -u tools/compact-rust-backend/check_rejections.py
-
       - name: Resolve locked ledger proof fixtures
         run: |
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
@@ -678,7 +673,11 @@ jobs:
           assert all(version.split()[1] == "1.99.0" for version in versions)
           PY
 
-      - name: Check workspace Clippy before proof qualification
+      - name: Check Rust capability refusals
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC=compactc python3 -X faulthandler -u tools/compact-rust-backend/check_rejections.py
+
+      - name: Check workspace Clippy for generated APIs
         run: |
           # Reject generated-source lint failures before expensive proof work.
           # The final native gate repeats this exact command after its tests.
@@ -779,6 +778,199 @@ jobs:
             !${{ runner.temp }}/compact-passport-current/cargo-target/**
             !${{ runner.temp }}/compact-passport-current/consumer/target/**
           if-no-files-found: ignore
+
+      - name: Rehearse Rust runtime packages
+        id: runtime-packages
+        run: |
+          python3 tools/compact-rust-backend/check_release_packages.py --manifest target/rust-runtime-release.json
+          python3 tools/compact-rust-backend/check_release_packages.py --verify-manifest target/rust-runtime-release.json
+
+      - name: Build generated Rust contracts from shared runtime archives
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_archive_consumer.py --manifest target/rust-runtime-release.json
+
+      - name: Run workspace Rust tests
+        run: cargo test --workspace --exclude compact --locked
+
+      - name: Retain Rust runtime packages and manifest
+        if: always() && steps.runtime-packages.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rust-runtime-packages-${{ github.sha }}
+          path: |
+            target/rust-runtime-release.json
+            target/package/midnight-compact-runtime-macros-*.crate
+            target/package/midnight-compact-runtime-*.crate
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain generated API diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: generated-rust-api-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/ledger-static-provenance.json
+            ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz
+            ${{ runner.temp }}/compact-functional-consumer.json
+            ${{ runner.temp }}/compact-did-functional/receipt.json
+            ${{ runner.temp }}/compact-did-functional/generated/
+            ${{ runner.temp }}/compact-did-functional/live-typescript.json
+            ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
+            ${{ runner.temp }}/compact-wide-zero.json
+            ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-wide-zero/typescript.json
+            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
+            ${{ runner.temp }}/compact-wide-zero/*.stdout
+            ${{ runner.temp }}/compact-wide-zero/*.stderr
+            ${{ runner.temp }}/compact-vector-projection.json
+            ${{ runner.temp }}/compact-constant-valued-vector.json
+            ${{ runner.temp }}/compact-map-size-expression.json
+            ${{ runner.temp }}/compact-field-wrappers.json
+            ${{ runner.temp }}/compact-field-wrappers/generated/
+            ${{ runner.temp }}/compact-field-wrappers/ts-reference.json
+            ${{ runner.temp }}/compact-field-wrappers/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-tuple-wrappers.json
+            ${{ runner.temp }}/compact-tuple-wrappers/generated/
+            ${{ runner.temp }}/compact-tuple-wrappers/ts-reference.json
+            ${{ runner.temp }}/compact-tuple-wrappers/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-unit-initializers.json
+            ${{ runner.temp }}/compact-unit-initializers/generated/
+            ${{ runner.temp }}/compact-unit-initializers/ts-reference.json
+            ${{ runner.temp }}/compact-unit-initializers/consumer/Cargo.lock
+            ${{ runner.temp }}/compact-passport-current/receipt.json
+            ${{ runner.temp }}/compact-passport-current/generated/
+            !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
+            ${{ runner.temp }}/compact-passport-current/consumer/
+            ${{ runner.temp }}/compact-passport-current/guide-consumer/
+            ${{ runner.temp }}/compact-passport-current/historical-guide-Cargo.lock
+            !${{ runner.temp }}/compact-passport-current/consumer/target/**
+            ${{ runner.temp }}/compact-passport-current/passport-source/
+            ${{ runner.temp }}/compact-passport-current/*.json
+            ${{ runner.temp }}/compact-passport-current/raw-generated-lib.rs
+            ${{ runner.temp }}/compact-passport-current/formatted-generated-lib.rs
+            ${{ runner.temp }}/compact-passport-current/*.stdout
+            ${{ runner.temp }}/compact-passport-current/*.stderr
+            ${{ runner.temp }}/compact-direct-fold.json
+            ${{ runner.temp }}/compact-direct-fold/generated/
+            ${{ runner.temp }}/compact-direct-fold/ts-reference.json
+            ${{ runner.temp }}/compact-direct-fold/consumer/Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 14
+
+  build:
+    name: Rust proof qualification
+    runs-on: ubuntu-latest
+    env:
+      # Share heavy dependencies with generated proof consumers.
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      # Keep debug assertions and overflow checks; omit bulky CI-only debug symbols.
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    permissions:
+      contents: read
+      actions: read
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
+    if: ${{ !cancelled() }}
+    # It takes 90+ minutes to build without Nix caching
+    timeout-minutes: 180
+    steps:
+      - name: Require successful compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+          LICENSE_RESULT: ${{ needs.license-check.result }}
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+          test "$LICENSE_RESULT" = success
+          test "$PREFLIGHT_RESULT" = success
+          test "$FIXTURES_RESULT" = success
+      - name: Checkout compactc repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Setup Rust toolchain for native backend
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
+
+      - name: Setup Python for Rust backend checks
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Restore Cargo registry and git downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+
+      - name: Realize compiler package output
+        run: |
+          # The broad default package has its own parallel owner.
+          # Keep result/bin/compactc for existing consumer commands.
+          nix build .#compactc
+
+      - name: Resolve locked ledger proof fixtures
+        run: |
+          python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
+          cargo fetch --locked
+          cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
+          python3 tools/compact-rust-backend/resolve_ledger_test_static.py --metadata "$RUNNER_TEMP/compact-cargo-metadata.json" --lock Cargo.lock --provenance "$RUNNER_TEMP/ledger-static-provenance.json" --github-env "$GITHUB_ENV"
+
+      - name: Verify consumer toolchain inside Nix
+        run: |
+          # setup-python exports its own libpython search path. Keep that host
+          # runtime out of the Nix interpreter and retain crash diagnostics.
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u - <<'PY'
+          import importlib, shutil, subprocess, sys
+          print("Nix Python:", sys.executable, sys.version)
+          sys.path.insert(0, "tools/compact-rust-backend")
+          for module in ("hashlib", "tomllib", "unittest.mock", "target_checks"):
+              importlib.import_module(module)
+              print("Imported:", module)
+          print(shutil.which("cargo"))
+          versions = [subprocess.check_output([tool, "--version"], text=True).strip()
+                      for tool in ("cargo", "rustc")]
+          print(*versions, sep="; ")
+          assert all(version.split()[1] == "1.99.0" for version in versions)
+          PY
 
       - name: Prepare verified built-in proof material
         run: |
@@ -948,23 +1140,12 @@ jobs:
             ${{ runner.temp }}/compact-wide-zero-proof/generated/
           if-no-files-found: ignore
 
-      - name: Rehearse Rust runtime packages
-        id: runtime-packages
-        run: |
-          python3 tools/compact-rust-backend/check_release_packages.py --manifest target/rust-runtime-release.json
-          python3 tools/compact-rust-backend/check_release_packages.py --verify-manifest target/rust-runtime-release.json
-
-      - name: Build generated Rust contracts from shared runtime archives
-        run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_archive_consumer.py --manifest target/rust-runtime-release.json
-
-      - name: Retain Rust runtime packages and manifest
-        if: always() && steps.runtime-packages.outcome == 'success'
+      - name: Retain Rust proof qualification diagnostics
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rust-runtime-packages-${{ github.sha }}
+          name: rust-proof-qualification-${{ github.sha }}-attempt-${{ github.run_attempt }}
           path: |
-            target/rust-runtime-release.json
             ${{ runner.temp }}/ledger-static-provenance.json
             ${{ runner.temp }}/compact-proof-material.json
             ${{ runner.temp }}/compact-component-product-vector-recipe/
@@ -973,11 +1154,6 @@ jobs:
             ${{ runner.temp }}/compact-vector-component-products-proof/
             ${{ runner.temp }}/compact-functional-source-sdk/
             !${{ runner.temp }}/compact-functional-source-sdk/cargo-target/**
-            ${{ runner.temp }}/compact-functional-consumer.json
-            ${{ runner.temp }}/compact-did-functional/receipt.json
-            ${{ runner.temp }}/compact-did-functional/generated/
-            ${{ runner.temp }}/compact-did-functional/live-typescript.json
-            ${{ runner.temp }}/compact-did-functional/api-refusals/Cargo.lock
             ${{ runner.temp }}/compact-did-functional-proof/receipt.json
             ${{ runner.temp }}/compact-did-functional-proof/generated/
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/receipt.json
@@ -986,61 +1162,21 @@ jobs:
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/*.stderr
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/*material*.json
             ${{ runner.temp }}/compact-did-zero-timestamp-proof/generated/
-            ${{ runner.temp }}/compact-wide-zero.json
-            ${{ runner.temp }}/compact-wide-zero/consumer/Cargo.lock
-            ${{ runner.temp }}/compact-wide-zero/typescript.json
-            ${{ runner.temp }}/compact-wide-zero/conditional-generated/
-            ${{ runner.temp }}/compact-wide-zero/*.stdout
-            ${{ runner.temp }}/compact-wide-zero/*.stderr
             ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
             ${{ runner.temp }}/compact-wide-zero-proof/generated/
-            ${{ runner.temp }}/compact-vector-projection.json
-            ${{ runner.temp }}/compact-constant-valued-vector.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/generated/
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
-            ${{ runner.temp }}/compact-map-size-expression.json
-            ${{ runner.temp }}/compact-field-wrappers.json
-            ${{ runner.temp }}/compact-field-wrappers/generated/
-            ${{ runner.temp }}/compact-field-wrappers/ts-reference.json
-            ${{ runner.temp }}/compact-field-wrappers/consumer/Cargo.lock
             ${{ runner.temp }}/compact-field-wrappers-proof/receipt.json
             ${{ runner.temp }}/compact-field-wrappers-proof/generated/
-            ${{ runner.temp }}/compact-tuple-wrappers.json
-            ${{ runner.temp }}/compact-tuple-wrappers/generated/
-            ${{ runner.temp }}/compact-tuple-wrappers/ts-reference.json
-            ${{ runner.temp }}/compact-tuple-wrappers/consumer/Cargo.lock
             ${{ runner.temp }}/compact-tuple-wrappers-proof/receipt.json
             ${{ runner.temp }}/compact-tuple-wrappers-proof/generated/
-            ${{ runner.temp }}/compact-unit-initializers.json
-            ${{ runner.temp }}/compact-unit-initializers/generated/
-            ${{ runner.temp }}/compact-unit-initializers/ts-reference.json
-            ${{ runner.temp }}/compact-unit-initializers/consumer/Cargo.lock
             ${{ runner.temp }}/compact-unit-initializers-proof/receipt.json
             ${{ runner.temp }}/compact-unit-initializers-proof/generated/
-            ${{ runner.temp }}/compact-passport-current/receipt.json
-            ${{ runner.temp }}/compact-passport-current/generated/
-            !${{ runner.temp }}/compact-passport-current/generated/contract/node_modules/**
-            ${{ runner.temp }}/compact-passport-current/consumer/
-            ${{ runner.temp }}/compact-passport-current/guide-consumer/
-            ${{ runner.temp }}/compact-passport-current/historical-guide-Cargo.lock
-            !${{ runner.temp }}/compact-passport-current/consumer/target/**
-            ${{ runner.temp }}/compact-passport-current/passport-source/
-            ${{ runner.temp }}/compact-passport-current/*.json
-            ${{ runner.temp }}/compact-passport-current/raw-generated-lib.rs
-            ${{ runner.temp }}/compact-passport-current/formatted-generated-lib.rs
-            ${{ runner.temp }}/compact-passport-current/*.stdout
-            ${{ runner.temp }}/compact-passport-current/*.stderr
-            ${{ runner.temp }}/compact-direct-fold.json
-            ${{ runner.temp }}/compact-direct-fold/generated/
-            ${{ runner.temp }}/compact-direct-fold/ts-reference.json
-            ${{ runner.temp }}/compact-direct-fold/consumer/Cargo.lock
             ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
             ${{ runner.temp }}/compact-direct-fold-proof/receipt.json
             ${{ runner.temp }}/compact-direct-fold-proof/generated/
-            target/package/midnight-compact-runtime-macros-*.crate
-            target/package/midnight-compact-runtime-*.crate
-          if-no-files-found: error
+          if-no-files-found: ignore
 
   outer-vector-proof:
     name: Outer Vector product proofs
@@ -1421,7 +1557,7 @@ jobs:
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Check and test native Rust backend
-        run: bash tools/compact-rust-backend/check_native_ci.sh
+        run: bash tools/compact-rust-backend/check_native_ci.sh --wallet-only
 
 
   e2e-tests:
@@ -1511,7 +1647,7 @@ jobs:
 
   complete:
     name: Build and test compiler
-    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]
+    needs: [license-check, source-preflight, compiler-linux, fixture-freshness, compiler-tests, package-outputs, generated-api, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions: {}
@@ -1524,6 +1660,7 @@ jobs:
           FIXTURES_RESULT: ${{ needs.fixture-freshness.result }}
           COMPILER_TESTS_RESULT: ${{ needs.compiler-tests.result }}
           PACKAGES_RESULT: ${{ needs.package-outputs.result }}
+          GENERATED_API_RESULT: ${{ needs.generated-api.result }}
           NATIVE_RESULT: ${{ needs.build.result }}
           NATIVE_BACKEND_RESULT: ${{ needs.native-backend.result }}
           NATIVE_SCENARIOS_RESULT: ${{ needs.native-scenarios.result }}
@@ -1536,6 +1673,7 @@ jobs:
           test "$FIXTURES_RESULT" = success
           test "$COMPILER_TESTS_RESULT" = success
           test "$PACKAGES_RESULT" = success
+          test "$GENERATED_API_RESULT" = success
           test "$NATIVE_RESULT" = success
           test "$NATIVE_BACKEND_RESULT" = success
           test "$NATIVE_SCENARIOS_RESULT" = success

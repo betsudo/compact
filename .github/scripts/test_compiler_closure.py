@@ -233,10 +233,12 @@ class WorkflowOwnershipTests(unittest.TestCase):
                          'Merge report as ZIP', 'name: Coverage Report'):
             self.assertIn(retained, compiler_tests)
         linux = workflow.split('  build:\n', 1)[1]
-        for retained in ('nix build', 'check_rejections.py',
-                         'check_functional_effects.py', 'check_archive_consumer.py', 'cargo clippy',
-                         'check_native_ci.sh'):
+        api = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
+        for retained in ('nix build', 'check_native_ci.sh'):
             self.assertIn(retained, linux)
+        for retained in ('check_rejections.py', 'check_functional_effects.py',
+                         'check_archive_consumer.py', 'cargo clippy'):
+            self.assertIn(retained, api)
         self.assertNotIn('./compiler/go', linux)
         packages = workflow.split('  package-outputs:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertIn('needs: compiler-linux', packages)
@@ -248,6 +250,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertIn('compiler-tests', complete)
         self.assertIn('test "$COMPILER_TESTS_RESULT" = success', complete)
         self.assertIn('test "$PACKAGES_RESULT" = success', complete)
+        self.assertIn('test "$GENERATED_API_RESULT" = success', complete)
         e2e = workflow.split('  e2e-tests:\n', 1)[1].split('  complete:\n', 1)[0]
         self.assertIn('needs: compiler-linux', e2e)
         self.assertIn('nix build .#compactc', e2e)
@@ -258,9 +261,9 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertIn('test "$E2E_RESULT" = success', complete)
         native = (owner.ROOT/'tools/compact-rust-backend/check_native_ci.sh').read_text()
         self.assertIn('cargo test', native)
-        self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', linux)
-        self.assertIn('id: runtime-packages', linux)
-        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", linux)
+        self.assertIn('check_functional_effects.py --compiler "$COMPACTC"', api)
+        self.assertIn('id: runtime-packages', api)
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", api)
 
     def test_macos_is_manual_opt_in_without_weakening_linux(self):
         from types import SimpleNamespace
@@ -442,21 +445,21 @@ if stage == 'zkir': print('/mock/bin/zkir')
 
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        linux = workflow.split('  build:\n', 1)[1]
-        before, step = linux.split('      - name: Check complete Counter source-map publication\n', 1)
+        api = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
+        before, step = api.split('      - name: Check complete Counter source-map publication\n', 1)
         step = step.split('      - name: Package source-map publication diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
         self.assertIn('check_source_map_publication.py --compiler-receipt "$RUNNER_TEMP/compact-source-map-recipe/receipt.json"', step)
         for weakened in ('continue-on-error', 'if:', '--prepare-only', '/lib/zkir'):
             self.assertNotIn(weakened, step)
-        upload = linux.split('      - name: Retain source-map publication diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        upload = api.split('      - name: Retain source-map publication diagnostics\n', 1)[1].split('      - name:', 1)[0]
         self.assertIn("if: always() && (steps.source_map_publication.outcome == 'success' || steps.source_map_publication.outcome == 'failure')", upload)
         self.assertNotIn('steps.runtime-packages', upload)
-        self.assertLess(linux.index('Retain source-map publication diagnostics'), linux.index('Qualify outer-Vector product APIs and fifteen selected proofs'))
+        self.assertIn('test "$GENERATED_API_RESULT" = success', workflow)
         self.assertIn('path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz', upload)
         self.assertNotIn('compact-source-map-publication/', upload)
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', linux)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', workflow)
 
     def test_literal_source_map_packaging_preserves_names_bytes_and_partial_failures(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()

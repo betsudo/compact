@@ -1,8 +1,47 @@
-# Compiler CI test graph proposal
+# Compiler CI test graph
 
-Status: investigation for [#708](https://github.com/betsudo/compact/issues/708),
-2026-11-06. Base: `codex/rust-backend-ast` at
-`9dc8d22b67eda0a90a8e99950556ef64b4e6f986`. This plan changes no gate.
+Status: implementation and hosted qualification for
+[#708](https://github.com/betsudo/compact/issues/708), 2026-11-06. Base:
+`codex/rust-backend-ast` at `9dc8d22b67eda0a90a8e99950556ef64b4e6f986`.
+The implementation is published as draft stacked PRs
+[#709](https://github.com/betsudo/compact/pull/709) through
+[#715](https://github.com/betsudo/compact/pull/715). The next API-owner split
+is being tested on `codex/ci-test-graph-phase8`.
+
+## Implemented graph and measured result
+
+The Linux producer still publishes the exact same-run authenticated compiler
+closure. Source/header preflight runs alongside it. Full 284-fixture freshness,
+Scheme compiler/source maps, default Nix package outputs and E2E/report uploads
+run after the producer. The fixture check gates native, proof and runtime
+qualification, so a stale fixture fails before those expensive consumers.
+Native qualification has a shared wallet/negative-control owner and three
+measured named-scenario shards. Outer Vector proofs have their own owner. A
+strict `Build and test compiler` job requires every owner and all shards.
+
+The complete [#713 hosted run](https://github.com/betsudo/compact/actions/runs/42134457505)
+passed in 77.57 minutes wall time and 178.95 summed runner minutes. Its long
+proof/runtime owner took 57.75 minutes after producer and fixture checks. The
+[#714 run](https://github.com/betsudo/compact/actions/runs/42138149437)
+also passed after outer Vector isolation: 72m54s end to end, with the remaining
+proof/runtime owner at 48m58s and the native/wallet owner at 52m49s. These are
+different source SHAs under overlapping hosted load, so the difference is
+indicative rather than a controlled speedup. The three-shard
+[#715 run](https://github.com/betsudo/compact/actions/runs/42143738114)
+also passed: 64m53s wall time and 270.47 summed successful runner minutes.
+All 26 named selectors passed exactly once. Its full fixture scan took 5m42s
+after a 14m28s producer. The remaining proof/runtime owner took 42m24s and the
+shared native wallet/control owner set the path at 44m28s. The additional
+shards raised runner use by 71.37 minutes versus #714; source SHAs and hosted
+load differed, so this is an indicative comparison.
+
+The next slice gives generated Rust API, capability, workspace tests, Clippy
+and runtime package checks an independent owner. The native wallet owner runs
+the original handoff in `--wallet-only` mode; the default local native script
+still runs its complete command list. Repeated capability and Clippy commands
+are owned once in the API lane, and proof qualification remains separate. All
+required tests and diagnostic artifacts retain an owner. This split is a
+candidate until hosted timing and complete-gate parity pass.
 
 ## Evidence
 
@@ -42,30 +81,40 @@ It proves the existing checker can isolate concrete contracts cheaply after
 compiler availability. The full 284-fixture scan remains required in a
 separate freshness lane until changed-source selection is complete and proven.
 
-## Proposed graph
+## Dependency graph
 
 ```mermaid
 flowchart LR
-    S[Source checks: headers, metadata, manifest] --> G[Required result aggregator]
-    C[Exact compiler producer, same-run artifact] --> F[Fixture freshness: all 284]
-    C --> A[Compiler, src-maps and API tests]
-    C --> P1[Proof shard A: measured case set]
-    C --> P2[Proof shard B: measured case set]
-    C --> E[E2E and generated runtime consumers]
-    Z[Verified proof tools and parameters] --> P1
-    Z --> P2
+    S[Headers, source and version preflight] --> G[Strict required result]
+    C[Exact compiler producer and same-run closure] --> F[All 284 fixture outputs]
+    C --> T[Scheme tests and source maps]
+    C --> E[E2E and reports]
+    C --> N[Complete Nix outputs]
+    F --> A[Generated Rust API, workspace tests and runtime packages]
+    F --> P[Rust proof qualification]
+    F --> V[Outer Vector proofs]
+    F --> W[Native core proofs and wallet handoff]
+    F --> M0[Native scenarios shard 0]
+    F --> M1[Native scenarios shard 1]
+    F --> M2[Native scenarios shard 2]
     F --> G
-    A --> G
-    P1 --> G
-    P2 --> G
+    T --> G
     E --> G
+    N --> G
+    A --> G
+    P --> G
+    V --> G
+    W --> G
+    M0 --> G
+    M1 --> G
+    M2 --> G
 ```
 
-The source checks and Scheme compiler tests can begin while the producer is
-running when they do not consume its artifact. Only genuine producer consumers
-get a `needs` edge. Use named jobs or small reusable workflows for owners;
-keep the final aggregator tiny and require each owner to report success. Use
-`fail-fast: false` for proof matrices so an unrelated shard still reports.
+The API owner is in the phase8 candidate and is not yet hosted-qualified.
+Source checks run while the producer builds. Scheme compiler tests still use
+its closure and begin after it. Every native/proof consumer requires the full
+fixture owner; each has its own verified proof material where required. The
+native scenario matrix uses `fail-fast: false` so every shard reports.
 
 ## Test inventory and scheduling
 

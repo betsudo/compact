@@ -136,42 +136,44 @@ class ProofCommands(unittest.TestCase):
             self.assertEqual(options.count("--profile"), 1)
             self.assertEqual(command[boundary + 1], "--prepare-proof-material")
 
-    def test_capability_preflight_precedes_proofs_and_retains_later_live_gate(self):
+    def test_capability_preflight_has_required_owner_and_retains_later_live_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         command = ("env -u LD_LIBRARY_PATH nix develop .#compiler --command env "
                    "COMPACTC=compactc python3 -X faulthandler -u "
                    "tools/compact-rust-backend/check_rejections.py")
         self.assertEqual(workflow.count(command), 1)
-        first = workflow.index(command)
-        native_job = workflow.split('  build:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
-        self.assertLess(native_job.index("- name: Import authenticated same-run compiler closure"),
-                        native_job.index(command))
+        api_job = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertLess(api_job.index("- name: Import authenticated same-run compiler closure"),
+                        api_job.index(command))
         compiler_tests = workflow.split('  compiler-tests:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertIn('- name: Run compiler tests', compiler_tests)
         self.assertIn('needs: compiler-linux', compiler_tests)
-        self.assertLess(first, workflow.index("--prepare-proof-material"))
+        complete = workflow.split('  complete:\n', 1)[1]
+        self.assertIn('test "$GENERATED_API_RESULT" = success', complete)
         live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
         self.assertEqual(native.count(live), 1)
         self.assertLess(native.index("--consumer --proof"), native.index(live))
 
-    def test_workspace_clippy_runs_before_proofs_and_remains_in_the_final_gate(self):
+    def test_workspace_clippy_has_required_owner_and_remains_in_the_final_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
         proof_job = workflow.split('  build:\n', 1)[1].split('  native-backend:\n', 1)[0]
+        api_job = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
         native_job = workflow.split('  native-backend:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
-        toolchain = proof_job.index("      - name: Verify consumer toolchain inside Nix\n")
-        early = proof_job.index("      - name: Check workspace Clippy before proof qualification\n")
+        toolchain = api_job.index("      - name: Verify consumer toolchain inside Nix\n")
+        early = api_job.index("      - name: Check workspace Clippy for generated APIs\n")
         prepare = proof_job.index("      - name: Prepare verified built-in proof material\n")
         native_prepare = native_job.index("      - name: Prepare verified built-in proof material\n")
         final = native_job.index("      - name: Check and test native Rust backend\n")
         self.assertLess(toolchain, early)
-        self.assertLess(early, prepare)
+        self.assertIn('test "$GENERATED_API_RESULT" = success', workflow)
+        self.assertIn('test "$NATIVE_RESULT" = success', workflow)
         self.assertLess(native_prepare, final)
         expected = "cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings"
         commands = [line.strip() for line in workflow.splitlines()
                     if line.lstrip().startswith("cargo clippy --workspace ")]
         self.assertEqual(commands, [expected])
-        early_step = proof_job[early:prepare]
+        early_step = api_job[early:]
         self.assertEqual(early_step.count(expected), 1)
         self.assertNotIn("continue-on-error", early_step)
         self.assertNotIn("MIDNIGHT_PP", early_step)
@@ -189,6 +191,38 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("fail-fast: false", workflow)
         self.assertIn("cargo test --workspace --exclude compact --locked", native)
 
+    def test_wallet_only_ci_mode_preserves_handoff_and_full_local_gate(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        api = workflow.split("  generated-api:\n", 1)[1].split("  build:\n", 1)[0]
+        native = workflow.split("  native-backend:\n", 1)[1].split("  e2e-tests:\n", 1)[0]
+        self.assertIn("run: cargo test --workspace --exclude compact --locked", api)
+        self.assertIn("run: bash tools/compact-rust-backend/check_native_ci.sh --wallet-only", native)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            mock = '#!/bin/sh\nprintf "%s %s\\n" "${0##*/}" "$*" >> "$TEST_LOG"\n'
+            for name in ("df", "du", "cargo", "nix", "python3"):
+                path = bin_dir / name
+                path.write_text(mock)
+                path.chmod(0o755)
+            env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ["PATH"],
+                       GITHUB_WORKSPACE=str(ROOT), CARGO_TARGET_DIR=str(root / "target"),
+                       RUNNER_TEMP=str(root), COMPACTC="/mock/compactc")
+            script = ROOT / "tools/compact-rust-backend/check_native_ci.sh"
+            for arguments, full in ((["--wallet-only"], False), ([], True)):
+                log = root / ("full.log" if full else "wallet.log")
+                env["TEST_LOG"] = str(log)
+                subprocess.run(["bash", str(script), *arguments], cwd=ROOT,
+                               env=env, check=True, capture_output=True, text=True)
+                calls = log.read_text()
+                self.assertIn("check_compactc_target.py --consumer --proof --core-only", calls)
+                self.assertIn("check_wallet_handoff.mjs", calls)
+                self.assertIn("check_oracle_acceptance.py", calls)
+                self.assertEqual("check_rejections.py" in calls, full)
+                self.assertEqual("cargo test --workspace --exclude compact --locked" in calls, full)
+                self.assertEqual("cargo clippy --workspace --exclude compact" in calls, full)
+
     def test_passport_failure_receipts_do_not_wait_for_runtime_package_success(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
         gate = workflow.index("      - name: Check standalone original Passport pure consumers\n")
@@ -197,7 +231,7 @@ class ProofCommands(unittest.TestCase):
         self.assertLess(gate, retain)
         self.assertLess(retain, prepare)
         qualification = workflow[gate:retain]
-        failure_upload = workflow[retain:prepare]
+        failure_upload = workflow[retain:workflow.index('      - name: Rehearse Rust runtime packages\n', retain)]
         self.assertIn("id: passport_current", qualification)
         self.assertNotIn("continue-on-error", qualification)
         self.assertIn("if: failure() && steps.passport_current.outcome == 'failure'", failure_upload)
@@ -244,12 +278,13 @@ class ProofCommands(unittest.TestCase):
         self.assertNotIn("runtime-packages", failure)
         self.assertIn("did-zero-timestamp-proof-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}", failure)
         self.assertIn("if-no-files-found: ignore", failure)
-        success = workflow[workflow.index("      - name: Retain Rust runtime packages and manifest\n"):]
+        success = workflow[workflow.index("      - name: Retain Rust proof qualification diagnostics\n"):]
         for suffix in ["receipt.json", "logs/", "*.stdout", "*.stderr", "*material*.json", "generated/"]:
             path = "${{ runner.temp }}/compact-did-zero-timestamp-proof/" + suffix
             self.assertIn(path, failure)
             self.assertIn(path, success)
-        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", success)
+        self.assertIn("if: always()", success)
+        self.assertIn("if: always() && steps.runtime-packages.outcome == 'success'", workflow)
         self.assertIn("compact-did-functional-proof/generated/", success)
 
     def test_did_zero_proof_shell_forwards_case_and_propagates_failure(self):
