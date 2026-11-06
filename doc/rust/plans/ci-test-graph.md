@@ -7,7 +7,8 @@ The implementation is published as draft stacked PRs
 [#709](https://github.com/betsudo/compact/pull/709) through
 [#715](https://github.com/betsudo/compact/pull/715). The consolidated
 [#716](https://github.com/betsudo/compact/pull/716) is in hosted qualification;
-the independent workspace/product owner split is a local follow-up candidate.
+its first complete gate passed, and the independent workspace/product owner
+split is in a second hosted run.
 
 ## Implemented graph and measured result
 
@@ -36,19 +37,23 @@ shared native wallet/control owner set the path at 44m28s. The additional
 shards raised runner use by 71.37 minutes versus #714; source SHAs and hosted
 load differed, so this is an indicative comparison.
 
-The #716 slice gives generated Rust API, capability, workspace tests, Clippy
-and runtime package checks an independent owner. The native wallet owner runs
+The first #716 slice gave generated Rust API, capability, workspace tests,
+Clippy and runtime package checks an independent owner. The native wallet owner runs
 the original handoff in `--wallet-only` mode; the default local native script
 still runs its complete command list. Repeated capability and Clippy commands
 are owned once in the API lane, and proof qualification remains separate. All
-required tests and diagnostic artifacts retain an owner. This split is a
-candidate until hosted timing and complete-gate parity pass. Its first hosted
-run showed the API owner's workspace Cargo test taking 16m18s after its other
-checks, so the local follow-up gives workspace tests and Clippy a separate
-compiler-independent owner that can start with the producer. The same follow-up
+required tests and diagnostic artifacts retain an owner. The first complete
+[#716 run](https://github.com/betsudo/compact/actions/runs/42151292882)
+passed in 68m59s wall time and 314.55 summed successful runner minutes. Its
+Rust proof owner set the critical path at 51m01s after fixtures, with four
+product checks consuming the final 17m42s. The API owner's workspace Cargo
+test took 16m18s after its other checks. The follow-up gives workspace tests
+and Clippy a separate compiler-independent owner that starts with the
+producer. The same follow-up
 moves the final four product qualification commands into their own owner after
 full fixture freshness. These changes require a complete hosted gate before
-any timing claim.
+any timing claim. The follow-up head is `a5eb5e62b` in
+[#716 run 42158465224](https://github.com/betsudo/compact/actions/runs/42158465224).
 
 ## Evidence
 
@@ -93,7 +98,7 @@ separate freshness lane until changed-source selection is complete and proven.
 ```mermaid
 flowchart LR
     S[Headers, source and version preflight] --> G[Strict required result]
-    W[Workspace Rust tests and Clippy] --> G
+    WR[Workspace Rust tests and Clippy] --> G
     C[Exact compiler producer and same-run closure] --> F[All 284 fixture outputs]
     C --> T[Scheme tests and source maps]
     C --> E[E2E and reports]
@@ -102,7 +107,7 @@ flowchart LR
     F --> P[Rust proof qualification]
     F --> Q[Nested and component product qualification]
     F --> V[Outer Vector proofs]
-    F --> W[Native core proofs and wallet handoff]
+    F --> NW[Native core proofs and wallet handoff]
     F --> M0[Native scenarios shard 0]
     F --> M1[Native scenarios shard 1]
     F --> M2[Native scenarios shard 2]
@@ -114,14 +119,13 @@ flowchart LR
     P --> G
     Q --> G
     V --> G
-    W --> G
+    NW --> G
     M0 --> G
     M1 --> G
     M2 --> G
 ```
 
-The independent workspace and product owners are local candidates, not yet
-hosted-qualified.
+The independent workspace and product owners are in hosted qualification.
 Source checks run while the producer builds. Scheme compiler tests still use
 its closure and begin after it. Every native/proof consumer requires the full
 fixture owner; each has its own verified proof material where required. The
