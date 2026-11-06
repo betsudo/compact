@@ -51,18 +51,18 @@ class ProofCommands(unittest.TestCase):
         preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
                        if line.lstrip().startswith("cargo run ")
                        and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 1, "expected one direct proof-material preparation")
-        command = preparation[0]
-        boundary = command.index("--")
-        options = command[:boundary]
-        self.assertEqual(options[options.index("--profile") + 1], "proof-checks")
-        self.assertEqual(options[options.index("-p") + 1], "compact-rust-proof-smoke")
-        self.assertIn("--locked", options)
-        self.assertIn("--offline", options)
-        self.assertNotIn("--release", options)
-        self.assertNotIn("-r", options)
-        self.assertEqual(options.count("--profile"), 1)
-        self.assertEqual(command[boundary + 1], "--prepare-proof-material")
+        self.assertEqual(len(preparation), 2, "each independent proof owner prepares verified material")
+        for command in preparation:
+            boundary = command.index("--")
+            options = command[:boundary]
+            self.assertEqual(options[options.index("--profile") + 1], "proof-checks")
+            self.assertEqual(options[options.index("-p") + 1], "compact-rust-proof-smoke")
+            self.assertIn("--locked", options)
+            self.assertIn("--offline", options)
+            self.assertNotIn("--release", options)
+            self.assertNotIn("-r", options)
+            self.assertEqual(options.count("--profile"), 1)
+            self.assertEqual(command[boundary + 1], "--prepare-proof-material")
 
     def test_capability_preflight_precedes_proofs_and_retains_later_live_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
@@ -85,26 +85,30 @@ class ProofCommands(unittest.TestCase):
 
     def test_workspace_clippy_runs_before_proofs_and_remains_in_the_final_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
-        toolchain = workflow.index("      - name: Verify consumer toolchain inside Nix\n")
-        early = workflow.index("      - name: Check workspace Clippy before proof qualification\n")
-        prepare = workflow.index("      - name: Prepare verified built-in proof material\n")
-        final = workflow.index("      - name: Check and test native Rust backend\n")
+        proof_job = workflow.split('  build:\n', 1)[1].split('  native-backend:\n', 1)[0]
+        native_job = workflow.split('  native-backend:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
+        toolchain = proof_job.index("      - name: Verify consumer toolchain inside Nix\n")
+        early = proof_job.index("      - name: Check workspace Clippy before proof qualification\n")
+        prepare = proof_job.index("      - name: Prepare verified built-in proof material\n")
+        native_prepare = native_job.index("      - name: Prepare verified built-in proof material\n")
+        final = native_job.index("      - name: Check and test native Rust backend\n")
         self.assertLess(toolchain, early)
         self.assertLess(early, prepare)
-        self.assertLess(prepare, final)
+        self.assertLess(native_prepare, final)
         expected = "cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings"
         commands = [line.strip() for line in workflow.splitlines()
                     if line.lstrip().startswith("cargo clippy --workspace ")]
         self.assertEqual(commands, [expected])
-        early_step = workflow[early:prepare]
+        early_step = proof_job[early:prepare]
         self.assertEqual(early_step.count(expected), 1)
         self.assertNotIn("continue-on-error", early_step)
         self.assertNotIn("MIDNIGHT_PP", early_step)
-        final_step = workflow[final:workflow.index("      - name: Rehearse Rust runtime packages\n", final)]
+        final_step = native_job[final:]
         invocation = "run: bash tools/compact-rust-backend/check_native_ci.sh"
         self.assertEqual(final_step.count(invocation), 1)
         self.assertEqual(workflow.count(invocation), 1)
         self.assertNotIn("continue-on-error", final_step)
+        self.assertIn('native-backend, e2e-tests, build]', workflow)
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         self.assertIn("set -e -o pipefail", native)
         self.assertEqual(native.count(expected), 1)
