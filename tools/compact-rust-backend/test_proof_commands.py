@@ -188,7 +188,8 @@ class ProofCommands(unittest.TestCase):
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         self.assertIn("set -e -o pipefail", native)
         self.assertEqual(native.count(expected), 1)
-        self.assertIn("check_compactc_target.py --consumer --proof --core-only", native)
+        self.assertIn('native_mode=(--core-only)', native)
+        self.assertIn('check_compactc_target.py --consumer --proof "${native_mode[@]}"', native)
         self.assertIn("--proof --scenario-shard \"$SHARD\"", workflow)
         self.assertIn("fail-fast: false", workflow)
         self.assertIn("cargo test --workspace --exclude compact --locked", native)
@@ -218,7 +219,8 @@ class ProofCommands(unittest.TestCase):
                 subprocess.run(["bash", str(script), *arguments], cwd=ROOT,
                                env=env, check=True, capture_output=True, text=True)
                 calls = log.read_text()
-                self.assertIn("check_compactc_target.py --consumer --proof --core-only", calls)
+                self.assertIn("check_compactc_target.py --consumer --proof", calls)
+                self.assertEqual("--core-only" in calls, not full)
                 self.assertIn("check_wallet_handoff.mjs", calls)
                 self.assertIn("check_oracle_acceptance.py", calls)
                 self.assertEqual("check_rejections.py" in calls, full)
@@ -340,8 +342,8 @@ class ProofCommands(unittest.TestCase):
                           commands[3])
             self.assertIn("COMPACT_RUST_DEPLOY_HANDOFF=" + str(root / "compact-counter-deploy-handoff.bin"),
                           commands[3])
-            self.assertEqual(commands[3][-4:], ["tools/compact-rust-backend/check_compactc_target.py",
-                                               "--consumer", "--proof", "--core-only"])
+            self.assertEqual(commands[3][-3:], ["tools/compact-rust-backend/check_compactc_target.py",
+                                               "--consumer", "--proof"])
 
     def test_existing_run_options_and_all_executable_arguments_survive(self):
         for prefix in (["cargo", "run"], ["cargo", "+1.99.0", "run"]):
