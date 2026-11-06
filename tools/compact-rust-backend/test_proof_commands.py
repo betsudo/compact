@@ -18,6 +18,7 @@
 """Proof-profile selection must preserve workload and failure propagation."""
 import os
 import io
+import json
 from contextlib import redirect_stdout
 from pathlib import Path
 import shlex
@@ -35,6 +36,44 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ProofCommands(unittest.TestCase):
+    def test_native_scenario_inventory_and_shard_partition(self):
+        # Freeze the complete pre-shard default invocation list, including
+        # which focused modes historically received --proof.
+        selectors = (
+            "--qualified-coin-cell", "--native-zswap-intents", "--kernel-shielded-effects",
+            "--shielded-receive", "--shielded-merge", "--shielded-send", "--stateful-struct",
+            "--field-observation", "--composite-zswap", "--micro-dao-token",
+            "--micro-dao-reveal", "--transient-receive-send", "--canonical-output-order",
+            "--terminal-lexical-return", "--micro-dao-advance", "--micro-dao-set-topic",
+            "--micro-dao-buy-in", "--micro-dao-cash-out", "--micro-dao-vote-commit",
+            "--coracle-guess", "--coracle-concede", "--coracle-start",
+            "--coracle-withdraw", "--wide-add", "--stateful-assert",
+            "--witness-composition",
+        )
+        without_proof = {"--stateful-struct", "--wide-add", "--stateful-assert",
+                         "--witness-composition"}
+        self.assertEqual(cli.NATIVE_SCENARIOS,
+                         tuple((selector, selector not in without_proof) for selector in selectors))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / "tools/compact-rust-backend/native_scenario_shards.json"
+            manifest.parent.mkdir(parents=True)
+            inventory = {
+                "format": "compact-native-scenario-shards/v1", "shard_count": 3,
+                "scenarios": [{"selector": selector, "shard": i % 3}
+                              for i, selector in enumerate(selectors)],
+            }
+            manifest.write_text(json.dumps(inventory))
+            with patch.object(cli, "ROOT", root):
+                shards = [cli.select_native_scenario_shard(i) for i in range(3)]
+                self.assertEqual(sum(map(len, shards)), len(selectors))
+                self.assertEqual({selector for shard in shards for selector, _ in shard},
+                                 set(selectors))
+                inventory["scenarios"].pop()
+                manifest.write_text(json.dumps(inventory))
+                with self.assertRaisesRegex(ValueError, "inventory differs"):
+                    cli.select_native_scenario_shard(0)
+
     def test_repository_proof_profile_preserves_checked_workspace_code(self):
         manifest = tomllib.loads((ROOT / "Cargo.toml").read_text())
         profile = manifest["profile"]["proof-checks"]

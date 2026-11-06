@@ -885,10 +885,64 @@ def check_complete_ir_binding(output: Path, retained: Path) -> None:
         raise ValueError(f"complete proof source IR differs from {retained}")
 
 
+NATIVE_SCENARIOS = (
+    ("--qualified-coin-cell", True),
+    ("--native-zswap-intents", True),
+    ("--kernel-shielded-effects", True),
+    ("--shielded-receive", True),
+    ("--shielded-merge", True),
+    ("--shielded-send", True),
+    ("--stateful-struct", False),
+    ("--field-observation", True),
+    ("--composite-zswap", True),
+    ("--micro-dao-token", True),
+    ("--micro-dao-reveal", True),
+    ("--transient-receive-send", True),
+    ("--canonical-output-order", True),
+    ("--terminal-lexical-return", True),
+    ("--micro-dao-advance", True),
+    ("--micro-dao-set-topic", True),
+    ("--micro-dao-buy-in", True),
+    ("--micro-dao-cash-out", True),
+    ("--micro-dao-vote-commit", True),
+    ("--coracle-guess", True),
+    ("--coracle-concede", True),
+    ("--coracle-start", True),
+    ("--coracle-withdraw", True),
+    ("--wide-add", False),
+    ("--stateful-assert", False),
+    ("--witness-composition", False),
+)
+
+
+def select_native_scenario_shard(index: int) -> tuple[tuple[str, bool], ...]:
+    manifest = ROOT / "tools/compact-rust-backend/native_scenario_shards.json"
+    inventory = json.loads(manifest.read_text())
+    if inventory.get("format") != "compact-native-scenario-shards/v1":
+        raise ValueError("wrong native scenario shard manifest format")
+    count = inventory.get("shard_count")
+    rows = inventory.get("scenarios")
+    if not isinstance(count, int) or count < 1 or not 0 <= index < count:
+        raise ValueError("invalid native scenario shard index/count")
+    if not isinstance(rows, list) or [row.get("selector") for row in rows] != [
+        selector for selector, _ in NATIVE_SCENARIOS
+    ]:
+        raise ValueError("native scenario shard inventory differs from the complete harness")
+    if any(not isinstance(row.get("shard"), int) or not 0 <= row["shard"] < count
+           for row in rows):
+        raise ValueError("invalid native scenario shard assignment")
+    if {row["shard"] for row in rows} != set(range(count)):
+        raise ValueError("empty native scenario shard")
+    return tuple(scenario for scenario, row in zip(NATIVE_SCENARIOS, rows)
+                 if row["shard"] == index)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--consumer", action="store_true", help="build and run a separate consumer")
     parser.add_argument("--proof", action="store_true", help="generate ZKIR and proving keys")
+    parser.add_argument("--core-only", action="store_true", help="run shared native consumer and proof checks without named scenarios")
+    parser.add_argument("--scenario-shard", type=int, help="run only the named scenarios assigned to one checked-in shard")
     parser.add_argument("--witness-composition", action="store_true", help="check unrelated witness composition preserves recording")
     parser.add_argument("--stateful-assert", action="store_true", help="check native stateful assertions and complete original micro-dao Cargo admission")
     parser.add_argument("--wide-add", action="store_true", help="check bounded native wide addition and original-source progress")
@@ -931,6 +985,10 @@ def main() -> None:
     parser.add_argument("--effectful-return", action="store_true",
                         help="check ordered terminal return plans and complete Coracle native acceptance")
     args = parser.parse_args()
+    if args.core_only and args.scenario_shard is not None:
+        parser.error("--core-only and --scenario-shard are mutually exclusive")
+    if args.scenario_shard is not None and args.consumer:
+        parser.error("--scenario-shard cannot run the shared consumer")
     # Captured Rust errors are asserted below; runner color settings must not split their text.
     os.environ["CARGO_TERM_COLOR"] = "never"
     # Proof-smoke cargo invocations also need the isolated consumer target when
@@ -1184,54 +1242,15 @@ def main() -> None:
                 raise ValueError("source-binding preflight unexpectedly produced keys")
             check_complete_ir_binding(
                 preflight, ROOT / "tools/compact-rust-backend/tests/mixed-width-operand-schema20-ir.json")
-        run(sys.executable, str(Path(__file__).resolve()), "--qualified-coin-cell",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--native-zswap-intents",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--kernel-shielded-effects",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--shielded-receive",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--shielded-merge",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--shielded-send",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--stateful-struct")
-        run(sys.executable, str(Path(__file__).resolve()), "--field-observation",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--composite-zswap",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-token",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-reveal",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--transient-receive-send",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--canonical-output-order",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--terminal-lexical-return",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-advance",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-set-topic",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-buy-in",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-cash-out",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--micro-dao-vote-commit",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--coracle-guess",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--coracle-concede",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--coracle-start",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--coracle-withdraw",
-            *(["--proof"] if args.proof else []))
-        run(sys.executable, str(Path(__file__).resolve()), "--wide-add")
-        run(sys.executable, str(Path(__file__).resolve()), "--stateful-assert")
-        run(sys.executable, str(Path(__file__).resolve()), "--witness-composition")
+        if not args.core_only:
+            scenarios = NATIVE_SCENARIOS
+            if args.scenario_shard is not None:
+                scenarios = select_native_scenario_shard(args.scenario_shard)
+            for selector, supports_proof in scenarios:
+                run(sys.executable, str(Path(__file__).resolve()), selector,
+                    *(("--proof",) if args.proof and supports_proof else ()))
+        if args.scenario_shard is not None:
+            return
         native_outputs = native_targets.check(
             compiler, base,
             root=ROOT, counter_source=SOURCE, pure_source=PURE_SOURCE,
