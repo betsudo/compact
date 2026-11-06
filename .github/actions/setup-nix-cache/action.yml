@@ -34,7 +34,7 @@ runs:
         set -euo pipefail
         echo 'Disk before cleanup:'
         df -h "$GITHUB_WORKSPACE"
-        for path in /usr/local/lib/android /usr/share/dotnet /opt/ghc; do
+        for path in /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup /opt/ghc; do
           if [ -e "$path" ]; then
             sudo du -sh "$path"
             sudo rm -rf -- "$path"
