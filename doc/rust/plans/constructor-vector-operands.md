@@ -738,3 +738,38 @@ shell control covers spaces and dollar signs in that path. The actual pinned
 actionlint 1.7.12 binary reproduces the old context error and accepts the
 corrected workflow; shell command controls remain separate. No key/proof gate,
 identity, limit, trigger or required-result condition changes in this correction.
+
+
+## Local reconciliation after PR #716 — 6 November 2026
+
+PR #716 merged into `codex/rust-backend-ast` at `3b9217e85`. Its split
+qualification graph supersedes the historical monolithic-job descriptions above.
+The #705 head `fd6ac13d` has two content conflicts with that base: the compiler
+workflow and proof-command ownership tests. Reconcile on an isolated local branch
+while preserving both parent histories and all prior CI/proof evidence.
+
+The resulting workflow retains every existing #716 job unchanged, including its
+fixed generated-API diagnostic paths. It adds #705's original constructor job
+unchanged: authenticated same-run compiler import, explicit external Cargo
+targets, capability refusals, Clippy, verified parameters, the complete seventeen
+selected proof-case protocol and success/failure diagnostics. It adds constructor
+success to #716's existing `complete` dependency list, environment and required
+success checks. There is one `Build and test compiler` status. The constructor's
+existing early checks remain explicit; this reconciliation makes no optimization
+or whole-CI timing claim. Triggers, cache policy, optional macOS and limits remain
+as defined by their respective accepted parent jobs.
+
+Ownership controls follow the actual split jobs: generated API/Passport/package
+checks in `generated-api`, native checks in `native-backend`, E2E in `e2e-tests`,
+and the constructor in its own job. Preserve all 625 combinations of the original
+four result controls while requiring the other split owners to succeed too.
+Those names include `E2E_RESULT`; test environment discovery must retain digits.
+All seven proof owners use the checked profile. Constructor shell failure and
+external-target controls remain. Parsed YAML comparison must show that the only
+existing-job change is adding the constructor to `complete`. Real actionlint
+validation remains separate from YAML parsing and shell controls.
+
+This local reconciliation is not current-head hosted CI or human integration
+acceptance. The old green #705 results stay historical. Obtain a fresh independent
+review of the reconciliation, then fresh CI after any authorized publication.
+No canonical branch or GitHub PR is merged by preparing this local candidate.

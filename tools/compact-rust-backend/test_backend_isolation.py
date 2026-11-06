@@ -61,9 +61,24 @@ import did_digest_reducer_gate, did_primitive_reducer_gate, acc_jubjub_gate
             self.assertNotIn("prepare_native_seed", source, name)
         gate = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         for command in ("--consumer --proof", "check_wallet_handoff.mjs",
-                        "check_fixture_outputs.py", "check_rejections.py",
+                        "check_rejections.py",
                         "cargo test --workspace", "cargo clippy --workspace"):
             self.assertIn(command, gate)
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        fixture_job = workflow.split("  fixture-freshness:\n", 1)[1].split("  build:\n", 1)[0]
+        self.assertIn("needs: compiler-linux", fixture_job)
+        self.assertIn("--artifact-id \"$ARTIFACT_ID\"", fixture_job)
+        self.assertIn("--source-sha \"$SOURCE_SHA\"", fixture_job)
+        self.assertIn("check_fixture_outputs.py", fixture_job)
+        self.assertEqual(workflow.count("check_fixture_outputs.py"), 1)
+        self.assertNotIn("check_fixture_outputs.py", gate)
+        preflight_job = workflow.split("  source-preflight:\n", 1)[1].split("  fixture-freshness:\n", 1)[0]
+        self.assertNotIn("needs:", preflight_job)
+        self.assertIn("check_oracle_acceptance.py", preflight_job)
+        self.assertIn("Check CHANGELOG.md top entry matches version files", preflight_job)
+        build_job = workflow.split("  build:\n", 1)[1]
+        self.assertIn("needs.source-preflight.result", build_job)
+        self.assertIn('test "$PREFLIGHT_RESULT" = success', build_job)
 
 
 if __name__ == "__main__":

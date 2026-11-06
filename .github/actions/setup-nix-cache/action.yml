@@ -10,6 +10,10 @@ inputs:
     description: Skip Attic cache configuration
     required: false
     default: 'false'
+  free_disk:
+    description: Remove unused Android, .NET, and Haskell SDKs before large Linux Nix consumers
+    required: false
+    default: 'false'
   nix_path:
     description: Nix path channel
     default: nixpkgs=channel:nixos-unstable
@@ -23,6 +27,22 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Free disk for Nix consumer
+      if: ${{ inputs.free_disk == 'true' && runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo 'Disk before cleanup:'
+        df -h "$GITHUB_WORKSPACE"
+        for path in /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup /opt/ghc; do
+          if [ -e "$path" ]; then
+            sudo du -sh "$path"
+            sudo rm -rf -- "$path"
+          fi
+        done
+        echo 'Disk after cleanup:'
+        df -h "$GITHUB_WORKSPACE"
+
     - name: Install Nix
       uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31.10.3
       with:
