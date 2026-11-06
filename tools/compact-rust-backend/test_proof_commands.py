@@ -54,6 +54,14 @@ class ProofCommands(unittest.TestCase):
                          "--witness-composition"}
         self.assertEqual(cli.NATIVE_SCENARIOS,
                          tuple((selector, selector not in without_proof) for selector in selectors))
+        checked_in = json.loads((ROOT / "tools/compact-rust-backend/native_scenario_shards.json").read_text())
+        self.assertEqual(checked_in["shard_count"], 3)
+        self.assertEqual([row["selector"] for row in checked_in["scenarios"]], list(selectors))
+        self.assertEqual({row["shard"] for row in checked_in["scenarios"]}, {0, 1, 2})
+        self.assertEqual(sum(len(cli.select_native_scenario_shard(i)) for i in range(3)),
+                         len(selectors))
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        self.assertIn("shard: [0, 1, 2]", workflow)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             manifest = root / "tools/compact-rust-backend/native_scenario_shards.json"
@@ -73,6 +81,31 @@ class ProofCommands(unittest.TestCase):
                 manifest.write_text(json.dumps(inventory))
                 with self.assertRaisesRegex(ValueError, "inventory differs"):
                     cli.select_native_scenario_shard(0)
+
+    def test_native_shard_and_core_dispatch_do_not_repeat_cases(self):
+        for shard in range(3):
+            with patch.object(cli.sys, "argv", ["check_compactc_target.py", "--scenario-shard", str(shard)]), \
+                 patch.object(cli, "run") as run, \
+                 patch.object(cli.native_targets, "check") as native:
+                cli.main()
+                self.assertEqual([call.args[2] for call in run.call_args_list],
+                                 [selector for selector, _ in cli.select_native_scenario_shard(shard)])
+                native.assert_not_called()
+            with patch.object(cli.sys, "argv", ["check_compactc_target.py", "--proof", "--scenario-shard", str(shard)]), \
+                 patch.object(cli, "run") as run, \
+                 patch.object(cli, "check_complete_ir_binding"), \
+                 patch.object(cli.native_targets, "check") as native:
+                cli.main()
+                calls = run.call_args_list[1:]  # The first call is the shared source-binding preflight.
+                self.assertEqual([(call.args[2], "--proof" in call.args)
+                                  for call in calls], list(cli.select_native_scenario_shard(shard)))
+                native.assert_not_called()
+        with patch.object(cli.sys, "argv", ["check_compactc_target.py", "--core-only"]), \
+             patch.object(cli, "run") as run, \
+             patch.object(cli.native_targets, "check") as native:
+            cli.main()
+            run.assert_not_called()
+            native.assert_called_once()
 
     def test_repository_proof_profile_preserves_checked_workspace_code(self):
         manifest = tomllib.loads((ROOT / "Cargo.toml").read_text())

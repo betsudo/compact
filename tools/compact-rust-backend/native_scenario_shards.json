@@ -1,0 +1,143 @@
+{
+  "format": "compact-native-scenario-shards/v1",
+  "shard_count": 3,
+  "measurement": {
+    "repository": "betsudo/compact",
+    "run_id": 42134457505,
+    "job_id": 127627123995,
+    "head_sha": "044e7840bae7993758cf704d3f21c52b0b1511d4",
+    "method": "one warm hosted run; longest-processing-time first; preserve original order within each shard"
+  },
+  "scenarios": [
+    {
+      "selector": "--qualified-coin-cell",
+      "shard": 0,
+      "measured_seconds": 156.925
+    },
+    {
+      "selector": "--native-zswap-intents",
+      "shard": 1,
+      "measured_seconds": 22.229
+    },
+    {
+      "selector": "--kernel-shielded-effects",
+      "shard": 0,
+      "measured_seconds": 9.711
+    },
+    {
+      "selector": "--shielded-receive",
+      "shard": 0,
+      "measured_seconds": 41.475
+    },
+    {
+      "selector": "--shielded-merge",
+      "shard": 2,
+      "measured_seconds": 73.012
+    },
+    {
+      "selector": "--shielded-send",
+      "shard": 2,
+      "measured_seconds": 94.584
+    },
+    {
+      "selector": "--stateful-struct",
+      "shard": 1,
+      "measured_seconds": 0.965
+    },
+    {
+      "selector": "--field-observation",
+      "shard": 1,
+      "measured_seconds": 9.195
+    },
+    {
+      "selector": "--composite-zswap",
+      "shard": 1,
+      "measured_seconds": 21.689
+    },
+    {
+      "selector": "--micro-dao-token",
+      "shard": 0,
+      "measured_seconds": 4.96
+    },
+    {
+      "selector": "--micro-dao-reveal",
+      "shard": 2,
+      "measured_seconds": 11.668
+    },
+    {
+      "selector": "--transient-receive-send",
+      "shard": 1,
+      "measured_seconds": 87.308
+    },
+    {
+      "selector": "--canonical-output-order",
+      "shard": 2,
+      "measured_seconds": 40.306
+    },
+    {
+      "selector": "--terminal-lexical-return",
+      "shard": 2,
+      "measured_seconds": 6.603
+    },
+    {
+      "selector": "--micro-dao-advance",
+      "shard": 2,
+      "measured_seconds": 14.701
+    },
+    {
+      "selector": "--micro-dao-set-topic",
+      "shard": 2,
+      "measured_seconds": 87.809
+    },
+    {
+      "selector": "--micro-dao-buy-in",
+      "shard": 1,
+      "measured_seconds": 94.361
+    },
+    {
+      "selector": "--micro-dao-cash-out",
+      "shard": 0,
+      "measured_seconds": 31.451
+    },
+    {
+      "selector": "--micro-dao-vote-commit",
+      "shard": 0,
+      "measured_seconds": 90.756
+    },
+    {
+      "selector": "--coracle-guess",
+      "shard": 0,
+      "measured_seconds": 19.706
+    },
+    {
+      "selector": "--coracle-concede",
+      "shard": 0,
+      "measured_seconds": 76.067
+    },
+    {
+      "selector": "--coracle-start",
+      "shard": 2,
+      "measured_seconds": 103.12
+    },
+    {
+      "selector": "--coracle-withdraw",
+      "shard": 1,
+      "measured_seconds": 140.252
+    },
+    {
+      "selector": "--wide-add",
+      "shard": 1,
+      "measured_seconds": 0.743
+    },
+    {
+      "selector": "--stateful-assert",
+      "shard": 1,
+      "measured_seconds": 2.251
+    },
+    {
+      "selector": "--witness-composition",
+      "shard": 1,
+      "measured_seconds": 52.183
+    }
+  ]
+}
