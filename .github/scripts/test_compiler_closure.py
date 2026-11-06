@@ -203,6 +203,35 @@ class ReceiptTests(unittest.TestCase):
 
 
 class WorkflowOwnershipTests(unittest.TestCase):
+    def test_wide_zero_api_upload_retains_generated_sources_on_its_runner(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        api = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
+        self.assertIn('id: wide_zero_api\n', api)
+        upload = api.split('      - name: Retain generated API diagnostics\n', 1)[1].split('      - name:', 1)[0]
+        self.assertIn('if: always()\n', upload)
+        paths = {line.strip() for line in upload.split('          path: |\n', 1)[1].splitlines()}
+        for path in ('compact-wide-zero.json', 'compact-wide-zero/generated/',
+                     'compact-wide-zero/conditional-generated/',
+                     'compact-wide-zero/consumer/Cargo.lock', 'compact-wide-zero/typescript.json',
+                     'compact-wide-zero/*.stdout', 'compact-wide-zero/*.stderr'):
+            with self.subTest(path=path):
+                self.assertIn('${{ runner.temp }}/' + path, paths)
+
+    def test_wide_zero_proof_upload_uses_only_its_own_step_and_outputs(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        proof = workflow.split('  build:\n', 1)[1].split('  product-proofs:\n', 1)[0]
+        self.assertIn('id: wide_zero_proof\n', proof)
+        self.assertNotIn('steps.wide_zero_api.', proof)
+        upload = proof.split('          name: wide-zero-failure-', 1)[0].rsplit('      - name:', 1)[1]
+        condition = next(line.strip()[4:] for line in upload.splitlines() if line.strip().startswith('if: '))
+        self.assertEqual(condition, "failure() && steps.wide_zero_proof.outcome == 'failure'")
+        upload = proof.split('          name: wide-zero-failure-', 1)[1].split('      - name:', 1)[0]
+        paths = {line.strip() for line in upload.split('          path: |\n', 1)[1].splitlines()}
+        for path in ('receipt.json', 'logs/', 'generated/'):
+            self.assertIn('${{ runner.temp }}/compact-wide-zero-proof/' + path, paths)
+        self.assertNotIn('${{ runner.temp }}/compact-wide-zero.json', paths)
+        self.assertFalse(any(path.startswith('${{ runner.temp }}/compact-wide-zero/') for path in paths))
+
     def test_named_consumers_require_same_platform_success_and_exact_artifact(self):
         workflow = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         for job, next_job, producer, system in (

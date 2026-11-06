@@ -55,6 +55,12 @@ full fixture freshness. These changes require a complete hosted gate before
 any timing claim. The follow-up head is `a5eb5e62b` in
 the later documentation-only `6466b1f35` gate.
 
+Wide-zero API diagnostics, including the generated source directory, upload
+from `generated-api` even when its gate fails. The separate proof owner retains
+its proof receipt, logs and generated files on proof failure; it does not refer
+to API step outcomes or paths on another runner. Workflow ownership tests cover
+both uploads.
+
 The [second #716 complete run](https://github.com/betsudo/compact/actions/runs/42158627089)
 at `6466b1f35` passed every owner and the strict aggregate in 61.37 minutes
 wall time, with 308.78 summed successful runner minutes. Workspace Rust passed
