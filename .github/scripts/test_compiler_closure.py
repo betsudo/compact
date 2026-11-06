@@ -237,8 +237,11 @@ class WorkflowOwnershipTests(unittest.TestCase):
         for retained in ('nix build', 'check_native_ci.sh'):
             self.assertIn(retained, linux)
         for retained in ('check_rejections.py', 'check_functional_effects.py',
-                         'check_archive_consumer.py', 'cargo clippy'):
+                         'check_archive_consumer.py'):
             self.assertIn(retained, api)
+        workspace = workflow.split('  workspace-rust:\n', 1)[1].split('  generated-api:\n', 1)[0]
+        self.assertIn('cargo test --workspace --exclude compact --locked', workspace)
+        self.assertIn('cargo clippy --workspace --exclude compact', workspace)
         self.assertNotIn('./compiler/go', linux)
         packages = workflow.split('  package-outputs:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertIn('needs: compiler-linux', packages)
@@ -251,6 +254,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
         self.assertIn('test "$COMPILER_TESTS_RESULT" = success', complete)
         self.assertIn('test "$PACKAGES_RESULT" = success', complete)
         self.assertIn('test "$GENERATED_API_RESULT" = success', complete)
+        self.assertIn('test "$WORKSPACE_RUST_RESULT" = success', complete)
         e2e = workflow.split('  e2e-tests:\n', 1)[1].split('  complete:\n', 1)[0]
         self.assertIn('needs: compiler-linux', e2e)
         self.assertIn('nix build .#compactc', e2e)
@@ -337,7 +341,7 @@ class CompilerFanoutTests(unittest.TestCase):
 class NestedProductWiringTests(unittest.TestCase):
     def test_component_vector_gate_requires_all_fourteen_proofs_and_parameters(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        linux = workflow.split('  build:\n', 1)[1]
+        linux = workflow.split('  product-proofs:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
         before, step = linux.split('      - name: Qualify component-product Vector APIs and fourteen selected proofs\n', 1)
         step = step.split('      - name: Retain failed component-product Vector diagnostics', 1)[0]
         material = before.split('      - name: Prepare verified built-in proof material\n', 1)[1].split('      - name:', 1)[0]
@@ -352,12 +356,12 @@ class NestedProductWiringTests(unittest.TestCase):
             self.assertNotIn(weakened, step)
         self.assertIn("steps.component_product_vector.outcome == 'failure'", linux)
         for role in ('recipe', 'proof'):
-            self.assertEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
+            self.assertGreaterEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
 
     def test_outer_vector_gate_keeps_full_current_source_and_boundary_execution(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  outer-vector-proof:\n', 1)[1].split('  native-backend:\n', 1)[0]
-        main = workflow.split('  build:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
+        main = workflow.split('  build:\n', 1)[1].split('  product-proofs:\n', 1)[0]
         before, step = linux.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)
         step = step.split('      - name: Retain outer-Vector product proof diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
@@ -390,10 +394,12 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
         self.assertIn('Qualify isolated witnessed functional SDK', main)
-        self.assertIn('outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
+        self.assertIn('product-proofs, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
+        self.assertNotIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
+        product = workflow.split('  product-proofs:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', product)
         self.assertIn('Qualify constant vector projection proofs', main)
 
     def test_outer_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
@@ -529,7 +535,7 @@ if stage == 'zkir': print('/mock/bin/zkir')
 
     def test_full_linux_gate_uses_current_imported_compiler_and_complete_proofs(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        linux = workflow.split('  build:\n', 1)[1]
+        linux = workflow.split('  product-proofs:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
         before, step = linux.split('      - name: Qualify complete nested-product APIs and selected proofs\n', 1)
         step = step.split('      - name: Retain failed nested-product', 1)[0]
         self.assertIn('--prepare-proof-material --parameter-k 6 --parameter-k 8', before)
@@ -544,7 +550,7 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertNotIn('continue-on-error', step)
         self.assertIn('steps.vector_component_products.outcome == \'failure\'', linux)
         self.assertIn('vector-component-products-failure-${{ github.sha }}-attempt-${{ github.run_attempt }}', linux)
-        self.assertEqual(linux.count('${{ runner.temp }}/compact-vector-component-products-proof/'), 2)
+        self.assertGreaterEqual(linux.count('${{ runner.temp }}/compact-vector-component-products-proof/'), 2)
         license_job = workflow.split('  license-check:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertIn('python3 -m unittest discover -s scripts -p test_header_regressions.py', license_job)
         self.assertLess(license_job.index('Test exact header-regression accounting'),

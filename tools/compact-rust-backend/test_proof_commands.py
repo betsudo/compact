@@ -123,7 +123,7 @@ class ProofCommands(unittest.TestCase):
         preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
                        if line.lstrip().startswith("cargo run ")
                        and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 4, "each independent proof owner prepares verified material")
+        self.assertEqual(len(preparation), 5, "each independent proof owner prepares verified material")
         for command in preparation:
             boundary = command.index("--")
             options = command[:boundary]
@@ -155,25 +155,27 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(native.count(live), 1)
         self.assertLess(native.index("--consumer --proof"), native.index(live))
 
-    def test_workspace_clippy_has_required_owner_and_remains_in_the_final_gate(self):
+    def test_workspace_clippy_has_required_parallel_owner_and_remains_local(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
         proof_job = workflow.split('  build:\n', 1)[1].split('  native-backend:\n', 1)[0]
-        api_job = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
+        workspace_job = workflow.split('  workspace-rust:\n', 1)[1].split('  generated-api:\n', 1)[0]
         native_job = workflow.split('  native-backend:\n', 1)[1].split('  e2e-tests:\n', 1)[0]
-        toolchain = api_job.index("      - name: Verify consumer toolchain inside Nix\n")
-        early = api_job.index("      - name: Check workspace Clippy for generated APIs\n")
+        toolchain = workspace_job.index("      - name: Setup Rust toolchain\n")
+        early = workspace_job.index("      - name: Check workspace Clippy\n")
         prepare = proof_job.index("      - name: Prepare verified built-in proof material\n")
         native_prepare = native_job.index("      - name: Prepare verified built-in proof material\n")
         final = native_job.index("      - name: Check and test native Rust backend\n")
         self.assertLess(toolchain, early)
         self.assertIn('test "$GENERATED_API_RESULT" = success', workflow)
+        self.assertIn('test "$WORKSPACE_RUST_RESULT" = success', workflow)
         self.assertIn('test "$NATIVE_RESULT" = success', workflow)
         self.assertLess(native_prepare, final)
         expected = "cargo clippy --workspace --exclude compact --all-targets --all-features --locked -- -D warnings"
-        commands = [line.strip() for line in workflow.splitlines()
-                    if line.lstrip().startswith("cargo clippy --workspace ")]
+        commands = [line.strip().removeprefix("run: ") for line in workflow.splitlines()
+                    if line.lstrip().startswith(("cargo clippy --workspace ",
+                                                  "run: cargo clippy --workspace "))]
         self.assertEqual(commands, [expected])
-        early_step = api_job[early:]
+        early_step = workspace_job[early:]
         self.assertEqual(early_step.count(expected), 1)
         self.assertNotIn("continue-on-error", early_step)
         self.assertNotIn("MIDNIGHT_PP", early_step)
@@ -182,7 +184,7 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(final_step.count(invocation), 1)
         self.assertEqual(workflow.count(invocation), 1)
         self.assertNotIn("continue-on-error", final_step)
-        self.assertIn('native-scenarios, native-backend, e2e-tests, build]', workflow)
+        self.assertIn('workspace-rust, compiler-linux, fixture-freshness', workflow)
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()
         self.assertIn("set -e -o pipefail", native)
         self.assertEqual(native.count(expected), 1)
@@ -193,9 +195,9 @@ class ProofCommands(unittest.TestCase):
 
     def test_wallet_only_ci_mode_preserves_handoff_and_full_local_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
-        api = workflow.split("  generated-api:\n", 1)[1].split("  build:\n", 1)[0]
+        workspace = workflow.split("  workspace-rust:\n", 1)[1].split("  generated-api:\n", 1)[0]
         native = workflow.split("  native-backend:\n", 1)[1].split("  e2e-tests:\n", 1)[0]
-        self.assertIn("run: cargo test --workspace --exclude compact --locked", api)
+        self.assertIn("run: cargo test --workspace --exclude compact --locked", workspace)
         self.assertIn("run: bash tools/compact-rust-backend/check_native_ci.sh --wallet-only", native)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
