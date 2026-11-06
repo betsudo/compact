@@ -619,8 +619,8 @@ The compiler schema descriptor is only an adapter after actual original-recipe
 source admission; it creates no new build/trust authority. No proof/verdict cache
 or resumed old qualification output is accepted.
 
-The required Linux workflow calls this combined command after verified material
-and the existing full outer-Vector gate. One bounded external Cargo target is
+The initial serial Linux workflow called this combined command after verified
+material and the existing full outer-Vector gate. One bounded external Cargo target is
 reused across all constructor stages, preserving the preflight's outside-source
 target guard and the rest of the job's existing target. Every selected executable
 is privately snapshotted. All prior compiler/proof/E2E gates remain unchanged;
@@ -643,3 +643,150 @@ This result paragraph is a documentation-only follow-up to the exact executed
 073 source epoch. Required native Linux GitHub CI and human integration review
 remain open. The separate Field-equality constructor-condition refusal remains a future
 semantic gap; no broader condition language or framework is introduced here.
+
+## PR #705 review repair — 6 November 2026
+
+Review comment `6671282935` identifies one stale generated welcome fixture. The
+original compiler194 package, authenticated against PR head `475553343`,
+reproduces the refusal. The maintained `check_fixture_outputs.py --only
+welcome.compact --update` regenerates its library with only the expected owned
+`Maybe` element clone. The complete original Compact source, recorded reference,
+private IR, checked Programs and historical proof bindings remain unchanged.
+The rebuilt compiler at `09b581735` passes the full comparison: 284 fixtures,
+zero stale and zero failed. Nine welcome tests, strict Clippy and formatting pass;
+those records retain their literal execution revisions.
+
+Both Rust module licenses now precede module documentation. The lexical test
+retains the authored 2026 copyright year. Only long statements in this PR's new
+Python tooling are wrapped: all seven syntax trees and literal receipt strings
+remain identical, with 62 lines over 150 characters removed. No source/proof-binding
+or proof protocol change is attributed to formatting.
+
+Fresh Claude CLI reviews of `d82be3f7` and `812c8e70b` identify edge cases in the
+initial attempt to enforce placement through the shared header tool. The final
+repair restores `add_headers.py` verbatim and preserves all ten original header
+controls. It adds leading-full-header validation only to changed, tracked Rust
+files in the PR regression gate, preserving Rust script shebangs while rejecting
+inner attributes even when whitespace or nested comments separate their tokens.
+The existing non-Rust validator/writer behavior and all workflow bytes are intact.
+No global header rewriting, encoding transformation or new preamble policy is
+introduced by this repair.
+
+The retained-conformance generator's embedded `GENERATED_HEADER` is string data,
+not its file license or a footer. Its unchanged historical bytes remain untouched.
+A new or modified Rust file cannot use such a literal as its leading license.
+The new controls cover this distinction, full versus short headers, actual module
+and attribute placement, BOM/shebangs, unusual filenames, deletion and duplicate
+report accounting. Existing exact-content inheritance and historical-copy guards
+remain authoritative; this is not full-tree license-compliance acceptance.
+
+The missing canonical push trigger and serial CI cost remain tracked in #706.
+Restoring duplicate post-merge qualification changes the deliberate cost policy;
+this repair preserves triggers, optional macOS behavior and all required proof,
+assertion, negative, application/replay and E2E gates. No CI optimization is added.
+The repeated clones in generated field projections remain an unmeasured separate
+optimization; the repair does not hand-edit output or broaden emitter semantics.
+Full current-head hosted CI and human integration review remain required.
+
+Claude's `ba0758c33` review found 67 pre-existing Rust placement cases outside
+this repair. The [pinned inventory and repair procedure](rust-license-placement-debt.md)
+make the migration-on-edit policy explicit: unchanged bytes remain preserved;
+future edits need a leading license in that PR, and the unchanged shared writer
+cannot perform that move automatically. This bounded decision avoids rewriting
+unrelated backend tests or historical generator data in the constructor repair.
+
+
+## PR #705 job-limit repair — 6 November 2026
+
+At `281949b2`, the Linux native backend gate passed, including the repaired
+fixture comparison. The new constructor gate also passed all seventeen selected
+proof cases and retained its artifact. The main consumer then exceeded its
+configured three-hour execution limit in run `42132301959`, job `127618693829`:
+00:06:35–03:06:58 UTC. GitHub reports “The job has exceeded the maximum execution
+time of 3h0m0s”. The constructor gate occupied 34m37s of that serial job; the
+interrupted nested-component gate and later packaging/E2E gates are not accepted.
+
+The bounded scheduling repair moves only this PR's constructor gate to a
+parallel Linux consumer. Both consumers require successful license checking and
+import the exact same-run, same-source, same-platform authenticated compiler
+artifact from the single Linux producer. The constructor consumer resolves its
+own locked ledger fixtures, verifies its toolchain and official parameters,
+uses private external Cargo targets, runs the identical whole-source API/model/
+preflight/fresh proof/application protocol, and retains success/failure evidence.
+It has no cache-write secret. Every existing compiler, backend, proof, package
+and E2E step remains in the legacy consumer.
+
+`Build and test compiler` remains the required status name. It now aggregates
+license, producer, legacy consumer and constructor consumer results and fails
+unless all four are exactly `success`, including when a dependency is skipped
+or cancelled. Both execution jobs retain the 180-minute bound. The focused
+controls execute the configured aggregate shell across all 625 combinations of
+success/failure/skipped/cancelled/empty dependency results; only all-success is
+accepted. Existing literal proof-command failure controls and artifact guards
+are retained. Triggers and optional macOS policy are unchanged; #706's separate
+push-trigger/cost policy is still open. This repair does not claim a whole-CI
+speedup or completion of gates skipped in the timed-out run. Fresh exact-head
+CI and human integration review remain required.
+
+
+The first scheduling commit `ed9c8b9aa` exposed an Actions-specific validation
+error before job execution: `runner.temp` is not available in job-level `env`.
+Its failed run `42155257278` is retained. YAML parsing and the first source
+review did not catch this. The correction selects the external bootstrap target
+through a quoted `$RUNNER_TEMP`/`$GITHUB_ENV` setup step before Cargo. A literal
+shell control covers spaces and dollar signs in that path. The actual pinned
+actionlint 1.7.12 binary reproduces the old context error and accepts the
+corrected workflow; shell command controls remain separate. No key/proof gate,
+identity, limit, trigger or required-result condition changes in this correction.
+
+
+## Local reconciliation after PR #716 — 6 November 2026
+
+PR #716 merged into `codex/rust-backend-ast` at `3b9217e85`. Its split
+qualification graph supersedes the historical monolithic-job descriptions above.
+The #705 head `fd6ac13d` has two content conflicts with that base: the compiler
+workflow and proof-command ownership tests. Reconcile on an isolated local branch
+while preserving both parent histories and all prior CI/proof evidence.
+
+The resulting workflow retains every existing #716 job unchanged, including its
+fixed generated-API diagnostic paths. It adds #705's original constructor job
+unchanged: authenticated same-run compiler import, explicit external Cargo
+targets, capability refusals, Clippy, verified parameters, the complete seventeen
+selected proof-case protocol and success/failure diagnostics. It adds constructor
+success to #716's existing `complete` dependency list, environment and required
+success checks. There is one `Build and test compiler` status. The constructor's
+existing early checks remain explicit; this reconciliation makes no optimization
+or whole-CI timing claim. Triggers, cache policy, optional macOS and limits remain
+as defined by their respective accepted parent jobs.
+
+Ownership controls follow the actual split jobs: generated API/Passport/package
+checks in `generated-api`, native checks in `native-backend`, E2E in `e2e-tests`,
+and the constructor in its own job. Preserve all 625 combinations of the original
+four result controls while requiring the other split owners to succeed too.
+Those names include `E2E_RESULT`; test environment discovery must retain digits.
+All seven proof owners use the checked profile. Constructor shell failure and
+external-target controls remain. Parsed YAML comparison must show that the only
+existing-job change is adding the constructor to `complete`. Real actionlint
+validation remains separate from YAML parsing and shell controls.
+
+This local reconciliation is not current-head hosted CI or human integration
+acceptance. The old green #705 results stay historical. Obtain a fresh independent
+review of the reconciliation, then fresh CI after any authorized publication.
+No canonical branch or GitHub PR is merged by preparing this local candidate.
+
+
+## Published reconciliation review — 6 November 2026
+
+The signed merge `83646b5ec` was published to the existing #705 branch with both
+parent histories preserved. Fresh Claude CLI review found no actionable P1/P2
+findings, consistent with the earlier Codex CLI reconciliation review. The
+50 focused ownership controls and actionlint 1.7.12 passed; the complete Python
+control suite passed 470 tests with 20 expected skips. These are source and local
+control results for that merge revision.
+
+PR qualification remains required for the final published head. A direct manual
+Compiler Build dispatch exercises the separate full-tree license policy and
+encountered historical header debt; it does not establish the PR's changed-file
+license result. Retain that failure and the existing migration-on-edit policy.
+The follow-up removes trailing whitespace from three constructor compile-fail
+twins without changing their Rust tokens, source roles or expected behavior.

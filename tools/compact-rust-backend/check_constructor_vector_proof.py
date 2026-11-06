@@ -58,7 +58,23 @@ def prove_selected(E, environment):
     pins.update({str(p):sha(p) for p in [preflight_path,model_path,Path(__file__)]})
     config = sdk.cargo_configuration(env)
     assert config == preflight['cargo_configuration']
-    R = dict(format='constructor-vector-fresh-proofs/v1', status='running', started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), producer_head=preflight['producer_head'], qualifier_head=preflight['qualifier_head'], preflight=str(preflight_path), commands=[], sources={}, frozen_inputs=pins, proof_cache=False, automatic_k_cap=8, scope='selected later-entrypoint proofs and separate funded DEFAULT strict applications, not constructor/deployment/wallet proof or integration acceptance')
+    R = dict(
+        format='constructor-vector-fresh-proofs/v1',
+        status='running',
+        started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        producer_head=preflight['producer_head'],
+        qualifier_head=preflight['qualifier_head'],
+        preflight=str(preflight_path),
+        commands=[],
+        sources={},
+        frozen_inputs=pins,
+        proof_cache=False,
+        automatic_k_cap=8,
+        scope=(
+            'selected later-entrypoint proofs and separate funded DEFAULT strict applications, '
+            'not constructor/deployment/wallet proof or integration acceptance'
+        ),
+    )
     save = lambda: (D/'receipt.json').write_text(json.dumps(R,indent=2)+'\n')
     save()
     def unchanged():
@@ -96,7 +112,16 @@ def prove_selected(E, environment):
             for f in (material_root/'zkir').iterdir():pins[str(f)]=sha(f)
             keys={}
             for entry in ['advance','advance_other']:
-                result=run(role+'-keygen-'+entry,[preflight['prerequisites']['zkir'],'compile',material_root/'zkir'/(entry+'.zkir'),material_root/'keys'/(entry+'.prover'),material_root/'keys'/(entry+'.verifier')])
+                result = run(
+                    role + '-keygen-' + entry,
+                    [
+                        preflight['prerequisites']['zkir'],
+                        'compile',
+                        material_root / 'zkir' / (entry + '.zkir'),
+                        material_root / 'keys' / (entry + '.prover'),
+                        material_root / 'keys' / (entry + '.verifier'),
+                    ],
+                )
                 match=re.search(r'\(k=(\d+), rows=(\d+)\)',result.stdout+result.stderr)
                 assert match and int(match[1])==6 and int(match[1])<=8,(role,entry,'geometry')
                 keys[entry]=dict(k=int(match[1]),rows=int(match[2]))
@@ -109,9 +134,22 @@ def prove_selected(E, environment):
             expected={x['id'] for x in cases if x['role']==role and x['error'] is None}
             assert value['status']=='passed' and {x['case'] for x in value['results']}==expected
             for result in value['results']:
-                assert result['status']=='passed' and result['strict_application']=='default' and result['replay_refusal']=='IntentAlreadyExists' and result['replay_unchanged']
-                for key in ['changed_binding_rejected','changed_input_rejected','changed_output_rejected','changed_input_preimage_rejected','changed_output_preimage_rejected','corrupted_proof_rejected','distinct_verifier_rejected']:
-                    assert result[key] is True,key
+                assert (
+                    result['status'] == 'passed'
+                    and result['strict_application'] == 'default'
+                    and result['replay_refusal'] == 'IntentAlreadyExists'
+                    and result['replay_unchanged']
+                )
+                for key in [
+                    'changed_binding_rejected',
+                    'changed_input_rejected',
+                    'changed_output_rejected',
+                    'changed_input_preimage_rejected',
+                    'changed_output_preimage_rejected',
+                    'corrupted_proof_rejected',
+                    'distinct_verifier_rejected',
+                ]:
+                    assert result[key] is True, key
                 path=lane/'applications'/result['case']
                 assert (path/'standalone.proof').stat().st_size==result['standalone_proof_bytes']>0
                 assert (path/'applied-transaction.bin').stat().st_size==result['transaction_bytes']>0
@@ -123,7 +161,18 @@ def prove_selected(E, environment):
     except BaseException as error:
         R.update(status='failed',error=repr(error));raise
     finally:
-        save();print(json.dumps({k:v for k,v in R.items() if k not in ['frozen_inputs','sources','commands','verified_material']},indent=2),flush=True)
+        save()
+        print(
+            json.dumps(
+                {
+                    k: v
+                    for k, v in R.items()
+                    if k not in ['frozen_inputs', 'sources', 'commands', 'verified_material']
+                },
+                indent=2,
+            ),
+            flush=True,
+        )
     return R
 
 def main():
@@ -153,8 +202,19 @@ def main():
         raise ValueError('current clean original compiler receipt required')
     pins={str(recipe_path):sha(recipe_path),str(zkir):sha(zkir),str(Path(__file__)):sha(__file__)}
     configuration=sdk.cargo_configuration(env)
-    report=dict(format='constructor-vector-complete-proof-gate/v1',status='running',head=head,tree=tree,stages=[],proof_execution=False,
-                scope='Whole current constructor source/API/refusal/model and selected lateradvance proofs/separatefundedDEFAULTstrictapps; notconstructor/deployment/wallet/totalcost/fullCI/integration')
+    report = dict(
+        format='constructor-vector-complete-proof-gate/v1',
+        status='running',
+        head=head,
+        tree=tree,
+        stages=[],
+        proof_execution=False,
+        scope=(
+            'Whole current constructor source/API/refusal/model and selected lateradvance '
+            'proofs/separatefundedDEFAULTstrictapps; '
+            'notconstructor/deployment/wallet/totalcost/fullCI/integration'
+        ),
+    )
     save=lambda:(output/'receipt.json').write_text(json.dumps(report,indent=2)+'\n')
     def unchanged():
         assert git('rev-parse','HEAD')==head and not git('status','--porcelain')
@@ -182,7 +242,12 @@ def main():
         protocol=output/'protocol'
         invoke('source-api',source_owner,['--compiler-receipt',recipe_path,'--ts-runtime',args.ts_runtime,'--output',protocol])
         producer_path=protocol/'receipt.json';producer=json.loads(producer_path.read_text())
-        assert producer['status']=='passed' and producer['head']==head and producer['complete_sources']==14 and producer['successful_constructor_cases']==17
+        assert (
+            producer['status'] == 'passed'
+            and producer['head'] == head
+            and producer['complete_sources'] == 14
+            and producer['successful_constructor_cases'] == 17
+        )
         pins.update(producer['tools']);pins.update({str(W/p):h for p,h in producer['inputs'].items()});pins[str(producer_path)]=sha(producer_path)
         invoke('models',model_owner,['--producer-root',protocol/'generated','--producer-receipt',producer_path,'--output',output/'models'])
         model_path=output/'models/receipt.json';models=json.loads(model_path.read_text());assert models['status']=='passed'
@@ -191,9 +256,18 @@ def main():
         # preflight owner. The source gate already admits the actual recipe,
         # launcher and Scheme component; the descriptor adds no trust authority.
         compiler_path=output/'compiler-descriptor.json'
-        descriptor=dict(format='constructor-original-recipe-descriptor/v1',status='passed',head=head,tree=tree,
-                        compiler=recipe['compactc']['path'],compiler_sha256=recipe['compactc']['sha256'],version=recipe['version'],
-                        original_recipe=str(recipe_path),original_recipe_sha256=sha(recipe_path),scope='schema adapter after actual maintained source admission, not a new build/recipe')
+        descriptor = dict(
+            format='constructor-original-recipe-descriptor/v1',
+            status='passed',
+            head=head,
+            tree=tree,
+            compiler=recipe['compactc']['path'],
+            compiler_sha256=recipe['compactc']['sha256'],
+            version=recipe['version'],
+            original_recipe=str(recipe_path),
+            original_recipe_sha256=sha(recipe_path),
+            scope='schema adapter after actual maintained source admission, not a new build/recipe',
+        )
         compiler_path.write_text(json.dumps(descriptor,indent=2)+'\n');pins[str(compiler_path)]=sha(compiler_path)
         invoke('preflight',preflight_owner,['--producer-root',protocol/'generated','--producer-receipt',producer_path,
                     '--compiler-receipt',compiler_path,'--model-receipt',model_path,'--output',output/'preflight'])
@@ -202,10 +276,22 @@ def main():
         result=prove_selected(output,env)
         assert result['status']=='passed' and result['fresh_standalone_proofs']==result['separately_proved_applications']==17
         unchanged()
-        report.update(status='passed',proof_execution=True,fresh_keypairs=28,standalone_proof_cases=17,separate_default_strict_applications=17,
-                      source_receipt=dict(path=str(producer_path),sha256=sha(producer_path)),model_receipt=dict(path=str(model_path),sha256=sha(model_path)),
-                      preflight_receipt=dict(path=str(output/'preflight/receipt.json'),sha256=sha(output/'preflight/receipt.json')),
-                      proof_receipt=dict(path=str(output/'proofs/receipt.json'),sha256=sha(output/'proofs/receipt.json')))
+        report.update(
+            status='passed',
+            proof_execution=True,
+            fresh_keypairs=28,
+            standalone_proof_cases=17,
+            separate_default_strict_applications=17,
+            source_receipt=dict(path=str(producer_path), sha256=sha(producer_path)),
+            model_receipt=dict(path=str(model_path), sha256=sha(model_path)),
+            preflight_receipt=dict(
+                path=str(output / 'preflight/receipt.json'),
+                sha256=sha(output / 'preflight/receipt.json'),
+            ),
+            proof_receipt=dict(
+                path=str(output / 'proofs/receipt.json'), sha256=sha(output / 'proofs/receipt.json')
+            ),
+        )
     except BaseException as error:
         report.update(status='failed',error=repr(error));raise
     finally:

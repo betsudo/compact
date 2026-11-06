@@ -125,7 +125,12 @@ def malformed_cases(irs):
             # Borrowed native iteration does not unroll by Vector length. Test
             # actual nested source depth against the unchanged policy instead.
             for _ in range(50):
-                loop["source"] = {"kind": "if", "condition": {"kind": "boolean", "value": True}, "then": loop["source"], "otherwise": {"kind": "parameter", "name": "input"}}
+                loop["source"] = {
+                    "kind": "if",
+                    "condition": {"kind": "boolean", "value": True},
+                    "then": loop["source"],
+                    "otherwise": {"kind": "parameter", "name": "input"},
+                }
             expected = ["resource", "syntax_depth", "48"]
         yield name, value, expected
 
@@ -159,7 +164,10 @@ def main():
     head, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
     require(not git("status", "--porcelain"), "clean source HEAD required")
     build = json.loads(args.compiler_receipt.read_text())
-    require(build["status"] == "passed" and build["head"] == head and build["tree"] == tree, "original compiler receipt must bind this clean HEAD/tree")
+    require(
+        build["status"] == "passed" and build["head"] == head and build["tree"] == tree,
+        "original compiler receipt must bind this clean HEAD/tree",
+    )
     compiler, scheme = [Path(build[k]["path"]).resolve(strict=True) for k in ["compactc", "compactc-scheme"]]
     require(compiler.parent == scheme.parent, "use one original compiler package")
     for key, path in [("compactc", compiler), ("compactc-scheme", scheme)]:
@@ -170,16 +178,37 @@ def main():
     paths.extend(Path(__file__).parent.glob("*.py"))
     pins = {str(p.relative_to(ROOT)): digest(p) for p in paths}
     rustup = Path(shutil.which("rustup")).resolve(strict=True)
-    tools = {str(p): digest(p) for p in [compiler, scheme, args.compiler_receipt.resolve(), rustup, Path(sys.executable).resolve(), Path(shutil.which("node")).resolve()]}
+    tools = {
+        str(p): digest(p)
+        for p in [
+            compiler,
+            scheme,
+            args.compiler_receipt.resolve(),
+            rustup,
+            Path(sys.executable).resolve(),
+            Path(shutil.which("node")).resolve(),
+        ]
+    }
     for name in ["cargo", "rustc", "clippy-driver", "cargo-clippy"]:
         path = Path(subprocess.check_output([str(rustup), "which", "--toolchain", "1.99.0", name], text=True).strip()).resolve(strict=True)
         tools[str(path)] = digest(path)
         if name == "cargo":
             env["PATH"] = str(path.parent) + os.pathsep + env["PATH"]
     output.mkdir(parents=True)
-    report = {"status": "incomplete", "head": head, "tree": tree, "inputs": pins, "tools": tools,
-              "cargo_configuration_sha256": configuration, "commands": [], "sources": {},
-              "scope": "Whole-source constructor/native/TS/API/refusal qualification only; no keys/proofs, constructor total-cost/crypto or integration acceptance"}
+    report = {
+        "status": "incomplete",
+        "head": head,
+        "tree": tree,
+        "inputs": pins,
+        "tools": tools,
+        "cargo_configuration_sha256": configuration,
+        "commands": [],
+        "sources": {},
+        "scope": (
+            "Whole-source constructor/native/TS/API/refusal qualification only; "
+            "no keys/proofs, constructor total-cost/crypto or integration acceptance"
+        ),
+    }
     start = time.monotonic()
 
     def save():
@@ -209,7 +238,16 @@ def main():
             path = output / f"{label}.{suffix}"
             path.write_text(getattr(p, suffix))
             hashes[suffix + "_sha256"] = digest(path)
-        report["commands"].append({"label": label, "command": command, "cwd": str(cwd), "exit": p.returncode, "seconds": time.monotonic() - began, **hashes})
+        report["commands"].append(
+            {
+                "label": label,
+                "command": command,
+                "cwd": str(cwd),
+                "exit": p.returncode,
+                "seconds": time.monotonic() - began,
+                **hashes,
+            }
+        )
         save()
         require(not success or p.returncode == 0, label + " failed: see retained diagnostics")
         return p
@@ -219,7 +257,12 @@ def main():
         definitions = json.loads((FIXTURES / "sources.json").read_text())
         cases = json.loads((FIXTURES / "cases.json").read_text())
         require(len(definitions) == 14 and len({s["role"] for s in definitions}) == 14, "complete source roster differs")
-        require({s["role"] for s in definitions} == {p.stem for p in (FIXTURES / "sources").glob("*.compact")} == {c["role"] for c in cases}, "uncovered or missing source")
+        require(
+            {s["role"] for s in definitions}
+            == {p.stem for p in (FIXTURES / "sources").glob("*.compact")}
+            == {c["role"] for c in cases},
+            "uncovered or missing source",
+        )
         require(len(cases) == len({c["id"] for c in cases}) == 24, "case roster differs")
         root_lock = (ROOT / "Cargo.lock").read_bytes()
         root = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads(root_lock.decode())["package"]}
@@ -228,15 +271,47 @@ def main():
             role = spec["role"]
             source, target = ROOT / spec["path"], generated / role
             require(digest(source) == spec["sha256"], "source bytes differ: " + role)
-            run(role + "-generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8", "--rust-require-recording", "--skip-zk", source, target])
+            run(
+                role + "-generate",
+                [
+                    compiler,
+                    "--target",
+                    "rust",
+                    "--target",
+                    "ts",
+                    "--rust-functional-ledger8",
+                    "--rust-require-recording",
+                    "--skip-zk",
+                    source,
+                    target,
+                ],
+            )
             independent = output / "independent" / role
             run(role + "-independent", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, independent])
             for name in ["compact-rust-ir.json", "compact-rust-origins.raw.json"]:
-                require((target / "contract" / name).read_bytes() == (independent / "contract" / name).read_bytes(), "complete independent " + name + " differs: " + role)
+                require(
+                    (target / "contract" / name).read_bytes()
+                    == (independent / "contract" / name).read_bytes(),
+                    "complete independent " + name + " differs: " + role,
+                )
             irs[role] = json.loads((target / "contract/compact-rust-ir.json").read_text())
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
-            require({c["name"] for c in caps} == set(spec["entries"]) == {p.stem for p in (target / "zkir").glob("*.zkir")}, "export/model roster differs")
-            require(all(c["recorded"] and c["observed_call"] and c["proof_required"] and c["recording_status"] == "available" for c in caps), "required recorded API missing")
+            require(
+                {c["name"] for c in caps}
+                == set(spec["entries"])
+                == {p.stem for p in (target / "zkir").glob("*.zkir")},
+                "export/model roster differs",
+            )
+            require(
+                all(
+                    c["recorded"]
+                    and c["observed_call"]
+                    and c["proof_required"]
+                    and c["recording_status"] == "available"
+                    for c in caps
+                ),
+                "required recorded API missing",
+            )
             programs = program_assets(target / "contract/checked-programs", spec["entries"])
             require(digest(target / "zkir/advance.zkir") != digest(target / "zkir/advance_other.zkir"), "wrong-verifier relation is not distinct")
             for package in ["runtime-rs", "runtime-rs-macros"]:
@@ -251,7 +326,21 @@ def main():
         (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "typescript.json"
-        run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime, "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
+        run(
+            "typescript",
+            [
+                "node",
+                FIXTURES / "capture.mjs",
+                "--generated",
+                generated,
+                "--runtime",
+                runtime,
+                "--version",
+                json.loads((ROOT / "runtime/package.json").read_text())["version"],
+                "--output",
+                ts,
+            ],
+        )
         reference = admit_oracle(ts, generated, runtime, definitions)
         require(reference["status"] == "passed" and {c["id"] for c in reference["rows"]} == {c["id"] for c in cases}, "incomplete TS execution")
         env["COMPACT_CONSTRUCTOR_TS"] = str(ts)
@@ -266,23 +355,84 @@ def main():
             (strict / "Cargo.lock").write_bytes(root_lock)
             metadata = run(role + "-sdk-resolve", ["cargo", "metadata", "--offline", "--format-version=1"], cwd=strict)
             check_lock(strict / "Cargo.lock", metadata, root, allowed, [strict])
-            run(role + "-sdk-clippy", ["cargo", "clippy", "--offline", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"], cwd=strict)
+            run(
+                role + "-sdk-clippy",
+                [
+                    "cargo",
+                    "clippy",
+                    "--offline",
+                    "--locked",
+                    "--all-targets",
+                    "--all-features",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+                cwd=strict,
+            )
             require(all(digest(strict / path) == sha for path, sha in before.items()), "strict SDK source changed")
             consumer = output / "consumers" / role
             consumer.mkdir(parents=True)
-            for source, name in [(FIXTURES / "consumer.rs", "consumer.rs"), (FIXTURES / "cases.json", "cases.json"), (FIXTURES / "constructors" / (spec["constructor_consumer"] + ".rs"), "constructor.rs")]:
+            for source, name in [
+                (FIXTURES / "consumer.rs", "consumer.rs"),
+                (FIXTURES / "cases.json", "cases.json"),
+                (
+                    FIXTURES / "constructors" / (spec["constructor_consumer"] + ".rs"),
+                    "constructor.rs",
+                ),
+            ]:
                 shutil.copyfile(source, consumer / name)
             (consumer / "Cargo.lock").write_bytes(root_lock)
-            manifest = '[workspace]\n[package]\nname="constructor-vector-' + role.replace("_", "-") + '"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\ngenerated={package=' + json.dumps(package["name"]) + ',path=' + json.dumps(str(sdk)) + ',features=["ledger-transaction"]}\n'
+            manifest = (
+                '[workspace]\n[package]\nname="constructor-vector-'
+                + role.replace("_", "-")
+                + '"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\ngenerated={package='
+                + json.dumps(package["name"])
+                + ',path='
+                + json.dumps(str(sdk))
+                + ',features=["ledger-transaction"]}\n'
+            )
             (consumer / "Cargo.toml").write_text(manifest)
             metadata = run(role + "-resolve", ["cargo", "metadata", "--offline", "--format-version=1"], cwd=consumer)
             check_lock(consumer / "Cargo.lock", metadata, root, allowed, [consumer, sdk])
             env["COMPACT_CONSTRUCTOR_ROLE"] = role
             env["COMPACT_CONSTRUCTOR_PROGRAM_ROOT"] = str(sdk / "checked-programs")
-            p = run(role + "-consumer", ["cargo", "test", "--offline", "--locked", "--lib", "constructor_cases", "--", "--exact", "--nocapture"], cwd=consumer)
+            p = run(
+                role + "-consumer",
+                [
+                    "cargo",
+                    "test",
+                    "--offline",
+                    "--locked",
+                    "--lib",
+                    "constructor_cases",
+                    "--",
+                    "--exact",
+                    "--nocapture",
+                ],
+                cwd=consumer,
+            )
             count = sum(c["role"] == role for c in cases)
-            require(f"constructor-cases:{count}" in p.stdout and "test result: ok. 1 passed; 0 failed; 0 ignored;" in p.stdout, "all native cases must execute")
-            run(role + "-clippy", ["cargo", "clippy", "--offline", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"], cwd=consumer)
+            require(
+                f"constructor-cases:{count}" in p.stdout
+                and "test result: ok. 1 passed; 0 failed; 0 ignored;" in p.stdout,
+                "all native cases must execute",
+            )
+            run(
+                role + "-clippy",
+                [
+                    "cargo",
+                    "clippy",
+                    "--offline",
+                    "--locked",
+                    "--all-targets",
+                    "--all-features",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+                cwd=consumer,
+            )
             consumers[role] = consumer
         report["identity_controls"] = {}
         duplicate = output / "duplicate-program-root"
@@ -316,8 +466,27 @@ def main():
         run("swapped-program-resolve", ["cargo", "metadata", "--offline", "--format-version=1"], cwd=swapped_consumer)
         env["COMPACT_CONSTRUCTOR_ROLE"] = "parameter"
         env["COMPACT_CONSTRUCTOR_PROGRAM_ROOT"] = str(assets)
-        rejected = run("swapped-program-consumer", ["cargo", "test", "--offline", "--locked", "--lib", "constructor_cases", "--", "--exact"], cwd=swapped_consumer, success=False)
-        require(rejected.returncode and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout and "exported Program root" in rejected.stdout, "swapped public Program mapping escaped actual consumer")
+        rejected = run(
+            "swapped-program-consumer",
+            [
+                "cargo",
+                "test",
+                "--offline",
+                "--locked",
+                "--lib",
+                "constructor_cases",
+                "--",
+                "--exact",
+            ],
+            cwd=swapped_consumer,
+            success=False,
+        )
+        require(
+            rejected.returncode
+            and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+            and "exported Program root" in rejected.stdout,
+            "swapped public Program mapping escaped actual consumer",
+        )
         report["identity_controls"]["swapped_programs"] = inventory(assets)
         changed = output / "changed-oracle.json"
         altered = copy.deepcopy(reference)
@@ -326,7 +495,15 @@ def main():
         sentinel = output / "untrusted-oracle-consumed"
         altered_environment = dict(env, COMPACT_CONSTRUCTOR_TS=str(changed))
         try:
-            run("changed-oracle-before-consumption", [sys.executable, "-c", "from pathlib import Path; Path(" + repr(str(sentinel)) + ").touch()"], environment=altered_environment)
+            run(
+                "changed-oracle-before-consumption",
+                [
+                    sys.executable,
+                    "-c",
+                    "from pathlib import Path; Path(" + repr(str(sentinel)) + ").touch()",
+                ],
+                environment=altered_environment,
+            )
         except ValueError as e:
             require("TS oracle path changed before consumption" in str(e) and not sentinel.exists(), "changed oracle reached child execution")
             report["identity_controls"]["changed_oracle"] = {"refusal": str(e), "sha256": digest(changed), "child_started": False}
@@ -362,8 +539,27 @@ def main():
         consumer_source.write_text(text.replace(old, "Field::from(expected + 1), // replay-state-expectation"))
         env["COMPACT_CONSTRUCTOR_ROLE"] = "parameter"
         env["COMPACT_CONSTRUCTOR_PROGRAM_ROOT"] = str(generated / "parameter/contract/checked-programs")
-        rejected = run("changed-replay-expectation", ["cargo", "test", "--offline", "--locked", "--lib", "constructor_cases", "--", "--exact"], cwd=mutant, success=False)
-        require(rejected.returncode and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout and "assertion `left == right` failed" in rejected.stdout, "changed replay expectation did not execute")
+        rejected = run(
+            "changed-replay-expectation",
+            [
+                "cargo",
+                "test",
+                "--offline",
+                "--locked",
+                "--lib",
+                "constructor_cases",
+                "--",
+                "--exact",
+            ],
+            cwd=mutant,
+            success=False,
+        )
+        require(
+            rejected.returncode
+            and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+            and "assertion `left == right` failed" in rejected.stdout,
+            "changed replay expectation did not execute",
+        )
         report["semantic_controls"]["replay_expectation"] = digest(consumer_source)
         for role, old, new in [
                 ("owned_reuse", "return input;", "return [input[1], input[0]];"),
@@ -379,7 +575,19 @@ def main():
             folder.mkdir()
             source = folder / (role + ".compact")
             source.write_text(text.replace(old, new))
-            run(role + "-mutant-generate", [compiler, "--target", "rust", "--rust-functional-ledger8", "--rust-require-recording", "--skip-zk", source, folder / "generated"])
+            run(
+                role + "-mutant-generate",
+                [
+                    compiler,
+                    "--target",
+                    "rust",
+                    "--rust-functional-ledger8",
+                    "--rust-require-recording",
+                    "--skip-zk",
+                    source,
+                    folder / "generated",
+                ],
+            )
             consumer = folder / "consumer"
             shutil.copytree(consumers[role], consumer)
             manifest = consumer / "Cargo.toml"
@@ -387,8 +595,27 @@ def main():
             run(role + "-mutant-resolve", ["cargo", "metadata", "--offline", "--format-version=1"], cwd=consumer)
             env["COMPACT_CONSTRUCTOR_ROLE"] = role
             env["COMPACT_CONSTRUCTOR_PROGRAM_ROOT"] = str(folder / "generated/contract/checked-programs")
-            rejected = run(role + "-mutant-consumer", ["cargo", "test", "--offline", "--locked", "--lib", "constructor_cases", "--", "--exact"], cwd=consumer, success=False)
-            require(rejected.returncode and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout and "assertion `left == right` failed" in rejected.stdout, "same-type complete source mutation escaped behavioral assertions: " + role)
+            rejected = run(
+                role + "-mutant-consumer",
+                [
+                    "cargo",
+                    "test",
+                    "--offline",
+                    "--locked",
+                    "--lib",
+                    "constructor_cases",
+                    "--",
+                    "--exact",
+                ],
+                cwd=consumer,
+                success=False,
+            )
+            require(
+                rejected.returncode
+                and "test result: FAILED. 0 passed; 1 failed;" in rejected.stdout
+                and "assertion `left == right` failed" in rejected.stdout,
+                "same-type complete source mutation escaped behavioral assertions: " + role,
+            )
             report["semantic_controls"][role] = {"source_sha256": digest(source), "generated": inventory(folder / "generated")}
         report["ir_refusals"] = {}
         backend = ["cargo", "run", "--locked", "--offline", "--quiet", "-p", "compact-rust-backend", "--bin", "compact-rust-backend"]
@@ -404,14 +631,32 @@ def main():
         admit_oracle(ts, generated, runtime, definitions)
         require({p: digest(ROOT / p) for p in pins} == pins and all(digest(p) == sha for p, sha in tools.items()), "source/tool bytes changed")
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source HEAD changed")
-        report.update(status="passed", complete_sources=14, cases=24, successful_constructor_cases=17, constructor_error_cases=7, post_initialization_routes=68, public_replays=34, fresh_proofs=0)
+        report.update(
+            status="passed",
+            complete_sources=14,
+            cases=24,
+            successful_constructor_cases=17,
+            constructor_error_cases=7,
+            post_initialization_routes=68,
+            public_replays=34,
+            fresh_proofs=0,
+        )
     except Exception as e:
         report.update(status="failed", error=str(e))
         raise
     finally:
         report["seconds"] = time.monotonic() - start
         save()
-        print(json.dumps({"status": report["status"], "seconds": report["seconds"], "commands": len(report["commands"]), "error": report.get("error")}))
+        print(
+            json.dumps(
+                {
+                    "status": report["status"],
+                    "seconds": report["seconds"],
+                    "commands": len(report["commands"]),
+                    "error": report.get("error"),
+                }
+            )
+        )
 
 
 if __name__ == "__main__":

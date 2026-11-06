@@ -19,6 +19,7 @@ import hashlib
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import check_header_regressions as gate
 
@@ -141,6 +142,111 @@ class PinnedHistoricalCopyTests(unittest.TestCase):
         result = gate.classify(self.root, self.base, [self.copy])
         self.assertFalse(result['passed'])
         self.assertEqual(result['retained_source_copies'], [])
+
+
+class RustHeaderPlacementTests(unittest.TestCase):
+    def setUp(self):
+        HeaderRegressionTests.setUp(self)
+        self.manager = gate.HeaderManager(str(gate.ROOT / 'header_config.json'), str(self.root))
+        self.header = self.manager._format_license_header('//', '2026') + '\n'
+
+    def source(self, name, content):
+        path = self.root / name
+        path.write_bytes(content if isinstance(content, bytes) else content.encode())
+        subprocess.run(['git', 'add', '--', name], cwd=self.root, check=True)
+        return path
+
+    def violations(self):
+        return gate.rust_header_placement_violations(self.root, self.base, self.manager)
+
+    def commit_fixture(self):
+        subprocess.run(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                        '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture'],
+                       cwd=self.root, check=True)
+        self.base = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.root, text=True).strip()
+
+    def test_full_header_precedes_module_documentation_and_code(self):
+        body = '//! Module docs.\npub fn example() {}\n'
+        path = self.source('module.rs', self.header + body)
+        self.assertEqual(self.violations(), [])
+        path.write_text(body + self.header)
+        self.assertEqual(self.violations(), [path])
+
+    def test_short_spdx_or_header_literal_is_not_a_leading_full_header(self):
+        for index, content in enumerate([
+                '// SPDX-License-Identifier: Apache-2.0\npub fn example() {}\n',
+                'const TEXT: &str = r#"\n' + self.header + '"#;\n']):
+            path = self.source(f'bad-{index}.rs', content)
+            self.assertIn(path, self.violations())
+
+    def test_inner_attributes_with_whitespace_and_nested_comments_are_code(self):
+        for index, attribute in enumerate([
+                '#![allow(dead_code)]', '#! [allow(dead_code)]', '#!\t[allow(dead_code)]',
+                '#!\n[allow(dead_code)]', '#!/*c*/[allow(dead_code)]',
+                '#! /* outer /* nested */ end */ [allow(dead_code)]',
+                '#!\n// comment\n[allow(dead_code)]', '#!/* unterminated']):
+            with self.subTest(attribute=attribute):
+                path = self.source(f'attribute-{index}.rs', attribute + '\n' + self.header)
+                self.assertIn(path, self.violations())
+
+    def test_rust_script_shebang_and_utf8_bom_keep_leading_header(self):
+        for index, preamble in enumerate(['#!/usr/bin/env rust-script\n', '#!rust-script\n', '\ufeff']):
+            path = self.source(f'valid-{index}.rs', preamble + '\n' + self.header + 'fn main() {}\n')
+            self.assertNotIn(path, self.violations())
+        raw = (self.header + 'fn main() {}\n').replace('\n', '\r\n').encode()
+        path = self.source('valid-crlf.rs', raw)
+        self.assertNotIn(path, self.violations())
+        self.assertEqual(path.read_bytes(), raw)
+        path = self.source('invalid-utf8.rs', b'\xff' + self.header.encode())
+        self.assertIn(path, self.violations())
+
+    def test_other_languages_keep_original_header_rules(self):
+        for name in ['counter_failing.compact', 'map_failing.compact', 'map_field_field.compact']:
+            raw = (gate.ROOT / 'examples/adt/negative' / name).read_bytes()
+            self.source(name, raw)
+            self.assertTrue(self.manager._scan_for_header('//', raw.decode()))
+        self.source('Dockerfile', '# syntax=docker/dockerfile:1\n')
+        self.source('encoding.py', '# coding: latin-1\n')
+        self.assertEqual(self.violations(), [])
+
+    def test_unchanged_historical_generator_bytes_stay_unchanged_not_certified_as_a_header(self):
+        authority = gate.ROOT / ('tools/compact-rust-backend/tests/retained-conformance-6e37443b/'
+                                 'tools/compact-rust-backend/src/lib.rs')
+        original = authority.read_bytes()
+        retained = self.source('historical.rs', original)
+        self.commit_fixture()
+        self.assertEqual(self.violations(), [])
+        # Its embedded GENERATED_HEADER is data, not this source file's license.
+        copied = self.source('new-copy.rs', original)
+        self.assertEqual(self.violations(), [copied])
+        retained.write_bytes(original + b'\n// changed\n')
+        self.assertIn(retained, self.violations())
+        self.assertEqual(authority.read_bytes(), original)
+
+    def test_unusual_filename_deletion_and_symlink_are_unambiguous(self):
+        path = self.source('space and\nnewline.rs', self.header + 'fn main() {}\n')
+        self.commit_fixture()
+        path.write_text('fn main() {}\n' + self.header)
+        self.assertEqual(self.violations(), [path])
+        path.unlink()
+        subprocess.run(['git', 'add', '--all'], cwd=self.root, check=True)
+        self.assertEqual(self.violations(), [])
+        link = self.root / 'link.rs'
+        link.symlink_to(self.path)
+        subprocess.run(['git', 'add', 'link.rs'], cwd=self.root, check=True)
+        with self.assertRaisesRegex(ValueError, 'regular file'):
+            self.violations()
+
+    def test_main_deduplicates_missing_and_misplaced_rust_header(self):
+        self.source('bad.rs', 'fn main() {}\n')
+        (self.root / 'header_config.json').write_bytes((gate.ROOT / 'header_config.json').read_bytes())
+        report = self.root / 'report.json'
+        with patch.object(gate, 'ROOT', self.root):
+            self.assertEqual(gate.main(['--base', self.base, '--report', str(report)]), 1)
+        import json
+        result = json.loads(report.read_text())
+        self.assertEqual(len(result['new_or_modified_violations']), 1)
+        self.assertEqual(result['rust_placement_violations'], ['bad.rs'])
 
 
 if __name__ == '__main__':

@@ -83,6 +83,67 @@ def base_bytes(root, base, name):
     return base_contents(root, base, [name])[name]
 
 
+def rust_header_start(content):
+    """Skip a Rust shebang, but not an inner attribute separated by trivia."""
+    if not content.startswith('#!'):
+        return 0
+    index = 2
+    while index < len(content):
+        if content[index].isspace():
+            index += 1
+        elif content.startswith('//', index):
+            end = content.find('\n', index)
+            index = len(content) if end == -1 else end + 1
+        elif content.startswith('/*', index):
+            index += 2
+            depth = 1
+            while index < len(content) and depth:
+                if content.startswith('/*', index):
+                    depth += 1
+                    index += 2
+                elif content.startswith('*/', index):
+                    depth -= 1
+                    index += 2
+                else:
+                    index += 1
+            if depth:
+                return 0
+        else:
+            break
+    if content.startswith('[', index):
+        return 0
+    newline = content.find('\n')
+    return len(content) if newline == -1 else newline + 1
+
+
+def rust_header_placement_violations(root, base, manager):
+    """Check only new/modified tracked Rust files; leave shared writer rules intact."""
+    names = subprocess.run(
+        ['git', 'diff', '--name-only', '--no-renames', '--diff-filter=ACMRT', '-z',
+         base, '--', '*.rs'], cwd=root, capture_output=True, check=True).stdout
+    invalid = []
+    pattern = manager._get_header_pattern('//')
+    for name in names.split(b'\0'):
+        if not name:
+            continue
+        path = Path(root) / os.fsdecode(name)
+        if path.is_symlink():
+            raise ValueError('changed Rust source must be a regular file: ' + str(path))
+        try:
+            # Match the existing validator's universal-newline text view without
+            # rewriting source bytes; Rust also permits a leading UTF-8 BOM.
+            content = path.read_text(encoding='utf-8-sig')
+        except UnicodeDecodeError:
+            invalid.append(path)
+            continue
+        start = rust_header_start(content)
+        while start < len(content) and content[start].isspace():
+            start += 1
+        if not pattern.match(content, start):
+            invalid.append(path)
+    return invalid
+
+
 def classify(root, base, missing):
     names = [Path(path).relative_to(root).as_posix() for path in missing]
     authorities = [RETAINED_SOURCE_COPIES[name][0] for name in names if name in RETAINED_SOURCE_COPIES]
@@ -120,11 +181,16 @@ def main(argv=None):
     if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', args.base):
         parser.error('full base commit SHA required')
     subprocess.run(['git', 'cat-file', '-e', args.base + '^{commit}'], cwd=ROOT, check=True)
-    # Original validator and full-template policy are unchanged. Keep per-file debt
+    # Preserve the original full-template validator and writer. Add placement
+    # enforcement only for changed Rust sources, including headers inside strings.
+    # Keep per-file debt
     # in the receipt instead of flooding the log with inherited warnings.
     logging.getLogger().setLevel(logging.ERROR)
     manager = HeaderManager(str(ROOT / 'header_config.json'), str(ROOT))
-    report = classify(ROOT, args.base, manager.validate_headers())
+    misplaced = rust_header_placement_violations(ROOT, args.base, manager)
+    missing = list(dict.fromkeys([*manager.validate_headers(), *misplaced]))
+    report = classify(ROOT, args.base, missing)
+    report['rust_placement_violations'] = [p.relative_to(ROOT).as_posix() for p in misplaced]
     with args.report.open('x') as output:
         json.dump(report, output, indent=2)
         output.write('\n')

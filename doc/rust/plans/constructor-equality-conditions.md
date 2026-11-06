@@ -195,3 +195,41 @@ The workflow addition is implemented locally; no hosted run or integration is
 claimed. Future whole-source CI must qualify the final integration head.
 Constructor/deployment cryptography, wallet/network lifecycle and total
 constructor cost remain outside the selected later-entrypoint result.
+
+
+## Publication reconciliation — 7 November 2026
+
+The owner authorized publishing coherent, locally checked backend slices for
+review and CI. This supersedes the earlier local-only publication restriction;
+Forge remains deferred. The continuation branch is
+`codex/rust-ast-constructor-equality-publication`, based on this equality slice
+and a forward merge of PR #705 at `9cda68a928b8384794cf305fefa39b318185af2f`.
+Both histories and all original local qualifiers remain intact. No history is
+rewritten and no earlier proof receipt is relabeled as a merged-head result.
+
+The merge retains #716's measured CI graph. Constructor Vector qualification
+remains in its existing required job; equality qualification is added once to
+the existing Rust proof job after authenticated compiler import and verified
+material preparation. Both jobs remain required by the completion gate.
+Component/outer Vector gates retain their separate owners. The duplicate
+mid-file license block from the old equality test addition is removed while
+retaining the current file's leading header and every semantic test.
+
+Required before publication: focused merged-source constructor and renderer
+checks, workflow shell/failure controls, formatting/header checks and a fresh
+independent review. Required before integration: current-head Linux CI and the
+complete maintained equality API/model/native/proof/application gate. The
+accepted `2a6a5479` and `041b74e47` local results above retain their original
+source, compiler and platform identities. Constructor/deployment proof and
+wallet/network readiness remain outside those results.
+
+Focused arm64 checks on the reconciled source passed: 64 constructor-selected
+backend tests, 14 constructor-selected renderer tests, 30 compiler/workflow
+controls, three backend-isolation controls and workspace formatting. The
+PR-scoped header validator reports zero new violations; its 1,247 inherited
+full-header debt entries remain reported. The first aggregate runner omitted
+the header CLI's required `--report` argument and therefore ended with exit2
+after the five preceding checks passed. A separate correct invocation passed
+with unchanged source bytes; the failed invocation and both results are retained.
+These checks support publication for review, not current-head proof or full
+Linux integration acceptance.

@@ -15,7 +15,7 @@
 
 use generated::{ledger_contract as c,runtime as r};
 fn main() {
- let state=c::initial_state(r::context::ConstructorContext::new(5u64), r::FixedVector([r::Field::from(2u64),r::Field::from(3u64)])).unwrap(); 
+ let state=c::initial_state(r::context::ConstructorContext::new(5u64), r::FixedVector([r::Field::from(2u64),r::Field::from(3u64)])).unwrap();
  let read=c::read(state.into_circuit_context(Default::default())).unwrap();
  assert_eq!(read.result,r::Field::from(3u64));
 }

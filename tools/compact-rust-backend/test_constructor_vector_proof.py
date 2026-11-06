@@ -40,7 +40,19 @@ class CompositionControls(unittest.TestCase):
             runtime=root/'runtime';runtime.mkdir()
             head='1'*40;tree='2'*40
             recipe=root/'recipe.json'
-            recipe.write_text(json.dumps(dict(status='passed',format='HOST-no-authority',head='3'*40 if stale else head,tree=tree,version='HOST',compactc=dict(path=str(compiler),sha256=owner.sha(compiler)),**{'compactc-scheme':dict(path=str(scheme),sha256=owner.sha(scheme))})))
+            recipe.write_text(
+                json.dumps(
+                    dict(
+                        status='passed',
+                        format='HOST-no-authority',
+                        head='3' * 40 if stale else head,
+                        tree=tree,
+                        version='HOST',
+                        compactc=dict(path=str(compiler), sha256=owner.sha(compiler)),
+                        **{'compactc-scheme': dict(path=str(scheme), sha256=owner.sha(scheme))}
+                    )
+                )
+            )
             calls=[];arguments={}
             def fake_git(*args):
                 return {('rev-parse','HEAD'):head,('rev-parse','HEAD^{tree}'):tree,('status','--porcelain'):''}[args]
@@ -52,7 +64,17 @@ class CompositionControls(unittest.TestCase):
                     if failure==name:raise RuntimeError('HOST '+name+' refusal')
                     path=Path(sys.argv[sys.argv.index('--output')+1]);path.mkdir()
                     if name=='source':
-                        value=dict(status='passed',head=head,complete_sources=14,successful_constructor_cases=17,inputs={},tools={str(compiler):owner.sha(compiler),str(scheme):owner.sha(scheme)})
+                        value = dict(
+                            status='passed',
+                            head=head,
+                            complete_sources=14,
+                            successful_constructor_cases=17,
+                            inputs={},
+                            tools={
+                                str(compiler): owner.sha(compiler),
+                                str(scheme): owner.sha(scheme),
+                            },
+                        )
                     elif name=='models':value=dict(status='passed',scope='HOST-no-model-authority')
                     else:value=dict(status='passed',prerequisites=dict(zkir=str(zkir)))
                     (path/'receipt.json').write_text(json.dumps(value))
