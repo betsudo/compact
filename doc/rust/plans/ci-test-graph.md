@@ -7,8 +7,8 @@ The implementation is published as draft stacked PRs
 [#709](https://github.com/betsudo/compact/pull/709) through
 [#715](https://github.com/betsudo/compact/pull/715). The consolidated
 [#716](https://github.com/betsudo/compact/pull/716) is in hosted qualification;
-its first complete gate passed, and the independent workspace/product owner
-split is in a second hosted run.
+its first two complete gates passed. A measured component Vector proof split
+is the final hosted candidate.
 
 ## Implemented graph and measured result
 
@@ -53,7 +53,21 @@ producer. The same follow-up
 moves the final four product qualification commands into their own owner after
 full fixture freshness. These changes require a complete hosted gate before
 any timing claim. The follow-up head is `a5eb5e62b` in
-[#716 run 42158465224](https://github.com/betsudo/compact/actions/runs/42158465224).
+the later documentation-only `6466b1f35` gate.
+
+The [second #716 complete run](https://github.com/betsudo/compact/actions/runs/42158627089)
+at `6466b1f35` passed every owner and the strict aggregate in 61.37 minutes
+wall time, with 308.78 summed successful runner minutes. Workspace Rust passed
+in 14m25s alongside the 14m04s producer. The generated API owner fell to
+17m16s, and the remaining Rust proof owner passed in 32m28s after fixtures.
+All three named native shards passed. The 40m10s combined product owner became
+the critical path: its final component Vector check took 6m54s, followed by
+about 45 seconds for artifact upload. Its sequential tail missed the under-60
+milestone by 1m22s. A final candidate assigns that exact component Vector
+command and diagnostics a separate fixture-dependent owner, retaining the
+other three nested/product commands in their current owner and requiring both
+from the strict aggregate. This costs another runner setup and needs a hosted
+complete gate before its wall-time benefit can be claimed.
 
 ## Evidence
 
@@ -106,6 +120,7 @@ flowchart LR
     F --> A[Generated Rust API and runtime packages]
     F --> P[Rust proof qualification]
     F --> Q[Nested and component product qualification]
+    F --> CV[Component Vector product qualification]
     F --> V[Outer Vector proofs]
     F --> NW[Native core proofs and wallet handoff]
     F --> M0[Native scenarios shard 0]
@@ -118,6 +133,7 @@ flowchart LR
     A --> G
     P --> G
     Q --> G
+    CV --> G
     V --> G
     NW --> G
     M0 --> G

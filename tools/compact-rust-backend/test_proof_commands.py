@@ -123,7 +123,7 @@ class ProofCommands(unittest.TestCase):
         preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
                        if line.lstrip().startswith("cargo run ")
                        and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 5, "each independent proof owner prepares verified material")
+        self.assertEqual(len(preparation), 6, "each independent proof owner prepares verified material")
         for command in preparation:
             boundary = command.index("--")
             options = command[:boundary]

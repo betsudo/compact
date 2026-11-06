@@ -341,7 +341,7 @@ class CompilerFanoutTests(unittest.TestCase):
 class NestedProductWiringTests(unittest.TestCase):
     def test_component_vector_gate_requires_all_fourteen_proofs_and_parameters(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        linux = workflow.split('  product-proofs:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
+        linux = workflow.split('  component-vector-proof:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
         before, step = linux.split('      - name: Qualify component-product Vector APIs and fourteen selected proofs\n', 1)
         step = step.split('      - name: Retain failed component-product Vector diagnostics', 1)[0]
         material = before.split('      - name: Prepare verified built-in proof material\n', 1)[1].split('      - name:', 1)[0]
@@ -355,6 +355,11 @@ class NestedProductWiringTests(unittest.TestCase):
         for weakened in ('--prepare-only', 'continue-on-error', 'if:', '/lib/zkir'):
             self.assertNotIn(weakened, step)
         self.assertIn("steps.component_product_vector.outcome == 'failure'", linux)
+        nested = workflow.split('  product-proofs:\n', 1)[1].split('  component-vector-proof:\n', 1)[0]
+        self.assertNotIn('check_component_product_vector_proof.py', nested)
+        self.assertEqual(workflow.count('check_component_product_vector_proof.py'), 1)
+        self.assertIn('COMPONENT_VECTOR_RESULT: ${{ needs.component-vector-proof.result }}', workflow)
+        self.assertIn('test "$COMPONENT_VECTOR_RESULT" = success', workflow)
         for role in ('recipe', 'proof'):
             self.assertGreaterEqual(linux.count('${{ runner.temp }}/compact-component-product-vector-' + role + '/'), 2)
 
@@ -394,11 +399,11 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
         self.assertIn('Qualify isolated witnessed functional SDK', main)
-        self.assertIn('product-proofs, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
+        self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertNotIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
-        product = workflow.split('  product-proofs:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
+        product = workflow.split('  component-vector-proof:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', product)
         self.assertIn('Qualify constant vector projection proofs', main)
 
