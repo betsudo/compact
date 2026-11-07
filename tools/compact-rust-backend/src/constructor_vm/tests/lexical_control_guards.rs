@@ -514,3 +514,261 @@ fn successful_guard_paths_keep_syntax_counters_and_no_extra_binding_name_check()
     }
     assert_ne!(identities[0], identities[1]);
 }
+
+#[test]
+fn constructor_equality_conditions_use_typed_fold_and_original_child_refusals() {
+    for negated in [false, true] {
+        let condition = if negated {
+            Expr::NotEqual {
+                left: Box::new(field("2")),
+                right: Box::new(field("3")),
+            }
+        } else {
+            Expr::Equal {
+                left: Box::new(field("2")),
+                right: Box::new(field("3")),
+            }
+        };
+        let step = ConstructorStep::If {
+            condition,
+            then_steps: vec![],
+            otherwise_steps: vec![],
+        };
+        let trace = GuardTrace::default();
+        let bare = execute(std::slice::from_ref(&step), &HashMap::new(), None);
+        let observed = execute(std::slice::from_ref(&step), &HashMap::new(), Some(&trace));
+        assert_eq!(bare, observed);
+        assert!(
+            observed
+                .0
+                .unwrap()
+                .contains(if negated { "!=" } else { "==" })
+        );
+        assert!(trace.0.borrow().is_empty());
+    }
+    let step = ConstructorStep::If {
+        condition: Expr::Equal {
+            left: Box::new(field("bad")),
+            right: Box::new(parameter("later")),
+        },
+        then_steps: vec![missing_step("then_missing")],
+        otherwise_steps: vec![],
+    };
+    let ConstructorStep::If {
+        condition: Expr::Equal { left, .. },
+        ..
+    } = &step
+    else {
+        panic!("fixture")
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &HashMap::new(),
+        &trace,
+        RenderError::InvalidFieldLiteral("bad".into()),
+    );
+    // The existing observed pure fold records the deepest child first, then
+    // its enclosing comparison. Both sites borrow the original input.
+    let ConstructorStep::If { condition, .. } = &step else {
+        panic!("fixture")
+    };
+    assert_eq!(
+        trace.0.borrow().as_slice(),
+        &[
+            (
+                "expr",
+                std::ptr::from_ref(left.as_ref()) as usize,
+                Slot::Node
+            ),
+            ("expr", std::ptr::from_ref(condition) as usize, Slot::Node),
+        ]
+    );
+}
+
+#[test]
+fn constructor_equality_keeps_typed_errors_inactive_arm_validation_and_operand_boundary() {
+    let step = ConstructorStep::If {
+        condition: Expr::Equal {
+            left: Box::new(field("1")),
+            right: Box::new(boolean(true)),
+        },
+        then_steps: vec![],
+        otherwise_steps: vec![],
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &HashMap::new(),
+        &trace,
+        RenderError::TypeMismatch {
+            expected: Type::Field,
+            actual: Type::Boolean,
+        },
+    );
+    let ConstructorStep::If { condition, .. } = &step else {
+        panic!("fixture")
+    };
+    only_expr(&trace, condition);
+
+    let step = ConstructorStep::If {
+        condition: Expr::Equal {
+            left: Box::new(field("1")),
+            right: Box::new(field("1")),
+        },
+        then_steps: vec![],
+        otherwise_steps: vec![missing_step("inactive")],
+    };
+    let ConstructorStep::If {
+        otherwise_steps, ..
+    } = &step
+    else {
+        panic!("fixture")
+    };
+    let ConstructorStep::Expression { value } = &otherwise_steps[0] else {
+        panic!("fixture")
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &HashMap::new(),
+        &trace,
+        RenderError::UnknownParameter("inactive".into()),
+    );
+    only_expr(&trace, value);
+
+    let condition = Expr::Equal {
+        left: Box::new(Expr::Add {
+            left: Box::new(field("1")),
+            right: Box::new(field("2")),
+        }),
+        right: Box::new(field("3")),
+    };
+    let step = ConstructorStep::If {
+        condition,
+        then_steps: vec![],
+        otherwise_steps: vec![],
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &HashMap::new(),
+        &trace,
+        RenderError::InvalidConstructorInitializer("if".into()),
+    );
+    let ConstructorStep::If { condition, .. } = &step else {
+        panic!("fixture")
+    };
+    only_expr(&trace, condition);
+    assert!(
+        !infallible_constructor_expr(condition),
+        "value initializer boundary unchanged"
+    );
+}
+
+#[test]
+fn constructor_equality_retains_comparable_types_nested_grouping_and_borrowed_operands() {
+    for ty in [
+        Type::Field,
+        Type::Boolean,
+        Type::Unsigned { max: "255".into() },
+        Type::Bytes { length: 2 },
+    ] {
+        let parameters = HashMap::from([
+            ("left", (&ty, syn::parse_quote!(left))),
+            ("right", (&ty, syn::parse_quote!(right))),
+        ]);
+        let condition = Expr::Equal {
+            left: Box::new(parameter("left")),
+            right: Box::new(parameter("right")),
+        };
+        let nested = Expr::Equal {
+            left: Box::new(condition.clone()),
+            right: Box::new(boolean(true)),
+        };
+        let step = ConstructorStep::If {
+            condition: nested,
+            then_steps: vec![],
+            otherwise_steps: vec![],
+        };
+        let source = execute(std::slice::from_ref(&step), &parameters, None)
+            .0
+            .unwrap();
+        let syntax: syn::Block = syn::parse_str(&format!("{{{source}}}")).unwrap();
+        let syn::Stmt::Expr(syn::Expr::If(branch), _) = &syntax.stmts[0] else {
+            panic!("structured if")
+        };
+        let syn::Expr::Binary(outer) = branch.cond.as_ref() else {
+            panic!("outer comparison")
+        };
+        assert!(matches!(outer.op, syn::BinOp::Eq(_)));
+        // Parsing pretty token text must preserve nested comparison grouping.
+        let inner = match outer.left.as_ref() {
+            syn::Expr::Paren(p) => p.expr.as_ref(),
+            other => other,
+        };
+        assert!(matches!(inner, syn::Expr::Binary(_)));
+        assert!(!infallible_constructor_expr(&condition));
+    }
+}
+
+#[test]
+fn constructor_equality_uses_actual_vector_element_value_scope() {
+    for ty in [
+        Type::Field,
+        Type::Boolean,
+        Type::Unsigned { max: "255".into() },
+        Type::Bytes { length: 2 },
+    ] {
+        let vector = Type::Vector {
+            element: Box::new(ty.clone()),
+            length: 2,
+        };
+        let parameters = HashMap::from([
+            ("values", (&vector, syn::parse_quote!(values))),
+            ("right", (&ty, syn::parse_quote!(right))),
+        ]);
+        let step = ConstructorStep::ForEachVector {
+            binding: binding(ty.clone()),
+            source: parameter("values"),
+            length: 2,
+            steps: vec![ConstructorStep::If {
+                condition: Expr::Equal {
+                    left: Box::new(parameter("item")),
+                    right: Box::new(parameter("right")),
+                },
+                then_steps: vec![],
+                otherwise_steps: vec![],
+            }],
+        };
+        let trace = GuardTrace::default();
+        let observed = execute(std::slice::from_ref(&step), &parameters, Some(&trace));
+        assert_eq!(
+            observed,
+            execute(std::slice::from_ref(&step), &parameters, None)
+        );
+        let source = observed.0.unwrap();
+        let syntax: syn::Block = syn::parse_str(&format!("{{{source}}}")).unwrap();
+        let syn::Stmt::Expr(syn::Expr::ForLoop(loop_), _) = &syntax.stmts[0] else {
+            panic!("borrowed loop")
+        };
+        let syn::Stmt::Local(value) = &loop_.body.stmts[0] else {
+            panic!("typed value scope")
+        };
+        assert!(matches!(value.pat, syn::Pat::Type(_)));
+        assert!(
+            matches!(value.init.as_ref().unwrap().expr.as_ref(),syn::Expr::Unary(unary) if matches!(unary.op,syn::UnOp::Deref(_)))
+        );
+        let syn::Stmt::Expr(syn::Expr::If(branch), _) = &loop_.body.stmts[1] else {
+            panic!("comparison")
+        };
+        assert!(
+            matches!(branch.cond.as_ref(),syn::Expr::Binary(binary) if matches!(binary.op,syn::BinOp::Eq(_)))
+        );
+        assert!(
+            !source.contains("clone"),
+            "Copy element normalization retains the borrowed caller Vector"
+        );
+        assert!(trace.0.borrow().is_empty());
+    }
+}

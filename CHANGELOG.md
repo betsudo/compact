@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.195, language 0.23.105, runtime 0.16.102]
+
+Unreleased local Rust-backend slice; qualification remains in progress.
+
+### Added
+
+- Support typed equality and inequality conditions in existing constructor
+  control flow. Reuse the checked pure lowering and structured Rust AST emitter;
+  keep value initializer restrictions and fallible operand refusals unchanged.
+- Add complete constructor equality qualification to the required Linux consumer:
+  current source/API checks, all 24 intact models and sixteen selected fresh
+  later-entrypoint proof cases with separate strict applications and replays.
+  Retain every preceding gate and independent diagnostics.
+
 ## [Toolchain 0.31.194, language 0.23.105, runtime 0.16.102]
 
 Unreleased constructor reconciliation checkpoint; required CI and integration

@@ -1,0 +1,90 @@
+[
+  {
+    "role": "boolean_parameter",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/boolean_parameter.compact",
+    "sha256": "639d9943ede48ead465e119a795b9766d410801a097b4edf76669a470f3df9c5",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "boolean_parameter"
+  },
+  {
+    "role": "field_literal_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/field_literal_eq.compact",
+    "sha256": "0af782845fbf243dd1beab4426e311131025987f1118f45c706eb46241b0f7c1",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "field_literal_eq"
+  },
+  {
+    "role": "field_pair_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/field_pair_eq.compact",
+    "sha256": "5714b732a6e17807c902c2750c09a24e3ea9f1c0a1c037075db15051dbc0f9ca",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "field_pair_eq"
+  },
+  {
+    "role": "field_pair_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/field_pair_ne.compact",
+    "sha256": "25057e67d18b3c85addd937f6652d0733bc7154c4b21472c7c6becc4542df8c3",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "field_pair_ne"
+  },
+  {
+    "role": "bool_pair_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/bool_pair_eq.compact",
+    "sha256": "a9bc991f9f53d30e9663bb4b1b2c62231d69462285ec4b36aae1fe9a7b8a7b77",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "bool_pair_eq"
+  },
+  {
+    "role": "uint_pair_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/uint_pair_eq.compact",
+    "sha256": "a7a61f6e43f23da7aa08c9917fc02f56a72dd40ab4a02f218939489185af4d98",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "uint_pair_eq"
+  },
+  {
+    "role": "bytes_pair_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/bytes_pair_eq.compact",
+    "sha256": "97d19792c4ead70a2bcbbf2927bc0270729b6386c5ab6cdbc828599fca6f40fd",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "bytes_pair_eq"
+  },
+  {
+    "role": "nested_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality/nested_eq.compact",
+    "sha256": "977dba14f54904999bc69c275b4c03d6dd1b8c21efe8a5b4a2401ecf34a7d94b",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "nested_eq"
+  }
+]

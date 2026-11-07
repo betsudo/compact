@@ -835,3 +835,48 @@ fn constructor_vector_loop_binds_owned_items_without_moving_the_vector() {
         );
     }
 }
+
+#[test]
+fn constructor_equality_predicates_keep_public_preflight_and_value_initializer_boundary() {
+    let mut contract = identity(
+        Type::Field,
+        Expr::Parameter {
+            name: "value".into(),
+        },
+    );
+    let equal = Expr::Equal {
+        left: Box::new(Expr::FieldLiteral { value: "2".into() }),
+        right: Box::new(Expr::FieldLiteral { value: "3".into() }),
+    };
+    contract.constructor = Some(Constructor {
+        source: None,
+        parameters: vec![],
+        steps: vec![ConstructorStep::If {
+            condition: equal.clone(),
+            then_steps: vec![],
+            otherwise_steps: vec![],
+        }],
+    });
+    assert!(render(&contract).is_ok());
+    let mut deep = equal;
+    for _ in 0..50 {
+        deep = Expr::Equal {
+            left: Box::new(deep),
+            right: Box::new(Expr::Boolean { value: true }),
+        };
+    }
+    let ConstructorStep::If { condition, .. } =
+        &mut contract.constructor.as_mut().unwrap().steps[0]
+    else {
+        panic!("fixture")
+    };
+    *condition = deep;
+    assert!(matches!(
+        render(&contract),
+        Err(RenderError::ResourceLimit {
+            resource: "syntax_depth",
+            limit: 48,
+            ..
+        })
+    ));
+}

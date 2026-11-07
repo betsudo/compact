@@ -562,6 +562,87 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
         self.assertIn('Qualify wide-zero multiplication proofs',legacy)
 
+    def test_constructor_equality_literal_shell_forwards_tools_and_stops_on_failures(self):
+        import os
+        import subprocess
+        import sys
+        import textwrap
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        step = workflow.split('      - name: Qualify constructor equality APIs and sixteen selected proof cases\n', 1)[1].split('      - name:', 1)[0]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        # Execute the configured shell with observable command boundaries. This
+        # is argument/failure propagation coverage, not a mock proof verdict.
+        with tempfile.TemporaryDirectory(prefix='constructor equality shell ') as directory:
+            root = Path(directory)
+            bin_dir = root / 'bin'
+            bin_dir.mkdir()
+            wrapper = '''import json, os, pathlib, sys
+args = sys.argv[1:]
+kind = pathlib.Path(sys.argv[0]).name
+stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+with open(os.environ['TEST_LOG'], 'a') as log:
+    log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'), target=os.environ.get('CARGO_TARGET_DIR'))) + "\\n")
+if os.environ.get('TEST_FAIL') == stage:
+    raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
+if stage == 'runtime': print('/mock/runtime-package')
+if stage == 'zkir': print('/mock/bin/zkir')
+'''
+            for name in ('python3', 'nix'):
+                path = bin_dir / name
+                path.write_text('#!' + sys.executable + '\n' + wrapper)
+                path.chmod(0o755)
+            for failure, expected in [('', 0), ('recipe', 71), ('zkir', 73), ('runtime', 72), ('gate', 74)]:
+                with self.subTest(failure=failure):
+                    log = root / ('log-' + (failure or 'success'))
+                    env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'],
+                               TEST_LOG=str(log), TEST_FAIL=failure, COMPACTC='/mock/compiler with spaces/compactc',
+                               RUNNER_TEMP=str(root / 'runner with spaces'), CARGO_TARGET_DIR='/mock/existing-shared-target', LD_LIBRARY_PATH='/untrusted/setup-python/lib')
+                    result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell], env=env, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, expected, result.stderr)
+                    rows = [json.loads(line) for line in log.read_text().splitlines()]
+                    stages = ['recipe', 'zkir', 'runtime', 'gate']
+                    self.assertEqual([r['stage'] for r in rows], stages if not failure else stages[:stages.index(failure) + 1])
+                    self.assertEqual(rows[0]['args'], ['tools/compact-rust-backend/record_compiler_recipe.py', '--compiler', env['COMPACTC'], '--output', env['RUNNER_TEMP'] + '/compact-constructor-equality-recipe'])
+                    for row in rows:
+                        if row['stage'] in ('zkir', 'gate'):
+                            self.assertIsNone(row['ld'])
+                    for row in rows:
+                        self.assertEqual(row['target'], env['RUNNER_TEMP'] + '/compact-constructor-equality-target' if row['stage']=='gate' else env['CARGO_TARGET_DIR'])
+                    if not failure:
+                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_equality_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-equality-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-constructor-equality-proof'])
+
+    def test_constructor_equality_gate_requires_material_full_execution_and_diagnostics(self):
+        workflow=(owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
+        linux=workflow.split('  build:\n',1)[1]
+        before,step=linux.split('      - name: Qualify constructor equality APIs and sixteen selected proof cases\n',1)
+        step=step.split('      - name:',1)[0]
+        self.assertIn('Prepare verified built-in proof material',before)
+        self.assertIn('Import authenticated same-run compiler closure',before)
+        self.assertIn('Resolve locked ledger proof fixtures',before)
+        self.assertEqual(linux.count('      - name: Qualify constructor equality APIs and sixteen selected proof cases'),1)
+        self.assertNotIn('id: constructor_vector_proof',linux)
+        required=workflow.split('  complete:\n',1)[1]
+        self.assertIn('needs.constructor-vector.result',required)
+        self.assertIn('needs.build.result',required)
+        self.assertIn('id: constructor_equality_proof',step)
+        self.assertIn('check_constructor_equality_proof.py --compiler-receipt',step)
+        self.assertIn('CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH',step)
+        for weakened in ('if:','continue-on-error','--prepare-only','/lib/zkir'):
+            self.assertNotIn(weakened,step)
+        upload=linux.split('      - name: Retain constructor equality proof diagnostics\n',1)[1].split('      - name:',1)[0]
+        condition=next(line.strip()[4:] for line in upload.splitlines() if line.strip().startswith('if: '))
+        self.assertEqual(condition,"always() && (steps.constructor_equality_proof.outcome == 'success' || steps.constructor_equality_proof.outcome == 'failure')")
+        for outcome,expected in [('success',True),('failure',True),('skipped',False),('cancelled',False)]:
+            with self.subTest(outcome=outcome):
+                expression=condition.replace('always()','True').replace('steps.constructor_equality_proof.outcome',repr(outcome)).replace('&&','and').replace('||','or')
+                self.assertEqual(eval(expression,{"__builtins__":{}},{}),expected)
+        self.assertIn('${{ runner.temp }}/compact-constructor-equality-recipe/',upload)
+        self.assertIn('${{ runner.temp }}/compact-constructor-equality-proof/',upload)
+        self.assertIn('!${{ runner.temp }}/compact-constructor-equality-proof/**/cargo-target/**',upload)
+        self.assertLess(linux.index('Retain constructor equality proof diagnostics'),linux.index('Qualify isolated witnessed functional SDK'))
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
+        self.assertIn('Qualify wide-zero multiplication proofs',linux)
+
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         api = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
