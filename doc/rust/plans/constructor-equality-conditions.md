@@ -179,8 +179,10 @@ actionable P1/P2 or acceptance-critical gap. It authenticates complete physical
 source/material closure and confirms the sixteen proof and transaction hashes
 are each distinct and disjoint from the earlier accepted `2a6a5479` epoch.
 
-The required Linux step runs this complete maintained command after
-the unchanged constructor Vector gate. It uses the existing authenticated
+At `3b39bff63`, the required Linux wiring placed this complete maintained
+command after the then colocated constructor Vector gate. The reconciled
+publication keeps the two gates in separate required owners, as recorded below.
+The equality step uses the existing authenticated
 same-run compiler, records its original recipe, resolves ZKIR from the compiler
 dev shell and preserves the exact TypeScript runtime resolution. Its bounded
 external Cargo target is separate from source. Diagnostic uploads retain
@@ -233,3 +235,19 @@ after the five preceding checks passed. A separate correct invocation passed
 with unchanged source bytes; the failed invocation and both results are retained.
 These checks support publication for review, not current-head proof or full
 Linux integration acceptance.
+
+
+### Canonical parent integration — 7 November 2026
+
+PR #705 was merged into `codex/rust-backend-ast` as
+`33f3136645143fb0201ad7c032f46eec71c8c879`; its tree is identical to the
+reviewed parent `9cda68a9`. PR #719 was retargeted to that canonical branch.
+A signed forward merge preserves this ancestry and the published equality
+history. Apart from this plan's historical-wiring clarification and status
+record, the source tree is unchanged from reviewed `4bd936a6c`.
+
+The earlier #719 compiler run was cancelled before full qualification; the
+passing compiler producer and Rust AST owner checks do not turn the cancelled
+Scheme, fixture, E2E or proof jobs into passes. Fresh full required CI and
+independent review of this integration delta remain required. No earlier
+proof epoch is relabeled, and no acceptance gate is waived.
