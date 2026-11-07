@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.194, language 0.23.105, runtime 0.16.102]
+
+Unreleased constructor reconciliation checkpoint; required CI and integration
+remain pending. Bounded local execution retains its exact source identities.
+
+### Fixed
+
+- Regenerate the welcome constructor fixture after owned Vector-element emission,
+  and require full license headers before source code or module documentation.
+
+- Preserve outer lexical Vector bindings through nested constructor loop,
+  sequence and conditional lowering; retain original source/proof fixtures and
+  add a separate complete nested-capture regression.
+
+- Add a maintained constructor qualification command to the required Linux gate:
+  complete source/API controls, all 42 intact models, and 17 selected fresh
+  later-entrypoint proof cases with separate strict applications and replays.
+  Reuse one bounded external Cargo target across its stages and preserve all
+  other gates. These proofs do not prove constructor initialization.
+
+- Preserve the checked constructor Vector operand extension alongside canonical
+  wide-zero and outer-Vector behavior through a forward source reconciliation.
+  Earlier compiler192 and compiler193 evidence retains its original identity.
+
 ## [Toolchain 0.31.193, language 0.23.105, runtime 0.16.102]
 
 Unreleased reconciliation checkpoint; no release or completed qualification is implied.
@@ -19,6 +43,20 @@ Unreleased reconciliation checkpoint; no release or completed qualification is i
 - Reconcile the preserved outer-Vector product stack with the canonical wide-Uint
   multiplication-by-zero backend. Retain both typed lowering paths, generated
   consumers, proof suites and CI diagnostics without rewriting either history.
+
+## [Toolchain 0.31.192, language 0.23.105, runtime 0.16.102]
+
+Unreleased Rust-backend source checkpoint; no release or hosted-CI result is implied.
+
+### Fixed
+
+- Admit checked single-Vector constructor loop operands from local values,
+  helpers, witnesses and conditional expressions. Prepare nonparameter operands
+  once before iteration while retaining the existing borrowed parameter route,
+  lexical/type/layout/resource validation and earlier invalid-kind refusals.
+- Bind borrowed constructor Vector elements as typed values before their use in
+  ledger operations, copying Copy elements and cloning owned elements without
+  cloning or moving the input Vector.
 
 ## [Toolchain 0.31.191, language 0.23.105, runtime 0.16.102]
 

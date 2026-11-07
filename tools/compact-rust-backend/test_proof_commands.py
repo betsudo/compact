@@ -123,7 +123,7 @@ class ProofCommands(unittest.TestCase):
         preparation = [shlex.split(line.strip()) for line in workflow.splitlines()
                        if line.lstrip().startswith("cargo run ")
                        and "--prepare-proof-material" in line]
-        self.assertEqual(len(preparation), 6, "each independent proof owner prepares verified material")
+        self.assertEqual(len(preparation), 7, "each independent proof owner prepares verified material")
         for command in preparation:
             boundary = command.index("--")
             options = command[:boundary]
@@ -142,7 +142,7 @@ class ProofCommands(unittest.TestCase):
         command = ("env -u LD_LIBRARY_PATH nix develop .#compiler --command env "
                    "COMPACTC=compactc python3 -X faulthandler -u "
                    "tools/compact-rust-backend/check_rejections.py")
-        self.assertEqual(workflow.count(command), 1)
+        self.assertEqual(workflow.count(command), 2)
         api_job = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
         self.assertLess(api_job.index("- name: Import authenticated same-run compiler closure"),
                         api_job.index(command))
@@ -151,6 +151,10 @@ class ProofCommands(unittest.TestCase):
         self.assertIn('needs: compiler-linux', compiler_tests)
         complete = workflow.split('  complete:\n', 1)[1]
         self.assertIn('test "$GENERATED_API_RESULT" = success', complete)
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  source-preflight:\n', 1)[0]
+        self.assertEqual(constructor.count(command), 1)
+        self.assertLess(constructor.index('- name: Import authenticated same-run compiler closure'), constructor.index(command))
+        self.assertLess(constructor.index(command), constructor.index('--prepare-proof-material'))
         live = command.replace("COMPACTC=compactc", 'COMPACTC="${COMPACTC:-compactc}"')
         self.assertEqual(native.count(live), 1)
         self.assertLess(native.index("--consumer --proof"), native.index(live))
@@ -174,7 +178,10 @@ class ProofCommands(unittest.TestCase):
         commands = [line.strip().removeprefix("run: ") for line in workflow.splitlines()
                     if line.lstrip().startswith(("cargo clippy --workspace ",
                                                   "run: cargo clippy --workspace "))]
-        self.assertEqual(commands, [expected])
+        self.assertEqual(commands, [expected, expected])
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  source-preflight:\n', 1)[0]
+        self.assertEqual(constructor.count(expected), 1)
+        self.assertLess(constructor.index('- name: Check workspace Clippy before proof qualification'), constructor.index('--prepare-proof-material'))
         early_step = workspace_job[early:]
         self.assertEqual(early_step.count(expected), 1)
         self.assertNotIn("continue-on-error", early_step)
@@ -228,12 +235,12 @@ class ProofCommands(unittest.TestCase):
                 self.assertEqual("cargo clippy --workspace --exclude compact" in calls, full)
 
     def test_passport_failure_receipts_do_not_wait_for_runtime_package_success(self):
-        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text().split("  generated-api:\n", 1)[1].split("  build:\n", 1)[0]
         gate = workflow.index("      - name: Check standalone original Passport pure consumers\n")
         retain = workflow.index("      - name: Retain failed Passport qualification diagnostics\n")
-        prepare = workflow.index("      - name: Prepare verified built-in proof material\n")
         self.assertLess(gate, retain)
-        self.assertLess(retain, prepare)
+        self.assertLess(retain, workflow.index("      - name: Rehearse Rust runtime packages\n"))
+        self.assertNotIn("--prepare-proof-material", workflow)
         qualification = workflow[gate:retain]
         failure_upload = workflow[retain:workflow.index('      - name: Rehearse Rust runtime packages\n', retain)]
         self.assertIn("id: passport_current", qualification)

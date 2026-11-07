@@ -1,0 +1,27 @@
+[
+  {
+    "name": "wrong_length",
+    "role": "parameter",
+    "code": "E0308"
+  },
+  {
+    "name": "wrong_element",
+    "role": "parameter",
+    "code": "E0308"
+  },
+  {
+    "name": "wrong_witness",
+    "role": "direct_witness",
+    "code": "E0053"
+  },
+  {
+    "name": "program_reuse",
+    "role": "parameter",
+    "code": "E0382"
+  },
+  {
+    "name": "context_reuse",
+    "role": "parameter",
+    "code": "E0382"
+  }
+]

@@ -236,11 +236,12 @@ class WorkflowOwnershipTests(unittest.TestCase):
         workflow = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         for job, next_job, producer, system in (
             ('build-macos', 'license-check', 'compiler-darwin', 'aarch64-darwin'),
-            ('build', None, 'compiler-linux', 'x86_64-linux')):
+            ('constructor-vector', 'source-preflight', 'compiler-linux', 'x86_64-linux'),
+            ('build', 'product-proofs', 'compiler-linux', 'x86_64-linux')):
             section = workflow.split('  '+job+':\n', 1)[1]
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
-            if job == 'build':
+            if job in ('build', 'constructor-vector'):
                 self.assertIn('if: ${{ !cancelled() }}', section)
             else:
                 self.assertIn("if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}", section)
@@ -428,7 +429,7 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
         self.assertIn('Qualify isolated witnessed functional SDK', main)
-        self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build]', workflow)
+        self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build, constructor-vector]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertNotIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
@@ -483,6 +484,84 @@ if stage == 'zkir': print('/mock/bin/zkir')
                     if not failure:
                         self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_outer_vector_product_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-outer-vector-product-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-outer-vector-product-proof'])
 
+    def test_constructor_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
+        import os
+        import subprocess
+        import sys
+        import textwrap
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        step = workflow.split('      - name: Qualify constructor Vector APIs and seventeen selected proof cases\n', 1)[1].split('      - name:', 1)[0]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        # Execute the configured shell with observable command boundaries. This
+        # is argument/failure propagation coverage, not a mock proof verdict.
+        with tempfile.TemporaryDirectory(prefix='constructor vector shell ') as directory:
+            root = Path(directory)
+            bin_dir = root / 'bin'
+            bin_dir.mkdir()
+            wrapper = '''import json, os, pathlib, sys
+args = sys.argv[1:]
+kind = pathlib.Path(sys.argv[0]).name
+stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+with open(os.environ['TEST_LOG'], 'a') as log:
+    log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'), target=os.environ.get('CARGO_TARGET_DIR'))) + "\\n")
+if os.environ.get('TEST_FAIL') == stage:
+    raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
+if stage == 'runtime': print('/mock/runtime-package')
+if stage == 'zkir': print('/mock/bin/zkir')
+'''
+            for name in ('python3', 'nix'):
+                path = bin_dir / name
+                path.write_text('#!' + sys.executable + '\n' + wrapper)
+                path.chmod(0o755)
+            for failure, expected in [('', 0), ('recipe', 71), ('zkir', 73), ('runtime', 72), ('gate', 74)]:
+                with self.subTest(failure=failure):
+                    log = root / ('log-' + (failure or 'success'))
+                    env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'],
+                               TEST_LOG=str(log), TEST_FAIL=failure, COMPACTC='/mock/compiler with spaces/compactc',
+                               RUNNER_TEMP=str(root / 'runner with spaces'), CARGO_TARGET_DIR='/mock/existing-shared-target', LD_LIBRARY_PATH='/untrusted/setup-python/lib')
+                    result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell], env=env, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, expected, result.stderr)
+                    rows = [json.loads(line) for line in log.read_text().splitlines()]
+                    stages = ['recipe', 'zkir', 'runtime', 'gate']
+                    self.assertEqual([r['stage'] for r in rows], stages if not failure else stages[:stages.index(failure) + 1])
+                    self.assertEqual(rows[0]['args'], ['tools/compact-rust-backend/record_compiler_recipe.py', '--compiler', env['COMPACTC'], '--output', env['RUNNER_TEMP'] + '/compact-constructor-vector-recipe'])
+                    for row in rows:
+                        if row['stage'] in ('zkir', 'gate'):
+                            self.assertIsNone(row['ld'])
+                    for row in rows:
+                        self.assertEqual(row['target'], env['RUNNER_TEMP'] + '/compact-constructor-vector-target' if row['stage']=='gate' else env['CARGO_TARGET_DIR'])
+                    if not failure:
+                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_vector_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-vector-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-constructor-vector-proof'])
+
+    def test_constructor_gate_requires_material_full_execution_and_diagnostics(self):
+        workflow=(owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
+        linux=workflow.split('  constructor-vector:\n',1)[1].split('  source-preflight:\n',1)[0]
+        before,step=linux.split('      - name: Qualify constructor Vector APIs and seventeen selected proof cases\n',1)
+        step=step.split('      - name:',1)[0]
+        self.assertIn('Prepare verified built-in proof material',before)
+        self.assertIn('Import authenticated same-run compiler closure',before)
+        self.assertIn('Resolve locked ledger proof fixtures',before)
+        self.assertIn('id: constructor_vector_proof',step)
+        self.assertIn('check_constructor_vector_proof.py --compiler-receipt',step)
+        self.assertIn('CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-vector-target" env -u LD_LIBRARY_PATH',step)
+        for weakened in ('if:','continue-on-error','--prepare-only','/lib/zkir'):
+            self.assertNotIn(weakened,step)
+        upload=linux.split('      - name: Retain constructor Vector proof diagnostics\n',1)[1].split('      - name:',1)[0]
+        condition=next(line.strip()[4:] for line in upload.splitlines() if line.strip().startswith('if: '))
+        self.assertEqual(condition,"always() && (steps.constructor_vector_proof.outcome == 'success' || steps.constructor_vector_proof.outcome == 'failure')")
+        for outcome,expected in [('success',True),('failure',True),('skipped',False),('cancelled',False)]:
+            with self.subTest(outcome=outcome):
+                expression=condition.replace('always()','True').replace('steps.constructor_vector_proof.outcome',repr(outcome)).replace('&&','and').replace('||','or')
+                self.assertEqual(eval(expression,{"__builtins__":{}},{}),expected)
+        self.assertIn('${{ runner.temp }}/compact-constructor-vector-recipe/',upload)
+        self.assertIn('${{ runner.temp }}/compact-constructor-vector-proof/',upload)
+        self.assertIn('!${{ runner.temp }}/compact-constructor-vector-proof/**/cargo-target/**',upload)
+        legacy=workflow.split('  build:\n',1)[1].split('  product-proofs:\n',1)[0]
+        self.assertNotIn('constructor_vector_proof', legacy)
+        self.assertIn('Qualify isolated witnessed functional SDK',legacy)
+        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
+        self.assertIn('Qualify wide-zero multiplication proofs',legacy)
+
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         api = workflow.split('  generated-api:\n', 1)[1].split('  build:\n', 1)[0]
@@ -500,6 +579,72 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz', upload)
         self.assertNotIn('compact-source-map-publication/', upload)
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', workflow)
+
+    def test_required_compiler_status_fails_closed_for_every_dependency_outcome(self):
+        import itertools
+        import re
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        required = workflow.split('  complete:\n', 1)[1]
+        self.assertIn('name: Build and test compiler', required)
+        self.assertEqual(workflow.count('name: Build and test compiler\n'), 1)
+        self.assertIn('constructor-vector]', required)
+        self.assertIn('CONSTRUCTOR_RESULT: ${{ needs.constructor-vector.result }}', required)
+        self.assertIn('if: ${{ always() }}', required)
+        self.assertNotIn('continue-on-error', workflow)
+        shell = textwrap.dedent(required.split('        run: |\n', 1)[1])
+        all_names = re.findall(r'test "\$([A-Z0-9_]+)" = success', shell)
+        self.assertEqual(len(all_names), len(set(all_names)))
+        self.assertIn('CONSTRUCTOR_RESULT', all_names)
+        names = ('LICENSE_RESULT', 'PRODUCER_RESULT', 'NATIVE_RESULT', 'CONSTRUCTOR_RESULT')
+        baseline = dict.fromkeys(all_names, 'success')
+        # Preserve the original four-owner combination coverage and require
+        # the merged graph's other owners to succeed at the same time.
+        for outcomes in itertools.product(('success', 'failure', 'skipped', 'cancelled', ''), repeat=4):
+            with self.subTest(outcomes=outcomes):
+                env = dict(os.environ, **(baseline | dict(zip(names, outcomes))))
+                run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                           env=env, capture_output=True, timeout=10)
+                self.assertEqual(run.returncode == 0, all(x == 'success' for x in outcomes))
+
+    def test_constructor_is_an_independent_required_same_producer_consumer(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  source-preflight:\n', 1)[0]
+        legacy = workflow.split('  build:\n', 1)[1].split('  product-proofs:\n', 1)[0]
+        for consumer in (constructor, legacy):
+            self.assertIn('compiler-linux', consumer.split('    steps:',1)[0])
+            self.assertIn('if: ${{ !cancelled() }}', consumer)
+            self.assertIn('needs.compiler-linux.outputs.artifact-id', consumer)
+            self.assertIn('needs.compiler-linux.outputs.producer-attempt', consumer)
+            self.assertIn('--source-sha "$SOURCE_SHA" --system x86_64-linux', consumer)
+            self.assertIn('--run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT"', consumer)
+            self.assertIn('ref: ${{ github.sha }}', consumer)
+        self.assertIn('needs: [license-check, compiler-linux]', constructor)
+        self.assertIn('timeout-minutes: 180', constructor)
+        self.assertIn("skip_cache: 'true'", constructor)
+        self.assertNotIn('secrets.', constructor)
+        self.assertNotIn('CARGO_TARGET_DIR: ${{ runner.', constructor)
+        self.assertIn('Select external Cargo bootstrap target', constructor)
+        self.assertNotIn('Qualify outer-Vector product APIs', constructor)
+        self.assertIn('Check and test native Rust backend', workflow.split('  native-backend:\n',1)[1].split('  e2e-tests:\n',1)[0])
+        self.assertIn('Rehearse Rust runtime packages', workflow.split('  generated-api:\n',1)[1].split('  build:\n',1)[0])
+        self.assertIn('Test E2E', workflow.split('  e2e-tests:\n',1)[1])
+
+    def test_constructor_bootstrap_target_uses_runtime_environment(self):
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  source-preflight:\n', 1)[0]
+        start = constructor.index('      - name: Select external Cargo bootstrap target\n')
+        self.assertLess(start, constructor.index('      - name: Resolve locked ledger proof fixtures'))
+        step = constructor[start:].split('      - name:', 2)[1]
+        shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        with tempfile.TemporaryDirectory(prefix='runner temp $quote with spaces ') as directory:
+            root = Path(directory)
+            exported = root / 'github-env'
+            run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                       env=dict(os.environ, RUNNER_TEMP=str(root), GITHUB_ENV=str(exported)),
+                                       capture_output=True, timeout=10)
+            self.assertEqual(run.returncode, 0, run.stderr)
+            self.assertEqual(exported.read_text(),
+                             'CARGO_TARGET_DIR=' + str(root / 'constructor-vector-bootstrap-target') + '\n')
 
     def test_literal_source_map_packaging_preserves_names_bytes_and_partial_failures(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()

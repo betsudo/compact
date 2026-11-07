@@ -38,6 +38,8 @@ These records retain their exact source/evidence revisions. They do not claim PR
 
 - [Outer Vector proof CI wiring](plans/outer-vector-product-proof-ci.md): locally implemented and independently reviewed; the literal Nix step passes all 91 native checks, 15 fresh verified proofs and 15 separately proved strict applications. All prior gates and independent diagnostics remain. PR #704 publishes this wiring; full hosted Linux qualification and integration remain open. Hosted macOS arm64 is opt-in via the `Compiler Build` manual `run_macos` input; PRs and schedules keep the full required Linux gates.
 
+- [Constructor Vector iterable operands](plans/constructor-vector-operands.md): reviewed local compiler194 qualification at `847758e3` covers 14 complete SDKs, nested lexical captures, constructor state/witness/owned-value behavior, all 42 intact models and 17 selected fresh later-entrypoint proof cases with separate funded DEFAULT-strict applications and replay controls. Earlier compiler192 results retain their own identities. The maintained combined CI command is being qualified separately; constructor cryptography/total cost, new-head CI/Linux and integration remain open.
+
 ## Checked recording checkpoint
 
 The current recording-effect branch is documented in [Checked recording and source diagnostics](guides/checked-recording.md) and the [capability and retirement book](recording-effect-algebra/capability-and-retirement-book.md). The compiler/runtime ABI is **53**, private Rust IR is **20**, finalized capability reports use **3**, and private source-origin transport uses **3**. Package versions remain separate.
