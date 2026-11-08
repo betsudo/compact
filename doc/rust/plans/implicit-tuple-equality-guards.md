@@ -173,3 +173,15 @@ outcomes. Source/proof-case metadata matches exactly. All new tuple sources and
 the two unsupported alias cases remain in the separate complete scope roster.
 Model/native-proof owners are not yet extended to this105case cohort, and no
 current generated consumer, model, key, proof or strict application has run.
+
+The first105case API run at `cc97a0ecd` independently passes live TS outcomes
+for all105 cases and compiles all16 complete Rust SDKs. The native batch then
+aborts before reporting results: its monolithic fixture test reserves
+2,731,536 bytes at entry (corroborated from the retained failed binary's selected
+prologue), above the required 2 MiB test worker. No native case or whole API pass
+is claimed. Preserve the failed binary, streams and first two missing-symbol
+inspection attempts. The fixture is outlined into one non-inlined typed helper
+per contract, preserving all105cases, caller ownership and twelve calls/six
+replays per case. The new tuple gate explicitly uses a 2 MiB worker; it does not
+raise a stack limit or remove a source/case. Re-execute the complete current API
+and all negative/reference controls before model or proof qualification.

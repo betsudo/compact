@@ -91,6 +91,9 @@ def main(*, boundaries=False, tuple_guards=False):
             "compiler identity differs")
     env = dict(os.environ)
     config = reject_compiler_overrides(dict(env))
+    if tuple_guards:
+        require(env.get("RUST_MIN_STACK") in (None, "2097152"), "exact 2 MiB tuple test worker required")
+        env["RUST_MIN_STACK"] = "2097152"
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "Rust1.99.0 required")
     env["CARGO_TARGET_DIR"] = str(cargo_target(env, out))
@@ -116,6 +119,8 @@ def main(*, boundaries=False, tuple_guards=False):
     out.mkdir(parents=True)
     report = dict(status="running", head=head, tree=tree, inputs=pins, commands=[], sources={},
                   scope=__doc__, proof_execution=False)
+    if tuple_guards:
+        report["rust_test_worker_stack_bytes"] = 2 * 1024 * 1024
     bound = {}
     dependency_sources = {}
     started = time.monotonic()
