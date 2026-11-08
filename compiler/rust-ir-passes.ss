@@ -174,6 +174,15 @@
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
       (define current-variable-types (make-parameter #f))
+      ;; Only constructor predicates need infallible implicit conversions.
+      ;; Keep ordinary expressions and constructor value initializers on their
+      ;; existing cast transport; parameterize restores this scope afterward.
+      (define current-constructor-condition? (make-parameter #f))
+      (define (constructor-unsigned-coercion-ir value source-maximum target-type maximum src)
+        (and (current-constructor-condition?) source-maximum
+             (<= source-maximum maximum)
+             (object (cons "kind" "coerce") (cons "value" value)
+                     (cons "ty" (type-ir target-type src)))))
       ;; Counter amounts use the existing checked lexical action bindings.
       (define current-counter-environment (make-parameter '()))
       (define struct-shape-names '())
@@ -624,9 +633,13 @@
                       (object (cons "kind" "unsigned_literal")
                               (cons "value" (number->string value))
                               (cons "max" (number->string nat))))
-                    (object (cons "kind" "unsigned_cast")
-                            (cons "max" (number->string nat))
-                            (cons "value" (typed-expression-ir expr type^ src)))))]
+                    (let ([value (typed-expression-ir expr type^ src)])
+                      (or (constructor-unsigned-coercion-ir value
+                            (and (current-constructor-condition?) (rust-unsigned-maximum type^))
+                            type nat src)
+                          (object (cons "kind" "unsigned_cast")
+                                  (cons "max" (number->string nat))
+                                  (cons "value" value))))))]
              [(tvector ,src^ ,len ,type1)
               (typed-expression-ir expr type src type^)]
              [(ttuple ,src^ ,type* ...)
@@ -1014,9 +1027,12 @@
                       [(tunsigned ,src1 ,nat1)
                        (if (= nat nat1)
                            (expression-ir expr owner-src)
-                           (object (cons "kind" "unsigned_cast")
-                                   (cons "value" (expression-ir expr src))
-                                   (cons "max" (number->string nat))))]
+                           (let ([value (expression-ir expr src)])
+                             (or (constructor-unsigned-coercion-ir
+                                   value nat1 expected-type nat src)
+                                 (object (cons "kind" "unsigned_cast")
+                                         (cons "value" value)
+                                         (cons "max" (number->string nat))))))]
                       [else (expression-ir expr owner-src)])]
                    [(tvector ,src^ ,len ,type)
                     (nanopass-case (Lnodisclose Type) actual-type
@@ -2975,7 +2991,9 @@
                (source-errorf src "Rust constructor fold must return its accumulator"))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (list (object (cons "kind" "if")
-                         (cons "condition" (expression-ir expr0 src))
+                         (cons "condition"
+                               (parameterize ([current-constructor-condition? #t])
+                                 (expression-ir expr0 src)))
                          (cons "then_steps"
                                (list->vector (constructor-fold-body-ir expr1 accumulator parameters bindings src witness-ids)))
                          (cons "otherwise_steps"
