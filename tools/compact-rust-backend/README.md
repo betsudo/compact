@@ -94,7 +94,12 @@ prepared for all 24 intact exports in the eight-source boundary cohort. Its
 new mode requires `--scope-receipt` in addition to the current complete producer
 and output arguments. The existing historical model entry remains unchanged.
 The thirty proof-case metadata rows preserve the complete API data; constructor
-adapters call generated APIs. No model observation, proof preflight, keys,
+adapters call generated APIs. The unqualified boundary composition entry
+`check_constructor_equality_boundaries_proof.py` reuses the maintained owners;
+its `--preflight-only` mode runs source/API, scope, model and native preflight
+stages without calling the proving stage. Automatic observed k values select
+verified material under the unchanged 1..8 policy; no forced-k argument is used.
+HOST orchestration controls are not real preflight or proof receipts. No model observation, proof preflight, keys,
 proofs or applications have run for this new path. See the
 [bounded proof plan](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
 

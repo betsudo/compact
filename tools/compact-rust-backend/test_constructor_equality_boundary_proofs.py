@@ -88,6 +88,16 @@ class ModelEntryAdmissionControls(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("optimized Python invocation is not admitted", result.stderr)
 
+    def test_new_proof_entries_refuse_optimization_before_help(self):
+        for name, message in (("check_constructor_equality_boundaries_proof.py", "optimized Python invocation is not admitted"),
+                              ("check_constructor_equality_boundaries_proof_preflight.py", "optimized preflight is not admitted")):
+            with self.subTest(script=name):
+                script = Path(__file__).with_name(name)
+                result = subprocess.run([sys.executable, "-O", "-B", script, "--help"],
+                    env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"), capture_output=True, text=True, timeout=30)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

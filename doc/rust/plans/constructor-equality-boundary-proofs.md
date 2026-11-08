@@ -52,10 +52,24 @@ model entry, roster, flags, receipt format and default behavior remain intact.
 The new mode uses the existing 600-second process-group owner, including Cargo
 and rustc descendants; partial timeout streams remain evidence.
 
-These are **source-only preparations**. Fixture bindings, Python syntax and
-Rust formatting have been checked. No new observer was compiled or invoked,
-no boundary preflight extension exists, and no parameters, keys, proofs or applications
-have run for this cohort.
+These are **source-only preparations**. The boundary preflight and composition
+now have an unqualified implementation, with a `--preflight-only` path that
+runs source/API, source-scope, complete models and native preflight without
+invoking proving. Material verification and key checks use actual observed k
+within 1..8; automatic key generation has no forced-k argument. The historical
+sixteen-case path retains its default CLI and stages.
+
+Fixture/admission and HOST orchestration controls, Python syntax and Rust
+formatting pass. The HOST controls exercise all thirty-case forwarding,
+key-free exclusion of proving, failure stop/order and model-policy/membership
+refusals before key effects; they are not genuine execution receipts. An initial
+mock omitted its mandatory proof receipt; the real composition correctly
+refused it. That failed fixture and its correction are retained.
+
+No new observer/adapters were compiled or invoked, no genuine boundary
+preflight has run, and no parameters, keys, proofs or applications have run
+for this cohort. Source/caller review, authenticated builds and current
+original producer/scope/model inputs remain required.
 
 ## Required remaining work and owners
 
