@@ -4,6 +4,13 @@
 
 # Preserve implicit tuple widening in constructor equality guards
 
+Latest execution epoch: `5758c0244`, compiler 0.31.210, ledger8.1.3 on macOS
+arm64. Current API, model/native preflight and fresh proof/application execution
+pass with a successful independent parent artifact audit. Independent actual
+proof-result review accepts only this bounded local execution epoch. Earlier progress sections below preserve their
+stated source epochs; they do not override the latest bounded results and limits
+at the end of this plan.
+
 ## Demonstrated gap and baseline
 
 This continuation of #720 starts at signed documentation head `91179e374`,
@@ -236,3 +243,59 @@ compilation and executed reuse provide the relevant evidence. Current new-cohort
 API/proof CI wiring remains integration work; the historical CI path is retained.
 No hosted run, actionlint pass, Linux qualification or broader-goal completion is
 claimed here.
+
+
+## Local proof execution and closeout boundary
+
+Frozen signed execution head `5758c0244` passes the current 105-case API gate
+(1,260 calls and 630 public VM replays), both complete source scopes, all 48
+intact exported models at automatic k6, and 16 immutable native proof consumers
+covering all 105 preflight cases. The separate proving stage executes 32 keygen
+invocations, 105 standalone proofs with immutable verifier calls and 105
+independently proved funded DEFAULT-strict transaction applications. Every case
+passes all seven binding/cryptographic negatives and an unchanged-state
+`IntentAlreadyExists` replay refusal: 735 negatives and 105 replays in total.
+
+The read-only parent audit checks all 49 proving commands, closed output-root
+and material memberships, all 105 proof/transaction/result triplets, frozen
+inputs, parameters, SDKs and binaries. Both 105-element proof and transaction
+artifact hash sets are distinct. This is an artifact/result audit, not a parent
+cryptographic rerun. Independent actual-result review accepts this bounded epoch. Retained
+receipts and reviews follow the maintainer evidence availability policy.
+
+All positive lanes have one later `advance` ZKIR circuit shape, and the 32
+keygen runs yield only two distinct verifier keys (`advance` and its wrong-key
+control). Initial stored values are 7 or 11. These counts do not establish 105
+distinct circuits, constructor/deployment proofs, a wallet lifecycle or network
+qualification. Verification occurs inside each immutable consumer; the saved
+proofs were not independently reverified in a separate process.
+
+The closeout isolates the existing preflight geometry and membership assertions
+into small private Python check functions so direct HOST tests exercise the
+actual checker. Geometry still refuses before fixture-spec loading; membership
+still refuses before material/consumer runners. Predicate bodies, error texts,
+cohort counts and order are preserved. Tests cover both the 24-model boundary
+and 48-model tuple cohorts, accepted automatic k1..8, malformed/noninteger/
+over-cap geometry, missing/extra/duplicate models, wrong roles/entries, producer
+membership and observed-k reconciliation. They are admission controls, not new
+model or proof executions. Production compiler, runtime, shared proof consumer,
+source/case/proof fixtures and public API stay unchanged.
+
+This documentation/test successor has its own source identity. It does not
+repin or relabel the frozen 5758 execution receipts. New-cohort CI wiring and
+native Linux/full required integration gates remain open; local arm64 results
+cannot satisfy them. Both valid-Compact alias transport gaps remain explicitly
+refused. Forge remains deferred, and the broader Rust AST goal remains incomplete.
+
+
+The independent actual-result review accepted the frozen 5758 local execution
+with no P1/P2 findings. It recomputed the proof audit's 20,845 pins, all 49
+streams, complete memberships and relevant upstream strict/mock features.
+Negative assertions establish refusal, not a separately discriminated cause for
+every rejection. The reviewer did not deserialize persisted transactions or
+re-execute cryptography. Required parameter material was verified and stayed
+hash-stable, but `FetchMode::Synchronous` permits fetching and the network was
+not blocked: there is no OS-level zero-network or parameter-load trace. Fifteen
+superseded Cargo output files are historical; the immutable lane snapshots and
+recorded build streams preserve their actual executable identities. These limits
+remain part of acceptance rather than reasons to relabel or rerun the result.

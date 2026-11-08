@@ -44,6 +44,24 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def check_model_geometry(models, model_count):
+    """Reject incomplete or over-cap observations before any material runner."""
+    observed = models["inventory"]["circuits"]
+    require(len(observed) == model_count
+            and all(type(m["k"]) is int and 1 <= m["k"] <= 8 for m in observed),
+            "whole intact model cohort exceeds automatic tiny policy")
+    return observed
+
+
+def check_model_membership(models, specs, producer_sources, source_count, observed):
+    require(models['observed_models'] == source_count * 3 and len(specs) == source_count
+            and {s['role'] for s in specs} == set(producer_sources)
+            and {(m['source'], m['circuit']) for m in observed} == {
+                (s['role'], entry) for s in specs for entry in ('read', 'advance', 'advance_other')}
+            and sorted({m['k'] for m in observed}) == models['observed_k'],
+            'complete intact model membership or geometry differs')
+
+
 def check_assets(directory, expected):
     complete = dict(expected["assets"])
     complete["compiler/contract-manifest.json"] = expected["manifest_sha256"]
@@ -245,16 +263,9 @@ def main(*, boundaries=False, tuple_guards=False):
                 paths.append(Path(name))
             frozen_roots.update(models["frozen_directories"])
             report["scope_receipt"] = dict(path=str(scope_path), sha256=sdk.digest(scope_path))
-            observed = models["inventory"]["circuits"]
-            require(len(observed) == model_count and all(type(m["k"]) is int and 1 <= m["k"] <= 8 for m in observed),
-                    "whole intact model cohort exceeds automatic tiny policy")
+            observed = check_model_geometry(models, model_count)
             specs = json.loads((fixture / "sources.json").read_text())
-            require(models['observed_models']==model_count and len(specs)==source_count
-                    and {s['role'] for s in specs}==set(producer['sources'])
-                    and {(m['source'],m['circuit']) for m in observed}=={
-                        (s['role'],entry) for s in specs for entry in ('read','advance','advance_other')}
-                    and sorted({m['k'] for m in observed})==models['observed_k'],
-                    'complete intact model membership or geometry differs')
+            check_model_membership(models, specs, producer['sources'], source_count, observed)
         frozen.update({str(p.resolve()):sdk.digest(p) for p in paths})
         python = Path(sys.executable).resolve()
         frozen[str(python)] = sdk.digest(python)

@@ -155,14 +155,34 @@ consumers before admitting keys. Omit `--preflight-only` only for the separate
 fresh proof/application qualification. All owners require fresh external output
 directories and exact current source/compiler identities.
 
-These new model/proof entry points are source preparation pending current
-execution and independent review. They preserve the historical 16-case and
-boundary 30-case paths. Automatic integer k must remain in 1..8 for every intact
-model; do not trim sources, force geometry or reuse cached proof verdicts.
-Selected later-entrypoint proofs still require seven negatives, actual verifier
-calls and separately proved DEFAULT-strict application/replay. They are not
-constructor/deployment proofs or evidence of distinct circuits per source.
-Current new-cohort CI wiring, Linux and complete integration gates remain open.
+At frozen execution head `5758c0244`, the local macOS arm64 run passes all
+48 intact models at automatic k6, all 16 immutable native proof consumers and
+105 native preflight cases. It then executes 32 keygen invocations, 105 standalone
+proof/verification calls and 105 separately proved funded DEFAULT-strict
+transaction applications, with 735 negative controls and 105 unchanged-state
+replay refusals. The parent artifact audit and independent actual-result
+review accept this bounded execution epoch. This closeout source does not relabel those receipts as
+execution at a later documentation/test head.
+
+The 32 keygen runs yield only two distinct verifier keys, and all positive
+cases use one later `advance` circuit shape. Verification runs in the immutable
+consumer process; persisted proof files were not reverified by a separate
+process. Constructor-derived state and later-entrypoint proofs do not establish
+constructor/deployment or production wallet cryptography.
+Required retained material was verified and remained hash-stable. The proving
+provider still permits synchronous fetching; the network was not blocked and
+there is no OS-level trace establishing zero network access or exactly which
+parameter files were loaded. Earlier lane binaries are identified by their
+immutable snapshots and build streams, since their shared Cargo output path
+was subsequently overwritten.
+
+The historical 16-case and boundary 30-case paths remain separate. Automatic
+integer k must remain in 1..8 for every intact model; do not trim sources, force
+geometry or reuse cached proof verdicts. The preflight's geometry and closed
+membership checks have direct HOST controls, including integer/cap/count and
+role/entry refusal cases; these controls execute no model, material runner or
+proof. Current new-cohort CI wiring, Linux and complete integration gates remain
+open.
 See [the active plan](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 ## Current recording architecture
