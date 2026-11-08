@@ -991,12 +991,17 @@
            ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
            ;; Lower that complete cast first, then preserve its wider Vector
            ;; context instead of losing it while unwrapping the source alias.
+           ;; Constructor equality also needs the expected tuple context: its
+           ;; existing checked Coerce owner validates each component widening.
            (let* ([value (expression-ir expr owner-src)]
                   [actual (type-ir type src)]
                   [target (type-ir expected-type src)])
              (if (and (or source-type
                           (and (equal? (cdr (assoc "kind" actual)) "vector")
-                               (equal? (cdr (assoc "kind" target)) "vector")))
+                               (equal? (cdr (assoc "kind" target)) "vector"))
+                          (and (current-constructor-condition?)
+                               (equal? (cdr (assoc "kind" actual)) "tuple")
+                               (equal? (cdr (assoc "kind" target)) "tuple")))
                       (not (equal? actual target)))
                  (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
                  value))]

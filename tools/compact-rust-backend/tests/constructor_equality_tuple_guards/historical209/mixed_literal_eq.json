@@ -1,0 +1,329 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "stored",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "mixed_literal_eq.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "read",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "mixed_literal_eq.compact",
+        "line": 24,
+        "column": 1
+      }
+    },
+    {
+      "name": "advance",
+      "parameters": [
+        {
+          "name": "delta",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_9",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "add",
+                "left": {
+                  "kind": "cell_read",
+                  "field": "stored",
+                  "index": 0
+                },
+                "right": {
+                  "kind": "parameter",
+                  "name": "delta"
+                }
+              }
+            }
+          ],
+          "action": {
+            "kind": "cell_write",
+            "field": "stored",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_9"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "mixed_literal_eq.compact",
+        "line": 25,
+        "column": 1
+      }
+    },
+    {
+      "name": "advance_other",
+      "parameters": [
+        {
+          "name": "delta",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "return_value": {
+        "kind": "cell_read",
+        "field": "stored",
+        "index": 0
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_8",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "add",
+                "left": {
+                  "kind": "add",
+                  "left": {
+                    "kind": "cell_read",
+                    "field": "stored",
+                    "index": 0
+                  },
+                  "right": {
+                    "kind": "parameter",
+                    "name": "delta"
+                  }
+                },
+                "right": {
+                  "kind": "field_literal",
+                  "value": "1"
+                }
+              }
+            }
+          ],
+          "action": {
+            "kind": "cell_write",
+            "field": "stored",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_8"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "mixed_literal_eq.compact",
+        "line": 29,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "input",
+        "ty": {
+          "kind": "vector",
+          "length": 2,
+          "element": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        }
+      },
+      {
+        "name": "right",
+        "ty": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_5",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "99"
+            }
+          }
+        ],
+        "step": {
+          "kind": "cell_write",
+          "field": "stored",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_5"
+          }
+        }
+      },
+      {
+        "kind": "for_each_vector",
+        "binding": {
+          "name": "item",
+          "ty": {
+            "kind": "unsigned",
+            "max": "255"
+          }
+        },
+        "source": {
+          "kind": "parameter",
+          "name": "input"
+        },
+        "length": 2,
+        "steps": [
+          {
+            "kind": "if",
+            "condition": {
+              "kind": "equal",
+              "left": {
+                "kind": "tuple",
+                "elements": [
+                  {
+                    "kind": "parameter",
+                    "name": "item"
+                  },
+                  {
+                    "kind": "unsigned_literal",
+                    "value": "0",
+                    "max": "65535"
+                  }
+                ]
+              },
+              "right": {
+                "kind": "parameter",
+                "name": "right"
+              }
+            },
+            "then_steps": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_6",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "7"
+                    }
+                  }
+                ],
+                "step": {
+                  "kind": "cell_write",
+                  "field": "stored",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_6"
+                  }
+                }
+              }
+            ],
+            "otherwise_steps": [
+              {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "tmp_7",
+                    "ty": {
+                      "kind": "field"
+                    },
+                    "value": {
+                      "kind": "field_literal",
+                      "value": "11"
+                    }
+                  }
+                ],
+                "step": {
+                  "kind": "cell_write",
+                  "field": "stored",
+                  "index": 0,
+                  "value": {
+                    "kind": "parameter",
+                    "name": "tmp_7"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "source": {
+      "file": "mixed_literal_eq.compact",
+      "line": 18,
+      "column": 1
+    }
+  }
+}

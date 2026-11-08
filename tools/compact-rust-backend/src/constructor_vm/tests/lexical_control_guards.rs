@@ -809,6 +809,112 @@ fn constructor_equality_uses_checked_monotone_uint_coercion() {
 }
 
 #[test]
+fn constructor_equality_checks_nested_tuple_coercion_and_owned_capture() {
+    let small = Type::Unsigned { max: "255".into() };
+    let large = Type::Unsigned {
+        max: "65535".into(),
+    };
+    let vector = Type::Vector {
+        length: 2,
+        element: Box::new(Type::Field),
+    };
+    let target = Type::Tuple {
+        elements: vec![
+            large.clone(),
+            Type::Tuple {
+                elements: vec![large, vector.clone()],
+            },
+        ],
+    };
+    let parameters: HashMap<&str, (&Type, syn::Ident)> = HashMap::from([
+        ("item", (&small, syn::parse_quote!(item))),
+        ("extra", (&vector, syn::parse_quote!(extra))),
+        ("right", (&target, syn::parse_quote!(right))),
+    ]);
+    for negated in [false, true] {
+        let left = Box::new(Expr::Coerce {
+            value: Box::new(Expr::Tuple {
+                elements: vec![
+                    parameter("item"),
+                    Expr::Tuple {
+                        elements: vec![parameter("item"), parameter("extra")],
+                    },
+                ],
+            }),
+            ty: target.clone(),
+        });
+        let right = Box::new(parameter("right"));
+        let condition = if negated {
+            Expr::NotEqual { left, right }
+        } else {
+            Expr::Equal { left, right }
+        };
+        let step = ConstructorStep::If {
+            condition,
+            then_steps: vec![],
+            otherwise_steps: vec![],
+        };
+        let steps = [step.clone(), step];
+        let trace = GuardTrace::default();
+        let bare = execute(&steps, &parameters, None);
+        let observed = execute(&steps, &parameters, Some(&trace));
+        assert_eq!(bare, observed);
+        assert!(observed.0.is_ok());
+        assert!(trace.0.borrow().is_empty());
+    }
+}
+
+#[test]
+fn constructor_tuple_coercion_rejects_component_narrowing_before_later_operand() {
+    let small = Type::Unsigned { max: "255".into() };
+    let large = Type::Unsigned {
+        max: "65535".into(),
+    };
+    let parameters: HashMap<&str, (&Type, syn::Ident)> =
+        HashMap::from([("wide", (&large, syn::parse_quote!(wide)))]);
+    let step = ConstructorStep::If {
+        condition: Expr::Equal {
+            left: Box::new(Expr::Coerce {
+                value: Box::new(Expr::Tuple {
+                    elements: vec![parameter("wide"), boolean(true)],
+                }),
+                ty: Type::Tuple {
+                    elements: vec![small.clone(), Type::Boolean],
+                },
+            }),
+            right: Box::new(parameter("later")),
+        },
+        then_steps: vec![],
+        otherwise_steps: vec![],
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &parameters,
+        &trace,
+        RenderError::TypeMismatch {
+            expected: small,
+            actual: large,
+        },
+    );
+    let ConstructorStep::If {
+        condition: Expr::Equal { left, .. },
+        ..
+    } = &step
+    else {
+        panic!("fixture")
+    };
+    assert_eq!(
+        trace.0.borrow().first(),
+        Some(&(
+            "expr",
+            std::ptr::from_ref(left.as_ref()) as usize,
+            Slot::Node
+        ))
+    );
+}
+
+#[test]
 fn constructor_equality_rejects_narrowing_coercion_and_general_cast_transport() {
     let large = Type::Unsigned {
         max: "65535".into(),

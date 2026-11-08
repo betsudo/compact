@@ -23,6 +23,31 @@ use compact_rust_backend::ir::{
 use compact_rust_backend::{RenderError, render};
 
 #[test]
+fn constructor_implicit_tuple_209_raw_ir_retains_typed_refusals() {
+    // Complete original compiler209 outputs, not current-generation fixtures.
+    // Preserve their mismatch: the new Scheme transport must supply Coerce;
+    // the Rust importer must never infer or silently repair the missing widths.
+    for source in [
+        include_str!("../constructor_equality_tuple_guards/historical209/flat_eq.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/flat_ne.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/nested_eq.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/mixed_literal_eq.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/reversed_eq.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/asymmetric_eq.json"),
+        include_str!("../constructor_equality_tuple_guards/historical209/owned_capture_eq.json"),
+    ] {
+        let contract = serde_json::from_str(source).unwrap();
+        assert!(matches!(
+            render(&contract),
+            Err(RenderError::TypeMismatch {
+                expected: Type::Tuple { .. },
+                actual: Type::Tuple { .. },
+            })
+        ));
+    }
+}
+
+#[test]
 fn constructor_cell_parameters_are_typed_and_validated() {
     let mut contract = identity(
         Type::Field,
