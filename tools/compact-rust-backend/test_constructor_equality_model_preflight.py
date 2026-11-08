@@ -15,6 +15,8 @@
 
 """HOST admission controls of the actual preflight checker; no model authority."""
 from copy import deepcopy
+import ast
+import inspect
 import unittest
 from unittest.mock import patch
 
@@ -31,7 +33,7 @@ class PreflightModelControls(unittest.TestCase):
     def admit(self, models, specs, count, producer=None):
         observed = owner.check_model_geometry(models, count * 3)
         owner.check_model_membership(models, specs,
-            {s['role']: {} for s in specs} if producer is None else producer,
+            dict(sources={s['role']: {} for s in specs} if producer is None else producer),
             count, observed)
         return observed
 
@@ -51,11 +53,8 @@ class PreflightModelControls(unittest.TestCase):
                 with self.subTest(count=count, k=k):
                     models, specs = self.cohort(count)
                     models['inventory']['circuits'][-1]['k'] = k
-                    with patch.object(owner.process_owner, 'bounded_command') as process, patch.object(owner.sdk, 'bounded_command') as sdk:
-                        with self.assertRaisesRegex(ValueError, 'automatic tiny policy'):
-                            self.admit(models, specs, count)
-                    process.assert_not_called()
-                    sdk.assert_not_called()
+                    with self.assertRaisesRegex(ValueError, 'automatic tiny policy'):
+                        self.admit(models, specs, count)
 
     def test_missing_and_extra_rows_refuse_before_membership(self):
         for count in (8, 16):
@@ -88,10 +87,47 @@ class PreflightModelControls(unittest.TestCase):
                     else:
                         producer.pop(declarations[0]['role'])
                         producer['HOST-unknown'] = {}
-                    with patch.object(owner.process_owner, 'bounded_command') as process:
-                        with self.assertRaisesRegex(ValueError, 'membership or geometry differs'):
-                            self.admit(models, declarations, count, producer)
-                    process.assert_not_called()
+                    with self.assertRaisesRegex(ValueError, 'membership or geometry differs'):
+                        self.admit(models, declarations, count, producer)
+
+    def test_original_count_refusal_precedes_missing_producer_sources(self):
+        for count in (8, 16):
+            models, specs = self.cohort(count)
+            observed = owner.check_model_geometry(models, count * 3)
+            for wrong in ('observed-count', 'spec-count'):
+                with self.subTest(count=count, wrong=wrong):
+                    invalid = deepcopy(models)
+                    declarations = deepcopy(specs)
+                    if wrong == 'observed-count': invalid['observed_models'] -= 1
+                    else: declarations.pop()
+                    with self.assertRaisesRegex(ValueError, 'membership or geometry differs'):
+                        owner.check_model_membership(invalid, declarations, {}, count, observed)
+            with self.assertRaises(KeyError) as error:
+                owner.check_model_membership(models, specs, {}, count, observed)
+            self.assertEqual(error.exception.args, ('sources',))
+
+    def test_main_keeps_checks_before_spec_load_and_maintained_runners(self):
+        tree = ast.parse(inspect.getsource(owner.main))
+        calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)]
+        geometry = [n for n in calls if isinstance(n.func, ast.Name) and n.func.id == 'check_model_geometry']
+        membership = [n for n in calls if isinstance(n.func, ast.Name) and n.func.id == 'check_model_membership']
+        self.assertEqual(len(geometry), 1)
+        self.assertEqual(len(membership), 1)
+        g, m = geometry[0], membership[0]
+        spec_loads = [n for n in ast.walk(tree) if isinstance(n, ast.Assign)
+                      and any(isinstance(t, ast.Name) and t.id == 'specs' for t in n.targets)
+                      and g.lineno < n.lineno < m.lineno]
+        self.assertEqual(len(spec_loads), 1)
+        runners = [n.lineno for n in calls if isinstance(n.func, ast.Name) and n.func.id == 'run']
+        self.assertLess(m.lineno, min(runners))
+        # Passing the whole producer preserves short-circuit evaluation inside
+        # the predicate; passing producer['sources'] eagerly changes errors.
+        self.assertIsInstance(m.args[2], ast.Name)
+        self.assertEqual(m.args[2].id, 'producer')
+        enclosing = [n for n in ast.walk(tree) if isinstance(n, ast.If)
+                     and isinstance(n.test, ast.Name) and n.test.id == 'extended'
+                     and g in list(ast.walk(n)) and m in list(ast.walk(n))]
+        self.assertEqual(len(enclosing), 1)
 
     def test_all_preflight_modes_stay_exclusive(self):
         with self.assertRaisesRegex(ValueError, 'one finite cohort'):

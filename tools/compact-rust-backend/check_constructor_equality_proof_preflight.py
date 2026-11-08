@@ -53,9 +53,9 @@ def check_model_geometry(models, model_count):
     return observed
 
 
-def check_model_membership(models, specs, producer_sources, source_count, observed):
+def check_model_membership(models, specs, producer, source_count, observed):
     require(models['observed_models'] == source_count * 3 and len(specs) == source_count
-            and {s['role'] for s in specs} == set(producer_sources)
+            and {s['role'] for s in specs} == set(producer['sources'])
             and {(m['source'], m['circuit']) for m in observed} == {
                 (s['role'], entry) for s in specs for entry in ('read', 'advance', 'advance_other')}
             and sorted({m['k'] for m in observed}) == models['observed_k'],
@@ -265,7 +265,7 @@ def main(*, boundaries=False, tuple_guards=False):
             report["scope_receipt"] = dict(path=str(scope_path), sha256=sdk.digest(scope_path))
             observed = check_model_geometry(models, model_count)
             specs = json.loads((fixture / "sources.json").read_text())
-            check_model_membership(models, specs, producer['sources'], source_count, observed)
+            check_model_membership(models, specs, producer, source_count, observed)
         frozen.update({str(p.resolve()):sdk.digest(p) for p in paths})
         python = Path(sys.executable).resolve()
         frozen[str(python)] = sdk.digest(python)

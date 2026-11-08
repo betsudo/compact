@@ -167,7 +167,8 @@ execution at a later documentation/test head.
 The 32 keygen runs yield only two distinct verifier keys, and all positive
 cases use one later `advance` circuit shape. Verification runs in the immutable
 consumer process; persisted proof files were not reverified by a separate
-process. Constructor-derived state and later-entrypoint proofs do not establish
+process. Constructor logic executes natively; constructor-state insertion and
+fee funding are privileged fixture setup. Later-entrypoint proofs do not establish
 constructor/deployment or production wallet cryptography.
 Required retained material was verified and remained hash-stable. The proving
 provider still permits synchronous fetching; the network was not blocked and

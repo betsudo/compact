@@ -299,3 +299,14 @@ not blocked: there is no OS-level zero-network or parameter-load trace. Fifteen
 superseded Cargo output files are historical; the immutable lane snapshots and
 recorded build streams preserve their actual executable identities. These limits
 remain part of acceptance rather than reasons to relabel or rerun the result.
+
+
+The closeout review caught an eager `producer['sources']` helper argument that
+changed malformed-receipt error precedence. The correction passes the whole
+producer and keeps the lookup inside the original short-circuit predicate.
+A direct regression test retains the count/spec ValueError before a missing
+producer key, and the original KeyError only after those counts are valid.
+A source-AST test also guards the order in `main`: geometry, spec loading,
+membership, then the first maintained runner. Earlier read-only Git/hash probes
+remain outside that assertion. Constructor logic runs natively; constructor
+state insertion and fee funding are privileged fixture setup, not proved setup.
