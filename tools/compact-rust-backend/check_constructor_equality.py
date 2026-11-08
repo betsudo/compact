@@ -32,6 +32,7 @@ import tomllib
 from check_constant_vector_projection import compile_failure
 from check_functional_effects import generated_manifest_snapshot
 from check_passport_current_profile import cargo_target
+import check_passport_current_profile as process_owner
 from check_stateful_product_vector_widening import digest, inventory, reject_compiler_overrides, require
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -112,16 +113,21 @@ def main(*, boundaries=False):
             argv[0] = str(rust["cargo"])
         start = time.monotonic()
         try:
-            result = subprocess.run(argv, cwd=ROOT, env=env if extra is None else dict(env, **extra),
-                                    capture_output=True, text=True, timeout=600)
+            if boundaries:
+                result = process_owner.bounded_command(argv, env if extra is None else dict(env, **extra))
+            else:
+                result = subprocess.run(argv, cwd=ROOT, env=env if extra is None else dict(env, **extra),
+                                        capture_output=True, text=True, timeout=600)
         except subprocess.TimeoutExpired as error:
             for stream in ("stdout", "stderr"):
                 data = getattr(error, stream)
                 (out / (label + "." + stream)).write_bytes(data.encode() if isinstance(data, str) else data or b"")
-            report["commands"].append(dict(label=label, argv=argv, exit=None, timeout=600,
+            report["commands"].append(dict(label=label, argv=argv, exit=None, timeout=process_owner.COMMAND_TIMEOUT_SECONDS if boundaries else 600,
                                             seconds=time.monotonic() - start))
             raise
         row = dict(label=label, argv=argv, exit=result.returncode, seconds=time.monotonic() - start)
+        if boundaries:
+            row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
         for stream in ("stdout", "stderr"):
             p = out / (label + "." + stream)
             p.write_text(getattr(result, stream))

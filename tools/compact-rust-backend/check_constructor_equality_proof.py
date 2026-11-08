@@ -28,6 +28,7 @@ import check_constructor_equality_models as model_owner
 import check_constructor_equality_scope as scope_owner
 import check_constructor_equality_proof_preflight as preflight_owner
 import check_functional_source_sdk as sdk
+import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as dependencies
 
 W = sdk.ROOT
@@ -80,12 +81,15 @@ def prove_selected(E, environment, *, boundaries=False):
         dependencies.unchanged(preflight['dependency_sources'])
     def run(label,cmd):
         unchanged();start=time.monotonic()
-        try: p=sdk.bounded_command(cmd,env)
+        try: p=(process_owner if boundaries else sdk).bounded_command(cmd,env)
         except subprocess.TimeoutExpired as error:
             for name,data in [('stdout',error.stdout),('stderr',error.stderr)]:
                 (D/(label+'.'+name)).write_text(data.decode(errors='replace') if isinstance(data,bytes) else data or '')
-            R['commands'].append(dict(label=label,argv=list(map(str,cmd)),timed_out=True));save();raise
+            row=dict(label=label,argv=list(map(str,cmd)),timed_out=True)
+            if boundaries:row['timeout_seconds']=process_owner.COMMAND_TIMEOUT_SECONDS
+            R['commands'].append(row);save();raise
         row=dict(label=label,argv=list(map(str,cmd)),exit=p.returncode,seconds=time.monotonic()-start)
+        if boundaries:row['timeout_seconds']=process_owner.COMMAND_TIMEOUT_SECONDS
         for name in ['stdout','stderr']:
             path=D/(label+'.'+name);path.write_text(getattr(p,name));row[name]=str(path);row[name+'_sha256']=sha(path)
         R['commands'].append(row);save();assert p.returncode==0,(label,p.stderr[-2000:])
@@ -225,9 +229,18 @@ def main(*, boundaries=False):
                     '--compiler-receipt',recipe_path,'--model-receipt',model_path,'--output',output/'preflight'],boundary_mode=boundaries)
         preflight=json.loads((output/'preflight/receipt.json').read_text())
         assert Path(preflight['prerequisites']['zkir']).resolve()==zkir
+        if boundaries:
+            pins[str(output/'preflight/receipt.json')]=sha(output/'preflight/receipt.json')
         if boundaries and args.preflight_only:
             assert preflight['status']=='passed' and preflight['selected_cases']==case_count
+            for path,digest in preflight['frozen_inputs'].items():
+                assert sha(path)==digest,path
+            for path,inventory in preflight['frozen_directories'].items():
+                sdk.equal_inventory(Path(path),inventory)
+            dependencies.unchanged(preflight['dependency_sources'])
+            unchanged()
             report.update(status='passed-key-free-preflight',proof_execution=False,key_generation=False,selected_cases=case_count,
+                observed_k=models['observed_k'],verified_material_k=sorted(map(int,preflight['verified_material_by_k'])),
                 source_receipt=dict(path=str(producer_path),sha256=sha(producer_path)),
                 scope_receipt=dict(path=str(scope_path),sha256=sha(scope_path)),
                 model_receipt=dict(path=str(model_path),sha256=sha(model_path)),

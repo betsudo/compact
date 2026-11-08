@@ -49,8 +49,14 @@ all 24 exports. Its Python boundary mode requires both the current complete API
 producer and a same-head source-scope receipt before observer build/observation.
 It rehashes scope inputs/outputs and freezes directory memberships. The original
 model entry, roster, flags, receipt format and default behavior remain intact.
-The new mode uses the existing 600-second process-group owner, including Cargo
-and rustc descendants; partial timeout streams remain evidence.
+The new boundary source/API, model, preflight and proving paths use the existing
+600-second `check_passport_current_profile` process-group owner, including Cargo
+and rustc descendants; command receipts record that actual constant and partial
+timeout streams remain evidence. The historical paths retain their prior
+process owners and limits. A fresh source review caught that the initial
+preparation called the separate 1200-second SDK helper while describing it as
+600 seconds. That unexecuted boundary preparation and its refused review are
+retained; it was corrected before productive boundary execution.
 
 These are **source-only preparations**. The boundary preflight and composition
 now have an unqualified implementation, with a `--preflight-only` path that
@@ -61,7 +67,7 @@ sixteen-case path retains its default CLI and stages.
 
 Fixture/admission and HOST orchestration controls, Python syntax and Rust
 formatting pass. The HOST controls exercise all thirty-case forwarding,
-key-free exclusion of proving, failure stop/order and model-policy/membership
+key-free exclusion of proving and final input rechecks, failure stop/order and model-policy/membership
 refusals before key effects; they are not genuine execution receipts. An initial
 mock omitted its mandatory proof receipt; the real composition correctly
 refused it. That failed fixture and its correction are retained.

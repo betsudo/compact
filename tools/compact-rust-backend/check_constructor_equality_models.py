@@ -24,6 +24,7 @@ if not __debug__ or sys.flags.optimize or os.environ.get('PYTHONOPTIMIZE'):
     raise RuntimeError('optimized Python invocation is not admitted')
 import constructor_proof_dependencies as dependencies
 import check_functional_source_sdk as sdk
+import check_passport_current_profile as process_owner
 
 def main(*, boundaries=False):
     W = Path(__file__).resolve().parents[2]
@@ -115,14 +116,14 @@ def main(*, boundaries=False):
         out, err = D / (label + '.stdout'), D / (label + '.stderr')
         if boundaries:
             # Reuse the existing group owner for Cargo/rustc descendants too.
-            assert timeout == 600, 'boundary commands use the maintained finite owner'
+            assert timeout == process_owner.COMMAND_TIMEOUT_SECONDS, 'boundary commands use the maintained finite owner'
             try:
-                p = sdk.bounded_command(list(map(str, argv)), env)
+                p = process_owner.bounded_command(list(map(str, argv)), env)
             except subprocess.TimeoutExpired as error:
                 for path, value in ((out, error.stdout), (err, error.stderr)):
                     path.write_text(value.decode(errors='replace') if isinstance(value, bytes) else value or '')
                 r['commands'].append(dict(label=label, argv=list(map(str, argv)), exit=None,
-                    timed_out=True, seconds=time.monotonic()-start, stdout=str(out), stderr=str(err),
+                    timed_out=True, timeout_seconds=process_owner.COMMAND_TIMEOUT_SECONDS, seconds=time.monotonic()-start, stdout=str(out), stderr=str(err),
                     stdout_sha256=sha(out), stderr_sha256=sha(err)))
                 save()
                 raise
@@ -132,6 +133,8 @@ def main(*, boundaries=False):
             with out.open('xb') as o, err.open('xb') as e:
                 p = subprocess.run(list(map(str, argv)), cwd=W, env=env, stdout=o, stderr=e, timeout=timeout)
         row = dict(label=label, argv=list(map(str, argv)), exit=p.returncode, seconds=time.monotonic()-start, stdout=str(out), stderr=str(err), stdout_sha256=sha(out), stderr_sha256=sha(err))
+        if boundaries:
+            row['timeout_seconds'] = process_owner.COMMAND_TIMEOUT_SECONDS
         r['commands'].append(row);save()
         assert (p.returncode == 0) if expected == 0 else (p.returncode != 0), row
         if diagnostic: assert diagnostic in err.read_text(), row

@@ -53,7 +53,11 @@ class CompositionControls(unittest.TestCase):
                     if name == "source":
                         value["sources"] = {str(i): {} for i in range(8)}
                     if name == "preflight":
-                        value.update(selected_cases=count, prerequisites={"zkir": str(zkir)})
+                        value.update(selected_cases=count, prerequisites={"zkir": str(zkir)},
+                                     frozen_inputs={}, frozen_directories={}, dependency_sources={},
+                                     verified_material_by_k={"6": {"format": "HOST-no-material-authority"}})
+                    if name == "models":
+                        value["observed_k"] = [6]
                     (destination / "receipt.json").write_text(json.dumps(value))
                 return run
             def prove(selected, environment, **kwargs):
@@ -113,6 +117,8 @@ class CompositionControls(unittest.TestCase):
         self.assertFalse(receipt["proof_execution"])
         self.assertFalse(receipt["key_generation"])
         self.assertEqual(receipt["selected_cases"], 30)
+        self.assertEqual(receipt["observed_k"], [6])
+        self.assertEqual(receipt["verified_material_k"], [6])
         self.assertEqual(set(receipt) & {"source_receipt", "scope_receipt", "model_receipt", "preflight_receipt"},
                          {"source_receipt", "scope_receipt", "model_receipt", "preflight_receipt"})
 
@@ -133,7 +139,7 @@ class CompositionControls(unittest.TestCase):
                 (root / "models").mkdir()
                 (root / "preflight/receipt.json").write_text(json.dumps(dict(status="passed", sources={str(i): {} for i in range(8)}, selected_cases=30)))
                 (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=24, observed_k=[k])))
-                with patch.object(owner.sdk, "bounded_command") as child:
+                with patch.object(owner.process_owner, "bounded_command") as child:
                     with self.assertRaises(AssertionError):
                         owner.prove_selected(root, {}, boundaries=True)
                 child.assert_not_called()
@@ -150,7 +156,7 @@ class CompositionControls(unittest.TestCase):
             rows[-1] = rows[0].copy()
             (root / "preflight/receipt.json").write_text(json.dumps(dict(status="passed", sources={r: {} for r in roles}, selected_cases=30)))
             (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=24, observed_k=[6], inventory={"circuits": rows})))
-            with patch.object(owner.sdk, "bounded_command") as child:
+            with patch.object(owner.process_owner, "bounded_command") as child:
                 with self.assertRaises(AssertionError):
                     owner.prove_selected(root, {}, boundaries=True)
             child.assert_not_called()

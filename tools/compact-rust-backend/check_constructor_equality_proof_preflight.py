@@ -30,6 +30,7 @@ import time
 import tomllib
 
 import check_functional_source_sdk as sdk
+import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as dependencies
 import did_proof_gate
 import local_parity_gate as common
@@ -157,15 +158,20 @@ def main(*, boundaries=False):
         unchanged()
         start = time.monotonic()
         try:
-            result = sdk.bounded_command(command, env)
+            result = (process_owner if boundaries else sdk).bounded_command(command, env)
         except subprocess.TimeoutExpired as error:
             for name, data in (("stdout", error.stdout), ("stderr", error.stderr)):
                 (output / f"{label}.{name}").write_text(data.decode(errors="replace") if isinstance(data, bytes) else data or "")
-            report["commands"].append(dict(label=label, command=list(map(str,command)), timed_out=True))
+            row = dict(label=label, command=list(map(str,command)), timed_out=True)
+            if boundaries:
+                row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
+            report["commands"].append(row)
             save()
             raise
         row = dict(label=label, command=list(map(str,command)), exit=result.returncode,
                    seconds=time.monotonic()-start)
+        if boundaries:
+            row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
         for name in ("stdout", "stderr"):
             path = output / f"{label}.{name}"
             path.write_text(getattr(result, name))
@@ -200,6 +206,8 @@ def main(*, boundaries=False):
         paths = [args.producer_receipt, args.compiler_receipt, args.model_receipt, Path(__file__),
                  Path(sdk.__file__), Path(dependencies.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
                  ROOT / "Cargo.toml", ROOT / "Cargo.lock", sdk.EXAMPLE / "consumer/Cargo.toml"]
+        if boundaries:
+            paths.append(Path(process_owner.__file__))
         paths += sdk.tracked_source_files(fixture)
         paths.append(ROOT/"tools/compact-rust-backend/tests/constructor_vector_operands/proof.rs")
         paths += sdk.tracked_source_files(ROOT / "testkit-rs")
