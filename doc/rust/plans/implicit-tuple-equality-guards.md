@@ -133,3 +133,20 @@ Qualify every intact export before selected proofs; no source/model trimming.
 The two compiler epochs and all failed attempts remain historical, not current
 native/proof or integration receipts. Linux/full CI and the broader goal remain
 open; Forge remains deferred.
+
+At signed repair head `64ec7c326`, the focused checks pass 69 constructor,
+15 renderer and 51 coercion tests plus strict library Clippy. Its rebuilt
+original210 compiler independently runs all 18 complete repository sources
+(54 generation commands): 16 Rust successes and the same two explicit alias
+transport refusals, with TS success for all 18. The original struct source now
+generates without the previously observed panic. This still does not prove
+generated Rust compilation, actual constructor behavior or cryptography.
+
+The maintained tuple scope gate now has explicit expected parameter/loop,
+condition and original source-origin records for all 18 sources, and separate
+wrapper/value ranges for each conversion. Aggregate cast wrappers can cover
+the whole original comparison while their values keep the variable use-site;
+do not force those original ranges to be equal. Source/HOST preparation checks
+pass on the completed64ec outputs: 17 raw-success validators and eight mutated
+copies refused without compiler/runtime execution. The new current-head CLI,
+original recipe, expanded API/native cohort and fresh review are separate gates.

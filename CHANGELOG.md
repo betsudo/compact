@@ -16,6 +16,8 @@ qualification remain separate acceptance gates.
   supported constructor Vector loops, including nested tuples and captured
   Vectors. Reuse checked coercion; retain narrowing and fallible guard refusals.
   Ordinary circuit and value initializer transport remain unchanged.
+- Assemble constructor guard conditions as structured AST so equality with a
+  leading struct literal does not panic while parsing generated condition tokens.
 
 ## [Toolchain 0.31.209, language 0.23.105, runtime 0.16.102]
 

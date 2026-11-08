@@ -16,8 +16,15 @@
 """Authenticate complete historical raw/source fixtures, never current output."""
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
+from unittest.mock import patch
+
+import check_constructor_equality_scope as scope_owner
 
 
 class HistoricalTupleFixtures(unittest.TestCase):
@@ -39,6 +46,38 @@ class HistoricalTupleFixtures(unittest.TestCase):
                              ["read", "advance", "advance_other"])
             self.assertEqual((row["raw_generation_exit"], row["ts_generation_exit"], row["rust_generation_exit"]), (0, 0, 1))
             self.assertNotEqual(row["type_mismatch_expected"], row["type_mismatch_actual"])
+
+    def test_tuple_scope_stale_and_dirty_recipe_refuse_before_compiler_effects(self):
+        for dirty in (False, True):
+            with self.subTest(dirty=dirty), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                source = root / "source"
+                source.mkdir()
+                recipe = root / "recipe.json"
+                recipe.write_text(json.dumps(dict(status="passed", head="stale", tree="tree")))
+                output = root / "out"
+                argv = ["gate", "--compiler-receipt", str(recipe), "--output", str(output)]
+                def git(command, **kwargs):
+                    return {("rev-parse", "HEAD"): "head", ("rev-parse", "HEAD^{tree}"): "tree",
+                            ("status", "--porcelain"): "dirty" if dirty else ""}[tuple(command[1:])]
+                with patch.object(scope_owner, "ROOT", source), patch.object(sys, "argv", argv), patch.object(scope_owner.subprocess, "check_output", side_effect=git), patch.object(scope_owner, "bounded_command") as execute:
+                    with self.assertRaisesRegex(ValueError, "clean source|current clean original"):
+                        scope_owner.main(tuple_guards=True)
+                execute.assert_not_called()
+                self.assertFalse(output.exists())
+
+    def test_optimized_tuple_scope_entrypoint_refuses_before_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            output = root / "out"
+            script = Path(scope_owner.__file__).with_name("check_constructor_tuple_equality_scope.py")
+            result = subprocess.run([sys.executable, "-O", "-B", str(script),
+                "--compiler-receipt", str(root / "missing"), "--output", str(output)],
+                capture_output=True, text=True, timeout=30,
+                env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("optimized Python is not admitted", result.stderr)
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":
