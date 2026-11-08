@@ -1,0 +1,156 @@
+{
+  "aliased_tuple_variable": {
+    "source_sha256": "23b484aa603aedac0cd86616989bb68340e76dfcd60f309a5144ce23aa76c8aa",
+    "observed_original209": {
+      "raw": 255,
+      "ts": 0,
+      "rust": 255
+    },
+    "observed_candidate458cc210": {
+      "raw": 255,
+      "ts": 0,
+      "rust": 255
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "aliased_uint_component": {
+    "source_sha256": "1f21205e34537706bf29c6298c461e033d43b37908722a14b23899e9217a0c8c",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "aliased_vector_variable": {
+    "source_sha256": "b78b418115435d05ba8352465c9669dc8441137671591d3850ee0dbc577e0760",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "direct_tuple_variable": {
+    "source_sha256": "ce128ba4bbb6394be74f592c580025cc203d10006bb8a4d53f2546cf788786bd",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "direct_vector_variable": {
+    "source_sha256": "8930d4cee57c373f1df8643449389a6c39774caf20f6f8b72301e347be245bb4",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "hash_tuple_argument": {
+    "source_sha256": "651f2b1ab5a9ef28a36b93806ea213d1c71bf1eecf09db30ee61023657330e63",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "struct_literal_field": {
+    "source_sha256": "59b21b97d00518eaa8a0549425981e1e3d7dc0fb50ebb5e039fc614692e1cafb",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 101
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 101
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "tuple_to_vector": {
+    "source_sha256": "4585dc0529d6213802b2694918dae2490f27ba9bdd38f4a739998237c5d18473",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "uint_to_field_tuple": {
+    "source_sha256": "f4fb657d011d73d43167f91cad8e7aee25e532b34df78de4992fe61c9e1d93d7",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "vector_to_tuple": {
+    "source_sha256": "9cf54ba957ea79549706410b0df175f1433eea952b8abc4f609511163a32bf7f",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  },
+  "widened_vector_capture": {
+    "source_sha256": "759c6c251f869c296182f67483b6953bd5a0d9d56f3dd0f5024a3e5066e6b3ce",
+    "observed_original209": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 1
+    },
+    "observed_candidate458cc210": {
+      "raw": 0,
+      "ts": 0,
+      "rust": 0
+    },
+    "scope": "Historical generation outcomes only. Current baseline panic repair and subsequent API/native/model/proof gates remain independently required."
+  }
+}

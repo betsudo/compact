@@ -822,7 +822,7 @@ fn constructor_equality_checks_nested_tuple_coercion_and_owned_capture() {
         elements: vec![
             large.clone(),
             Type::Tuple {
-                elements: vec![large, vector.clone()],
+                elements: vec![large.clone(), vector.clone()],
             },
         ],
     };
@@ -832,16 +832,23 @@ fn constructor_equality_checks_nested_tuple_coercion_and_owned_capture() {
         ("right", (&target, syn::parse_quote!(right))),
     ]);
     for negated in [false, true] {
-        let left = Box::new(Expr::Coerce {
-            value: Box::new(Expr::Tuple {
-                elements: vec![
-                    parameter("item"),
-                    Expr::Tuple {
-                        elements: vec![parameter("item"), parameter("extra")],
-                    },
-                ],
-            }),
-            ty: target.clone(),
+        let item = || Expr::Coerce {
+            value: Box::new(parameter("item")),
+            ty: large.clone(),
+        };
+        let left = Box::new(Expr::Tuple {
+            elements: vec![
+                item(),
+                Expr::Tuple {
+                    elements: vec![
+                        item(),
+                        Expr::Coerce {
+                            value: Box::new(parameter("extra")),
+                            ty: vector.clone(),
+                        },
+                    ],
+                },
+            ],
         });
         let right = Box::new(parameter("right"));
         let condition = if negated {
@@ -860,7 +867,69 @@ fn constructor_equality_checks_nested_tuple_coercion_and_owned_capture() {
         let observed = execute(&steps, &parameters, Some(&trace));
         assert_eq!(bare, observed);
         assert!(observed.0.is_ok());
+        assert!(
+            observed.0.as_ref().unwrap().contains("extra . clone ()"),
+            "component coercion retains the owned captured Vector"
+        );
         assert!(trace.0.borrow().is_empty());
+    }
+}
+
+#[test]
+fn constructor_struct_literal_equality_guard_round_trips_without_parser_panic() {
+    let ty = Type::Struct {
+        name: "Wide".into(),
+        fields: vec![crate::ir::StructField {
+            name: "value".into(),
+            ty: Type::Field,
+        }],
+    };
+    let parameters = HashMap::from([("right", (&ty, syn::parse_quote!(right)))]);
+    for negated in [false, true] {
+        for has_else in [false, true] {
+            let left = Box::new(Expr::StructLiteral {
+                ty: ty.clone(),
+                fields: vec![Expr::FieldLiteral { value: "1".into() }],
+            });
+            let right = Box::new(parameter("right"));
+            let condition = if negated {
+                Expr::NotEqual { left, right }
+            } else {
+                Expr::Equal { left, right }
+            };
+            let step = ConstructorStep::If {
+                condition,
+                then_steps: vec![],
+                otherwise_steps: if has_else {
+                    vec![ConstructorStep::Assert {
+                        condition: boolean(true),
+                        message: "else".into(),
+                    }]
+                } else {
+                    vec![]
+                },
+            };
+            let trace = GuardTrace::default();
+            let bare = execute(std::slice::from_ref(&step), &parameters, None);
+            let observed = execute(std::slice::from_ref(&step), &parameters, Some(&trace));
+            assert_eq!(bare, observed);
+            let syntax: syn::Block =
+                syn::parse_str(&format!("{{{}}}", observed.0.unwrap())).unwrap();
+            let syn::Stmt::Expr(syn::Expr::If(branch), _) = &syntax.stmts[0] else {
+                panic!("structured if")
+            };
+            let syn::Expr::Binary(condition) = branch.cond.as_ref() else {
+                panic!("comparison")
+            };
+            assert_eq!(matches!(condition.op, syn::BinOp::Ne(_)), negated);
+            let left = match condition.left.as_ref() {
+                syn::Expr::Paren(p) => p.expr.as_ref(),
+                x => x,
+            };
+            assert!(matches!(left, syn::Expr::Struct(_)));
+            assert_eq!(branch.else_branch.is_some(), has_else);
+            assert!(trace.0.borrow().is_empty());
+        }
     }
 }
 

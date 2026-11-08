@@ -2679,11 +2679,17 @@ fn render_constructor_vm_steps_observed<'a>(
                         next_temp,
                     },
                 )?;
-                if otherwise_body.is_empty() {
-                    actions.push(syn::parse_quote!(if #condition { #(#then_body)* }));
+                // Parse only a fixed skeleton, then insert the checked AST.
+                // A leading struct literal in equality is ambiguous in the
+                // token grammar for an if condition; syn's AST printer owns
+                // the required grouping, as it does for Fold conditions.
+                let mut branch: syn::ExprIf = if otherwise_body.is_empty() {
+                    syn::parse_quote!(if __compact_condition { #(#then_body)* })
                 } else {
-                    actions.push(syn::parse_quote!(if #condition { #(#then_body)* } else { #(#otherwise_body)* }));
-                }
+                    syn::parse_quote!(if __compact_condition { #(#then_body)* } else { #(#otherwise_body)* })
+                };
+                branch.cond = Box::new(condition);
+                actions.push(syn::Stmt::Expr(syn::Expr::If(branch), None));
             }
         }
     }

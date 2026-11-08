@@ -90,3 +90,46 @@ acceptance remain open. The initial focused test run also caught a borrow/move
 error in the new narrowing test; its expected diagnostic now clones the type
 already borrowed by the parameter fixture. Stop new slices at
 2026-11-08 09:05 UTC and preserve an exact continuation handoff.
+
+## Current characterization and review follow-up
+
+Original210 at `458cc6231` generates raw IR, TypeScript and Rust for all seven
+complete sources (21 commands). This is generation evidence only. All 68
+constructor unit tests pass. The historical renderer test initially overlooked
+the original source-location wrapper; it is strengthened to require the exact
+location and complete expected/actual tuple types. A separate Python control
+authenticates all seven full source/raw hashes and intact three-export rosters.
+
+Fresh Claude source review found no traced unsafe acceptance, but identified
+two P2 coverage gaps: the existing analyzed-source fallback also repairs direct
+aggregate variables and other parents, and the seven original probes lack a
+maintained exact-condition/component-origin generation gate. Both findings
+remain acceptance work. The external 50-case API draft is not an executed gate.
+Do not restrict legitimate affected shapes merely to avoid their validation.
+
+Eleven supplemental complete sources now have actual original209 and
+candidate458cc210 comparisons, preserved under `supplemental/`. Direct tuple
+and Vector variables, both tuple/Vector conversion directions, Uint-to-Field
+tuple components, widened Vector capture and aliased Vector variables gain Rust
+generation. A tuple hash-argument source already generates with209 and remains
+a regression control. Numeric-alias tuple components still stop at checked tuple
+typing; aliased tuple variables stop earlier at the Scheme cast owner. These
+are remaining valid-Compact transport limitations, not invalid-language rules.
+
+The struct-literal guard source exposes a real existing renderer panic in BOTH
+209 and458cc210, after successful frontend/raw generation. Repair this concrete
+baseline defect before dependent feature qualification: construct the existing
+constructor `if` from a fixed AST skeleton and insert the checked condition AST,
+following the existing Fold owner. This lets the AST printer retain required
+grouping around struct-literal comparisons without parsing ambiguous condition
+tokens. Preserve condition/arm validation and counter/error order. Unit controls
+must round-trip both operators and with/without else; generation and native
+compilation of the complete original source must confirm the fix.
+
+The next maintained gate must include exact current conditions and component
+source origins for all affected supported shapes, actual ordinary/functional
+API behavior against live TS, static misuses, ownership and existing refusals.
+Qualify every intact export before selected proofs; no source/model trimming.
+The two compiler epochs and all failed attempts remain historical, not current
+native/proof or integration receipts. Linux/full CI and the broader goal remain
+open; Forge remains deferred.
