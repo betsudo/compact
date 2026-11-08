@@ -150,3 +150,26 @@ do not force those original ranges to be equal. Source/HOST preparation checks
 pass on the completed64ec outputs: 17 raw-success validators and eight mutated
 copies refused without compiler/runtime execution. The new current-head CLI,
 original recipe, expanded API/native cohort and fresh review are separate gates.
+
+The actual current36a maintained run passes both source cohorts: 72 generation
+commands, 24 complete sources, and 18 never-executed HOST refusals. Fresh Claude
+review accepts the baseline AST repair and actual result integrity only; P2-1
+API execution remains open. Its two additional scope findings are addressed in
+the next source preparation: all109 expression-origin records are pinned
+structurally (including identity/literal/tuple/other operand nodes), a ninth HOST
+control clears an identity child, a compiler-free test loads the expectations,
+and the existing locally configured CI step invokes the tuple gate and retains
+its diagnostics before the historical proof owner. Default historical pipeline
+stages and sixteen-case proof behavior stay independently tested. No hosted run
+or actionlint pass is claimed; actionlint was not available in the checked PATHs.
+
+The expanded finite API cohort now has 16 complete supported sources and 105
+literal cases, with five marked ordinary misuses/valid twins, live TS capture,
+four native/recorded/functional routes and public VM replay checks. Its intended
+counts are 1,260 calls and 630 replays, not yet execution results. Hash-argument
+fixture inputs come from the pinned official runtime's typed homogeneous pair
+encoding; actual live TS constructor execution must confirm their literal branch
+outcomes. Source/proof-case metadata matches exactly. All new tuple sources and
+the two unsupported alias cases remain in the separate complete scope roster.
+Model/native-proof owners are not yet extended to this105case cohort, and no
+current generated consumer, model, key, proof or strict application has run.

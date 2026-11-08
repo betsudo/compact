@@ -58,6 +58,19 @@ def at(value, path):
     return value
 
 
+def expression_paths(value, path):
+    """Expression addresses under a condition, excluding type annotations."""
+    if isinstance(value, dict):
+        if "kind" in value:
+            yield tuple(path)
+        for key, child in value.items():
+            if key != "ty":
+                yield from expression_paths(child, [*path, key])
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from expression_paths(child, [*path, index])
+
+
 def validate(role, ir, origins, source, expected):
     """Exact finite shapes and physical original origins, with no type inference."""
     require(digest(source) == expected["source_sha256"], "tuple scope source bytes differ")
@@ -75,6 +88,13 @@ def validate(role, ir, origins, source, expected):
                 "tuple condition transport differs: " + role)
     require([c["name"] for c in ir["stateful_circuits"]] == expected["exports"] ==
             ["read", "advance", "advance_other"], "tuple intact export roster differs")
+    actual_paths = {path for index, step in enumerate(ctor["steps"])
+                    if step["kind"] == "for_each_vector"
+                    for path in expression_paths(step["steps"][0]["condition"],
+                        ["constructor", "steps", index, "steps", 0, "condition"])}
+    wanted_paths = [tuple(row["path"]) for row in expected["condition_origins"]]
+    require(len(wanted_paths) == len(set(wanted_paths)) and actual_paths == set(wanted_paths),
+            "tuple complete expression origin roster differs")
     contents = source.read_bytes()
 
     def physical(path, wanted):
@@ -123,6 +143,18 @@ def host_controls(cases, output, expected):
             root = next(row[3] for row in raw["addresses"] if row[2] == "equal")
             raw["origins"][target][0] = raw["origins"][root][0]
 
+    def clear_identity_origin(raw):
+        paths = []
+        target = ("constructor", "steps", 1, "steps", 0, "condition", "left", "elements", 0)
+        for row in raw["addresses"]:
+            parent, edge, _, _ = row
+            path = () if parent is None else (*paths[parent], edge.get("field", edge.get("index")))
+            paths.append(path)
+            if path == target:
+                row[3] = None
+                return
+        raise ValueError("HOST identity child missing from original addresses")
+
     controls = (
         ("missing-component-coerce", "flat_eq", lambda ir, raw: condition(ir)["left"]["elements"].__setitem__(0, first(ir)["value"]), "scope origin kind differs"),
         ("wrong-component-bound", "flat_eq", lambda ir, raw: first(ir)["ty"].update(max="255"), "tuple condition transport differs"),
@@ -132,6 +164,7 @@ def host_controls(cases, output, expected):
         ("wrong-original-parameter", "direct_vector_variable", lambda ir, raw: ir["constructor"]["parameters"][0]["ty"].update(length=3), "tuple original parameters differ"),
         ("copied-condition-range", "flat_eq", lambda ir, raw: change_origin(raw), "tuple original physical span differs"),
         ("missing-original-value-origin", "flat_eq", lambda ir, raw: change_origin(raw, missing=True), "tuple original origin missing"),
+        ("missing-identity-child-origin", "asymmetric_eq", lambda ir, raw: clear_identity_origin(raw), "tuple original origin missing"),
     )
     output.mkdir()
     results = {}

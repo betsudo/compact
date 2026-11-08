@@ -25,9 +25,62 @@ import unittest
 from unittest.mock import patch
 
 import check_constructor_equality_scope as scope_owner
+import constructor_tuple_scope as tuple_scope
+import check_constructor_equality as api_owner
 
 
 class HistoricalTupleFixtures(unittest.TestCase):
+    def test_all_current_cases_keep_exact_proof_metadata_and_complete_source_roster(self):
+        fixtures = tuple_scope.FIXTURES
+        cases = json.loads((fixtures / "cases.json").read_bytes())
+        proofs = json.loads((fixtures / "proof-cases.json").read_bytes())
+        sources = json.loads((fixtures / "sources.json").read_bytes())
+        self.assertEqual(len(cases), 105)
+        self.assertEqual(len({(r["role"], r["case"]) for r in cases}), 105)
+        self.assertEqual(tuple(r["role"] for r in sources), api_owner.TUPLE_ROLES)
+        self.assertEqual({r["role"] for r in cases}, set(api_owner.TUPLE_ROLES))
+        self.assertEqual(len(sources), 16)
+        self.assertEqual(proofs, [dict(r, id=r["role"] + "_" + r["case"],
+                                      privateState=42, trace=[], error=None) for r in cases])
+        for row in sources:
+            source = api_owner.ROOT / row["path"]
+            self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), row["sha256"])
+            self.assertEqual(row["entries"], ["read", "advance", "advance_other"])
+            self.assertEqual(row["constructor_consumer"], row["role"])
+        for name in api_owner.TUPLE_NEGATIVES:
+            self.assertEqual((fixtures / (name + ".rs")).read_text().count("// expected-error"), 1)
+            self.assertNotIn("// expected-error", (fixtures / (name + "_twin.rs")).read_text())
+
+    def test_tuple_api_dirty_stale_recipe_refuses_before_tools_or_output(self):
+        for dirty in (False, True):
+            with self.subTest(dirty=dirty), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                recipe = root / "recipe.json"
+                recipe.write_text(json.dumps(dict(status="passed", head="stale", tree="tree")))
+                output = root / "output"
+                argv = ["gate", "--compiler-receipt", str(recipe), "--ts-runtime", str(root), "--output", str(output)]
+                def git(command, **kwargs):
+                    return {("status", "--porcelain"): "dirty" if dirty else "", ("rev-parse", "HEAD"): "head", ("rev-parse", "HEAD^{tree}"): "tree"}[tuple(command[1:])]
+                with patch.object(api_owner, "ROOT", root), patch.object(sys, "argv", argv), patch.object(api_owner.subprocess, "check_output", side_effect=git), patch.object(api_owner.subprocess, "run") as execute:
+                    with self.assertRaisesRegex(ValueError, "clean source|current clean original"):
+                        api_owner.main(tuple_guards=True)
+                execute.assert_not_called()
+                self.assertFalse(output.exists())
+
+    def test_current_scope_expectations_cover_all_complete_sources(self):
+        rows = tuple_scope.expectations()
+        self.assertEqual(set(rows), set(tuple_scope.ROLES))
+        self.assertEqual(len(rows), 18)
+        for row in rows.values():
+            if "raw_refusal" in row:
+                continue
+            paths = [tuple(r["path"]) for r in row["condition_origins"]]
+            self.assertEqual(len(paths), len(set(paths)))
+            self.assertTrue(paths)
+            for r in row["condition_origins"]:
+                self.assertTrue(r["source_fragment"])
+                self.assertEqual(r["origin_role"], "expression")
+
     def test_full_209_source_ir_pairs_keep_exact_hashes_and_all_exports(self):
         fixtures = Path(__file__).with_name("tests") / "constructor_equality_tuple_guards"
         rows = json.loads((fixtures / "historical209/manifest.json").read_bytes())

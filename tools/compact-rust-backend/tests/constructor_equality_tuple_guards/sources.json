@@ -1,0 +1,178 @@
+[
+  {
+    "role": "aliased_vector_variable",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/aliased_vector_variable.compact",
+    "sha256": "b78b418115435d05ba8352465c9669dc8441137671591d3850ee0dbc577e0760",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "aliased_vector_variable"
+  },
+  {
+    "role": "asymmetric_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/asymmetric_eq.compact",
+    "sha256": "a035b79586d6524c5154a76599a4763c889ec4dcc9b5f59a79853c53012f44b3",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "asymmetric_eq"
+  },
+  {
+    "role": "direct_tuple_variable",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/direct_tuple_variable.compact",
+    "sha256": "ce128ba4bbb6394be74f592c580025cc203d10006bb8a4d53f2546cf788786bd",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "direct_tuple_variable"
+  },
+  {
+    "role": "direct_vector_variable",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/direct_vector_variable.compact",
+    "sha256": "8930d4cee57c373f1df8643449389a6c39774caf20f6f8b72301e347be245bb4",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "direct_vector_variable"
+  },
+  {
+    "role": "flat_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/flat_eq.compact",
+    "sha256": "48d99345f426359ca9f91703a2980bbb284310bb5ac203e6b94ff7fafd3b22da",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "flat_eq"
+  },
+  {
+    "role": "flat_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/flat_ne.compact",
+    "sha256": "0a06515bc8aafcfdca74f671e4b4524d4daf5750be48abab123e9990966a7c3f",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "flat_ne"
+  },
+  {
+    "role": "hash_tuple_argument",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/hash_tuple_argument.compact",
+    "sha256": "651f2b1ab5a9ef28a36b93806ea213d1c71bf1eecf09db30ee61023657330e63",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "hash_tuple_argument"
+  },
+  {
+    "role": "mixed_literal_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/mixed_literal_eq.compact",
+    "sha256": "9f102f199ec056705f7d03508fd61bda2ad5056837ffaa805425f2f5c789c6f4",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "mixed_literal_eq"
+  },
+  {
+    "role": "nested_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/nested_eq.compact",
+    "sha256": "3b9d87b9a1f147369aeb3f367e0099d149010a81eaabfa2dab0dc2e913a55270",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "nested_eq"
+  },
+  {
+    "role": "owned_capture_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/owned_capture_eq.compact",
+    "sha256": "ec693f607ae35d360f4497ec13323bbd1abcfa2662fb758c859f48509b6fbd0f",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "owned_capture_eq"
+  },
+  {
+    "role": "reversed_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/reversed_eq.compact",
+    "sha256": "e0b5c9b3a9e8fea5ea03d8739292d24dd771e72b78cef114b30ce137edb6b078",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "reversed_eq"
+  },
+  {
+    "role": "struct_literal_field",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/struct_literal_field.compact",
+    "sha256": "59b21b97d00518eaa8a0549425981e1e3d7dc0fb50ebb5e039fc614692e1cafb",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "struct_literal_field"
+  },
+  {
+    "role": "tuple_to_vector",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/tuple_to_vector.compact",
+    "sha256": "4585dc0529d6213802b2694918dae2490f27ba9bdd38f4a739998237c5d18473",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "tuple_to_vector"
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/uint_to_field_tuple.compact",
+    "sha256": "f4fb657d011d73d43167f91cad8e7aee25e532b34df78de4992fe61c9e1d93d7",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "uint_to_field_tuple"
+  },
+  {
+    "role": "vector_to_tuple",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/vector_to_tuple.compact",
+    "sha256": "9cf54ba957ea79549706410b0df175f1433eea952b8abc4f609511163a32bf7f",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "vector_to_tuple"
+  },
+  {
+    "role": "widened_vector_capture",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_tuple_guards/supplemental/widened_vector_capture.compact",
+    "sha256": "759c6c251f869c296182f67483b6953bd5a0d9d56f3dd0f5024a3e5066e6b3ce",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "widened_vector_capture"
+  }
+]

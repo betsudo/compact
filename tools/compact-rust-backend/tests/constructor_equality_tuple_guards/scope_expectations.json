@@ -110,6 +110,56 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          859,
+          21,
+          39,
+          880
+        ],
+        "source_fragment": "[item, item] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          0
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          860,
+          21,
+          23,
+          864
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           1
@@ -141,6 +191,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          866,
+          21,
+          29,
+          870
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          34,
+          875,
+          21,
+          39,
+          880
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "asymmetric_eq.compact"
@@ -263,6 +364,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          860,
+          21,
+          39,
+          881
+        ],
+        "source_fragment": "[item, item] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -305,6 +430,33 @@
           "condition",
           "left",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          861,
+          21,
+          23,
+          865
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -334,6 +486,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          867,
+          21,
+          29,
+          871
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          34,
+          876,
+          21,
+          39,
+          881
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "flat_eq.compact"
@@ -456,6 +659,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          860,
+          21,
+          39,
+          881
+        ],
+        "source_fragment": "[item, item] != right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -498,6 +725,33 @@
           "condition",
           "left",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          861,
+          21,
+          23,
+          865
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -527,6 +781,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          867,
+          21,
+          29,
+          871
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          34,
+          876,
+          21,
+          39,
+          881
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "flat_ne.compact"
@@ -643,6 +948,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          860,
+          21,
+          36,
+          878
+        ],
+        "source_fragment": "[item, 0] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -674,6 +1003,83 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          861,
+          21,
+          23,
+          865
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1
+        ],
+        "kind": "unsigned_literal",
+        "physical_span": [
+          0,
+          21,
+          25,
+          867,
+          21,
+          26,
+          868
+        ],
+        "source_fragment": "0",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          31,
+          873,
+          21,
+          36,
+          878
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "mixed_literal_eq.compact"
@@ -821,6 +1227,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          872,
+          21,
+          47,
+          901
+        ],
+        "source_fragment": "[item, [item, item]] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -852,6 +1282,59 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          873,
+          21,
+          23,
+          877
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          25,
+          879,
+          21,
+          37,
+          891
+        ],
+        "source_fragment": "[item, item]",
+        "origin_status": "provided",
+        "origin_role": "expression"
       },
       {
         "path": [
@@ -907,6 +1390,35 @@
           "elements",
           1,
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          26,
+          880,
+          21,
+          30,
+          884
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -936,6 +1448,59 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          32,
+          886,
+          21,
+          36,
+          890
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          42,
+          896,
+          21,
+          47,
+          901
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "nested_eq.compact"
@@ -1125,6 +1690,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          893,
+          21,
+          40,
+          915
+        ],
+        "source_fragment": "[item, extra] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -1156,6 +1745,33 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          894,
+          21,
+          23,
+          898
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
       },
       {
         "path": [
@@ -1201,12 +1817,87 @@
         "path": [
           "constructor",
           "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          900,
+          21,
+          30,
+          905
+        ],
+        "source_fragment": "extra",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          35,
+          910,
+          21,
+          40,
+          915
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
           2,
           "steps",
           0,
           "condition"
         ],
         "kind": "equal",
+        "physical_span": [
+          0,
+          24,
+          18,
+          1007,
+          24,
+          40,
+          1029
+        ],
+        "source_fragment": "[item, extra] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          2,
+          "steps",
+          0,
+          "condition",
+          "left"
+        ],
+        "kind": "tuple",
         "physical_span": [
           0,
           24,
@@ -1270,6 +1961,33 @@
           "condition",
           "left",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          24,
+          19,
+          1008,
+          24,
+          23,
+          1012
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          2,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -1299,6 +2017,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          2,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          24,
+          25,
+          1014,
+          24,
+          30,
+          1019
+        ],
+        "source_fragment": "extra",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          2,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          24,
+          35,
+          1024,
+          24,
+          40,
+          1029
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "owned_capture_eq.compact"
@@ -1421,6 +2190,54 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          18,
+          860,
+          21,
+          23,
+          865
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          860,
+          21,
+          39,
+          881
+        ],
+        "source_fragment": "right == [item, item]",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "right",
           "elements",
           0
@@ -1463,6 +2280,33 @@
           "condition",
           "right",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          28,
+          870,
+          21,
+          32,
+          874
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -1492,6 +2336,33 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          34,
+          876,
+          21,
+          38,
+          880
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "reversed_eq.compact"
@@ -1594,6 +2465,106 @@
           903
         ],
         "source_fragment": "[item, item] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          22,
+          18,
+          882,
+          22,
+          39,
+          903
+        ],
+        "source_fragment": "[item, item] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          0
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          22,
+          19,
+          883,
+          22,
+          23,
+          887
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          22,
+          25,
+          889,
+          22,
+          29,
+          893
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          22,
+          34,
+          898,
+          22,
+          39,
+          903
+        ],
+        "source_fragment": "right",
         "origin_status": "provided",
         "origin_role": "expression"
       }
@@ -1738,6 +2709,55 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          23,
+          18,
+          932,
+          23,
+          22,
+          936
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          23,
+          26,
+          940,
+          23,
+          31,
+          945
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/aliased_vector_variable.compact"
@@ -1900,6 +2920,55 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          18,
+          871,
+          21,
+          22,
+          875
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          26,
+          879,
+          21,
+          31,
+          884
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/direct_tuple_variable.compact"
@@ -2042,6 +3111,55 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          18,
+          870,
+          21,
+          22,
+          874
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          26,
+          878,
+          21,
+          31,
+          883
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/direct_vector_variable.compact"
@@ -2158,6 +3276,55 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "persistent_hash",
+        "physical_span": [
+          0,
+          21,
+          18,
+          849,
+          21,
+          68,
+          899
+        ],
+        "source_fragment": "persistentHash<[Uint<16>, Uint<16>]>([item, item])",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          849,
+          21,
+          68,
+          899
+        ],
+        "source_fragment": "persistentHash<[Uint<16>, Uint<16>]>([item, item])",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "value",
           "elements",
@@ -2202,6 +3369,34 @@
           "left",
           "value",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          56,
+          887,
+          21,
+          60,
+          891
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -2231,6 +3426,58 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          62,
+          893,
+          21,
+          66,
+          897
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          72,
+          903,
+          21,
+          77,
+          908
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/hash_tuple_argument.compact"
@@ -2355,6 +3602,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "struct_literal",
+        "physical_span": [
+          0,
+          22,
+          18,
+          884,
+          22,
+          38,
+          904
+        ],
+        "source_fragment": "Wide { value: item }",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "fields",
           0
@@ -2386,6 +3657,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "fields",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          22,
+          32,
+          898,
+          22,
+          36,
+          902
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          22,
+          42,
+          908,
+          22,
+          47,
+          913
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/struct_literal_field.compact"
@@ -2538,6 +3860,55 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          18,
+          870,
+          21,
+          22,
+          874
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          26,
+          878,
+          21,
+          31,
+          883
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/tuple_to_vector.compact"
@@ -2650,6 +4021,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          854,
+          21,
+          39,
+          875
+        ],
+        "source_fragment": "[item, item] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -2692,6 +4087,33 @@
           "condition",
           "left",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          855,
+          21,
+          23,
+          859
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
           1
         ],
         "kind": "field_cast",
@@ -2721,6 +4143,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          861,
+          21,
+          29,
+          865
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          34,
+          870,
+          21,
+          39,
+          875
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/uint_to_field_tuple.compact"
@@ -2873,6 +4346,55 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          18,
+          871,
+          21,
+          22,
+          875
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          26,
+          879,
+          21,
+          31,
+          884
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/vector_to_tuple.compact"
@@ -3014,6 +4536,30 @@
           "steps",
           0,
           "condition",
+          "left"
+        ],
+        "kind": "tuple",
+        "physical_span": [
+          0,
+          21,
+          18,
+          898,
+          21,
+          40,
+          920
+        ],
+        "source_fragment": "[item, extra] == right",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
           "left",
           "elements",
           0
@@ -3056,6 +4602,33 @@
           "condition",
           "left",
           "elements",
+          0,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          19,
+          899,
+          21,
+          23,
+          903
+        ],
+        "source_fragment": "item",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
           1
         ],
         "kind": "coerce",
@@ -3085,6 +4658,57 @@
           "origin_status": "provided",
           "origin_role": "expression"
         }
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "left",
+          "elements",
+          1,
+          "value"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          25,
+          905,
+          21,
+          30,
+          910
+        ],
+        "source_fragment": "extra",
+        "origin_status": "provided",
+        "origin_role": "expression"
+      },
+      {
+        "path": [
+          "constructor",
+          "steps",
+          1,
+          "steps",
+          0,
+          "condition",
+          "right"
+        ],
+        "kind": "parameter",
+        "physical_span": [
+          0,
+          21,
+          35,
+          915,
+          21,
+          40,
+          920
+        ],
+        "source_fragment": "right",
+        "origin_status": "provided",
+        "origin_role": "expression"
       }
     ],
     "path": "supplemental/widened_vector_capture.compact"

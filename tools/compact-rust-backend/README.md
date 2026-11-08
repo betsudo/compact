@@ -71,9 +71,9 @@ See [the bounded #720 plan](../../doc/rust/plans/constructor-equality-operand-bo
 requires an exact clean-head original compiler recipe and rejects compiler
 substitutions and optimized Python. Six complete Compact sources exercise
 ordinary and initializer transport after a condition, literal inference,
-explicit nested tuple widening, narrowing refusal and the current implicit
-mixed-width tuple refusal. The last case is an **open frontend/backend transport
-gap**, not a Compact language rule or a completed semantic capability.
+explicit nested tuple widening, narrowing refusal and implicit mixed-width
+tuple widening. Compiler209's historical tuple refusal remains independently
+tested; current210 requires checked component coercions and successful generation.
 
 The intended gate checks current raw Scheme IR/origin addresses, independent
 TypeScript generation and supported/refused Rust generation. Ten mutations
@@ -86,6 +86,19 @@ At frozen `0e07d63f4`, the actual eighteen-command gate and independent source
 and result reviews pass within this source-generation scope. Later source
 changes need their own identities; this does not qualify the additional SDKs
 natively. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
+`check_constructor_tuple_equality_scope.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--output FRESH_OUTPUT` covers all18 complete tuple probes and original origins.
+It requires exact current parameters, loop/condition shapes and every expression
+origin under each guard (excluding type annotations), including unchanged and
+literal children and both operands. Conversion wrapper and value ranges retain
+their distinct original ownership. Nine HOST mutations must refuse; none run as
+compiler or runtime inputs. Two valid-Compact alias transport gaps remain explicit
+refusals; the other16 sources must generate Rust. This gate runs before the
+existing sixteen-case proof owner in the locally configured required CI job, and
+its complete diagnostics are retained. No new hosted run is claimed. It preserves
+the historical/default proof cohort and does not qualify these16 generated APIs
+for execution, models or proofs. See [the active slice](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 ## Bounded local boundary proof qualification
 
