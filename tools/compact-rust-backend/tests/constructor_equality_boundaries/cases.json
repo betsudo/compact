@@ -1,0 +1,632 @@
+[
+  {
+    "role": "mixed_uint_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "first_match",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      256
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      65535
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "max_match",
+    "args": [
+      [
+        0,
+        255
+      ],
+      255
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "zero_match",
+    "args": [
+      [
+        255,
+        0
+      ],
+      0
+    ],
+    "expected": 7
+  },
+  {
+    "role": "tuple_eq",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "tuple_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            5
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_eq",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "vector_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_eq",
+    "case": "last_match",
+    "args": [
+      [
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            5
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "first_match",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      256
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      65535
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "max_match",
+    "args": [
+      [
+        0,
+        255
+      ],
+      255
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "zero_match",
+    "args": [
+      [
+        255,
+        0
+      ],
+      0
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_ne",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "tuple_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            5
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "vector_ne",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "vector_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_ne",
+    "case": "last_match",
+    "args": [
+      [
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            5
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7
+  }
+]

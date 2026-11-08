@@ -11,8 +11,8 @@ Unreleased local Rust-backend slice; qualification remains in progress.
 
 ### Added
 
-- Support typed equality and inequality conditions in existing constructor
-  control flow. Reuse the checked pure lowering and structured Rust AST emitter;
+- Support typed equality and inequality guards inside supported constructor
+  Vector loops. Reuse the checked pure lowering and structured Rust AST emitter;
   keep value initializer restrictions and fallible operand refusals unchanged.
 - Add complete constructor equality qualification to the required Linux consumer:
   current source/API checks, all 24 intact models and sixteen selected fresh

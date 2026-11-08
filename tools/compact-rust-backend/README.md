@@ -19,7 +19,7 @@ witness-only VM queries; the Rust result sums the observed query costs.
 ## Local constructor equality qualification
 
 The bounded `0.31.195` slice admits equality and inequality predicates in
-existing constructor control flow through the existing typed pure lowering.
+supported constructor Vector loops through the existing typed pure lowering.
 Value initializers retain their previous expression boundary. Top-level
 constructor `if` frontend admission is a separate gap.
 
@@ -36,6 +36,33 @@ reference. It performs no key generation or proofs. Dependency lock checks are
 not transitive consumed-source attestation. Model/proof/application qualification,
 full required Linux CI and independent review remain separate acceptance gates;
 see [the plan](../../doc/rust/plans/constructor-equality-conditions.md).
+
+## Constructor equality operand boundaries
+
+`check_constructor_equality_boundaries.py` uses the same compiler-recipe and
+physical TypeScript-runtime requirements as the historical equality gate. It
+retains all four historical frontend/native refusal sources. Its separate finite
+cohort contains eight complete three-export contracts: mixed Uint8/Uint16,
+tuple, nested Vector and Bytes-containing struct guards, with both operators.
+Thirty cases include final-iteration ordering, differences in each aggregate
+component, zero/max values and Uint16 values above 255. The generated constructor
+API consumes inputs; the consumer explicitly clones caller-owned inputs for
+reuse. All three later exports exercise ordinary, recorded, functional native
+and functional recorded routes, comparing state/effects/cost and actual public
+VM replay against live TypeScript transcripts. Five marked type/shape misuses
+have compiling valid twins. A changed TS reference must fail the actual consumer,
+then the original reference must pass again.
+
+```sh
+python3 tools/compact-rust-backend/check_constructor_equality_boundaries.py \
+  --compiler-receipt ORIGINAL_CURRENT_RECIPE_RECEIPT \
+  --ts-runtime COMPACT_TS_RUNTIME --output FRESH_OUTPUT
+```
+
+This is the maintained intended native gate, pending execution and independent
+review at the current source. It does not generate keys/proofs, prove constructor
+initialization/deployment, qualify Linux, or replace the historical cohort.
+See [the bounded #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
 
 ## Current recording architecture
 

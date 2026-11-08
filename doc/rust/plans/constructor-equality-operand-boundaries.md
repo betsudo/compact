@@ -92,8 +92,9 @@ and accepted capability/retirement decisions. Clean only owned inactive unneeded
 reproducible intermediates after process/open-file/lock guards; keep current
 executables, dependencies, results, failures, parameters and keys.
 
-Status: plan only. No current baseline checks, source characterization, new
-SDK execution or proofs have run for this slice. Stop initiating new slices at
+Current status: compiler209 source fix and eight-source generation regression
+pass locally at signed `5753ac7c3`. The native/API gate is being prepared;
+generated SDK execution, models, keys, proofs and applications are not accepted. Stop initiating new slices at
 2026-11-08 09:05 UTC and leave an exact handoff; the broad goal stays incomplete.
 
 ## Baseline and genuine source characterization
@@ -142,5 +143,34 @@ unpublished work, so the proposed new source identifier is 0.31.209. The unrelat
 `chore/version-scheme` experiment is not this branch's baseline or numbering
 policy. No prior receipt is relabeled and no release is authorized.
 
-Status: the semantic fix, current native/TS comparisons, marked misuse checks
-and applicable proofs remain unimplemented/unexecuted at this planning epoch.
+Historical planning boundary: the semantic fix and subsequent qualification
+were not yet implemented/executed at that epoch. See the current status above.
+
+
+## Native/API gate cohort
+
+The maintained `check_constructor_equality_boundaries.py` reuses the existing
+compiler-recipe, tool identity, generated inventory, lock and command owner in
+`check_constructor_equality.py`, selecting a separate finite cohort without
+changing the historical roles, fixture bytes or default command. All four
+original source refusals still execute. Eight complete sources each retain
+`read`, `advance` and `advance_other`; the runtime ABI and private schema stay
+unchanged.
+
+The thirty literal cases distinguish both operators, first/last loop ordering,
+each composite component, Uint8 zero/max and Uint16 256/65535. Independent live
+TypeScript observes initialization and all three later exports. The Rust
+consumer compares literal outcomes and the consumed TS reference, all four
+native/recorded/functional routes, complete state/effects, gas, private state
+and public VM replay. Its intended counts are 360 native calls and 180 VM
+replays; these are not cryptographic proof counts. The actual constructor API
+consumes arguments. Explicit caller clones preserve owned composite inputs for
+reuse without inventing a borrowed public API.
+
+Five ordinary marked E0308 misuses cover Uint bound, outer Vector length,
+tuple component, inner Vector length and nominal generated struct identity.
+Each has a valid compiling twin. The changed-reference control must fail the
+actual Rust assertion, followed by a restored-reference pass. Source/host
+controls and actual current-head execution remain separate evidence: adding
+this gate alone does not claim it passed. Applicable fresh proofs, independent
+verification, strict applications and full required CI remain open.
