@@ -33,6 +33,7 @@ from check_constant_vector_projection import compile_failure
 from check_functional_effects import generated_manifest_snapshot
 from check_passport_current_profile import cargo_target
 import check_passport_current_profile as process_owner
+import constructor_proof_dependencies as proof_dependencies
 from check_stateful_product_vector_widening import digest, inventory, reject_compiler_overrides, require
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -99,12 +100,15 @@ def main(*, boundaries=False):
     report = dict(status="running", head=head, tree=tree, inputs=pins, commands=[], sources={},
                   scope=__doc__, proof_execution=False)
     bound = {}
+    dependency_sources = {}
     started = time.monotonic()
 
     def unchanged():
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source changed")
         require(reject_compiler_overrides(dict(os.environ)) == config, "Cargo configuration changed")
         require(all(Path(p).is_file() and digest(p) == h for p, h in {**pins, **bound}.items()), "input changed")
+        if boundaries:
+            proof_dependencies.unchanged(dependency_sources)
 
     def run(label, argv, success=True, extra=None):
         unchanged()
@@ -202,6 +206,9 @@ def main(*, boundaries=False):
             if package.get("source"):
                 key = package["name"], package["version"], package["source"]
                 require(key in locked and package.get("checksum") == locked[key], "lock identity/checksum differs")
+        if boundaries:
+            proof_dependencies.authenticate(metadata, locked, dependency_sources)
+            report["dependency_sources"] = dependency_sources
         bound.update({str(consumer / p): h for p, h in inventory(consumer).items()})
         env["COMPACT_CONSTRUCTOR_EQUALITY_TS"] = str(reference)
         argv = ["cargo", "test", "--offline", "--locked", "--manifest-path", manifest, "--lib"]

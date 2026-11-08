@@ -56,7 +56,11 @@ timeout streams remain evidence. The historical paths retain their prior
 process owners and limits. A fresh source review caught that the initial
 preparation called the separate 1200-second SDK helper while describing it as
 600 seconds. That unexecuted boundary preparation and its refused review are
-retained; it was corrected before productive boundary execution.
+retained; it was corrected before productive boundary execution. The boundary
+source/API stage also authenticates its physical locked dependency sources
+after metadata and before its first Cargo build/test, using the existing
+proof dependency owner. Subsequent commands recheck that admitted source graph.
+This is not a hermetic/transitive build-process attestation.
 
 These are **source-only preparations**. The boundary preflight and composition
 now have an unqualified implementation, with a `--preflight-only` path that
