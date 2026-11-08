@@ -131,7 +131,39 @@ Observed contract k selects existing verified material under the unchanged
 prerequisites. No forced k, trimmed cohort, proof/verdict cache, or parameter
 download was used. Fresh independent actual-result review accepts only this
 bounded source epoch; see the [qualification plan and limits](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
-The implicit mixed-width tuple literal transport gap stays open.
+The implicit mixed-width tuple literal transport continuation has a separate
+source/API acceptance epoch described below; those results do not extend this
+frozen proof acceptance.
+
+## Implicit tuple guard API and proof continuation
+
+`check_constructor_tuple_equality.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--ts-runtime COMPACT_TS_RUNTIME --output FRESH_OUTPUT` exercises 16 complete
+current SDKs and 105 live TypeScript/native cases. At signed `54e428633` the local
+arm64 gate and independent result review pass: 1,260 calls, 630 public VM replays,
+five marked compile-fail/valid-twin pairs and changed/restored-reference controls.
+The generated API consumes constructor arguments by value; owned captures are
+reused through generated cloning. The 2 MiB worker fit is not yet Linux evidence.
+Two valid-Compact alias transport gaps remain explicit source refusals.
+
+The separate `check_constructor_tuple_equality_models.py` observer requires both
+`--scope-receipt` (the six-source ordinary scope) and `--tuple-scope-receipt`
+(the complete 18-source tuple scope), plus the current producer root/receipt.
+`check_constructor_tuple_equality_proof.py --preflight-only` composes current
+source/API, both scope gates, all 48 intact models and 16 immutable native proof
+consumers before admitting keys. Omit `--preflight-only` only for the separate
+fresh proof/application qualification. All owners require fresh external output
+directories and exact current source/compiler identities.
+
+These new model/proof entry points are source preparation pending current
+execution and independent review. They preserve the historical 16-case and
+boundary 30-case paths. Automatic integer k must remain in 1..8 for every intact
+model; do not trim sources, force geometry or reuse cached proof verdicts.
+Selected later-entrypoint proofs still require seven negatives, actual verifier
+calls and separately proved DEFAULT-strict application/replay. They are not
+constructor/deployment proofs or evidence of distinct circuits per source.
+Current new-cohort CI wiring, Linux and complete integration gates remain open.
+See [the active plan](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 ## Current recording architecture
 

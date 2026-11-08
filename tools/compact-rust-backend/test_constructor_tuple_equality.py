@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Authenticate complete historical raw/source fixtures, never current output."""
+"""Fixture identity and entry admission controls, never current execution proof."""
 import hashlib
 import json
 import os
@@ -40,6 +40,8 @@ class HistoricalTupleFixtures(unittest.TestCase):
         self.assertEqual(tuple(r["role"] for r in sources), api_owner.TUPLE_ROLES)
         self.assertEqual({r["role"] for r in cases}, set(api_owner.TUPLE_ROLES))
         self.assertEqual(len(sources), 16)
+        self.assertEqual({p.stem for p in (fixtures / 'constructors').glob('*.rs')},
+                         set(api_owner.TUPLE_ROLES))
         self.assertEqual(proofs, [dict(r, id=r["role"] + "_" + r["case"],
                                       privateState=42, trace=[], error=None) for r in cases])
         for row in sources:
@@ -131,6 +133,30 @@ class HistoricalTupleFixtures(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("optimized Python is not admitted", result.stderr)
             self.assertFalse(output.exists())
+
+    def test_tuple_model_entry_requires_both_scope_receipts_before_output(self):
+        for supplied, missing in (([], '--scope-receipt'),
+                                  (['--scope-receipt', 'HOST-missing.json'], '--tuple-scope-receipt')):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temporary:
+                output = Path(temporary) / 'out'
+                script = Path(__file__).with_name('check_constructor_tuple_equality_models.py')
+                result = subprocess.run([sys.executable, '-B', script, '--producer-root', temporary,
+                    '--producer-receipt', 'HOST-missing.json', '--output', output, *supplied],
+                    capture_output=True, text=True, timeout=30,
+                    env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(missing, result.stderr)
+                self.assertFalse(output.exists())
+
+    def test_tuple_qualification_entries_reject_optimized_python(self):
+        for suffix in ('models', 'proof_preflight', 'proof'):
+            with self.subTest(suffix=suffix):
+                script = Path(__file__).with_name('check_constructor_tuple_equality_' + suffix + '.py')
+                result = subprocess.run([sys.executable, '-O', '-B', script, '--help'],
+                    capture_output=True, text=True, timeout=30,
+                    env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('is not admitted', result.stderr)
 
 
 if __name__ == "__main__":

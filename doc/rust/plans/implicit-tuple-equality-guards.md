@@ -38,7 +38,7 @@ The historical source and raw IR must remain byte exact compatibility fixtures.
   source, raw IR, generated SDK, parameter and immutable verifier identities.
 
 Generated `initial_state(ConstructorContext, ...)` keeps the exact Compact
-parameter types, including borrowed caller-owned Vectors and typed tuples.
+parameter types, including caller-owned Vectors passed by value and typed tuples.
 No public API, runtime ABI, IR schema, dependency or recording operation changes.
 Local branch inventory identifies 0.31.210 as unused among the inspected local
 heads; this is a source identifier, not a release or global availability claim.
@@ -185,3 +185,54 @@ per contract, preserving all105cases, caller ownership and twelve calls/six
 replays per case. The new tuple gate explicitly uses a 2 MiB worker; it does not
 raise a stack limit or remove a source/case. Re-execute the complete current API
 and all negative/reference controls before model or proof qualification.
+
+
+## Accepted source/API milestone and proof continuation
+
+Signed `54e428633` is accepted locally for source/API/scope after fresh Claude
+review and an independent parent audit. The maintained gate passed all 16 SDKs,
+105 live TypeScript/native cases, 1,260 API calls and 630 public VM replays under
+the required 2 MiB Rust test-worker stack. Five marked E0308 misuse cases each
+have a passing valid twin; a changed oracle fails and the restored oracle passes.
+The initial monolithic fixture's stack-overflow failure remains retained. The
+repair outlines typed per-contract helpers without trimming cases or raising the
+stack. Linux debug stack fit remains unproven.
+
+The outer reporting caller failed *after* this maintained gate passed because
+it used a source-only directory inventory on an intentional Node runtime link.
+That failure remains failed. The separate result audit authenticates the typed
+link, exact runtime target, 219 runtime files and whole result membership. Source
+closure checks still reject symlinks. The maintained API receipt itself does not
+snapshot its binary or compiler lock sidecars; the parent audit does. No result
+is promoted to constructor/deployment cryptography or full CI acceptance.
+
+The isolated proof continuation preserves that source head and all results. It
+adds an explicit tuple-guard cohort to the existing model, native-preflight and
+proof owners: 16 complete sources, all 48 intact exported models and all 105
+cases. Historical default 16-case and boundary 30-case modes remain independent.
+Both the ordinary six-source scope gate and the complete 18-source tuple scope
+(109 expression origins, nine HOST refusals) precede model admission. Every
+intact model must have automatic integer k in 1..8 before keys. The new observer
+and typed constructor adapters are qualification infrastructure, not a new
+semantic feature or a generated-code rewrite.
+
+Entry points are `check_constructor_tuple_equality_models.py`,
+`check_constructor_tuple_equality_proof_preflight.py` and
+`check_constructor_tuple_equality_proof.py`; the complete owner supports
+`--preflight-only` to avoid key/proof effects. HOST orchestration tests prove only
+stage ordering and early refusal. They are not compiler or cryptographic results.
+Actual models, immutable native proof consumers, fresh key generation, selected
+proofs/verification and separate DEFAULT strict applications remain open until
+current execution receipts and independent review establish them. Seven binding,
+input/output/preimage, corruption and wrong-verifier negatives remain required
+per positive case. The common proof/application consumer stays unchanged.
+
+The later `advance` circuit may be identical across source roles and constructor
+states; count actual key identities instead of claiming 105 distinct circuits.
+Final-state TS comparison observes the last iteration and overwrite order, not
+every intermediate guard result. Cloned-caller equality assertions alone are
+weak ownership evidence; by-value API signatures, generated capture cloning,
+compilation and executed reuse provide the relevant evidence. Current new-cohort
+API/proof CI wiring remains integration work; the historical CI path is retained.
+No hosted run, actionlint pass, Linux qualification or broader-goal completion is
+claimed here.
