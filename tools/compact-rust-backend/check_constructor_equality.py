@@ -238,7 +238,7 @@ def main(*, boundaries=False, tuple_guards=False):
         bound.update({str(consumer / p): h for p, h in inventory(consumer).items()})
         env["COMPACT_CONSTRUCTOR_EQUALITY_TS"] = str(reference)
         argv = ["cargo", "test", "--offline", "--locked", "--manifest-path", manifest, "--lib"]
-        result = run("consumer", [*argv, "--", "--nocapture"] if boundaries else argv)
+        result = run("consumer", [*argv, "--", "--nocapture"] if extended else argv)
         require(re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result.stdout) == [("1", "0", "0")], "consumer did not execute")
         if extended:
             require(("tuple-guard-cases:105 calls:1260 replays:630" if tuple_guards else
