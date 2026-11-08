@@ -160,7 +160,8 @@ At frozen execution head `5758c0244`, the local macOS arm64 run passes all
 105 native preflight cases. It then executes 32 keygen invocations, 105 standalone
 proof/verification calls and 105 separately proved funded DEFAULT-strict
 transaction applications, with 735 negative controls and 105 unchanged-state
-replay refusals. The parent artifact audit and independent actual-result
+replay refusals. The negative assertions establish refusal, without separately
+discriminating each cause. The parent artifact audit and independent actual-result
 review accept this bounded execution epoch. This closeout source does not relabel those receipts as
 execution at a later documentation/test head.
 

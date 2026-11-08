@@ -6,7 +6,7 @@
 
 Latest execution epoch: `5758c0244`, compiler 0.31.210, ledger8.1.3 on macOS
 arm64. Current API, model/native preflight and fresh proof/application execution
-pass with a successful independent parent artifact audit. Independent actual
+pass with a successful parent artifact audit. Independent actual
 proof-result review accepts only this bounded local execution epoch. Earlier progress sections below preserve their
 stated source epochs; they do not override the latest bounded results and limits
 at the end of this plan.
