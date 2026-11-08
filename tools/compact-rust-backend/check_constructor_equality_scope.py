@@ -17,8 +17,8 @@
 """Pin genuine constructor-condition coercion scope and current refusal boundaries.
 
 Source/IR/origin and generation checks only, not SDK execution or proofs.
-The implicit mixed-width tuple case records an OPEN transport gap, not a
-language rule or a completed semantic capability.
+The implicit mixed-width tuple case requires current component coercions;
+complete compiler209 mismatch fixtures separately retain historical refusals.
 """
 import argparse
 import copy
@@ -35,8 +35,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "constructor_equality_boundaries" / "scope"
 ROLES = ("ordinary_after_condition", "initializer_after_condition", "literal_condition",
          "nested_explicit_tuple_condition", "narrowing_condition", "nested_tuple_condition")
-REFUSALS = {"narrowing_condition": 'constructor can initialize root Cells from parameters only: "if"',
-            "nested_tuple_condition": 'expression has type Tuple { elements: [Unsigned { max: "65535" }, Unsigned { max: "65535" }] }, expected Tuple { elements: [Unsigned { max: "255" }, Unsigned { max: "255" }] }'}
+REFUSALS = {"narrowing_condition": 'constructor can initialize root Cells from parameters only: "if"'}
 
 
 def unsigned(maximum):
@@ -91,9 +90,7 @@ def validate_scope(role, ir, origins, source):
                         right={"kind": "unsigned_literal", "value": "2", "max": "255"})
     elif role == "narrowing_condition":
         expected["left"] = {"kind": "unsigned_cast", "max": "255", "value": {"kind": "parameter", "name": "item"}}
-    elif role == "nested_tuple_condition":
-        expected["left"] = {"kind": "tuple", "elements": [{"kind": "parameter", "name": "item"}] * 2}
-    elif role == "nested_explicit_tuple_condition":
+    elif role in ("nested_tuple_condition", "nested_explicit_tuple_condition"):
         expected["left"] = {"kind": "tuple", "elements": [coerce(), coerce()]}
     require(condition == expected, "scope condition transport differs: " + role)
     if role == "ordinary_after_condition":
@@ -111,7 +108,7 @@ def validate_scope(role, ir, origins, source):
     require(mapped.get(prefix) is not None, "scope guard lost original origin")
     return {"raw_origin_addresses": len(nodes), "original_input_max": maximum,
             "rust_generation": "current-typed-refusal" if role in REFUSALS else "supported-generation",
-            "implicit_mixed_tuple_gap_open": role == "nested_tuple_condition"}
+            "implicit_mixed_tuple_gap_open": False}
 
 
 def host_controls(cases, output):
@@ -261,7 +258,7 @@ def main():
             save()
         report["HOST_controls"] = host_controls(cases, out / "HOST-transport-controls")
         unchanged()
-        report.update(status="passed", complete_sources=6, supported_rust_generations=4, current_typed_refusals=2)
+        report.update(status="passed", complete_sources=6, supported_rust_generations=5, current_typed_refusals=1)
     except BaseException as error:
         report.update(status="failed", error=repr(error))
         raise

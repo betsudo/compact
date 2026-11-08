@@ -25,8 +25,10 @@ The historical source and raw IR must remain byte exact compatibility fixtures.
 ## Owners and intended API
 
 - `compiler/rust-ir-passes.ss`, `typed-expression-ir-value`: investigate and
-  retain the wider equality tuple context through an existing safe-cast wrapper,
-  only under the scoped constructor-condition parameter introduced in 209.
+  retain the original analyzed component source type passed through tuple casts
+  to variable references, only under the scoped constructor-condition parameter
+  introduced in 209. The constructor has no callable variable-type table;
+  ignoring this existing source annotation loses the needed widening.
 - Existing `pure_semantics` coercion planning independently validates every
   tuple element and unsigned bound; `pure_native` and `value_lowering` render
   its checked facts through structured Rust AST. Do not relax that relation.
@@ -78,7 +80,13 @@ coercion framework, accepted-capability reopening, scalar-triple model workaroun
 CI optimization, publication, hosted trial or Forge work. Linux/full required CI
 remains an integration gate. Do not infer proof or API acceptance from generation.
 
-At this planning epoch no production fix has been implemented. Baseline and
-original209 characterization are complete; current210 compiler, generated API,
-model, proof and application acceptance remain open. Stop new slices at
+The initial210 candidate built correctly, but all seven Rust generations still
+refused: preserving an outer safe-cast wrapper did not address the actual lost
+variable source-type annotation. That ineffective change is removed in a
+forward repair, retaining the failed epoch and complete outputs. The repair uses
+the existing per-component source annotation under the scoped condition flag.
+Its current original compiler, generated API, model, proof and application
+acceptance remain open. The initial focused test run also caught a borrow/move
+error in the new narrowing test; its expected diagnostic now clones the type
+already borrowed by the parameter fixture. Stop new slices at
 2026-11-08 09:05 UTC and preserve an exact continuation handoff.

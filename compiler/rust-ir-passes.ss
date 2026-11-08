@@ -991,17 +991,12 @@
            ;; Nominal cast analysis can retain an inner alias-unwrapping cast.
            ;; Lower that complete cast first, then preserve its wider Vector
            ;; context instead of losing it while unwrapping the source alias.
-           ;; Constructor equality also needs the expected tuple context: its
-           ;; existing checked Coerce owner validates each component widening.
            (let* ([value (expression-ir expr owner-src)]
                   [actual (type-ir type src)]
                   [target (type-ir expected-type src)])
              (if (and (or source-type
                           (and (equal? (cdr (assoc "kind" actual)) "vector")
-                               (equal? (cdr (assoc "kind" target)) "vector"))
-                          (and (current-constructor-condition?)
-                               (equal? (cdr (assoc "kind" actual)) "tuple")
-                               (equal? (cdr (assoc "kind" target)) "tuple")))
+                               (equal? (cdr (assoc "kind" target)) "vector")))
                       (not (equal? actual target)))
                  (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
                  value))]
@@ -1017,8 +1012,13 @@
                  (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
                  value))]
           [(var-ref ,src ,var-name)
-           (let ([actual-type (and (current-variable-types)
-                                   (eq-hashtable-ref (current-variable-types) var-name #f))])
+           ;; Constructor tuple casts carry analyzed source types down to each
+           ;; child, even without a callable variable-type table. Retain that
+           ;; authority for the existing checked constructor widening owner.
+           ;; Ordinary expressions and value initializers keep their transport.
+           (let ([actual-type (or (and (current-variable-types)
+                                      (eq-hashtable-ref (current-variable-types) var-name #f))
+                                 (and (current-constructor-condition?) source-type))])
              (if actual-type
                  (nanopass-case (Lnodisclose Type) expected-type
                    [(tfield ,src^)

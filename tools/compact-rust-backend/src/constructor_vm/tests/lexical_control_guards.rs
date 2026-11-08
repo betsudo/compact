@@ -894,7 +894,7 @@ fn constructor_tuple_coercion_rejects_component_narrowing_before_later_operand()
         &trace,
         RenderError::TypeMismatch {
             expected: small,
-            actual: large,
+            actual: large.clone(),
         },
     );
     let ConstructorStep::If {
