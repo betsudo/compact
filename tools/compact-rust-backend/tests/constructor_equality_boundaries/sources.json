@@ -1,0 +1,90 @@
+[
+  {
+    "role": "mixed_uint_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/mixed_uint_eq.compact",
+    "sha256": "6dea1e26a1c9aa9b9b8f006e7be9b357cf18e0a844f19f8dae41db44122114d2",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "mixed_uint_eq"
+  },
+  {
+    "role": "mixed_uint_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/mixed_uint_ne.compact",
+    "sha256": "1b8aca929922ce719d908eedafcb19e7a537d59aac51e301f6b0a36711f4c1bf",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "mixed_uint_ne"
+  },
+  {
+    "role": "tuple_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/tuple_eq.compact",
+    "sha256": "cdd305e98be8cb39e3bbafc329e5bcddffcf788c5aff5ea3fd907d4b8137b333",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "tuple_eq"
+  },
+  {
+    "role": "tuple_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/tuple_ne.compact",
+    "sha256": "df202252edfe92e8b1c8fc8fcd1bc994798205def9c49154fe39d39e5d862fb1",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "tuple_ne"
+  },
+  {
+    "role": "vector_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/vector_eq.compact",
+    "sha256": "4f400906e37568f84b431f6d2d8f4c03f90467065a8fe77a686f671f79a4741e",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "vector_eq"
+  },
+  {
+    "role": "vector_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/vector_ne.compact",
+    "sha256": "cbc00573b4f0510091fb3792134250bc2fe2a2e05925ce02c67c081d0ff8a15f",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "vector_ne"
+  },
+  {
+    "role": "struct_eq",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/struct_eq.compact",
+    "sha256": "126e770ff75899b20da346bd2f5d66b8152a447db4090735911d0414f696e209",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "struct_eq"
+  },
+  {
+    "role": "struct_ne",
+    "path": "tools/compact-rust-backend/tests/constructor_equality_boundaries/sources/struct_ne.compact",
+    "sha256": "4541ffd2dc38b8e59da44ac506eca062962be897843c47a7a2c28436398b6960",
+    "entries": [
+      "read",
+      "advance",
+      "advance_other"
+    ],
+    "constructor_consumer": "struct_ne"
+  }
+]

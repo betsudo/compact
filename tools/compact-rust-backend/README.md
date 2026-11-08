@@ -82,8 +82,21 @@ objects are never executed. It binds source/tool/output bytes and complete
 output memberships through the existing finite process owner. These checks do
 not execute generated SDKs, prove evaluation order, generate keys or proofs,
 attest transitive dependencies, or replace the separate 30-case native/API gate.
-Current clean-head execution and independent review of the scope gate remain
-pending. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+At frozen `0e07d63f4`, the actual eighteen-command gate and independent source
+and result reviews pass within this source-generation scope. Later source
+changes need their own identities; this does not qualify the additional SDKs
+natively. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
+## Boundary proof preparation
+
+The separate `check_constructor_equality_boundaries_models.py` entry is being
+prepared for all 24 intact exports in the eight-source boundary cohort. Its
+new mode requires `--scope-receipt` in addition to the current complete producer
+and output arguments. The existing historical model entry remains unchanged.
+The thirty proof-case metadata rows preserve the complete API data; constructor
+adapters call generated APIs. No model observation, proof preflight, keys,
+proofs or applications have run for this new path. See the
+[bounded proof plan](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
 
 ## Current recording architecture
 
