@@ -92,13 +92,12 @@ and accepted capability/retirement decisions. Clean only owned inactive unneeded
 reproducible intermediates after process/open-file/lock guards; keep current
 executables, dependencies, results, failures, parameters and keys.
 
-Current status: compiler209 source fix and eight-source generation regression
-pass locally at signed `5753ac7c3`. The separate native/API gate is committed
-at `eadedfd796`; fresh review found a non-Copy fixture repeat and the missing
-compiler209 changelog heading, which are being corrected before execution.
-Generated SDK execution, models, keys, proofs and applications remain open.
-Stop initiating new slices at
-2026-11-08 09:05 UTC and leave an exact handoff; the broad goal stays incomplete.
+Current status: the compiler209 fix and complete native/API milestone pass at
+signed frozen producer `76088439d`, with independent source and actual-result
+reviews. The isolated scope-control continuation adds maintained generation
+checks; it is not yet qualified. Model/key/proof/application and full required
+CI acceptance remain open, as does the whole #720 slice and broader goal.
+Stop initiating new slices at 2026-11-08 09:05 UTC and leave an exact handoff.
 
 ## Baseline and genuine source characterization
 
@@ -177,3 +176,61 @@ actual Rust assertion, followed by a restored-reference pass. Source/host
 controls and actual current-head execution remain separate evidence: adding
 this gate alone does not claim it passed. Applicable fresh proofs, independent
 verification, strict applications and full required CI remain open.
+
+
+## Accepted bounded native milestone and scope continuation
+
+Frozen producer `76088439d` passes the actual 27-command arm64 gate: eight
+complete three-export SDKs, thirty literal/live-TS cases, 360 Rust calls across
+ordinary/recorded/functional-native/functional-recorded routes and 180 public
+VM replays. All five marked E0308 misuses have compiling valid twins. All four
+historical source refusals remain. The changed TS reference fails the actual
+Rust assertion (8 versus 7), then the original reference passes. Generated SDK
+membership remains exact at seventeen files per source. The parent and a fresh
+independent Codex CLI actual-result review rehashed source/tool/runtime/output
+memberships and inspected the real controls. The fresh Claude re-review hit its
+session limit; no accepted Claude verdict is claimed. Earlier Claude P1/P2
+findings were corrected before native execution.
+
+This is bounded native/source acceptance. Dependency lock comparisons are not
+transitive consumed-source attestation; the key-free test binary did not have
+immutable admission before execution. No model, key, proof, strict application,
+Linux/full-CI or constructor/deployment cryptographic qualification follows.
+The original producer/worktree and all its input paths remain unchanged while
+the shallow-stacked scope continuation is implemented independently.
+
+The maintained `check_constructor_equality_scope.py` has six complete sources:
+
+| Source control | Current observed producer boundary |
+| --- | --- |
+| Ordinary widening after a condition | Guard uses checked Coerce; ordinary cast retains original unsigned_cast |
+| Initializer after a condition | Guard uses checked Coerce; initializer cast retains original unsigned_cast |
+| Literal condition | Uint8 literal inference remains max255 |
+| Explicit nested tuple widening | Known monotone inner casts become checked Coerce; Rust generation succeeds |
+| Narrowing condition | Original unsigned_cast remains; Rust generation refuses the constructor guard |
+| Implicit mixed-width tuple condition | Original tuple elements lack widening transport; Rust generation refuses at typed tuple mismatch |
+
+The first five probes were independently inspected as source-characterization
+evidence; the literal probe was characterized separately afterwards. All six
+still require the maintained clean-head scope gate. Source generation does not
+establish native SDK behavior for the additional probes. Their original raw
+outputs are retained; copies used for HOST mutation assertions never execute.
+Physical origin/address binding checks do not prove runtime evaluation order.
+
+### Open semantic frontier
+
+Compact accepts `[item, item] == right` with Uint8 items and a Uint16 tuple
+parameter, but both original195 and current209 raw IR omit aggregate operand
+widening. Current Rust correctly refuses that mismatched private IR. This is an
+observed unclosed transport gap, not an intended Compact restriction and not
+support delivered by the scalar condition fix. Keep it open for a bounded
+semantic follow-up; do not broaden admission, erase bounds or change the source
+merely to obtain a passing case. The present source control pins the observed
+boundary and must evolve with genuine lowering, native and proof evidence if
+that gap is subsequently implemented.
+
+Scope-gate source, tests and HOST controls do not complete #720. Before applicable
+models/keys/proofs, obtain a current original recipe and independent scope
+source/caller review, execute the full finite scope gate, and review its actual
+receipt. Preserve the original complete native/proof cohorts and all required
+integration gates. No forced k, cap change, cohort trimming or Forge activity.

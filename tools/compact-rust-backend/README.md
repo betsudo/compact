@@ -64,6 +64,27 @@ review at the current source. It does not generate keys/proofs, prove constructo
 initialization/deployment, qualify Linux, or replace the historical cohort.
 See [the bounded #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
 
+## Constructor equality source scope
+
+`check_constructor_equality_scope.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--output FRESH_OUTPUT` is the separate maintained source-generation gate. It
+requires an exact clean-head original compiler recipe and rejects compiler
+substitutions and optimized Python. Six complete Compact sources exercise
+ordinary and initializer transport after a condition, literal inference,
+explicit nested tuple widening, narrowing refusal and the current implicit
+mixed-width tuple refusal. The last case is an **open frontend/backend transport
+gap**, not a Compact language rule or a completed semantic capability.
+
+The intended gate checks current raw Scheme IR/origin addresses, independent
+TypeScript generation and supported/refused Rust generation. Ten mutations
+of copies of actual raw outputs must fail the scope assertions; those HOST
+objects are never executed. It binds source/tool/output bytes and complete
+output memberships through the existing finite process owner. These checks do
+not execute generated SDKs, prove evaluation order, generate keys or proofs,
+attest transitive dependencies, or replace the separate 30-case native/API gate.
+Current clean-head execution and independent review of the scope gate remain
+pending. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
 ## Current recording architecture
 
 The default recorder lowers supported typed operations and composition into a checked plan. Ordinary roots use the checked route; Effectful roots retain their earlier checked boundary. Unsupported operations return checked refusals; invalid plans are fatal. The former StartFunding and generic/profile fallback paths are test history. They do not accept rejected production plans. Profile names describe retained examples and tests, not formal algebraic theorems or production admission authority.
