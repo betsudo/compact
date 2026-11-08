@@ -33,7 +33,7 @@ The independent scalar-triple full proof cohort remains refused at three k9
 models under cap8. This cohort neither substitutes for it nor relaxes its policy.
 Forge remains deliberately deferred with all sources/stores/evidence preserved.
 
-## Finite cohort and current preparation
+## Finite cohort and qualification
 
 The new `tests/constructor_equality_boundaries/sources.json` pins all eight
 **complete source paths and SHA-256s**, each with `read`, `advance` and
@@ -53,64 +53,84 @@ The new boundary source/API, model, preflight and proving paths use the existing
 600-second `check_passport_current_profile` process-group owner, including Cargo
 and rustc descendants; command receipts record that actual constant and partial
 timeout streams remain evidence. The historical paths retain their prior
-process owners and limits. A fresh source review caught that the initial
-preparation called the separate 1200-second SDK helper while describing it as
-600 seconds. That unexecuted boundary preparation and its refused review are
-retained; it was corrected before productive boundary execution. The boundary
+process owners and limits. The retained failure history includes a corrected
+process-owner mismatch before productive boundary execution. The boundary
 source/API stage also authenticates its physical locked dependency sources
 after metadata and before its first Cargo build/test, using the existing
 proof dependency owner. Subsequent commands recheck that admitted source graph.
 This is not a hermetic/transitive build-process attestation.
 
-These are **source-only preparations**. The boundary preflight and composition
-now have an unqualified implementation, with a `--preflight-only` path that
-runs source/API, source-scope, complete models and native preflight without
-invoking proving. Material verification and key checks use actual observed k
-within 1..8; automatic key generation has no forced-k argument. The historical
-sixteen-case path retains its default CLI and stages.
+## Current local result — source `7f690b7a6`
 
-Fixture/admission and HOST orchestration controls, Python syntax and Rust
-formatting pass. The HOST controls exercise all thirty-case forwarding,
-key-free exclusion of proving and final input rechecks, failure stop/order and model-policy/membership
-refusals before key effects; they are not genuine execution receipts. An initial
-mock omitted its mandatory proof receipt; the real composition correctly
-refused it. That failed fixture and its correction are retained.
+The signed source `7f690b7a68f054048fad74406e4f622a6a03af48`, tree
+`a4ae5d21d9f2d48cfe90cfecd7ae3ecfc6b641fe`, has completed the following
+local macOS arm64 execution. Fresh independent actual-result review accepted
+this bounded native/proof milestone with no P1/P2 findings.
+The original compiler recipe realizes compiler **0.31.209**. Current inputs,
+complete generated SDKs, Programs, toolchain, physical dependencies, parameters
+and immutable proof-consumer binaries are bound through the retained receipts.
+The earlier frozen 760/0e results above remain separate historical epochs.
 
-No new observer/adapters were compiled or invoked, no genuine boundary
-preflight has run, and no parameters, keys, proofs or applications have run
-for this cohort. Source/caller review, authenticated builds and current
-original producer/scope/model inputs remain required.
+| Stage | Actual current result |
+|---|---|
+| Focused source and process controls | 23 fixture, admission, orchestration and compatibility controls; 18 existing process-owner controls, including real descendant and pipe timeout cases; syntax, headers and diff checks pass. |
+| Complete API and native behavior | 27 commands; 30 live TypeScript/Rust cases, 360 four-route calls and 180 public VM replays; five marked E0308 refusals with five compiling twins; four retained frontend/native refusals; changed-reference failure followed by restored success. |
+| Source-scope generation | Six complete sources, 18 commands, four Rust generation successes, two current refusals and ten never-executed HOST mutations. |
+| Intact models | Source-built observer and strict Clippy pass; all 24 exports actually observed at automatic k6; five membership refusal controls pass. |
+| Native proof preflight | 45 commands, eight complete bundled-runtime SDKs and read-only binary snapshots; every one of the 30 selected cases executes. |
+| Fresh proving and application | 25 commands, 16 actual fresh key pairs, 30 standalone proofs with direct verification, and 30 separately proved funded DEFAULT-strict transactions and applications. |
+| Negative and replay controls | All seven identity/cryptographic controls pass in every case (210 results); 30 preparation ReplayStateMismatch checks and 30 IntentAlreadyExists replay refusals with unchanged state. |
+| Parent evidence audit | Key-free audit checks 32 complete manifests and 50 directory inventories; post-proof audit checks 32,298 bound files, all 30 saved proof/transaction/result triplets and actual keygen geometry. The audit performs file/receipt checks without a cryptographic rerun. |
 
-## Required remaining work and owners
+The boundary composition entry is
+`check_constructor_equality_boundaries_proof.py`. Its `--preflight-only` mode
+runs source/API, scope, all models and native preflight, then stops before
+key generation. This qualification used that mode first and a separately
+reviewed caller for the existing `prove_selected(..., boundaries=True)` stage.
+It did not repeat or relabel earlier preflight execution. The historical
+sixteen-case entry retains its original CLI, roster, formats and defaults.
 
-1. Finish and validate the observer/preflight/composition source with exact-head
-   original compiler and dependency/tool identities. Preserve the old owners'
-   default sixteen-case path; use explicit finite boundary mode, not mutable
-   globals or a new generic qualification framework.
-2. Run current complete native/API and source-scope gates before model work.
-   Observe every intact one of the 24 models; record actual automatic k before
-   any key. Do not infer eligibility from earlier bytes, rows, badges or JSON
-   continuity. Automatic tiny k must remain in 1..8. If the full cohort fails,
-   retain complete diagnostics and stop before keys: no trimming, forced k,
-   cap increase or easier proof substitution.
-3. Extend `check_constructor_equality_proof_preflight.py` through its existing
-   authenticated SDK staging, real asset/source mutation refusals, bundled
-   runtime, locked physical dependency, material and binary-snapshot owners.
-   Every one of the thirty constructor cases must execute natively. Retain
-   complete unedited sources, raw models, generated APIs and Program assets.
-4. Extend the existing fresh-proof composition and constructor Vector proof
-   consumer for this finite cohort. Select later `advance` per case, with
-   `advance_other` as the distinct-verifier control; keep `read` and all three
-   exports intact. Use actual observed geometry and verified official material.
-   Each case needs a fresh standalone proof, independent immutable verification,
-   and a separately proved funded DEFAULT-strict application with replay refusal
-   and unchanged state. Preserve source/tool/recipe/serialization/parameter/key
-   identity, changed binding/input/output/preimage, corruption and wrong-verifier
-   controls. Never cache proofs or verdicts.
-5. Obtain fresh independent source/caller and actual-result reviews, signed
-   Conventional DCO/Assisted-by commits, focused local checks during iteration,
-   and complete required CI/proof gates for integration. Local arm64 execution
-   does not qualify Linux. Keep all work local under the active goal.
+Material selection uses the observed automatic geometry within the unchanged
+contract k range 1..8. Verify-only admission reads existing official managed
+assets and parameters; the current set includes k6 plus the existing k13–15
+fee/dust material needed by strict transactions. Those built-in parameters do
+not change the selected contract cap. No forced-k option, cohort trimming,
+parameter download, proof cache or verdict cache was used.
+
+Physical dependency admission runs before the first Cargo code build in each
+stage and is rechecked between commands: 332 API, 458 model and 338 proof-consumer
+external source roots in their respective graphs. These are stage-specific
+source records, with overlap; their sum is not a package-coverage claim.
+The complete observer and eight immutable consumers were actually compiled.
+
+The 16 keygen invocations are fresh executions across eight lanes and two
+entrypoints. Their byte-identical later circuits produce only **two distinct
+verifier keys**: one for `advance`, one for the `advance_other` negative control.
+The positive cryptography therefore exercises one later `advance` circuit over
+30 constructor-derived cases, with initial stored values 7 or 11. Fresh
+communication randomness yields distinct proof/transaction bytes; it does not
+establish 30 distinct semantic statements or any constructor proof. The native
+TypeScript/Rust comparisons establish the distinct constructor behavior.
+
+Direct standalone verification executes in the same immutable consumer process
+as proving. A separate process has not reverified the persisted proof or
+transaction files. The parent audit and independent source/result review have
+their own evidence limits. Source-scope probes remain generation-only and do
+not qualify their additional SDK behavior, the complete importer or general
+runtime evaluation order. All failed prototypes and refused review epochs are
+retained with their original source identities.
+
+## Remaining work and owners
+
+- Keep the implicit mixed-width tuple literal guard transport gap open. Valid
+  Compact tuple literals still need component widening before Rust equality
+  typing; the safe current refusal is not a language restriction.
+- Retain the complete required integration CI and native Linux proof gates.
+  The actual execution above is local arm64; no hosted trial or Linux result
+  is established. Future source changes need their own qualification identity.
+- Preserve all complete sources, SDKs, raw models, Program assets, receipts,
+  source/tool/recipe/serialization/parameter/verifier identities and failure
+  history. Keep scalar-triple's separate three-k9 full-cohort frontier intact.
 
 Later-entrypoint proofs bind the selected later statement and observed starting
 state. They do **not** prove constructor initialization, deployment, a wallet,
@@ -122,6 +142,6 @@ No new language/ABI, broad refactor, CI optimization, workflow activation,
 push/merge/release/shared installation, snapshot/cache policy change, Forge
 work or deletion of retained stores/targets/evidence. Current executables and
 qualification dependencies remain needed. Clean only owned inactive unneeded
-reproducible outputs after guards, and preserve unpublished work. Stop initiating
-new slices at 2026-11-08 09:05 UTC; settle owned work and leave an exact handoff.
-#720 and the broad backend goal remain incomplete throughout this preparation.
+reproducible outputs after guards, and preserve unpublished work.
+#720 integration and the broader backend goal remain open after this bounded
+local qualification.

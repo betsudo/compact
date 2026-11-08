@@ -87,21 +87,38 @@ and result reviews pass within this source-generation scope. Later source
 changes need their own identities; this does not qualify the additional SDKs
 natively. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
 
-## Boundary proof preparation
+## Bounded local boundary proof qualification
 
-The separate `check_constructor_equality_boundaries_models.py` entry is being
-prepared for all 24 intact exports in the eight-source boundary cohort. Its
-new mode requires `--scope-receipt` in addition to the current complete producer
-and output arguments. The existing historical model entry remains unchanged.
-The thirty proof-case metadata rows preserve the complete API data; constructor
-adapters call generated APIs. The unqualified boundary composition entry
-`check_constructor_equality_boundaries_proof.py` reuses the maintained owners;
-its `--preflight-only` mode runs source/API, scope, model and native preflight
-stages without calling the proving stage. Automatic observed k values select
-verified material under the unchanged 1..8 policy; no forced-k argument is used.
-HOST orchestration controls are not real preflight or proof receipts. No model observation, proof preflight, keys,
-proofs or applications have run for this new path. See the
-[bounded proof plan](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
+At signed source `7f690b7a6`, the separate
+`check_constructor_equality_boundaries_models.py` entry observes all 24 intact
+exports in the eight-source boundary cohort. Its boundary mode requires the
+current complete producer and `--scope-receipt`. The historical model entry and
+sixteen-case proof path retain their original defaults and fixtures.
+
+`check_constructor_equality_boundaries_proof.py --preflight-only` runs current
+source/API, source-scope, complete models and native proof preflight without
+key generation. The accepted local arm64 execution passes all 30 API/native
+cases, observes automatic k6 for all 24 models, and builds eight immutable proof
+consumers with all 30 native preflight cases. Physical locked dependency
+graphs are authenticated before Cargo builds; complete SDK/runtime/Program
+memberships remain frozen between commands.
+
+A separate reviewed proving stage then executes 16 fresh keygens, 30 standalone
+proof/verification calls and 30 separately proved funded DEFAULT-strict
+transactions/applications, with seven negatives and unchanged-state replay
+refusal for every case. The 16 keygen runs produce only two distinct verifier
+keys: all eight lanes share the same later `advance` circuit, with
+`advance_other` supplying the wrong-verifier control. These proofs do not
+establish constructor initialization or deployment cryptography. Verification
+runs inside the immutable consumer; saved artifacts were not reverified by a
+separate process. Required Linux/full integration CI remains open.
+
+Observed contract k selects existing verified material under the unchanged
+1..8 policy; the existing larger built-in fee/dust parameters remain transaction
+prerequisites. No forced k, trimmed cohort, proof/verdict cache, or parameter
+download was used. Fresh independent actual-result review accepts only this
+bounded source epoch; see the [qualification plan and limits](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
+The implicit mixed-width tuple literal transport gap stays open.
 
 ## Current recording architecture
 
