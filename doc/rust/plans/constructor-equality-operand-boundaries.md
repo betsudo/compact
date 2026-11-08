@@ -93,8 +93,11 @@ reproducible intermediates after process/open-file/lock guards; keep current
 executables, dependencies, results, failures, parameters and keys.
 
 Current status: compiler209 source fix and eight-source generation regression
-pass locally at signed `5753ac7c3`. The native/API gate is being prepared;
-generated SDK execution, models, keys, proofs and applications are not accepted. Stop initiating new slices at
+pass locally at signed `5753ac7c3`. The separate native/API gate is committed
+at `eadedfd796`; fresh review found a non-Copy fixture repeat and the missing
+compiler209 changelog heading, which are being corrected before execution.
+Generated SDK execution, models, keys, proofs and applications remain open.
+Stop initiating new slices at
 2026-11-08 09:05 UTC and leave an exact handoff; the broad goal stays incomplete.
 
 ## Baseline and genuine source characterization

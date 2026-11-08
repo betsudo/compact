@@ -17,7 +17,9 @@ use midnight_compact_runtime as r;
 fn main() {
     let _ = vector_eq::ledger_contract::initial_state(
         r::context::ConstructorContext::new(()),
-        r::FixedVector([r::FixedVector([r::Field::from(2u64); 2]); 2]),
+        r::FixedVector(std::array::from_fn(|_| {
+            r::FixedVector([r::Field::from(2u64); 2])
+        })),
         r::FixedVector([r::Field::from(2u64); 2]),
     )
     .unwrap();
