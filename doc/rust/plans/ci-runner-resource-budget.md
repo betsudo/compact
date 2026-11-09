@@ -91,9 +91,17 @@ on a warm store. The normal `nix develop` calls still set up and verify the actu
 environment; importing prerequisites does not admit any test result.
 
 The local arm64 shell probe found 330 paths and 2,390,370,584 NAR bytes, using
-already present dependencies and building only the shell reference output. This
-is a size/closure feasibility observation, **not** a Linux cold-run benchmark or
-proof acceptance. The real Linux bundle size and combined producer export/upload,
+already present dependencies and building only the shell reference output.
+At source `e6b48101e68df248531c0ac68702e0edef83875a`, the real helper exported
+2,390,492,208 bytes in 36.08 seconds. A new isolated local store imported all 330
+paths in 14.20 seconds; complete registry/requisite/NAR rosters matched and all
+contents verified in 5.17 seconds. Separately, the original shell passed an offline
+host-store probe with Rust/Cargo 1.99.0 in 3.50 seconds. This did not execute the
+shell from the isolated store, authenticate a GitHub service artifact, or run any
+proof. The first local harness stopped on an unsupported registry-query flag;
+that failure and the corrected harness are retained alongside the same export.
+These are local transfer observations, **not** a Linux cold-run benchmark or
+measured CI savings. The real Linux bundle size and combined producer export/upload,
 consumer download/import and subsequent environment setup times must be reported
 from CI. Retain the full required gate and compare total assigned-runner minutes,
 not only the renamed setup step.
@@ -102,10 +110,11 @@ The repeated Nix preparation steps are the first concrete target. Measure full
 runner-minutes and elapsed time after a bounded implementation before claiming
 savings. Further sharding can reduce elapsed time while increasing total runner
 minutes through repeated toolchain/dependency builds; do not treat wall time as
-resource cost. Keep no more than the existing two published stack slices active,
-run focused checks locally before pushing a coherent slice, and rerun only failed
-jobs on an unchanged reviewed head when rerunning can resolve an identified
-transient problem. Do not repeatedly restart a healthy full qualification.
+resource cost. Run focused checks locally before publishing a coherent slice.
+The owner's explicit Nix setup request is a separate bounded measurement slice
+above the existing two PRs; it does not restart either healthy qualification.
+Rerun only failed jobs on an unchanged reviewed head when that can resolve an
+identified transient problem. Do not repeatedly restart a healthy full run.
 
 Retained API metadata, raw failure logs, job and step timings, PR reopen and
 owned failed-run cancellation receipts are under
