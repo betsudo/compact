@@ -52,14 +52,14 @@ owners and the existing 105-case tuple proof gate:
 - Give cheap source/header jobs 10-minute caps and the final gate 5 minutes. Existing
   heavy-job caps remain unchanged until the new Linux results provide duration
   evidence; do not cut valid proof cohorts to meet a shorter timer.
-- Group runs by workflow, source repository and head branch across PR/manual/push
-  events. New PR/push work cancels stale work; manual/scheduled requests queue
-  rather than cancel an active required PR run. Forks with equal branch names
-  stay separate. macOS remains an explicit manual opt-in.
+- Retain existing per-PR cancellation of superseded runs. Do not create duplicate
+  manual runs to repair missing PR checks. PR merge trees and manual head trees
+  can differ; they keep distinct concurrency scopes, as do separate PRs with
+  the same source branch and different bases. macOS remains a manual opt-in.
 
 The 33 workflow controls exercise exact shell failure propagation, every
 prerequisite's success/failure/skipped/cancelled/empty decisions, final required
-membership and PR/manual/fork concurrency identities. Actionlint also checks
+membership and distinct PR/manual concurrency identities. Actionlint also checks
 both changed workflows. These checks establish wiring behavior, not hosted
 performance improvements or proof acceptance.
 

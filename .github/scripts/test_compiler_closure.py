@@ -881,28 +881,26 @@ class RunnerResourceControls(unittest.TestCase):
             self.assertIn('timeout-minutes: 180', jobs[name])
         self.assertIn('check_constructor_tuple_equality_proof.py', jobs['build'])
 
-    def test_manual_pr_and_push_share_branch_scope_without_fork_collisions(self):
+    def test_pr_and_manual_scopes_preserve_distinct_tested_trees(self):
         import re
         for filename in ('build-compiler.yml', 'rust-backend-checks.yml'):
             text = (owner.ROOT / '.github/workflows' / filename).read_text()
             group = re.search(r'^  group: (.+)$', text, re.M).group(1)
-            self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}", text)
-            policy = re.search(r'^  cancel-in-progress: \$\{\{ (.*) \}\}$', text, re.M).group(1)
-            for event in ('pull_request', 'push', 'workflow_dispatch', 'schedule'):
-                actual = eval(policy.replace('github.event_name', repr(event)).replace('||', ' or '), {'__builtins__': {}}, {})
-                self.assertEqual(actual, event in ('pull_request', 'push'))
+            self.assertIn('cancel-in-progress: true', text)
             def render(fields):
                 return re.sub(r'\$\{\{\s*(.*?)\s*\}\}',
                     lambda m: next((fields.get(x.strip(), '') for x in m[1].split('||') if fields.get(x.strip(), '')), ''), group)
-            common = {'github.workflow': filename, 'github.repository': 'betsudo/compact'}
+            common = {'github.workflow': filename}
             branch = 'codex/resource-control-test'
-            pr = common | {'github.event.pull_request.head.repo.full_name': 'betsudo/compact',
-                           'github.head_ref': branch, 'github.ref_name': '722/merge',
-                           'github.event.pull_request.number': '722', 'github.ref': 'refs/pull/722/merge'}
-            manual = common | {'github.ref_name': branch, 'github.ref': 'refs/heads/'+branch}
-            self.assertEqual(render(pr), render(manual))
-            self.assertNotEqual(render(pr), render(pr | {'github.event.pull_request.head.repo.full_name': 'HOST-fork/compact'}))
-            self.assertNotEqual(render(manual), render(manual | {'github.ref_name': 'codex/other-branch'}))
+            pr = common | {'github.event.pull_request.number': '722', 'github.ref': 'refs/pull/722/merge'}
+            manual = common | {'github.ref': 'refs/heads/'+branch}
+            # Same-head PRs against different bases require separate merge checks;
+            # a manual head checkout cannot replace either merge qualification.
+            self.assertNotEqual(render(pr), render(pr | {'github.event.pull_request.number': '723'}))
+            self.assertNotEqual(render(pr), render(manual))
+            self.assertEqual(render(manual), render(dict(manual)))
+            self.assertNotEqual(render(manual), render(manual | {'github.ref': 'refs/heads/codex/other-branch'}))
+
 
 
 if __name__ == '__main__':
