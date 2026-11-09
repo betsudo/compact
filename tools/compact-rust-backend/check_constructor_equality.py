@@ -34,6 +34,7 @@ from check_functional_effects import generated_manifest_snapshot
 from check_passport_current_profile import cargo_target
 import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as proof_dependencies
+import local_parity_gate as common
 from check_stateful_product_vector_widening import digest, inventory, reject_compiler_overrides, require
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,29 @@ BOUNDARY_NEGATIVES = ("wrong_uint_width", "wrong_outer_length", "wrong_tuple_com
 TUPLE_ROLES = ('aliased_vector_variable', 'asymmetric_eq', 'direct_tuple_variable', 'direct_vector_variable', 'flat_eq', 'flat_ne', 'hash_tuple_argument', 'mixed_literal_eq', 'nested_eq', 'owned_capture_eq', 'reversed_eq', 'struct_literal_field', 'tuple_to_vector', 'uint_to_field_tuple', 'vector_to_tuple', 'widened_vector_capture')
 TUPLE_SUPPLEMENTAL = ('aliased_vector_variable', 'direct_tuple_variable', 'direct_vector_variable', 'hash_tuple_argument', 'struct_literal_field', 'tuple_to_vector', 'uint_to_field_tuple', 'vector_to_tuple', 'widened_vector_capture')
 TUPLE_NEGATIVES = ("wrong_input_width", "wrong_tuple_width", "wrong_capture_length", "wrong_vector_component", "wrong_field_pair")
+
+
+def test_worker_artifact(stdout, metadata, consumer, target):
+    """Bind one actual Cargo lib-test artifact before taking an immutable copy."""
+    rows = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+    root = metadata.get("resolve", {}).get("root")
+    require(root is not None, "Cargo test package root required")
+    artifacts = [row for row in rows if row.get("reason") == "compiler-artifact"
+                 and row.get("package_id") == root and row.get("executable")
+                 and row.get("target", {}).get("kind") == ["lib"]
+                 and row.get("profile", {}).get("test") is True]
+    require(len(artifacts) == 1, "one actual Cargo lib-test executable required")
+    row = artifacts[0]
+    require(Path(row["target"]["src_path"]).resolve() == (consumer / "consumer.rs").resolve(),
+            "test executable consumer source differs")
+    require(row["profile"].get("debug_assertions") is True
+            and row["profile"].get("overflow_checks") is True,
+            "test executable lacks checked profile settings")
+    actual = Path(row["executable"]).resolve(strict=True)
+    require(actual.is_relative_to(target.resolve()) and actual.is_file(),
+            "test executable escaped selected Cargo target")
+    return dict(path=str(actual), package_id=root, source=row["target"]["src_path"],
+                profile=row["profile"], compiled_cache_reused=row.get("fresh"))
 
 
 def main(*, boundaries=False, tuple_guards=False):
@@ -93,7 +117,8 @@ def main(*, boundaries=False, tuple_guards=False):
     config = reject_compiler_overrides(dict(env))
     if tuple_guards:
         require(env.get("RUST_MIN_STACK") in (None, "2097152"), "exact 2 MiB tuple test worker required")
-        env["RUST_MIN_STACK"] = "2097152"
+        # Keep the worker limit off Cargo/rustc; only test execution uses2MiB.
+        env.pop("RUST_MIN_STACK", None)
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "Rust1.99.0 required")
     env["CARGO_TARGET_DIR"] = str(cargo_target(env, out))
@@ -243,7 +268,21 @@ def main(*, boundaries=False, tuple_guards=False):
         bound.update({str(consumer / p): h for p, h in inventory(consumer).items()})
         env["COMPACT_CONSTRUCTOR_EQUALITY_TS"] = str(reference)
         argv = ["cargo", "test", "--offline", "--locked", "--manifest-path", manifest, "--lib"]
-        result = run("consumer", [*argv, "--", "--nocapture"] if extended else argv)
+        worker_environment = {}
+        if tuple_guards:
+            build = run("consumer-build", [*argv, "--no-run", "--message-format=json"])
+            artifact = test_worker_artifact(build.stdout, metadata, consumer, Path(env["CARGO_TARGET_DIR"]))
+            (out / "bin").mkdir()
+            snapshot = common.stable_copy(Path(artifact["path"]), out / "bin/constructor-equality-tests")
+            bound[snapshot["snapshot"]] = snapshot["sha256"]
+            report["test_worker_artifact"] = dict(cargo=artifact, binary=snapshot,
+                compiler_stack_environment="RUST_MIN_STACK unset for compilation",
+                worker_stack_bytes=2 * 1024 * 1024)
+            argv = [snapshot["snapshot"]]
+            worker_environment = {"RUST_MIN_STACK": "2097152"}
+            result = run("consumer", [*argv, "--nocapture"], extra=worker_environment)
+        else:
+            result = run("consumer", [*argv, "--", "--nocapture"] if extended else argv)
         require(re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result.stdout) == [("1", "0", "0")], "consumer did not execute")
         if extended:
             require(("tuple-guard-cases:105 calls:1260 replays:630" if tuple_guards else
@@ -262,10 +301,10 @@ def main(*, boundaries=False, tuple_guards=False):
         wrong.write_text(json.dumps(changed))
         if extended:
             bound[str(wrong)] = digest(wrong)
-        result = run("changed-reference", argv, success=False, extra={"COMPACT_CONSTRUCTOR_EQUALITY_TS": str(wrong)})
+        result = run("changed-reference", argv, success=False, extra=dict(worker_environment, COMPACT_CONSTRUCTOR_EQUALITY_TS=str(wrong)))
         require(result.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in result.stdout, "changed reference was accepted")
         if extended:
-            restored = run("restored-reference", argv)
+            restored = run("restored-reference", argv, extra=worker_environment or None)
             require(re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", restored.stdout)
                     == [("1", "0", "0")], "restored consumer did not execute")
         require(all(inventory(generated / role) == before for role, before in snapshots.items()), "generated SDK changed")

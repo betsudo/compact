@@ -310,3 +310,33 @@ A source-AST test also guards the order in `main`: geometry, spec loading,
 membership, then the first maintained runner. Earlier read-only Git/hash probes
 remain outside that assertion. Constructor logic runs natively; constructor
 state insertion and fee funding are privileged fixture setup, not proved setup.
+
+
+## Delivery continuation — 2026-11-09
+
+The shallow delivery branch preserves both accepted histories and adds the full
+105-case tuple entry to the existing required Linux `build` proof job, after
+the historical equality and operand-boundary cohorts. A current same-run
+compiler recipe, runtime and ZKIR are mandatory; the existing external Cargo
+target is shared. The default entry includes all sixteen sources, 48 exported
+models, fresh selected proofs, separately proved strict applications, negative
+controls and unchanged-state replay refusals. It is not preflight-only.
+Success and failure diagnostics are retained separately. macOS stays optional;
+no Linux result is inferred from the earlier local arm64 receipts.
+
+The API owner also ports the independently reviewed worker fix from numeric
+qualification: compile with `RUST_MIN_STACK` unset, authenticate exactly one
+checked-profile root-package lib-test artifact from Cargo JSON, make a stable
+read-only executable copy, and run the positive/changed/restored reference
+checks on that same copy with the exact 2 MiB test-worker stack. Cargo and rustc
+retain their normal stack environment. This prevents the observed cold rustls
+compiler failure without increasing the test worker limit. The original
+historical and operand-boundary API paths are unchanged. Artifact admission
+controls cover missing/duplicate artifacts, wrong package/target/source,
+unchecked profiles and executables outside the selected Cargo target.
+
+The frozen `5758c0244` proof results above retain their literal execution head;
+they are not relabeled as this delivery source. New API execution and hosted
+CI must record the delivery head themselves. Standing owner authorization now
+permits coherent PR publication and CI; automatic merge, release, Forge work
+and changes to snapshot/material policy remain excluded.

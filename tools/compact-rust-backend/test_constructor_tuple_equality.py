@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """Fixture identity and entry admission controls, never current execution proof."""
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -30,6 +31,41 @@ import check_constructor_equality as api_owner
 
 
 class HistoricalTupleFixtures(unittest.TestCase):
+    def test_test_worker_artifact_requires_current_source_profile_and_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            consumer = root / "consumer"
+            consumer.mkdir()
+            (consumer / "consumer.rs").write_text("// HOST source, never compiled\n")
+            target = root / "target"
+            target.mkdir()
+            executable = target / "HOST-never-executed"
+            executable.write_bytes(b"HOST fixture, not an ELF")
+            outside = root / "HOST-outside-target"
+            outside.write_bytes(b"HOST fixture, never executed")
+            metadata = dict(resolve=dict(root="HOST-package"))
+            original = dict(reason="compiler-artifact", package_id="HOST-package",
+                executable=str(executable), fresh=True,
+                target=dict(kind=["lib"], src_path=str(consumer / "consumer.rs")),
+                profile=dict(test=True, debug_assertions=True, overflow_checks=True))
+            admitted = api_owner.test_worker_artifact(json.dumps(original), metadata, consumer, target)
+            self.assertEqual(admitted["path"], str(executable))
+            self.assertTrue(admitted["compiled_cache_reused"])
+            for mutation in ("missing", "duplicate", "wrong-package", "bin-target",
+                             "not-test", "wrong-source", "unchecked", "outside-target"):
+                with self.subTest(mutation=mutation):
+                    row = deepcopy(original)
+                    if mutation == "wrong-package": row["package_id"] = "HOST-other"
+                    elif mutation == "bin-target": row["target"]["kind"] = ["bin"]
+                    elif mutation == "not-test": row["profile"]["test"] = False
+                    elif mutation == "wrong-source": row["target"]["src_path"] = str(consumer / "other.rs")
+                    elif mutation == "unchecked": row["profile"]["overflow_checks"] = False
+                    elif mutation == "outside-target": row["executable"] = str(outside)
+                    stdout = "" if mutation == "missing" else json.dumps(row)
+                    if mutation == "duplicate": stdout += "\n" + json.dumps(row)
+                    with self.assertRaises(ValueError):
+                        api_owner.test_worker_artifact(stdout, metadata, consumer, target)
+
     def test_all_current_cases_keep_exact_proof_metadata_and_complete_source_roster(self):
         fixtures = tuple_scope.FIXTURES
         cases = json.loads((fixtures / "cases.json").read_bytes())

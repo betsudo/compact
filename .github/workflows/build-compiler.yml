@@ -1195,6 +1195,26 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Qualify implicit tuple equality guards and 105 proof cases
+        id: constructor_tuple_guards_proof
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_tuple_equality_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-proof"
+
+      - name: Retain implicit tuple equality guard proof diagnostics
+        if: always() && (steps.constructor_tuple_guards_proof.outcome == 'success' || steps.constructor_tuple_guards_proof.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: constructor-tuple-guards-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-constructor-tuple-guards-recipe/
+            ${{ runner.temp }}/compact-constructor-tuple-guards-proof/
+            !${{ runner.temp }}/compact-constructor-tuple-guards-proof/**/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Qualify isolated witnessed functional SDK
         id: functional_sdk
         run: |
