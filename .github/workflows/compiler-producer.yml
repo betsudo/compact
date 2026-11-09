@@ -7,6 +7,11 @@ on:
         description: Exact platform; callers create independent same-platform dependencies
         required: true
         type: string
+      export-shell:
+        description: Also hand off the unchanged compiler devShell inputs
+        required: false
+        default: false
+        type: boolean
     outputs:
       artifact-id:
         description: Immutable same-run platform compiler artifact ID
@@ -14,6 +19,9 @@ on:
       producer-attempt:
         description: Actual successful producer step attempt, retained on partial reruns
         value: ${{ jobs.compiler.outputs.producer-attempt }}
+      shell-artifact-id:
+        description: Immutable same-run compiler shell artifact ID, when requested
+        value: ${{ jobs.compiler.outputs.shell-artifact-id }}
 permissions: {}
 jobs:
   compiler:
@@ -23,6 +31,7 @@ jobs:
     outputs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       producer-attempt: ${{ steps.identity.outputs.producer-attempt }}
+      shell-artifact-id: ${{ steps.shell-upload.outputs.artifact-id }}
     timeout-minutes: 180
     permissions:
       contents: read
@@ -61,6 +70,28 @@ jobs:
           path: |
             ${{ runner.temp }}/compiler-material/manifest.json
             ${{ runner.temp }}/compiler-material/closure.nar-export
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+      - name: Realize unchanged compiler shell and export its closure once
+        if: ${{ inputs.export-shell }}
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          NIX_SYSTEM: ${{ inputs.system }}
+        run: |
+          python3 -B .github/scripts/compiler_closure.py export --material compiler-shell \
+            --source-sha "$SOURCE_SHA" --system "$NIX_SYSTEM" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --directory "$RUNNER_TEMP/compiler-shell-material"
+      - name: Upload same-run compiler shell prerequisites
+        if: ${{ inputs.export-shell }}
+        id: shell-upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-shell-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.system }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/compiler-shell-material/manifest.json
+            ${{ runner.temp }}/compiler-shell-material/closure.nar-export
           if-no-files-found: error
           retention-days: 1
           compression-level: 0

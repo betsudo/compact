@@ -33,6 +33,98 @@ spec.loader.exec_module(owner)
 
 
 class ReceiptTests(unittest.TestCase):
+    def test_shell_material_is_fixed_and_separate_from_compiler(self):
+        args = argparse.Namespace(system='x86_64-linux', material='compiler-shell')
+        self.assertEqual(owner.installable(args), '.#devShells.x86_64-linux.compiler')
+        args.system = 'aarch64-darwin'
+        self.assertEqual(owner.installable(args), '.#devShells.aarch64-darwin.compiler')
+        args.material = 'compiler'
+        self.assertEqual(owner.installable(args), '.#compactc')
+        args.material = '.#unreviewed'
+        with self.assertRaises(ValueError):
+            owner.installable(args)
+
+    def test_shell_cannot_consume_compiler_artifact_or_other_shell_epoch(self):
+        args = argparse.Namespace(material='compiler-shell', artifact_id='42', run_id='1',
+            run_attempt='3', producer_attempt='2', system='x86_64-linux', source_sha='b'*40,
+            artifact_zip=Path('unused.zip'))
+        valid = dict(id=42, expired=False, workflow_run={'id': 1},
+            name='compiler-shell-1-2-x86_64-linux-'+'b'*40, digest='sha256:'+'a'*64)
+        names = [valid['name'].replace('compiler-shell-', 'compiler-', 1),
+                 valid['name'].replace('-1-2-', '-2-2-'),
+                 valid['name'].replace('-1-2-', '-1-3-'),
+                 valid['name'].replace('x86_64-linux', 'aarch64-darwin'),
+                 valid['name'].replace('b'*40, 'c'*40)]
+        for name in names:
+            with self.subTest(name=name), patch.object(owner, 'service_artifact', return_value=dict(valid, name=name)), patch.object(owner, 'sha', return_value='a'*64), patch.object(owner.zipfile, 'ZipFile') as unzip:
+                with self.assertRaises(ValueError):
+                    owner.unpack_artifact(args, Path('never-created'))
+                unzip.assert_not_called()
+        with patch.object(owner, 'service_artifact', return_value=valid), patch.object(owner, 'sha', return_value='a'*64), patch.object(owner.zipfile, 'ZipFile', side_effect=RuntimeError('valid shell identity')):
+            with self.assertRaisesRegex(RuntimeError, 'valid shell identity'):
+                owner.unpack_artifact(args, Path('never-created'))
+
+    def test_shell_zip_over_decimal_bound_is_refused_before_writing(self):
+        args = argparse.Namespace(material='compiler-shell', artifact_id='42', run_id='1',
+            run_attempt='2', producer_attempt='2', system='x86_64-linux', source_sha='b'*40,
+            artifact_zip=Path('unused.zip'))
+        valid = dict(id=42, expired=False, workflow_run={'id': 1},
+            name='compiler-shell-1-2-x86_64-linux-'+'b'*40, digest='sha256:'+'a'*64)
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory, patch.object(owner, 'service_artifact', return_value=valid), patch.object(owner, 'sha', return_value='a'*64), patch.object(owner.zipfile, 'ZipFile') as unzip:
+            bundle = unzip.return_value.__enter__.return_value
+            bundle.namelist.return_value = ['closure.nar-export', 'manifest.json']
+            bundle.getinfo.side_effect = lambda name: SimpleNamespace(file_size=100 if name == 'manifest.json' else owner.SHELL_TRANSFER_LIMIT+1)
+            target = Path(directory)/'must-not-exist'
+            with self.assertRaisesRegex(ValueError, 'transfer bound'):
+                owner.unpack_artifact(args, target)
+            self.assertFalse(target.exists())
+
+    def test_shell_identity_cannot_be_relabelled_as_runtime_material(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory)/'archive'
+            archive.write_bytes(b'not a real export')
+            root = '/nix/store/'+'a'*32+'-nix-shell'
+            expected = dict(source_sha='b'*40, material='compiler-shell')
+            value = dict(schema=1, identity=expected, derivation=root+'.drv', output=root,
+                closure={root: 'sha256-'+base64.b64encode(bytes(32)).decode()}, archive_sha256=owner.sha(archive))
+            owner.validate_receipt(value, expected, archive)
+            with self.assertRaisesRegex(ValueError, 'identity mismatch'):
+                owner.validate_receipt(value, dict(source_sha='b'*40), archive)
+
+    def test_shell_import_checks_complete_roster_and_source_root_without_compiler_smoke(self):
+        root = '/nix/store/'+'a'*32+'-nix-shell'
+        dependency = '/nix/store/'+'c'*32+'-dependency'
+        nar = 'sha256-'+base64.b64encode(bytes(32)).decode()
+        args = argparse.Namespace(material='compiler-shell')
+        expected = dict(source_sha='b'*40, material='compiler-shell')
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            archive = directory/'closure.nar-export'
+            archive.write_bytes(b'boundary stub, not a real export')
+            receipt = dict(schema=1, identity=expected, derivation=root+'.drv', output=root,
+                closure={root: nar, dependency: nar}, archive_sha256=owner.sha(archive))
+            (directory/'manifest.json').write_text(json.dumps(receipt))
+            for mode in ('success', 'omitted-import', 'duplicate-import', 'warm-extra-requisite', 'wrong-deriver', 'wrong-nar'):
+                imported = [root, dependency]
+                if mode == 'omitted-import': imported = [root]
+                if mode == 'duplicate-import': imported += [dependency]
+                requisites = root+'\n'+dependency
+                if mode == 'warm-extra-requisite': requisites += '\n/nix/store/'+'d'*32+'-omitted'
+                deriver = root+'.drv' if mode != 'wrong-deriver' else dependency+'.drv'
+                actual_info = receipt['closure'] if mode != 'wrong-nar' else {root: nar}
+                with self.subTest(mode=mode), patch.object(owner, 'unpack_artifact'), patch.object(owner, 'identity', return_value=expected), patch.object(owner, 'text_import', return_value=imported), patch.object(owner, 'text', side_effect=[requisites, deriver]), patch.object(owner, 'info', return_value=actual_info), patch.object(owner, 'smoke') as compiler_smoke, patch('builtins.print'):
+                    if mode == 'success':
+                        owner.consume(args, expected, directory, receipt['derivation'], root)
+                    else:
+                        with self.assertRaises(ValueError):
+                            owner.consume(args, expected, directory, receipt['derivation'], root)
+                    compiler_smoke.assert_not_called()
+            with patch.object(owner, 'unpack_artifact'), patch.object(owner, 'text_import') as imported:
+                with self.assertRaisesRegex(ValueError, 'source output mismatch'):
+                    owner.consume(args, expected, directory, receipt['derivation'], dependency)
+                imported.assert_not_called()
+
     def test_build_failure_streams_diagnostics_and_preserves_machine_stdout(self):
         # Exercise a real failed child without reading or modifying a Nix store.
         script = (
@@ -355,6 +447,59 @@ class WorkflowOwnershipTests(unittest.TestCase):
 
 
 class CompilerFanoutTests(unittest.TestCase):
+    def test_shell_bundle_reaches_only_original_shell_consumers_before_first_use(self):
+        import re
+        workflow = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
+        jobs = dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:\n|\Z)', workflow.split('jobs:\n', 1)[1], re.M | re.S))
+        users = {name for name, body in jobs.items() if 'nix develop .#compiler' in body}
+        self.assertEqual(users, {'constructor-vector', 'compiler-tests', 'generated-api',
+            'build', 'product-proofs', 'component-vector-proof', 'outer-vector-proof',
+            'native-scenarios', 'native-backend', 'e2e-tests'})
+        for name, body in jobs.items():
+            with self.subTest(job=name):
+                action = 'uses: ./.github/actions/import-compiler-shell'
+                if name not in users:
+                    self.assertNotIn(action, body)
+                    continue
+                self.assertEqual(body.count(action), 1)
+                self.assertLess(body.index('compiler_closure.py import'), body.index(action))
+                self.assertLess(body.index(action), body.index('nix develop .#compiler'))
+                self.assertIn('artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}', body)
+                self.assertIn('producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}', body)
+                self.assertIn('actions: read', body)
+        self.assertIn('export-shell: true', jobs['compiler-linux'])
+        self.assertNotIn('export-shell: true', jobs['compiler-darwin'])
+
+    def test_shell_bundle_service_output_and_import_are_fail_closed(self):
+        producer = (owner.ROOT/'.github/workflows/compiler-producer.yml').read_text()
+        self.assertIn('value: ${{ jobs.compiler.outputs.shell-artifact-id }}', producer)
+        self.assertIn('shell-artifact-id: ${{ steps.shell-upload.outputs.artifact-id }}', producer)
+        self.assertIn('export --material compiler-shell', producer)
+        self.assertEqual(producer.count('if: ${{ inputs.export-shell }}'), 2)
+        action = (owner.ROOT/'.github/actions/import-compiler-shell/action.yml').read_text()
+        script = textwrap.dedent(action.split('      run: |\n', 1)[1])
+        # Execute the real configured Bash against boundary stubs, not a second
+        # implementation. Missing identity, download and import failures stop.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'gh').write_text('#!/bin/bash\necho download >> "$EVENTS"\nexit "${DOWNLOAD_EXIT:-0}"\n')
+            (root/'python3').write_text('#!/bin/bash\nprintf "%s\\n" "$*" >> "$EVENTS"\nexit "${IMPORT_EXIT:-0}"\n')
+            for name in ('gh', 'python3'):
+                (root/name).chmod(0o755)
+            env = dict(os.environ, PATH=str(root)+':'+os.environ['PATH'], EVENTS=str(root/'events'),
+                RUNNER_TEMP=directory, ARTIFACT_ID='42', PRODUCER_ATTEMPT='2',
+                REPOSITORY='betsudo/compact', SOURCE_SHA='b'*40, GITHUB_RUN_ID='10', GITHUB_RUN_ATTEMPT='3')
+            for variable, value, expected_events in [('ARTIFACT_ID', '', 0), ('PRODUCER_ATTEMPT', '', 0), ('DOWNLOAD_EXIT', '71', 1), ('IMPORT_EXIT', '72', 2), ('IMPORT_EXIT', '0', 2)]:
+                with self.subTest(variable=variable, value=value):
+                    (root/'events').write_text('')
+                    result = owner.subprocess.run(['bash', '-c', script], env=dict(env, **{variable: value}), capture_output=True, text=True)
+                    self.assertEqual(result.returncode == 0, variable == 'IMPORT_EXIT' and value == '0')
+                    events = (root/'events').read_text().splitlines()
+                    self.assertEqual(len(events), expected_events)
+                    if len(events) == 2:
+                        self.assertIn('import --material compiler-shell --source-sha '+'b'*40+' --system x86_64-linux', events[1])
+                        self.assertIn('--run-id 10 --run-attempt 3 --producer-attempt 2 --repository betsudo/compact --artifact-id 42', events[1])
+
     def test_consumers_keep_exact_platform_producers_and_complete_gates(self):
         caller = (owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         self.assertEqual(caller.count('uses: ./.github/workflows/compiler-producer.yml'), 2)

@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Same-run .#compactc runtime-closure handoff, not a cached test verdict."""
+"""Same-run compiler/runtime or unchanged compiler-shell inputs, never verdicts."""
 import argparse
 import base64
 import hashlib
@@ -29,6 +29,17 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 STORE = re.compile(r'/nix/store/[a-z0-9]{32}-[^/\s]+')
+SHELL_TRANSFER_LIMIT = 10_000_000_000
+
+
+def material(args):
+    value = getattr(args, 'material', 'compiler')
+    require(value in ('compiler', 'compiler-shell'), 'unsupported material')
+    return value
+
+
+def installable(args):
+    return '.#compactc' if material(args) == 'compiler' else f'.#devShells.{args.system}.compiler'
 
 
 def require(condition, message):
@@ -69,9 +80,12 @@ def identity(args):
     require(text(['nix', 'eval', '--impure', '--raw', '--expr', 'builtins.currentSystem']) == args.system,
             'platform mismatch')
     actual_attempt = producer_attempt(args.run_attempt, getattr(args, 'producer_attempt', None) or args.run_attempt)
-    return dict(source_sha=args.source_sha, system=args.system, run_id=args.run_id,
+    result = dict(source_sha=args.source_sha, system=args.system, run_id=args.run_id,
                 run_attempt=actual_attempt, flake_sha256=sha(ROOT/'flake.nix'),
                 lock_sha256=sha(ROOT/'flake.lock'))
+    if material(args) != 'compiler':
+        result['material'] = material(args)
+    return result
 
 
 def info(paths):
@@ -118,6 +132,13 @@ def smoke(output):
         require((Path(directory)/'contract/compiler/contract-manifest.json').is_file(), 'fixture manifest absent')
 
 
+def smoke_material(args, output):
+    if material(args) == 'compiler':
+        smoke(output)
+    # A mkShell output is a reference file, not a compiler executable. Consumer
+    # tool/version checks still run independently in the original nix develop.
+
+
 def service_artifact(args):
     """Authenticate producer material against current-run GitHub service metadata.
 
@@ -141,7 +162,7 @@ def service_artifact(args):
 def unpack_artifact(args, directory):
     value = service_artifact(args)
     actual_attempt = producer_attempt(args.run_attempt, args.producer_attempt)
-    expected_name = f'compiler-{args.run_id}-{actual_attempt}-{args.system}-{args.source_sha}'
+    expected_name = f'{material(args)}-{args.run_id}-{actual_attempt}-{args.system}-{args.source_sha}'
     require(str(value['id']) == args.artifact_id and not value['expired']
             and str(value['workflow_run']['id']) == args.run_id and value['name'] == expected_name,
             'artifact is not the expected same-run platform producer')
@@ -150,7 +171,8 @@ def unpack_artifact(args, directory):
     with zipfile.ZipFile(args.artifact_zip) as bundle:
         require(sorted(bundle.namelist()) == ['closure.nar-export', 'manifest.json'], 'artifact ZIP roster mismatch')
         require(bundle.getinfo('manifest.json').file_size <= 4*1024*1024, 'manifest exceeds bound')
-        require(bundle.getinfo('closure.nar-export').file_size <= 16*1024**3, 'closure exceeds transfer bound')
+        bound = SHELL_TRANSFER_LIMIT if material(args) == 'compiler-shell' else 16*1024**3
+        require(bundle.getinfo('closure.nar-export').file_size <= bound, 'closure exceeds transfer bound')
         directory.mkdir(parents=True, exist_ok=False)
         for name in ('manifest.json', 'closure.nar-export'):
             with bundle.open(name) as source, (directory/name).open('xb') as target:
@@ -184,7 +206,7 @@ def consume(args, expected, directory, derivation, expected_output):
     # closure-only export does not claim to transfer its build-time dependencies.
     require(text(['nix-store', '--query', '--deriver', value['output']]) == derivation,
             'imported declared deriver mismatch')
-    smoke(value['output'])
+    smoke_material(args, value['output'])
     require(identity(args) == expected, 'source changed during consumer import')
     print(value['output'])
 
@@ -199,23 +221,34 @@ def main():
     parser.add_argument('--repository')
     parser.add_argument('--artifact-id')
     parser.add_argument('--artifact-zip', type=Path)
+    parser.add_argument('--material', choices=['compiler', 'compiler-shell'], default='compiler')
     args = parser.parse_args()
     if args.mode == 'import':
         require(all((args.repository, args.artifact_id, args.artifact_zip, args.producer_attempt)), 'import requires same-run service artifact identity and ZIP')
     expected = identity(args)
     directory = args.directory.resolve()
     archive, receipt = directory/'closure.nar-export', directory/'manifest.json'
-    derivation = text(['nix', 'eval', '--raw', '.#compactc.drvPath'])
-    expected_output = text(['nix', 'eval', '--raw', '.#compactc.outPath'])
+    target = installable(args)
+    derivation = text(['nix', 'eval', '--raw', target+'.drvPath'])
+    expected_output = text(['nix', 'eval', '--raw', target+'.outPath'])
     if args.mode == 'export':
         directory.mkdir(parents=True, exist_ok=False)
-        output = text(['nix', 'build', '.#compactc', '--no-link', '--print-out-paths'])
+        output = text(['nix', 'build', target, '--no-link', '--print-out-paths'])
         require(STORE.fullmatch(output) and output == expected_output, 'unexpected build output')
-        smoke(output)
+        smoke_material(args, output)
         paths = sorted(text(['nix-store', '--query', '--requisites', output]).splitlines())
         closure = info(paths)
+        if material(args) == 'compiler-shell':
+            sizes = json.loads(text(['nix', 'path-info', '--json', *paths]))
+            require(set(sizes) == set(paths), 'shell size roster mismatch')
+            total = sum(sizes[p]['narSize'] for p in paths)
+            require(total <= SHELL_TRANSFER_LIMIT, 'shell closure exceeds decimal 10GB bound')
+            print(f'Compiler shell: {len(paths)} paths, {total} NAR bytes', file=sys.stderr)
         with archive.open('xb') as stream:
             run(['nix-store', '--export', *paths], stdout=stream)
+        if material(args) == 'compiler-shell':
+            require(archive.stat().st_size <= SHELL_TRANSFER_LIMIT, 'shell export exceeds decimal 10GB bound')
+            print(f'Compiler shell export: {archive.stat().st_size} bytes', file=sys.stderr)
         value = dict(schema=1, identity=expected, derivation=derivation, output=output,
                      closure=closure, archive_sha256=sha(archive))
         receipt.write_text(json.dumps(value, sort_keys=True, indent=2)+'\n')
