@@ -162,6 +162,32 @@ class ProofCommands(unittest.TestCase):
         self.assertIn("needs.build.result", complete)
         self.assertIn('test "$NATIVE_RESULT" = success', complete)
 
+    def test_constructor_tuple_guards_use_complete_required_proof_gate(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        owner = workflow.split("  build:\n", 1)[1].split("  product-proofs:\n", 1)[0]
+        start = owner.index("      - name: Qualify implicit tuple equality guards and 105 proof cases\n")
+        end = owner.index("      - name: Retain implicit tuple equality guard proof diagnostics\n", start)
+        step = owner[start:end]
+        gate = "tools/compact-rust-backend/check_constructor_tuple_equality_proof.py"
+        self.assertEqual(workflow.count(gate), 1)
+        self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC"', step)
+        self.assertIn('--compiler-receipt "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe/receipt.json"', step)
+        self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', step)
+        self.assertIn('CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target"', step)
+        self.assertIn('env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u ' + gate, step)
+        self.assertNotIn("--preflight-only", step)
+        self.assertNotIn("continue-on-error", step)
+        self.assertLess(owner.index("--prepare-proof-material"), start)
+        self.assertLess(owner.index("id: constructor_boundaries_proof"), start)
+        retain = owner[end:owner.index("      - name: Qualify isolated witnessed functional SDK\n", end)]
+        self.assertIn("if: always() && (steps.constructor_tuple_guards_proof.outcome == 'success' || steps.constructor_tuple_guards_proof.outcome == 'failure')", retain)
+        for path in ("compact-constructor-tuple-guards-recipe/", "compact-constructor-tuple-guards-proof/",
+                     "!${{ runner.temp }}/compact-constructor-tuple-guards-proof/**/cargo-target/**"):
+            self.assertIn(path, retain)
+        complete = workflow.split("  complete:\n", 1)[1]
+        self.assertIn("needs.build.result", complete)
+        self.assertIn('test "$NATIVE_RESULT" = success', complete)
+
     def test_capability_preflight_has_required_owner_and_retains_later_live_gate(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
         native = (ROOT / "tools/compact-rust-backend/check_native_ci.sh").read_text()

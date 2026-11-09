@@ -23,6 +23,72 @@ use compact_rust_backend::ir::{
 use compact_rust_backend::{RenderError, render};
 
 #[test]
+fn constructor_implicit_tuple_209_raw_ir_retains_typed_refusals() {
+    // Complete original compiler209 outputs, not current-generation fixtures.
+    // Preserve their mismatch: the new Scheme transport must supply Coerce;
+    // the Rust importer must never infer or silently repair the missing widths.
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(
+        "../constructor_equality_tuple_guards/historical209/manifest.json"
+    ))
+    .unwrap();
+    for (role, source) in [
+        (
+            "flat_eq",
+            include_str!("../constructor_equality_tuple_guards/historical209/flat_eq.json"),
+        ),
+        (
+            "flat_ne",
+            include_str!("../constructor_equality_tuple_guards/historical209/flat_ne.json"),
+        ),
+        (
+            "nested_eq",
+            include_str!("../constructor_equality_tuple_guards/historical209/nested_eq.json"),
+        ),
+        (
+            "mixed_literal_eq",
+            include_str!(
+                "../constructor_equality_tuple_guards/historical209/mixed_literal_eq.json"
+            ),
+        ),
+        (
+            "reversed_eq",
+            include_str!("../constructor_equality_tuple_guards/historical209/reversed_eq.json"),
+        ),
+        (
+            "asymmetric_eq",
+            include_str!("../constructor_equality_tuple_guards/historical209/asymmetric_eq.json"),
+        ),
+        (
+            "owned_capture_eq",
+            include_str!(
+                "../constructor_equality_tuple_guards/historical209/owned_capture_eq.json"
+            ),
+        ),
+    ] {
+        let contract: compact_rust_backend::ir::Contract = serde_json::from_str(source).unwrap();
+        let expected =
+            serde_json::from_value(manifest[role]["type_mismatch_expected"].clone()).unwrap();
+        let actual =
+            serde_json::from_value(manifest[role]["type_mismatch_actual"].clone()).unwrap();
+        let location = contract
+            .constructor
+            .as_ref()
+            .unwrap()
+            .source
+            .clone()
+            .unwrap();
+        assert_eq!(
+            render(&contract),
+            Err(RenderError::Located {
+                location,
+                error: Box::new(RenderError::TypeMismatch { expected, actual }),
+            }),
+            "complete historical source: {role}"
+        );
+    }
+}
+
+#[test]
 fn constructor_cell_parameters_are_typed_and_validated() {
     let mut contract = identity(
         Type::Field,

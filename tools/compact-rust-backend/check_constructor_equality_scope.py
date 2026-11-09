@@ -17,8 +17,8 @@
 """Pin genuine constructor-condition coercion scope and current refusal boundaries.
 
 Source/IR/origin and generation checks only, not SDK execution or proofs.
-The implicit mixed-width tuple case records an OPEN transport gap, not a
-language rule or a completed semantic capability.
+The implicit mixed-width tuple case requires current component coercions;
+complete compiler209 mismatch fixtures separately retain historical refusals.
 """
 import argparse
 import copy
@@ -35,8 +35,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "constructor_equality_boundaries" / "scope"
 ROLES = ("ordinary_after_condition", "initializer_after_condition", "literal_condition",
          "nested_explicit_tuple_condition", "narrowing_condition", "nested_tuple_condition")
-REFUSALS = {"narrowing_condition": 'constructor can initialize root Cells from parameters only: "if"',
-            "nested_tuple_condition": 'expression has type Tuple { elements: [Unsigned { max: "65535" }, Unsigned { max: "65535" }] }, expected Tuple { elements: [Unsigned { max: "255" }, Unsigned { max: "255" }] }'}
+REFUSALS = {"narrowing_condition": 'constructor can initialize root Cells from parameters only: "if"'}
 
 
 def unsigned(maximum):
@@ -47,8 +46,8 @@ def coerce():
     return {"kind": "coerce", "value": {"kind": "parameter", "name": "item"}, "ty": unsigned(65535)}
 
 
-def validate_scope(role, ir, origins, source):
-    """Finite source regression assertions, not a replacement IR/origin importer."""
+def original_origins(ir, origins, source):
+    """Walk original producer addresses; callers add their finite assertions."""
     require(ir["schema_version"] == 20 and origins["schema_version"] == 3, "IR/origin schema differs")
     require(len(origins["files"]) == 1 and Path(origins["files"][0]["path"]).resolve() == source.resolve(),
             "scope source origin file differs")
@@ -71,6 +70,12 @@ def validate_scope(role, ir, origins, source):
         mapped[path] = None if origin is None else origins["origins"][origin]
         nodes.append(node)
         paths.append(path)
+    return mapped, len(nodes)
+
+
+def validate_scope(role, ir, origins, source):
+    """Finite source regression assertions, not a replacement IR/origin importer."""
+    mapped, node_count = original_origins(ir, origins, source)
     ctor = ir["constructor"]
     loops = [(i, s) for i, s in enumerate(ctor["steps"]) if s["kind"] == "for_each_vector"]
     require(len(loops) == 1, "one complete scope loop required")
@@ -91,9 +96,7 @@ def validate_scope(role, ir, origins, source):
                         right={"kind": "unsigned_literal", "value": "2", "max": "255"})
     elif role == "narrowing_condition":
         expected["left"] = {"kind": "unsigned_cast", "max": "255", "value": {"kind": "parameter", "name": "item"}}
-    elif role == "nested_tuple_condition":
-        expected["left"] = {"kind": "tuple", "elements": [{"kind": "parameter", "name": "item"}] * 2}
-    elif role == "nested_explicit_tuple_condition":
+    elif role in ("nested_tuple_condition", "nested_explicit_tuple_condition"):
         expected["left"] = {"kind": "tuple", "elements": [coerce(), coerce()]}
     require(condition == expected, "scope condition transport differs: " + role)
     if role == "ordinary_after_condition":
@@ -109,9 +112,9 @@ def validate_scope(role, ir, origins, source):
             "initializer widening transport changed")
     prefix = ("constructor", "steps", index, "steps", 0, "condition")
     require(mapped.get(prefix) is not None, "scope guard lost original origin")
-    return {"raw_origin_addresses": len(nodes), "original_input_max": maximum,
+    return {"raw_origin_addresses": node_count, "original_input_max": maximum,
             "rust_generation": "current-typed-refusal" if role in REFUSALS else "supported-generation",
-            "implicit_mixed_tuple_gap_open": role == "nested_tuple_condition"}
+            "implicit_mixed_tuple_gap_open": False}
 
 
 def host_controls(cases, output):
@@ -169,8 +172,15 @@ def host_controls(cases, output):
     return results
 
 
-def main():
+def main(*, tuple_guards=False):
     require(__debug__ and not os.environ.get("PYTHONOPTIMIZE"), "optimized Python is not admitted")
+    if tuple_guards:
+        import constructor_tuple_scope as tuple_scope
+        tuple_expected = tuple_scope.expectations()
+        roles, fixtures = tuple_scope.ROLES, tuple_scope.FIXTURES
+        raw_refusals, refusals = tuple_scope.RAW_REFUSALS, tuple_scope.RUST_REFUSALS
+    else:
+        roles, fixtures, raw_refusals, refusals = ROLES, FIXTURES, {}, REFUSALS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler-receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -189,7 +199,8 @@ def main():
     environment = dict(os.environ)
     configuration = reject_compiler_overrides(environment)
     environment.pop("LD_LIBRARY_PATH", None)
-    require({p.stem for p in FIXTURES.glob("*.compact")} == set(ROLES), "complete scope source roster differs")
+    if not tuple_guards:
+        require({p.stem for p in fixtures.glob("*.compact")} == set(roles), "complete scope source roster differs")
     pins = {str(ROOT / p): digest(ROOT / p) for p in git("ls-files").splitlines() if (ROOT / p).is_file()}
     pins.update({str(p): digest(p) for p in [args.compiler_receipt.resolve(), *tools.values()]})
     out.mkdir(parents=True)
@@ -237,31 +248,47 @@ def main():
 
     try:
         cases = {}
-        for role in ROLES:
-            source = FIXTURES / (role + ".compact")
+        for role in roles:
+            source = fixtures / (tuple_expected[role]["path"] if tuple_guards else role + ".compact")
             raw, ts, rust = [out / role / target for target in ("raw", "ts", "rust")]
-            run(role + "-raw", [tools["compactc-scheme"], "--emit-rust-ir", "--skip-zk", "--skip-ts", source, raw])
-            ir = json.loads((raw / "contract/compact-rust-ir.json").read_bytes())
-            origins = json.loads((raw / "contract/compact-rust-origins.raw.json").read_bytes())
-            report["sources"][role] = validate_scope(role, ir, origins, source)
-            cases[role] = (ir, origins, source)
+            result = run(role + "-raw", [tools["compactc-scheme"], "--emit-rust-ir", "--skip-zk", "--skip-ts", source, raw],
+                         expected=255 if role in raw_refusals else 0)
+            if role in raw_refusals:
+                require(result.returncode == 255 and raw_refusals[role] in result.stderr,
+                        "unrelated raw tuple scope refusal: " + role)
+                report["sources"][role] = dict(raw_generation="known-open-transport-refusal",
+                                                rust_generation="current-typed-refusal")
+            else:
+                ir = json.loads((raw / "contract/compact-rust-ir.json").read_bytes())
+                origins = json.loads((raw / "contract/compact-rust-origins.raw.json").read_bytes())
+                report["sources"][role] = (tuple_scope.validate(role, ir, origins, source, tuple_expected[role])
+                                           if tuple_guards else validate_scope(role, ir, origins, source))
+                cases[role] = (ir, origins, source)
             report["sources"][role]["source_sha256"] = digest(source)
-            bound.update({str(raw / p): h for p, h in inventory(raw).items()})
-            frozen_directories[str(raw)] = inventory(raw)
+            if raw.exists():
+                bound.update({str(raw / p): h for p, h in inventory(raw).items()})
+                frozen_directories[str(raw)] = inventory(raw)
             run(role + "-ts", [tools["compactc"], "--target", "ts", "--skip-zk", source, ts])
             bound.update({str(ts / p): h for p, h in inventory(ts).items()})
             frozen_directories[str(ts)] = inventory(ts)
             result = run(role + "-rust", [tools["compactc"], "--target", "rust", "--skip-zk",
                 "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
-                source, rust], expected=1 if role in REFUSALS else 0)
-            if role in REFUSALS:
-                require(REFUSALS[role] in result.stderr, "unrelated scope refusal: " + role)
-            bound.update({str(rust / p): h for p, h in inventory(rust).items()})
-            frozen_directories[str(rust)] = inventory(rust)
+                source, rust], expected=1 if role in refusals else 0)
+            if role in refusals:
+                require(refusals[role] in result.stderr, "unrelated scope refusal: " + role)
+                if tuple_guards:
+                    require(result.returncode == (255 if role in raw_refusals else 1),
+                            "wrong exact tuple refusal exit: " + role)
+            if rust.exists():
+                bound.update({str(rust / p): h for p, h in inventory(rust).items()})
+                frozen_directories[str(rust)] = inventory(rust)
             save()
-        report["HOST_controls"] = host_controls(cases, out / "HOST-transport-controls")
+        report["HOST_controls"] = (tuple_scope.host_controls(cases, out / "HOST-transport-controls", tuple_expected)
+                                   if tuple_guards else host_controls(cases, out / "HOST-transport-controls"))
         unchanged()
-        report.update(status="passed", complete_sources=6, supported_rust_generations=4, current_typed_refusals=2)
+        report.update(status="passed", complete_sources=len(roles), supported_rust_generations=len(roles) - len(refusals),
+                      current_typed_refusals=len(refusals),
+                      cohort="implicit-tuple-guards" if tuple_guards else "constructor-scope")
     except BaseException as error:
         report.update(status="failed", error=repr(error))
         raise

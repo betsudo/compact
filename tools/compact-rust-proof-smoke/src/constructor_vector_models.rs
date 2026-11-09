@@ -48,6 +48,18 @@ pub(super) fn equality_boundaries_inventory(root: &Path) -> Result<(), Box<dyn E
     )
 }
 
+pub(super) fn tuple_equality_inventory(root: &Path) -> Result<(), Box<dyn Error>> {
+    observe(
+        root,
+        include_bytes!(
+            "../../compact-rust-backend/tests/constructor_equality_tuple_guards/sources.json"
+        ),
+        16,
+        48,
+        "compact-constructor-tuple-equality-model-inventory/v1",
+    )
+}
+
 fn observe(
     root: &Path,
     roster: &[u8],

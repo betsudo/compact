@@ -71,9 +71,9 @@ See [the bounded #720 plan](../../doc/rust/plans/constructor-equality-operand-bo
 requires an exact clean-head original compiler recipe and rejects compiler
 substitutions and optimized Python. Six complete Compact sources exercise
 ordinary and initializer transport after a condition, literal inference,
-explicit nested tuple widening, narrowing refusal and the current implicit
-mixed-width tuple refusal. The last case is an **open frontend/backend transport
-gap**, not a Compact language rule or a completed semantic capability.
+explicit nested tuple widening, narrowing refusal and implicit mixed-width
+tuple widening. Compiler209's historical tuple refusal remains independently
+tested; current210 requires checked component coercions and successful generation.
 
 The intended gate checks current raw Scheme IR/origin addresses, independent
 TypeScript generation and supported/refused Rust generation. Ten mutations
@@ -86,6 +86,19 @@ At frozen `0e07d63f4`, the actual eighteen-command gate and independent source
 and result reviews pass within this source-generation scope. Later source
 changes need their own identities; this does not qualify the additional SDKs
 natively. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
+`check_constructor_tuple_equality_scope.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--output FRESH_OUTPUT` covers all18 complete tuple probes and original origins.
+It requires exact current parameters, loop/condition shapes and every expression
+origin under each guard (excluding type annotations), including unchanged and
+literal children and both operands. Conversion wrapper and value ranges retain
+their distinct original ownership. Nine HOST mutations must refuse; none run as
+compiler or runtime inputs. Two valid-Compact alias transport gaps remain explicit
+refusals; the other16 sources must generate Rust. This gate runs before the
+existing sixteen-case proof owner in the locally configured required CI job, and
+its complete diagnostics are retained. No new hosted run is claimed. It preserves
+the historical/default proof cohort and does not qualify these16 generated APIs
+for execution, models or proofs. See [the active slice](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 ## Bounded local boundary proof qualification
 
@@ -118,7 +131,61 @@ Observed contract k selects existing verified material under the unchanged
 prerequisites. No forced k, trimmed cohort, proof/verdict cache, or parameter
 download was used. Fresh independent actual-result review accepts only this
 bounded source epoch; see the [qualification plan and limits](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
-The implicit mixed-width tuple literal transport gap stays open.
+The implicit mixed-width tuple literal transport continuation has a separate
+source/API acceptance epoch described below; those results do not extend this
+frozen proof acceptance.
+
+## Implicit tuple guard API and proof continuation
+
+`check_constructor_tuple_equality.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--ts-runtime COMPACT_TS_RUNTIME --output FRESH_OUTPUT` exercises 16 complete
+current SDKs and 105 live TypeScript/native cases. At signed `54e428633` the local
+arm64 gate and independent result review pass: 1,260 calls, 630 public VM replays,
+five marked compile-fail/valid-twin pairs and changed/restored-reference controls.
+The generated API consumes constructor arguments by value; owned captures are
+reused through generated cloning. The 2 MiB worker fit is not yet Linux evidence.
+Two valid-Compact alias transport gaps remain explicit source refusals.
+
+The separate `check_constructor_tuple_equality_models.py` observer requires both
+`--scope-receipt` (the six-source ordinary scope) and `--tuple-scope-receipt`
+(the complete 18-source tuple scope), plus the current producer root/receipt.
+`check_constructor_tuple_equality_proof.py --preflight-only` composes current
+source/API, both scope gates, all 48 intact models and 16 immutable native proof
+consumers before admitting keys. Omit `--preflight-only` only for the separate
+fresh proof/application qualification. All owners require fresh external output
+directories and exact current source/compiler identities.
+
+At frozen execution head `5758c0244`, the local macOS arm64 run passes all
+48 intact models at automatic k6, all 16 immutable native proof consumers and
+105 native preflight cases. It then executes 32 keygen invocations, 105 standalone
+proof/verification calls and 105 separately proved funded DEFAULT-strict
+transaction applications, with 735 negative controls and 105 unchanged-state
+replay refusals. The negative assertions establish refusal, without separately
+discriminating each cause. The parent artifact audit and independent actual-result
+review accept this bounded execution epoch. This closeout source does not relabel those receipts as
+execution at a later documentation/test head.
+
+The 32 keygen runs yield only two distinct verifier keys, and all positive
+cases use one later `advance` circuit shape. Verification runs in the immutable
+consumer process; persisted proof files were not reverified by a separate
+process. Constructor logic executes natively; constructor-state insertion and
+fee funding are privileged fixture setup. Later-entrypoint proofs do not establish
+constructor/deployment or production wallet cryptography.
+Required retained material was verified and remained hash-stable. The proving
+provider still permits synchronous fetching; the network was not blocked and
+there is no OS-level trace establishing zero network access or exactly which
+parameter files were loaded. Earlier lane binaries are identified by their
+immutable snapshots and build streams, since their shared Cargo output path
+was subsequently overwritten.
+
+The historical 16-case and boundary 30-case paths remain separate. Automatic
+integer k must remain in 1..8 for every intact model; do not trim sources, force
+geometry or reuse cached proof verdicts. The preflight's geometry and closed
+membership checks have direct HOST controls, including integer/cap/count and
+role/entry refusal cases; these controls execute no model, material runner or
+proof. Current new-cohort CI wiring, Linux and complete integration gates remain
+open.
+See [the active plan](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 ## Current recording architecture
 

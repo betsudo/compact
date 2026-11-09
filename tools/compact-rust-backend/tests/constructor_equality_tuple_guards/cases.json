@@ -1,0 +1,2003 @@
+[
+  {
+    "role": "flat_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_eq",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_eq",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        256
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_eq",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        65535,
+        65535
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_ne",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_ne",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_ne",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_ne",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "flat_ne",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        256
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_ne",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        65535,
+        65535
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "flat_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "reversed_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "reversed_eq",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "reversed_eq",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "reversed_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "reversed_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        256
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "reversed_eq",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        65535,
+        65535
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "reversed_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "reversed_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "nested_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          2,
+          2
+        ]
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "nested_eq",
+    "case": "outer_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        [
+          2,
+          2
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "nested_eq",
+    "case": "inner_first_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          1,
+          2
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "nested_eq",
+    "case": "inner_last_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          2,
+          1
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "nested_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        [
+          255,
+          255
+        ]
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "nested_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        [
+          0,
+          256
+        ]
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "literal_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "mixed_literal_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        0
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        256
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        65535
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "asymmetric_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "capture_first_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          5,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "capture_second_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          3,
+          5
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        [
+          0,
+          1
+        ]
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "owned_capture_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "first_only",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "source_max",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "aliased_vector_variable",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          255
+        ]
+      ],
+      [
+        256,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "first_only",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "source_max",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_tuple_variable",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          255
+        ]
+      ],
+      [
+        256,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "first_only",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "source_max",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "direct_vector_variable",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          255
+        ]
+      ],
+      [
+        256,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "first_only",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "source_max",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "tuple_to_vector",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          255
+        ]
+      ],
+      [
+        256,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "first_only",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "source_max",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "vector_to_tuple",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          255
+        ]
+      ],
+      [
+        256,
+        255
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      {
+        "value": 2
+      }
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      {
+        "value": 1
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      {
+        "value": 255
+      }
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      {
+        "value": 0
+      }
+    ],
+    "expected": 7
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      {
+        "value": 256
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "struct_literal_field",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      {
+        "value": 65535
+      }
+    ],
+    "expected": 11
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        256
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        65535,
+        65535
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "first_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "uint_to_field_tuple",
+    "case": "second_component_differs",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "capture_first_no_narrow",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          256,
+          4
+        ]
+      ],
+      [
+        0,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "capture_second_no_narrow",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        [
+          3,
+          256
+        ]
+      ],
+      [
+        3,
+        0
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        255,
+        [
+          255,
+          255
+        ]
+      ],
+      [
+        255,
+        255
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "widened_vector_capture",
+    "case": "scalar_no_narrow",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        256,
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "hash_tuple_argument",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        170,
+        87,
+        173,
+        54,
+        103,
+        217,
+        15,
+        59,
+        54,
+        216,
+        158,
+        244,
+        142,
+        8,
+        20,
+        33,
+        201,
+        84,
+        155,
+        139,
+        28,
+        48,
+        110,
+        27,
+        217,
+        52,
+        232,
+        149,
+        103,
+        127,
+        127,
+        110
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "hash_tuple_argument",
+    "case": "first_only",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        80,
+        117,
+        3,
+        181,
+        25,
+        96,
+        204,
+        237,
+        168,
+        217,
+        36,
+        144,
+        79,
+        184,
+        83,
+        119,
+        254,
+        125,
+        23,
+        127,
+        184,
+        223,
+        207,
+        86,
+        178,
+        78,
+        69,
+        87,
+        100,
+        78,
+        212,
+        134
+      ]
+    ],
+    "expected": 11
+  },
+  {
+    "role": "hash_tuple_argument",
+    "case": "zero",
+    "args": [
+      [
+        255,
+        0
+      ],
+      [
+        223,
+        63,
+        97,
+        152,
+        4,
+        169,
+        47,
+        219,
+        64,
+        87,
+        25,
+        45,
+        196,
+        61,
+        215,
+        72,
+        234,
+        119,
+        138,
+        220,
+        82,
+        188,
+        73,
+        140,
+        232,
+        5,
+        36,
+        192,
+        20,
+        184,
+        17,
+        25
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "hash_tuple_argument",
+    "case": "source_max",
+    "args": [
+      [
+        0,
+        255
+      ],
+      [
+        53,
+        84,
+        114,
+        107,
+        160,
+        245,
+        64,
+        79,
+        154,
+        13,
+        63,
+        49,
+        128,
+        65,
+        212,
+        32,
+        247,
+        220,
+        148,
+        164,
+        8,
+        138,
+        84,
+        138,
+        140,
+        33,
+        72,
+        188,
+        253,
+        139,
+        180,
+        154
+      ]
+    ],
+    "expected": 7
+  },
+  {
+    "role": "hash_tuple_argument",
+    "case": "changed_digest",
+    "args": [
+      [
+        1,
+        2
+      ],
+      [
+        171,
+        87,
+        173,
+        54,
+        103,
+        217,
+        15,
+        59,
+        54,
+        216,
+        158,
+        244,
+        142,
+        8,
+        20,
+        33,
+        201,
+        84,
+        155,
+        139,
+        28,
+        48,
+        110,
+        27,
+        217,
+        52,
+        232,
+        149,
+        103,
+        127,
+        127,
+        110
+      ]
+    ],
+    "expected": 11
+  }
+]

@@ -34,6 +34,7 @@ from check_functional_effects import generated_manifest_snapshot
 from check_passport_current_profile import cargo_target
 import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as proof_dependencies
+import local_parity_gate as common
 from check_stateful_product_vector_widening import digest, inventory, reject_compiler_overrides, require
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,13 +48,46 @@ BOUNDARY_NEGATIVES = ("wrong_uint_width", "wrong_outer_length", "wrong_tuple_com
                       "wrong_inner_length", "wrong_nominal_struct")
 
 
-def main(*, boundaries=False):
-    # Keep the original cohort/default CLI and imports used by its proof owners.
-    # The second finite cohort has complete sources in its own directory.
-    fixtures = FIXTURES.with_name("constructor_equality_boundaries") if boundaries else FIXTURES
-    sources = fixtures / "sources" if boundaries else fixtures
-    roles = BOUNDARY_ROLES if boundaries else ROLES
-    negatives = BOUNDARY_NEGATIVES if boundaries else NEGATIVES
+TUPLE_ROLES = ('aliased_vector_variable', 'asymmetric_eq', 'direct_tuple_variable', 'direct_vector_variable', 'flat_eq', 'flat_ne', 'hash_tuple_argument', 'mixed_literal_eq', 'nested_eq', 'owned_capture_eq', 'reversed_eq', 'struct_literal_field', 'tuple_to_vector', 'uint_to_field_tuple', 'vector_to_tuple', 'widened_vector_capture')
+TUPLE_SUPPLEMENTAL = ('aliased_vector_variable', 'direct_tuple_variable', 'direct_vector_variable', 'hash_tuple_argument', 'struct_literal_field', 'tuple_to_vector', 'uint_to_field_tuple', 'vector_to_tuple', 'widened_vector_capture')
+TUPLE_NEGATIVES = ("wrong_input_width", "wrong_tuple_width", "wrong_capture_length", "wrong_vector_component", "wrong_field_pair")
+
+
+def test_worker_artifact(stdout, metadata, consumer, target):
+    """Bind one actual Cargo lib-test artifact before taking an immutable copy."""
+    rows = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+    root = metadata.get("resolve", {}).get("root")
+    require(root is not None, "Cargo test package root required")
+    artifacts = [row for row in rows if row.get("reason") == "compiler-artifact"
+                 and row.get("package_id") == root and row.get("executable")
+                 and row.get("target", {}).get("kind") == ["lib"]
+                 and row.get("profile", {}).get("test") is True]
+    require(len(artifacts) == 1, "one actual Cargo lib-test executable required")
+    row = artifacts[0]
+    require(Path(row["target"]["src_path"]).resolve() == (consumer / "consumer.rs").resolve(),
+            "test executable consumer source differs")
+    require(row["profile"].get("debug_assertions") is True
+            and row["profile"].get("overflow_checks") is True,
+            "test executable lacks checked profile settings")
+    actual = Path(row["executable"]).resolve(strict=True)
+    require(actual.is_relative_to(target.resolve()) and actual.is_file(),
+            "test executable escaped selected Cargo target")
+    return dict(path=str(actual), package_id=root, source=row["target"]["src_path"],
+                profile=row["profile"], compiled_cache_reused=row.get("fresh"))
+
+
+def main(*, boundaries=False, tuple_guards=False):
+    # Preserve both old finite cohorts and their default CLI/imports.
+    require(not (boundaries and tuple_guards), "one finite cohort required")
+    extended = boundaries or tuple_guards
+    fixtures = (FIXTURES.with_name("constructor_equality_tuple_guards") if tuple_guards else
+                FIXTURES.with_name("constructor_equality_boundaries") if boundaries else FIXTURES)
+    sources = fixtures if tuple_guards else fixtures / "sources" if boundaries else fixtures
+    roles = TUPLE_ROLES if tuple_guards else BOUNDARY_ROLES if boundaries else ROLES
+    negatives = TUPLE_NEGATIVES if tuple_guards else BOUNDARY_NEGATIVES if boundaries else NEGATIVES
+    case_count = 105 if tuple_guards else 30 if boundaries else 16
+    def source_for(role):
+        return sources / ("supplemental" if tuple_guards and role in TUPLE_SUPPLEMENTAL else "") / (role + ".compact")
     require(__debug__, "qualification requires Python without optimization")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler-receipt", type=Path, required=True)
@@ -68,12 +102,23 @@ def main(*, boundaries=False):
     recipe = json.loads(args.compiler_receipt.read_bytes())
     require(recipe["status"] == "passed" and recipe["head"] == head and recipe["tree"] == tree,
             "current clean original compiler recipe required")
+    if tuple_guards:
+        specs = json.loads((fixtures / "sources.json").read_bytes())
+        require(tuple(row["role"] for row in specs) == roles and all(
+            row["path"] == str(source_for(row["role"]).relative_to(ROOT)) and
+            row["sha256"] == digest(source_for(row["role"])) and
+            row["entries"] == ["read", "advance", "advance_other"] for row in specs),
+            "complete tuple source/export roster differs")
     compiler, scheme = [Path(recipe[k]["path"]).resolve(strict=True) for k in ("compactc", "compactc-scheme")]
     require(compiler.parent == scheme.parent, "one original compiler package required")
     require(all(digest(p) == recipe[k]["sha256"] for k, p in (("compactc", compiler), ("compactc-scheme", scheme))),
             "compiler identity differs")
     env = dict(os.environ)
     config = reject_compiler_overrides(dict(env))
+    if tuple_guards:
+        require(env.get("RUST_MIN_STACK") in (None, "2097152"), "exact 2 MiB tuple test worker required")
+        # Keep the worker limit off Cargo/rustc; only test execution uses2MiB.
+        env.pop("RUST_MIN_STACK", None)
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
     require(env["RUSTUP_TOOLCHAIN"] == "1.99.0", "Rust1.99.0 required")
     env["CARGO_TARGET_DIR"] = str(cargo_target(env, out))
@@ -99,6 +144,8 @@ def main(*, boundaries=False):
     out.mkdir(parents=True)
     report = dict(status="running", head=head, tree=tree, inputs=pins, commands=[], sources={},
                   scope=__doc__, proof_execution=False)
+    if tuple_guards:
+        report["rust_test_worker_stack_bytes"] = 2 * 1024 * 1024
     bound = {}
     dependency_sources = {}
     started = time.monotonic()
@@ -107,7 +154,7 @@ def main(*, boundaries=False):
         require(git("rev-parse", "HEAD") == head and not git("status", "--porcelain"), "source changed")
         require(reject_compiler_overrides(dict(os.environ)) == config, "Cargo configuration changed")
         require(all(Path(p).is_file() and digest(p) == h for p, h in {**pins, **bound}.items()), "input changed")
-        if boundaries:
+        if extended:
             proof_dependencies.unchanged(dependency_sources)
 
     def run(label, argv, success=True, extra=None):
@@ -117,7 +164,7 @@ def main(*, boundaries=False):
             argv[0] = str(rust["cargo"])
         start = time.monotonic()
         try:
-            if boundaries:
+            if extended:
                 result = process_owner.bounded_command(argv, env if extra is None else dict(env, **extra))
             else:
                 result = subprocess.run(argv, cwd=ROOT, env=env if extra is None else dict(env, **extra),
@@ -126,11 +173,11 @@ def main(*, boundaries=False):
             for stream in ("stdout", "stderr"):
                 data = getattr(error, stream)
                 (out / (label + "." + stream)).write_bytes(data.encode() if isinstance(data, str) else data or b"")
-            report["commands"].append(dict(label=label, argv=argv, exit=None, timeout=process_owner.COMMAND_TIMEOUT_SECONDS if boundaries else 600,
+            report["commands"].append(dict(label=label, argv=argv, exit=None, timeout=process_owner.COMMAND_TIMEOUT_SECONDS if extended else 600,
                                             seconds=time.monotonic() - start))
             raise
         row = dict(label=label, argv=argv, exit=result.returncode, seconds=time.monotonic() - start)
-        if boundaries:
+        if extended:
             row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
         for stream in ("stdout", "stderr"):
             p = out / (label + "." + stream)
@@ -149,10 +196,10 @@ def main(*, boundaries=False):
             destination = generated / role
             run(role + "-generate", [compiler, "--target", "rust", "--target", "ts", "--skip-zk",
                 "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
-                sources / (role + ".compact"), destination])
+                source_for(role), destination])
             manifest = generated_manifest_snapshot(destination)
             snapshots[role] = inventory(destination)
-            report["sources"][role] = dict(source_sha256=digest(sources / (role + ".compact")), manifest=manifest)
+            report["sources"][role] = dict(source_sha256=digest(source_for(role)), manifest=manifest)
             package = tomllib.loads((destination / "contract/Cargo.toml").read_text())["package"]["name"]
             dependencies.append(role + "={package=" + json.dumps(package) + ",path="
                                 + json.dumps(str(destination / "contract")) + ',features=["ledger-transaction"]}')
@@ -167,6 +214,15 @@ def main(*, boundaries=False):
                 out / "refused" / role], success=False)
             require(result.returncode != 0 and message in result.stderr, "wrong refusal: " + role)
             report["refusals"][role] = message
+        if tuple_guards:
+            from constructor_tuple_scope import RUST_REFUSALS
+            for role, message in RUST_REFUSALS.items():
+                result = run(role + "-known-alias-refusal", [compiler, "--target", "rust", "--skip-zk",
+                    "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
+                    fixtures / "supplemental" / (role + ".compact"), out / "refused" / role], success=False)
+                require(result.returncode == (255 if role == "aliased_tuple_variable" else 1) and message in result.stderr,
+                        "wrong known alias transport refusal: " + role)
+                report["refusals"][role] = message
         modules = out / "node_modules/@midnight-ntwrk"
         modules.mkdir(parents=True)
         (modules / "compact-runtime").symlink_to(runtime, target_is_directory=True)
@@ -182,10 +238,10 @@ def main(*, boundaries=False):
         consumer = out / "consumer"
         (consumer / "src/bin").mkdir(parents=True)
         shutil.copyfile(fixtures / "consumer.rs", consumer / "consumer.rs")
-        if boundaries:
+        if extended:
             shutil.copyfile(fixtures / "cases.json", consumer / "cases.json")
         text = '[workspace]\n[package]\nname="constructor-equality-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\nmidnight-compact-runtime={path=' + json.dumps(str(ROOT / "runtime-rs")) + '}\n'
-        bins = tuple(n for name in negatives for n in (name, name + "_twin")) if boundaries else negatives
+        bins = tuple(n for name in negatives for n in (name, name + "_twin")) if extended else negatives
         text += "\n".join(dependencies) + "\n[features]\n" + "\n".join(n + "=[]" for n in bins) + "\n"
         for name in bins:
             shutil.copyfile(fixtures / (name + ".rs"), consumer / ("src/bin/" + name + ".rs"))
@@ -206,18 +262,33 @@ def main(*, boundaries=False):
             if package.get("source"):
                 key = package["name"], package["version"], package["source"]
                 require(key in locked and package.get("checksum") == locked[key], "lock identity/checksum differs")
-        if boundaries:
+        if extended:
             proof_dependencies.authenticate(metadata, locked, dependency_sources)
             report["dependency_sources"] = dependency_sources
         bound.update({str(consumer / p): h for p, h in inventory(consumer).items()})
         env["COMPACT_CONSTRUCTOR_EQUALITY_TS"] = str(reference)
         argv = ["cargo", "test", "--offline", "--locked", "--manifest-path", manifest, "--lib"]
-        result = run("consumer", [*argv, "--", "--nocapture"] if boundaries else argv)
+        worker_environment = {}
+        if tuple_guards:
+            build = run("consumer-build", [*argv, "--no-run", "--message-format=json"])
+            artifact = test_worker_artifact(build.stdout, metadata, consumer, Path(env["CARGO_TARGET_DIR"]))
+            (out / "bin").mkdir()
+            snapshot = common.stable_copy(Path(artifact["path"]), out / "bin/constructor-equality-tests")
+            bound[snapshot["snapshot"]] = snapshot["sha256"]
+            report["test_worker_artifact"] = dict(cargo=artifact, binary=snapshot,
+                compiler_stack_environment="RUST_MIN_STACK unset for compilation",
+                worker_stack_bytes=2 * 1024 * 1024)
+            argv = [snapshot["snapshot"]]
+            worker_environment = {"RUST_MIN_STACK": "2097152"}
+            result = run("consumer", [*argv, "--nocapture"], extra=worker_environment)
+        else:
+            result = run("consumer", [*argv, "--", "--nocapture"] if extended else argv)
         require(re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", result.stdout) == [("1", "0", "0")], "consumer did not execute")
-        if boundaries:
-            require("boundary-cases:30 calls:360 replays:180" in result.stdout, "boundary execution counts differ")
+        if extended:
+            require(("tuple-guard-cases:105 calls:1260 replays:630" if tuple_guards else
+                     "boundary-cases:30 calls:360 replays:180") in result.stdout, "finite execution counts differ")
         for name in negatives:
-            if boundaries:
+            if extended:
                 twin = name + "_twin"
                 run(twin, ["cargo", "check", "--offline", "--locked", "--manifest-path", manifest,
                     "--bin", twin, "--features", twin])
@@ -228,18 +299,18 @@ def main(*, boundaries=False):
         changed[0]["initial"] = "8"
         wrong = out / "wrong-reference.json"
         wrong.write_text(json.dumps(changed))
-        if boundaries:
+        if extended:
             bound[str(wrong)] = digest(wrong)
-        result = run("changed-reference", argv, success=False, extra={"COMPACT_CONSTRUCTOR_EQUALITY_TS": str(wrong)})
+        result = run("changed-reference", argv, success=False, extra=dict(worker_environment, COMPACT_CONSTRUCTOR_EQUALITY_TS=str(wrong)))
         require(result.returncode != 0 and "test result: FAILED. 0 passed; 1 failed;" in result.stdout, "changed reference was accepted")
-        if boundaries:
-            restored = run("restored-reference", argv)
+        if extended:
+            restored = run("restored-reference", argv, extra=worker_environment or None)
             require(re.findall(r"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored", restored.stdout)
                     == [("1", "0", "0")], "restored consumer did not execute")
         require(all(inventory(generated / role) == before for role, before in snapshots.items()), "generated SDK changed")
         unchanged()
-        report.update(status="passed", cases=30 if boundaries else 16,
-                      cohort="operand-boundaries" if boundaries else "historical-equality",
+        report.update(status="passed", cases=case_count,
+                      cohort="implicit-tuple-guards" if tuple_guards else "operand-boundaries" if boundaries else "historical-equality",
                       generated_snapshots=snapshots)
     except BaseException as error:
         report.update(status="failed", error=repr(error))

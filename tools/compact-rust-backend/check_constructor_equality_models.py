@@ -26,13 +26,19 @@ import constructor_proof_dependencies as dependencies
 import check_functional_source_sdk as sdk
 import check_passport_current_profile as process_owner
 
-def main(*, boundaries=False):
+def main(*, boundaries=False, tuple_guards=False):
+    assert not (boundaries and tuple_guards), "one finite cohort required"
+    extended = boundaries or tuple_guards
+    source_count = 16 if tuple_guards else 8
+    model_count = source_count * 3
     W = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--producer-root', type=Path, required=True)
     parser.add_argument('--producer-receipt', type=Path, required=True)
-    if boundaries:
+    if extended:
         parser.add_argument('--scope-receipt', type=Path, required=True)
+    if tuple_guards:
+        parser.add_argument('--tuple-scope-receipt', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     D = args.output.resolve()
@@ -47,15 +53,15 @@ def main(*, boundaries=False):
     source = git('rev-parse', 'HEAD')
     accepted = json.loads(functional.read_text())
     assert accepted['status'] == 'passed' and accepted['head']==source and accepted['tree']==git('rev-parse','HEAD^{tree}')
-    fixture = 'constructor_equality_boundaries' if boundaries else 'constructor_equality'
-    inventory_flag = '--constructor-equality-boundaries-inventory' if boundaries else '--constructor-equality-inventory'
-    observation_timeout = 600 if boundaries else 120
+    fixture = 'constructor_equality_tuple_guards' if tuple_guards else 'constructor_equality_boundaries' if boundaries else 'constructor_equality'
+    inventory_flag = '--constructor-tuple-equality-inventory' if tuple_guards else '--constructor-equality-boundaries-inventory' if boundaries else '--constructor-equality-inventory'
+    observation_timeout = 600 if extended else 120
     roster_path = W / 'tools/compact-rust-backend/tests' / fixture / 'sources.json'
-    if boundaries:
-        assert accepted.get('cohort') == 'operand-boundaries', 'boundary producer cohort differs'
+    if extended:
+        assert accepted.get('cohort') == ('implicit-tuple-guards' if tuple_guards else 'operand-boundaries'), 'boundary producer cohort differs'
     assert sha(roster_path) == accepted['inputs'][str(roster_path)]
     specs = json.loads(roster_path.read_text())
-    assert len(specs)==8 and {s['role'] for s in specs}==set(accepted['sources'])
+    assert len(specs)==source_count and {s['role'] for s in specs}==set(accepted['sources'])
     assert all(s['entries']==['read','advance','advance_other'] for s in specs)
     for spec in specs:
         assert sha(W/spec['path'])==spec['sha256']==accepted['sources'][spec['role']]['source_sha256']
@@ -64,7 +70,7 @@ def main(*, boundaries=False):
     sdk_roots={}
     pins.update(accepted['inputs'])
     scope_roots = {}
-    if boundaries:
+    if extended:
         scope_path = args.scope_receipt.resolve(strict=True)
         scope = json.loads(scope_path.read_text())
         assert scope['status'] == 'passed' and scope['head'] == source and scope['tree'] == git('rev-parse', 'HEAD^{tree}')
@@ -82,6 +88,23 @@ def main(*, boundaries=False):
         scope_roots = scope['frozen_directories']
         for path, expected_inventory in scope_roots.items():
             sdk.equal_inventory(Path(path), expected_inventory)
+    if tuple_guards:
+        tuple_scope_path = args.tuple_scope_receipt.resolve(strict=True)
+        tuple_scope = json.loads(tuple_scope_path.read_bytes())
+        assert tuple_scope['status']=='passed' and tuple_scope['head']==source and tuple_scope['tree']==git('rev-parse','HEAD^{tree}')
+        assert tuple_scope['complete_sources']==18 and len(tuple_scope['commands'])==54 and len(tuple_scope['HOST_controls'])==9
+        assert tuple_scope['supported_rust_generations']==16 and tuple_scope['current_typed_refusals']==2 and not tuple_scope['sdk_execution'] and not tuple_scope['proof_execution']
+        pins[str(tuple_scope_path)] = sha(tuple_scope_path)
+        for path, digest in tuple_scope['inputs'].items():
+            assert Path(path).is_absolute() and sha(path)==digest
+            pins[path]=digest
+        for relative, digest in tuple_scope['artifacts'].items():
+            path=(tuple_scope_path.parent/relative).resolve(strict=True)
+            assert not Path(relative).is_absolute() and path.is_relative_to(tuple_scope_path.parent) and sha(path)==digest
+            pins[str(path)]=digest
+        for path, files in tuple_scope['frozen_directories'].items():
+            sdk.equal_inventory(Path(path),files)
+        scope_roots.update(tuple_scope['frozen_directories'])
     for tool in [Path(sys.executable).resolve(), Path(shutil.which('rustup')).resolve(), Path(dependencies.GIT)]:
         pins[str(tool)]=sha(tool)
     for role, row in accepted['sources'].items():
@@ -102,7 +125,7 @@ def main(*, boundaries=False):
     assert not Path(env['CARGO_TARGET_DIR']).resolve().is_relative_to(W)
     configuration = sdk.cargo_configuration(env)
     env.pop('LD_LIBRARY_PATH', None)
-    r = dict(format='constructor-equality-boundaries-model-observation/v1' if boundaries else 'constructor-equality-model-observation/v1', status='running', producer_source=accepted['head'], qualifier_source=source, qualifier_tree=git('rev-parse', 'HEAD^{tree}'), started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), inputs=pins, commands=[], key_generation=False, proof_execution=False, scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission')
+    r = dict(format='constructor-tuple-equality-model-observation/v1' if tuple_guards else 'constructor-equality-boundaries-model-observation/v1' if boundaries else 'constructor-equality-model-observation/v1', status='running', producer_source=accepted['head'], qualifier_source=source, qualifier_tree=git('rev-parse', 'HEAD^{tree}'), started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), inputs=pins, commands=[], key_generation=False, proof_execution=False, scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission')
     save = lambda: (D / 'receipt.json').write_text(json.dumps(r, indent=2) + '\n')
     save()
     def run(label, argv, expected=0, diagnostic=None, timeout=600):
@@ -114,7 +137,7 @@ def main(*, boundaries=False):
         for name, expected_inventory in scope_roots.items(): sdk.equal_inventory(Path(name),expected_inventory)
         dependencies.unchanged(dependency_sources)
         out, err = D / (label + '.stdout'), D / (label + '.stderr')
-        if boundaries:
+        if extended:
             # Reuse the existing group owner for Cargo/rustc descendants too.
             assert timeout == process_owner.COMMAND_TIMEOUT_SECONDS, 'boundary commands use the maintained finite owner'
             try:
@@ -133,7 +156,7 @@ def main(*, boundaries=False):
             with out.open('xb') as o, err.open('xb') as e:
                 p = subprocess.run(list(map(str, argv)), cwd=W, env=env, stdout=o, stderr=e, timeout=timeout)
         row = dict(label=label, argv=list(map(str, argv)), exit=p.returncode, seconds=time.monotonic()-start, stdout=str(out), stderr=str(err), stdout_sha256=sha(out), stderr_sha256=sha(err))
-        if boundaries:
+        if extended:
             row['timeout_seconds'] = process_owner.COMMAND_TIMEOUT_SECONDS
         r['commands'].append(row);save()
         assert (p.returncode == 0) if expected == 0 else (p.returncode != 0), row
@@ -161,7 +184,7 @@ def main(*, boundaries=False):
         run('clippy', ['cargo', 'clippy', '--profile', 'proof-checks', '--locked', '--offline', '-p', 'compact-rust-proof-smoke', '--bin', 'compact-rust-proof-smoke', '--features', 'constructor-vector-models', '--', '-D', 'warnings'])
         output = run('inventory', [binary, inventory_flag, root], timeout=observation_timeout)
         inventory = json.loads(output.read_text());rows=inventory['circuits']
-        assert len(rows) == 24 and {(x['source'], x['circuit']) for x in rows} == {(s['role'], e) for s in specs for e in s['entries']}
+        assert len(rows) == model_count and {(x['source'], x['circuit']) for x in rows} == {(s['role'], e) for s in specs for e in s['entries']}
         assert not inventory['key_generation'] and not inventory['proof_execution'] and not inventory['selection_made']
         for x in rows:
             p = root / x['source'] / 'zkir' / (x['circuit']+'.zkir')
@@ -195,8 +218,9 @@ def main(*, boundaries=False):
         assert git('rev-parse','HEAD')==source and not git('status','--porcelain')
         assert sdk.cargo_configuration(env)==configuration
         r.update(status='passed', input_bytes_unchanged=True, observed_models=len(rows), observed_k=sorted(set(x['k'] for x in rows)), within_numeric_cap=sum(x['k']<=8 for x in rows), missing_or_extra_members_refused=True, frozen_directories=sdk_roots)
-        if boundaries:
+        if extended:
             r['scope_receipt'] = str(scope_path)
+            if tuple_guards: r['tuple_scope_receipt'] = str(tuple_scope_path)
             r['frozen_directories'] = {**sdk_roots, **scope_roots}
     except BaseException as error:
         r.update(status='failed',error=repr(error));raise

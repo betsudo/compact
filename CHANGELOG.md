@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
+
+Unreleased local Rust-backend slice; generated API, native and proof
+qualification remain separate acceptance gates.
+
+### Fixed
+
+- Preserve implicit tuple component widening in equality guards inside
+  supported constructor Vector loops, including nested tuples and captured
+  Vectors. Reuse checked coercion; retain narrowing and fallible guard refusals.
+  Ordinary circuit and value initializer transport remain unchanged.
+- Assemble constructor guard conditions as structured AST so equality with a
+  leading struct literal does not panic while parsing generated condition tokens.
+
 ## [Toolchain 0.31.209, language 0.23.105, runtime 0.16.102]
 
 Unreleased local Rust-backend slice; native and proof qualification remain

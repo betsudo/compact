@@ -27,6 +27,7 @@ concurrency:
 
 jobs:
   compiler-linux:
+    needs: [license-check, source-preflight]
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
       contents: read
@@ -34,6 +35,7 @@ jobs:
       system: x86_64-linux
 
   compiler-darwin:
+    needs: [license-check, source-preflight]
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_macos }}
     uses: ./.github/workflows/compiler-producer.yml
     permissions:
@@ -108,6 +110,7 @@ jobs:
   license-check:
     name: No new full-header violations
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -152,8 +155,8 @@ jobs:
   constructor-vector:
     name: Constructor Vector proofs
     runs-on: ubuntu-latest
-    needs: [license-check, compiler-linux]
-    if: ${{ !cancelled() }}
+    needs: [license-check, source-preflight, compiler-linux]
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' }}
     permissions:
       contents: read
       actions: read
@@ -282,6 +285,7 @@ jobs:
   source-preflight:
     name: Source and version preflight
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -295,6 +299,9 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: 3.13
+
+      - name: Check workflow and compiler handoff controls before expensive builds
+        run: python3 -B .github/scripts/test_compiler_closure.py
 
       - name: Check pinned oracle inventory before expensive builds
         run: python3 tools/compact-rust-backend/check_oracle_acceptance.py
@@ -447,7 +454,7 @@ jobs:
   fixture-freshness:
     name: Generated Rust fixtures are fresh
     needs: compiler-linux
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.compiler-linux.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -511,7 +518,7 @@ jobs:
   compiler-tests:
     name: Scheme compiler, source maps and coverage
     needs: compiler-linux
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.compiler-linux.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -641,7 +648,7 @@ jobs:
   package-outputs:
     name: Complete Nix package outputs
     needs: compiler-linux
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.compiler-linux.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -692,6 +699,8 @@ jobs:
 
   workspace-rust:
     name: Workspace Rust tests and Clippy
+    needs: [license-check, source-preflight]
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -754,7 +763,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 120
     steps:
       - name: Require successful compiler producer
@@ -1044,7 +1053,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     # It takes 90+ minutes to build without Nix caching
     timeout-minutes: 180
     steps:
@@ -1153,10 +1162,11 @@ jobs:
           cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
-      - name: Qualify constructor equality APIs and sixteen selected proof cases
+      - name: Qualify constructor guard origins, APIs and sixteen selected proofs
         id: constructor_equality_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-equality-recipe"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_tuple_equality_scope.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-equality-recipe/receipt.json" --output "$RUNNER_TEMP/compact-constructor-tuple-scope"
           ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_equality_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-equality-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-equality-proof"
@@ -1168,6 +1178,7 @@ jobs:
           name: constructor-equality-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/compact-constructor-equality-recipe/
+            ${{ runner.temp }}/compact-constructor-tuple-scope/
             ${{ runner.temp }}/compact-constructor-equality-proof/
             !${{ runner.temp }}/compact-constructor-equality-proof/**/cargo-target/**
           if-no-files-found: ignore
@@ -1190,6 +1201,26 @@ jobs:
             ${{ runner.temp }}/compact-constructor-boundaries-recipe/
             ${{ runner.temp }}/compact-constructor-boundaries-proof/
             !${{ runner.temp }}/compact-constructor-boundaries-proof/**/cargo-target/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Qualify implicit tuple equality guards and 105 proof cases
+        id: constructor_tuple_guards_proof
+        run: |
+          python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_tuple_equality_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-proof"
+
+      - name: Retain implicit tuple equality guard proof diagnostics
+        if: always() && (steps.constructor_tuple_guards_proof.outcome == 'success' || steps.constructor_tuple_guards_proof.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: constructor-tuple-guards-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/compact-constructor-tuple-guards-recipe/
+            ${{ runner.temp }}/compact-constructor-tuple-guards-proof/
+            !${{ runner.temp }}/compact-constructor-tuple-guards-proof/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1321,7 +1352,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 90
     steps:
       - name: Require successful compiler producer
@@ -1509,7 +1540,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 90
     steps:
       - name: Require successful compiler producer
@@ -1654,7 +1685,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 90
     steps:
       - name: Require successful compiler producer
@@ -1792,7 +1823,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 120
     steps:
       - name: Require successful compiler producer
@@ -1916,7 +1947,7 @@ jobs:
       contents: read
       actions: read
     needs: [license-check, source-preflight, compiler-linux, fixture-freshness]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.license-check.result == 'success' && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' && needs.fixture-freshness.result == 'success' }}
     timeout-minutes: 120
     steps:
       - name: Require successful compiler producer
@@ -2031,7 +2062,7 @@ jobs:
   e2e-tests:
     name: Compiler E2E and test reports
     needs: compiler-linux
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.compiler-linux.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -2118,6 +2149,7 @@ jobs:
     needs: [license-check, source-preflight, workspace-rust, compiler-linux, fixture-freshness, compiler-tests, package-outputs, generated-api, product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build, constructor-vector]
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions: {}
     steps:
       - name: Require every Linux qualification owner

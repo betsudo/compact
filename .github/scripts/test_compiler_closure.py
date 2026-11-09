@@ -242,7 +242,7 @@ class WorkflowOwnershipTests(unittest.TestCase):
             if next_job:
                 section = section.split('  '+next_job+':\n', 1)[0]
             if job in ('build', 'constructor-vector'):
-                self.assertIn('if: ${{ !cancelled() }}', section)
+                self.assertIn("if: ${{ !cancelled() && needs.", section)
             else:
                 self.assertIn("if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.run_macos }}", section)
             first_step = section.split('    steps:\n', 1)[1].split('      - name: Checkout', 1)[0]
@@ -562,13 +562,23 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
         self.assertIn('Qualify wide-zero multiplication proofs',legacy)
 
+    def constructor_equality_step(self):
+        # The stable step id owns the shell; a descriptive name may change.
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        marker = '        id: constructor_equality_proof\n'
+        self.assertEqual(workflow.count(marker), 1)
+        index = workflow.index(marker)
+        start = workflow.rfind('      - name:', 0, index)
+        end = workflow.find('      - name:', index)
+        self.assertGreaterEqual(start, 0)
+        return workflow, workflow[start:end if end >= 0 else None]
+
     def test_constructor_equality_literal_shell_forwards_tools_and_stops_on_failures(self):
         import os
         import subprocess
         import sys
         import textwrap
-        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        step = workflow.split('      - name: Qualify constructor equality APIs and sixteen selected proof cases\n', 1)[1].split('      - name:', 1)[0]
+        workflow, step = self.constructor_equality_step()
         shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
         # Execute the configured shell with observable command boundaries. This
         # is argument/failure propagation coverage, not a mock proof verdict.
@@ -579,11 +589,11 @@ if stage == 'zkir': print('/mock/bin/zkir')
             wrapper = '''import json, os, pathlib, sys
 args = sys.argv[1:]
 kind = pathlib.Path(sys.argv[0]).name
-stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else ('scope' if 'tools/compact-rust-backend/check_constructor_tuple_equality_scope.py' in args else 'gate')))
 with open(os.environ['TEST_LOG'], 'a') as log:
     log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'), target=os.environ.get('CARGO_TARGET_DIR'))) + "\\n")
 if os.environ.get('TEST_FAIL') == stage:
-    raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
+    raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74,'scope':75}[stage])
 if stage == 'runtime': print('/mock/runtime-package')
 if stage == 'zkir': print('/mock/bin/zkir')
 '''
@@ -591,7 +601,7 @@ if stage == 'zkir': print('/mock/bin/zkir')
                 path = bin_dir / name
                 path.write_text('#!' + sys.executable + '\n' + wrapper)
                 path.chmod(0o755)
-            for failure, expected in [('', 0), ('recipe', 71), ('zkir', 73), ('runtime', 72), ('gate', 74)]:
+            for failure, expected in [('', 0), ('recipe', 71), ('scope', 75), ('zkir', 73), ('runtime', 72), ('gate', 74)]:
                 with self.subTest(failure=failure):
                     log = root / ('log-' + (failure or 'success'))
                     env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'],
@@ -600,26 +610,27 @@ if stage == 'zkir': print('/mock/bin/zkir')
                     result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell], env=env, capture_output=True, text=True, timeout=30)
                     self.assertEqual(result.returncode, expected, result.stderr)
                     rows = [json.loads(line) for line in log.read_text().splitlines()]
-                    stages = ['recipe', 'zkir', 'runtime', 'gate']
+                    stages = ['recipe', 'scope', 'zkir', 'runtime', 'gate']
                     self.assertEqual([r['stage'] for r in rows], stages if not failure else stages[:stages.index(failure) + 1])
                     self.assertEqual(rows[0]['args'], ['tools/compact-rust-backend/record_compiler_recipe.py', '--compiler', env['COMPACTC'], '--output', env['RUNNER_TEMP'] + '/compact-constructor-equality-recipe'])
                     for row in rows:
-                        if row['stage'] in ('zkir', 'gate'):
+                        if row['stage'] in ('scope', 'zkir', 'gate'):
                             self.assertIsNone(row['ld'])
                     for row in rows:
                         self.assertEqual(row['target'], env['RUNNER_TEMP'] + '/compact-constructor-equality-target' if row['stage']=='gate' else env['CARGO_TARGET_DIR'])
                     if not failure:
+                        self.assertEqual(rows[1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_tuple_equality_scope.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-equality-recipe/receipt.json', '--output', env['RUNNER_TEMP'] + '/compact-constructor-tuple-scope'])
                         self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_equality_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-equality-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-constructor-equality-proof'])
 
     def test_constructor_equality_gate_requires_material_full_execution_and_diagnostics(self):
         workflow=(owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
         linux=workflow.split('  build:\n',1)[1]
-        before,step=linux.split('      - name: Qualify constructor equality APIs and sixteen selected proof cases\n',1)
-        step=step.split('      - name:',1)[0]
+        _,step=self.constructor_equality_step()
+        before=linux[:linux.index(step)]
         self.assertIn('Prepare verified built-in proof material',before)
         self.assertIn('Import authenticated same-run compiler closure',before)
         self.assertIn('Resolve locked ledger proof fixtures',before)
-        self.assertEqual(linux.count('      - name: Qualify constructor equality APIs and sixteen selected proof cases'),1)
+        self.assertEqual(linux.count('        id: constructor_equality_proof\n'),1)
         self.assertNotIn('id: constructor_vector_proof',linux)
         required=workflow.split('  complete:\n',1)[1]
         self.assertIn('needs.constructor-vector.result',required)
@@ -693,13 +704,13 @@ if stage == 'zkir': print('/mock/bin/zkir')
         legacy = workflow.split('  build:\n', 1)[1].split('  product-proofs:\n', 1)[0]
         for consumer in (constructor, legacy):
             self.assertIn('compiler-linux', consumer.split('    steps:',1)[0])
-            self.assertIn('if: ${{ !cancelled() }}', consumer)
+            self.assertIn("if: ${{ !cancelled() && needs.", consumer)
             self.assertIn('needs.compiler-linux.outputs.artifact-id', consumer)
             self.assertIn('needs.compiler-linux.outputs.producer-attempt', consumer)
             self.assertIn('--source-sha "$SOURCE_SHA" --system x86_64-linux', consumer)
             self.assertIn('--run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT"', consumer)
             self.assertIn('ref: ${{ github.sha }}', consumer)
-        self.assertIn('needs: [license-check, compiler-linux]', constructor)
+        self.assertIn('needs: [license-check, source-preflight, compiler-linux]', constructor)
         self.assertIn('timeout-minutes: 180', constructor)
         self.assertIn("skip_cache: 'true'", constructor)
         self.assertNotIn('secrets.', constructor)
@@ -815,6 +826,81 @@ if stage == 'zkir': print('/mock/bin/zkir')
         self.assertIn('python3 -m unittest discover -s scripts -p test_header_regressions.py', license_job)
         self.assertLess(license_job.index('Test exact header-regression accounting'),
                         license_job.index('Reject new header violations on pull requests'))
+
+
+class RunnerResourceControls(unittest.TestCase):
+    """Exercise the configured admission decisions; never run builds/proofs."""
+    def jobs(self):
+        import re
+        text = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        return dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:\n|\Z)',
+                               text.split('\njobs:\n', 1)[1], re.M | re.S))
+
+    def test_expensive_jobs_require_every_declared_prerequisite_success(self):
+        import re
+        jobs = self.jobs()
+        full = ['license-check', 'source-preflight', 'compiler-linux', 'fixture-freshness']
+        expected = {name: full for name in ('generated-api', 'build', 'product-proofs',
+                    'component-vector-proof', 'outer-vector-proof', 'native-scenarios', 'native-backend')}
+        expected.update({name: ['compiler-linux'] for name in ('fixture-freshness', 'compiler-tests', 'package-outputs', 'e2e-tests')})
+        expected.update({'constructor-vector': ['license-check', 'source-preflight', 'compiler-linux'],
+                         'workspace-rust': ['license-check', 'source-preflight']})
+        for name, deps in expected.items():
+            with self.subTest(job=name):
+                header = jobs[name].split('    steps:', 1)[0]
+                configured = re.search(r'^    needs: (.+)$', header, re.M).group(1).strip('[]').split(',')
+                self.assertEqual([x.strip() for x in configured], deps)
+                condition = re.search(r'^    if: \$\{\{ (.*) \}\}$', header, re.M).group(1)
+                self.assertEqual(set(re.findall(r'needs\.([\w-]+)\.result', condition)), set(deps))
+                expression = re.sub(r'needs\.([\w-]+)\.result', lambda m: 'states['+repr(m[1])+']', condition)
+                expression = expression.replace('!cancelled()', 'not cancelled').replace('&&', ' and ')
+                samples = [dict.fromkeys(deps, 'success')]
+                samples += [dict.fromkeys(deps, 'success') | {dep: failed}
+                            for dep in deps for failed in ('failure', 'cancelled', 'skipped', '')]
+                for states in samples:
+                    for cancelled in (False, True):
+                        actual = eval(expression, {'__builtins__': {}}, dict(states=states, cancelled=cancelled))
+                        self.assertEqual(actual, not cancelled and all(s == 'success' for s in states.values()))
+        # Failed/skipped consumers must still fail the existing always-run gate.
+        complete = jobs['complete']
+        self.assertIn('if: ${{ always() }}', complete)
+        required = re.search(r'^    needs: \[(.+)\]$', complete, re.M).group(1)
+        self.assertEqual({x.strip() for x in required.split(',')},
+                         set(expected) | {'license-check', 'source-preflight', 'compiler-linux'})
+        self.assertNotIn('continue-on-error', complete)
+
+    def test_cheap_controls_precede_producer_and_workspace_allocations(self):
+        jobs = self.jobs()
+        for producer in ('compiler-linux', 'compiler-darwin'):
+            self.assertIn('needs: [license-check, source-preflight]', jobs[producer])
+        self.assertIn('run: python3 -B .github/scripts/test_compiler_closure.py', jobs['source-preflight'])
+        for name, cap in [('license-check', 10), ('source-preflight', 10), ('complete', 5)]:
+            self.assertIn('timeout-minutes: '+str(cap), jobs[name])
+        # Keep all proof/native/package/E2E owners and their existing time budgets.
+        for name in ('build', 'constructor-vector'):
+            self.assertIn('timeout-minutes: 180', jobs[name])
+        self.assertIn('check_constructor_tuple_equality_proof.py', jobs['build'])
+
+    def test_pr_and_manual_scopes_preserve_distinct_tested_trees(self):
+        import re
+        for filename in ('build-compiler.yml', 'rust-backend-checks.yml'):
+            text = (owner.ROOT / '.github/workflows' / filename).read_text()
+            group = re.search(r'^  group: (.+)$', text, re.M).group(1)
+            self.assertIn('cancel-in-progress: true', text)
+            def render(fields):
+                return re.sub(r'\$\{\{\s*(.*?)\s*\}\}',
+                    lambda m: next((fields.get(x.strip(), '') for x in m[1].split('||') if fields.get(x.strip(), '')), ''), group)
+            common = {'github.workflow': filename}
+            branch = 'codex/resource-control-test'
+            pr = common | {'github.event.pull_request.number': '722', 'github.ref': 'refs/pull/722/merge'}
+            manual = common | {'github.ref': 'refs/heads/'+branch}
+            # Same-head PRs against different bases require separate merge checks;
+            # a manual head checkout cannot replace either merge qualification.
+            self.assertNotEqual(render(pr), render(pr | {'github.event.pull_request.number': '723'}))
+            self.assertNotEqual(render(pr), render(manual))
+            self.assertEqual(render(manual), render(dict(manual)))
+            self.assertNotEqual(render(manual), render(manual | {'github.ref': 'refs/heads/codex/other-branch'}))
+
 
 
 if __name__ == '__main__':

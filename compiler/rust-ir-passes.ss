@@ -1012,8 +1012,13 @@
                  (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target))
                  value))]
           [(var-ref ,src ,var-name)
-           (let ([actual-type (and (current-variable-types)
-                                   (eq-hashtable-ref (current-variable-types) var-name #f))])
+           ;; Constructor tuple casts carry analyzed source types down to each
+           ;; child, even without a callable variable-type table. Retain that
+           ;; authority for the existing checked constructor widening owner.
+           ;; Ordinary expressions and value initializers keep their transport.
+           (let ([actual-type (or (and (current-variable-types)
+                                      (eq-hashtable-ref (current-variable-types) var-name #f))
+                                 (and (current-constructor-condition?) source-type))])
              (if actual-type
                  (nanopass-case (Lnodisclose Type) expected-type
                    [(tfield ,src^)
