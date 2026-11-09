@@ -122,6 +122,16 @@ retained with their original source identities.
 
 ## Remaining work and owners
 
+The delivery branch adds the complete thirty-case boundary entry to the
+existing required Linux `build` proof job, after the unchanged historical
+sixteen-case entry. It records a fresh compiler recipe for the authenticated
+same-run compiler, resolves the runtime and ZKIR from the current Nix recipe,
+and reuses the existing Cargo target. Its full default invocation includes API,
+scope, model, native preflight, fresh keys/proofs, strict applications and replay
+controls; it does not use `--preflight-only`. Success and failure diagnostics
+are retained under a separate artifact name. macOS remains optional. These
+workflow changes are integration coverage, not a claim of a completed Linux run.
+
 - Keep the implicit mixed-width tuple literal guard transport gap open. Valid
   Compact tuple literals still need component widening before Rust equality
   typing; the safe current refusal is not a language restriction.
@@ -138,9 +148,11 @@ all possible entrypoints, whole-CI value or the whole Rust AST milestone.
 
 ## Exclusions and operational limits
 
-No new language/ABI, broad refactor, CI optimization, workflow activation,
-push/merge/release/shared installation, snapshot/cache policy change, Forge
-work or deletion of retained stores/targets/evidence. Current executables and
+No new language/ABI, broad refactor, CI optimization, release/shared installation,
+snapshot/cache policy change, Forge work or deletion of retained stores/targets/
+evidence. The earlier local qualification did not publish or run hosted CI;
+delivery now follows the owner's standing logical-slice PR/CI authorization.
+Current executables and
 qualification dependencies remain needed. Clean only owned inactive unneeded
 reproducible outputs after guards, and preserve unpublished work.
 #720 integration and the broader backend goal remain open after this bounded
