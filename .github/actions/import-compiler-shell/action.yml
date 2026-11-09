@@ -1,0 +1,46 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Import compiler shell prerequisites
+description: Authenticate and import unchanged same-run Linux compiler shell inputs
+inputs:
+  artifact-id:
+    description: Immutable artifact ID from the compiler producer
+    required: true
+  producer-attempt:
+    description: Actual successful compiler producer attempt
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Import authenticated same-run compiler shell closure
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        SOURCE_SHA: ${{ github.sha }}
+        ARTIFACT_ID: ${{ inputs.artifact-id }}
+        PRODUCER_ATTEMPT: ${{ inputs.producer-attempt }}
+      run: |
+        set -euo pipefail
+        test -n "$ARTIFACT_ID"
+        test -n "$PRODUCER_ATTEMPT"
+        gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-shell-material.zip"
+        python3 -B .github/scripts/compiler_closure.py import --material compiler-shell \
+          --source-sha "$SOURCE_SHA" --system x86_64-linux \
+          --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+          --producer-attempt "$PRODUCER_ATTEMPT" \
+          --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+          --artifact-zip "$RUNNER_TEMP/compiler-shell-material.zip" \
+          --directory "$RUNNER_TEMP/imported-compiler-shell"

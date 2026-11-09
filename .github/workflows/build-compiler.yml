@@ -33,6 +33,7 @@ jobs:
       contents: read
     with:
       system: x86_64-linux
+      export-shell: true
 
   compiler-darwin:
     needs: [license-check, source-preflight]
@@ -204,6 +205,12 @@ jobs:
             --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
 
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
@@ -564,6 +571,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Snapshot doc/compact-reference.mdx before running compiler/go
         run: |
           cp doc/compact-reference.mdx /tmp/compact-reference.before.mdx
@@ -809,6 +822,12 @@ jobs:
             --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
 
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
@@ -1101,6 +1120,12 @@ jobs:
             --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
 
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
@@ -1400,6 +1425,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
         with:
@@ -1588,6 +1619,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
         with:
@@ -1733,6 +1770,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
         with:
@@ -1871,6 +1914,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
         with:
@@ -1995,6 +2044,12 @@ jobs:
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
 
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
       - name: Setup Rust toolchain for native backend
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
         with:
@@ -2107,6 +2162,12 @@ jobs:
             --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
             --directory "$RUNNER_TEMP/imported-compiler")
           echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
 
       - name: Realize compiler package for relative E2E binary paths
         run: nix build .#compactc
