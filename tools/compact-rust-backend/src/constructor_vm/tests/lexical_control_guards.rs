@@ -772,3 +772,110 @@ fn constructor_equality_uses_actual_vector_element_value_scope() {
         assert!(trace.0.borrow().is_empty());
     }
 }
+
+#[test]
+fn constructor_equality_uses_checked_monotone_uint_coercion() {
+    let small = Type::Unsigned { max: "255".into() };
+    let large = Type::Unsigned {
+        max: "65535".into(),
+    };
+    let parameters: HashMap<&str, (&Type, syn::Ident)> = HashMap::from([
+        ("item", (&small, syn::parse_quote!(item))),
+        ("right", (&large, syn::parse_quote!(right))),
+    ]);
+    for negated in [false, true] {
+        let left = Box::new(Expr::Coerce {
+            value: Box::new(parameter("item")),
+            ty: large.clone(),
+        });
+        let right = Box::new(parameter("right"));
+        let condition = if negated {
+            Expr::NotEqual { left, right }
+        } else {
+            Expr::Equal { left, right }
+        };
+        let step = ConstructorStep::If {
+            condition,
+            then_steps: vec![],
+            otherwise_steps: vec![],
+        };
+        let trace = GuardTrace::default();
+        let bare = execute(std::slice::from_ref(&step), &parameters, None);
+        let observed = execute(std::slice::from_ref(&step), &parameters, Some(&trace));
+        assert_eq!(bare, observed);
+        assert!(observed.0.is_ok());
+        assert!(trace.0.borrow().is_empty());
+    }
+}
+
+#[test]
+fn constructor_equality_rejects_narrowing_coercion_and_general_cast_transport() {
+    let large = Type::Unsigned {
+        max: "65535".into(),
+    };
+    let small = Type::Unsigned { max: "255".into() };
+    let parameters: HashMap<&str, (&Type, syn::Ident)> =
+        HashMap::from([("wide", (&large, syn::parse_quote!(wide)))]);
+    let step = ConstructorStep::If {
+        condition: Expr::Equal {
+            left: Box::new(Expr::Coerce {
+                value: Box::new(parameter("wide")),
+                ty: small.clone(),
+            }),
+            // A later error must not hide the failed checked bound relation.
+            right: Box::new(parameter("later")),
+        },
+        then_steps: vec![],
+        otherwise_steps: vec![],
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &parameters,
+        &trace,
+        RenderError::TypeMismatch {
+            expected: small,
+            actual: large.clone(),
+        },
+    );
+    let ConstructorStep::If {
+        condition: Expr::Equal { left, .. },
+        ..
+    } = &step
+    else {
+        panic!("fixture")
+    };
+    assert_eq!(
+        trace.0.borrow().first(),
+        Some(&(
+            "expr",
+            std::ptr::from_ref(left.as_ref()) as usize,
+            Slot::Node
+        ))
+    );
+    // The producer must provide checked Coerce. The broad cast whitelist is
+    // deliberately unchanged, even if this particular cast could widen.
+    let condition = Expr::Equal {
+        left: Box::new(Expr::UnsignedCast {
+            value: Box::new(parameter("wide")),
+            max: "65535".into(),
+        }),
+        right: Box::new(parameter("wide")),
+    };
+    let step = ConstructorStep::If {
+        condition,
+        then_steps: vec![],
+        otherwise_steps: vec![],
+    };
+    let trace = GuardTrace::default();
+    error(
+        &step,
+        &parameters,
+        &trace,
+        RenderError::InvalidConstructorInitializer("if".into()),
+    );
+    let ConstructorStep::If { condition, .. } = &step else {
+        panic!("fixture")
+    };
+    only_expr(&trace, condition);
+}

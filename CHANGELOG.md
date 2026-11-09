@@ -5,14 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.209, language 0.23.105, runtime 0.16.102]
+
+Unreleased local Rust-backend slice; native and proof qualification remain
+separate acceptance gates.
+
+### Fixed
+
+- Preserve checked implicit unsigned widening in equality guards inside
+  supported constructor Vector loops. Keep general casts, value initializer
+  restrictions and ordinary circuit lowering with their existing owners.
+
+### Added
+
+- Add a separate complete mixed-width Uint, tuple, Vector and struct equality
+  SDK cohort, with both operators, TypeScript comparisons, ordinary and
+  functional Rust routes, public VM replay and marked type/shape misuse
+  controls with valid twins. Proof qualification and full required CI remain
+  integration requirements; this entry is not an execution receipt.
+
 ## [Toolchain 0.31.195, language 0.23.105, runtime 0.16.102]
 
 Unreleased local Rust-backend slice; qualification remains in progress.
 
 ### Added
 
-- Support typed equality and inequality conditions in existing constructor
-  control flow. Reuse the checked pure lowering and structured Rust AST emitter;
+- Support typed equality and inequality guards inside supported constructor
+  Vector loops. Reuse the checked pure lowering and structured Rust AST emitter;
   keep value initializer restrictions and fallible operand refusals unchanged.
 - Add complete constructor equality qualification to the required Linux consumer:
   current source/API checks, all 24 intact models and sixteen selected fresh

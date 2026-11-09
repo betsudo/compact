@@ -30,6 +30,7 @@ import time
 import tomllib
 
 import check_functional_source_sdk as sdk
+import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as dependencies
 import did_proof_gate
 import local_parity_gate as common
@@ -117,7 +118,10 @@ def consumer_manifest(package):
     return prefix + '\n[[bin]]\nname="constructor-vector-proof"\npath="proof/prove.rs"\nrequired-features=["proof"]\n\n[profile.proof-checks]' + original.split("[profile.proof-checks]", 1)[1]
 
 
-def main():
+def main(*, boundaries=False):
+    require(__debug__ and not os.environ.get("PYTHONOPTIMIZE"), "optimized preflight is not admitted")
+    fixture = FIXTURE.with_name("constructor_equality_boundaries") if boundaries else FIXTURE
+    case_count = 30 if boundaries else 16
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--producer-receipt", type=Path, required=True)
     parser.add_argument("--producer-root", type=Path, required=True)
@@ -129,7 +133,7 @@ def main():
     require(not output.exists() and not args.output.is_symlink() and not output.is_relative_to(ROOT),
             "fresh output outside checkout required")
     output.mkdir(parents=True, mode=0o700)
-    report = dict(format="constructor-equality-proof-preflight/v1", status="running", commands=[],
+    report = dict(format="constructor-equality-boundaries-proof-preflight/v1" if boundaries else "constructor-equality-proof-preflight/v1", status="running", commands=[],
                   sources={}, key_generation=False, proof_execution=False,
                   scope="selected compiler-produced complete SDKs; native constructor/Program and build-graph admission only; not cryptographic, integration or constructor-cost acceptance")
     receipt = output / "receipt.json"
@@ -154,15 +158,20 @@ def main():
         unchanged()
         start = time.monotonic()
         try:
-            result = sdk.bounded_command(command, env)
+            result = (process_owner if boundaries else sdk).bounded_command(command, env)
         except subprocess.TimeoutExpired as error:
             for name, data in (("stdout", error.stdout), ("stderr", error.stderr)):
                 (output / f"{label}.{name}").write_text(data.decode(errors="replace") if isinstance(data, bytes) else data or "")
-            report["commands"].append(dict(label=label, command=list(map(str,command)), timed_out=True))
+            row = dict(label=label, command=list(map(str,command)), timed_out=True)
+            if boundaries:
+                row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
+            report["commands"].append(row)
             save()
             raise
         row = dict(label=label, command=list(map(str,command)), exit=result.returncode,
                    seconds=time.monotonic()-start)
+        if boundaries:
+            row["timeout_seconds"] = process_owner.COMMAND_TIMEOUT_SECONDS
         for name in ("stdout", "stderr"):
             path = output / f"{label}.{name}"
             path.write_text(getattr(result, name))
@@ -197,7 +206,9 @@ def main():
         paths = [args.producer_receipt, args.compiler_receipt, args.model_receipt, Path(__file__),
                  Path(sdk.__file__), Path(dependencies.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
                  ROOT / "Cargo.toml", ROOT / "Cargo.lock", sdk.EXAMPLE / "consumer/Cargo.toml"]
-        paths += sdk.tracked_source_files(FIXTURE)
+        if boundaries:
+            paths.append(Path(process_owner.__file__))
+        paths += sdk.tracked_source_files(fixture)
         paths.append(ROOT/"tools/compact-rust-backend/tests/constructor_vector_operands/proof.rs")
         paths += sdk.tracked_source_files(ROOT / "testkit-rs")
         require(producer["head"] == report["qualifier_head"] == models["qualifier_source"],
@@ -209,6 +220,23 @@ def main():
         for name,digest in compiler["inputs_before_use"].items():
             require(sdk.digest(name)==digest,"original compiler recipe input changed")
             paths.append(Path(name))
+        if boundaries:
+            require(producer.get("cohort") == "operand-boundaries" and models.get("format") == "constructor-equality-boundaries-model-observation/v1", "boundary cohort differs")
+            scope_path = Path(models["scope_receipt"]).resolve(strict=True)
+            scope = json.loads(scope_path.read_text())
+            require(scope["status"] == "passed" and scope["head"] == report["qualifier_head"]
+                    and scope["tree"] == report["qualifier_tree"], "current scope receipt required")
+            require(scope["complete_sources"] == 6 and len(scope["commands"]) == 18 and len(scope["HOST_controls"]) == 10
+                    and not scope["sdk_execution"] and not scope["proof_execution"], "complete source scope required")
+            paths.append(scope_path)
+            for name, digest in models["inputs"].items():
+                require(Path(name).is_absolute() and sdk.digest(name) == digest, "model/scope input changed")
+                paths.append(Path(name))
+            frozen_roots.update(models["frozen_directories"])
+            report["scope_receipt"] = dict(path=str(scope_path), sha256=sdk.digest(scope_path))
+            observed = models["inventory"]["circuits"]
+            require(len(observed) == 24 and all(type(m["k"]) is int and 1 <= m["k"] <= 8 for m in observed),
+                    "whole intact model cohort exceeds automatic tiny policy")
         frozen.update({str(p.resolve()):sdk.digest(p) for p in paths})
         python = Path(sys.executable).resolve()
         frozen[str(python)] = sdk.digest(python)
@@ -239,17 +267,34 @@ def main():
         for tool, command in (("compiler",[compiler_path,"--version"]),("zkir",[prereq["zkir"],"--version"]),("cargo",[cargo,"--version"]),("rustc",[tools["rustc"]["path"],"-Vv"])):
             report["versions"][tool] = run(tool+"-version", command).stdout.strip()
         require(report["versions"]["compiler"] == compiler["version"], "compiler version differs")
-        material = json.loads(run("verify-material",[binary,"--prepare-proof-material","--verify-only","--parameter-k","6"]).stdout)
-        require(material.get("mode") == "verify-only" and material.get("verification") == "all files checked against locked upstream SHA256 tables"
-                and Path(material["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve()
-                and 6 in [p["k"] for p in material["parameters"]], "official k6 material verification required")
-        report["verified_material"] = material
-        for asset in material["assets"]+material["parameters"]:
-            p = Path(env["MIDNIGHT_PP"]) / asset["name"]
-            frozen[str(p)] = sdk.digest(p)
-        specs = json.loads((FIXTURE / "sources.json").read_text())
-        cases = json.loads((FIXTURE / "proof-cases.json").read_text())
-        require(len(specs)==8 and len([c for c in cases if c["error"] is None])==16, "complete source/case membership differs")
+        material_ks = sorted({m["k"] for m in models["inventory"]["circuits"]
+                              if m["circuit"] in ("advance", "advance_other")}) if boundaries else [6]
+        verified = {}
+        for k in material_ks:
+            label = "verify-material-" + str(k) if boundaries else "verify-material"
+            material = json.loads(run(label,[binary,"--prepare-proof-material","--verify-only","--parameter-k",str(k)]).stdout)
+            require(material.get("mode") == "verify-only" and material.get("verification") == "all files checked against locked upstream SHA256 tables"
+                    and Path(material["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve()
+                    and k in [p["k"] for p in material["parameters"]], "official observed-k material verification required")
+            verified[str(k)] = material
+            for asset in material["assets"]+material["parameters"]:
+                p = Path(env["MIDNIGHT_PP"]) / asset["name"]
+                frozen[str(p)] = sdk.digest(p)
+        if boundaries:
+            report["verified_material_by_k"] = verified
+        else:
+            report["verified_material"] = verified["6"]
+        specs = json.loads((fixture / "sources.json").read_text())
+        cases = json.loads((fixture / "proof-cases.json").read_text())
+        require(len(specs)==8 and len([c for c in cases if c["error"] is None])==case_count, "complete source/case membership differs")
+        if boundaries:
+            api = json.loads((fixture / "cases.json").read_text())
+            metadata = {"id", "privateState", "trace", "error"}
+            require(len(cases) == case_count and len({c["id"] for c in cases}) == case_count
+                    and [{k:v for k,v in c.items() if k not in metadata} for c in cases] == api,
+                    "complete proof/API case binding differs")
+            require(all(c["id"] == c["role"] + "_" + c["case"] and c["privateState"] == 42
+                        and c["trace"] == [] and c["error"] is None for c in cases), "proof case metadata differs")
         cohort = {(p["name"],p["version"],p.get("source")):p.get("checksum") for p in tomllib.loads((ROOT/"Cargo.lock").read_text())["package"]}
         for spec in specs:
             role=spec["role"]
@@ -257,7 +302,7 @@ def main():
             check_source(ROOT/spec["path"], spec["sha256"])
             for entry in spec["entries"]:
                 row=[m for m in models["inventory"]["circuits"] if m["source"]==role and m["circuit"]==entry]
-                require(len(row)==1 and row[0]["k"]==6, "exact intact model observation differs")
+                require(len(row)==1 and (1 <= row[0]["k"] <= 8 if boundaries else row[0]["k"]==6), "exact intact model observation differs")
             original=args.producer_root/role
             expected_manifest=producer["sources"][role]["manifest"]
             complete=check_assets(original,expected_manifest)
@@ -294,7 +339,7 @@ def main():
             package=tomllib.loads((generated/"contract/Cargo.toml").read_text())["package"]["name"]
             manifest.write_text(consumer_manifest(package))
             shutil.copyfile(ROOT/"tools/compact-rust-backend/tests/constructor_vector_operands/proof.rs",consumer/"proof/prove.rs")
-            shutil.copyfile(FIXTURE/"constructors"/(spec["constructor_consumer"]+".rs"),consumer/"proof/constructor.rs")
+            shutil.copyfile(fixture/"constructors"/(spec["constructor_consumer"]+".rs"),consumer/"proof/constructor.rs")
             recipe=sdk.source_testkit(ROOT/"testkit-rs",lane/"testkit-rs")
             shutil.copyfile(ROOT/"Cargo.lock",consumer/"Cargo.lock")
             metadata=json.loads(run(role+"-metadata",[cargo,"metadata","--offline","--format-version","1","--features","proof","--manifest-path",manifest]).stdout)
@@ -314,14 +359,14 @@ def main():
             executable=common.stable_copy(actual,lane/"bin/constructor-vector-proof")
             frozen[executable["snapshot"]]=executable["sha256"]
             run(role+"-clippy",[cargo,"clippy","--locked","--offline","--profile","proof-checks","--features","proof","--bin","constructor-vector-proof","--manifest-path",manifest,"--","-D","warnings"])
-            native=json.loads(run(role+"-native",[executable["snapshot"],"--preflight",generated,role,FIXTURE/"proof-cases.json",lane/"material-not-created",lane/"proofs-not-created"]).stdout)
+            native=json.loads(run(role+"-native",[executable["snapshot"],"--preflight",generated,role,fixture/"proof-cases.json",lane/"material-not-created",lane/"proofs-not-created"]).stdout)
             expected={c["id"] for c in cases if c["role"]==role and c["error"] is None}
             require(native["status"]=="passed" and {r["case"] for r in native["results"]}==expected, "all selected cases must execute")
             report["sources"][role]=dict(bundled_manifest=bundled_manifest,api_reference_manifest=expected_manifest,actual_runtime=actual_runtime,raw_sdk=raw,testkit_recipe=recipe,dependency_graph=graph,binary=executable,native_preflight=native)
             save()
         unchanged()
         require(len(report["sources"])==8, "all sources must pass")
-        report.update(status="passed", selected_cases=16, input_bytes_unchanged=True)
+        report.update(status="passed", selected_cases=case_count, input_bytes_unchanged=True)
     except BaseException as error:
         report.update(status="failed",error=repr(error))
         raise

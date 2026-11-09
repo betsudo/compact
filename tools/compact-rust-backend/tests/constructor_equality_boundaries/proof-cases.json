@@ -1,0 +1,752 @@
+[
+  {
+    "role": "mixed_uint_eq",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 7,
+    "id": "mixed_uint_eq_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "first_match",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 11,
+    "id": "mixed_uint_eq_first_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      256
+    ],
+    "expected": 11,
+    "id": "mixed_uint_eq_no_narrow_256",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      65535
+    ],
+    "expected": 11,
+    "id": "mixed_uint_eq_no_narrow_65535",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "max_match",
+    "args": [
+      [
+        0,
+        255
+      ],
+      255
+    ],
+    "expected": 7,
+    "id": "mixed_uint_eq_max_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_eq",
+    "case": "zero_match",
+    "args": [
+      [
+        255,
+        0
+      ],
+      0
+    ],
+    "expected": 7,
+    "id": "mixed_uint_eq_zero_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_eq",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7,
+    "id": "tuple_eq_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11,
+    "id": "tuple_eq_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            5
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11,
+    "id": "tuple_eq_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_eq",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7,
+    "id": "vector_eq_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11,
+    "id": "vector_eq_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11,
+    "id": "vector_eq_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_eq",
+    "case": "last_match",
+    "args": [
+      [
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7,
+    "id": "struct_eq_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_eq",
+    "case": "first_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11,
+    "id": "struct_eq_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_eq",
+    "case": "second_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            5
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11,
+    "id": "struct_eq_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "last_match",
+    "args": [
+      [
+        1,
+        2
+      ],
+      2
+    ],
+    "expected": 11,
+    "id": "mixed_uint_ne_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "first_match",
+    "args": [
+      [
+        2,
+        3
+      ],
+      2
+    ],
+    "expected": 7,
+    "id": "mixed_uint_ne_first_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "no_narrow_256",
+    "args": [
+      [
+        255,
+        0
+      ],
+      256
+    ],
+    "expected": 7,
+    "id": "mixed_uint_ne_no_narrow_256",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "no_narrow_65535",
+    "args": [
+      [
+        0,
+        255
+      ],
+      65535
+    ],
+    "expected": 7,
+    "id": "mixed_uint_ne_no_narrow_65535",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "max_match",
+    "args": [
+      [
+        0,
+        255
+      ],
+      255
+    ],
+    "expected": 11,
+    "id": "mixed_uint_ne_max_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "mixed_uint_ne",
+    "case": "zero_match",
+    "args": [
+      [
+        255,
+        0
+      ],
+      0
+    ],
+    "expected": 11,
+    "id": "mixed_uint_ne_zero_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_ne",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 11,
+    "id": "tuple_ne_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          9,
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7,
+    "id": "tuple_ne_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "tuple_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          [
+            3,
+            4
+          ]
+        ],
+        [
+          2,
+          [
+            3,
+            5
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          3,
+          4
+        ]
+      ]
+    ],
+    "expected": 7,
+    "id": "tuple_ne_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_ne",
+    "case": "last_match",
+    "args": [
+      [
+        [
+          9,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 11,
+    "id": "vector_ne_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7,
+    "id": "vector_ne_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "vector_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "expected": 7,
+    "id": "vector_ne_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_ne",
+    "case": "last_match",
+    "args": [
+      [
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 11,
+    "id": "struct_ne_last_match",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_ne",
+    "case": "first_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 9,
+          "tag": [
+            3,
+            4
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7,
+    "id": "struct_ne_first_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  },
+  {
+    "role": "struct_ne",
+    "case": "second_component_differs",
+    "args": [
+      [
+        {
+          "value": 2,
+          "tag": [
+            3,
+            4
+          ]
+        },
+        {
+          "value": 2,
+          "tag": [
+            3,
+            5
+          ]
+        }
+      ],
+      {
+        "value": 2,
+        "tag": [
+          3,
+          4
+        ]
+      }
+    ],
+    "expected": 7,
+    "id": "struct_ne_second_component_differs",
+    "privateState": 42,
+    "trace": [],
+    "error": null
+  }
+]

@@ -346,6 +346,18 @@ pub(super) fn try_run(
             }
             crate::constructor_vector_models::equality_inventory(std::path::Path::new(&root))
         })()),
+        #[cfg(feature = "constructor-vector-models")]
+        ("--constructor-equality-boundaries-inventory", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("constructor model inventory requires the complete generated root")?;
+            if arguments.next().is_some() {
+                return Err("unexpected constructor model inventory argument".into());
+            }
+            crate::constructor_vector_models::equality_boundaries_inventory(std::path::Path::new(
+                &root,
+            ))
+        })()),
         #[cfg(feature = "outer-vector-product-models")]
         ("--outer-vector-product-inventory", _) => Some((|| {
             let root = arguments

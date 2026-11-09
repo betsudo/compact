@@ -19,7 +19,7 @@ witness-only VM queries; the Rust result sums the observed query costs.
 ## Local constructor equality qualification
 
 The bounded `0.31.195` slice admits equality and inequality predicates in
-existing constructor control flow through the existing typed pure lowering.
+supported constructor Vector loops through the existing typed pure lowering.
 Value initializers retain their previous expression boundary. Top-level
 constructor `if` frontend admission is a separate gap.
 
@@ -36,6 +36,89 @@ reference. It performs no key generation or proofs. Dependency lock checks are
 not transitive consumed-source attestation. Model/proof/application qualification,
 full required Linux CI and independent review remain separate acceptance gates;
 see [the plan](../../doc/rust/plans/constructor-equality-conditions.md).
+
+## Constructor equality operand boundaries
+
+`check_constructor_equality_boundaries.py` uses the same compiler-recipe and
+physical TypeScript-runtime requirements as the historical equality gate. It
+retains all four historical frontend/native refusal sources. Its separate finite
+cohort contains eight complete three-export contracts: mixed Uint8/Uint16,
+tuple, nested Vector and Bytes-containing struct guards, with both operators.
+Thirty cases include final-iteration ordering, differences in each aggregate
+component, zero/max values and Uint16 values above 255. The generated constructor
+API consumes inputs; the consumer explicitly clones caller-owned inputs for
+reuse. All three later exports exercise ordinary, recorded, functional native
+and functional recorded routes, comparing state/effects/cost and actual public
+VM replay against live TypeScript transcripts. Five marked type/shape misuses
+have compiling valid twins. A changed TS reference must fail the actual consumer,
+then the original reference must pass again.
+
+```sh
+python3 tools/compact-rust-backend/check_constructor_equality_boundaries.py \
+  --compiler-receipt ORIGINAL_CURRENT_RECIPE_RECEIPT \
+  --ts-runtime COMPACT_TS_RUNTIME --output FRESH_OUTPUT
+```
+
+This is the maintained intended native gate, pending execution and independent
+review at the current source. It does not generate keys/proofs, prove constructor
+initialization/deployment, qualify Linux, or replace the historical cohort.
+See [the bounded #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
+## Constructor equality source scope
+
+`check_constructor_equality_scope.py --compiler-receipt CURRENT_ORIGINAL_RECIPE
+--output FRESH_OUTPUT` is the separate maintained source-generation gate. It
+requires an exact clean-head original compiler recipe and rejects compiler
+substitutions and optimized Python. Six complete Compact sources exercise
+ordinary and initializer transport after a condition, literal inference,
+explicit nested tuple widening, narrowing refusal and the current implicit
+mixed-width tuple refusal. The last case is an **open frontend/backend transport
+gap**, not a Compact language rule or a completed semantic capability.
+
+The intended gate checks current raw Scheme IR/origin addresses, independent
+TypeScript generation and supported/refused Rust generation. Ten mutations
+of copies of actual raw outputs must fail the scope assertions; those HOST
+objects are never executed. It binds source/tool/output bytes and complete
+output memberships through the existing finite process owner. These checks do
+not execute generated SDKs, prove evaluation order, generate keys or proofs,
+attest transitive dependencies, or replace the separate 30-case native/API gate.
+At frozen `0e07d63f4`, the actual eighteen-command gate and independent source
+and result reviews pass within this source-generation scope. Later source
+changes need their own identities; this does not qualify the additional SDKs
+natively. See [the #720 plan](../../doc/rust/plans/constructor-equality-operand-boundaries.md).
+
+## Bounded local boundary proof qualification
+
+At signed source `7f690b7a6`, the separate
+`check_constructor_equality_boundaries_models.py` entry observes all 24 intact
+exports in the eight-source boundary cohort. Its boundary mode requires the
+current complete producer and `--scope-receipt`. The historical model entry and
+sixteen-case proof path retain their original defaults and fixtures.
+
+`check_constructor_equality_boundaries_proof.py --preflight-only` runs current
+source/API, source-scope, complete models and native proof preflight without
+key generation. The accepted local arm64 execution passes all 30 API/native
+cases, observes automatic k6 for all 24 models, and builds eight immutable proof
+consumers with all 30 native preflight cases. Physical locked dependency
+graphs are authenticated before Cargo builds; complete SDK/runtime/Program
+memberships remain frozen between commands.
+
+A separate reviewed proving stage then executes 16 fresh keygens, 30 standalone
+proof/verification calls and 30 separately proved funded DEFAULT-strict
+transactions/applications, with seven negatives and unchanged-state replay
+refusal for every case. The 16 keygen runs produce only two distinct verifier
+keys: all eight lanes share the same later `advance` circuit, with
+`advance_other` supplying the wrong-verifier control. These proofs do not
+establish constructor initialization or deployment cryptography. Verification
+runs inside the immutable consumer; saved artifacts were not reverified by a
+separate process. Required Linux/full integration CI remains open.
+
+Observed contract k selects existing verified material under the unchanged
+1..8 policy; the existing larger built-in fee/dust parameters remain transaction
+prerequisites. No forced k, trimmed cohort, proof/verdict cache, or parameter
+download was used. Fresh independent actual-result review accepts only this
+bounded source epoch; see the [qualification plan and limits](../../doc/rust/plans/constructor-equality-boundary-proofs.md).
+The implicit mixed-width tuple literal transport gap stays open.
 
 ## Current recording architecture
 
