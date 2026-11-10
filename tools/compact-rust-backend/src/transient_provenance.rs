@@ -20,6 +20,8 @@ pub struct Limits {
     pub max_circuits: usize,
     pub max_call_depth: usize,
     pub max_nodes: usize,
+    pub max_parameters: usize,
+    pub max_component_nodes: usize,
     pub max_depth: usize,
     pub max_routes: usize,
     pub max_steps: usize,
@@ -33,6 +35,8 @@ impl Default for Limits {
             max_circuits: 128,
             max_call_depth: 8,
             max_nodes: 4096,
+            max_parameters: 32,
+            max_component_nodes: 64,
             max_depth: 64,
             max_routes: 32,
             max_steps: 32,
@@ -63,6 +67,12 @@ pub struct Dependency {
     pub path: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+pub struct ParameterDependency {
+    pub circuit: String,
+    pub name: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Route {
     pub producer: Producer,
@@ -81,6 +91,10 @@ pub struct Finding {
     pub routes: Vec<Route>,
     /// Provenance of a condition that controls whether this sink executes.
     pub control_routes: Vec<Route>,
+    /// Root-circuit parameters that may affect this sink input.
+    pub parameter_dependencies: Vec<ParameterDependency>,
+    /// Root-circuit parameters that may affect whether this sink executes.
+    pub control_parameter_dependencies: Vec<ParameterDependency>,
     /// Branch arms containing the sink; an empty list means no lexical branch.
     pub conditions: Vec<String>,
     /// True when the sink input also depends on an ordinary argument, witness,
@@ -238,6 +252,7 @@ fn push_unavailable(report: &mut Report, limits: Limits, circuit: &str, path: &s
 #[derive(Clone, Default)]
 struct Origin {
     routes: Vec<Route>,
+    parameters: BTreeSet<ParameterDependency>,
     unknown: bool,
     components: Option<Components>,
 }
@@ -277,9 +292,35 @@ impl Origin {
     fn unknown() -> Self {
         Self {
             routes: Vec::new(),
+            parameters: BTreeSet::new(),
             unknown: true,
             components: None,
         }
+    }
+
+    fn parameter(circuit: &str, name: &str) -> Self {
+        let mut origin = Self::unknown();
+        origin.parameters.insert(ParameterDependency {
+            circuit: circuit.into(),
+            name: name.into(),
+        });
+        origin
+    }
+}
+
+fn count_component_nodes(origin: &Origin, used: &mut usize, limit: usize) -> bool {
+    if *used >= limit {
+        return false;
+    }
+    *used += 1;
+    match &origin.components {
+        Some(Components::Indexed(values)) => values
+            .iter()
+            .all(|value| count_component_nodes(value, used, limit)),
+        Some(Components::Named(values)) => values
+            .iter()
+            .all(|(_, value)| count_component_nodes(value, used, limit)),
+        None => true,
     }
 }
 
@@ -344,8 +385,11 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 routes.push(route);
             }
         }
+        let mut parameters = left.parameters;
+        parameters.extend(right.parameters);
         Origin {
             routes,
+            parameters,
             unknown: left.unknown || right.unknown,
             components: None,
         }
@@ -356,6 +400,13 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             Components::Indexed(values) => values.iter().collect(),
             Components::Named(values) => values.iter().map(|(_, value)| value).collect(),
         };
+        let mut component_nodes = 1;
+        if !values.iter().all(|value| {
+            count_component_nodes(value, &mut component_nodes, self.limits.max_component_nodes)
+        }) {
+            self.unavailable(path, "aggregate component limit");
+            return Origin::unknown();
+        }
         let had_known = values.iter().any(|value| !value.routes.is_empty());
         let mut whole = Origin::default();
         for value in values {
@@ -399,10 +450,10 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 ))
             }
             (Some(components), None) if otherwise.routes.is_empty() => {
-                Some(self.components_with_unknown(components, path))
+                Some(self.components_with_unknown(components, otherwise, path))
             }
             (None, Some(components)) if then.routes.is_empty() => {
-                Some(self.components_with_unknown(components, path))
+                Some(self.components_with_unknown(components, then, path))
             }
             (None, None) => None,
             _ => {
@@ -412,12 +463,19 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         }
     }
 
-    fn components_with_unknown(&mut self, components: &Components, path: &str) -> Components {
+    fn components_with_unknown(
+        &mut self,
+        components: &Components,
+        other: &Origin,
+        path: &str,
+    ) -> Components {
+        let mut unknown = Origin::unknown();
+        unknown.parameters = other.parameters.clone();
         match components {
             Components::Indexed(values) => Components::Indexed(
                 values
                     .iter()
-                    .map(|value| self.combine(value.clone(), Origin::unknown(), path))
+                    .map(|value| self.combine(value.clone(), unknown.clone(), path))
                     .collect(),
             ),
             Components::Named(values) => Components::Named(
@@ -426,7 +484,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     .map(|(name, value)| {
                         (
                             name.clone(),
-                            self.combine(value.clone(), Origin::unknown(), path),
+                            self.combine(value.clone(), unknown.clone(), path),
                         )
                     })
                     .collect(),
@@ -453,6 +511,13 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             input: input.into(),
             routes: origin.routes.clone(),
             control_routes: self.control_origin.routes.clone(),
+            parameter_dependencies: origin.parameters.iter().cloned().collect(),
+            control_parameter_dependencies: self
+                .control_origin
+                .parameters
+                .iter()
+                .cloned()
+                .collect(),
             conditions: self.conditions.clone(),
             has_unknown_input: origin.unknown,
             has_unknown_control: self.control_origin.unknown,
@@ -569,7 +634,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             StateAction::Assert { condition, .. } => {
                 let condition_origin =
                     self.visit(condition, env, &format!("{path}.condition"), depth + 1);
-                if !condition_origin.routes.is_empty() {
+                if !condition_origin.routes.is_empty() || condition_origin.unknown {
                     self.unavailable(path, "assertion execution control unavailable");
                 }
             }
@@ -664,7 +729,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "pure action helper arity mismatch");
                     return;
                 }
-                if callee.parameters.len() > self.limits.max_nodes {
+                if callee.parameters.len() > self.limits.max_nodes.min(self.limits.max_parameters) {
                     self.unavailable(path, "parameter limit");
                     return;
                 }
@@ -735,7 +800,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "stateful helper arity mismatch");
                     return;
                 }
-                if callee.parameters.len() > self.limits.max_nodes {
+                if callee.parameters.len() > self.limits.max_nodes.min(self.limits.max_parameters) {
                     self.unavailable(path, "parameter limit");
                     return;
                 }
@@ -953,7 +1018,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             self.unavailable(path, "stateful value helper arity mismatch");
             return Origin::unknown();
         }
-        if callee.parameters.len() > self.limits.max_nodes {
+        if callee.parameters.len() > self.limits.max_nodes.min(self.limits.max_parameters) {
             self.unavailable(path, "parameter limit");
             return Origin::unknown();
         }
@@ -1085,7 +1150,15 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 self.ledger_query(key, env, path, depth + 1, "key", "map_membership")
             }
             Expr::Tuple { elements } | Expr::Vector { elements, .. } => {
-                let mut values = Vec::with_capacity(elements.len().min(self.limits.max_nodes));
+                if elements.len() > self.limits.max_nodes {
+                    self.unavailable(path, "expression node limit");
+                    return Origin::unknown();
+                }
+                if elements.len() >= self.limits.max_component_nodes {
+                    self.unavailable(path, "aggregate component limit");
+                    return Origin::unknown();
+                }
+                let mut values = Vec::with_capacity(elements.len());
                 for (index, element) in elements.iter().enumerate() {
                     if self.nodes >= self.limits.max_nodes {
                         self.unavailable(path, "expression node limit");
@@ -1112,7 +1185,15 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "struct literal arity mismatch");
                     return Origin::unknown();
                 }
-                let mut values = Vec::with_capacity(fields.len().min(self.limits.max_nodes));
+                if fields.len() > self.limits.max_nodes {
+                    self.unavailable(path, "expression node limit");
+                    return Origin::unknown();
+                }
+                if fields.len() >= self.limits.max_component_nodes {
+                    self.unavailable(path, "aggregate component limit");
+                    return Origin::unknown();
+                }
+                let mut values = Vec::with_capacity(fields.len());
                 for (index, (field, declaration)) in fields.iter().zip(declared).enumerate() {
                     if self.nodes >= self.limits.max_nodes {
                         self.unavailable(path, "expression node limit");
@@ -1219,7 +1300,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "unknown pure helper");
                     return Origin::unknown();
                 };
-                if formals.len() > self.limits.max_nodes {
+                if formals.len() > self.limits.max_nodes.min(self.limits.max_parameters) {
                     self.unavailable(path, "parameter limit");
                     return Origin::unknown();
                 }
@@ -1353,6 +1434,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             Expr::WitnessCall { arguments, .. } => {
                 let unavailable_before = self.report.unavailable.len();
                 let mut known_argument = false;
+                let mut parameters = BTreeSet::new();
                 for (index, argument) in arguments.iter().enumerate() {
                     if self.nodes >= self.limits.max_nodes {
                         self.unavailable(path, "expression node limit");
@@ -1365,11 +1447,14 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         depth + 1,
                     );
                     known_argument |= !argument_origin.routes.is_empty();
+                    parameters.extend(argument_origin.parameters);
                 }
                 if known_argument || self.report.unavailable.len() > unavailable_before {
                     self.unavailable(path, "witness result provenance is unavailable");
                 }
-                Origin::unknown()
+                let mut result = Origin::unknown();
+                result.parameters = parameters;
+                result
             }
             Expr::NativeWitnessCall { .. } | Expr::CellRead { .. } => Origin::unknown(),
             Expr::MapLookup { key, .. } => {
@@ -1379,10 +1464,12 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 // Retain upstream transient producers through this operation.
                 let input = self.visit(value, env, &child("value"), depth + 1);
                 let mut unknown = input.unknown;
+                let mut parameters = input.parameters.clone();
                 let mut upstream = self.append(input, "transient_value", path);
                 if let Expr::TransientCommit { opening, .. } = expr {
                     let opening = self.visit(opening, env, &child("opening"), depth + 1);
                     unknown |= opening.unknown;
+                    parameters.extend(opening.parameters.iter().cloned());
                     let opening = self.append(opening, "transient_opening", path);
                     upstream = self.combine(upstream, opening, path);
                 }
@@ -1404,6 +1491,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         },
                         dependencies: Vec::new(),
                     }],
+                    parameters,
                     unknown,
                     components: None,
                 };
@@ -1476,7 +1564,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             }
             Expr::Assert { condition, .. } => {
                 let condition_origin = self.visit(condition, env, &child("condition"), depth + 1);
-                if !condition_origin.routes.is_empty() {
+                if !condition_origin.routes.is_empty() || condition_origin.unknown {
                     self.unavailable(path, "assertion execution control unavailable");
                 }
                 Origin::default()
@@ -1517,7 +1605,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             return report;
         }
         count += 1;
-        if circuit.parameters.len() > limits.max_nodes {
+        if circuit.parameters.len() > limits.max_nodes.min(limits.max_parameters) {
             push_unavailable(
                 &mut report,
                 limits,
@@ -1564,7 +1652,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
         let env = circuit
             .parameters
             .iter()
-            .map(|p| (p.name.clone(), Origin::unknown()))
+            .map(|p| (p.name.clone(), Origin::parameter(&circuit.name, &p.name)))
             .collect();
         analysis.visit(&circuit.body, &env, "body", 0);
     }
@@ -1581,7 +1669,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             return report;
         }
         count += 1;
-        if circuit.parameters.len() > limits.max_nodes {
+        if circuit.parameters.len() > limits.max_nodes.min(limits.max_parameters) {
             push_unavailable(
                 &mut report,
                 limits,
@@ -1641,7 +1729,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             let env = circuit
                 .parameters
                 .iter()
-                .map(|p| (p.name.clone(), Origin::unknown()))
+                .map(|p| (p.name.clone(), Origin::parameter(&circuit.name, &p.name)))
                 .collect();
             for (index, action) in circuit.actions.iter().enumerate() {
                 if analysis.nodes >= limits.max_nodes {

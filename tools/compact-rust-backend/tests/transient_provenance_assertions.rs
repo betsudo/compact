@@ -32,6 +32,7 @@ fn source_state_assertions_report_nested_sink_and_control_limit() {
             .collect::<Vec<_>>(),
         [
             ("transient_gate", "assertion execution control unavailable"),
+            ("ordinary_gate", "assertion execution control unavailable"),
             ("nested_sink", "assertion execution control unavailable"),
         ]
     );
@@ -41,12 +42,7 @@ fn source_state_assertions_report_nested_sink_and_control_limit() {
             .iter()
             .all(|finding| finding.circuit != "ordinary_gate")
     );
-    assert!(
-        report
-            .unavailable
-            .iter()
-            .all(|entry| entry.circuit != "ordinary_gate")
-    );
+    // The ordinary Field gate is allowed, but its effect on later execution is unknown.
 }
 
 #[test]

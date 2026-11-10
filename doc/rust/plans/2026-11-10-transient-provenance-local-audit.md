@@ -1,11 +1,11 @@
 # #612 local typed-IR provenance audit
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
-`09c75e2891283fed65f2db385925a5a4b9409af6`. Reviewed local head:
-`591502730` on `codex/rust-ast-transient-provenance-map-lookup` in an
-isolated worktree. The subsequent audit and Field-to-Bytes<32> source
-evidence remain on local branches. All 13 reviewed implementation commits
-have verified GPG signatures.
+`09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
+`codex/rust-ast-transient-provenance-symbolic-inputs`, stacked on the
+GPG-signed Field-to-Bytes<32> evidence head `bb362ced4`. The earlier
+13 implementation commits and audit commit also have verified GPG
+signatures. No remote publication.
 
 ## Verified bounded deliverable
 
@@ -15,21 +15,24 @@ schema 20 IR. The module is only exported from `lib.rs`; rendering,
 capability selection and recording admission do not invoke it. Findings
 carry entry and sink circuit, source location where schema 20 provides one,
 IR path, sink input, producer and ordered dependency routes, possible-path
-control routes, and unknown-input flags. Unsupported forms and exhausted
+control routes, symbolic root-parameter dependencies for data/control, and
+unknown-input flags. Unsupported forms and exhausted
 budgets are reported as unavailable; a missing known producer is never a
 stability certificate. An exact, bounded, caller-supplied acknowledgement
 changes advisory warning status without removing evidence.
 
-The Field-to-Bytes<32> evidence head ran every `transient_provenance*.rs`
-integration test target: 14 targets, 39 tests, zero failures, under
-`/Users/ysh/.codex/local-evidence/transient-provenance-field-bytes-20261110/target`
+The symbolic-input evidence head ran every `transient_provenance*.rs`
+integration test target: 15 targets, 45 tests, zero failures, under
+`/Users/ysh/.codex/local-evidence/transient-provenance-symbolic-inputs-20261110/target`
 with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
-per-slice plans. The selected corpora's generated `contract/lib.rs` and
+per-slice plans; the full focused run is retained as `provenance-tests.log`
+in that evidence directory. The selected corpora's generated `contract/lib.rs` and
 `contract/rust-capabilities.json` files compared byte-identical. The latest
 map-lookup corpus hashes are in its own plan. No shared fixture was
-regenerated. A fresh cumulative independent read-only review at this head
-found no blocker for this bounded local prototype.
+regenerated. Cumulative independent read-only review found no blocker for
+the preceding bounded stack; the symbolic-input review found two initial
+issues and no blocker after their fixes.
 
 ## Acceptance trace
 
@@ -41,6 +44,7 @@ found no blocker for this bounded local prototype.
 | Helper-produced and forwarded origins, including action and value calls | Helper, action-call, value-call, effectful-return, and pure-action fixtures/tests | Verified for supported forms and bounded call depths |
 | Field-to-bytes and `upgradeFromTransient` do not launder provenance | Distinct `FieldToBytes32` source fixture/test; first-slice and standard-library `evolveNonce` source tests for `upgradeFromTransient` | Verified for selected conversions, including commitment opening |
 | Ordinary Field argument/witness acceptance; known route survives unknown input | First-slice, helper, membership and map-lookup source controls | Verified; unknown origin is not certified stable |
+| Symbolic formal dependencies and external/unknown contributions | Helper, aggregate and state-sink source fixtures; symbolic-input tests and explicit parameter/component limits | Caller-root parameter dependencies reported separately for data/control; no materialized cached helper summary |
 | Intentional standard-library use and acknowledgement | Value-call source fixture and exact-acknowledgement tests | Verified as caller-side advisory policy |
 | Persistent values/openings, direct state writes, control dependence, summaries | Sink, aggregate, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified via bounded call-site traversal; no separate cached summary representation |
 | Warning-only mode preserves native/recorded results, public API and ledger encoding | Pass has no emission hook; per-corpus generated Rust/capability byte comparisons | Rust/capability parity verified for selected corpus; native/recorded result and FAB-byte equivalence unverified |
@@ -54,9 +58,10 @@ found no blocker for this bounded local prototype.
 | Selected cell/set/map/list/merkle write forms | Finding for known transient data or branch-control route; key, value and static position operands remain distinct. Cell/set/map have direct source cases; list/merkle matches lack source cases in this stack. Other write forms remain unsupported. |
 | Conditional expression/action/return path | Possible-path control evidence; no reachability proof. Identical primitive literal result arms avoid a false result-control route. |
 | Set/map membership and map lookup | Known key/operand route survives with unknown ledger state. Lookup selection is a possible dependency, not a claim about stored-value origin. |
-| Assertion condition | Nested sinks remain visible. Transient-dependent continuation after the assertion is explicitly unavailable. |
+| Assertion condition | Nested sinks remain visible. Known-transient or unknown/symbolic continuation after the assertion is explicitly unavailable. |
 | External argument, witness result, preexisting ledger read | Unknown origin remains usable; known routes combined with unknown inputs remain visible where supported. |
 | Unsupported fold, dynamic/opaque projection, constructor flow, other unsupported action/expression | Explicit unavailable or unknown boundary; no stability claim. |
+| Parameter or aggregate component budget exhaustion | Explicit unavailable/truncated record; retained symbolic and component evidence has independent caps. |
 
 ## Remaining issue-level work
 
