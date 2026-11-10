@@ -1,0 +1,53 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+export ledger members: Set<Field>;
+export ledger entries: Map<Field, Field>;
+
+export circuit cell_hit(value: Field): [] {
+  const digest = transientHash<Field>(value);
+  stored = disclose(digest);
+}
+
+export circuit cell_miss(value: Field): [] {
+  const ignored = transientHash<Field>(value);
+  stored = disclose(value);
+}
+
+export circuit set_hit(value: Field): [] {
+  members.insert(disclose(transientHash<Field>(value)));
+}
+
+export circuit map_key_hit(value: Field, other: Field): [] {
+  entries.insert(disclose(transientHash<Field>(value)), disclose(other));
+}
+
+export circuit map_value_hit(value: Field, other: Field): [] {
+  entries.insert(disclose(other), disclose(transientHash<Field>(value)));
+}
+
+export circuit branch_hit(value: Field, selected: Boolean): [] {
+  if (disclose(selected)) {
+    stored = disclose(transientHash<Field>(value));
+  } else {
+    stored = disclose(value);
+  }
+}
+
+export circuit return_plan_hit(value: Field): Bytes<32> {
+  const digest = transientHash<Field>(value);
+  stored = disclose(digest);
+  return persistentHash<Field>(digest);
+}
+
+export circuit control_hit(value: Field, other: Field): [] {
+  if (disclose(transientHash<Field>(value) == 0)) {
+    stored = disclose(other);
+  } else {
+    stored = disclose(value);
+  }
+}

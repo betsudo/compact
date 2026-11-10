@@ -8,7 +8,10 @@
 //! finding never certifies a value as stable. Unsupported expression forms and exhausted
 //! budgets are reported as unavailable, including when a known route was already found.
 
-use crate::ir::{Contract, Expr, PureCircuit, SourceLocation, StateReturn, Type};
+use crate::ir::{
+    Contract, Expr, LocalBinding, PureCircuit, ReturnPlan, SourceLocation, StateAction,
+    StateReturn, Type,
+};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,11 +79,14 @@ pub struct Finding {
     pub sink_path: String,
     pub input: String,
     pub routes: Vec<Route>,
+    /// Provenance of a condition that controls whether this sink executes.
+    pub control_routes: Vec<Route>,
     /// Branch arms containing the sink; an empty list means no lexical branch.
     pub conditions: Vec<String>,
     /// True when the sink input also depends on an ordinary argument, witness,
     /// or an expression whose origin cannot be established by this slice.
     pub has_unknown_input: bool,
+    pub has_unknown_control: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -171,6 +177,8 @@ struct CircuitAnalysis<'c, 'r> {
     ambiguous: &'c BTreeSet<&'c str>,
     call_stack: Vec<&'c str>,
     conditions: Vec<String>,
+    control_origin: Origin,
+    return_env: Option<BTreeMap<String, Origin>>,
     limits: Limits,
     nodes: usize,
     report: &'r mut Report,
@@ -310,7 +318,7 @@ impl CircuitAnalysis<'_, '_> {
     }
 
     fn sink(&mut self, kind: &str, path: &str, input: &str, origin: &Origin) {
-        if origin.routes.is_empty() {
+        if origin.routes.is_empty() && self.control_origin.routes.is_empty() {
             return;
         }
         if self.report.findings.len() >= self.limits.max_findings {
@@ -327,9 +335,271 @@ impl CircuitAnalysis<'_, '_> {
             sink_path: path.into(),
             input: input.into(),
             routes: origin.routes.clone(),
+            control_routes: self.control_origin.routes.clone(),
             conditions: self.conditions.clone(),
             has_unknown_input: origin.unknown,
+            has_unknown_control: self.control_origin.unknown,
         });
+    }
+
+    fn action_node(&mut self, path: &str, depth: usize) -> bool {
+        if depth > self.limits.max_depth {
+            self.unavailable(path, "action depth limit");
+            return false;
+        }
+        if self.nodes >= self.limits.max_nodes {
+            self.unavailable(path, "action node limit");
+            return false;
+        }
+        self.nodes += 1;
+        true
+    }
+
+    fn bindings(
+        &mut self,
+        bindings: &[LocalBinding],
+        env: &BTreeMap<String, Origin>,
+        path: &str,
+        depth: usize,
+    ) -> BTreeMap<String, Origin> {
+        let mut local = env.clone();
+        for (index, binding) in bindings.iter().enumerate() {
+            if !self.action_node(&format!("{path}.bindings[{index}]"), depth) {
+                break;
+            }
+            let binding_path = format!("{path}.bindings[{index}]");
+            let origin = self.visit(
+                &binding.value,
+                &local,
+                &format!("{binding_path}.value"),
+                depth + 1,
+            );
+            local.insert(
+                binding.name.clone(),
+                self.append(origin, &format!("binding:{}", binding.name), &binding_path),
+            );
+        }
+        local
+    }
+
+    fn action(
+        &mut self,
+        action: &StateAction,
+        env: &BTreeMap<String, Origin>,
+        path: &str,
+        depth: usize,
+        terminal: bool,
+    ) {
+        if !self.action_node(path, depth) {
+            return;
+        }
+        match action {
+            StateAction::Sequence { actions } => {
+                for (index, action) in actions.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "action node limit");
+                        break;
+                    }
+                    self.action(
+                        action,
+                        env,
+                        &format!("{path}.actions[{index}]"),
+                        depth + 1,
+                        terminal && index + 1 == actions.len(),
+                    );
+                }
+            }
+            StateAction::Let { bindings, action } => {
+                let local = self.bindings(bindings, env, path, depth + 1);
+                if terminal {
+                    self.return_env = Some(local.clone());
+                }
+                self.action(
+                    action,
+                    &local,
+                    &format!("{path}.action"),
+                    depth + 1,
+                    terminal,
+                );
+            }
+            StateAction::If {
+                condition,
+                then,
+                otherwise,
+            } => {
+                let condition_origin =
+                    self.visit(condition, env, &format!("{path}.condition"), depth + 1);
+                let prior_control = self.control_origin.clone();
+                let branch_control = self.append(condition_origin, "branch_execution", path);
+                self.control_origin = self.combine(prior_control.clone(), branch_control, path);
+                self.conditions.push(format!("{path}:then"));
+                self.action(then, env, &format!("{path}.then"), depth + 1, false);
+                self.conditions.pop();
+                self.conditions.push(format!("{path}:otherwise"));
+                self.action(
+                    otherwise,
+                    env,
+                    &format!("{path}.otherwise"),
+                    depth + 1,
+                    false,
+                );
+                self.conditions.pop();
+                self.control_origin = prior_control;
+            }
+            StateAction::Expression { value } => {
+                self.visit(value, env, &format!("{path}.value"), depth + 1);
+            }
+            StateAction::Assert { condition, .. } => {
+                self.visit(condition, env, &format!("{path}.condition"), depth + 1);
+            }
+            StateAction::CellWrite { value, .. } => {
+                self.state_sink("cell_write", "value", value, env, path, depth)
+            }
+            StateAction::SetInsert { value, .. } => {
+                self.state_sink("set_insert", "value", value, env, path, depth)
+            }
+            StateAction::SetRemove { value, .. } => {
+                self.state_sink("set_remove", "value", value, env, path, depth)
+            }
+            StateAction::ListPushFront { value, .. } => {
+                self.state_sink("list_push_front", "value", value, env, path, depth)
+            }
+            StateAction::MerkleInsert { value, .. } => {
+                self.state_sink("merkle_insert", "value", value, env, path, depth)
+            }
+            StateAction::MerkleInsertHash { hash, .. } => {
+                self.state_sink("merkle_insert_hash", "hash", hash, env, path, depth)
+            }
+            StateAction::HistoricMerkleInsert { value, .. } => {
+                self.state_sink("historic_merkle_insert", "value", value, env, path, depth)
+            }
+            StateAction::HistoricMerkleInsertHash { hash, .. } => self.state_sink(
+                "historic_merkle_insert_hash",
+                "hash",
+                hash,
+                env,
+                path,
+                depth,
+            ),
+            StateAction::MapInsert { key, value, .. } => {
+                self.state_sink("map_insert", "key", key, env, path, depth);
+                self.state_sink("map_insert", "value", value, env, path, depth);
+            }
+            StateAction::MapInsertDefault { key, .. } => {
+                self.state_sink("map_insert_default", "key", key, env, path, depth)
+            }
+            StateAction::MapRemove { key, .. } => {
+                self.state_sink("map_remove", "key", key, env, path, depth)
+            }
+            StateAction::MerkleInsertIndex {
+                value, position, ..
+            } => {
+                self.state_sink(
+                    "merkle_insert_index",
+                    "position",
+                    position,
+                    env,
+                    path,
+                    depth,
+                );
+                self.state_sink("merkle_insert_index", "value", value, env, path, depth);
+            }
+            StateAction::HistoricMerkleInsertIndex {
+                value, position, ..
+            } => {
+                self.state_sink(
+                    "historic_merkle_insert_index",
+                    "position",
+                    position,
+                    env,
+                    path,
+                    depth,
+                );
+                self.state_sink(
+                    "historic_merkle_insert_index",
+                    "value",
+                    value,
+                    env,
+                    path,
+                    depth,
+                );
+            }
+            StateAction::PureCall { .. } => {
+                self.unavailable(path, "standalone pure action call unavailable")
+            }
+            StateAction::CircuitCall { .. } => {
+                self.unavailable(path, "stateful circuit call flow unavailable")
+            }
+            _ => self.unavailable(path, "unsupported state action"),
+        }
+    }
+
+    fn state_sink(
+        &mut self,
+        kind: &str,
+        input: &str,
+        value: &Expr,
+        env: &BTreeMap<String, Origin>,
+        path: &str,
+        depth: usize,
+    ) {
+        let origin = self.visit(value, env, &format!("{path}.{input}"), depth + 1);
+        self.sink(kind, path, input, &origin);
+    }
+
+    fn return_plan(
+        &mut self,
+        plan: &ReturnPlan,
+        env: &BTreeMap<String, Origin>,
+        path: &str,
+        depth: usize,
+    ) {
+        if !self.action_node(path, depth) {
+            return;
+        }
+        match plan {
+            ReturnPlan::Value { value } => {
+                self.visit(value, env, &format!("{path}.value"), depth + 1);
+            }
+            ReturnPlan::Sequence { actions, result } => {
+                for (index, action) in actions.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "action node limit");
+                        return;
+                    }
+                    self.action(
+                        action,
+                        env,
+                        &format!("{path}.actions[{index}]"),
+                        depth + 1,
+                        false,
+                    );
+                }
+                self.return_plan(result, env, &format!("{path}.result"), depth + 1);
+            }
+            ReturnPlan::Let { bindings, result } => {
+                let local = self.bindings(bindings, env, path, depth + 1);
+                self.return_plan(result, &local, &format!("{path}.result"), depth + 1);
+            }
+            ReturnPlan::Conditional {
+                condition,
+                then,
+                otherwise,
+            } => {
+                let condition_origin =
+                    self.visit(condition, env, &format!("{path}.condition"), depth + 1);
+                let prior_control = self.control_origin.clone();
+                let branch_control = self.append(condition_origin, "branch_execution", path);
+                self.control_origin = self.combine(prior_control.clone(), branch_control, path);
+                self.conditions.push(format!("{path}:then"));
+                self.return_plan(then, env, &format!("{path}.then"), depth + 1);
+                self.conditions.pop();
+                self.conditions.push(format!("{path}:otherwise"));
+                self.return_plan(otherwise, env, &format!("{path}.otherwise"), depth + 1);
+                self.conditions.pop();
+                self.control_origin = prior_control;
+            }
+        }
     }
 
     fn visit(
@@ -447,12 +717,17 @@ impl CircuitAnalysis<'_, '_> {
                 otherwise,
             } => {
                 let condition_origin = self.visit(condition, env, &child("condition"), depth + 1);
+                let prior_control = self.control_origin.clone();
+                let branch_control =
+                    self.append(condition_origin.clone(), "branch_execution", path);
+                self.control_origin = self.combine(prior_control.clone(), branch_control, path);
                 self.conditions.push(format!("{path}:then"));
                 let then_origin = self.visit(then, env, &child("then"), depth + 1);
                 self.conditions.pop();
                 self.conditions.push(format!("{path}:otherwise"));
                 let otherwise_origin = self.visit(otherwise, env, &child("otherwise"), depth + 1);
                 self.conditions.pop();
+                self.control_origin = prior_control;
                 let same_literal = same_simple_literal(then, otherwise);
                 let had_known = !then_origin.routes.is_empty()
                     || !otherwise_origin.routes.is_empty()
@@ -733,6 +1008,8 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             ambiguous: &ambiguous,
             call_stack: vec![&circuit.name],
             conditions: Vec::new(),
+            control_origin: Origin::default(),
+            return_env: None,
             limits,
             nodes: 0,
             report: &mut report,
@@ -784,37 +1061,77 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             );
             continue;
         }
-        if circuit.actions.is_empty() {
-            if let StateReturn::Expression { value } = &circuit.return_value {
-                let mut analysis = CircuitAnalysis {
-                    name: &circuit.name,
-                    source: &circuit.source,
-                    current_circuit: &circuit.name,
-                    current_source: &circuit.source,
-                    circuits: &circuits,
-                    ambiguous: &ambiguous,
-                    call_stack: vec![&circuit.name],
-                    conditions: Vec::new(),
-                    limits,
-                    nodes: 0,
-                    report: &mut report,
-                };
-                let env = circuit
-                    .parameters
-                    .iter()
-                    .map(|p| (p.name.clone(), Origin::unknown()))
-                    .collect();
-                analysis.visit(value, &env, "return_value.value", 0);
-                continue;
+        if !circuit.actions.is_empty()
+            && matches!(circuit.return_value, StateReturn::Effectful { .. })
+        {
+            push_unavailable(
+                &mut report,
+                limits,
+                &circuit.name,
+                "return_value",
+                "effectful return with separate actions",
+            );
+            continue;
+        }
+        {
+            let mut analysis = CircuitAnalysis {
+                name: &circuit.name,
+                source: &circuit.source,
+                current_circuit: &circuit.name,
+                current_source: &circuit.source,
+                circuits: &circuits,
+                ambiguous: &ambiguous,
+                call_stack: vec![&circuit.name],
+                conditions: Vec::new(),
+                control_origin: Origin::default(),
+                return_env: None,
+                limits,
+                nodes: 0,
+                report: &mut report,
+            };
+            let env = circuit
+                .parameters
+                .iter()
+                .map(|p| (p.name.clone(), Origin::unknown()))
+                .collect();
+            for (index, action) in circuit.actions.iter().enumerate() {
+                if analysis.nodes >= limits.max_nodes {
+                    analysis.unavailable("actions", "action node limit");
+                    break;
+                }
+                analysis.action(
+                    action,
+                    &env,
+                    &format!("actions[{index}]"),
+                    0,
+                    index + 1 == circuit.actions.len(),
+                );
+            }
+            let return_env = analysis.return_env.clone().unwrap_or_else(|| env.clone());
+            match &circuit.return_value {
+                StateReturn::Unit => {}
+                StateReturn::Expression { value } => {
+                    analysis.visit(value, &return_env, "return_value.value", 0);
+                }
+                StateReturn::Effectful { body } if circuit.actions.is_empty() => {
+                    analysis.return_plan(body, &env, "return_value.body", 0);
+                }
+                StateReturn::Effectful { .. } => {
+                    analysis.unavailable("return_value", "effectful return with separate actions")
+                }
+                StateReturn::SetMember { value, .. } => {
+                    analysis.visit(value, &return_env, "return_value.value", 0);
+                }
+                StateReturn::MapMember { key, .. } | StateReturn::MapLookup { key, .. } => {
+                    analysis.visit(key, &return_env, "return_value.key", 0);
+                }
+                StateReturn::HistoricMerkleCheckRoot { root, .. }
+                | StateReturn::MerkleCheckRoot { root, .. } => {
+                    analysis.visit(root, &return_env, "return_value.root", 0);
+                }
+                _ => {}
             }
         }
-        push_unavailable(
-            &mut report,
-            limits,
-            &circuit.name,
-            "actions",
-            "stateful action/return flow is outside this slice",
-        );
     }
     if contract.constructor.is_some() {
         push_unavailable(
