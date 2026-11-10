@@ -20,7 +20,7 @@ pub struct Limits {
     pub max_circuits: usize,
     pub max_call_depth: usize,
     pub max_nodes: usize,
-    /// Total nodes permitted while materializing reusable pure helper summaries.
+    /// Total nodes permitted while materializing reusable helper return summaries.
     pub max_summary_nodes: usize,
     pub max_parameters: usize,
     pub max_component_nodes: usize,
@@ -527,6 +527,44 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             }
         }
         result
+    }
+
+    fn cached_summary_result(
+        &mut self,
+        name: &str,
+        formals: &[Parameter],
+        actuals: &[Origin],
+        path: &str,
+        call_body: &str,
+        depth: usize,
+    ) -> Option<Origin> {
+        let summary = self.summaries?.get(name)?.clone();
+        let route_upper_bound =
+            summary
+                .result
+                .formals
+                .iter()
+                .fold(summary.result.routes.len(), |used, formal| {
+                    used.saturating_add(
+                        actuals
+                            .get(formal.index)
+                            .map_or(self.limits.max_routes.saturating_add(1), |actual| {
+                                actual.routes.len()
+                            }),
+                    )
+                });
+        if self.nodes.saturating_add(summary.nodes) > self.limits.max_nodes
+            || depth.saturating_add(1).saturating_add(summary.max_depth) > self.limits.max_depth
+            || self.call_stack.len().saturating_add(summary.max_call_stack)
+                > self.limits.max_call_depth.saturating_add(1)
+            || route_upper_bound > self.limits.max_routes
+        {
+            return None;
+        }
+        self.nodes += summary.nodes;
+        let result =
+            self.instantiate_summary_origin(summary.result, actuals, formals, path, call_body);
+        Some(self.append(result, &format!("call_return:{name}"), path))
     }
 
     fn append(&mut self, mut origin: Origin, operation: &str, path: &str) -> Origin {
@@ -1309,6 +1347,19 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             self.unavailable(path, "stateful value helper call depth limit");
             return Origin::unknown();
         }
+        if callee.actions.is_empty() {
+            let call_body = format!("{path}.callee:{}", callee.name);
+            if let Some(result) = self.cached_summary_result(
+                &callee.name,
+                &callee.parameters,
+                &actuals,
+                path,
+                &call_body,
+                depth,
+            ) {
+                return result;
+            }
+        }
         let mut callee_env = BTreeMap::new();
         for (formal, actual) in callee.parameters.iter().zip(actuals) {
             callee_env.insert(
@@ -1679,41 +1730,16 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "pure helper call depth limit");
                     return Origin::unknown();
                 }
-                let summary = self
-                    .summaries
-                    .and_then(|summaries| summaries.get(callee.name.as_str()))
-                    .cloned();
-                if let Some(summary) = summary {
-                    let route_upper_bound = summary.result.formals.iter().fold(
-                        summary.result.routes.len(),
-                        |used, formal| {
-                            used.saturating_add(
-                                actuals
-                                    .get(formal.index)
-                                    .map_or(self.limits.max_routes.saturating_add(1), |actual| {
-                                        actual.routes.len()
-                                    }),
-                            )
-                        },
-                    );
-                    if self.nodes.saturating_add(summary.nodes) <= self.limits.max_nodes
-                        && depth.saturating_add(1).saturating_add(summary.max_depth)
-                            <= self.limits.max_depth
-                        && self.call_stack.len().saturating_add(summary.max_call_stack)
-                            <= self.limits.max_call_depth.saturating_add(1)
-                        && route_upper_bound <= self.limits.max_routes
-                    {
-                        self.nodes += summary.nodes;
-                        let call_body = format!("{path}.callee:{}.body", callee.name);
-                        let result = self.instantiate_summary_origin(
-                            summary.result,
-                            &actuals,
-                            &callee.parameters,
-                            path,
-                            &call_body,
-                        );
-                        return self.append(result, &format!("call_return:{}", callee.name), path);
-                    }
+                let call_body = format!("{path}.callee:{}.body", callee.name);
+                if let Some(result) = self.cached_summary_result(
+                    &callee.name,
+                    &callee.parameters,
+                    &actuals,
+                    path,
+                    &call_body,
+                    depth,
+                ) {
+                    return result;
                 }
                 let mut callee_env = BTreeMap::new();
                 for (formal, actual) in callee.parameters.iter().zip(actuals) {
@@ -1952,6 +1978,124 @@ fn build_helper_summaries<'c>(
             .map(|(index, parameter)| (parameter.name.clone(), Origin::formal(index)))
             .collect();
         let result = analysis.visit(&circuit.body, &env, "body", 0);
+        let nodes = analysis.nodes;
+        let max_depth = analysis.max_depth_seen;
+        let max_call_stack = analysis.max_call_stack_seen;
+        let eligible =
+            !analysis.saw_sink && !analysis.saw_stateful_call && !analysis.saw_assert_or_witness;
+        drop(analysis);
+        used_nodes = used_nodes.saturating_add(nodes);
+        if !eligible || !scratch.unavailable.is_empty() || scratch.truncated {
+            continue;
+        }
+        let formal_dependencies = result
+            .formals
+            .iter()
+            .filter_map(|formal| {
+                circuit
+                    .parameters
+                    .get(formal.index)
+                    .map(|parameter| FormalDependency {
+                        parameter: parameter.name.clone(),
+                        dependencies: formal.dependencies.clone(),
+                    })
+            })
+            .collect();
+        let mut producers = Vec::new();
+        for route in &result.routes {
+            if !producers.contains(&route.producer) {
+                producers.push(route.producer.clone());
+            }
+        }
+        evidence.push(HelperSummaryEvidence {
+            circuit: circuit.name.clone(),
+            source: circuit.source.clone(),
+            formal_dependencies,
+            producers,
+            has_nonformal_unknown: result.unknown,
+            nodes,
+        });
+        summaries.insert(
+            circuit.name.as_str(),
+            HelperSummary {
+                result,
+                nodes,
+                max_depth,
+                max_call_stack,
+            },
+        );
+    }
+    for circuit in contract
+        .stateful_circuits
+        .iter()
+        .take(limits.max_circuits.saturating_sub(contract.circuits.len()))
+    {
+        let remaining = limits.max_summary_nodes.saturating_sub(used_nodes);
+        if remaining == 0 {
+            break;
+        }
+        if !circuit.actions.is_empty()
+            || ambiguous_stateful.contains(circuit.name.as_str())
+            || circuits.contains_key(circuit.name.as_str())
+            || circuit.parameters.len() > limits.max_nodes.min(limits.max_parameters)
+            || circuit
+                .parameters
+                .iter()
+                .map(|parameter| parameter.name.as_str())
+                .collect::<BTreeSet<_>>()
+                .len()
+                != circuit.parameters.len()
+        {
+            continue;
+        }
+        let mut scratch = Report::default();
+        let mut analysis = CircuitAnalysis {
+            name: &circuit.name,
+            source: &circuit.source,
+            current_circuit: &circuit.name,
+            current_source: &circuit.source,
+            circuits,
+            ambiguous,
+            stateful_circuits,
+            ambiguous_stateful,
+            summaries: None,
+            call_stack: vec![&circuit.name],
+            conditions: Vec::new(),
+            control_origin: Origin::default(),
+            return_env: None,
+            limits: Limits {
+                max_nodes: limits.max_nodes.min(remaining),
+                ..limits
+            },
+            nodes: 0,
+            max_depth_seen: 0,
+            max_call_stack_seen: 1,
+            saw_sink: false,
+            saw_stateful_call: false,
+            saw_assert_or_witness: false,
+            report: &mut scratch,
+        };
+        let env = circuit
+            .parameters
+            .iter()
+            .enumerate()
+            .map(|(index, parameter)| (parameter.name.clone(), Origin::formal(index)))
+            .collect();
+        let result = match &circuit.return_value {
+            StateReturn::Expression { value } => {
+                analysis.visit(value, &env, "return_value.value", 0)
+            }
+            StateReturn::SetMember { value, .. } => {
+                analysis.ledger_query(value, &env, "return_value", 0, "value", "set_membership")
+            }
+            StateReturn::MapMember { key, .. } => {
+                analysis.ledger_query(key, &env, "return_value", 0, "key", "map_membership")
+            }
+            StateReturn::MapLookup { key, .. } => {
+                analysis.ledger_query(key, &env, "return_value", 0, "key", "map_lookup_selection")
+            }
+            _ => continue,
+        };
         let nodes = analysis.nodes;
         let max_depth = analysis.max_depth_seen;
         let max_call_stack = analysis.max_call_stack_seen;
