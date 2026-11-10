@@ -1,0 +1,30 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger marker: Field;
+
+pure circuit check(value: Field): [] {
+  assert(persistentHash<Field>(value) != default<Bytes<32>>, "digest is nonzero");
+}
+
+pure circuit make_and_check(value: Field): [] {
+  check(transientHash<Field>(value));
+}
+
+export circuit forwarded(value: Field): [] {
+  check(transientHash<Field>(value));
+  marker = disclose(value);
+}
+
+export circuit produced(value: Field): [] {
+  make_and_check(value);
+  marker = disclose(value);
+}
+
+export circuit ordinary(value: Field): [] {
+  check(value);
+  marker = disclose(value);
+}

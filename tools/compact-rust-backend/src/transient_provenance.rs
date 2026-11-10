@@ -641,8 +641,82 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     depth,
                 );
             }
-            StateAction::PureCall { .. } => {
-                self.unavailable(path, "standalone pure action call unavailable")
+            StateAction::PureCall { name, arguments } => {
+                if self.ambiguous.contains(name.as_str())
+                    || self.stateful_circuits.contains_key(name.as_str())
+                {
+                    self.unavailable(path, "ambiguous pure action helper");
+                    return;
+                }
+                let Some(callee) = self.circuits.get(name.as_str()).copied() else {
+                    self.unavailable(path, "unknown pure action helper");
+                    return;
+                };
+                if !matches!(callee.result, Type::Unit) {
+                    self.unavailable(path, "non-unit pure action helper");
+                    return;
+                }
+                if arguments.len() != callee.parameters.len() {
+                    self.unavailable(path, "pure action helper arity mismatch");
+                    return;
+                }
+                if callee.parameters.len() > self.limits.max_nodes {
+                    self.unavailable(path, "parameter limit");
+                    return;
+                }
+                if callee
+                    .parameters
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != callee.parameters.len()
+                {
+                    self.unavailable(path, "duplicate pure action helper parameter");
+                    return;
+                }
+                if self.call_stack.contains(&callee.name.as_str()) {
+                    self.unavailable(path, "recursive pure action helper");
+                    return;
+                }
+                if self.call_stack.len() > self.limits.max_call_depth {
+                    self.unavailable(path, "pure action helper call depth limit");
+                    return;
+                }
+                let mut actuals = Vec::with_capacity(arguments.len().min(self.limits.max_nodes));
+                for (index, argument) in arguments.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "action node limit");
+                        return;
+                    }
+                    actuals.push(self.visit(
+                        argument,
+                        env,
+                        &format!("{path}.arguments[{index}]"),
+                        depth + 1,
+                    ));
+                }
+                let mut callee_env = BTreeMap::new();
+                for (formal, actual) in callee.parameters.iter().zip(actuals) {
+                    callee_env.insert(
+                        formal.name.clone(),
+                        self.append(actual, &format!("call_argument:{}", formal.name), path),
+                    );
+                }
+                self.call_stack.push(&callee.name);
+                let previous_circuit = self.current_circuit;
+                let previous_source = self.current_source;
+                self.current_circuit = &callee.name;
+                self.current_source = &callee.source;
+                self.visit(
+                    &callee.body,
+                    &callee_env,
+                    &format!("{path}.callee:{}.body", callee.name),
+                    depth + 1,
+                );
+                self.current_circuit = previous_circuit;
+                self.current_source = previous_source;
+                self.call_stack.pop();
             }
             StateAction::CircuitCall { name, arguments } => {
                 if self.ambiguous_stateful.contains(name.as_str()) {
@@ -1354,6 +1428,13 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.visit(step, env, &format!("{path}.steps[{index}]"), depth + 1);
                 }
                 self.visit(value, env, &child("value"), depth + 1)
+            }
+            Expr::Assert { condition, .. } => {
+                let condition_origin = self.visit(condition, env, &child("condition"), depth + 1);
+                if !condition_origin.routes.is_empty() {
+                    self.unavailable(path, "assertion execution control unavailable");
+                }
+                Origin::default()
             }
             _ => {
                 self.unavailable(path, "unsupported expression form");
