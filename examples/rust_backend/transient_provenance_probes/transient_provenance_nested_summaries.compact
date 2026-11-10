@@ -1,0 +1,72 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+circuit identity(value: Field): Field {
+  return value;
+}
+
+circuit relay(value: Field): Field {
+  return identity(value);
+}
+
+circuit two_hops(value: Field): Field {
+  return relay(value);
+}
+
+circuit derive(value: Field): Field {
+  return transientHash<Field>(value);
+}
+
+circuit wrap(value: Field): Field {
+  return derive(value);
+}
+
+circuit wrap_twice(value: Field): Field {
+  return wrap(value);
+}
+
+circuit mix(value: Field, ordinary: Field): Field {
+  return relay(value) + ordinary;
+}
+
+circuit persist(value: Field): Bytes<32> {
+  return persistentHash<Field>(value);
+}
+
+circuit persist_wrapper(value: Field): Bytes<32> {
+  return persist(value);
+}
+
+export circuit forwarded_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(two_hops(transientHash<Field>(value)));
+}
+
+export circuit forwarded_plain(value: Field): Bytes<32> {
+  return persistentHash<Field>(two_hops(value));
+}
+
+export circuit produced_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(wrap_twice(value));
+}
+
+export circuit mixed_hit(value: Field, ordinary: Field): Bytes<32> {
+  return persistentHash<Field>(mix(transientHash<Field>(value), ordinary));
+}
+
+export circuit sinkful_hit(value: Field): Bytes<32> {
+  return persist_wrapper(transientHash<Field>(value));
+}

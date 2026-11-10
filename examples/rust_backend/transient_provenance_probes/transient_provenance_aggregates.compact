@@ -1,0 +1,80 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+export struct Pair { first: Field; second: Field; }
+
+export circuit struct_hit(value: Field, other: Field): Bytes<32> {
+  const pair = Pair { first: transientHash<Field>(value), second: other };
+  return persistentHash<Field>(pair.first);
+}
+
+export circuit struct_miss(value: Field, other: Field): Bytes<32> {
+  const pair = Pair { first: transientHash<Field>(value), second: other };
+  return persistentHash<Field>(pair.second);
+}
+
+export circuit tuple_hit(value: Field, other: Field): Bytes<32> {
+  const pair: [Field, Field] = [transientHash<Field>(value), other];
+  return persistentHash<Field>(pair[0]);
+}
+
+export circuit tuple_miss(value: Field, other: Field): Bytes<32> {
+  const pair: [Field, Field] = [transientHash<Field>(value), other];
+  return persistentHash<Field>(pair[1]);
+}
+
+export circuit vector_hit(value: Field, other: Field): Bytes<32> {
+  const values: Vector<2, Field> = [transientHash<Field>(value), other];
+  return persistentHash<Field>(values[0]);
+}
+
+export circuit vector_miss(value: Field, other: Field): Bytes<32> {
+  const values: Vector<2, Field> = [transientHash<Field>(value), other];
+  return persistentHash<Field>(values[1]);
+}
+
+export circuit whole_product(value: Field, other: Field): Bytes<32> {
+  return persistentHash<[Field, Field]>([transientHash<Field>(value), other]);
+}
+
+export circuit branch_data(value: Field, selected: Boolean): Bytes<32> {
+  const chosen = selected ? transientHash<Field>(value) : value;
+  return persistentHash<Field>(chosen);
+}
+
+export circuit branch_struct(value: Field, other: Field, selected: Boolean): Bytes<32> {
+  const left = Pair { first: transientHash<Field>(value), second: other };
+  const right = Pair { first: other, second: other };
+  const chosen = selected ? left : right;
+  return persistentHash<Field>(chosen.first);
+}
+
+export circuit branch_struct_miss(value: Field, other: Field, selected: Boolean): Bytes<32> {
+  const left = Pair { first: transientHash<Field>(value), second: other };
+  const right = Pair { first: other, second: other };
+  const chosen = selected ? left : right;
+  return persistentHash<Field>(chosen.second);
+}
+
+export circuit branch_control(value: Field): Bytes<32> {
+  const selected = transientHash<Field>(value) == 0;
+  return persistentHash<Field>(selected ? 1 : 2);
+}
+
+export circuit branch_sink(value: Field, selected: Boolean): Bytes<32> {
+  return selected ? persistentHash<Field>(transientHash<Field>(value)) : persistentHash<Field>(value);
+}

@@ -1,0 +1,78 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+export struct Pair { first: Field; second: Field; }
+
+circuit pair(first: Field, second: Field): Pair {
+  return Pair { first, second };
+}
+
+circuit relay(value: Pair): Pair {
+  return value;
+}
+
+circuit convert(value: Field): Bytes<32> {
+  return value as Bytes<32>;
+}
+
+circuit choose(value: Field, selected: Boolean): Field {
+  return selected ? value : 0;
+}
+
+circuit derive(value: Field): Field {
+  return transientHash<Field>(value);
+}
+
+circuit mix(value: Field): Field {
+  return value + transientHash<Field>(1);
+}
+
+export circuit projected_hit(value: Field, ordinary: Field): Bytes<32> {
+  const result = pair(transientHash<Field>(value), ordinary);
+  return persistentHash<Field>(result.first);
+}
+
+export circuit projected_plain(value: Field, ordinary: Field): Bytes<32> {
+  const result = pair(transientHash<Field>(value), ordinary);
+  return persistentHash<Field>(result.second);
+}
+
+export circuit relayed_hit(value: Field, ordinary: Field): Bytes<32> {
+  const result = relay(Pair { first: transientHash<Field>(value), second: ordinary });
+  return persistentHash<Field>(result.first);
+}
+
+export circuit relayed_plain(value: Field, ordinary: Field): Bytes<32> {
+  const result = relay(Pair { first: transientHash<Field>(value), second: ordinary });
+  return persistentHash<Field>(result.second);
+}
+
+export circuit conversion_hit(value: Field): Bytes<32> {
+  return persistentHash<Bytes<32>>(convert(transientHash<Field>(value)));
+}
+
+export circuit branch_hit(value: Field, selected: Boolean): Bytes<32> {
+  return persistentHash<Field>(choose(transientHash<Field>(value), selected));
+}
+
+export circuit produced_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(derive(value));
+}
+
+export circuit mixed_order_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(mix(transientHash<Field>(value)));
+}
