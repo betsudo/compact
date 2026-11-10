@@ -1,0 +1,23 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger table: Map<Bytes<32>, Field>;
+
+export circuit nested_hash(value: Field): Bytes<32> {
+  return persistentHash<Field>(transientHash<Field>(transientHash<Field>(value)));
+}
+
+export circuit nested_commit_value(value: Field, opening: Field): Bytes<32> {
+  return persistentHash<Field>(transientCommit<Field>(transientHash<Field>(value), opening));
+}
+
+export circuit nested_commit_opening(value: Field, opening: Field): Bytes<32> {
+  return persistentHash<Field>(transientCommit<Field>(value, transientHash<Field>(opening)));
+}
+
+export circuit nested_lookup_key(value: Field): Bytes<32> {
+  return persistentHash<Field>(table.lookup(disclose(persistentHash<Field>(transientHash<Field>(value)))));
+}

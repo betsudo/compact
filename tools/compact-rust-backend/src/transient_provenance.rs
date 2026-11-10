@@ -1216,23 +1216,30 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 }
                 Origin::unknown()
             }
-            Expr::NativeWitnessCall { .. } | Expr::CellRead { .. } | Expr::MapLookup { .. } => {
+            Expr::NativeWitnessCall { .. } | Expr::CellRead { .. } => Origin::unknown(),
+            Expr::MapLookup { key, .. } => {
+                let key_origin = self.visit(key, env, &child("key"), depth + 1);
+                if !key_origin.routes.is_empty() {
+                    self.unavailable(path, "map lookup result provenance unavailable");
+                }
                 Origin::unknown()
             }
             Expr::TransientHash { value } | Expr::TransientCommit { value, opening: _ } => {
-                // Analyze children for nested sinks; a producer starts at this operation.
+                // Retain upstream transient producers through this operation.
                 let input = self.visit(value, env, &child("value"), depth + 1);
                 let mut unknown = input.unknown;
+                let mut upstream = self.append(input, "transient_value", path);
                 if let Expr::TransientCommit { opening, .. } = expr {
-                    unknown |= self
-                        .visit(opening, env, &child("opening"), depth + 1)
-                        .unknown;
+                    let opening = self.visit(opening, env, &child("opening"), depth + 1);
+                    unknown |= opening.unknown;
+                    let opening = self.append(opening, "transient_opening", path);
+                    upstream = self.combine(upstream, opening, path);
                 }
                 if self.limits.max_routes == 0 {
                     self.unavailable(path, "producer route limit");
                     return Origin::unknown();
                 }
-                Origin {
+                let direct = Origin {
                     routes: vec![Route {
                         producer: Producer {
                             kind: if matches!(expr, Expr::TransientHash { .. }) {
@@ -1248,7 +1255,8 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     }],
                     unknown,
                     components: None,
-                }
+                };
+                self.combine(direct, upstream, path)
             }
             Expr::PersistentHash { value } => {
                 let input = child("value");
