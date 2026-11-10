@@ -1,0 +1,1248 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "struct_hit",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "pair",
+            "ty": {
+              "kind": "struct",
+              "name": "Pair",
+              "fields": [
+                {
+                  "name": "first",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                {
+                  "name": "second",
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ]
+            },
+            "value": {
+              "kind": "struct_literal",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "fields": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "struct_field",
+            "value": {
+              "kind": "parameter",
+              "name": "pair"
+            },
+            "field": "first",
+            "index": 0
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 9,
+        "column": 1
+      }
+    },
+    {
+      "name": "struct_miss",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "pair",
+            "ty": {
+              "kind": "struct",
+              "name": "Pair",
+              "fields": [
+                {
+                  "name": "first",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                {
+                  "name": "second",
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ]
+            },
+            "value": {
+              "kind": "struct_literal",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "fields": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "struct_field",
+            "value": {
+              "kind": "parameter",
+              "name": "pair"
+            },
+            "field": "second",
+            "index": 1
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 14,
+        "column": 1
+      }
+    },
+    {
+      "name": "tuple_hit",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "pair",
+            "ty": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "field"
+                },
+                {
+                  "kind": "field"
+                }
+              ]
+            },
+            "value": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "pair"
+            },
+            "index": 0
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "tuple_miss",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "pair",
+            "ty": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "field"
+                },
+                {
+                  "kind": "field"
+                }
+              ]
+            },
+            "value": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "pair"
+            },
+            "index": 1
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 24,
+        "column": 1
+      }
+    },
+    {
+      "name": "vector_hit",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "values",
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "field"
+              }
+            },
+            "value": {
+              "kind": "vector",
+              "element": {
+                "kind": "field"
+              },
+              "elements": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "values"
+            },
+            "index": 0
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 29,
+        "column": 1
+      }
+    },
+    {
+      "name": "vector_miss",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "values",
+            "ty": {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "field"
+              }
+            },
+            "value": {
+              "kind": "vector",
+              "element": {
+                "kind": "field"
+              },
+              "elements": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "parameter",
+              "name": "values"
+            },
+            "index": 1
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 34,
+        "column": 1
+      }
+    },
+    {
+      "name": "whole_product",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "persistent_hash",
+        "value": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "transient_hash",
+              "value": {
+                "kind": "parameter",
+                "name": "value"
+              }
+            },
+            {
+              "kind": "parameter",
+              "name": "other"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 39,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch_data",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "chosen",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              },
+              "otherwise": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              }
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "parameter",
+            "name": "chosen"
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 43,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch_struct",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "left",
+            "ty": {
+              "kind": "struct",
+              "name": "Pair",
+              "fields": [
+                {
+                  "name": "first",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                {
+                  "name": "second",
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ]
+            },
+            "value": {
+              "kind": "struct_literal",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "fields": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "right",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "value": {
+                "kind": "struct_literal",
+                "ty": {
+                  "kind": "struct",
+                  "name": "Pair",
+                  "fields": [
+                    {
+                      "name": "first",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "name": "second",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ]
+                },
+                "fields": [
+                  {
+                    "kind": "parameter",
+                    "name": "other"
+                  },
+                  {
+                    "kind": "parameter",
+                    "name": "other"
+                  }
+                ]
+              }
+            }
+          ],
+          "body": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "chosen",
+                "ty": {
+                  "kind": "struct",
+                  "name": "Pair",
+                  "fields": [
+                    {
+                      "name": "first",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "name": "second",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ]
+                },
+                "value": {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "parameter",
+                    "name": "selected"
+                  },
+                  "then": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "left"
+                    },
+                    "ty": {
+                      "kind": "struct",
+                      "name": "Pair",
+                      "fields": [
+                        {
+                          "name": "first",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "name": "second",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "right"
+                    },
+                    "ty": {
+                      "kind": "struct",
+                      "name": "Pair",
+                      "fields": [
+                        {
+                          "name": "first",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "name": "second",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "body": {
+              "kind": "persistent_hash",
+              "value": {
+                "kind": "struct_field",
+                "value": {
+                  "kind": "parameter",
+                  "name": "chosen"
+                },
+                "field": "first",
+                "index": 0
+              }
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 48,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch_struct_miss",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "other",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "left",
+            "ty": {
+              "kind": "struct",
+              "name": "Pair",
+              "fields": [
+                {
+                  "name": "first",
+                  "ty": {
+                    "kind": "field"
+                  }
+                },
+                {
+                  "name": "second",
+                  "ty": {
+                    "kind": "field"
+                  }
+                }
+              ]
+            },
+            "value": {
+              "kind": "struct_literal",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "fields": [
+                {
+                  "kind": "transient_hash",
+                  "value": {
+                    "kind": "parameter",
+                    "name": "value"
+                  }
+                },
+                {
+                  "kind": "parameter",
+                  "name": "other"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "right",
+              "ty": {
+                "kind": "struct",
+                "name": "Pair",
+                "fields": [
+                  {
+                    "name": "first",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  },
+                  {
+                    "name": "second",
+                    "ty": {
+                      "kind": "field"
+                    }
+                  }
+                ]
+              },
+              "value": {
+                "kind": "struct_literal",
+                "ty": {
+                  "kind": "struct",
+                  "name": "Pair",
+                  "fields": [
+                    {
+                      "name": "first",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "name": "second",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ]
+                },
+                "fields": [
+                  {
+                    "kind": "parameter",
+                    "name": "other"
+                  },
+                  {
+                    "kind": "parameter",
+                    "name": "other"
+                  }
+                ]
+              }
+            }
+          ],
+          "body": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "chosen",
+                "ty": {
+                  "kind": "struct",
+                  "name": "Pair",
+                  "fields": [
+                    {
+                      "name": "first",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    },
+                    {
+                      "name": "second",
+                      "ty": {
+                        "kind": "field"
+                      }
+                    }
+                  ]
+                },
+                "value": {
+                  "kind": "if",
+                  "condition": {
+                    "kind": "parameter",
+                    "name": "selected"
+                  },
+                  "then": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "left"
+                    },
+                    "ty": {
+                      "kind": "struct",
+                      "name": "Pair",
+                      "fields": [
+                        {
+                          "name": "first",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "name": "second",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "otherwise": {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "parameter",
+                      "name": "right"
+                    },
+                    "ty": {
+                      "kind": "struct",
+                      "name": "Pair",
+                      "fields": [
+                        {
+                          "name": "first",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        },
+                        {
+                          "name": "second",
+                          "ty": {
+                            "kind": "field"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "body": {
+              "kind": "persistent_hash",
+              "value": {
+                "kind": "struct_field",
+                "value": {
+                  "kind": "parameter",
+                  "name": "chosen"
+                },
+                "field": "second",
+                "index": 1
+              }
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 55,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch_control",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "selected",
+            "ty": {
+              "kind": "boolean"
+            },
+            "value": {
+              "kind": "equal",
+              "left": {
+                "kind": "transient_hash",
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              "right": {
+                "kind": "field_literal",
+                "value": "0"
+              }
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "field_cast",
+            "value": {
+              "kind": "if",
+              "condition": {
+                "kind": "parameter",
+                "name": "selected"
+              },
+              "then": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "unsigned_literal",
+                  "value": "1",
+                  "max": "2"
+                },
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "2"
+                }
+              },
+              "otherwise": {
+                "kind": "coerce",
+                "value": {
+                  "kind": "unsigned_literal",
+                  "value": "2",
+                  "max": "2"
+                },
+                "ty": {
+                  "kind": "unsigned",
+                  "max": "2"
+                }
+              }
+            }
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 62,
+        "column": 1
+      }
+    },
+    {
+      "name": "branch_sink",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "selected",
+          "ty": {
+            "kind": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "if",
+        "condition": {
+          "kind": "parameter",
+          "name": "selected"
+        },
+        "then": {
+          "kind": "coerce",
+          "value": {
+            "kind": "persistent_hash",
+            "value": {
+              "kind": "transient_hash",
+              "value": {
+                "kind": "parameter",
+                "name": "value"
+              }
+            }
+          },
+          "ty": {
+            "kind": "bytes",
+            "length": 32
+          }
+        },
+        "otherwise": {
+          "kind": "coerce",
+          "value": {
+            "kind": "persistent_hash",
+            "value": {
+              "kind": "parameter",
+              "name": "value"
+            }
+          },
+          "ty": {
+            "kind": "bytes",
+            "length": 32
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_aggregates.compact",
+        "line": 67,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

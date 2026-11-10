@@ -8,7 +8,7 @@
 //! finding never certifies a value as stable. Unsupported expression forms and exhausted
 //! budgets are reported as unavailable, including when a known route was already found.
 
-use crate::ir::{Contract, Expr, PureCircuit, SourceLocation, StateReturn};
+use crate::ir::{Contract, Expr, PureCircuit, SourceLocation, StateReturn, Type};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,6 +76,8 @@ pub struct Finding {
     pub sink_path: String,
     pub input: String,
     pub routes: Vec<Route>,
+    /// Branch arms containing the sink; an empty list means no lexical branch.
+    pub conditions: Vec<String>,
     /// True when the sink input also depends on an ordinary argument, witness,
     /// or an expression whose origin cannot be established by this slice.
     pub has_unknown_input: bool,
@@ -116,6 +118,38 @@ fn push_unavailable(report: &mut Report, limits: Limits, circuit: &str, path: &s
 struct Origin {
     routes: Vec<Route>,
     unknown: bool,
+    components: Option<Components>,
+}
+
+#[derive(Clone)]
+enum Components {
+    Indexed(Vec<Origin>),
+    Named(Vec<(String, Origin)>),
+}
+
+fn same_simple_literal(left: &Expr, right: &Expr) -> bool {
+    match (left, right) {
+        (Expr::Unit, Expr::Unit) => true,
+        (Expr::Boolean { value: a }, Expr::Boolean { value: b }) => a == b,
+        (Expr::FieldLiteral { value: a }, Expr::FieldLiteral { value: b }) => {
+            a.len() <= 128 && b.len() <= 128 && a == b
+        }
+        (Expr::BytesLiteral { bytes: a }, Expr::BytesLiteral { bytes: b }) => {
+            a.len() <= 64 && b.len() <= 64 && a == b
+        }
+        (
+            Expr::UnsignedLiteral { value: a, max: am },
+            Expr::UnsignedLiteral { value: b, max: bm },
+        ) => {
+            a.len() <= 128
+                && b.len() <= 128
+                && am.len() <= 128
+                && bm.len() <= 128
+                && a == b
+                && am == bm
+        }
+        _ => false,
+    }
 }
 
 impl Origin {
@@ -123,6 +157,7 @@ impl Origin {
         Self {
             routes: Vec::new(),
             unknown: true,
+            components: None,
         }
     }
 }
@@ -135,6 +170,7 @@ struct CircuitAnalysis<'c, 'r> {
     circuits: &'c BTreeMap<&'c str, &'c PureCircuit>,
     ambiguous: &'c BTreeSet<&'c str>,
     call_stack: Vec<&'c str>,
+    conditions: Vec<String>,
     limits: Limits,
     nodes: usize,
     report: &'r mut Report,
@@ -156,6 +192,19 @@ impl CircuitAnalysis<'_, '_> {
                 path: path.into(),
             });
         }
+        match &mut origin.components {
+            Some(Components::Indexed(values)) => {
+                for value in values {
+                    *value = self.append(value.clone(), operation, path);
+                }
+            }
+            Some(Components::Named(values)) => {
+                for (_, value) in values {
+                    *value = self.append(value.clone(), operation, path);
+                }
+            }
+            None => {}
+        }
         origin
     }
 
@@ -173,6 +222,90 @@ impl CircuitAnalysis<'_, '_> {
         Origin {
             routes,
             unknown: left.unknown || right.unknown,
+            components: None,
+        }
+    }
+
+    fn aggregate(&mut self, components: Components, path: &str) -> Origin {
+        let values: Vec<&Origin> = match &components {
+            Components::Indexed(values) => values.iter().collect(),
+            Components::Named(values) => values.iter().map(|(_, value)| value).collect(),
+        };
+        let had_known = values.iter().any(|value| !value.routes.is_empty());
+        let mut whole = Origin::default();
+        for value in values {
+            whole = self.combine(whole, value.clone(), path);
+        }
+        if had_known && whole.routes.is_empty() {
+            return Origin::unknown();
+        }
+        whole.components = Some(components);
+        whole
+    }
+
+    fn branch_components(
+        &mut self,
+        then: &Origin,
+        otherwise: &Origin,
+        path: &str,
+    ) -> Option<Components> {
+        match (&then.components, &otherwise.components) {
+            (Some(Components::Indexed(left)), Some(Components::Indexed(right)))
+                if left.len() == right.len() =>
+            {
+                Some(Components::Indexed(
+                    left.iter()
+                        .zip(right)
+                        .map(|(a, b)| self.combine(a.clone(), b.clone(), path))
+                        .collect(),
+                ))
+            }
+            (Some(Components::Named(left)), Some(Components::Named(right)))
+                if left.len() == right.len()
+                    && left.iter().zip(right).all(|((a, _), (b, _))| a == b) =>
+            {
+                Some(Components::Named(
+                    left.iter()
+                        .zip(right)
+                        .map(|((name, a), (_, b))| {
+                            (name.clone(), self.combine(a.clone(), b.clone(), path))
+                        })
+                        .collect(),
+                ))
+            }
+            (Some(components), None) if otherwise.routes.is_empty() => {
+                Some(self.components_with_unknown(components, path))
+            }
+            (None, Some(components)) if then.routes.is_empty() => {
+                Some(self.components_with_unknown(components, path))
+            }
+            (None, None) => None,
+            _ => {
+                self.unavailable(path, "branch aggregate shape unavailable");
+                None
+            }
+        }
+    }
+
+    fn components_with_unknown(&mut self, components: &Components, path: &str) -> Components {
+        match components {
+            Components::Indexed(values) => Components::Indexed(
+                values
+                    .iter()
+                    .map(|value| self.combine(value.clone(), Origin::unknown(), path))
+                    .collect(),
+            ),
+            Components::Named(values) => Components::Named(
+                values
+                    .iter()
+                    .map(|(name, value)| {
+                        (
+                            name.clone(),
+                            self.combine(value.clone(), Origin::unknown(), path),
+                        )
+                    })
+                    .collect(),
+            ),
         }
     }
 
@@ -194,6 +327,7 @@ impl CircuitAnalysis<'_, '_> {
             sink_path: path.into(),
             input: input.into(),
             routes: origin.routes.clone(),
+            conditions: self.conditions.clone(),
             has_unknown_input: origin.unknown,
         });
     }
@@ -224,6 +358,135 @@ impl CircuitAnalysis<'_, '_> {
             | Expr::UnsignedLiteral { .. }
             | Expr::EnumVariant { .. } => Origin::default(),
             Expr::Parameter { name } => env.get(name).cloned().unwrap_or_else(Origin::unknown),
+            Expr::Tuple { elements } | Expr::Vector { elements, .. } => {
+                let mut values = Vec::with_capacity(elements.len().min(self.limits.max_nodes));
+                for (index, element) in elements.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "expression node limit");
+                        return Origin::unknown();
+                    }
+                    values.push(self.visit(
+                        element,
+                        env,
+                        &format!("{path}.elements[{index}]"),
+                        depth + 1,
+                    ));
+                }
+                self.aggregate(Components::Indexed(values), path)
+            }
+            Expr::StructLiteral { ty, fields } => {
+                let Type::Struct {
+                    fields: declared, ..
+                } = ty
+                else {
+                    self.unavailable(path, "struct literal shape unavailable");
+                    return Origin::unknown();
+                };
+                if declared.len() != fields.len() {
+                    self.unavailable(path, "struct literal arity mismatch");
+                    return Origin::unknown();
+                }
+                let mut values = Vec::with_capacity(fields.len().min(self.limits.max_nodes));
+                for (index, (field, declaration)) in fields.iter().zip(declared).enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "expression node limit");
+                        return Origin::unknown();
+                    }
+                    values.push((
+                        declaration.name.clone(),
+                        self.visit(field, env, &format!("{path}.fields[{index}]"), depth + 1),
+                    ));
+                }
+                self.aggregate(Components::Named(values), path)
+            }
+            Expr::StructField {
+                value,
+                field,
+                index,
+            } => {
+                let origin = self.visit(value, env, &child("value"), depth + 1);
+                match origin.components {
+                    Some(Components::Named(values))
+                        if values.get(*index).is_some_and(|(name, _)| name == field) =>
+                    {
+                        self.append(
+                            values[*index].1.clone(),
+                            &format!("projection:{field}"),
+                            path,
+                        )
+                    }
+                    _ => {
+                        self.unavailable(path, "struct projection shape unavailable");
+                        Origin::unknown()
+                    }
+                }
+            }
+            Expr::TupleIndex { value, index } => {
+                let origin = self.visit(value, env, &child("value"), depth + 1);
+                match origin.components {
+                    Some(Components::Indexed(values)) if *index < values.len() => {
+                        self.append(values[*index].clone(), "tuple_projection", path)
+                    }
+                    _ => {
+                        self.unavailable(path, "tuple projection shape unavailable");
+                        Origin::unknown()
+                    }
+                }
+            }
+            Expr::Equal { left, right }
+            | Expr::NotEqual { left, right }
+            | Expr::Compare { left, right, .. } => {
+                let left = self.visit(left, env, &child("left"), depth + 1);
+                let right = self.visit(right, env, &child("right"), depth + 1);
+                let combined = self.combine(left, right, path);
+                self.append(combined, "comparison", path)
+            }
+            Expr::If {
+                condition,
+                then,
+                otherwise,
+            } => {
+                let condition_origin = self.visit(condition, env, &child("condition"), depth + 1);
+                self.conditions.push(format!("{path}:then"));
+                let then_origin = self.visit(then, env, &child("then"), depth + 1);
+                self.conditions.pop();
+                self.conditions.push(format!("{path}:otherwise"));
+                let otherwise_origin = self.visit(otherwise, env, &child("otherwise"), depth + 1);
+                self.conditions.pop();
+                let same_literal = same_simple_literal(then, otherwise);
+                let had_known = !then_origin.routes.is_empty()
+                    || !otherwise_origin.routes.is_empty()
+                    || (!same_literal && !condition_origin.routes.is_empty());
+                let components = self.branch_components(&then_origin, &otherwise_origin, path);
+                let mut result = self.combine(then_origin, otherwise_origin, path);
+                // Identical primitive literals are provably independent of
+                // branch selection. Other arm equivalence is not attempted.
+                let control = if same_literal {
+                    Origin::default()
+                } else {
+                    self.append(condition_origin, "conditional_control", path)
+                };
+                result = self.combine(result, control.clone(), path);
+                if had_known && result.routes.is_empty() {
+                    return Origin::unknown();
+                }
+                result.components = components.map(|mut components| {
+                    match &mut components {
+                        Components::Indexed(values) => {
+                            for value in values {
+                                *value = self.combine(value.clone(), control.clone(), path);
+                            }
+                        }
+                        Components::Named(values) => {
+                            for (_, value) in values {
+                                *value = self.combine(value.clone(), control.clone(), path);
+                            }
+                        }
+                    }
+                    components
+                });
+                result
+            }
             Expr::Call { name, arguments } => {
                 let mut actuals = Vec::with_capacity(arguments.len().min(self.limits.max_nodes));
                 for (index, argument) in arguments.iter().enumerate() {
@@ -340,6 +603,7 @@ impl CircuitAnalysis<'_, '_> {
                         dependencies: Vec::new(),
                     }],
                     unknown,
+                    components: None,
                 }
             }
             Expr::PersistentHash { value } => {
@@ -468,6 +732,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             circuits: &circuits,
             ambiguous: &ambiguous,
             call_stack: vec![&circuit.name],
+            conditions: Vec::new(),
             limits,
             nodes: 0,
             report: &mut report,
@@ -529,6 +794,7 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
                     circuits: &circuits,
                     ambiguous: &ambiguous,
                     call_stack: vec![&circuit.name],
+                    conditions: Vec::new(),
                     limits,
                     nodes: 0,
                     report: &mut report,
