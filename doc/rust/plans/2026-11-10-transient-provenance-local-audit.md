@@ -2,8 +2,8 @@
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
-`codex/rust-ast-transient-provenance-cli`, stacked on the GPG-signed
-state-query-summaries head `f4babcc16`. Earlier local stack commits
+`codex/rust-ast-transient-provenance-cumulative-parity`, stacked on the
+GPG-signed standalone-advisory head `bfa7c06c2`. Earlier local stack commits
 also have verified GPG signatures. No remote publication.
 
 ## Verified bounded deliverable
@@ -32,10 +32,12 @@ with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
 per-slice plans; the full focused run is retained as `provenance-tests.log`
 in that evidence directory. The selected corpora's generated `contract/lib.rs`
-and `contract/rust-capabilities.json` files compared byte-identical. The
-latest map-lookup corpus hashes are in its own plan; all 117 generated files
-in that parent/current comparison matched byte-for-byte. No shared fixture was
-regenerated. Cumulative independent read-only review found no blocker for
+and `contract/rust-capabilities.json` files compared byte-identical. A direct
+canonical-base/current comparison also found all 1,855 generated files
+byte-identical across all 16 source-backed provenance corpora; the standalone
+cumulative-parity note and external `comparison.json` retain the details.
+No shared fixture was regenerated. Cumulative independent read-only review
+found no blocker for
 the preceding bounded stack; the symbolic-input review found two initial
 issues and no blocker after their fixes. The state-collections review found
 an indexed-position test gap; four synthetic analyzer regressions closed it,
@@ -46,6 +48,11 @@ a stateful-call exclusion regression, which is included. State-query-summary
 read-only review and final re-review found no blocker. CLI review identified
 schema, input-budget and duplicate-key gaps; after fixes, final re-review
 found no remaining blocker.
+
+The standalone advisory was also run over all 16 retained typed-IR outputs:
+80 warnings, eight explicit assertion-control unavailable records and no
+truncation. Its structured reports and summary are retained alongside the
+cumulative parity evidence.
 
 ## Acceptance trace
 
@@ -60,7 +67,7 @@ found no remaining blocker.
 | Symbolic formal dependencies and external/unknown contributions | Helper, aggregate, state-sink, map-lookup and membership source fixtures; symbolic-input and summary tests with explicit parameter/component/summary/call limits | Caller-root parameter dependencies reported separately for data/control; eligible pure and action-free stateful query return summaries materialized and instantiated |
 | Intentional standard-library use and acknowledgement | Value-call source fixture, exact-acknowledgement tests and CLI JSON input/output test | Verified as caller-side advisory policy |
 | Persistent values/openings, direct state writes, control dependence, summaries | Sink, state-collections, aggregate, helper-summary, nested-summary, state-query-summary, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified; eligible pure and action-free stateful query returns cached, sinkful/actionful helpers traversed per call |
-| Warning-only mode preserves native/recorded results, public API and ledger encoding | Standalone advisory has no emission hook; selected parent/current generated tree (117 files) and prior Rust/capability corpus comparisons | Generated artifact parity verified for selected corpora; native/recorded runtime result and FAB-byte equivalence unverified |
+| Warning-only mode preserves native/recorded results, public API and ledger encoding | Standalone advisory has no emission hook; canonical-base/current generated tree (1,855 files across 16 source corpora) | Generated artifact parity verified for selected corpora; native/recorded runtime result and FAB-byte equivalence unverified |
 | Optional wrapper feasibility separated from compiler lint | ADR-0463 nominal wrapper and trait discussion; no generated wrapper | Design separation recorded; no wrapper claimed |
 
 ## Policy matrix and explicit boundaries
