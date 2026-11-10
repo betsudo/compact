@@ -2,8 +2,8 @@
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
-`codex/rust-ast-transient-provenance-cumulative-parity`, stacked on the
-GPG-signed standalone-advisory head `bfa7c06c2`. Earlier local stack commits
+`codex/rust-ast-transient-provenance-schema-guard`, stacked on the
+GPG-signed cumulative-parity head `fa429b909`. Earlier local stack commits
 also have verified GPG signatures. No remote publication.
 
 ## Verified bounded deliverable
@@ -25,9 +25,9 @@ action-free stateful query returns, are materialized with formal routes and
 instantiated at call sites; sinkful and actionful stateful helpers retain
 bounded body traversal.
 
-The standalone-CLI evidence head ran every `transient_provenance*.rs`
-integration test target: 20 targets, 70 tests, zero failures, under
-`/Users/ysh/.codex/local-evidence/transient-provenance-cli-20261110/target`
+The schema-guard evidence head ran every `transient_provenance*.rs`
+integration test target: 21 targets, 71 tests, zero failures, under
+`/Users/ysh/.codex/local-evidence/transient-provenance-schema-guard-20261110/target`
 with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
 per-slice plans; the full focused run is retained as `provenance-tests.log`
@@ -59,7 +59,7 @@ cumulative parity evidence.
 | #612 criterion | Local evidence | Status |
 | --- | --- | --- |
 | ADR-0463 / CoPS-029 design, before/after examples, compatibility limits | Existing midnight vault ADR-0463 and CoPS-029; standalone local iteration note | Recorded design; implementation status remains separate |
-| Opt-in typed-IR prototype independent of recording, deterministic and bounded | `transient_provenance.rs`, standalone CLI and focused tests | Verified for the selected IR/corpus; CLI rejects unsupported schemas and oversized/malformed JSON |
+| Opt-in typed-IR prototype independent of recording, deterministic and bounded | `transient_provenance.rs`, standalone CLI and focused tests | Verified for selected IR/corpus; direct API reports unavailable for unsupported schemas, while CLI rejects them and oversized/malformed JSON |
 | Direct producers, aliases, arithmetic, products/projections, conditional paths | First-slice and aggregate source fixtures/tests | Verified for supported forms |
 | Helper-produced and forwarded origins, including action and value calls | Helper, action-call, value-call, effectful-return, and pure-action fixtures/tests | Verified for supported forms and bounded call depths |
 | Field-to-bytes and `upgradeFromTransient` do not launder provenance | Distinct `FieldToBytes32` source fixture/test; first-slice and standard-library `evolveNonce` source tests for `upgradeFromTransient` | Verified for selected conversions, including commitment opening |

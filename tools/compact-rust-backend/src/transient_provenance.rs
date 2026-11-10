@@ -9,8 +9,8 @@
 //! budgets are reported as unavailable, including when a known route was already found.
 
 use crate::ir::{
-    Contract, Expr, LocalBinding, Parameter, PureCircuit, ReturnPlan, SourceLocation, StateAction,
-    StateReturn, StatefulCircuit, Type,
+    Contract, Expr, LocalBinding, Parameter, PureCircuit, ReturnPlan, SCHEMA_VERSION,
+    SourceLocation, StateAction, StateReturn, StatefulCircuit, Type,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -2153,6 +2153,19 @@ fn build_helper_summaries<'c>(
 /// Analyze only explicitly selected typed IR. No rendering, capability, or ABI effect.
 pub fn analyze(contract: &Contract, limits: Limits) -> Report {
     let mut report = Report::default();
+    if contract.schema_version != SCHEMA_VERSION {
+        push_unavailable(
+            &mut report,
+            limits,
+            "contract",
+            "schema_version",
+            &format!(
+                "unsupported typed IR schema {}; expected {SCHEMA_VERSION}",
+                contract.schema_version
+            ),
+        );
+        return report;
+    }
     let mut circuits = BTreeMap::new();
     let mut ambiguous = BTreeSet::new();
     for circuit in contract.circuits.iter().take(limits.max_circuits) {
