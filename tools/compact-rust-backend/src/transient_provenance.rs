@@ -186,7 +186,7 @@ struct CircuitAnalysis<'c, 'r> {
     report: &'r mut Report,
 }
 
-impl CircuitAnalysis<'_, '_> {
+impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     fn unavailable(&mut self, path: &str, reason: &str) {
         push_unavailable(self.report, self.limits, self.name, path, reason);
     }
@@ -542,6 +542,10 @@ impl CircuitAnalysis<'_, '_> {
                     self.unavailable(path, "stateful helper arity mismatch");
                     return;
                 }
+                if callee.parameters.len() > self.limits.max_nodes {
+                    self.unavailable(path, "parameter limit");
+                    return;
+                }
                 if callee
                     .parameters
                     .iter()
@@ -677,6 +681,86 @@ impl CircuitAnalysis<'_, '_> {
                 self.control_origin = prior_control;
             }
         }
+    }
+
+    fn stateful_value_call(
+        &mut self,
+        callee: &'c StatefulCircuit,
+        actuals: Vec<Origin>,
+        path: &str,
+        depth: usize,
+    ) -> Origin {
+        if actuals.len() != callee.parameters.len() {
+            self.unavailable(path, "stateful value helper arity mismatch");
+            return Origin::unknown();
+        }
+        if callee.parameters.len() > self.limits.max_nodes {
+            self.unavailable(path, "parameter limit");
+            return Origin::unknown();
+        }
+        if callee
+            .parameters
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<BTreeSet<_>>()
+            .len()
+            != callee.parameters.len()
+        {
+            self.unavailable(path, "duplicate stateful value helper parameter");
+            return Origin::unknown();
+        }
+        if self.call_stack.contains(&callee.name.as_str()) {
+            self.unavailable(path, "recursive stateful value helper");
+            return Origin::unknown();
+        }
+        if self.call_stack.len() > self.limits.max_call_depth {
+            self.unavailable(path, "stateful value helper call depth limit");
+            return Origin::unknown();
+        }
+        let mut callee_env = BTreeMap::new();
+        for (formal, actual) in callee.parameters.iter().zip(actuals) {
+            callee_env.insert(
+                formal.name.clone(),
+                self.append(actual, &format!("call_argument:{}", formal.name), path),
+            );
+        }
+        self.call_stack.push(&callee.name);
+        let previous_circuit = self.current_circuit;
+        let previous_source = self.current_source;
+        let previous_return_env = self.return_env.take();
+        self.current_circuit = &callee.name;
+        self.current_source = &callee.source;
+        for (index, action) in callee.actions.iter().enumerate() {
+            if self.nodes >= self.limits.max_nodes {
+                self.unavailable(path, "action node limit");
+                break;
+            }
+            self.action(
+                action,
+                &callee_env,
+                &format!("{path}.callee:{}.actions[{index}]", callee.name),
+                depth + 1,
+                index + 1 == callee.actions.len(),
+            );
+        }
+        let return_env = self.return_env.take().unwrap_or(callee_env);
+        let result = match &callee.return_value {
+            StateReturn::Expression { value } => self.visit(
+                value,
+                &return_env,
+                &format!("{path}.callee:{}.return_value.value", callee.name),
+                depth + 1,
+            ),
+            _ => {
+                self.unavailable(path, "non-expression stateful value result unavailable");
+                Origin::unknown()
+            }
+        };
+        self.current_circuit = previous_circuit;
+        self.current_source = previous_source;
+        self.return_env = previous_return_env;
+        self.call_stack.pop();
+        self.append(result, &format!("call_return:{}", callee.name), path)
     }
 
     fn visit(
@@ -840,6 +924,92 @@ impl CircuitAnalysis<'_, '_> {
                 result
             }
             Expr::Call { name, arguments } => {
+                if self.ambiguous.contains(name.as_str()) {
+                    self.unavailable(path, "ambiguous pure helper");
+                    return Origin::unknown();
+                }
+                let pure = self.circuits.get(name.as_str()).copied();
+                if pure.is_some() && self.stateful_circuits.contains_key(name.as_str()) {
+                    self.unavailable(path, "ambiguous helper kind");
+                    return Origin::unknown();
+                }
+                let stateful = if pure.is_none() {
+                    if self.ambiguous_stateful.contains(name.as_str()) {
+                        self.unavailable(path, "ambiguous stateful value helper");
+                        return Origin::unknown();
+                    }
+                    self.stateful_circuits.get(name.as_str()).copied()
+                } else {
+                    None
+                };
+                let Some(formals) = pure
+                    .map(|callee| &callee.parameters)
+                    .or_else(|| stateful.map(|callee| &callee.parameters))
+                else {
+                    self.unavailable(path, "unknown pure helper");
+                    return Origin::unknown();
+                };
+                if formals.len() > self.limits.max_nodes {
+                    self.unavailable(path, "parameter limit");
+                    return Origin::unknown();
+                }
+                if arguments.len() != formals.len() {
+                    self.unavailable(
+                        path,
+                        if pure.is_some() {
+                            "pure helper arity mismatch"
+                        } else {
+                            "stateful value helper arity mismatch"
+                        },
+                    );
+                    return Origin::unknown();
+                }
+                if formals
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != formals.len()
+                {
+                    self.unavailable(
+                        path,
+                        if pure.is_some() {
+                            "duplicate pure helper parameter"
+                        } else {
+                            "duplicate stateful value helper parameter"
+                        },
+                    );
+                    return Origin::unknown();
+                }
+                if self.call_stack.contains(&name.as_str()) {
+                    self.unavailable(
+                        path,
+                        if pure.is_some() {
+                            "recursive pure helper"
+                        } else {
+                            "recursive stateful value helper"
+                        },
+                    );
+                    return Origin::unknown();
+                }
+                if self.call_stack.len() > self.limits.max_call_depth {
+                    self.unavailable(
+                        path,
+                        if pure.is_some() {
+                            "pure helper call depth limit"
+                        } else {
+                            "stateful value helper call depth limit"
+                        },
+                    );
+                    return Origin::unknown();
+                }
+                if stateful.is_some_and(|callee| {
+                    !callee.actions.is_empty()
+                        && matches!(callee.return_value, StateReturn::Effectful { .. })
+                }) {
+                    self.unavailable(path, "effectful return with separate actions");
+                    return Origin::unknown();
+                }
                 let mut actuals = Vec::with_capacity(arguments.len().min(self.limits.max_nodes));
                 for (index, argument) in arguments.iter().enumerate() {
                     if self.nodes >= self.limits.max_nodes {
@@ -854,6 +1024,13 @@ impl CircuitAnalysis<'_, '_> {
                     return Origin::unknown();
                 }
                 let Some(callee) = self.circuits.get(name.as_str()).copied() else {
+                    if self.ambiguous_stateful.contains(name.as_str()) {
+                        self.unavailable(path, "ambiguous stateful value helper");
+                        return Origin::unknown();
+                    }
+                    if let Some(callee) = self.stateful_circuits.get(name.as_str()).copied() {
+                        return self.stateful_value_call(callee, actuals, path, depth);
+                    }
                     self.unavailable(path, "unknown pure helper");
                     return Origin::unknown();
                 };

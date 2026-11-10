@@ -1,0 +1,32 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+
+circuit make(value: Field): Field {
+  stored = disclose(value);
+  return transientHash<Field>(value);
+}
+
+circuit identity(value: Field): Field {
+  return value;
+}
+
+export circuit direct(value: Field): Bytes<32> {
+  return persistentHash<Field>(make(value));
+}
+
+export circuit forwarded(value: Field): Bytes<32> {
+  return persistentHash<Field>(identity(transientHash<Field>(value)));
+}
+
+export circuit ordinary(value: Field): Bytes<32> {
+  return persistentHash<Field>(identity(value));
+}
+
+export circuit standard_nonce(index: Uint<128>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<Bytes<32>>(evolveNonce(index, nonce));
+}
