@@ -1,0 +1,37 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger marker: Field;
+export ledger members: Set<Field>;
+export ledger entries: Map<Field, Field>;
+
+circuit has_transient_member(value: Field): Boolean {
+  return members.member(disclose(transientHash<Field>(value)));
+}
+
+export circuit set_gate(value: Field): [] {
+  if (members.member(disclose(transientHash<Field>(value)))) {
+    marker = disclose(value);
+  }
+}
+
+export circuit map_gate(value: Field): [] {
+  if (entries.member(disclose(transientHash<Field>(value)))) {
+    marker = disclose(value);
+  }
+}
+
+export circuit helper_gate(value: Field): [] {
+  if (has_transient_member(value)) {
+    marker = disclose(value);
+  }
+}
+
+export circuit ordinary_gate(value: Field): [] {
+  if (members.member(disclose(value))) {
+    marker = disclose(value);
+  }
+}

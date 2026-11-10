@@ -821,6 +821,21 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         self.sink(kind, path, input, &origin);
     }
 
+    fn membership(
+        &mut self,
+        operand: &Expr,
+        env: &BTreeMap<String, Origin>,
+        path: &str,
+        depth: usize,
+        input: &str,
+        operation: &str,
+    ) -> Origin {
+        let operand_origin = self.visit(operand, env, &format!("{path}.{input}"), depth);
+        // The queried key affects the Boolean result, while ledger contents are external.
+        let result = self.combine(operand_origin, Origin::unknown(), path);
+        self.append(result, operation, path)
+    }
+
     fn return_plan(
         &mut self,
         plan: &ReturnPlan,
@@ -995,6 +1010,22 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 &format!("{path}.callee:{}.return_value.value", callee.name),
                 depth + 1,
             ),
+            StateReturn::SetMember { value, .. } => self.membership(
+                value,
+                &return_env,
+                &format!("{path}.callee:{}.return_value", callee.name),
+                depth + 1,
+                "value",
+                "set_membership",
+            ),
+            StateReturn::MapMember { key, .. } => self.membership(
+                key,
+                &return_env,
+                &format!("{path}.callee:{}.return_value", callee.name),
+                depth + 1,
+                "key",
+                "map_membership",
+            ),
             StateReturn::Effectful { body } if callee.actions.is_empty() => self.return_plan(
                 body,
                 &return_env,
@@ -1039,6 +1070,12 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             | Expr::UnsignedLiteral { .. }
             | Expr::EnumVariant { .. } => Origin::default(),
             Expr::Parameter { name } => env.get(name).cloned().unwrap_or_else(Origin::unknown),
+            Expr::SetMember { value, .. } => {
+                self.membership(value, env, path, depth + 1, "value", "set_membership")
+            }
+            Expr::MapMember { key, .. } => {
+                self.membership(key, env, path, depth + 1, "key", "map_membership")
+            }
             Expr::Tuple { elements } | Expr::Vector { elements, .. } => {
                 let mut values = Vec::with_capacity(elements.len().min(self.limits.max_nodes));
                 for (index, element) in elements.iter().enumerate() {
