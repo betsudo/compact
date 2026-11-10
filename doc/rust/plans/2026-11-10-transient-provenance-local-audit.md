@@ -2,8 +2,8 @@
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
-`codex/rust-ast-transient-provenance-schema-guard`, stacked on the
-GPG-signed cumulative-parity head `fa429b909`. Earlier local stack commits
+`codex/rust-ast-transient-provenance-compiler-warnings`, stacked on the
+GPG-signed schema-guard head `6a05c3120`. Earlier local stack commits
 also have verified GPG signatures. No remote publication.
 
 ## Verified bounded deliverable
@@ -67,7 +67,8 @@ cumulative parity evidence.
 | Symbolic formal dependencies and external/unknown contributions | Helper, aggregate, state-sink, map-lookup and membership source fixtures; symbolic-input and summary tests with explicit parameter/component/summary/call limits | Caller-root parameter dependencies reported separately for data/control; eligible pure and action-free stateful query return summaries materialized and instantiated |
 | Intentional standard-library use and acknowledgement | Value-call source fixture, exact-acknowledgement tests and CLI JSON input/output test | Verified as caller-side advisory policy |
 | Persistent values/openings, direct state writes, control dependence, summaries | Sink, state-collections, aggregate, helper-summary, nested-summary, state-query-summary, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified; eligible pure and action-free stateful query returns cached, sinkful/actionful helpers traversed per call |
-| Warning-only mode preserves native/recorded results, public API and ledger encoding | Standalone advisory has no emission hook; canonical-base/current generated tree (1,855 files across 16 source corpora) | Generated artifact parity verified for selected corpora; native/recorded runtime result and FAB-byte equivalence unverified |
+| Warning-only mode preserves native/recorded results, public API and ledger encoding | Public `compactc` opt-in warning flag; canonical-base/current generated tree (1,855 files across 16 corpora); warning/default Rust and capability files match for all 16; four selected native/recorded calls and tagged ledger-state bytes match base/current | Verified for selected corpora; nonempty result FAB bytes compared for two calls; private FAB arrays empty |
+| Compact compiler warning transport and exact acknowledgement | Public `compactc` opt-in flag, focused 34-test target, 16 genuine source runs with 84 route warnings and eight unavailable notes, one genuine exact acknowledgement | Verified for the public Rust wrapper; frontend-owned transport remains outside this slice |
 | Optional wrapper feasibility separated from compiler lint | ADR-0463 nominal wrapper and trait discussion; no generated wrapper | Design separation recorded; no wrapper claimed |
 
 ## Policy matrix and explicit boundaries
@@ -83,16 +84,14 @@ cumulative parity evidence.
 | Unsupported fold, dynamic/opaque projection, constructor flow, other unsupported action/expression | Explicit unavailable or unknown boundary; no stability claim. |
 | Parameter or aggregate component budget exhaustion | Explicit unavailable/truncated record; retained symbolic and component evidence has independent caps. |
 
-## Remaining issue-level work
+## Remaining limits
 
-The standalone command consumes typed IR but does not transport diagnostics
-through the Compact frontend/compiler CLI, and no default or strict compiler
-policy is selected. It does
-not verify native/recorded runtime result parity, FAB bytes, proof behavior,
-or universal Compact language coverage. Sinkful and actionful stateful helper
-summaries remain unmaterialized. The integration and
-runtime tasks were expressly excluded
-from this local iteration. The evidence therefore supports a reviewable
-bounded typed-IR deliverable, not closing the full compiler-integrated
-issue #612. The goal stays active until the remaining acceptance requirements
-are authorized and verified or the issue scope is revised explicitly.
+The public Rust `compactc` wrapper now transports opt-in warnings, but no
+frontend-owned diagnostic transport, default lint policy or strict failure
+mode is selected. The focused native/recorded comparison verifies four
+map-lookup calls and two nonempty tagged result FAB returns; private FAB
+arrays are empty. It does not verify proof execution or universal Compact
+language coverage. Sinkful and actionful stateful helper summaries remain
+unmaterialized. These limits are explicit unavailable/unknown boundaries
+or deferred integrations, not stability claims. The new compiler and runtime
+evidence note records the completed local iteration and independent review.
