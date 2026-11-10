@@ -1,0 +1,28 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger table: Map<Field, Field>;
+export ledger stored: Field;
+
+circuit selected(value: Field): Field {
+  return table.lookup(disclose(transientHash<Field>(value)));
+}
+
+export circuit state_hit(value: Field): [] {
+  stored = disclose(table.lookup(disclose(transientHash<Field>(value))));
+}
+
+export circuit hash_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(table.lookup(disclose(transientHash<Field>(value))));
+}
+
+export circuit helper_hit(value: Field): Bytes<32> {
+  return persistentHash<Field>(selected(value));
+}
+
+export circuit ordinary(value: Field): [] {
+  stored = disclose(table.lookup(disclose(value)));
+}

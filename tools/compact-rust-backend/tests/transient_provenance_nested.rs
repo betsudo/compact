@@ -63,31 +63,58 @@ fn source_nested_producers_remain_visible_at_persistent_sinks() {
 }
 
 #[test]
-fn source_map_lookup_key_is_traversed_without_claiming_result_origin() {
+fn source_map_lookup_selection_origin_reaches_outer_sink() {
     let report = analyze(&source_contract(), Limits::default());
     let lookup = report
         .findings
         .iter()
         .filter(|finding| finding.circuit == "nested_lookup_key")
         .collect::<Vec<_>>();
-    assert_eq!(lookup.len(), 1);
+    assert_eq!(lookup.len(), 2);
     assert_eq!(lookup[0].sink, "persistent_hash");
+    assert_eq!(lookup[1].sink, "persistent_hash");
+    assert!(lookup[1].has_unknown_input);
     assert!(
-        report
-            .unavailable
+        lookup[1].routes[0]
+            .dependencies
             .iter()
-            .any(|entry| entry.circuit == "nested_lookup_key"
-                && entry.reason == "map lookup result provenance unavailable")
+            .any(|step| step.operation == "map_lookup_selection")
     );
+    assert!(!report.unavailable.iter().any(|entry| {
+        entry.circuit == "nested_lookup_key"
+            && entry.reason == "map lookup result provenance unavailable"
+    }));
 }
 
 #[test]
 fn nested_routes_stop_at_the_configured_limit() {
     let mut contract = source_contract();
-    contract.circuits.retain(|circuit| circuit.name == "nested_hash");
+    contract
+        .circuits
+        .retain(|circuit| circuit.name == "nested_hash");
     contract.stateful_circuits.clear();
-    let report = analyze(&contract, Limits { max_routes: 1, ..Limits::default() });
+    let report = analyze(
+        &contract,
+        Limits {
+            max_routes: 1,
+            ..Limits::default()
+        },
+    );
     assert!(report.truncated);
-    assert!(report.unavailable.iter().any(|entry| entry.reason == "producer route limit"));
-    assert_eq!(report, analyze(&contract, Limits { max_routes: 1, ..Limits::default() }));
+    assert!(
+        report
+            .unavailable
+            .iter()
+            .any(|entry| entry.reason == "producer route limit")
+    );
+    assert_eq!(
+        report,
+        analyze(
+            &contract,
+            Limits {
+                max_routes: 1,
+                ..Limits::default()
+            }
+        )
+    );
 }

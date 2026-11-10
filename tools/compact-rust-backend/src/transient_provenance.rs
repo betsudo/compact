@@ -821,7 +821,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         self.sink(kind, path, input, &origin);
     }
 
-    fn membership(
+    fn ledger_query(
         &mut self,
         operand: &Expr,
         env: &BTreeMap<String, Origin>,
@@ -831,7 +831,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         operation: &str,
     ) -> Origin {
         let operand_origin = self.visit(operand, env, &format!("{path}.{input}"), depth);
-        // The queried key affects the Boolean result, while ledger contents are external.
+        // The query operand can affect the result, while ledger contents are external.
         let result = self.combine(operand_origin, Origin::unknown(), path);
         self.append(result, operation, path)
     }
@@ -1010,7 +1010,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 &format!("{path}.callee:{}.return_value.value", callee.name),
                 depth + 1,
             ),
-            StateReturn::SetMember { value, .. } => self.membership(
+            StateReturn::SetMember { value, .. } => self.ledger_query(
                 value,
                 &return_env,
                 &format!("{path}.callee:{}.return_value", callee.name),
@@ -1018,13 +1018,21 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 "value",
                 "set_membership",
             ),
-            StateReturn::MapMember { key, .. } => self.membership(
+            StateReturn::MapMember { key, .. } => self.ledger_query(
                 key,
                 &return_env,
                 &format!("{path}.callee:{}.return_value", callee.name),
                 depth + 1,
                 "key",
                 "map_membership",
+            ),
+            StateReturn::MapLookup { key, .. } => self.ledger_query(
+                key,
+                &return_env,
+                &format!("{path}.callee:{}.return_value", callee.name),
+                depth + 1,
+                "key",
+                "map_lookup_selection",
             ),
             StateReturn::Effectful { body } if callee.actions.is_empty() => self.return_plan(
                 body,
@@ -1071,10 +1079,10 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             | Expr::EnumVariant { .. } => Origin::default(),
             Expr::Parameter { name } => env.get(name).cloned().unwrap_or_else(Origin::unknown),
             Expr::SetMember { value, .. } => {
-                self.membership(value, env, path, depth + 1, "value", "set_membership")
+                self.ledger_query(value, env, path, depth + 1, "value", "set_membership")
             }
             Expr::MapMember { key, .. } => {
-                self.membership(key, env, path, depth + 1, "key", "map_membership")
+                self.ledger_query(key, env, path, depth + 1, "key", "map_membership")
             }
             Expr::Tuple { elements } | Expr::Vector { elements, .. } => {
                 let mut values = Vec::with_capacity(elements.len().min(self.limits.max_nodes));
@@ -1365,11 +1373,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             }
             Expr::NativeWitnessCall { .. } | Expr::CellRead { .. } => Origin::unknown(),
             Expr::MapLookup { key, .. } => {
-                let key_origin = self.visit(key, env, &child("key"), depth + 1);
-                if !key_origin.routes.is_empty() {
-                    self.unavailable(path, "map lookup result provenance unavailable");
-                }
-                Origin::unknown()
+                self.ledger_query(key, env, path, depth + 1, "key", "map_lookup_selection")
             }
             Expr::TransientHash { value } | Expr::TransientCommit { value, opening: _ } => {
                 // Retain upstream transient producers through this operation.
