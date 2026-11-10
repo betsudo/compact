@@ -306,6 +306,7 @@ struct HelperSummary {
     result: Origin,
     nodes: usize,
     max_depth: usize,
+    max_call_stack: usize,
 }
 
 fn same_simple_literal(left: &Expr, right: &Expr) -> bool {
@@ -409,8 +410,9 @@ struct CircuitAnalysis<'c, 'r> {
     limits: Limits,
     nodes: usize,
     max_depth_seen: usize,
+    max_call_stack_seen: usize,
     saw_sink: bool,
-    saw_call: bool,
+    saw_stateful_call: bool,
     saw_assert_or_witness: bool,
     report: &'r mut Report,
 }
@@ -1391,6 +1393,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         depth: usize,
     ) -> Origin {
         self.max_depth_seen = self.max_depth_seen.max(depth);
+        self.max_call_stack_seen = self.max_call_stack_seen.max(self.call_stack.len());
         if depth > self.limits.max_depth {
             self.unavailable(path, "expression depth limit");
             return Origin::unknown();
@@ -1542,7 +1545,6 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 )
             }
             Expr::Call { name, arguments } => {
-                self.saw_call = true;
                 if self.ambiguous.contains(name.as_str()) {
                     self.unavailable(path, "ambiguous pure helper");
                     return Origin::unknown();
@@ -1561,6 +1563,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 } else {
                     None
                 };
+                self.saw_stateful_call |= stateful.is_some();
                 let Some(formals) = pure
                     .map(|callee| &callee.parameters)
                     .or_else(|| stateful.map(|callee| &callee.parameters))
@@ -1696,6 +1699,8 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     if self.nodes.saturating_add(summary.nodes) <= self.limits.max_nodes
                         && depth.saturating_add(1).saturating_add(summary.max_depth)
                             <= self.limits.max_depth
+                        && self.call_stack.len().saturating_add(summary.max_call_stack)
+                            <= self.limits.max_call_depth.saturating_add(1)
                         && route_upper_bound <= self.limits.max_routes
                     {
                         self.nodes += summary.nodes;
@@ -1934,8 +1939,9 @@ fn build_helper_summaries<'c>(
             },
             nodes: 0,
             max_depth_seen: 0,
+            max_call_stack_seen: 1,
             saw_sink: false,
-            saw_call: false,
+            saw_stateful_call: false,
             saw_assert_or_witness: false,
             report: &mut scratch,
         };
@@ -1948,7 +1954,9 @@ fn build_helper_summaries<'c>(
         let result = analysis.visit(&circuit.body, &env, "body", 0);
         let nodes = analysis.nodes;
         let max_depth = analysis.max_depth_seen;
-        let eligible = !analysis.saw_sink && !analysis.saw_call && !analysis.saw_assert_or_witness;
+        let max_call_stack = analysis.max_call_stack_seen;
+        let eligible =
+            !analysis.saw_sink && !analysis.saw_stateful_call && !analysis.saw_assert_or_witness;
         drop(analysis);
         used_nodes = used_nodes.saturating_add(nodes);
         if !eligible || !scratch.unavailable.is_empty() || scratch.truncated {
@@ -1987,6 +1995,7 @@ fn build_helper_summaries<'c>(
                 result,
                 nodes,
                 max_depth,
+                max_call_stack,
             },
         );
     }
@@ -2074,8 +2083,9 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             limits,
             nodes: 0,
             max_depth_seen: 0,
+            max_call_stack_seen: 1,
             saw_sink: false,
-            saw_call: false,
+            saw_stateful_call: false,
             saw_assert_or_witness: false,
             report: &mut report,
         };
@@ -2156,8 +2166,9 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
                 limits,
                 nodes: 0,
                 max_depth_seen: 0,
+                max_call_stack_seen: 1,
                 saw_sink: false,
-                saw_call: false,
+                saw_stateful_call: false,
                 saw_assert_or_witness: false,
                 report: &mut report,
             };
