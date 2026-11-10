@@ -122,7 +122,7 @@ fn every_data_and_control_route_requires_acknowledgement() {
     nonce.control_routes.push(extra.clone());
     report.findings = vec![nonce.clone()];
     let one = acknowledgement(&nonce);
-    let partial = advise(&report, &[one.clone()], 4);
+    let partial = advise(&report, std::slice::from_ref(&one), 4);
     assert_eq!(partial.findings[0].acknowledged_data_routes, [true, false]);
     assert_eq!(partial.findings[0].acknowledged_control_routes, [false]);
     assert!(partial.findings[0].warning);

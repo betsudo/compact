@@ -80,6 +80,12 @@ and the new-header regression check reports zero violations. A fresh
 canonical-base/current backend comparison over the relocated sources found
 all 1,855 generated files byte-identical. These post-PR receipts are under
 `/Users/ysh/.codex/local-evidence/transient-provenance-pr-20261110`.
+The first full CI pass also exposed one module-order formatting issue and two
+Clippy warnings in the new analyzer/test code. After those focused fixes,
+`cargo fmt -p compact-rust-backend -- --check`, backend all-target Clippy with
+`-D warnings`, and the 22 focused Rust test targets all pass locally. The
+changelog gate still needs a maintainer decision because this slice excludes
+a Scheme compiler version change.
 
 ## Limits
 

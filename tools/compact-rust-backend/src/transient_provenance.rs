@@ -267,7 +267,8 @@ pub fn advise(
     result.unused_acknowledgements = active
         .iter()
         .zip(used)
-        .filter_map(|(entry, used)| (!used).then(|| entry.clone()))
+        .filter(|(_, used)| !*used)
+        .map(|(entry, _)| entry.clone())
         .collect();
     result
 }
