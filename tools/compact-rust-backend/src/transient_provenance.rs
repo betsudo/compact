@@ -567,7 +567,11 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 self.visit(value, env, &format!("{path}.value"), depth + 1);
             }
             StateAction::Assert { condition, .. } => {
-                self.visit(condition, env, &format!("{path}.condition"), depth + 1);
+                let condition_origin =
+                    self.visit(condition, env, &format!("{path}.condition"), depth + 1);
+                if !condition_origin.routes.is_empty() {
+                    self.unavailable(path, "assertion execution control unavailable");
+                }
             }
             StateAction::CellWrite { value, .. } => {
                 self.state_sink("cell_write", "value", value, env, path, depth)

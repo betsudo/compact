@@ -1,0 +1,25 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger marker: Field;
+
+export circuit transient_gate(value: Field): [] {
+  assert(disclose(transientHash<Field>(value) != 0), "transient gate");
+  marker = disclose(value);
+}
+
+export circuit ordinary_gate(value: Field): [] {
+  assert(disclose(value != 0), "ordinary gate");
+  marker = disclose(value);
+}
+
+export circuit nested_sink(value: Field): [] {
+  assert(
+    disclose(persistentHash<Field>(transientHash<Field>(value)) != default<Bytes<32>>),
+    "nested sink"
+  );
+  marker = disclose(value);
+}
