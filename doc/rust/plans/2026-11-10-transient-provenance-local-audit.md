@@ -1,5 +1,18 @@
 # #612 local typed-IR provenance audit
 
+## PR publication history
+
+Before pushing, the 25-commit local stack was rebased to add the required
+DCO sign-off trailers. Every corresponding commit retained the same Git tree,
+and all 25 published-history commits have valid GPG signatures and DCO
+trailers. Historical hashes in the dated per-slice evidence notes refer to
+the pre-publication local commits and retained build evidence. Key old-to-PR
+commit mappings are `fe7c5dd84` → `64bc5a973` (first slice),
+`bfa7c06c2` → `b69d91b9f` (standalone CLI),
+`fa429b909` → `782e4c988` (cumulative parity),
+`6a05c3120` → `a72a1d7fd` (schema guard), and
+`688f0e6e9` → `6e91db217` (compiler warning transport).
+
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
 `codex/rust-ast-transient-provenance-compiler-warnings`, stacked on the
