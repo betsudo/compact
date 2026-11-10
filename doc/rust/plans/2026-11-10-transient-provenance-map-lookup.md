@@ -17,7 +17,7 @@ dependency, finding and unavailable bounds apply.
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_map_lookup.compact` compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_map_lookup.compact` compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. The source-produced schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-map-lookup-source-ir.json`

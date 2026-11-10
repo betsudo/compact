@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use compact_rust_backend::ir::{Contract, Expr, Parameter, Type};
 use compact_rust_backend::transient_provenance::{Limits, ProducerKind, analyze};
@@ -51,7 +62,7 @@ fn source_helpers_produce_forward_and_consume_known_origins() {
             .as_ref()
             .unwrap()
             .line,
-        11
+        22
     );
     assert!(
         report.findings[1].routes[0]
@@ -62,9 +73,9 @@ fn source_helpers_produce_forward_and_consume_known_origins() {
             >= 2
     );
     assert!(report.findings[2].sink_path.contains("callee:persist.body"));
-    assert_eq!(report.findings[2].source.as_ref().unwrap().line, 32);
+    assert_eq!(report.findings[2].source.as_ref().unwrap().line, 43);
     assert_eq!(report.findings[2].sink_circuit, "persist");
-    assert_eq!(report.findings[2].sink_source.as_ref().unwrap().line, 15);
+    assert_eq!(report.findings[2].sink_source.as_ref().unwrap().line, 26);
     assert!(report.findings[3].has_unknown_input);
     assert!(
         report.findings[3].routes[0]

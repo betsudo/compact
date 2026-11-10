@@ -61,6 +61,26 @@ byte-identical, SHA-256
 Independent read-only review found no remaining blocker after the stderr
 and filename fixes; it confirmed the direct return FAB-byte assertions.
 
+## PR CI qualification
+
+After opening PR #724, the repository's header and public Python gates
+identified two integration requirements for the new source probes. All 40
+new Compact/Rust files now carry the repository's full license header. The
+16 analysis-only Compact sources live in
+`examples/rust_backend/transient_provenance_probes/`, outside the top-level
+full parity fixture inventory. This keeps the source-backed probes visible
+without claiming they are maintained flat generated libraries or changing
+shared parity baselines. The branch-owned schema-20 IR fixtures were
+recaptured with the pinned frontend solely for the 11-line source-position
+shift. All 16 current sources reproduce those retained IR bytes exactly;
+the parsed IR excluding source positions is unchanged. Focused tests pass
+across 21 provenance integration targets and the `compactc` target. The
+public Python gate passes all 519 selected methods (zero failures/errors),
+and the new-header regression check reports zero violations. A fresh
+canonical-base/current backend comparison over the relocated sources found
+all 1,855 generated files byte-identical. These post-PR receipts are under
+`/Users/ysh/.codex/local-evidence/transient-provenance-pr-20261110`.
+
 ## Limits
 
 The warning flag is optional and Rust-target-only. This is a bounded

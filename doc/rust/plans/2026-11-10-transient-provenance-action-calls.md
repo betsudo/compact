@@ -19,7 +19,7 @@ remain unavailable. No state read-after-write provenance is inferred.
 
 ## Evidence
 
-The genuine source `examples/rust_backend/transient_provenance_action_calls.compact`
+The genuine source `examples/rust_backend/transient_provenance_probes/transient_provenance_action_calls.compact`
 was compiled using the recorded `compactc`/`compactc-scheme` pair with
 `--target rust --skip-zk --emit-rust-ir`. The new source IR fixture is
 `tools/compact-rust-backend/tests/transient-provenance-action-calls-source-ir.json`.

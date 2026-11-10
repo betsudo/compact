@@ -29,7 +29,7 @@ IR paths identify producer and sink occurrences.
 
 ## Evidence
 
-`examples/rust_backend/transient_provenance_state_sinks.compact` was compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_state_sinks.compact` was compiled
 with the recorded `compactc`/`compactc-scheme` pair using `--target rust
 --skip-zk --emit-rust-ir`; the new fixture is
 `tools/compact-rust-backend/tests/transient-provenance-state-sinks-source-ir.json`.

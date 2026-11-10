@@ -20,7 +20,7 @@ unavailable at call sites. Stateful value calls, sinkful helpers, assertions,
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_nested_summaries.compact` was
+`examples/rust_backend/transient_provenance_probes/transient_provenance_nested_summaries.compact` was
 compiled by the pinned pre-existing `compactc`/`compactc-scheme` pair with
 `--target rust --skip-zk --emit-rust-ir`. The new retained schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-nested-summaries-source-ir.json`

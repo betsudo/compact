@@ -18,7 +18,7 @@ record bounds apply.
 
 ## Source and tests
 
-`examples/rust_backend/transient_provenance_assertions.compact` was compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_assertions.compact` was compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. Its new schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-assertions-source-ir.json`

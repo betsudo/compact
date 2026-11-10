@@ -21,7 +21,7 @@ The returned ledger value remains an unknown cross-transaction boundary.
 
 ## Evidence and limits
 
-`examples/rust_backend/transient_provenance_nested.compact` was compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_nested.compact` was compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`; its new schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-nested-source-ir.json`.

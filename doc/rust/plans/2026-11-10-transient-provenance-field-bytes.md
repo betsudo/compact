@@ -16,7 +16,7 @@ finding and conversion-dependency evidence.
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_field_bytes.compact` compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_field_bytes.compact` compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. The source-produced schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-field-bytes-source-ir.json`

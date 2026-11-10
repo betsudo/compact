@@ -29,7 +29,7 @@ ledger writes. A missing finding still does not certify stability.
 
 ## Source-backed corpus and evidence
 
-`examples/rust_backend/transient_provenance_helpers.compact` is compiled by
+`examples/rust_backend/transient_provenance_probes/transient_provenance_helpers.compact` is compiled by
 the same pre-existing `compactc`/`compactc-scheme` pair documented in the
 first-slice note, with `--target rust --skip-zk --emit-rust-ir`.
 `tests/transient-provenance-helpers-source-ir.json` is the new resulting

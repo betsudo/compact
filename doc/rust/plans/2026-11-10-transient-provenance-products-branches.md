@@ -29,7 +29,7 @@ certify upgrade stability.
 
 ## Evidence
 
-`examples/rust_backend/transient_provenance_aggregates.compact` was compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_aggregates.compact` was compiled
 with the previously recorded `compactc`/`compactc-scheme` pair using
 `--target rust --skip-zk --emit-rust-ir`; the new schema 20 fixture is
 `tests/transient-provenance-aggregates-source-ir.json`. Positive and negative

@@ -28,7 +28,7 @@ does not certify stability: formal and unknown contributions remain separate.
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_helper_summaries.compact` was
+`examples/rust_backend/transient_provenance_probes/transient_provenance_helper_summaries.compact` was
 compiled by the pinned pre-existing `compactc`/`compactc-scheme` pair with
 `--target rust --skip-zk --emit-rust-ir`. The new retained schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-helper-summaries-source-ir.json`

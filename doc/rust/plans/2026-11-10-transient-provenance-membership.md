@@ -18,7 +18,7 @@ or unknown boundary, since the selected stored value's origin is not known.
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_membership.compact` compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_membership.compact` compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. The source-produced schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-membership-source-ir.json`

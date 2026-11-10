@@ -33,7 +33,7 @@ expression paths distinguish producer and sink occurrences.
 
 ## Source-backed corpus
 
-`examples/rust_backend/transient_provenance.compact` was compiled with the
+`examples/rust_backend/transient_provenance_probes/transient_provenance.compact` was compiled with the
 pre-existing `compactc`/`compactc-scheme` pair from the isolated
 `rust-ast-zero-width-boundary-20261101/fresh-proofs-v1/bin` evidence directory,
 using `--target rust --skip-zk --emit-rust-ir`. Its new

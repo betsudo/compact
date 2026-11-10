@@ -17,7 +17,7 @@
       },
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 7,
+        "line": 18,
         "column": 1
       }
     }
@@ -112,7 +112,7 @@
       "internal": true,
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 9,
+        "line": 20,
         "column": 1
       }
     },
@@ -192,7 +192,7 @@
       "internal": true,
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 19,
+        "line": 30,
         "column": 1
       }
     },
@@ -294,7 +294,7 @@
       "internal": true,
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 29,
+        "line": 40,
         "column": 1
       }
     },
@@ -392,7 +392,7 @@
       "internal": true,
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 39,
+        "line": 50,
         "column": 1
       }
     },
@@ -468,7 +468,7 @@
       ],
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 50,
+        "line": 61,
         "column": 1
       }
     },
@@ -531,7 +531,7 @@
       ],
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 54,
+        "line": 65,
         "column": 1
       }
     },
@@ -591,7 +591,7 @@
       ],
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 58,
+        "line": 69,
         "column": 1
       }
     },
@@ -651,7 +651,7 @@
       ],
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 62,
+        "line": 73,
         "column": 1
       }
     },
@@ -711,7 +711,7 @@
       ],
       "source": {
         "file": "transient_provenance_effectful_returns.compact",
-        "line": 66,
+        "line": 77,
         "column": 1
       }
     }

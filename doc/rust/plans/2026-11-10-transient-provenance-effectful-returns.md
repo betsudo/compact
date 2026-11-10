@@ -20,7 +20,7 @@ effectful return with separate actions is still rejected before traversal.
 ## Evidence
 
 The genuine source
-`examples/rust_backend/transient_provenance_effectful_returns.compact`
+`examples/rust_backend/transient_provenance_probes/transient_provenance_effectful_returns.compact`
 was compiled with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. The new schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-effectful-returns-source-ir.json`.

@@ -38,7 +38,7 @@ binary SHA-256 values are
 `59e590a4178088c2e332ea2ef54eb87f6ab1d9f61433f07e5d06c2dcf7dae661`
 (`compactc-scheme`).
 
-For every `examples/rust_backend/transient_provenance*.compact` source, the
+For every `examples/rust_backend/transient_provenance_probes/transient_provenance*.compact` source, the
 comparison checks the relative file set and SHA-256 of every generated file.
 Only per-invocation `compile.log` is excluded because it captures invocation
 paths. The retained `comparison.json` records per-source file counts and Rust,

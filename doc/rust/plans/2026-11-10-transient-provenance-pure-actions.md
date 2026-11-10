@@ -18,7 +18,7 @@ assertion execution is marked unavailable for control interpretation.
 
 ## Evidence
 
-`examples/rust_backend/transient_provenance_pure_actions.compact` compiled
+`examples/rust_backend/transient_provenance_probes/transient_provenance_pure_actions.compact` compiled
 with the recorded frontend pair using `--target rust --skip-zk
 --emit-rust-ir`. Its new schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-pure-actions-source-ir.json`.

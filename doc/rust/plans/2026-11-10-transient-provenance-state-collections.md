@@ -18,7 +18,7 @@ separate from sink-data evidence.
 
 ## Source and evidence
 
-`examples/rust_backend/transient_provenance_state_collections.compact` was
+`examples/rust_backend/transient_provenance_probes/transient_provenance_state_collections.compact` was
 compiled by the pinned pre-existing `compactc`/`compactc-scheme` pair with
 `--target rust --skip-zk --emit-rust-ir`. The new retained schema 20 fixture is
 `tools/compact-rust-backend/tests/transient-provenance-state-collections-source-ir.json`

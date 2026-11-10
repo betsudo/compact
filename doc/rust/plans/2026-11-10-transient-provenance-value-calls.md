@@ -25,7 +25,7 @@ rendering or capability route calls it.
 uses the same conversion in shielded send/change and merge nonce construction
 (lines 171, 187, 218). The conversion is a representation step; the diagnostic
 must retain its transient producer. The genuine source corpus
-`examples/rust_backend/transient_provenance_value_calls.compact` invokes
+`examples/rust_backend/transient_provenance_probes/transient_provenance_value_calls.compact` invokes
 `evolveNonce` and passes its result to a persistent hash. Its source-produced
 schema 20 IR fixture is
 `tools/compact-rust-backend/tests/transient-provenance-value-calls-source-ir.json`.
