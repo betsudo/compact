@@ -2,10 +2,9 @@
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
-`codex/rust-ast-transient-provenance-state-collections`, stacked on the
-GPG-signed symbolic-input evidence head `db2153a47`. The earlier
-14 implementation commits and audit commit also have verified GPG
-signatures. No remote publication.
+`codex/rust-ast-transient-provenance-helper-summaries`, stacked on the
+GPG-signed state-collections head `3664f769e`. Earlier local stack commits
+also have verified GPG signatures. No remote publication.
 
 ## Verified bounded deliverable
 
@@ -19,22 +18,27 @@ control routes, symbolic root-parameter dependencies for data/control, and
 unknown-input flags. Unsupported forms and exhausted
 budgets are reported as unavailable; a missing known producer is never a
 stability certificate. An exact, bounded, caller-supplied acknowledgement
-changes advisory warning status without removing evidence.
+changes advisory warning status without removing evidence. Eligible pure leaf
+helper return summaries are materialized with formal routes and instantiated
+at call sites; sinkful, nested-call and stateful helpers retain bounded body
+traversal.
 
-The state-collections evidence head ran every `transient_provenance*.rs`
-integration test target: 16 targets, 49 tests, zero failures, under
-`/Users/ysh/.codex/local-evidence/transient-provenance-state-collections-20261110/target`
+The helper-summaries evidence head ran every `transient_provenance*.rs`
+integration test target: 17 targets, 54 tests, zero failures, under
+`/Users/ysh/.codex/local-evidence/transient-provenance-helper-summaries-20261110/target`
 with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
 per-slice plans; the full focused run is retained as `provenance-tests.log`
 in that evidence directory. The selected corpora's generated `contract/lib.rs`
 and `contract/rust-capabilities.json` files compared byte-identical. The
-latest state-collections corpus hashes are in its own plan. No shared fixture was
+latest helper-summaries corpus hashes are in its own plan. No shared fixture was
 regenerated. Cumulative independent read-only review found no blocker for
 the preceding bounded stack; the symbolic-input review found two initial
 issues and no blocker after their fixes. The state-collections review found
 an indexed-position test gap; four synthetic analyzer regressions closed it,
-and re-review found no remaining bounded-slice blocker.
+and re-review found no remaining bounded-slice blocker. Helper-summary review
+identified route-order, aggregate-projection and unknown-field wording gaps;
+all were addressed in the current slice.
 
 ## Acceptance trace
 
@@ -46,9 +50,9 @@ and re-review found no remaining bounded-slice blocker.
 | Helper-produced and forwarded origins, including action and value calls | Helper, action-call, value-call, effectful-return, and pure-action fixtures/tests | Verified for supported forms and bounded call depths |
 | Field-to-bytes and `upgradeFromTransient` do not launder provenance | Distinct `FieldToBytes32` source fixture/test; first-slice and standard-library `evolveNonce` source tests for `upgradeFromTransient` | Verified for selected conversions, including commitment opening |
 | Ordinary Field argument/witness acceptance; known route survives unknown input | First-slice, helper, membership and map-lookup source controls | Verified; unknown origin is not certified stable |
-| Symbolic formal dependencies and external/unknown contributions | Helper, aggregate and state-sink source fixtures; symbolic-input tests and explicit parameter/component limits | Caller-root parameter dependencies reported separately for data/control; no materialized cached helper summary |
+| Symbolic formal dependencies and external/unknown contributions | Helper, aggregate and state-sink source fixtures; symbolic-input and helper-summary tests with explicit parameter/component/summary limits | Caller-root parameter dependencies reported separately for data/control; eligible pure leaf helper summaries materialized and instantiated |
 | Intentional standard-library use and acknowledgement | Value-call source fixture and exact-acknowledgement tests | Verified as caller-side advisory policy |
-| Persistent values/openings, direct state writes, control dependence, summaries | Sink, state-collections, aggregate, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified via bounded call-site traversal; no separate cached summary representation |
+| Persistent values/openings, direct state writes, control dependence, summaries | Sink, state-collections, aggregate, helper-summary, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified; eligible pure leaf return summaries cached, other helpers traversed per call |
 | Warning-only mode preserves native/recorded results, public API and ledger encoding | Pass has no emission hook; per-corpus generated Rust/capability byte comparisons | Rust/capability parity verified for selected corpus; native/recorded result and FAB-byte equivalence unverified |
 | Optional wrapper feasibility separated from compiler lint | ADR-0463 nominal wrapper and trait discussion; no generated wrapper | Design separation recorded; no wrapper claimed |
 
@@ -70,8 +74,8 @@ and re-review found no remaining bounded-slice blocker.
 The local prototype does not transport diagnostics through the frontend or
 compiler CLI, and no default or strict compiler policy is selected. It does
 not verify native/recorded runtime result parity, FAB bytes, proof behavior,
-or universal Compact language coverage. Materialized helper summaries are
-also pending. The integration and
+or universal Compact language coverage. Nested-call, sinkful and stateful
+helper summaries remain unmaterialized. The integration and
 runtime tasks were expressly excluded
 from this local iteration. The evidence therefore supports a reviewable
 bounded typed-IR deliverable, not closing the full compiler-integrated

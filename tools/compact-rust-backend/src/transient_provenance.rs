@@ -9,7 +9,7 @@
 //! budgets are reported as unavailable, including when a known route was already found.
 
 use crate::ir::{
-    Contract, Expr, LocalBinding, PureCircuit, ReturnPlan, SourceLocation, StateAction,
+    Contract, Expr, LocalBinding, Parameter, PureCircuit, ReturnPlan, SourceLocation, StateAction,
     StateReturn, StatefulCircuit, Type,
 };
 use serde::Serialize;
@@ -20,6 +20,8 @@ pub struct Limits {
     pub max_circuits: usize,
     pub max_call_depth: usize,
     pub max_nodes: usize,
+    /// Total nodes permitted while materializing reusable pure helper summaries.
+    pub max_summary_nodes: usize,
     pub max_parameters: usize,
     pub max_component_nodes: usize,
     pub max_depth: usize,
@@ -35,6 +37,7 @@ impl Default for Limits {
             max_circuits: 128,
             max_call_depth: 8,
             max_nodes: 4096,
+            max_summary_nodes: 4096,
             max_parameters: 32,
             max_component_nodes: 64,
             max_depth: 64,
@@ -71,6 +74,23 @@ pub struct Dependency {
 pub struct ParameterDependency {
     pub circuit: String,
     pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct FormalDependency {
+    pub parameter: String,
+    pub dependencies: Vec<Dependency>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct HelperSummaryEvidence {
+    pub circuit: String,
+    pub source: Option<SourceLocation>,
+    pub formal_dependencies: Vec<FormalDependency>,
+    pub producers: Vec<Producer>,
+    /// Unknown contribution other than a symbolic formal; false never certifies stability.
+    pub has_nonformal_unknown: bool,
+    pub nodes: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -113,6 +133,8 @@ pub struct Unavailable {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct Report {
     pub findings: Vec<Finding>,
+    /// Reusable, sink-free pure helper return summaries used at call sites.
+    pub helper_summaries: Vec<HelperSummaryEvidence>,
     pub unavailable: Vec<Unavailable>,
     /// A resource limit stopped analysis or omitted further diagnostic records.
     pub truncated: bool,
@@ -151,6 +173,7 @@ pub struct AdvisoryFinding {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct AdvisoryReport {
     pub findings: Vec<AdvisoryFinding>,
+    pub helper_summaries: Vec<HelperSummaryEvidence>,
     pub unavailable: Vec<Unavailable>,
     pub unused_acknowledgements: Vec<Acknowledgement>,
     pub truncated: bool,
@@ -167,6 +190,7 @@ pub fn advise(
     max_acknowledgements: usize,
 ) -> AdvisoryReport {
     let mut result = AdvisoryReport {
+        helper_summaries: report.helper_summaries.clone(),
         unavailable: report.unavailable.clone(),
         truncated: report.truncated,
         ..AdvisoryReport::default()
@@ -252,6 +276,8 @@ fn push_unavailable(report: &mut Report, limits: Limits, circuit: &str, path: &s
 #[derive(Clone, Default)]
 struct Origin {
     routes: Vec<Route>,
+    formals: Vec<FormalRoute>,
+    route_order: Vec<RouteSlot>,
     parameters: BTreeSet<ParameterDependency>,
     unknown: bool,
     components: Option<Components>,
@@ -261,6 +287,25 @@ struct Origin {
 enum Components {
     Indexed(Vec<Origin>),
     Named(Vec<(String, Origin)>),
+}
+
+#[derive(Clone, PartialEq, Eq)]
+struct FormalRoute {
+    index: usize,
+    dependencies: Vec<Dependency>,
+}
+
+#[derive(Clone)]
+enum RouteSlot {
+    Known(usize),
+    Formal(usize),
+}
+
+#[derive(Clone)]
+struct HelperSummary {
+    result: Origin,
+    nodes: usize,
+    max_depth: usize,
 }
 
 fn same_simple_literal(left: &Expr, right: &Expr) -> bool {
@@ -292,6 +337,8 @@ impl Origin {
     fn unknown() -> Self {
         Self {
             routes: Vec::new(),
+            formals: Vec::new(),
+            route_order: Vec::new(),
             parameters: BTreeSet::new(),
             unknown: true,
             components: None,
@@ -305,6 +352,17 @@ impl Origin {
             name: name.into(),
         });
         origin
+    }
+
+    fn formal(index: usize) -> Self {
+        Self {
+            formals: vec![FormalRoute {
+                index,
+                dependencies: Vec::new(),
+            }],
+            route_order: vec![RouteSlot::Formal(0)],
+            ..Self::default()
+        }
     }
 }
 
@@ -324,6 +382,16 @@ fn count_component_nodes(origin: &Origin, used: &mut usize, limit: usize) -> boo
     }
 }
 
+fn summary_path(path: &str, call_body: &str) -> String {
+    if path == "body" {
+        call_body.into()
+    } else if let Some(rest) = path.strip_prefix("body.") {
+        format!("{call_body}.{rest}")
+    } else {
+        format!("{call_body}.{path}")
+    }
+}
+
 struct CircuitAnalysis<'c, 'r> {
     name: &'c str,
     source: &'c Option<SourceLocation>,
@@ -333,18 +401,130 @@ struct CircuitAnalysis<'c, 'r> {
     ambiguous: &'c BTreeSet<&'c str>,
     stateful_circuits: &'c BTreeMap<&'c str, &'c StatefulCircuit>,
     ambiguous_stateful: &'c BTreeSet<&'c str>,
+    summaries: Option<&'c BTreeMap<&'c str, HelperSummary>>,
     call_stack: Vec<&'c str>,
     conditions: Vec<String>,
     control_origin: Origin,
     return_env: Option<BTreeMap<String, Origin>>,
     limits: Limits,
     nodes: usize,
+    max_depth_seen: usize,
+    saw_sink: bool,
+    saw_call: bool,
+    saw_assert_or_witness: bool,
     report: &'r mut Report,
 }
 
 impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     fn unavailable(&mut self, path: &str, reason: &str) {
         push_unavailable(self.report, self.limits, self.name, path, reason);
+    }
+
+    fn instantiate_summary_origin(
+        &mut self,
+        template: Origin,
+        actuals: &[Origin],
+        formals: &[Parameter],
+        path: &str,
+        call_body: &str,
+    ) -> Origin {
+        let Origin {
+            mut routes,
+            formals: formal_routes,
+            route_order,
+            parameters,
+            unknown,
+            components,
+        } = template;
+        for route in &mut routes {
+            route.producer.path = summary_path(&route.producer.path, call_body);
+            for dependency in &mut route.dependencies {
+                dependency.path = summary_path(&dependency.path, call_body);
+            }
+        }
+        let retain_actual_components = matches!(route_order.as_slice(), [RouteSlot::Formal(_)])
+            && !unknown
+            && parameters.is_empty()
+            && components.is_none();
+        let mut result = Origin {
+            routes: Vec::new(),
+            formals: Vec::new(),
+            route_order: Vec::new(),
+            parameters,
+            unknown,
+            components: None,
+        };
+        for slot in route_order {
+            match slot {
+                RouteSlot::Known(index) => {
+                    let route = Origin {
+                        routes: vec![routes[index].clone()],
+                        route_order: vec![RouteSlot::Known(0)],
+                        ..Origin::default()
+                    };
+                    result = self.combine(result, route, path);
+                }
+                RouteSlot::Formal(index) => {
+                    let formal = &formal_routes[index];
+                    let Some((parameter, actual)) =
+                        formals.get(formal.index).zip(actuals.get(formal.index))
+                    else {
+                        self.unavailable(path, "summary formal unavailable");
+                        return Origin::unknown();
+                    };
+                    let mut actual = self.append(
+                        actual.clone(),
+                        &format!("call_argument:{}", parameter.name),
+                        path,
+                    );
+                    for dependency in &formal.dependencies {
+                        actual = self.append(
+                            actual,
+                            &dependency.operation,
+                            &summary_path(&dependency.path, call_body),
+                        );
+                    }
+                    result = if retain_actual_components {
+                        actual
+                    } else {
+                        self.combine(result, actual, path)
+                    };
+                }
+            }
+        }
+        if let Some(components) = components {
+            result.components = Some(match components {
+                Components::Indexed(values) => Components::Indexed(
+                    values
+                        .into_iter()
+                        .map(|value| {
+                            self.instantiate_summary_origin(
+                                value, actuals, formals, path, call_body,
+                            )
+                        })
+                        .collect(),
+                ),
+                Components::Named(values) => Components::Named(
+                    values
+                        .into_iter()
+                        .map(|(name, value)| {
+                            (
+                                name,
+                                self.instantiate_summary_origin(
+                                    value, actuals, formals, path, call_body,
+                                ),
+                            )
+                        })
+                        .collect(),
+                ),
+            });
+            let mut used = 0;
+            if !count_component_nodes(&result, &mut used, self.limits.max_component_nodes) {
+                self.unavailable(path, "aggregate component limit");
+                return Origin::unknown();
+            }
+        }
+        result
     }
 
     fn append(&mut self, mut origin: Origin, operation: &str, path: &str) -> Origin {
@@ -354,6 +534,16 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 return Origin::unknown();
             }
             route.dependencies.push(Dependency {
+                operation: operation.into(),
+                path: path.into(),
+            });
+        }
+        for formal in &mut origin.formals {
+            if formal.dependencies.len() >= self.limits.max_steps {
+                self.unavailable(path, "dependency step limit");
+                return Origin::unknown();
+            }
+            formal.dependencies.push(Dependency {
                 operation: operation.into(),
                 path: path.into(),
             });
@@ -376,19 +566,40 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
 
     fn combine(&mut self, left: Origin, right: Origin, path: &str) -> Origin {
         let mut routes = left.routes;
-        for route in right.routes {
-            if !routes.contains(&route) {
-                if routes.len() >= self.limits.max_routes {
-                    self.unavailable(path, "producer route limit");
-                    return Origin::unknown();
+        let mut formals = left.formals;
+        let mut route_order = left.route_order;
+        for slot in right.route_order {
+            match slot {
+                RouteSlot::Known(index) => {
+                    let route = &right.routes[index];
+                    if !routes.contains(route) {
+                        if routes.len() >= self.limits.max_routes {
+                            self.unavailable(path, "producer route limit");
+                            return Origin::unknown();
+                        }
+                        route_order.push(RouteSlot::Known(routes.len()));
+                        routes.push(route.clone());
+                    }
                 }
-                routes.push(route);
+                RouteSlot::Formal(index) => {
+                    let formal = &right.formals[index];
+                    if !formals.contains(formal) {
+                        if formals.len() >= self.limits.max_routes {
+                            self.unavailable(path, "formal route limit");
+                            return Origin::unknown();
+                        }
+                        route_order.push(RouteSlot::Formal(formals.len()));
+                        formals.push(formal.clone());
+                    }
+                }
             }
         }
         let mut parameters = left.parameters;
         parameters.extend(right.parameters);
         Origin {
             routes,
+            formals,
+            route_order,
             parameters,
             unknown: left.unknown || right.unknown,
             components: None,
@@ -407,12 +618,14 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             self.unavailable(path, "aggregate component limit");
             return Origin::unknown();
         }
-        let had_known = values.iter().any(|value| !value.routes.is_empty());
+        let had_known = values
+            .iter()
+            .any(|value| !value.routes.is_empty() || !value.formals.is_empty());
         let mut whole = Origin::default();
         for value in values {
             whole = self.combine(whole, value.clone(), path);
         }
-        if had_known && whole.routes.is_empty() {
+        if had_known && whole.routes.is_empty() && whole.formals.is_empty() {
             return Origin::unknown();
         }
         whole.components = Some(components);
@@ -449,10 +662,12 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         .collect(),
                 ))
             }
-            (Some(components), None) if otherwise.routes.is_empty() => {
+            (Some(components), None)
+                if otherwise.routes.is_empty() && otherwise.formals.is_empty() =>
+            {
                 Some(self.components_with_unknown(components, otherwise, path))
             }
-            (None, Some(components)) if then.routes.is_empty() => {
+            (None, Some(components)) if then.routes.is_empty() && then.formals.is_empty() => {
                 Some(self.components_with_unknown(components, then, path))
             }
             (None, None) => None,
@@ -471,6 +686,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     ) -> Components {
         let mut unknown = Origin::unknown();
         unknown.parameters = other.parameters.clone();
+        unknown.formals = other.formals.clone();
         match components {
             Components::Indexed(values) => Components::Indexed(
                 values
@@ -493,6 +709,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     }
 
     fn sink(&mut self, kind: &str, path: &str, input: &str, origin: &Origin) {
+        self.saw_sink = true;
         if origin.routes.is_empty() && self.control_origin.routes.is_empty() {
             return;
         }
@@ -525,6 +742,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     }
 
     fn action_node(&mut self, path: &str, depth: usize) -> bool {
+        self.max_depth_seen = self.max_depth_seen.max(depth);
         if depth > self.limits.max_depth {
             self.unavailable(path, "action depth limit");
             return false;
@@ -1022,7 +1240,10 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
     ) -> Origin {
         let had_known = !then_origin.routes.is_empty()
             || !otherwise_origin.routes.is_empty()
-            || (!same_literal && !condition_origin.routes.is_empty());
+            || !then_origin.formals.is_empty()
+            || !otherwise_origin.formals.is_empty()
+            || (!same_literal
+                && (!condition_origin.routes.is_empty() || !condition_origin.formals.is_empty()));
         let components = self.branch_components(&then_origin, &otherwise_origin, path);
         let mut result = self.combine(then_origin, otherwise_origin, path);
         let control = if same_literal {
@@ -1031,7 +1252,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             self.append(condition_origin, "conditional_control", path)
         };
         result = self.combine(result, control.clone(), path);
-        if had_known && result.routes.is_empty() {
+        if had_known && result.routes.is_empty() && result.formals.is_empty() {
             return Origin::unknown();
         }
         result.components = components.map(|mut components| {
@@ -1169,6 +1390,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         path: &str,
         depth: usize,
     ) -> Origin {
+        self.max_depth_seen = self.max_depth_seen.max(depth);
         if depth > self.limits.max_depth {
             self.unavailable(path, "expression depth limit");
             return Origin::unknown();
@@ -1320,6 +1542,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 )
             }
             Expr::Call { name, arguments } => {
+                self.saw_call = true;
                 if self.ambiguous.contains(name.as_str()) {
                     self.unavailable(path, "ambiguous pure helper");
                     return Origin::unknown();
@@ -1453,6 +1676,40 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                     self.unavailable(path, "pure helper call depth limit");
                     return Origin::unknown();
                 }
+                let summary = self
+                    .summaries
+                    .and_then(|summaries| summaries.get(callee.name.as_str()))
+                    .cloned();
+                if let Some(summary) = summary {
+                    let route_upper_bound = summary.result.formals.iter().fold(
+                        summary.result.routes.len(),
+                        |used, formal| {
+                            used.saturating_add(
+                                actuals
+                                    .get(formal.index)
+                                    .map_or(self.limits.max_routes.saturating_add(1), |actual| {
+                                        actual.routes.len()
+                                    }),
+                            )
+                        },
+                    );
+                    if self.nodes.saturating_add(summary.nodes) <= self.limits.max_nodes
+                        && depth.saturating_add(1).saturating_add(summary.max_depth)
+                            <= self.limits.max_depth
+                        && route_upper_bound <= self.limits.max_routes
+                    {
+                        self.nodes += summary.nodes;
+                        let call_body = format!("{path}.callee:{}.body", callee.name);
+                        let result = self.instantiate_summary_origin(
+                            summary.result,
+                            &actuals,
+                            &callee.parameters,
+                            path,
+                            &call_body,
+                        );
+                        return self.append(result, &format!("call_return:{}", callee.name), path);
+                    }
+                }
                 let mut callee_env = BTreeMap::new();
                 for (formal, actual) in callee.parameters.iter().zip(actuals) {
                     callee_env.insert(
@@ -1477,6 +1734,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 self.append(result, &format!("call_return:{}", callee.name), path)
             }
             Expr::WitnessCall { arguments, .. } => {
+                self.saw_assert_or_witness = true;
                 let unavailable_before = self.report.unavailable.len();
                 let mut known_argument = false;
                 let mut parameters = BTreeSet::new();
@@ -1491,7 +1749,8 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         &format!("{path}.arguments[{index}]"),
                         depth + 1,
                     );
-                    known_argument |= !argument_origin.routes.is_empty();
+                    known_argument |=
+                        !argument_origin.routes.is_empty() || !argument_origin.formals.is_empty();
                     parameters.extend(argument_origin.parameters);
                 }
                 if known_argument || self.report.unavailable.len() > unavailable_before {
@@ -1536,6 +1795,8 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         },
                         dependencies: Vec::new(),
                     }],
+                    formals: Vec::new(),
+                    route_order: vec![RouteSlot::Known(0)],
                     parameters,
                     unknown,
                     components: None,
@@ -1608,6 +1869,7 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 self.visit(value, env, &child("value"), depth + 1)
             }
             Expr::Assert { condition, .. } => {
+                self.saw_assert_or_witness = true;
                 let condition_origin = self.visit(condition, env, &child("condition"), depth + 1);
                 if !condition_origin.routes.is_empty() || condition_origin.unknown {
                     self.unavailable(path, "assertion execution control unavailable");
@@ -1620,6 +1882,115 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             }
         }
     }
+}
+
+fn build_helper_summaries<'c>(
+    contract: &'c Contract,
+    circuits: &'c BTreeMap<&'c str, &'c PureCircuit>,
+    ambiguous: &'c BTreeSet<&'c str>,
+    stateful_circuits: &'c BTreeMap<&'c str, &'c StatefulCircuit>,
+    ambiguous_stateful: &'c BTreeSet<&'c str>,
+    limits: Limits,
+) -> (BTreeMap<&'c str, HelperSummary>, Vec<HelperSummaryEvidence>) {
+    let mut summaries = BTreeMap::new();
+    let mut evidence = Vec::new();
+    let mut used_nodes = 0usize;
+    for circuit in contract.circuits.iter().take(limits.max_circuits) {
+        let remaining = limits.max_summary_nodes.saturating_sub(used_nodes);
+        if remaining == 0 {
+            break;
+        }
+        if ambiguous.contains(circuit.name.as_str())
+            || stateful_circuits.contains_key(circuit.name.as_str())
+            || circuit.parameters.len() > limits.max_nodes.min(limits.max_parameters)
+            || circuit
+                .parameters
+                .iter()
+                .map(|parameter| parameter.name.as_str())
+                .collect::<BTreeSet<_>>()
+                .len()
+                != circuit.parameters.len()
+        {
+            continue;
+        }
+        let mut scratch = Report::default();
+        let mut analysis = CircuitAnalysis {
+            name: &circuit.name,
+            source: &circuit.source,
+            current_circuit: &circuit.name,
+            current_source: &circuit.source,
+            circuits,
+            ambiguous,
+            stateful_circuits,
+            ambiguous_stateful,
+            summaries: None,
+            call_stack: vec![&circuit.name],
+            conditions: Vec::new(),
+            control_origin: Origin::default(),
+            return_env: None,
+            limits: Limits {
+                max_nodes: limits.max_nodes.min(remaining),
+                ..limits
+            },
+            nodes: 0,
+            max_depth_seen: 0,
+            saw_sink: false,
+            saw_call: false,
+            saw_assert_or_witness: false,
+            report: &mut scratch,
+        };
+        let env = circuit
+            .parameters
+            .iter()
+            .enumerate()
+            .map(|(index, parameter)| (parameter.name.clone(), Origin::formal(index)))
+            .collect();
+        let result = analysis.visit(&circuit.body, &env, "body", 0);
+        let nodes = analysis.nodes;
+        let max_depth = analysis.max_depth_seen;
+        let eligible = !analysis.saw_sink && !analysis.saw_call && !analysis.saw_assert_or_witness;
+        drop(analysis);
+        used_nodes = used_nodes.saturating_add(nodes);
+        if !eligible || !scratch.unavailable.is_empty() || scratch.truncated {
+            continue;
+        }
+        let formal_dependencies = result
+            .formals
+            .iter()
+            .filter_map(|formal| {
+                circuit
+                    .parameters
+                    .get(formal.index)
+                    .map(|parameter| FormalDependency {
+                        parameter: parameter.name.clone(),
+                        dependencies: formal.dependencies.clone(),
+                    })
+            })
+            .collect();
+        let mut producers = Vec::new();
+        for route in &result.routes {
+            if !producers.contains(&route.producer) {
+                producers.push(route.producer.clone());
+            }
+        }
+        evidence.push(HelperSummaryEvidence {
+            circuit: circuit.name.clone(),
+            source: circuit.source.clone(),
+            formal_dependencies,
+            producers,
+            has_nonformal_unknown: result.unknown,
+            nodes,
+        });
+        summaries.insert(
+            circuit.name.as_str(),
+            HelperSummary {
+                result,
+                nodes,
+                max_depth,
+            },
+        );
+    }
+    (summaries, evidence)
 }
 
 /// Analyze only explicitly selected typed IR. No rendering, capability, or ABI effect.
@@ -1642,6 +2013,15 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             ambiguous_stateful.insert(circuit.name.as_str());
         }
     }
+    let (summaries, summary_evidence) = build_helper_summaries(
+        contract,
+        &circuits,
+        &ambiguous,
+        &stateful_circuits,
+        &ambiguous_stateful,
+        limits,
+    );
+    report.helper_summaries = summary_evidence;
     let mut count = 0;
     for circuit in &contract.circuits {
         if count >= limits.max_circuits {
@@ -1686,12 +2066,17 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             ambiguous: &ambiguous,
             stateful_circuits: &stateful_circuits,
             ambiguous_stateful: &ambiguous_stateful,
+            summaries: Some(&summaries),
             call_stack: vec![&circuit.name],
             conditions: Vec::new(),
             control_origin: Origin::default(),
             return_env: None,
             limits,
             nodes: 0,
+            max_depth_seen: 0,
+            saw_sink: false,
+            saw_call: false,
+            saw_assert_or_witness: false,
             report: &mut report,
         };
         let env = circuit
@@ -1763,12 +2148,17 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
                 ambiguous: &ambiguous,
                 stateful_circuits: &stateful_circuits,
                 ambiguous_stateful: &ambiguous_stateful,
+                summaries: Some(&summaries),
                 call_stack: vec![&circuit.name],
                 conditions: Vec::new(),
                 control_origin: Origin::default(),
                 return_env: None,
                 limits,
                 nodes: 0,
+                max_depth_seen: 0,
+                saw_sink: false,
+                saw_call: false,
+                saw_assert_or_witness: false,
                 report: &mut report,
             };
             let env = circuit
