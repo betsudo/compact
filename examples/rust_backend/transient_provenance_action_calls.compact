@@ -1,0 +1,27 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+
+circuit save(value: Field): [] {
+  stored = disclose(value);
+}
+
+circuit make_and_save(value: Field): [] {
+  save(transientHash<Field>(value));
+}
+
+export circuit direct_call(value: Field): [] {
+  save(transientHash<Field>(value));
+}
+
+export circuit nested_call(value: Field): [] {
+  make_and_save(value);
+}
+
+export circuit ordinary_call(value: Field): [] {
+  save(value);
+}

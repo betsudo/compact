@@ -10,7 +10,7 @@
 
 use crate::ir::{
     Contract, Expr, LocalBinding, PureCircuit, ReturnPlan, SourceLocation, StateAction,
-    StateReturn, Type,
+    StateReturn, StatefulCircuit, Type,
 };
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -175,6 +175,8 @@ struct CircuitAnalysis<'c, 'r> {
     current_source: &'c Option<SourceLocation>,
     circuits: &'c BTreeMap<&'c str, &'c PureCircuit>,
     ambiguous: &'c BTreeSet<&'c str>,
+    stateful_circuits: &'c BTreeMap<&'c str, &'c StatefulCircuit>,
+    ambiguous_stateful: &'c BTreeSet<&'c str>,
     call_stack: Vec<&'c str>,
     conditions: Vec<String>,
     control_origin: Origin,
@@ -527,8 +529,83 @@ impl CircuitAnalysis<'_, '_> {
             StateAction::PureCall { .. } => {
                 self.unavailable(path, "standalone pure action call unavailable")
             }
-            StateAction::CircuitCall { .. } => {
-                self.unavailable(path, "stateful circuit call flow unavailable")
+            StateAction::CircuitCall { name, arguments } => {
+                if self.ambiguous_stateful.contains(name.as_str()) {
+                    self.unavailable(path, "ambiguous stateful helper");
+                    return;
+                }
+                let Some(callee) = self.stateful_circuits.get(name.as_str()).copied() else {
+                    self.unavailable(path, "unknown stateful helper");
+                    return;
+                };
+                if arguments.len() != callee.parameters.len() {
+                    self.unavailable(path, "stateful helper arity mismatch");
+                    return;
+                }
+                if callee
+                    .parameters
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != callee.parameters.len()
+                {
+                    self.unavailable(path, "duplicate stateful helper parameter");
+                    return;
+                }
+                if self.call_stack.contains(&callee.name.as_str()) {
+                    self.unavailable(path, "recursive stateful helper");
+                    return;
+                }
+                if self.call_stack.len() > self.limits.max_call_depth {
+                    self.unavailable(path, "stateful helper call depth limit");
+                    return;
+                }
+                if !matches!(callee.return_value, StateReturn::Unit) {
+                    self.unavailable(path, "non-unit stateful action helper");
+                    return;
+                }
+                let mut actuals = Vec::with_capacity(arguments.len().min(self.limits.max_nodes));
+                for (index, argument) in arguments.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "action node limit");
+                        return;
+                    }
+                    actuals.push(self.visit(
+                        argument,
+                        env,
+                        &format!("{path}.arguments[{index}]"),
+                        depth + 1,
+                    ));
+                }
+                let mut callee_env = BTreeMap::new();
+                for (formal, actual) in callee.parameters.iter().zip(actuals) {
+                    callee_env.insert(
+                        formal.name.clone(),
+                        self.append(actual, &format!("call_argument:{}", formal.name), path),
+                    );
+                }
+                self.call_stack.push(&callee.name);
+                let previous_circuit = self.current_circuit;
+                let previous_source = self.current_source;
+                self.current_circuit = &callee.name;
+                self.current_source = &callee.source;
+                for (index, action) in callee.actions.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "action node limit");
+                        break;
+                    }
+                    self.action(
+                        action,
+                        &callee_env,
+                        &format!("{path}.callee:{}.actions[{index}]", callee.name),
+                        depth + 1,
+                        false,
+                    );
+                }
+                self.current_circuit = previous_circuit;
+                self.current_source = previous_source;
+                self.call_stack.pop();
             }
             _ => self.unavailable(path, "unsupported state action"),
         }
@@ -964,6 +1041,16 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             ambiguous.insert(circuit.name.as_str());
         }
     }
+    let mut stateful_circuits = BTreeMap::new();
+    let mut ambiguous_stateful = BTreeSet::new();
+    for circuit in contract.stateful_circuits.iter().take(limits.max_circuits) {
+        if stateful_circuits
+            .insert(circuit.name.as_str(), circuit)
+            .is_some()
+        {
+            ambiguous_stateful.insert(circuit.name.as_str());
+        }
+    }
     let mut count = 0;
     for circuit in &contract.circuits {
         if count >= limits.max_circuits {
@@ -1006,6 +1093,8 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             current_source: &circuit.source,
             circuits: &circuits,
             ambiguous: &ambiguous,
+            stateful_circuits: &stateful_circuits,
+            ambiguous_stateful: &ambiguous_stateful,
             call_stack: vec![&circuit.name],
             conditions: Vec::new(),
             control_origin: Origin::default(),
@@ -1081,6 +1170,8 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
                 current_source: &circuit.source,
                 circuits: &circuits,
                 ambiguous: &ambiguous,
+                stateful_circuits: &stateful_circuits,
+                ambiguous_stateful: &ambiguous_stateful,
                 call_stack: vec![&circuit.name],
                 conditions: Vec::new(),
                 control_origin: Origin::default(),
