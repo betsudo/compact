@@ -104,6 +104,121 @@ pub struct Report {
     pub truncated: bool,
 }
 
+/// Exact caller-supplied acknowledgement of one producer route at one sink input.
+/// It changes advisory severity only; the producer and dependency evidence remains.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DependencyRole {
+    Data,
+    Control,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Acknowledgement {
+    pub circuit: String,
+    pub sink: String,
+    pub sink_circuit: String,
+    pub sink_path: String,
+    pub input: String,
+    pub role: DependencyRole,
+    pub route: Route,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AdvisoryFinding {
+    pub finding: Finding,
+    pub acknowledged_data_routes: Vec<bool>,
+    pub acknowledged_control_routes: Vec<bool>,
+    /// True if any known route remains unacknowledged.
+    pub warning: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct AdvisoryReport {
+    pub findings: Vec<AdvisoryFinding>,
+    pub unavailable: Vec<Unavailable>,
+    pub unused_acknowledgements: Vec<Acknowledgement>,
+    pub truncated: bool,
+}
+
+/// Apply an explicit, bounded acknowledgement policy to an `analyze` report.
+/// Matching is exact over circuit, sink kind/circuit/path/input, dependency role,
+/// and the full route. No finding is removed. `warning == false` means all known
+/// routes were acknowledged, not that unknown input is stable. An empty or
+/// whitespace-only reason never acknowledges.
+pub fn advise(
+    report: &Report,
+    acknowledgements: &[Acknowledgement],
+    max_acknowledgements: usize,
+) -> AdvisoryReport {
+    let mut result = AdvisoryReport {
+        unavailable: report.unavailable.clone(),
+        truncated: report.truncated,
+        ..AdvisoryReport::default()
+    };
+    if acknowledgements.len() > max_acknowledgements {
+        result.unavailable.push(Unavailable {
+            circuit: "acknowledgements".into(),
+            path: "policy".into(),
+            reason: "acknowledgement limit".into(),
+        });
+        result.truncated = true;
+    }
+    let active = if acknowledgements.len() <= max_acknowledgements {
+        acknowledgements
+    } else {
+        &[]
+    };
+    let mut used = vec![false; active.len()];
+    for finding in &report.findings {
+        let mut mark = |route: &Route, role: DependencyRole| {
+            let mut acknowledged = false;
+            for (index, entry) in active.iter().enumerate() {
+                if !entry.reason.trim().is_empty()
+                    && entry.circuit == finding.circuit
+                    && entry.sink == finding.sink
+                    && entry.sink_circuit == finding.sink_circuit
+                    && entry.sink_path == finding.sink_path
+                    && entry.input == finding.input
+                    && entry.role == role
+                    && entry.route == *route
+                {
+                    used[index] = true;
+                    acknowledged = true;
+                }
+            }
+            acknowledged
+        };
+        let acknowledged_data_routes = finding
+            .routes
+            .iter()
+            .map(|route| mark(route, DependencyRole::Data))
+            .collect::<Vec<_>>();
+        let acknowledged_control_routes = finding
+            .control_routes
+            .iter()
+            .map(|route| mark(route, DependencyRole::Control))
+            .collect::<Vec<_>>();
+        let warning = acknowledged_data_routes
+            .iter()
+            .chain(&acknowledged_control_routes)
+            .any(|acknowledged| !acknowledged);
+        result.findings.push(AdvisoryFinding {
+            finding: finding.clone(),
+            acknowledged_data_routes,
+            acknowledged_control_routes,
+            warning,
+        });
+    }
+    result.unused_acknowledgements = active
+        .iter()
+        .zip(used)
+        .filter_map(|(entry, used)| (!used).then(|| entry.clone()))
+        .collect();
+    result
+}
+
 fn push_unavailable(report: &mut Report, limits: Limits, circuit: &str, path: &str, reason: &str) {
     if reason.ends_with("limit") {
         report.truncated = true;
