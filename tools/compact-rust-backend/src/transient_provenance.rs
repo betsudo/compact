@@ -12,7 +12,7 @@ use crate::ir::{
     Contract, Expr, LocalBinding, Parameter, PureCircuit, ReturnPlan, SourceLocation, StateAction,
     StateReturn, StatefulCircuit, Type,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Copy)]
@@ -49,14 +49,15 @@ impl Default for Limits {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProducerKind {
     TransientHash,
     TransientCommit,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Producer {
     pub kind: ProducerKind,
     pub circuit: String,
@@ -64,7 +65,8 @@ pub struct Producer {
     pub path: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Dependency {
     pub operation: String,
     pub path: String,
@@ -93,7 +95,8 @@ pub struct HelperSummaryEvidence {
     pub nodes: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Route {
     pub producer: Producer,
     pub dependencies: Vec<Dependency>,
@@ -133,7 +136,7 @@ pub struct Unavailable {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct Report {
     pub findings: Vec<Finding>,
-    /// Reusable, sink-free pure helper return summaries used at call sites.
+    /// Reusable, sink-free helper return summaries used at call sites.
     pub helper_summaries: Vec<HelperSummaryEvidence>,
     pub unavailable: Vec<Unavailable>,
     /// A resource limit stopped analysis or omitted further diagnostic records.
@@ -142,14 +145,15 @@ pub struct Report {
 
 /// Exact caller-supplied acknowledgement of one producer route at one sink input.
 /// It changes advisory severity only; the producer and dependency evidence remains.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DependencyRole {
     Data,
     Control,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Acknowledgement {
     pub circuit: String,
     pub sink: String,
