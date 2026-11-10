@@ -667,6 +667,51 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 path,
                 depth,
             ),
+            StateAction::MerkleInsertHashIndex { hash, position, .. } => {
+                self.state_sink("merkle_insert_hash_index", "hash", hash, env, path, depth);
+                self.state_sink(
+                    "merkle_insert_hash_index",
+                    "position",
+                    position,
+                    env,
+                    path,
+                    depth,
+                );
+            }
+            StateAction::HistoricMerkleInsertHashIndex { hash, position, .. } => {
+                self.state_sink(
+                    "historic_merkle_insert_hash_index",
+                    "hash",
+                    hash,
+                    env,
+                    path,
+                    depth,
+                );
+                self.state_sink(
+                    "historic_merkle_insert_hash_index",
+                    "position",
+                    position,
+                    env,
+                    path,
+                    depth,
+                );
+            }
+            StateAction::MerkleInsertIndexDefault { position, .. } => self.state_sink(
+                "merkle_insert_index_default",
+                "position",
+                position,
+                env,
+                path,
+                depth,
+            ),
+            StateAction::HistoricMerkleInsertIndexDefault { position, .. } => self.state_sink(
+                "historic_merkle_insert_index_default",
+                "position",
+                position,
+                env,
+                path,
+                depth,
+            ),
             StateAction::MapInsert { key, value, .. } => {
                 self.state_sink("map_insert", "key", key, env, path, depth);
                 self.state_sink("map_insert", "value", value, env, path, depth);

@@ -2,9 +2,9 @@
 
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Current local worktree:
-`codex/rust-ast-transient-provenance-symbolic-inputs`, stacked on the
-GPG-signed Field-to-Bytes<32> evidence head `bb362ced4`. The earlier
-13 implementation commits and audit commit also have verified GPG
+`codex/rust-ast-transient-provenance-state-collections`, stacked on the
+GPG-signed symbolic-input evidence head `db2153a47`. The earlier
+14 implementation commits and audit commit also have verified GPG
 signatures. No remote publication.
 
 ## Verified bounded deliverable
@@ -21,18 +21,20 @@ budgets are reported as unavailable; a missing known producer is never a
 stability certificate. An exact, bounded, caller-supplied acknowledgement
 changes advisory warning status without removing evidence.
 
-The symbolic-input evidence head ran every `transient_provenance*.rs`
-integration test target: 15 targets, 45 tests, zero failures, under
-`/Users/ysh/.codex/local-evidence/transient-provenance-symbolic-inputs-20261110/target`
+The state-collections evidence head ran every `transient_provenance*.rs`
+integration test target: 16 targets, 49 tests, zero failures, under
+`/Users/ysh/.codex/local-evidence/transient-provenance-state-collections-20261110/target`
 with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
 per-slice plans; the full focused run is retained as `provenance-tests.log`
-in that evidence directory. The selected corpora's generated `contract/lib.rs` and
-`contract/rust-capabilities.json` files compared byte-identical. The latest
-map-lookup corpus hashes are in its own plan. No shared fixture was
+in that evidence directory. The selected corpora's generated `contract/lib.rs`
+and `contract/rust-capabilities.json` files compared byte-identical. The
+latest state-collections corpus hashes are in its own plan. No shared fixture was
 regenerated. Cumulative independent read-only review found no blocker for
 the preceding bounded stack; the symbolic-input review found two initial
-issues and no blocker after their fixes.
+issues and no blocker after their fixes. The state-collections review found
+an indexed-position test gap; four synthetic analyzer regressions closed it,
+and re-review found no remaining bounded-slice blocker.
 
 ## Acceptance trace
 
@@ -46,7 +48,7 @@ issues and no blocker after their fixes.
 | Ordinary Field argument/witness acceptance; known route survives unknown input | First-slice, helper, membership and map-lookup source controls | Verified; unknown origin is not certified stable |
 | Symbolic formal dependencies and external/unknown contributions | Helper, aggregate and state-sink source fixtures; symbolic-input tests and explicit parameter/component limits | Caller-root parameter dependencies reported separately for data/control; no materialized cached helper summary |
 | Intentional standard-library use and acknowledgement | Value-call source fixture and exact-acknowledgement tests | Verified as caller-side advisory policy |
-| Persistent values/openings, direct state writes, control dependence, summaries | Sink, aggregate, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified via bounded call-site traversal; no separate cached summary representation |
+| Persistent values/openings, direct state writes, control dependence, summaries | Sink, state-collections, aggregate, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified via bounded call-site traversal; no separate cached summary representation |
 | Warning-only mode preserves native/recorded results, public API and ledger encoding | Pass has no emission hook; per-corpus generated Rust/capability byte comparisons | Rust/capability parity verified for selected corpus; native/recorded result and FAB-byte equivalence unverified |
 | Optional wrapper feasibility separated from compiler lint | ADR-0463 nominal wrapper and trait discussion; no generated wrapper | Design separation recorded; no wrapper claimed |
 
@@ -55,7 +57,7 @@ issues and no blocker after their fixes.
 | IR path | Local policy |
 | --- | --- |
 | `persistent_hash` and `persistent_commit` value; commitment opening | Finding for each known transient route reaching that input. |
-| Selected cell/set/map/list/merkle write forms | Finding for known transient data or branch-control route; key, value and static position operands remain distinct. Cell/set/map have direct source cases; list/merkle matches lack source cases in this stack. Other write forms remain unsupported. |
+| Selected cell/set/map/list/merkle write forms | Finding for known transient data or branch-control route; key, value, hash and position operands remain distinct. Cell/set/map/list/merkle have direct source cases; transient-derived Merkle positions have synthetic schema-20 IR analyzer regressions but lack a source case because the attempted Field-to-Uint downcast is rejected (retained compiler diagnostic in the state-collections evidence directory). Other write forms remain unsupported. |
 | Conditional expression/action/return path | Possible-path control evidence; no reachability proof. Identical primitive literal result arms avoid a false result-control route. |
 | Set/map membership and map lookup | Known key/operand route survives with unknown ledger state. Lookup selection is a possible dependency, not a claim about stored-value origin. |
 | Assertion condition | Nested sinks remain visible. Known-transient or unknown/symbolic continuation after the assertion is explicitly unavailable. |

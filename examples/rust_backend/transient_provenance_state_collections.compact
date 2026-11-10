@@ -1,0 +1,73 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger items: List<Field>;
+export ledger tree: MerkleTree<3, Field>;
+export ledger history: HistoricMerkleTree<3, Field>;
+
+export circuit list_hit(value: Field): [] {
+  items.pushFront(disclose(transientHash<Field>(value)));
+}
+
+export circuit list_plain(value: Field): [] {
+  items.pushFront(disclose(value));
+}
+
+export circuit tree_hit(value: Field): [] {
+  tree.insert(disclose(transientHash<Field>(value)));
+}
+
+export circuit tree_plain(value: Field): [] {
+  tree.insert(disclose(value));
+}
+
+export circuit tree_index_hit(value: Field, position: Uint<64>): [] {
+  tree.insertIndex(disclose(transientHash<Field>(value)), disclose(position));
+}
+
+export circuit tree_hash_hit(value: Field): [] {
+  tree.insertHash(disclose(transientHash<Field>(value) as Bytes<32>));
+}
+
+export circuit tree_hash_index_hit(value: Field, position: Uint<64>): [] {
+  tree.insertHashIndex(disclose(transientHash<Field>(value) as Bytes<32>), disclose(position));
+}
+
+export circuit history_hit(value: Field): [] {
+  history.insert(disclose(transientHash<Field>(value)));
+}
+
+export circuit history_index_hit(value: Field, position: Uint<64>): [] {
+  history.insertIndex(disclose(transientHash<Field>(value)), disclose(position));
+}
+
+export circuit history_hash_hit(value: Field): [] {
+  history.insertHash(disclose(transientHash<Field>(value) as Bytes<32>));
+}
+
+export circuit history_hash_index_hit(value: Field, position: Uint<64>): [] {
+  history.insertHashIndex(disclose(transientHash<Field>(value) as Bytes<32>), disclose(position));
+}
+
+export circuit tree_default_position(position: Uint<64>): [] {
+  tree.insertIndexDefault(disclose(position));
+}
+
+export circuit history_default_position(position: Uint<64>): [] {
+  history.insertIndexDefault(disclose(position));
+}
+
+export circuit list_control_hit(value: Field, ordinary: Field): [] {
+  if (disclose(transientHash<Field>(value) == 0)) {
+    items.pushFront(disclose(ordinary));
+  }
+}
+
+export circuit tree_control_hit(value: Field, ordinary: Field): [] {
+  if (disclose(transientHash<Field>(value) == 0)) {
+    tree.insert(disclose(ordinary));
+  }
+}
