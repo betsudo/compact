@@ -749,19 +749,19 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
         env: &BTreeMap<String, Origin>,
         path: &str,
         depth: usize,
-    ) {
+    ) -> Origin {
         if !self.action_node(path, depth) {
-            return;
+            return Origin::unknown();
         }
         match plan {
             ReturnPlan::Value { value } => {
-                self.visit(value, env, &format!("{path}.value"), depth + 1);
+                self.visit(value, env, &format!("{path}.value"), depth + 1)
             }
             ReturnPlan::Sequence { actions, result } => {
                 for (index, action) in actions.iter().enumerate() {
                     if self.nodes >= self.limits.max_nodes {
                         self.unavailable(path, "action node limit");
-                        return;
+                        return Origin::unknown();
                     }
                     self.action(
                         action,
@@ -771,11 +771,11 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                         false,
                     );
                 }
-                self.return_plan(result, env, &format!("{path}.result"), depth + 1);
+                self.return_plan(result, env, &format!("{path}.result"), depth + 1)
             }
             ReturnPlan::Let { bindings, result } => {
                 let local = self.bindings(bindings, env, path, depth + 1);
-                self.return_plan(result, &local, &format!("{path}.result"), depth + 1);
+                self.return_plan(result, &local, &format!("{path}.result"), depth + 1)
             }
             ReturnPlan::Conditional {
                 condition,
@@ -785,17 +785,68 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 let condition_origin =
                     self.visit(condition, env, &format!("{path}.condition"), depth + 1);
                 let prior_control = self.control_origin.clone();
-                let branch_control = self.append(condition_origin, "branch_execution", path);
+                let branch_control =
+                    self.append(condition_origin.clone(), "branch_execution", path);
                 self.control_origin = self.combine(prior_control.clone(), branch_control, path);
                 self.conditions.push(format!("{path}:then"));
-                self.return_plan(then, env, &format!("{path}.then"), depth + 1);
+                let then_origin = self.return_plan(then, env, &format!("{path}.then"), depth + 1);
                 self.conditions.pop();
                 self.conditions.push(format!("{path}:otherwise"));
-                self.return_plan(otherwise, env, &format!("{path}.otherwise"), depth + 1);
+                let otherwise_origin =
+                    self.return_plan(otherwise, env, &format!("{path}.otherwise"), depth + 1);
                 self.conditions.pop();
                 self.control_origin = prior_control;
+                let same_literal = matches!((then.as_ref(), otherwise.as_ref()),
+                    (ReturnPlan::Value { value: a }, ReturnPlan::Value { value: b }) if same_simple_literal(a, b));
+                self.conditional_result(
+                    condition_origin,
+                    then_origin,
+                    otherwise_origin,
+                    same_literal,
+                    path,
+                )
             }
         }
+    }
+
+    fn conditional_result(
+        &mut self,
+        condition_origin: Origin,
+        then_origin: Origin,
+        otherwise_origin: Origin,
+        same_literal: bool,
+        path: &str,
+    ) -> Origin {
+        let had_known = !then_origin.routes.is_empty()
+            || !otherwise_origin.routes.is_empty()
+            || (!same_literal && !condition_origin.routes.is_empty());
+        let components = self.branch_components(&then_origin, &otherwise_origin, path);
+        let mut result = self.combine(then_origin, otherwise_origin, path);
+        let control = if same_literal {
+            Origin::default()
+        } else {
+            self.append(condition_origin, "conditional_control", path)
+        };
+        result = self.combine(result, control.clone(), path);
+        if had_known && result.routes.is_empty() {
+            return Origin::unknown();
+        }
+        result.components = components.map(|mut components| {
+            match &mut components {
+                Components::Indexed(values) => {
+                    for value in values {
+                        *value = self.combine(value.clone(), control.clone(), path);
+                    }
+                }
+                Components::Named(values) => {
+                    for (_, value) in values {
+                        *value = self.combine(value.clone(), control.clone(), path);
+                    }
+                }
+            }
+            components
+        });
+        result
     }
 
     fn stateful_value_call(
@@ -864,6 +915,12 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 value,
                 &return_env,
                 &format!("{path}.callee:{}.return_value.value", callee.name),
+                depth + 1,
+            ),
+            StateReturn::Effectful { body } if callee.actions.is_empty() => self.return_plan(
+                body,
+                &return_env,
+                &format!("{path}.callee:{}.return_value.body", callee.name),
                 depth + 1,
             ),
             _ => {
@@ -1005,38 +1062,13 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
                 self.conditions.pop();
                 self.control_origin = prior_control;
                 let same_literal = same_simple_literal(then, otherwise);
-                let had_known = !then_origin.routes.is_empty()
-                    || !otherwise_origin.routes.is_empty()
-                    || (!same_literal && !condition_origin.routes.is_empty());
-                let components = self.branch_components(&then_origin, &otherwise_origin, path);
-                let mut result = self.combine(then_origin, otherwise_origin, path);
-                // Identical primitive literals are provably independent of
-                // branch selection. Other arm equivalence is not attempted.
-                let control = if same_literal {
-                    Origin::default()
-                } else {
-                    self.append(condition_origin, "conditional_control", path)
-                };
-                result = self.combine(result, control.clone(), path);
-                if had_known && result.routes.is_empty() {
-                    return Origin::unknown();
-                }
-                result.components = components.map(|mut components| {
-                    match &mut components {
-                        Components::Indexed(values) => {
-                            for value in values {
-                                *value = self.combine(value.clone(), control.clone(), path);
-                            }
-                        }
-                        Components::Named(values) => {
-                            for (_, value) in values {
-                                *value = self.combine(value.clone(), control.clone(), path);
-                            }
-                        }
-                    }
-                    components
-                });
-                result
+                self.conditional_result(
+                    condition_origin,
+                    then_origin,
+                    otherwise_origin,
+                    same_literal,
+                    path,
+                )
             }
             Expr::Call { name, arguments } => {
                 if self.ambiguous.contains(name.as_str()) {

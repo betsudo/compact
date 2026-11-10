@@ -1,0 +1,68 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export ledger stored: Field;
+
+circuit choose(value: Field, other: Field, selected: Boolean): Field {
+  if (disclose(selected)) {
+    stored = disclose(other);
+    return transientHash<Field>(value);
+  } else {
+    stored = disclose(value);
+    return other;
+  }
+}
+
+circuit echo(value: Field, selected: Boolean): Field {
+  if (disclose(selected)) {
+    stored = disclose(value);
+    return value;
+  } else {
+    stored = disclose(value);
+    return value;
+  }
+}
+
+circuit controlled(value: Field, other: Field): Field {
+  if (disclose(transientHash<Field>(value) == 0)) {
+    stored = disclose(other);
+    return 1;
+  } else {
+    stored = disclose(other);
+    return 2;
+  }
+}
+
+circuit local(value: Field, selected: Boolean): Field {
+  const digest = transientHash<Field>(value);
+  if (disclose(selected)) {
+    stored = disclose(value);
+    return digest;
+  } else {
+    stored = disclose(value);
+    return value;
+  }
+}
+
+export circuit produced(value: Field, other: Field, selected: Boolean): Bytes<32> {
+  return persistentHash<Field>(choose(value, other, selected));
+}
+
+export circuit forwarded(value: Field, selected: Boolean): Bytes<32> {
+  return persistentHash<Field>(echo(transientHash<Field>(value), selected));
+}
+
+export circuit ordinary(value: Field, selected: Boolean): Bytes<32> {
+  return persistentHash<Field>(echo(value, selected));
+}
+
+export circuit control(value: Field, other: Field): Bytes<32> {
+  return persistentHash<Field>(controlled(value, other));
+}
+
+export circuit local_binding(value: Field, selected: Boolean): Bytes<32> {
+  return persistentHash<Field>(local(value, selected));
+}
