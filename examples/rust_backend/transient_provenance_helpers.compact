@@ -1,0 +1,46 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+circuit identity(value: Field): Field {
+  return value;
+}
+
+circuit derive(value: Field): Field {
+  return transientHash<Field>(value);
+}
+
+circuit persist(value: Field): Bytes<32> {
+  return persistentHash<Field>(value);
+}
+
+circuit combine(digest: Field, extra: Field): Field {
+  return digest + extra;
+}
+
+export circuit helper_producer(value: Field): Bytes<32> {
+  return persistentHash<Field>(derive(value));
+}
+
+export circuit helper_forwarder(value: Field): Bytes<32> {
+  const digest = transientHash<Field>(value);
+  return persistentHash<Field>(identity(identity(digest)));
+}
+
+export circuit helper_sink(value: Field): Bytes<32> {
+  return persist(transientHash<Field>(value));
+}
+
+export circuit helper_mixed(value: Field, extra: Field): Bytes<32> {
+  return persist(combine(transientHash<Field>(value), extra));
+}
+
+export circuit ordinary_forwarded(value: Field): Bytes<32> {
+  return persist(identity(value));
+}
+
+export circuit transient_only(value: Field): Field {
+  return derive(value);
+}

@@ -1,0 +1,366 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "identity",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "parameter",
+        "name": "value"
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 7,
+        "column": 1
+      }
+    },
+    {
+      "name": "derive",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "transient_hash",
+        "value": {
+          "kind": "parameter",
+          "name": "value"
+        }
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 11,
+        "column": 1
+      }
+    },
+    {
+      "name": "persist",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "persistent_hash",
+        "value": {
+          "kind": "parameter",
+          "name": "value"
+        }
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 15,
+        "column": 1
+      }
+    },
+    {
+      "name": "combine",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "digest",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "extra",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "add",
+        "left": {
+          "kind": "parameter",
+          "name": "digest"
+        },
+        "right": {
+          "kind": "parameter",
+          "name": "extra"
+        }
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 19,
+        "column": 1
+      }
+    },
+    {
+      "name": "helper_producer",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "persistent_hash",
+        "value": {
+          "kind": "call",
+          "name": "derive",
+          "arguments": [
+            {
+              "kind": "parameter",
+              "name": "value"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 23,
+        "column": 1
+      }
+    },
+    {
+      "name": "helper_forwarder",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "digest",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "transient_hash",
+              "value": {
+                "kind": "parameter",
+                "name": "value"
+              }
+            }
+          }
+        ],
+        "body": {
+          "kind": "persistent_hash",
+          "value": {
+            "kind": "call",
+            "name": "identity",
+            "arguments": [
+              {
+                "kind": "call",
+                "name": "identity",
+                "arguments": [
+                  {
+                    "kind": "parameter",
+                    "name": "digest"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 27,
+        "column": 1
+      }
+    },
+    {
+      "name": "helper_sink",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "call",
+        "name": "persist",
+        "arguments": [
+          {
+            "kind": "transient_hash",
+            "value": {
+              "kind": "parameter",
+              "name": "value"
+            }
+          }
+        ]
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 32,
+        "column": 1
+      }
+    },
+    {
+      "name": "helper_mixed",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        },
+        {
+          "name": "extra",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "call",
+        "name": "persist",
+        "arguments": [
+          {
+            "kind": "call",
+            "name": "combine",
+            "arguments": [
+              {
+                "kind": "transient_hash",
+                "value": {
+                  "kind": "parameter",
+                  "name": "value"
+                }
+              },
+              {
+                "kind": "parameter",
+                "name": "extra"
+              }
+            ]
+          }
+        ]
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 36,
+        "column": 1
+      }
+    },
+    {
+      "name": "ordinary_forwarded",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "call",
+        "name": "persist",
+        "arguments": [
+          {
+            "kind": "call",
+            "name": "identity",
+            "arguments": [
+              {
+                "kind": "parameter",
+                "name": "value"
+              }
+            ]
+          }
+        ]
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 40,
+        "column": 1
+      }
+    },
+    {
+      "name": "transient_only",
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "field"
+      },
+      "body": {
+        "kind": "call",
+        "name": "derive",
+        "arguments": [
+          {
+            "kind": "parameter",
+            "name": "value"
+          }
+        ]
+      },
+      "source": {
+        "file": "transient_provenance_helpers.compact",
+        "line": 44,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+  ]
+}

@@ -98,7 +98,7 @@ fn unsupported_flow_and_limits_are_explicit_and_deterministic() {
         report
             .unavailable
             .iter()
-            .any(|u| u.circuit == "direct" && u.reason == "unsupported expression form")
+            .any(|u| u.circuit == "direct" && u.reason == "unknown pure helper")
     );
 
     contract.circuits[0].body = Expr::PersistentHash {

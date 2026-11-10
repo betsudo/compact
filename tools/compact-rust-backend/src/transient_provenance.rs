@@ -8,13 +8,14 @@
 //! finding never certifies a value as stable. Unsupported expression forms and exhausted
 //! budgets are reported as unavailable, including when a known route was already found.
 
-use crate::ir::{Contract, Expr, SourceLocation, StateReturn};
+use crate::ir::{Contract, Expr, PureCircuit, SourceLocation, StateReturn};
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
     pub max_circuits: usize,
+    pub max_call_depth: usize,
     pub max_nodes: usize,
     pub max_depth: usize,
     pub max_routes: usize,
@@ -27,6 +28,7 @@ impl Default for Limits {
     fn default() -> Self {
         Self {
             max_circuits: 128,
+            max_call_depth: 8,
             max_nodes: 4096,
             max_depth: 64,
             max_routes: 32,
@@ -47,6 +49,8 @@ pub enum ProducerKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Producer {
     pub kind: ProducerKind,
+    pub circuit: String,
+    pub source: Option<SourceLocation>,
     pub path: String,
 }
 
@@ -67,6 +71,8 @@ pub struct Finding {
     pub circuit: String,
     pub source: Option<SourceLocation>,
     pub sink: String,
+    pub sink_circuit: String,
+    pub sink_source: Option<SourceLocation>,
     pub sink_path: String,
     pub input: String,
     pub routes: Vec<Route>,
@@ -121,15 +127,20 @@ impl Origin {
     }
 }
 
-struct CircuitAnalysis<'a> {
-    name: &'a str,
-    source: &'a Option<SourceLocation>,
+struct CircuitAnalysis<'c, 'r> {
+    name: &'c str,
+    source: &'c Option<SourceLocation>,
+    current_circuit: &'c str,
+    current_source: &'c Option<SourceLocation>,
+    circuits: &'c BTreeMap<&'c str, &'c PureCircuit>,
+    ambiguous: &'c BTreeSet<&'c str>,
+    call_stack: Vec<&'c str>,
     limits: Limits,
     nodes: usize,
-    report: &'a mut Report,
+    report: &'r mut Report,
 }
 
-impl CircuitAnalysis<'_> {
+impl CircuitAnalysis<'_, '_> {
     fn unavailable(&mut self, path: &str, reason: &str) {
         push_unavailable(self.report, self.limits, self.name, path, reason);
     }
@@ -178,6 +189,8 @@ impl CircuitAnalysis<'_> {
             circuit: self.name.into(),
             source: self.source.clone(),
             sink: kind.into(),
+            sink_circuit: self.current_circuit.into(),
+            sink_source: self.current_source.clone(),
             sink_path: path.into(),
             input: input.into(),
             routes: origin.routes.clone(),
@@ -211,6 +224,70 @@ impl CircuitAnalysis<'_> {
             | Expr::UnsignedLiteral { .. }
             | Expr::EnumVariant { .. } => Origin::default(),
             Expr::Parameter { name } => env.get(name).cloned().unwrap_or_else(Origin::unknown),
+            Expr::Call { name, arguments } => {
+                let mut actuals = Vec::with_capacity(arguments.len().min(self.limits.max_nodes));
+                for (index, argument) in arguments.iter().enumerate() {
+                    if self.nodes >= self.limits.max_nodes {
+                        self.unavailable(path, "expression node limit");
+                        return Origin::unknown();
+                    }
+                    let argument_path = format!("{path}.arguments[{index}]");
+                    actuals.push(self.visit(argument, env, &argument_path, depth + 1));
+                }
+                if self.ambiguous.contains(name.as_str()) {
+                    self.unavailable(path, "ambiguous pure helper");
+                    return Origin::unknown();
+                }
+                let Some(callee) = self.circuits.get(name.as_str()).copied() else {
+                    self.unavailable(path, "unknown pure helper");
+                    return Origin::unknown();
+                };
+                if actuals.len() != callee.parameters.len() {
+                    self.unavailable(path, "pure helper arity mismatch");
+                    return Origin::unknown();
+                }
+                if callee
+                    .parameters
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != callee.parameters.len()
+                {
+                    self.unavailable(path, "duplicate pure helper parameter");
+                    return Origin::unknown();
+                }
+                if self.call_stack.contains(&callee.name.as_str()) {
+                    self.unavailable(path, "recursive pure helper");
+                    return Origin::unknown();
+                }
+                if self.call_stack.len() > self.limits.max_call_depth {
+                    self.unavailable(path, "pure helper call depth limit");
+                    return Origin::unknown();
+                }
+                let mut callee_env = BTreeMap::new();
+                for (formal, actual) in callee.parameters.iter().zip(actuals) {
+                    callee_env.insert(
+                        formal.name.clone(),
+                        self.append(actual, &format!("call_argument:{}", formal.name), path),
+                    );
+                }
+                self.call_stack.push(&callee.name);
+                let previous_circuit = self.current_circuit;
+                let previous_source = self.current_source;
+                self.current_circuit = &callee.name;
+                self.current_source = &callee.source;
+                let result = self.visit(
+                    &callee.body,
+                    &callee_env,
+                    &format!("{path}.callee:{}.body", callee.name),
+                    depth + 1,
+                );
+                self.current_circuit = previous_circuit;
+                self.current_source = previous_source;
+                self.call_stack.pop();
+                self.append(result, &format!("call_return:{}", callee.name), path)
+            }
             Expr::WitnessCall { arguments, .. } => {
                 let unavailable_before = self.report.unavailable.len();
                 let mut known_argument = false;
@@ -256,6 +333,8 @@ impl CircuitAnalysis<'_> {
                             } else {
                                 ProducerKind::TransientCommit
                             },
+                            circuit: self.current_circuit.into(),
+                            source: self.current_source.clone(),
                             path: path.into(),
                         },
                         dependencies: Vec::new(),
@@ -339,6 +418,13 @@ impl CircuitAnalysis<'_> {
 /// Analyze only explicitly selected typed IR. No rendering, capability, or ABI effect.
 pub fn analyze(contract: &Contract, limits: Limits) -> Report {
     let mut report = Report::default();
+    let mut circuits = BTreeMap::new();
+    let mut ambiguous = BTreeSet::new();
+    for circuit in contract.circuits.iter().take(limits.max_circuits) {
+        if circuits.insert(circuit.name.as_str(), circuit).is_some() {
+            ambiguous.insert(circuit.name.as_str());
+        }
+    }
     let mut count = 0;
     for circuit in &contract.circuits {
         if count >= limits.max_circuits {
@@ -357,9 +443,31 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             );
             continue;
         }
+        if circuit
+            .parameters
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<BTreeSet<_>>()
+            .len()
+            != circuit.parameters.len()
+        {
+            push_unavailable(
+                &mut report,
+                limits,
+                &circuit.name,
+                "parameters",
+                "duplicate circuit parameter",
+            );
+            continue;
+        }
         let mut analysis = CircuitAnalysis {
             name: &circuit.name,
             source: &circuit.source,
+            current_circuit: &circuit.name,
+            current_source: &circuit.source,
+            circuits: &circuits,
+            ambiguous: &ambiguous,
+            call_stack: vec![&circuit.name],
             limits,
             nodes: 0,
             report: &mut report,
@@ -394,11 +502,33 @@ pub fn analyze(contract: &Contract, limits: Limits) -> Report {
             );
             continue;
         }
+        if circuit
+            .parameters
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<BTreeSet<_>>()
+            .len()
+            != circuit.parameters.len()
+        {
+            push_unavailable(
+                &mut report,
+                limits,
+                &circuit.name,
+                "parameters",
+                "duplicate circuit parameter",
+            );
+            continue;
+        }
         if circuit.actions.is_empty() {
             if let StateReturn::Expression { value } = &circuit.return_value {
                 let mut analysis = CircuitAnalysis {
                     name: &circuit.name,
                     source: &circuit.source,
+                    current_circuit: &circuit.name,
+                    current_source: &circuit.source,
+                    circuits: &circuits,
+                    ambiguous: &ambiguous,
+                    call_stack: vec![&circuit.name],
                     limits,
                     nodes: 0,
                     report: &mut report,
