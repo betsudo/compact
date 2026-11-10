@@ -3,8 +3,9 @@
 Date: 2026-11-10. Base: `origin/codex/rust-backend-ast` at
 `09c75e2891283fed65f2db385925a5a4b9409af6`. Reviewed local head:
 `591502730` on `codex/rust-ast-transient-provenance-map-lookup` in an
-isolated worktree. All 13 stacked commits have verified GPG signatures and
-remain local.
+isolated worktree. The subsequent audit and Field-to-Bytes<32> source
+evidence remain on local branches. All 13 reviewed implementation commits
+have verified GPG signatures.
 
 ## Verified bounded deliverable
 
@@ -19,9 +20,9 @@ budgets are reported as unavailable; a missing known producer is never a
 stability certificate. An exact, bounded, caller-supplied acknowledgement
 changes advisory warning status without removing evidence.
 
-The latest head ran every `transient_provenance*.rs` integration test target:
-13 targets, 38 tests, zero failures, under
-`/Users/ysh/.codex/local-evidence/transient-provenance-map-lookup-20261110/target`
+The Field-to-Bytes<32> evidence head ran every `transient_provenance*.rs`
+integration test target: 14 targets, 39 tests, zero failures, under
+`/Users/ysh/.codex/local-evidence/transient-provenance-field-bytes-20261110/target`
 with `CARGO_BUILD_JOBS=2`. The source-produced fixtures and exact-parent/
 current generated-output comparisons are documented in the adjacent
 per-slice plans. The selected corpora's generated `contract/lib.rs` and
@@ -38,7 +39,7 @@ found no blocker for this bounded local prototype.
 | Opt-in typed-IR prototype independent of recording, deterministic and bounded | `transient_provenance.rs`; `transient_provenance.rs` tests | Verified for the selected IR/corpus |
 | Direct producers, aliases, arithmetic, products/projections, conditional paths | First-slice and aggregate source fixtures/tests | Verified for supported forms |
 | Helper-produced and forwarded origins, including action and value calls | Helper, action-call, value-call, effectful-return, and pure-action fixtures/tests | Verified for supported forms and bounded call depths |
-| Field-to-bytes and `upgradeFromTransient` do not launder provenance | `FieldToBytes32` is handled by the unary conversion visitor; first-slice and standard-library `evolveNonce` source tests exercise `upgradeFromTransient` | Upgrade conversion source-verified; direct Field-to-bytes source fixture remains to add |
+| Field-to-bytes and `upgradeFromTransient` do not launder provenance | Distinct `FieldToBytes32` source fixture/test; first-slice and standard-library `evolveNonce` source tests for `upgradeFromTransient` | Verified for selected conversions, including commitment opening |
 | Ordinary Field argument/witness acceptance; known route survives unknown input | First-slice, helper, membership and map-lookup source controls | Verified; unknown origin is not certified stable |
 | Intentional standard-library use and acknowledgement | Value-call source fixture and exact-acknowledgement tests | Verified as caller-side advisory policy |
 | Persistent values/openings, direct state writes, control dependence, summaries | Sink, aggregate, action-call, assertion, membership and lookup fixtures/tests; policy matrix below | Supported paths verified via bounded call-site traversal; no separate cached summary representation |
@@ -62,8 +63,8 @@ found no blocker for this bounded local prototype.
 The local prototype does not transport diagnostics through the frontend or
 compiler CLI, and no default or strict compiler policy is selected. It does
 not verify native/recorded runtime result parity, FAB bytes, proof behavior,
-or universal Compact language coverage. Direct Field-to-bytes source evidence
-and materialized helper summaries are also pending. The integration and
+or universal Compact language coverage. Materialized helper summaries are
+also pending. The integration and
 runtime tasks were expressly excluded
 from this local iteration. The evidence therefore supports a reviewable
 bounded typed-IR deliverable, not closing the full compiler-integrated

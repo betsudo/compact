@@ -1,0 +1,19 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+
+import CompactStandardLibrary;
+
+export circuit cast_hit(value: Field): Bytes<32> {
+  const encoded = transientHash<Field>(value) as Bytes<32>;
+  return persistentHash<Bytes<32>>(encoded);
+}
+
+export circuit opening_hit(value: Field): Bytes<32> {
+  const opening = transientHash<Field>(value) as Bytes<32>;
+  return persistentCommit<Field>(value, opening);
+}
+
+export circuit cast_plain(value: Field): Bytes<32> {
+  return persistentHash<Bytes<32>>(value as Bytes<32>);
+}
