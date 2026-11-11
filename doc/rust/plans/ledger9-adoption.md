@@ -43,3 +43,7 @@ The rebuilt Scheme frontend generated an unedited Rust Counter crate and its exa
 A separate local transaction used the same exact IR and installed verifier with a fresh transaction-bound v3 proof. It proved one Dust spend using the released Ledger 9 `dust/10/spend` material, passed default strict validation, and applied the expected generated Rust state transition. The installed operation stayed intact. Replaying the verified transaction returned `IntentAlreadyExists` with byte-identical whole-ledger state. This qualification used Rust 1.99 on macOS arm64, with locally funded test state.
 
 Next, migrate the maintained proof gate and TypeScript/Nix package pairing, then regenerate the affected workspace consumers. Keep historical v2 proof/source bindings and Ledger 8 fixtures available on their original line. A Ledger 9 check must bind its own generated Rust, ZKIR v3, keys and released package graph.
+
+## Rust 1.99 toolchain
+
+The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the official release manifest hash and uses the matching Cargo, compiler and standard library. Linux uses the matching musl standard library and keeps the static linker and ELF checks. The standalone compiler lock is selected from the workspace lock and its registry package identities, checksums and retained edges are audited before a locked build.

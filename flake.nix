@@ -57,6 +57,10 @@
     };
     n2c.url = "github:nlewo/nix2container";
     chez-exe.url = "github:tkerber/chez-exe";
+    fenix = {
+      url = "github:nix-community/fenix/5b3016c5f8cdd37d5e557646d369ce76e30666de";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
@@ -78,6 +82,7 @@
     utils,
     inclusive,
     chez-exe,
+    fenix,
     npmlock2nix,
     ...
   } @ inputs:
@@ -226,7 +231,24 @@
             # Cross to static musl with native build tools, avoiding a
             # musl-hosted Rust/LLVM bootstrap just to package the Linux CLI.
             linking-pkgs = if pkgs.lib.hasSuffix "linux" system then pkgs.pkgsStatic else pkgs;
-          in linking-pkgs.rustPlatform.buildRustPackage ({
+            build-target = pkgs.stdenv.hostPlatform.rust.rustcTarget;
+            cli-target = linking-pkgs.stdenv.hostPlatform.rust.rustcTarget;
+            rust = fenix.packages.${system};
+            rust-version = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel;
+            rust-manifest = builtins.fromTOML (builtins.readFile (builtins.fetchurl {
+              url = "https://static.rust-lang.org/dist/channel-rust-${rust-version}.toml";
+              sha256 = "sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=";
+            }));
+            toolchain = rust.combine (
+              [(rust.fromManifest rust-manifest).minimalToolchain]
+              ++ pkgs.lib.optional (cli-target != build-target)
+                (rust.targets.${cli-target}.fromManifest rust-manifest).rust-std
+            );
+            rust-platform = linking-pkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in rust-platform.buildRustPackage ({
             pname = "compact-rust-cli";
             version = "0.2.0";
             # The CLI build needs only its crate sources; local harness scripts
@@ -239,7 +261,6 @@
             ];
             cargoLock = {
               lockFile = ./tools/compact-rust-backend/Cargo.lock;
-              outputHashes."midnight-base-crypto-1.0.2" = "sha256-iNrhLPBGrWxeospwl8eW4TtYNlk+vY5Y564OTRjwBoM=";
             };
             cargoBuildFlags = [ "--bin" "compactc" ];
             # Compiler-backed gates run in build-compiler.yml against the full

@@ -17,7 +17,7 @@
 name = "compact-rust-proof-smoke"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 publish = false
 description = "Ledger-8 proof compatibility gate for Rust Compact output"
 
