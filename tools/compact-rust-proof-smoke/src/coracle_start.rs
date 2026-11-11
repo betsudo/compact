@@ -14,6 +14,9 @@
 // limitations under the License.
 //! Original start, funded by two real wallet inputs. The blue fixture seeds a
 //! prior red pot at its authoritative ledger index; it is not a proved game chain.
+use super::local_v3_application as v3;
+use super::positional_transaction::make_deploy;
+use super::qualified_coin_funding as funding;
 use super::*;
 use compact_rust_test_center_coracle_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -120,16 +123,25 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_test_center_coracle_fixture::RETAINED_IR,
     )?;
+    v3::validate_pinned_artifacts(
+        root,
+        include_str!("../../compact-rust-backend/tests/coracle-start-ledger9-artifacts.json"),
+    )?;
     const NAME: &str = "start";
+    let stem = format!("coracle-start-{}", if blue { "blue" } else { "red" });
     let mut rng = StdRng::seed_from_u64(0x0213_0000 + u64::from(blue));
     let initial = c::initial_state(ConstructorContext::new(Private::default()))?;
     let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    tokio::runtime::Builder::new_current_thread()
+    let mut fees = funding::fee_funded_state(&mut rng)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(fees.give_fee_token(&mut rng, 10));
+        .build()?;
+    executor.block_on(fees.give_fee_token(&mut rng, 10));
+    let resolver = funding::fee_resolver(root, NAME)?;
+    v3::apply_funded_deployment(
+        root, &stem, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let wager = coin(3, 5, 17);
     let deposit = coin(2, 0, 100000);
     let historic = coin(1, 5, 17);
@@ -200,6 +212,8 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         ctx = slots::state.write(ctx, types::State::red_started)?.context;
         prior.data = ctx.query.state;
     }
+    // The deployment commits to its original state and address. Seed the
+    // explicit prior game fixture at that address before proving the call.
     fees.ledger.contract = fees.ledger.contract.insert(address, prior.clone());
     let ledger = fees.ledger.clone();
     assert_eq!(wallet.merkle_tree.root(), ledger.zswap.coin_coms.root());
@@ -372,9 +386,7 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
             types::State::red_started
         }
     );
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/start.verifier"),
-    )?))?;
+    let verifier = v3::read_verifier(root, NAME)?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0u64))?;
     assert_eq!(
         prepared.prototype().guaranteed_public_transcript.is_some(),
@@ -384,49 +396,54 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         prepared.prototype().fallible_public_transcript.is_some(),
         blue
     );
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let sealed = v3::prove_funded_offer(
         root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (NAME, &stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let Transaction::Standard(structure) = &tx else {
-        panic!("standard")
+        &verifier,
+        |tx| {
+            let Transaction::Standard(structure) = tx else {
+                return Err("expected standard Coracle start transaction".into());
+            };
+            if blue {
+                assert!(structure.guaranteed_coins.is_none());
+                assert_eq!(structure.fallible_coins.iter().count(), 1);
+                assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+            } else {
+                assert!(structure.fallible_coins.is_empty());
+                assert_eq!(**structure.guaranteed_coins.as_ref().unwrap(), offer);
+            }
+            Ok(())
+        },
+    )?;
+    let mut sealed_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut sealed_bytes)?;
+    v3::write_new(
+        root.join(format!(
+            "start-{}-sealed.bin",
+            if blue { "blue" } else { "red" }
+        )),
+        &sealed_bytes,
+    )?;
+    let Transaction::Standard(structure) = &sealed else {
+        return Err("expected standard Coracle start transaction".into());
     };
     if blue {
         assert!(structure.guaranteed_coins.is_none());
-        assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+        assert_eq!(structure.fallible_coins.iter().count(), 1);
+        assert_eq!(
+            structure.fallible_coins.get(&1).unwrap().erase_proofs(),
+            offer.erase_proofs()
+        );
     } else {
         assert!(structure.fallible_coins.is_empty());
-        assert_eq!(**structure.guaranteed_coins.as_ref().unwrap(), offer);
+        assert_eq!(
+            structure.guaranteed_coins.as_ref().unwrap().erase_proofs(),
+            offer.erase_proofs()
+        );
     }
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0213_5052 + u64::from(blue)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0213_5345 + u64::from(blue)));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
-    tagged_serialize(
-        &sealed,
-        &mut File::create(root.join(format!(
-            "start-{}-sealed.bin",
-            if blue { "blue" } else { "red" }
-        )))?,
-    )?;
     let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), fees.time)?;
     let context = TransactionContext {
         ref_state: ledger.clone(),
@@ -491,6 +508,10 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         native.context.query.state
     );
     assert_eq!(
+        updated.contract.get(&address).unwrap().operations,
+        prior.operations
+    );
+    assert_eq!(
         updated.zswap.first_free,
         first_free + if blue { 3 } else { 2 }
     );
@@ -514,6 +535,7 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         updated.zswap.try_apply(&offer, None),
         Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(_))
     ));
+    v3::check_offer_replay(root, &stem, &updated, &verified, context)?;
     println!(
         "original Coracle.start blue={blue}: two exact wallet inputs, canonical persistent allocation, whole selected segment, default-strict proof/apply, seeded prior state"
     );

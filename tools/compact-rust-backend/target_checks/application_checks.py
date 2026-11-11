@@ -37,7 +37,7 @@ def check_coracle_start(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/start.zkir"), str(output / "keys/start.prover"), str(output / "keys/start.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/start.zkir"), str(output / "keys/start.prover"), str(output / "keys/start.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-start", str(output))
     print("original Coracle start recorded with exact two-wallet paths; all four proof-required exports have recording APIs")
 
@@ -54,7 +54,7 @@ def check_coracle_concede(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/concede.zkir"), str(output / "keys/concede.prover"), str(output / "keys/concede.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/concede.zkir"), str(output / "keys/concede.prover"), str(output / "keys/concede.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-concede", str(output))
     print("original Coracle concede recorded; all four proof-required exports have recording APIs")
 
@@ -71,7 +71,7 @@ def check_coracle_withdraw(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/withdraw.zkir"), str(output / "keys/withdraw.prover"), str(output / "keys/withdraw.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/withdraw.zkir"), str(output / "keys/withdraw.prover"), str(output / "keys/withdraw.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-withdraw", str(output))
     print("original Coracle withdraw recorded; all four proof-required exports have recording APIs")
 

@@ -17,7 +17,10 @@
 use super::observational_binding::ProofBoundCall;
 use super::positional_transaction::verify_separately;
 use super::*;
-use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
+use midnight_ledger::{
+    structure::{ProofVersioned, VerifiedTransaction},
+    test_utilities::{TxBound, tx_prove},
+};
 use midnight_onchain_state::state::IrBuf;
 use midnight_storage::arena::Sp;
 use midnight_transient_crypto::proofs::{Proof, Zkir};
@@ -397,11 +400,58 @@ pub(super) fn prove_and_apply_offer(
     verifier: &VerifierKey,
     expected: &StateValue<DefaultDB>,
 ) -> Result<LedgerState<DefaultDB>, Box<dyn Error>> {
+    let address = prepared.prototype().address;
+    let entry = EntryPointBuf(name.as_bytes().to_vec());
+    let ledger = funded.ledger.clone();
+    let sealed = prove_funded_offer(root, (name, stem), prepared, funded, rng, verifier, |_| {
+        Ok(())
+    })?;
+    let time = funded.time;
+    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
+    let context = TransactionContext {
+        ref_state: ledger.clone(),
+        block_context: BlockContext {
+            tblock: time,
+            last_block_time: time,
+            ..BlockContext::default()
+        },
+        whitelist: None,
+    };
+    let (updated, outcome) = ledger.apply(&verified, &context);
+    if !matches!(outcome, TransactionResult::Success(_)) {
+        return Err(format!("{stem} strict apply failed: {outcome:?}").into());
+    }
+    let state = updated
+        .contract
+        .get(&address)
+        .ok_or("v3 offer contract missing after application")?;
+    let original = ledger
+        .contract
+        .get(&address)
+        .and_then(|state| state.operations.get(&entry));
+    if state.data.get_ref() != expected || state.operations.get(&entry) != original {
+        return Err("v3 offer changed the expected state or installed operation".into());
+    }
+    check_offer_replay(root, stem, &updated, &verified, context)?;
+    Ok(updated)
+}
+
+pub(super) fn prove_funded_offer(
+    root: &Path,
+    (name, stem): (&'static str, &str),
+    prepared: impl ProofBoundCall,
+    funded: &mut midnight_ledger::test_utilities::TestState<DefaultDB>,
+    rng: &mut StdRng,
+    verifier: &VerifierKey,
+    check_preproof: impl FnOnce(
+        &Transaction<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB>,
+    ) -> Result<(), Box<dyn Error>>,
+) -> Result<TxBound<Signature, DefaultDB>, Box<dyn Error>> {
     let prototype = prepared.prototype();
     let address = prototype.address;
     let entry = EntryPointBuf(name.as_bytes().to_vec());
-    let ledger = funded.ledger.clone();
-    let operation = ledger
+    let operation = funded
+        .ledger
         .contract
         .get(&address)
         .and_then(|state| state.operations.get(&entry))
@@ -414,6 +464,7 @@ pub(super) fn prove_and_apply_offer(
 
     let time = funded.time;
     let tx = prepared.into_test_transaction(rng, Timestamp::from_secs(time.to_secs() + 3600));
+    check_preproof(&tx)?;
     let resolver = qualified_coin_funding::fee_resolver(root, name)?;
     let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -453,29 +504,18 @@ pub(super) fn prove_and_apply_offer(
         &transaction_proof.0,
     )?;
 
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: time,
-            last_block_time: time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, outcome) = ledger.apply(&verified, &context);
-    if !matches!(outcome, TransactionResult::Success(_)) {
-        return Err(format!("{stem} strict apply failed: {outcome:?}").into());
-    }
-    let state = updated
-        .contract
-        .get(&address)
-        .ok_or("v3 offer contract missing after application")?;
-    if state.data.get_ref() != expected || state.operations.get(&entry) != Some(operation) {
-        return Err("v3 offer changed the expected state or installed operation".into());
-    }
+    Ok(sealed)
+}
+
+pub(super) fn check_offer_replay(
+    root: &Path,
+    stem: &str,
+    updated: &LedgerState<DefaultDB>,
+    verified: &VerifiedTransaction<DefaultDB>,
+    context: TransactionContext<DefaultDB>,
+) -> Result<(), Box<dyn Error>> {
     let (replayed, replay_result) = updated.apply(
-        &verified,
+        verified,
         &TransactionContext {
             ref_state: updated.clone(),
             ..context
@@ -488,13 +528,13 @@ pub(super) fn prove_and_apply_offer(
                 midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
             )
         )
-    ) || replayed != updated
+    ) || &replayed != updated
     {
         return Err(format!("{stem} replay differs or mutated ledger: {replay_result:?}").into());
     }
     let mut after = Vec::new();
     let mut replay = Vec::new();
-    tagged_serialize(&updated, &mut after)?;
+    tagged_serialize(updated, &mut after)?;
     tagged_serialize(&replayed, &mut replay)?;
     if replay != after {
         return Err("v3 offer replay changed serialized ledger bytes".into());
@@ -502,7 +542,7 @@ pub(super) fn prove_and_apply_offer(
     write_new(root.join(format!("{stem}-ledger-after.bin")), &after)?;
     write_new(root.join(format!("{stem}-ledger-replay.bin")), &replay)?;
     println!("{stem}: funded default-strict apply; replay refused without mutation");
-    Ok(updated)
+    Ok(())
 }
 
 pub(super) fn apply_funded_deployment(

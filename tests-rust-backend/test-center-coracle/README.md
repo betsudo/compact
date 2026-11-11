@@ -19,3 +19,13 @@ prior states, verify fresh standalone proofs separately, fund deployment
 and a distinct strict call, and check exact unchanged replay refusal.
 Each applied state also refuses the repeated same-color move. The prior
 state represents game setup for the fixture.
+
+The `start`, `concede` and `withdraw` proof adapters use selected Ledger 9 v3
+artifacts bound to the same complete original source. Each color has a funded
+deployment, a separately verified standalone call proof and a distinct strict
+transaction proof. The seeded cases install the explicit prior game and coin
+state after deployment. Blue start and both withdrawal cases check that a
+changed phase rolls back the selected offer while guaranteed Dust and replay
+processing persist. Withdrawal also checks refusal of misplaced proved coins.
+Each successful case checks exact transaction replay refusal with unchanged
+ledger bytes.
