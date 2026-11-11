@@ -379,4 +379,7 @@ The ten Direct Fold sources regenerate exact bound IR, origins,
 capabilities, and checked programs with Ledger 9. Their released v3
 models use k6, k7, and k8. The proof migration verifies those parameters
 before fresh key generation and retains all eleven executions.
-The full Direct Fold proof gate is running separately.
+The 64-command Direct Fold proof gate passed at `9a3518c68`.
+It separately verified all eleven standalone proofs and rejected their
+corrupted forms. Eleven distinct funded v3 transactions applied with
+default strictness and refused replay with byte-identical ledger state.
