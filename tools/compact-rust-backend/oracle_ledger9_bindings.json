@@ -171,13 +171,17 @@
     },
     "tests-rust-backend/map-fn-oracle/tests/map_fn_oracle.rs": {
       "historical_sha256": "12016bacc06bf537c0f51c6dd510e7c1c9bab9f0cb8d35b653d51bd24d1b0420",
-      "current_sha256": "fdcd9959b88357d8775f2e634b6360aff7f06e72ca6d46bb7744e45750f78bd4",
-      "capture_paths": []
+      "current_sha256": "74794698ebf89ef824d0b3c7e94d9571be3ba56703b6871c263db26e53dce5dd",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/map-fn-oracle.json"
+      ]
     },
     "tests-rust-backend/map-lambda-oracle/tests/map_lambda_oracle.rs": {
       "historical_sha256": "0f85aa0514e93308bf45a0fee93c88431e15fcdbc74c4fe1474147f5b781a19b",
-      "current_sha256": "544769f805172534382c899a99efc7c4ae68ea44214f6ac8030602f485b84106",
-      "capture_paths": []
+      "current_sha256": "6b31ac687f096e7b8a2494bd42e95d29229012250ff3cbd04889247ccffcee37",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/map-lambda-oracle.json"
+      ]
     },
     "tests-rust-backend/map-oracle/tests/map_oracle.rs": {
       "historical_sha256": "10110780c75018c51ca7806e1db9f9138a6cfa6b7ed6fc5730f5875fb0a410a4",
@@ -216,8 +220,10 @@
     },
     "tests-rust-backend/pure-circuit-oracle/tests/pure_circuit_oracle.rs": {
       "historical_sha256": "6bd4c63f35588ed4b336431cfb77d91381d19f24b862e1fb076746d5b69e27af",
-      "current_sha256": "a52f16a87e68d04df7bd807662b6b56dca9a099bd2c9f73e59b09eee87c3ebea",
-      "capture_paths": []
+      "current_sha256": "17d405ea6570d4af64213e5a3d3bc8adcd640a15445bfd145b18a40861dd620e",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/pure-circuit-oracle.json"
+      ]
     },
     "tests-rust-backend/schnorr-attest-oracle/tests/schnorr_attest_oracle.rs": {
       "historical_sha256": "ee8f0a03371d40a0e0f99d3e3ab4f12d8d2d20c1a10f1e9b866746fe46d51ee9",
@@ -476,6 +482,16 @@
       "historical_sha256": "28ab95cb80ad99f77e8d875cbf925e06afbee07f58ac5bf038e029995bc58990",
       "current_sha256": "7406510a67c8451be844428ea7480572773bed1acc7412c5d02307171283b522"
     },
+    "runtime-rs/tests/fixtures/map-fn-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-map-fn-oracle.json",
+      "historical_sha256": "736cd3135624b8227c507a19a54be0c1231cd668341982a82c3cc1f28a8ed65f",
+      "current_sha256": "a12036e1b7342ab1f661ad75d6ce92f094883fd5100216c81ea1d51a4cc05c9b"
+    },
+    "runtime-rs/tests/fixtures/map-lambda-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-map-lambda-oracle.json",
+      "historical_sha256": "5087ed31320654d4238da0c4713a95a1213e1d6fc945b5c81aa2276dba9c9ab1",
+      "current_sha256": "1781c52a626913f484a8884cfa65ff8596b0472b1aa11f715c85b70df1553664"
+    },
     "runtime-rs/tests/fixtures/map-oracle.json": {
       "historical_sha256": "6bbe73836c8260532f43cc470f679bd8796f21ed3784ee0765fb2acfb4e8b9bc",
       "current": "runtime-rs/tests/fixtures/ledger9-map-oracle.json",
@@ -510,6 +526,11 @@
       "historical_sha256": "7e61b764c3e79654ae46b2ab806f053776f14eceb811b9412580e0417b6b39c4",
       "current": "runtime-rs/tests/fixtures/ledger9-oracle-recorded-traces.json",
       "current_sha256": "04e838263d6f6938843a332704e7e62f30c0aff69a5db2cf769bca5ca423682e"
+    },
+    "runtime-rs/tests/fixtures/pure-circuit-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-pure-circuit-oracle.json",
+      "historical_sha256": "a44d2da6b3b9b556dd59249cbdb347ddced8384e81b796a961fde277de062fd1",
+      "current_sha256": "80fe8f7570aedc016067ad51508f41276b2e90b3d1987a61d60f9e5ad19ef5a0"
     },
     "runtime-rs/tests/fixtures/recorded-pure-assert.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-recorded-pure-assert.json",

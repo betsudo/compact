@@ -167,7 +167,7 @@ fn normalized_verify_ops<Output>(
 #[test]
 fn tiny_constructor_clear_set_and_get_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/tiny-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-tiny-oracle.json"
     ))
     .unwrap();
     let gas_oracle: serde_json::Value = serde_json::from_str(include_str!(
@@ -222,7 +222,7 @@ fn tiny_constructor_clear_set_and_get_match_typescript() {
 #[test]
 fn tiny_recorded_clear_and_set_match_native_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/tiny-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-tiny-oracle.json"
     ))
     .unwrap();
     let gas_oracle: serde_json::Value = serde_json::from_str(include_str!(

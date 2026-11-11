@@ -56,7 +56,7 @@ impl c::Witnesses<Vec<Value>> for Witness {
     }
 }
 fn captured() -> Value {
-    serde_json::from_str(include_str!("../oracle/cases.json")).unwrap()
+    serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap()
 }
 fn scenario(id: &str, expected_outputs: [u128; 4]) {
     let captured = captured();
@@ -133,8 +133,8 @@ fn identical_labels_do_not_cache_argument_results_or_helper_execution() {
 #[test]
 fn capture_is_bound_to_reviewed_source_and_capture_program() {
     let capture = captured();
-    assert_eq!(capture["compiler"], "0.31.133");
-    assert_eq!(capture["runtime"], "0.16.101");
+    assert_eq!(capture["compiler"], "0.31.210");
+    assert_eq!(capture["runtime"], "0.17.0");
     for (role, bytes) in [
         (
             "source",

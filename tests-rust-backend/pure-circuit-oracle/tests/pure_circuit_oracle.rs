@@ -39,7 +39,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_pure_circuit_oracle_matches_typescript_results_and_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/pure-circuit-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-pure-circuit-oracle.json"
     ))
     .unwrap();
     for (index, (a, b)) in [(false, false), (false, true), (true, false), (true, true)]
