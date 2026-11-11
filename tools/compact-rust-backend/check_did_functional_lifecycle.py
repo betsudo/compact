@@ -128,7 +128,7 @@ def run(args):
             common.run(list(map(str, argv)), name, output, receipt, env=env, stdout_path=stdout)
 
         generated = output / "generated"
-        execute([compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        execute([compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                  "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate-did")
         receipt["generated"] = generated_manifest_snapshot(generated)
         for name, retained in [("compact-rust-ir.json", "original-ir.json"),
@@ -165,8 +165,10 @@ def run(args):
                  generated / "contract/index.js", runtime, version], "live-typescript", capture)
         observations = json.loads(capture.read_text())
         did_rows = [row for row in observations["cases"] if row["source"] == "did"]
-        expected = json.loads((FIXTURE / "data/unit-composition.json").read_text())
-        require(expected["runtime_version"] == version and len(did_rows) == 12 and
+        expected = json.loads((FIXTURE / "data/ledger9-unit-composition.json").read_text())
+        require(expected["schema"] == "compact-did-functional-lifecycle-oracle/v2" and
+                expected["source_manifest"] == json.loads((SOURCE_ROOT / "source-manifest.json").read_text()) and
+                expected["runtime_version"] == version and len(did_rows) == 12 and
                 did_rows == expected["cases"], "complete live DID observations differ")
         receipt["typescript"] = {"capture_sha256": common.sha256(capture),
                                   "did_rows": 12, "all_rows": len(observations["cases"]),
