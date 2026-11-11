@@ -573,10 +573,16 @@
 
       (define (assemble test-val alignment* var-name* src path env vm-code instr*)
         (parameterize ([zkir-instr* instr*])
-          (let* ([code (expand-vm-code src path #f env (vm-code-code vm-code))]
-                 [op** (map (lambda (c) (assemble1 c test-val alignment* var-name*)) code)])
-            (with-output-language (Lzkir Instruction)
-              (cons `(impact ,test-val ,(apply append op**) ...) (zkir-instr*))))))
+          (for-each
+            (lambda (instruction)
+              (let ([operands (assemble1 instruction test-val alignment* var-name*)])
+                ;; The Ledger 9 prover consumes one skip entry per transcript
+                ;; operation. Suppressed operations have no transcript entry.
+                (unless (null? operands)
+                  (with-output-language (Lzkir Instruction)
+                    (zkir-instr* (cons `(impact ,test-val ,operands ...) (zkir-instr*)))))))
+            (expand-vm-code src path #f env (vm-code-code vm-code)))
+          (zkir-instr*)))
 
       ;; ==== Per-circuit state ====
       (define default-src)

@@ -20,7 +20,7 @@ The Set and Map transition sources retain the export sets of the existing Rust f
 
 The migration branch is an integration worktree. The workspace still has generated fixtures with direct Ledger 8 dependency pins. The Rust compiler compatibility record now selects Ledger 9. The Nix frontend/TypeScript distribution still needs its own migration. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for this runtime slice.
 
-Next, qualify one current Rust AST-generated Counter with the paired Ledger 9 compiler and runtime. Bind the exact ZKIR v3 artifact, prover and installed verifier, then independently verify a fresh proof. Separately prove and apply a funded transaction under default strict validation and check replay leaves the complete ledger unchanged. Port the remaining fixture and proof consumers and pass the required Linux, package and end-to-end gates before switching the default.
+Port the remaining fixture and proof consumers and pass the required Linux, package and end-to-end gates before switching the distribution default.
 
 The current Scheme frontend can emit Rust IR and ZKIR v3 in the same invocation with `--feature-zkir-v3`. The official Compact 0.36.0 reference emits a newer ZKIR format and has no Rust IR entry point. Check the exact current frontend artifacts against the selected official ZKIR tool before generating keys. Preserve the compiler's source/runtime pairing checks and give the Ledger 9 pair a distinct ABI identity when qualifying generated Rust.
 
@@ -34,4 +34,12 @@ The ordinary Rust target selects ZKIR v3 and emits ABI 54 against the exact Ledg
 
 The standard `compactc --target rust --rust-require-recording --rust-runtime-root … --skip-zk` invocation generated an unedited Counter crate and its ZKIR. The generated crate compiled with the transaction feature. Native execution, the typed observed call, recorded replay, and the independently captured Ledger 9 TypeScript oracle agreed on the selected transition and full state bytes. Native and recorded gas matched. The official ZKIR model tool accepted both retained artifacts at k=6. CLI preflight refused a Ledger 8 source root and preserved existing output. Local Rust 1.99 arm64 validation included 30 CLI tests, 21 compatibility tests, and 281 runtime tests.
 
-A separately built proof consumer will use the exact generated `increment.zkir` and released ZKIR 3.2.0 API. The funded step also needs the matching official Ledger 9 Dust material. Proof, application, and the full workspace remain separate gates.
+## Funded Counter qualification
+
+The first standalone proof passed, but the Ledger 9 transaction prover exhausted its skip entries before producing a contract proof. The previous ZKIR v3 emitter grouped multiple expanded ledger operations into one impact. Ledger 9 consumes a skip entry for each transcript operation. The updated emitter keeps those operation boundaries and omits suppressed operations. Counter's three impact instructions match the released Compact 0.36.0 output. The generated artifacts retain this branch's ZKIR 3.0 JSON format.
+
+The rebuilt Scheme frontend generated an unedited Rust Counter crate and its exact ZKIR. The regenerated crate still passed native, recorded and observed execution parity with the independent TypeScript oracle. Released ZKIR 3.2.0 generated fresh k=6 keys and a standalone proof for `increment`. A separate process verified the proof, refused a different circuit's verifier, changed binding and commitment fields, and corrupted proof bytes, then verified the original again.
+
+A separate local transaction used the same exact IR and installed verifier with a fresh transaction-bound v3 proof. It proved one Dust spend using the released Ledger 9 `dust/10/spend` material, passed default strict validation, and applied the expected generated Rust state transition. The installed operation stayed intact. Replaying the verified transaction returned `IntentAlreadyExists` with byte-identical whole-ledger state. This qualification used Rust 1.99 on macOS arm64, with locally funded test state.
+
+Next, migrate the maintained proof gate and TypeScript/Nix package pairing, then regenerate the affected workspace consumers. Keep historical v2 proof/source bindings and Ledger 8 fixtures available on their original line. A Ledger 9 check must bind its own generated Rust, ZKIR v3, keys and released package graph.
