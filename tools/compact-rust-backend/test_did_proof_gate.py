@@ -34,6 +34,7 @@ def summary(scenario):
     spec = gate.SCENARIOS[scenario]
     return {"format": "compact-did-proof-result/v2", "scenario": scenario,
             "selector": spec["selector"], "installed_operations": spec["installed_operations"],
+            "v3_operations": [name for name in spec["installed_operations"] if name in spec["operations"]],
             "strictness": "default", "deployment_applied": True,
             "constructor_execution_proved": False, "final_state_file": f"did-{scenario}-final-state.bin",
             "calls": [{"case": case, "operation": operation, "proof_bytes": 123,

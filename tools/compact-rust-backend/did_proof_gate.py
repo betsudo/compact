@@ -217,6 +217,8 @@ def validate_summary(summary, scenario):
     require(summary.get("format") == "compact-did-proof-result/v2", "missing DID success format")
     for key, value in {"scenario": scenario, "selector": spec["selector"],
                        "installed_operations": spec["installed_operations"],
+                       "v3_operations": [name for name in spec["installed_operations"]
+                                         if name in spec["operations"]],
                        "strictness": "default", "deployment_applied": True,
                        "constructor_execution_proved": False}.items():
         require(summary.get(key) == value, f"DID summary mismatch: {key}")

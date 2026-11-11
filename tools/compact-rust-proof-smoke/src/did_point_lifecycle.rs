@@ -277,11 +277,35 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
     if stored_id.bytes != r::FixedBytes::new([0; 32]) {
         return Err("original constructor id changed".into());
     }
+    let rows = capture_scenario["steps"]
+        .as_array()
+        .ok_or("missing DID steps")?;
+    let selected = calls
+        .iter()
+        .map(|&id| {
+            rows.iter()
+                .find(|row| row["id"] == id)
+                .map(|row| (id, row))
+                .ok_or("missing DID proof case")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let operation_names = operations;
+    let v3_operations = operation_names
+        .iter()
+        .copied()
+        .filter(|&name| selected.iter().any(|(_, row)| row["name"] == name))
+        .collect::<Vec<_>>();
     let mut operations = HashMap::new();
     for name in operation_names {
-        let (_, _, operation) = v3::load_operation(root, name)?;
-        operations = operations.insert(EntryPointBuf(name.as_bytes().to_vec()), operation);
+        let (_, verifier, operation) = v3::load_operation(root, name)?;
+        // Ledger 9 charges for deployment bytes. Keep the existing verifier
+        // registry, adding binary IR only to entry points this scenario proves.
+        let installed = if v3_operations.contains(name) {
+            operation
+        } else {
+            ContractOperation::new(Some(verifier), None)
+        };
+        operations = operations.insert(EntryPointBuf(name.as_bytes().to_vec()), installed);
     }
     let deploy = ContractDeploy::new(
         &mut rng,
@@ -326,13 +350,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         "DID original constructor data: actual default-strict Dust-funded deployment applied; stored zero id retained, distinct deployed address"
     );
     let mut checked_calls = Vec::new();
-    for (number, &id) in calls.iter().enumerate() {
-        let row = capture_scenario["steps"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|r| r["id"] == id)
-            .unwrap();
+    for (number, (id, row)) in selected.into_iter().enumerate() {
         let name = if matches!(lifecycle, Lifecycle::Relations | Lifecycle::RelationSchnorr) {
             match row["name"].as_str().unwrap() {
                 "setVerificationMethod" => "setVerificationMethod",
@@ -375,6 +393,9 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
                 _ => "setAlsoKnownAs",
             }
         };
+        if !v3_operations.contains(&name) {
+            return Err("DID selected call lacks installed v3 IR".into());
+        }
         let prior = state
             .ledger
             .contract
@@ -968,6 +989,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         serde_json::to_vec_pretty(&json!({
             "format": "compact-did-proof-result/v2", "scenario": scenario,
             "selector": selector, "installed_operations": operation_names,
+            "v3_operations": v3_operations,
             "strictness": "default", "deployment_applied": true,
             "constructor_execution_proved": false, "calls": checked_calls,
             "final_state_file": final_state_file,

@@ -117,12 +117,13 @@ class RelationGateTests(unittest.TestCase):
 
     def original(self, scenario):
         selector, cases, operations = gate.SCENARIOS[scenario]
+        installed = (["setVerificationMethod", "removeVerificationMethod", gate.RELATION]
+                     if scenario == "relations" else ["setSchnorrJubjubVerificationMethod",
+                         "verifySchnorrJubjubDigestSignature", gate.RELATION])
         return {'format': 'compact-did-proof-result/v2', 'scenario': scenario,
                 'selector': selector, 'strictness': 'default', 'deployment_applied': True,
-                'installed_operations': (["setVerificationMethod", "removeVerificationMethod",
-                                          gate.RELATION] if scenario == "relations" else
-                                         ["setSchnorrJubjubVerificationMethod",
-                                          "verifySchnorrJubjubDigestSignature", gate.RELATION]),
+                'installed_operations': installed,
+                'v3_operations': [name for name in installed if name in operations],
                 'constructor_execution_proved': False,
                 'final_state_file': f'did-{scenario}-final-state.bin',
                 'calls': [{'case': case, 'operation': operation, 'proof_bytes': 1,

@@ -82,6 +82,7 @@ def validate_original(summary, scenario):
             and summary.get("scenario") == scenario and summary.get("selector") == selector,
             "wrong original DID relation scenario")
     require(summary.get("installed_operations") == installed
+            and summary.get("v3_operations") == [name for name in installed if name in operations]
             and summary.get("strictness") == "default" and summary.get("deployment_applied") is True
             and summary.get("constructor_execution_proved") is False,
             "original relation strictness/deployment boundary changed")
