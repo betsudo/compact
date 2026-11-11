@@ -100,7 +100,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                     pins[path] = old_pins[path]
                     continue
                 if path == 'tests-rust-backend/opaque-observed-boundary-source/tests/nested.rs':
-                    self.assertEqual(pin, 'f4d057c24402594ca22f0bea7f727c4bf15456a9a1df5042f1e5cd9ae64e6005')
+                    self.assertEqual(pin, '592298e93e1b572d4ac49b45d73472f6cb64e4e604d7d18b394aca2f7108ba17')
                     pins[path] = old_pins[path]
                     continue
                 self.assertEqual(manifest.name, 'Cargo.toml')

@@ -210,7 +210,7 @@
     },
     {
       "path": "tests-rust-backend/did-adoption/tests/digest_qualification/scenarios.rs",
-      "sha256": "431a8c16fcb4fcd28d0e6b2bbb15dbeff0e16b7eeafeea0a90dfdf949c030b2e"
+      "sha256": "cb1458b964abc86fe9f2902cf9d618eac5aca1f5c833fdc8011cebe6f5bde81e"
     },
     {
       "path": "tests-rust-backend/did-adoption/tests/digest_recording.rs",
@@ -238,7 +238,7 @@
     },
     {
       "path": "tests-rust-backend/did-adoption/tests/relation_recording.rs",
-      "sha256": "2af8981cd07f409ec9ae7b9cc5a935855c9ef11867c892e7ec17bebb625084bb"
+      "sha256": "ba00ef94f0829fbcd6041866776f42972f16d5c4d479d00088846e538a9cb9aa"
     },
     {
       "path": "tests-rust-backend/did-adoption/tests/schnorr_method_recording.rs",
