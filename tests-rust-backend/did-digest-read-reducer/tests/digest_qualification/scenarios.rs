@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
 fn rows() -> Vec<Value> {
-    let capture: Value = serde_json::from_str(include_str!("../../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../../oracle/ledger9-cases.json")).unwrap();
     capture["cases"].as_array().unwrap().clone()
 }
 fn check(row: &Value, fail: bool) {

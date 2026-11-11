@@ -13,14 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[path = "../../support/reviewed_capture.rs"]
-mod reviewed_capture;
+#[path = "../../support/ledger9_reducer_capture.rs"]
+mod ledger9_reducer_capture;
 
 use serde_json::Value;
 use std::collections::BTreeSet;
 #[test]
 fn reviewed_source_capture_and_assertions_have_exact_identities() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9-cases.json")).unwrap();
     assert_eq!(
         capture["format"],
         "compact-did-primitive-reducer-capture/v1"
@@ -59,5 +60,5 @@ fn reviewed_source_capture_and_assertions_have_exact_identities() {
             "runtime/src/compact-types.ts"
         ])
     );
-    reviewed_capture::verify(env!("CARGO_MANIFEST_DIR"), "cases.json");
+    ledger9_reducer_capture::verify(env!("CARGO_MANIFEST_DIR"), &capture);
 }

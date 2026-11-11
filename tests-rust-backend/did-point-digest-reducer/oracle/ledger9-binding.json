@@ -1,0 +1,10 @@
+{
+  "format": "compact-ledger9-reducer-capture-binding/v1",
+  "ledger8_capture_sha256": "6c7544460cc303ae45c4258ce5e0645ff0f4551253195c9b712c4a469dd70d27",
+  "ledger8_binding_sha256": "f8906ffef49d2af680092d2e45f4d298a8a07e5d1992f5c5a1e530dd3890c4cc",
+  "ledger9_capture_sha256": "e332241cb70a3d51bc17bedd6bea9ee5f0e649aa75ff79ec4783f20470028ccd",
+  "compact_runtime": "0.17.0",
+  "onchain_runtime": "4.0.1",
+  "runtime_builtins_sha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+  "generated_javascript_sha256": "e7d366f08b9921394e091733d17c94486a073ef293277d6b791a78175fef9b77"
+}
