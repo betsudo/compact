@@ -20,7 +20,7 @@ use midnight_ledger_v9::{
 };
 use serde_json::{Value, json};
 
-fn sorted_claims(mut effects: Value) -> Value {
+pub fn normalized_effects(mut effects: Value) -> Value {
     for key in [
         "claimedNullifiers",
         "claimedShieldedReceives",
@@ -30,6 +30,17 @@ fn sorted_claims(mut effects: Value) -> Value {
             .as_array_mut()
             .expect("shielded claim set")
             .sort_by(|a, b| a.as_str().cmp(&b.as_str()));
+    }
+    // WASM exposes bigint mint amounts as decimal strings. Rust serde
+    // exposes the same exact u64 amounts as JSON numbers.
+    for amount in effects["shieldedMints"]
+        .as_object_mut()
+        .expect("shielded mint map")
+        .values_mut()
+    {
+        if let Some(number) = amount.as_u64() {
+            *amount = json!(number.to_string());
+        }
     }
     effects
 }
@@ -82,8 +93,8 @@ pub fn assert_partition<P, O>(recorded: &RecordedCircuitResult<P, O>, row: &Valu
             );
         }
         assert_eq!(
-            sorted_claims(json!(actual.effects)),
-            sorted_claims(expected["effects"].clone()),
+            normalized_effects(json!(actual.effects)),
+            normalized_effects(expected["effects"].clone()),
             "{}: partition effects",
             row["name"]
         );

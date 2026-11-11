@@ -17,6 +17,7 @@ mod ledger9_partition;
 use compact_rust_test_center_micro_dao_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
 };
+use ledger9_partition::normalized_effects;
 use midnight_compact_runtime as runtime;
 use runtime::context::{CircuitContext, ConstructorContext};
 use runtime::{BoundedUint, FixedBytes};
@@ -84,29 +85,6 @@ fn coin(row: &Value) -> types::ShieldedCoinInfo {
         ))
         .unwrap(),
     }
-}
-fn normalized_effects(mut value: Value) -> Value {
-    // These upstream fields are sets. Sort without deduplicating so an extra
-    // entry cannot disappear; source/query/private transcript order is exact.
-    for field in [
-        "claimedNullifiers",
-        "claimedShieldedReceives",
-        "claimedShieldedSpends",
-    ] {
-        value[field]
-            .as_array_mut()
-            .unwrap()
-            .sort_by_key(Value::to_string);
-    }
-    // TS serializes bigint map values as decimal strings; Rust serde emits
-    // the same integer as a JSON number. Keep every token-color key and exact
-    // amount while comparing the shared semantic value.
-    for amount in value["shieldedMints"].as_object_mut().unwrap().values_mut() {
-        if let Some(number) = amount.as_u64() {
-            *amount = json!(number.to_string());
-        }
-    }
-    value
 }
 #[test]
 fn original_buy_in_native_and_recorded_match_independent_typescript() {
