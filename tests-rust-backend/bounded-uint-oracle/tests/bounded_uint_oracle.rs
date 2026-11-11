@@ -42,7 +42,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_bounded_uint_oracle_matches_typescript_state_and_range() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/bounded-uint-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-bounded-uint-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -76,7 +76,7 @@ fn exact_bounded_uint_oracle_matches_typescript_state_and_range() {
 #[test]
 fn recorded_bounded_uint_cell_write_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/bounded-uint-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-bounded-uint-oracle.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(()))

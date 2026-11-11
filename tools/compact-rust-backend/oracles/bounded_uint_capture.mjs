@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Capture exact codegen-rust bounded_uint_fixture with ledger-8 TypeScript.
+// Capture exact codegen-rust bounded_uint_fixture with the compiled contract's paired TypeScript runtime.
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
