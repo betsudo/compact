@@ -321,3 +321,18 @@ exclusive build directory.
 
 The broader workspace behavior, remaining proof consumers and required
 Linux integration lanes remain open.
+
+Ten DID reducer fixtures now bind separate Ledger 9 TypeScript captures.
+The exact compiler regenerated all ten Rust libraries byte-for-byte.
+The 59 cases retained their reviewed order, inputs, outcomes, transcripts
+and gas. State bytes and capture provenance were refreshed using Compact
+Runtime 0.17.0 and Onchain Runtime 4.0.1. The original Ledger 8 captures
+and review manifests retain their exact hashes. The 26 locked Rust
+integration tests passed, including the ten provenance tests.
+
+The maintained Constructor Vector model observer passed all 42 v3 models
+and its membership refusal controls. The first exact conditional proof
+probe refused a prepared operation that had lost its installed v3 IR.
+The proof consumer now uses the observed-call path in both typed routes
+and keeps the malformed replay refusal. Full Constructor Vector proof
+qualification requires a fresh run of the corrected gate.
