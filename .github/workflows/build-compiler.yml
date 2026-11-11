@@ -1992,10 +1992,7 @@ jobs:
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
           # Built-in proof material contributes k13 through k15. The named
           # Ledger 9 circuits also use k9, k10, k16 and k17.
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
-            --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 \
-            --parameter-k 9 --parameter-k 10 --parameter-k 16 --parameter-k 17 \
-            > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 --parameter-k 9 --parameter-k 10 --parameter-k 16 --parameter-k 17 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Run assigned named native scenarios with proofs
@@ -2132,10 +2129,7 @@ jobs:
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
           # Use the explicit SRS roster from local Ledger 9 core and wallet qualification.
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
-            --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 \
-            --parameter-k 9 --parameter-k 10 --parameter-k 11 \
-            > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 --parameter-k 9 --parameter-k 10 --parameter-k 11 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Check and test native Rust backend

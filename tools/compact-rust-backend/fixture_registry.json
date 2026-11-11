@@ -2139,7 +2139,7 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/field-observation-oracle/Cargo.toml": "21bb28dde192978bfb13da7aeeb8abe9c3ccb21c5379082700c52e816665e942",
-        "tests-rust-backend/field-observation-oracle/lib.rs": "917a8186ea1c7d3b5fc31c084c4010f64e5bb40bb8e5bc7718a1660815881543",
+        "tests-rust-backend/field-observation-oracle/lib.rs": "328f4facdc1669b29d91d51aeff64d8d7def93fe6fa2bc67b22e3622adfb26ce",
         "tests-rust-backend/field-observation-oracle/build.rs": "57f611e6a1c6f084d4549c22dd44ff34553aa793eed99c87626defc1c7777a0d"
       }
     },
@@ -2401,7 +2401,7 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/kernel-shielded-effects-oracle/Cargo.toml": "04d94f5b44180432bc7c53105db515c720e2a18a237b12edc583f898e9cc9a2c",
-        "tests-rust-backend/kernel-shielded-effects-oracle/lib.rs": "00b163fbd15a26c6288cdadb9c6424c38829cb452bb9cc950bb979dcec109054",
+        "tests-rust-backend/kernel-shielded-effects-oracle/lib.rs": "17d3ab2c3fca08c4a4409a76ddb35fb989663cc878422640decc47119bf3ad8a",
         "tests-rust-backend/kernel-shielded-effects-oracle/build.rs": "e6c9274b6d9b156773a3ac31c8a8e06ce7bc42d90356fc22ff687c2af05d7afb"
       }
     },
