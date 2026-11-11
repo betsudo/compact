@@ -455,6 +455,17 @@ pub(super) fn map_size_expression(
     crate::map_size_expression::run(Path::new(&root))
 }
 
+pub(super) fn map_size_expression_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --map-size-expression-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::map_size_expression::verify(Path::new(&root))
+}
+
 /// Direct proof path for the genuine #516 Field wrapper source.
 pub(super) fn field_return_wrappers(
     arguments: &mut impl Iterator<Item = OsString>,

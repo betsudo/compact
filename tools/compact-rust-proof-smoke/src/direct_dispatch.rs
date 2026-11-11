@@ -51,6 +51,9 @@ pub(super) fn try_run(
         }
         ("--tuple-return-wrappers", _) => Some(collections::tuple_return_wrappers(arguments)),
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
+        ("--map-size-expression-verify", _) => {
+            Some(collections::map_size_expression_verify(arguments))
+        }
         #[cfg(all(
             feature = "fold-vector-result-widening",
             compact_fold_vector_result_generated
@@ -737,6 +740,11 @@ mod tests {
                 "--map-size-expression",
                 1,
                 "usage: compact-rust-proof-smoke --map-size-expression <proof-output>",
+            ),
+            (
+                "--map-size-expression-verify",
+                1,
+                "usage: compact-rust-proof-smoke --map-size-expression-verify <proof-output>",
             ),
             (
                 "--wide-add",
