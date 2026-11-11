@@ -90,12 +90,12 @@ def main():
 
     try:
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-require-recording", "--rust-runtime-root", ROOT,
                          "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         conditional = output / "conditional-generated"
-        run("generate-conditional", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate-conditional", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
             "--rust-require-recording", "--rust-runtime-root", ROOT, "--skip-zk",
             FIXTURES / "conditional.compact", conditional])
         report["conditional_generated"] = generated_manifest_snapshot(conditional)

@@ -1271,7 +1271,8 @@ jobs:
       - name: Qualify wide-zero multiplication proofs
         id: wide_zero_proof
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-wide-zero-proof"
 
       - name: Qualify constant-valued Vector index proofs
         run: |

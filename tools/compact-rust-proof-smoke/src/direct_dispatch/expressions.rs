@@ -539,6 +539,17 @@ pub(super) fn wide_zero(
     }
 }
 
+pub(super) fn wide_zero_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --wide-zero-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::wide_zero::verify(Path::new(&root))
+}
+
 pub(super) fn opaque_cell_input(
     arguments: &mut impl Iterator<Item = OsString>,
 ) -> Result<(), Box<dyn Error>> {

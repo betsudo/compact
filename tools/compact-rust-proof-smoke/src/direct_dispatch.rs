@@ -569,6 +569,7 @@ pub(super) fn try_run(
         ("--public-products", _) => Some(expressions::public_products(arguments)),
         ("--wide-add", _) => Some(expressions::wide_add(arguments)),
         ("--wide-zero", _) => Some(expressions::wide_zero(arguments)),
+        ("--wide-zero-verify", _) => Some(expressions::wide_zero_verify(arguments)),
         ("--wide-casts", _) => Some(expressions::wide_casts(arguments)),
         ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments)),
         ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments)),

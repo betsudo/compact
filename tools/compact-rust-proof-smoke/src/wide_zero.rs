@@ -14,12 +14,14 @@
 // limitations under the License.
 
 //! Exact-source wide-zero multiplication, selected proofs and strict application.
+use super::local_v3_application::{self as v3, write_new};
 use super::*;
 use compact_rust_wide_zero_multiplication_source_fixture::{
     ledger_contract as c, ledger_slots as slots,
 };
 use midnight_compact_runtime::{self as r, recording::RecordingFrame};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 
 const IR: &str =
     include_str!("../../../tests-rust-backend/wide-zero-multiplication-source/original-ir.json");
@@ -67,6 +69,9 @@ fn validate_source(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("wide-zero requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
     // Independent Rust admission of the entire source and all programs BEFORE
     // touching state, verifier keys, funding or any proof operation.
     validate_source(root)?;
@@ -83,7 +88,15 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         let x = Wide::from_le_bytes(&bytes)?;
         let mut rng = StdRng::seed_from_u64(0x0700_0000 + index as u64);
         let initial = c::initial_state(ConstructorContext::new(42_u64))?;
-        let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
+        let (ir, verifier, operation) = v3::operation(root, name, 7)?;
+        assert_eq!(ir.model().rows(), 102);
+        let entry = EntryPointBuf(name.as_bytes().to_vec());
+        let contract = ContractState::new(
+            initial.ledger_state.get_ref().clone(),
+            HashMap::new().insert(entry, operation),
+            ContractMaintenanceAuthority::default(),
+        );
+        let deploy = ContractDeploy::new(&mut rng, contract);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -153,22 +166,35 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             return Err("Counter differs".into());
         }
         let expected = native.context.query.state.get_ref().clone();
-        let prepared = check_generated_trace(root, name, functional, x)?;
+        let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+        let prepared = r::transaction::RecordedCall::new(&observed, functional, name, x)
+            .prepare(verifier.clone(), randomness)?;
+        let ordinary = r::transaction::RecordedCall::new(&observed, recorded, name, x)
+            .prepare(verifier.clone(), randomness)?;
+        if format!("{prepared:?}") != format!("{ordinary:?}") {
+            return Err("wide-zero functional and ordinary preparation differ".into());
+        }
         if prepared.input != AlignedValue::from(x)
             || prepared.output != AlignedValue::from(r::BoundedUint::<255>::new(0)?)
         {
             return Err("wide-zero exact public input/result atoms or alignment differs".into());
         }
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
-        let proof_bytes = prove(root, name, index, &prepared, &verifier, x)?;
-        apply(root, name, index, prepared, deploy, &expected, rng)?;
-        rows.push(serde_json::json!({"name":name,"proof_bytes":proof_bytes,"result":0,"changed_binding_rejected":true,
+        let proof = prove(root, name, index, &prepared, &verifier, &ir, x)?;
+        let transaction_proof_bytes = v3::apply(
+            root,
+            name,
+            &format!("wide-zero-{index}"),
+            prepared,
+            deploy,
+            &expected,
+            &proof,
+        )?;
+        rows.push(serde_json::json!({"name":name,"proof_bytes":proof.0.len(),"transaction_proof_bytes":transaction_proof_bytes,
+            "transaction_proof_version":3,"transaction_proof_distinct":true,"positive_fee_dust_spends":1,"result":0,"changed_binding_rejected":true,
             "changed_input_same_geometry":true,"changed_result_same_geometry":true,"changed_input_rejected":true,"changed_result_rejected":true,
             "changed_proof_bytes_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-wide-zero-proof/v1","status":"passed","calls":rows,
+    let result = serde_json::json!({"format":"compact-wide-zero-proof/v2","status":"passed","calls":rows,
         "constructor_execution_proved":false,"scope":"two fresh functional-derived ordinary call proofs and strict-funded applications; no pure/failing/witnessed call proof claim"});
     write_new(
         root.join("wide-zero-proof-result.json"),
@@ -177,13 +203,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     println!("{result}");
     Ok(())
 }
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
+pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
+    validate_source(root)?;
+    for (index, name) in ["multiplyRight", "multiplyLeft"].into_iter().enumerate() {
+        let (_, verifier, _) = v3::operation(root, name, 7)?;
+        v3::verify_standalone(root, &format!("wide-zero-{index}"), &verifier)?;
+        println!("{name}: standalone v3 proof verified and corruption refused");
+    }
+    Ok(())
 }
 
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
@@ -199,24 +226,22 @@ fn prove(
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
+    ir: &IrSourceV3,
     original_input: Wide,
-) -> Result<usize, Box<dyn Error>> {
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected wide-zero proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{name}.bzkir")),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.prover")),
     )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -305,92 +330,19 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed wide-zero proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("wide-zero IR accepted changed result".into());
     }
     write_new(root.join(format!("wide-zero-{index}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
     write_new(root.join(format!("wide-zero-{index}.preimage")), &bytes)?;
+    let mut bytes = Vec::new();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("wide-zero-{index}.inputs")), &bytes)?;
     println!(
         "wide-zero {index}: {}-byte proof verified; changed binding/result refused",
         proof.0.len()
     );
-    Ok(proof.0.len())
-}
-
-fn apply(
-    root: &Path,
-    name: &'static str,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<(), Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0674_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0674_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("wide-zero strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("wide-zero contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("wide-zero applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(
-            format!("wide-zero replay refused incorrectly or mutated ledger: {result:?}").into(),
-        );
-    }
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(root.join(format!("wide-zero-{index}-state.bin")), &bytes)?;
-    println!("wide-zero {index}: funded default-strict apply; replay refused without mutation");
-    Ok(())
+    Ok(proof)
 }
