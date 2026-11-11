@@ -179,7 +179,7 @@ fn check(out: CircuitResult<Private, ()>, row: &Value) {
 #[test]
 fn original_advance_native_recorded_and_replay_match_pinned_ts() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-advance.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-advance.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

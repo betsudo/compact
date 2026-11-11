@@ -123,7 +123,7 @@ fn check<T: PartialEq + std::fmt::Debug>(
 #[test]
 fn typed_recording_preserves_preclear_messages_instances_and_witnesses() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/bboard-recording-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-bboard-recording-oracle.json"
     ))
     .unwrap();
     let mut current = initial();

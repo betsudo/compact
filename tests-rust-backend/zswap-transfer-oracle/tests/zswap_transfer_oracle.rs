@@ -94,7 +94,7 @@ fn encoded_recipient(r: &CoinRecipient) -> Value {
 #[test]
 fn transfer_intents_queries_state_and_private_outputs_match_independent_typescript() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zswap-transfer-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zswap-transfer-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

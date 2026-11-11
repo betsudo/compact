@@ -220,7 +220,7 @@ fn zerocash_spend_matches_typescript_state_with_captured_merkle_path() {
 fn recorded_mint_preserves_composite_witnesses_program_gas_and_historic_state() {
     use compact_rust_zerocash_oracle_fixture::ledger_contract::recorded;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zerocash-mint.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zerocash-mint.json"
     ))
     .unwrap();
     let initial = || {

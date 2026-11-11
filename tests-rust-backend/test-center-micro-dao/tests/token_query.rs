@@ -77,7 +77,7 @@ fn check(out: CircuitResult<Vec<u8>, runtime::FixedBytes<32>>, row: &Value) {
 #[test]
 fn original_micro_dao_token_query_matches_ts_native_recorded_and_upstream() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-token-query.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-token-query.json"
     ))
     .unwrap();
     let mut tokens = std::collections::HashSet::new();

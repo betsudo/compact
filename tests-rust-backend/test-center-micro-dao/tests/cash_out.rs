@@ -192,7 +192,7 @@ fn check(out: CircuitResult<Private, types::ShieldedCoinInfo>, row: &Value) {
 #[test]
 fn original_cash_out_native_recorded_and_replay_match_twenty_one_pinned_ts_cases() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-cash-out.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-cash-out.json"
     ))
     .unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 21);

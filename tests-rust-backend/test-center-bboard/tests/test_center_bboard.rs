@@ -44,7 +44,7 @@ impl Witnesses<u64> for SecretWitness {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-bboard.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-bboard.json"
     ))
     .unwrap()
 }
