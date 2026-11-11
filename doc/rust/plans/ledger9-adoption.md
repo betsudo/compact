@@ -475,7 +475,14 @@ over-cap refusal before key generation. The API protocol passed all 91
 commands at `15bd923c2`. The proof gate stopped before key generation
 when the model command wrote its binary IR alongside the intact donor.
 The corrected gate authenticates that binary and binds the original raw
-IR in the refusal. Its local retry at `221d9a690` is in progress.
+IR in the refusal. The local retry at `221d9a690` passed all 91 API
+commands and 22 pre-key refusals. It generated fresh keys for all 16
+exports on macOS arm64. A separate invocation verified every standalone
+v3 proof and refused corruption. All 16 independently proved funded
+transactions applied with default strictness and refused exact replay
+with byte-identical ledger state. The artifact readback checked the
+standalone and transaction proof bytes, the per-call event records, and
+the unchanged raw donor.
 
 The workspace rustdoc rerun passed at `15bd923c2` with Rust 1.99,
 the locked Ledger 9 graph, and a fresh exclusive target directory.
@@ -486,9 +493,12 @@ TypeScript captures at `093467ed0`. Their 82 serialized contract-state
 fields use Ledger 9. The three wide-add diagnostic locations track the
 current source lines and preserve the error text and values. Historical
 captures retain their original bytes. All 14 focused Rust tests passed
-with all features on macOS arm64. The fresh behavioral workspace run
-at this head is in progress, with all 148 previous failure targets
-resolved against current Cargo metadata.
+with all features on macOS arm64. At this head, the behavioral
+workspace run completed 733 targets with 3,244 passes, 182 failures,
+and seven ignores. The 99 failing targets all appear in the earlier
+failure roster. All 182 failure messages show a v6/v8 contract-state
+encoding mismatch. Further assertions can run after those comparisons
+are repaired.
 
 Another 31 fixtures now bind fresh captures from their original
 TypeScript producers at `061640db6`. These captures refresh 177
@@ -496,10 +506,19 @@ serialized contract-state fields. Witness effect order also records
 the current compiler, Scheme, and runtime provenance. The canonical
 output capture preserves spend-set membership and the exact ordered
 query trace. Its Rust test keeps the established set comparison and
-all execution-order checks. The all-features native tests for these
-fixtures follow the behavioral workspace run.
+all execution-order checks. The all-features native run completed
+66 targets with 88 passes and one failure. The failed test also read a
+separate Ledger 8 capture for the untaken impure call argument.
+The original TypeScript producer supplied fresh state and current tool
+provenance for that case at `3af6ccba3`. Its full public program,
+ordered query trace, and other scenario values agree with the
+historical capture. All 12 package tests passed on the focused rerun.
 
-Fourteen additional scenario captures were generated. Eleven differ
-solely in serialized contract state. Coracle guess, Coracle withdraw,
-and Micro DAO vote commitment also differ in budget or effect data.
-These captures still need native parity qualification.
+Eleven additional scenario captures at `6e324f9f9` refresh 124
+serialized state fields. The native tests completed 13 targets with 18
+passes and two failures. Both failures compare against a separate
+historical Zerocash constructor, mint, and spend capture. Coracle guess,
+Coracle withdraw, and Micro DAO vote commitment require further review
+of budget or effect differences before adoption. The three DID relation
+reducers have an existing TypeScript producer for their next parity
+rerun. Workspace and integration qualification remain open.
