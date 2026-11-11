@@ -36,7 +36,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn native_public_key_matches_typescript_without_user_witness_or_proof() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/pm-19252-own-public-key.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-pm-19252-own-public-key.json"
     ))
     .unwrap();
     assert_eq!(oracle["proofRequired"], false);

@@ -90,7 +90,7 @@ fn assert_oracle_output(result: &CircuitResult<u64, bool>, oracle: &serde_json::
 #[test]
 fn witness_reads_current_typed_set() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-set-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-set-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -146,7 +146,7 @@ fn repeated_set_member_reads_charge_each_vm_query() {
 #[test]
 fn set_projection_matches_each_typescript_query_cost() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-set-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-set-ts-output.json"
     ))
     .unwrap();
     let queries = oracle["before"]["queryCosts"].as_array().unwrap();
@@ -232,7 +232,7 @@ mod recording_parity {
     #[test]
     fn recorded_and_observed_witness_reads_match_native_and_ts() {
         let oracle: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../runtime-rs/tests/fixtures/witness-ledger-set-ts-output.json"
+            "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-set-ts-output.json"
         ))
         .unwrap();
         for (populated, key) in [(false, "before"), (true, "after")] {
