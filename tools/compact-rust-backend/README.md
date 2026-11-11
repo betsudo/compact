@@ -629,24 +629,13 @@ points to that one runtime source package, allowing the contracts to share a
 Cargo graph. This mode depends on the chosen local path; the default bundled
 mode keeps each individual generated contract self-contained.
 
-Use `--rust-runtime-registry` to generate a crate that depends on the
-compiler-distributed runtime version exactly, without copying runtime or macro
-sources:
+Ledger 9 Rust generation requires the selected shared runtime root or bundled
+runtime sources. The compiler rejects `--rust-runtime-registry`. The offline
+archive rehearsal below uses shared-source generation and resolves the
+generated contracts against the exact runtime and macro archives in an
+isolated consumer.
 
-```sh
-compactc --target rust --rust-runtime-registry \
-  examples/rust_backend/counter.compact /tmp/compact-counter-registry
-```
-
-The generated dependency is
-`midnight-compact-runtime = { version = "=0.2.0", package = "midnight-compact-runtime" }`
-for this compiler. The option cannot be combined with `--rust-runtime-root`.
-The package is not yet published, so use this mode with the local archive-only
-release rehearsal below until macro and runtime crates are available from a
-registry. The default bundled mode remains the way to build one generated
-crate without a registry release.
-
-The packaged command keeps the ledger-8 Scheme compiler as a sibling named
+The packaged command keeps the Scheme frontend as a sibling named
 `compactc-scheme`. For compiler development, set `COMPACTC_SCHEME` to a local
 Scheme executable and run `cargo run -p compact-rust-backend --bin compactc --`.
 The older `compact-rustc` command remains available for fixture generation; it
@@ -823,8 +812,9 @@ patch was used during archive verification. The `midnight` vault's ADR-0013
 records the decision; [issue #114](https://github.com/MediaNoxLabs/compact/issues/114)
 tracks this historical package-rehearsal scope.
 
-After packaging, rehearse separately generated Counter and Boolean Cell
-contracts together against the two exact archives in that manifest:
+After packaging, rehearse the separately generated Counter, Boolean Cell,
+Set, Map, List, and Merkle contracts together against the two exact archives
+in that manifest:
 
 ```sh
 nix develop .#compiler --command python3 \
@@ -832,16 +822,21 @@ nix develop .#compiler --command python3 \
   --manifest target/rust-runtime-release.json
 ```
 
-This isolated gate vendors the pinned upstream crates and installs the macro
-and runtime from their `.crate` bytes. It compiles both contracts independently
-with `compactc --target rust --rust-runtime-registry` and runs their untouched
-generated crates from one external consumer. It checks
-that Cargo resolves exactly one shared runtime and macro as registry-style
-packages from the archive source, including direct dependencies from both
-generated crates. No local path patch is used for the final consumer. Source
-replacement is a local release rehearsal. Crates.io publication and a public
-registry consumer are outside v2; dedicated branch publication and same-revision
-remote CI remain separate from the local Nix acceptance evidence.
+This isolated gate vendors pinned upstream crates and installs the runtime and
+macro packages from their exact `.crate` bytes. It generates each contract with
+`compactc --target rust --rust-runtime-root <repo> --skip-zk`, verifies the
+generated contract and compatibility records, and matches the compiler's
+runtime source fingerprints against the archives. It copies the verified
+contracts into an external consumer and replaces only each copy's runtime
+path dependency with the exact release version. The original compiler output
+and the generated Rust used by the consumer retain their original bytes.
+
+Cargo resolves each generated crate to one shared archived runtime and that
+runtime to one archived macro. The gate checks the resolved archive locations
+and both archive checksums in the consumer lock, then runs the positive and
+compile-fail controls offline with that lock. This rehearsal uses Cargo source
+replacement. Crates.io publication and public-registry consumption remain
+outside this gate.
 
 ## Source model
 
