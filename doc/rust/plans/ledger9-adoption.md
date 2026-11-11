@@ -835,9 +835,20 @@ selectors refused substituted source. Fourteen fixture tests and two
 source-refusal tests passed. The follow-up `a4090b951` completes the
 required source license header.
 
-The next required conditional, sequential and pure-call cohort has
-eleven commands. Direct baseline runs reproduced the v2 reader failure
-with the current compiler's v3 output for all eleven.
+At `8a5009ef5`, eleven conditional, sequential and pure-call
+commands passed 33 fresh Ledger 9 proof cases. The current compiler
+reproduced the linked Rust for all five source fixtures. The checks
+cover both branches and seeded ledger state, ordered unsigned writes,
+typed Field, curve and vector arguments, witness execution and Set
+insert and remove behavior. The unsigned sequential command refused
+substituted binary IR. Separate verification, binding and corruption
+refusals, funded deployment, independently proved default-strict
+application and exact unchanged replay passed for all 33 cases.
+Twenty-four fixture tests also passed.
+
+Seven asset registry and Schnorr commands follow this cohort in the
+core gate. Direct runs with the original sources confirmed that all
+seven still use v2 readers against v3 output.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
