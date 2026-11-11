@@ -310,7 +310,11 @@ impl<D: DB> ObservationalOfferBackedState<D> {
         self.reconciliation()
             .reconcile(&call.recorded)
             .map_err(ObservedCallError::ZswapIntent)?;
-        let prepared = call.prepare_inner(verifier, communication_commitment_rand, true)?;
+        let prepared = call.prepare_inner(
+            verifier,
+            communication_commitment_rand,
+            Some(OfferTranscriptPartition::Automatic),
+        )?;
         if prepared.fallible_public_transcript.is_some() {
             return Err(ObservedCallError::ZswapIntent(
                 ZswapIntentError::OfferTranscriptPlacementMismatch,

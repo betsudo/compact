@@ -147,7 +147,7 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
     let historic = coin(1, 5, 17);
     let keys = SecretKeys::from_rng_seed(&mut rng);
     let placement = if blue {
-        OfferPlacement::Fallible(NonZeroU16::new(1).unwrap())
+        OfferPlacement::Fallible(NonZeroU16::MIN)
     } else {
         OfferPlacement::Guaranteed
     };
@@ -286,13 +286,14 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
     let (_, allocated) = ledger.zswap.try_apply(&offer, None)?;
     let mut options = OfferBindingOptions::default()
         .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-        .with_offer_placement(placement)
         .with_wallet_funding(selected_wallet);
-    if blue {
-        options = options.with_transient_coins(
-            ContractTransientCoins::from_transients_for_placement(transients, placement)
-                .map_err(|e| format!("transient selection {e:?}"))?,
-        );
+    if let OfferPlacement::Fallible(segment) = placement {
+        options = options
+            .with_wholly_fallible_offer(segment)
+            .with_transient_coins(
+                ContractTransientCoins::from_transients_for_placement(transients, placement)
+                    .map_err(|e| format!("transient selection {e:?}"))?,
+            );
     }
     let observed = ObservedContractState::new(
         address,

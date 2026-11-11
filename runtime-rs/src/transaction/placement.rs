@@ -12,8 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//! Explicit single-offer placement. Source transcripts and upstream proofs are
-//! retained unchanged; this policy never retargets a proof or infers a segment.
+//! Explicit single-offer placement. The ledger partitions the exact recorded
+//! source program, and the selected upstream proofs retain their segments.
 use super::*;
 use std::num::NonZeroU16;
 
@@ -58,7 +58,7 @@ impl OfferPlacement {
         // Wallet and contract Input returns both start with 1; that scalar is
         // not an owner discriminator. Explicit selections and reconciliation
         // establish ownership and full proof identity separately.
-        // Exact pinned ledger8 return shapes; segment() alone accepts malformed
+        // Exact pinned ledger return shapes; segment() alone accepts malformed
         // vectors with a valid last element and maps overflow to None.
         let segment = Fr::from(u64::from(segment.get()));
         if offer
@@ -105,6 +105,7 @@ mod tests {
     }
     fn bound(
         n: u16,
+        options: OfferBindingOptions,
     ) -> (
         OfferBackedObservedState,
         crate::ledger::QualifiedCoinInfo,
@@ -125,14 +126,14 @@ mod tests {
             ),
             &ledger,
             base.offer.retarget_segment(n),
-            options(n),
+            options,
         )
         .unwrap();
         (bound, input, output, recipient)
     }
     #[test]
     fn exact_segment_vectors_and_policy_restrictions() {
-        let (base, _, _, _) = bound(7);
+        let (base, _, _, _) = bound(7, options(7));
         let good = options(7);
         assert_eq!(good.placement.validate_offer(&base.offer, &good), Ok(()));
         for values in [
@@ -221,26 +222,27 @@ mod tests {
     }
     #[test]
     fn public_prepare_empty_and_guaranteed_refusal_and_non_one_transaction_key() {
-        let (mut bound, input, output, recipient) = bound(7);
+        let (mut automatic_bound, input, output, recipient) = bound(7, options(7));
         let mut rng = StdRng::seed_from_u64(206);
         let verifier: VerifierKey = rng.r#gen();
-        bound.observed.contract.operations = bound.observed.contract.operations.insert(
+        let operations = automatic_bound.observed.contract.operations.insert(
             EntryPointBuf(b"placement".to_vec()),
             ContractOperation::new(Some(verifier.clone()), None),
         );
-        let empty = RecordingFrame::new(bound.observed().circuit_context(()))
+        automatic_bound.observed.contract.operations = operations.clone();
+        let empty = RecordingFrame::new(automatic_bound.observed().circuit_context(()))
             .kernel_self()
             .unwrap()
             .0
             .finish(());
-        let call = RecordedCall::new(bound.observed(), empty, "placement", ());
+        let call = RecordedCall::new(automatic_bound.observed(), empty, "placement", ());
         assert!(matches!(
-            bound.prepare(call, verifier.clone(), Fr::from(0)),
+            automatic_bound.prepare(call, verifier.clone(), Fr::from(0)),
             Err(ObservedCallError::ZswapIntent(
                 ZswapIntentError::CanonicalEmptyPlan
             ))
         ));
-        let record = || {
+        let record = |bound: &OfferBackedObservedState| {
             RecordingFrame::new(bound.observed().circuit_context(()))
                 .create_zswap_input(input)
                 .create_zswap_output(output, recipient.clone())
@@ -250,31 +252,53 @@ mod tests {
                 .0
                 .finish(())
         };
-        let call = RecordedCall::new(bound.observed(), record(), "placement", ());
+        let call = RecordedCall::new(
+            automatic_bound.observed(),
+            record(&automatic_bound),
+            "placement",
+            (),
+        );
         assert!(matches!(
-            bound.prepare(call, verifier.clone(), Fr::from(0)),
+            automatic_bound.prepare(call, verifier.clone(), Fr::from(0)),
             Err(ObservedCallError::ZswapIntent(
                 ZswapIntentError::OfferTranscriptPlacementMismatch
             ))
         ));
-        // Structural construction test only: the actual original withdraw proof
-        // exercises public whole-fallible preparation and ledger acceptance.
-        let call = RecordedCall::new(bound.observed(), record(), "placement", ());
-        let mut prototype = call.prepare_inner(verifier, Fr::from(0), true).unwrap();
-        prototype.fallible_public_transcript = prototype.guaranteed_public_transcript.take();
-        assert_eq!(bound.placement.validate_prototype(&prototype), Ok(()));
-        let mut mixed = prototype.clone();
+        let call = RecordedCall::new(
+            automatic_bound.observed(),
+            record(&automatic_bound),
+            "placement",
+            (),
+        );
+        let automatic = call
+            .prepare_inner(
+                verifier.clone(),
+                Fr::from(0),
+                Some(OfferTranscriptPartition::Automatic),
+            )
+            .unwrap();
+        assert!(automatic.fallible_public_transcript.is_none());
+        assert!(automatic.guaranteed_public_transcript.is_some());
+
+        // This fixture uses an otherwise identical, exact offer and recorded
+        // program. Only the caller's partition choice changes.
+        let explicit = options(7).with_wholly_fallible_offer(NonZeroU16::new(7).unwrap());
+        let (mut bound, _, _, _) = bound(7, explicit);
+        bound.observed.contract.operations = operations;
+        assert_eq!(bound.offer, automatic_bound.offer);
+        let call = RecordedCall::new(bound.observed(), record(&bound), "placement", ());
+        let prepared = bound.prepare(call, verifier, Fr::from(0)).unwrap();
+        assert!(prepared.call.guaranteed_public_transcript.is_none());
+        assert_eq!(
+            prepared.call.fallible_public_transcript,
+            automatic.guaranteed_public_transcript
+        );
+        let mut mixed = prepared.call.clone();
         mixed.guaranteed_public_transcript = mixed.fallible_public_transcript.clone();
         assert_eq!(
             bound.placement.validate_prototype(&mixed),
             Err(ZswapIntentError::OfferTranscriptPlacementMismatch)
         );
-        let prepared = OfferBoundPreparedCall {
-            admission: OfferAdmission::CompleteLedger,
-            call: prototype,
-            offer: bound.offer.clone(),
-            placement: bound.placement,
-        };
         let retained = bound.offer.clone();
         let Transaction::Standard(tx) =
             prepared.into_transaction(&mut rng, "local-test", Timestamp::from_secs(100))

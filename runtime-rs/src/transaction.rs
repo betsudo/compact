@@ -23,7 +23,9 @@
 use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
+use std::num::NonZeroU16;
 
+use midnight_base_crypto::cost_model::CostDuration;
 use midnight_base_crypto::fab::AlignedValue;
 use midnight_base_crypto::time::Timestamp;
 use midnight_coin_structure::coin::Commitment;
@@ -140,6 +142,7 @@ pub struct OfferBackedObservedState<D: DB = DefaultDB> {
     wallet_funding: Option<WalletFundingInputs<D>>,
     transients: Option<ContractTransientCoins<D>>,
     placement: OfferPlacement,
+    partition: OfferTranscriptPartition,
 }
 
 /// How persistent output intents bind to the retained upstream offer.
@@ -158,7 +161,15 @@ pub struct OfferBindingOptions<D: DB = DefaultDB> {
     wallet_funding: Option<WalletFundingInputs<D>>,
     transients: Option<ContractTransientCoins<D>>,
     placement: OfferPlacement,
+    partition: OfferTranscriptPartition,
 }
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OfferTranscriptPartition {
+    Automatic,
+    WhollyFallible,
+}
+
 impl<D: DB> Default for OfferBindingOptions<D> {
     fn default() -> Self {
         Self {
@@ -166,15 +177,27 @@ impl<D: DB> Default for OfferBindingOptions<D> {
             wallet_funding: None,
             transients: None,
             placement: OfferPlacement::Guaranteed,
+            partition: OfferTranscriptPartition::Automatic,
         }
     }
 }
 impl<D: DB> OfferBindingOptions<D> {
-    /// Select one whole offer's logical placement explicitly. Fallible placement
-    /// requires canonical allocation; any wallet funding/transients must be
-    /// explicitly selected and constructed for the same nonzero segment.
+    /// Select one whole offer's logical placement with automatic transcript
+    /// partitioning. Fallible placement requires the automatic partition to be
+    /// wholly fallible, canonical allocation, and exact selected coin segments.
     pub fn with_offer_placement(mut self, placement: OfferPlacement) -> Self {
         self.placement = placement;
+        self.partition = OfferTranscriptPartition::Automatic;
+        self
+    }
+
+    /// Request that the ledger partition the entire recorded call into the
+    /// fallible section. All offer coins must already be bound to this segment
+    /// under the same canonical allocation and selection rules as
+    /// [`OfferPlacement::Fallible`].
+    pub fn with_wholly_fallible_offer(mut self, segment: NonZeroU16) -> Self {
+        self.placement = OfferPlacement::Fallible(segment);
+        self.partition = OfferTranscriptPartition::WhollyFallible;
         self
     }
     pub fn with_output_allocation(mut self, policy: PersistentOutputAllocation) -> Self {
@@ -373,6 +396,7 @@ impl<D: DB> OfferBackedObservedState<D> {
             wallet_funding,
             transients,
             placement: options.placement,
+            partition: options.partition,
         })
     }
 
@@ -392,6 +416,7 @@ impl<D: DB> OfferBackedObservedState<D> {
         {
             return Err(ObservedCallError::OfferMismatch);
         }
+        let offer_partition = Some(self.partition);
         // Empty plans preserve pre-existing offer-only calls only in the
         // default exact policy. Funded mode must bind actual circuit intents.
         if self.wallet_funding.is_none()
@@ -403,7 +428,7 @@ impl<D: DB> OfferBackedObservedState<D> {
             && call.recorded.public.verify_ops().is_empty()
         {
             return call
-                .prepare_inner(verifier, communication_commitment_rand, true)
+                .prepare_inner(verifier, communication_commitment_rand, offer_partition)
                 .map(|call| OfferBoundPreparedCall {
                     call,
                     offer: self.offer.clone(),
@@ -413,7 +438,8 @@ impl<D: DB> OfferBackedObservedState<D> {
         }
         self.reconcile(&call.recorded)
             .map_err(ObservedCallError::ZswapIntent)?;
-        let prepared = call.prepare_inner(verifier, communication_commitment_rand, true)?;
+        let prepared =
+            call.prepare_inner(verifier, communication_commitment_rand, offer_partition)?;
         self.placement
             .validate_prototype(&prepared)
             .map_err(ObservedCallError::ZswapIntent)?;
@@ -760,14 +786,14 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
         verifier: VerifierKey,
         communication_commitment_rand: Fr,
     ) -> Result<ContractCallPrototype<D>, ObservedCallError> {
-        self.prepare_inner(verifier, communication_commitment_rand, false)
+        self.prepare_inner(verifier, communication_commitment_rand, None)
     }
 
     fn prepare_inner(
         self,
         verifier: VerifierKey,
         communication_commitment_rand: Fr,
-        offer_bound: bool,
+        offer_partition: Option<OfferTranscriptPartition>,
     ) -> Result<ContractCallPrototype<D>, ObservedCallError> {
         let initial = self.recorded.public.initial();
         if initial.address != self.observed.address {
@@ -800,7 +826,7 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
                 self.input,
                 communication_commitment_rand,
             ),
-            offer_bound,
+            offer_partition,
         )
         .map_err(ObservedCallError::Prepare)?;
         // Keep the IR and verifier roles from the operation selected by the
@@ -908,13 +934,13 @@ pub fn prepare_call<Private, Output, D: DB>(
 where
     Output: Into<AlignedValue>,
 {
-    prepare_call_inner(recorded, spec, false)
+    prepare_call_inner(recorded, spec, None)
 }
 
 fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
     recorded: RecordedCircuitResult<Private, Output, D>,
     spec: CallSpec,
-    offer_bound: bool,
+    offer_partition: Option<OfferTranscriptPartition>,
 ) -> Result<ContractCallPrototype<D>, PrepareCallError> {
     if recorded.public.verify_ops().is_empty() {
         return Err(PrepareCallError::EmptyTranscript);
@@ -930,7 +956,7 @@ fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
     {
         return Err(PrepareCallError::ZswapPlanMismatch);
     }
-    if !offer_bound && !recorded.public.final_intents().is_empty() {
+    if offer_partition.is_none() && !recorded.public.final_intents().is_empty() {
         return Err(PrepareCallError::UnboundZswapIntents);
     }
     // Exact in-memory source values can contain opaque trailing zeros. The
@@ -968,13 +994,21 @@ fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
     }
     let (context, program) = recorded.public.into_parts();
     let address = context.address;
+    let mut parameters = INITIAL_PARAMETERS;
+    if offer_partition == Some(OfferTranscriptPartition::WhollyFallible) {
+        // The ledger partitioner derives its guarantee budget from both limits.
+        // Keep its runtime cost model and gas calculation. These limits apply
+        // only to constructing this explicit whole-fallible call.
+        parameters.limits.min_time_to_dismiss = CostDuration::ZERO;
+        parameters.limits.time_to_dismiss_per_byte = CostDuration::ZERO;
+    }
     let partitioned = partition_transcripts(
         &[PreTranscript {
             context,
             program,
             comm_comm: None,
         }],
-        &INITIAL_PARAMETERS,
+        &parameters,
     )
     .map_err(|error| PrepareCallError::Partition(format!("{error:?}")))?;
     let (guaranteed, fallible) = partitioned
