@@ -429,9 +429,29 @@ comparisons, 14 compile-fail controls, 13 malformed-IR controls, and
 three typed source mutations. The complete proof gate retains three
 selected k8 exports and separate standalone verification. The native
 runner, complete model check, and pre-key refusal controls passed. The
-first run reached material verification and refused a local cache that
-lacked the k8 SRS. Qualification continues using an isolated copy of the
-verified upstream k8 material. A complete proof result is pending.
+corrected run reached material verification and refused a local cache
+that lacked the k8 SRS. With verified upstream k8 material, all three
+selected cases passed at `72aa8d16a`. Each standalone proof was
+3,824 bytes and passed separate verification, including corruption and
+wrong-verifier refusals. Each distinct funded v3 transaction applied with
+default strictness and refused exact replay with byte-identical ledger
+state.
+
+The nested component and component Vector product callers now select
+the released v3 tool. Their complete source models retain 14 and 16
+exports respectively. The four and fourteen original proof selections
+retain their complete checked-program bindings and typed negative
+controls. The nested component gate passed at `5e99bec69` on macOS
+arm64, including the 73-command API protocol and 16 pre-key byte and
+membership refusals. It generated four fresh key pairs at k7 and k8.
+Each standalone proof passed separate verification and refused
+corruption. The four distinct funded v3 transactions applied with
+default strictness and refused exact replay with byte-identical ledger
+state.
+
+The component Vector model classifies the original direct export at k9
+and the unselected family `branch` at k8. Its complete proof gate is
+running locally at `d16987d11`.
 
 The outer-vector over-cap refusal needs a different donor when its
 caller moves to v3. Its existing intact `family/branch` donor measures
