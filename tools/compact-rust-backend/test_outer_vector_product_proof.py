@@ -16,6 +16,7 @@
 """Failure-path controls for raw proof-gate command evidence, not proof verdicts."""
 import hashlib
 import copy
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -24,7 +25,24 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import check_component_product_vector_proof as component_gate
 import check_outer_vector_product_proof as gate
+
+
+class Ledger9ProofSelection(unittest.TestCase):
+    def test_every_measured_in_cap_export_is_selected(self):
+        for owner in (component_gate, gate):
+            with self.subTest(owner=owner.__name__):
+                expected = owner.main_gate.FIXTURES / "ledger9-model-expectations.json"
+                circuits = json.loads(expected.read_text())["circuits"]
+                eligible = {
+                    (row["source"], row["circuit"])
+                    for row in circuits
+                    if row["proof_required"] and row["k"] <= 8
+                }
+                self.assertEqual(set(owner.SELECTED), eligible)
+                self.assertEqual(len(owner.SELECTED), len(eligible))
+                self.assertIn(("family", "branch"), eligible)
 
 
 class CommandEvidence(unittest.TestCase):

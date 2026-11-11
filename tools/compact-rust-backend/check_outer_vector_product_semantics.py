@@ -69,7 +69,7 @@ def main():
     for key, path in (("compactc", compiler), ("compactc-scheme", scheme)):
         require(digest(path) == build[key]["sha256"], "compiler executable identity changed")
     runtime = args.ts_runtime.resolve(strict=True)
-    require(json.loads((runtime / "package.json").read_bytes())["version"] == "0.16.102", "runtime version differs")
+    require(json.loads((runtime / "package.json").read_bytes())["version"] == "0.17.0", "runtime version differs")
     env = dict(os.environ)
     config = reject_compiler_overrides(dict(env))
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
@@ -165,7 +165,7 @@ def main():
             generated = out / "generated" / role
             independent = out / "independent" / role
             run(role + "-generate", [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                "--rust-functional-ledger8", "--rust-require-recording", spec["path"], generated])
+                "--rust-functional-ledger9", "--rust-require-recording", spec["path"], generated])
             run(role + "-independent-ir", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", spec["path"], independent])
             ir = generated / "contract/compact-rust-ir.json"
             golden = FIXTURES / "proof-goldens" / role
@@ -181,9 +181,10 @@ def main():
             require(caps["schema_version"] == 3 and [c["name"] for c in caps["circuits"]] == spec["entries"]
                     and all(c["recorded"] and c["observed_call"] and c["proof_required"] is True for c in caps["circuits"]), "capability roster differs")
             programs = generated / "contract/checked-programs"
+            expected_programs = FIXTURES / "ledger9-proof-goldens" / role / "checked-programs"
             names = {f"program-{i}.json" for i in range(len(spec["entries"]))}
-            require({p.name for p in programs.iterdir()} == {p.name for p in (golden / "checked-programs").iterdir()} == names
-                    and all((programs / n).read_bytes() == (golden / "checked-programs" / n).read_bytes() for n in names), "whole raw Programs differ")
+            require({p.name for p in programs.iterdir()} == {p.name for p in expected_programs.iterdir()} == names
+                    and all((programs / n).read_bytes() == (expected_programs / n).read_bytes() for n in names), "whole raw Programs differ")
             map_path = generated / "contract/index.js.map"
             mapping = json.loads(map_path.read_bytes())
             targets = [Path(os.path.normpath(map_path.parent / mapping.get("sourceRoot", "") / name)).resolve(strict=True) for name in mapping["sources"]]
@@ -207,11 +208,11 @@ def main():
         (out / "package.json").write_text('{"type":"module"}\n')
         bind(out / "package.json")
         ts = out / "ts-results.json"
-        run("fresh-ts", [node, FIXTURES / "capture.mjs", "--generated", out / "generated", "--runtime", runtime, "--version", "0.16.102", "--output", ts])
+        run("fresh-ts", [node, FIXTURES / "capture.mjs", "--generated", out / "generated", "--runtime", runtime, "--version", "0.17.0", "--output", ts])
         observed = json.loads(ts.read_bytes())
         require(observed["status"] == "passed" and observed["format"] == "outer-vector-product-widening-ts/v1"
                 and [r["id"] for r in observed["rows"]] == [r["id"] for r in cases], "fresh TS case roster differs")
-        require(observed["runtime"]["path"] == str(runtime) and observed["runtime"]["version"] == "0.16.102"
+        require(observed["runtime"]["path"] == str(runtime) and observed["runtime"]["version"] == "0.17.0"
                 and observed["node"]["path"] == str(node) and observed["node"]["sha256"] == digest(node), "TS runtime/Node identity differs")
         require(observed["capture"] == {"path": str((FIXTURES / "capture.mjs").resolve()), "sha256": digest(FIXTURES / "capture.mjs")}, "TS capture identity differs")
         require(set(observed["wrappers"]) == {s["role"] for s in definitions}, "TS wrapper roster differs")
@@ -276,7 +277,7 @@ def main():
             for lane in ("ts", "rust", "ir"):
                 dest = out / "source-scope" / (name + "-" + lane)
                 command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
-                           else [compiler, "--target", lane, "--skip-zk"] + (["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"] if lane == "rust" else []))
+                           else [compiler, "--target", lane, "--skip-zk"] + (["--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording"] if lane == "rust" else []))
                 label = name + "-" + lane + "-scope"
                 expected = spec["lanes"][lane]
                 stdout = run(label, [*command, source, dest], expected_exit=expected["exit"])

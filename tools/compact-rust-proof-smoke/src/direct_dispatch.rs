@@ -334,15 +334,26 @@ pub(super) fn try_run(
             feature = "outer-vector-product-proofs",
             compact_outer_vector_product_generated
         ))]
-        ("--outer-vector-product" | "--outer-vector-product-models", _) => Some((|| {
+        (
+            "--outer-vector-product"
+            | "--outer-vector-product-models"
+            | "--outer-vector-product-verify",
+            _,
+        ) => Some((|| {
             let root = arguments
                 .next()
-                .ok_or("component Vector proof command requires a complete root")?;
-            if selector == "--outer-vector-product-models" {
+                .ok_or("outer Vector proof command requires a complete root")?;
+            let root = std::path::Path::new(&root);
+            if selector == "--outer-vector-product-verify" {
+                if arguments.next().is_some() {
+                    return Err("unexpected verification argument".into());
+                }
+                crate::outer_vector_product_proofs::verify(root)
+            } else if selector == "--outer-vector-product-models" {
                 if arguments.next().is_some() {
                     return Err("unexpected selected models argument".into());
                 }
-                crate::outer_vector_product_proofs::models(std::path::Path::new(&root))
+                crate::outer_vector_product_proofs::models(root)
             } else {
                 let ts = arguments
                     .next()
@@ -350,10 +361,7 @@ pub(super) fn try_run(
                 if arguments.next().is_some() {
                     return Err("unexpected proof argument".into());
                 }
-                crate::outer_vector_product_proofs::run(
-                    std::path::Path::new(&root),
-                    std::path::Path::new(&ts),
-                )
+                crate::outer_vector_product_proofs::run(root, std::path::Path::new(&ts))
             }
         })()),
         #[cfg(feature = "constructor-vector-models")]

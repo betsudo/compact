@@ -543,7 +543,7 @@ class NestedProductWiringTests(unittest.TestCase):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  outer-vector-proof:\n', 1)[1].split('  native-backend:\n', 1)[0]
         main = workflow.split('  build:\n', 1)[1].split('  product-proofs:\n', 1)[0]
-        before, step = linux.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)
+        before, step = linux.split('      - name: Qualify outer-Vector product APIs and sixteen selected proofs\n', 1)
         step = step.split('      - name: Retain outer-Vector product proof diagnostics', 1)[0]
         self.assertIn('Import authenticated same-run compiler closure', before)
         self.assertIn('Prepare verified built-in proof material', before)
@@ -551,7 +551,8 @@ class NestedProductWiringTests(unittest.TestCase):
         for k in (5, 7, 8):
             self.assertIn('--parameter-k ' + str(k), material)
         self.assertLess(before.index('Import authenticated same-run compiler closure'), before.index('Prepare verified built-in proof material'))
-        self.assertIn('shutil.which("zkir")', step)
+        self.assertIn('ZKIR="$(env -u LD_LIBRARY_PATH nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"', step)
+        self.assertNotIn('shutil.which("zkir")', step)
         self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', step)
         self.assertEqual(linux.count('check_outer_vector_product_proof.py'), 1)
         self.assertNotIn('check_outer_vector_product_semantics.py', linux)
@@ -589,7 +590,7 @@ class NestedProductWiringTests(unittest.TestCase):
         import sys
         import textwrap
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
-        step = workflow.split('      - name: Qualify outer-Vector product APIs and fifteen selected proofs\n', 1)[1].split('      - name:', 1)[0]
+        step = workflow.split('      - name: Qualify outer-Vector product APIs and sixteen selected proofs\n', 1)[1].split('      - name:', 1)[0]
         shell = textwrap.dedent(step.split('        run: |\n', 1)[1])
         # Execute the configured shell with observable command boundaries. This
         # is argument/failure propagation coverage, not a mock proof verdict.
@@ -600,13 +601,13 @@ class NestedProductWiringTests(unittest.TestCase):
             wrapper = '''import json, os, pathlib, sys
 args = sys.argv[1:]
 kind = pathlib.Path(sys.argv[0]).name
-stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+stage = 'recipe' if kind == 'python3' else ('zkir' if args[-1] == '.#zkir-v3' else ('runtime' if args[0] == 'build' else 'gate'))
 with open(os.environ['TEST_LOG'], 'a') as log:
     log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'))) + "\\n")
 if os.environ.get('TEST_FAIL') == stage:
     raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
 if stage == 'runtime': print('/mock/runtime-package')
-if stage == 'zkir': print('/mock/bin/zkir')
+if stage == 'zkir': print('/mock/zkir-package')
 '''
             for name in ('python3', 'nix'):
                 path = bin_dir / name
@@ -628,7 +629,7 @@ if stage == 'zkir': print('/mock/bin/zkir')
                         if row['stage'] in ('zkir', 'gate'):
                             self.assertIsNone(row['ld'])
                     if not failure:
-                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_outer_vector_product_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-outer-vector-product-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-outer-vector-product-proof'])
+                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_outer_vector_product_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-outer-vector-product-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/zkir-package/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-outer-vector-product-proof'])
 
     def test_constructor_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
         import os
