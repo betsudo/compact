@@ -1289,11 +1289,13 @@ jobs:
 
       - name: Qualify selected Field return-wrapper proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
 
       - name: Qualify selected tuple return-wrapper proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
 
       - name: Qualify selected original DID functional proof
         run: |
@@ -1321,7 +1323,8 @@ jobs:
 
       - name: Qualify selected Unit mutation initializer proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
 
       - name: Retain failed wide-zero proof diagnostics
         if: failure() && steps.wide_zero_proof.outcome == 'failure'

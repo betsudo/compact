@@ -91,6 +91,21 @@ pub(super) fn verify_standalone(
     Ok(())
 }
 
+pub(super) fn deploy(
+    data: StateValue<DefaultDB>,
+    name: &str,
+    operation: ContractOperation,
+    rng: &mut StdRng,
+) -> ContractDeploy<DefaultDB> {
+    let entry = EntryPointBuf(name.as_bytes().to_vec());
+    let contract = ContractState::new(
+        data,
+        HashMap::new().insert(entry, operation),
+        ContractMaintenanceAuthority::default(),
+    );
+    ContractDeploy::new(rng, contract)
+}
+
 pub(super) fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
     use std::io::Write;
     std::fs::OpenOptions::new()

@@ -385,7 +385,7 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
                    "vector-projection-proofs": "compact-vector-projection-proof-gate/v2",
                    "constant-valued-vector-index-proofs": "compact-vector-projection-proof-gate/v2",
                    "map-size-expression-proofs": "compact-map-size-expression-proof-gate/v2",
-                   "direct-fold-proofs": "compact-direct-fold-proof-gate/v1"}
+                   "direct-fold-proofs": "compact-direct-fold-proof-gate/v2"}
         def command(argv, label, directory, receipt, **kwargs):
             calls.append((label, argv))
             self.assertNotIn("--only", argv)

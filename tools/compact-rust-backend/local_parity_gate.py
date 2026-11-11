@@ -459,7 +459,7 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
         ("map-size-expression-proofs", "check_map_size_expression_proof.py", "map-size-expression-proofs",
          "map_size_expression_proof_gate", "compact-map-size-expression-proof-gate/v2", "--output", "--target-dir"),
         ("direct-fold-proofs", "check_direct_fold_proof.py", "direct-fold-proofs",
-         "direct_fold_proof_gate", "compact-direct-fold-proof-gate/v1", "--output", "--target-dir"),
+         "direct_fold_proof_gate", "compact-direct-fold-proof-gate/v2", "--output", "--target-dir"),
     )
     children = []
     for label, script, subdirectory, key, expected_format, output_flag, target_flag in gates:

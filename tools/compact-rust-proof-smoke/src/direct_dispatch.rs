@@ -46,11 +46,24 @@ pub(super) fn try_run(
             Some(collections::constant_valued_vector_indices(arguments))
         }
         ("--vector-projection-verify", _) => Some(collections::vector_projection_verify(arguments)),
-        ("--field-return-wrappers", _) => Some(collections::field_return_wrappers(arguments)),
-        ("--unit-mutation-initializers", _) => {
-            Some(collections::unit_mutation_initializers(arguments))
+        ("--field-return-wrappers-verify", _) => {
+            Some(collections::field_return_wrappers(arguments, true))
         }
-        ("--tuple-return-wrappers", _) => Some(collections::tuple_return_wrappers(arguments)),
+        ("--field-return-wrappers", _) => {
+            Some(collections::field_return_wrappers(arguments, false))
+        }
+        ("--unit-mutation-initializers-verify", _) => {
+            Some(collections::unit_mutation_initializers(arguments, true))
+        }
+        ("--unit-mutation-initializers", _) => {
+            Some(collections::unit_mutation_initializers(arguments, false))
+        }
+        ("--tuple-return-wrappers-verify", _) => {
+            Some(collections::tuple_return_wrappers(arguments, true))
+        }
+        ("--tuple-return-wrappers", _) => {
+            Some(collections::tuple_return_wrappers(arguments, false))
+        }
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
         ("--map-size-expression-verify", _) => {
             Some(collections::map_size_expression_verify(arguments))

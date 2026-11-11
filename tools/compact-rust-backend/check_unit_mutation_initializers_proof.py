@@ -24,7 +24,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tomllib
@@ -34,11 +33,28 @@ import resolve_ledger_test_static as ledger_static
 from check_unit_mutation_initializers import SOURCE, digest, require_clean_source
 from check_functional_effects import generated_manifest_snapshot, scheme_compiler
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
+from wrapper_v3_proof import prepare_material, verify_artifacts
 
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/unit-mutation-initializers-source"
-PROOF_RESULT_FORMAT = "compact-unit-mutation-initializers-proof/v2"
-PROOF_GATE_FORMAT = "compact-unit-mutation-initializers-proof-gate/v2"
+PROOF_RESULT_FORMAT = "compact-unit-mutation-initializers-proof/v3"
+PROOF_GATE_FORMAT = "compact-unit-mutation-initializers-proof-gate/v3"
+
+GEOMETRY = {
+    "conditional": (7, 61),
+    "nested": (7, 87),
+    "observed": (7, 65),
+    "sequential": (7, 105),
+    "shadowed": (7, 85),
+    "statement_field": (7, 61),
+    "statement_observed": (7, 82),
+    "statement_shadowed": (8, 124),
+    "statement_unit": (7, 60),
+    "trailing_conditional": (7, 77),
+    "trailing_unconditional": (7, 75),
+    "unit_result": (7, 60),
+    "unused": (7, 62),
+}
 
 
 def require(value, message):
@@ -57,6 +73,9 @@ def validate_proof_summary(summary):
     require(summary["unselected_branch_proved"] is False, "unexpected unselected branch proof claim")
     for index,row in enumerate(summary["calls"]):
         require(all(type(row[name]) is int for name in ("key", "before", "after", "proof_bytes", "transaction_bytes")) and
+                type(row.get("transaction_proof_bytes")) is int and row["transaction_proof_bytes"] > 0 and
+                type(row.get("transaction_proof_version")) is int and row["transaction_proof_version"] == 3 and
+                type(row.get("positive_fee_dust_spends")) is int and row["positive_fee_dust_spends"] == 1 and
                 row["proof_bytes"] > 0 and row["transaction_bytes"] > 0 and
                 row["standalone_proof"] == f"unit-initializers-{index}.proof" and
                 row["applied_transaction"] == f"unit-initializers-{index}-transaction.bin" and
@@ -71,6 +90,7 @@ def validate_proof_summary(summary):
 def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
+    require("MIDNIGHT_PROOF_SERVER" not in os.environ, "wrapper proof requires local proving")
     output.mkdir(parents=True)
     receipt = {"format": PROOF_GATE_FORMAT, "status": "incomplete", "commands": [],
                "scope": "four source-bound return/statement call proofs and independently proved default-strict funded local transactions",
@@ -85,7 +105,7 @@ def run(args):
                  ROOT / "tools/compact-rust-backend/check_unit_mutation_initializers.py",
                  ROOT / "tools/compact-rust-backend/check_functional_effects.py",
                  Path(common.__file__), Path(ledger_static.__file__),
-                 ROOT / "tools/compact-rust-backend/did_proof_gate.py",
+                 ROOT / "tools/compact-rust-backend/did_proof_gate.py", Path(__file__).with_name("wrapper_v3_proof.py"),
                  ROOT / "tools/compact-rust-backend/Cargo.toml"]
         for directory in ["runtime-rs", "runtime-rs-macros", "tools/compact-rust-backend/src",
                           "tools/compact-rust-proof-smoke", "tests-rust-backend"]:
@@ -94,8 +114,8 @@ def run(args):
         receipt["source_hashes"] = hashes(paths)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
-        selected_zkir = args.zkir or shutil.which("zkir", path=env.get("PATH"))
-        require(selected_zkir is not None, "official direct zkir must be selected")
+        selected_zkir = args.zkir or shutil.which("zkir-v3", path=env.get("PATH"))
+        require(selected_zkir is not None, "official direct zkir-v3 must be selected")
         (output / "bin").mkdir()
         components = receipt["components"] = {}
         for name, path in [("compactc", compiler), ("compactc-scheme", scheme), ("zkir", Path(selected_zkir).resolve(strict=True))]:
@@ -117,7 +137,7 @@ def run(args):
         components["runner"] = common.stable_copy(target / "proof-checks/compact-rust-proof-smoke", output / "bin/proof-runner")
         runner = components["runner"]["snapshot"]
         generated = output / "generated"
-        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger8",
+        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger9",
                  "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate")
         receipt["generated"] = generated_manifest_snapshot(generated)
         formatted = output / "formatted-lib.rs"
@@ -161,37 +181,16 @@ def run(args):
         require(not (program_negative / "keys").exists() and not list(program_negative.glob("unit-initializers-*")),
                 "changed program refusal created proof/state outputs")
         receipt["changed_program_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True}
-        material = output / "proof-material.json"
-        execute([runner, "--prepare-proof-material", "--verify-only"], "verify-builtins", material)
-        prepared = json.loads(material.read_text())
-        require(prepared["mode"] == "verify-only" and prepared["verification"] == "all files checked against locked upstream SHA256 tables", "built-in verification receipt differs")
-        require(Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected parameter directory")
-        (generated / "keys").mkdir()
-        execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
-        receipt["keygen"] = []
-        material_paths, artifacts = [], []
-        for circuit in ("conditional", "statement_field"):
-            execute([components["zkir"]["snapshot"], "compile", generated / f"zkir/{circuit}.zkir",
-                     generated / f"keys/{circuit}.prover", generated / f"keys/{circuit}.verifier"], f"keygen-{circuit}")
-            model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-            require(model is not None, "keygen omitted actual circuit model")
-            k, rows = map(int, model.groups())
-            receipt["keygen"].append({"mode": "fresh direct native", "circuit": circuit, "k": k, "rows": rows})
-            selected_path = output / f"selected-material-{circuit}.json"
-            execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
-                    f"verify-selected-parameters-{circuit}", selected_path)
-            selected = json.loads(selected_path.read_text())
-            require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]), "selected SRS was not verified")
-            material_paths += [Path(selected["cache_directory"]) / row["name"] for row in selected["assets"] + selected["parameters"]]
-            artifacts += [generated / f"keys/{circuit}.{ext}" for ext in ("prover", "verifier")]
-            artifacts += [generated / f"zkir/{circuit}.{ext}" for ext in ("zkir", "bzkir")]
-        require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
-        receipt["material_hashes"] = hashes(material_paths + artifacts)
+        receipt["material_hashes"] = prepare_material(
+            execute, receipt, generated, output, components["zkir"]["snapshot"], runner,
+            env["MIDNIGHT_PP"], GEOMETRY, ('conditional', 'statement_field'),
+        )
         execute([runner, "--unit-mutation-initializers", generated], "prove-verify-apply")
         summary = json.loads((generated / "unit-initializers-proof-result.json").read_text())
         validate_proof_summary(summary)
         receipt["proof_result"] = summary
-        receipt["result_hashes"] = hashes([p for p in generated.glob("unit-initializers-*") if p.is_file()])
+        verify_artifacts(execute, receipt, generated, runner, "--unit-mutation-initializers-verify",
+                         "unit-initializers", summary["calls"])
         unchanged(receipt["source_hashes"])
         unchanged(receipt["dust_fixture_hashes"])
         unchanged(receipt["material_hashes"])
