@@ -822,9 +822,22 @@ commitment tree and preserved ordered witnesses, private transcript,
 ciphertext and commitment index. Each command refused substituted IR
 before key access.
 
-The next nine required commands for declared call arguments and
-discarded witness results reproduced the v2 reader refusal on current
-v3 output. Their proof routes are the next core migration cohort.
+At `8013f70b7`, nine required declared-argument and witness commands
+and two additional related selectors passed thirteen fresh Ledger 9
+proof cases. The current compiler output matched the Rust linked into
+the runner. These cases preserve declared Field commitments, vector
+witness values and discarded results, typed Field helper calls,
+persistent and transient pair hashing, and Boolean assertions. Each
+case passed separate verification, binding and corruption refusal,
+funded deployment and an independently proved default-strict call.
+Exact replay was refused with identical ledger bytes. Both commitment
+selectors refused substituted source. Fourteen fixture tests and two
+source-refusal tests passed. The follow-up `a4090b951` completes the
+required source license header.
+
+The next required conditional, sequential and pure-call cohort has
+eleven commands. Direct baseline runs reproduced the v2 reader failure
+with the current compiler's v3 output for all eleven.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
