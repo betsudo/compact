@@ -516,9 +516,28 @@ historical capture. All 12 package tests passed on the focused rerun.
 
 Eleven additional scenario captures at `6e324f9f9` refresh 124
 serialized state fields. The native tests completed 13 targets with 18
-passes and two failures. Both failures compare against a separate
-historical Zerocash constructor, mint, and spend capture. Coracle guess,
-Coracle withdraw, and Micro DAO vote commitment require further review
-of budget or effect differences before adoption. The three DID relation
-reducers have an existing TypeScript producer for their next parity
-rerun. Workspace and integration qualification remain open.
+passes and two failures against a separate historical Zerocash
+constructor, mint, and spend capture. At `4991d2a73`, the fresh
+Zerocash capture reproduces the historical leaf, all 32 siblings,
+and their directions. The three DID relation reducers preserve all
+22 scenarios, including their exact ordered programs, query costs,
+and refusal cases. All nine focused tests across the four packages
+passed with Rust 1.99 on macOS arm64.
+
+At `514df1d5e`, Coracle withdraw preserves exact spend and nullifier
+membership under the existing set comparison. Micro DAO vote commitment
+preserves exact commitment-to-index pairs and ordered offer outputs.
+For Coracle guess, the fixed per-query budget that succeeded on Ledger 8
+now fails on Ledger 9 after six successful TypeScript queries. Native
+and recorded Rust both report the corresponding out-of-gas error and
+match the captured witness order. The zero-budget refusal and the
+unlimited positive paths also pass. All three focused tests passed.
+
+At `d5747ec1f`, five Election and seven conditional captures refresh
+61 state fields and preserve their non-state behavior. The original
+conditional producer also records current tool provenance for the
+opposite-state case. The focused run passed 16 tests and reported five
+remaining v6/v8 comparisons. Those tests still reference the distinct
+Election owner-operation, base ternary, conditional Counter, and
+shared direct behavior fixtures. Workspace and integration
+qualification remain open.
