@@ -482,17 +482,20 @@ pub(super) fn prove_funded_offer(
         sealed,
         &resolver,
     ))?;
-    let mut calls = sealed.calls();
-    let (_, call) = calls.next().ok_or("v3 offer transaction has no call")?;
-    let ProofVersioned::V3(transaction_proof) = &call.proof else {
-        return Err("v3 offer transaction proof is not v3".into());
+    let transaction_proof = {
+        let mut calls = sealed.calls();
+        let (_, call) = calls.next().ok_or("v3 offer transaction has no call")?;
+        let ProofVersioned::V3(transaction_proof) = call.proof else {
+            return Err("v3 offer transaction proof is not v3".into());
+        };
+        if calls.next().is_some()
+            || transaction_proof == standalone
+            || positive_fee_dust_spends(&sealed) == 0
+        {
+            return Err("v3 offer transaction proof or Dust spend differs".into());
+        }
+        transaction_proof
     };
-    if calls.next().is_some()
-        || transaction_proof == &standalone
-        || positive_fee_dust_spends(&sealed) == 0
-    {
-        return Err("v3 offer transaction proof or Dust spend differs".into());
-    }
     let mut transaction_bytes = Vec::new();
     tagged_serialize(&sealed, &mut transaction_bytes)?;
     write_new(
