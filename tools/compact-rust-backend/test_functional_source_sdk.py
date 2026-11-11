@@ -364,6 +364,26 @@ class IsolatedSdkControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate.validate_result(dict(result, **{key: value}))
 
+    def test_ledger9_result_requires_distinct_funded_v3_proof(self):
+        result = dict(transaction_proof_version=3, funded_dust_spends=1,
+                      standalone_proof_bytes=2, transaction_proof_bytes=2,
+                      transaction_bytes=3)
+        with tempfile.TemporaryDirectory() as directory:
+            application = Path(directory)
+            (application / "standalone.proof").write_bytes(b"aa")
+            (application / "transaction-bound.proof").write_bytes(b"bb")
+            (application / "applied-transaction.bin").write_bytes(b"txn")
+            with patch.object(gate, "validate_result") as base:
+                gate.validate_ledger9_result(result, application)
+                base.assert_called_once_with(result)
+                for key, value in (("transaction_proof_version", 2), ("funded_dust_spends", True),
+                                   ("funded_dust_spends", 0), ("transaction_proof_bytes", 3)):
+                    with self.assertRaises(ValueError):
+                        gate.validate_ledger9_result(dict(result, **{key: value}), application)
+                (application / "transaction-bound.proof").write_bytes(b"aa")
+                with self.assertRaisesRegex(ValueError, "must be distinct"):
+                    gate.validate_ledger9_result(result, application)
+
     def test_selected_config_refuses_compiler_substitution_and_unchecked_profiles(self):
         for key in ("RUSTC_WRAPPER", "RUSTC_BOOTSTRAP", "CARGO_PROFILE_PROOF_CHECKS_DEBUG_ASSERTIONS",
                     "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS", "CLIPPY_ARGS"):

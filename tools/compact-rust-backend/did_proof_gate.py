@@ -88,15 +88,15 @@ def unchanged(inventory):
                 f"frozen input changed: {name}")
 
 
-def prerequisites(env):
+def prerequisites(env, *, zkir_name="zkir"):
     result = {}
     for name in ("MIDNIGHT_PP", "MIDNIGHT_LEDGER_TEST_STATIC_DIR"):
         path = Path(env.get(name, ""))
         require(bool(env.get(name)) and path.is_absolute() and path.is_dir()
                 and os.access(path, os.R_OK), f"{name} must name an absolute readable directory")
         result[name] = str(path.resolve())
-    zkir = shutil.which('zkir', path=env.get('PATH'))
-    require(zkir is not None, "DID proof gate requires zkir on PATH")
+    zkir = shutil.which(zkir_name, path=env.get('PATH'))
+    require(zkir is not None, f"proof gate requires {zkir_name} on PATH")
     result["zkir"] = str(Path(zkir).resolve())
     return result
 

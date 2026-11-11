@@ -39,7 +39,8 @@ import local_parity_gate as common
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE = ROOT / "doc/rust/guides/examples/functional-witness"
 ORIGINAL = ROOT / "tools/compact-rust-backend/tests/functional_effects/field_witness_proof.compact"
-REVISION = "b5d3e965a18e4cac17fac4f38446fc55c524439a"
+WITNESSED_K = 7
+ZKIR_VERSION = "midnight-zkir 3.2.0"
 TIMEOUT = 1200
 DRAIN = 2
 CONTROLS = {"witness_result": ("E0053", "Result<(u64, bool)"),
@@ -199,6 +200,24 @@ def validate_result(result):
         raise ValueError("applied Cell does not encode the selected Compact Field value 42")
 
 
+def validate_ledger9_result(result, application):
+    validate_result(result)
+    version = result.get("transaction_proof_version")
+    spends = result.get("funded_dust_spends")
+    if type(version) is not int or version != 3 or type(spends) is not int or spends != 1:
+        raise ValueError("expected a transaction-bound v3 proof and one proved Dust spend")
+    for filename, field in (
+        ("standalone.proof", "standalone_proof_bytes"),
+        ("transaction-bound.proof", "transaction_proof_bytes"),
+        ("applied-transaction.bin", "transaction_bytes"),
+    ):
+        size = result.get(field)
+        if type(size) is not int or size <= 0 or (application / filename).stat().st_size != size:
+            raise ValueError("retained proof/transaction length differs from actual result")
+    if digest(application / "standalone.proof") == digest(application / "transaction-bound.proof"):
+        raise ValueError("standalone and transaction-bound proofs must be distinct")
+
+
 def clippy_library_command(cargo, manifest, package):
     # These packages are dependencies outside the consumer workspace. Cargo
     # clippy's workspace wrapper does not lint them, even with --package.
@@ -353,7 +372,7 @@ def main(argv=None):
     if output.exists() or args.output.is_symlink() or output.is_relative_to(ROOT):
         raise ValueError("qualification output must be absent and outside the source checkout")
     output.mkdir(parents=True, mode=0o700)
-    receipt = {"format": "compact-functional-source-sdk/v1", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-functional-source-sdk/v2", "status": "incomplete", "commands": [],
                "scope": "one complete witnessed Cell source; raw default bundled functional SDK and explicit optional testkit source package",
                "limits": "selected source/host/configuration and official fixture qualification; not exhaustive semantics, hostile-host attestation, deployment/constructor proof, wallet lifecycle or fully vendored distribution"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", PYTHONDONTWRITEBYTECODE="1", CARGO_INCREMENTAL="0")
@@ -392,7 +411,7 @@ def main(argv=None):
             raise ValueError("default installed SDK qualification forbids COMPACT_RUST_RUNTIME_DIR")
         # Fail before generation or Cargo work when selected material/static
         # locations or the native ZKIR executable are missing.
-        prerequisites = receipt["prerequisites"] = did_proof_gate.prerequisites(env)
+        prerequisites = receipt["prerequisites"] = did_proof_gate.prerequisites(env, zkir_name="zkir-v3")
         receipt["dust_fixture_hashes"] = did_proof_gate.dust_fixture_inventory(
             Path(prerequisites["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         receipt["cargo_configuration_sha256"] = cargo_configuration(env)
@@ -419,6 +438,8 @@ def main(argv=None):
         for name, command in (("compiler", [compiler, "--version"]), ("zkir", [tools["zkir"]["path"], "--version"]),
                               ("cargo", ["cargo", "--version"]), ("rustc", ["rustc", "-Vv"]), ("clippy", ["cargo", "clippy", "--version"])):
             receipt.setdefault("versions", {})[name] = run(name+"-version", command).stdout.strip()
+        if receipt["versions"]["zkir"] != ZKIR_VERSION:
+            raise ValueError("expected the released Ledger 9 ZKIR v3 compiler")
         version = re.search(r"make-version 'compiler (\d+) (\d+) (\d+)", (ROOT / "compiler/compiler-version.ss").read_text())
         if version is None or receipt["versions"]["compiler"] != ".".join(version.groups()):
             raise ValueError("compiler version differs from selected source")
@@ -440,10 +461,10 @@ def main(argv=None):
         paths += [ROOT / p for p in expected_runtime]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths}
         receipt["runtime_bundle_hashes"] = expected_runtime
-        # k6 is the explicit maintained fixture recipe; verify actual content
+        # Verify the selected k7 fixture and built-in material content
         # before generating source or compiling the external consumer.
-        material = json.loads(run("verify-material", [tools["material-runner"]["path"], "--prepare-proof-material", "--verify-only", "--parameter-k", "6"]).stdout)
-        if material.get("mode") != "verify-only" or material.get("verification") != "all files checked against locked upstream SHA256 tables" or Path(material["cache_directory"]).resolve() != Path(env["MIDNIGHT_PP"]).resolve() or 6 not in [p["k"] for p in material["parameters"]]:
+        material = json.loads(run("verify-material", [tools["material-runner"]["path"], "--prepare-proof-material", "--verify-only", "--parameter-k", str(WITNESSED_K)]).stdout)
+        if material.get("mode") != "verify-only" or material.get("verification") != "all files checked against locked upstream SHA256 tables" or Path(material["cache_directory"]).resolve() != Path(env["MIDNIGHT_PP"]).resolve() or WITNESSED_K not in [p["k"] for p in material["parameters"]]:
             raise ValueError("selected SRS and built-ins require fresh upstream hash verification")
         receipt["verified_material"] = material
         material_names = [p["name"] for p in material["assets"]+material["parameters"]]
@@ -461,7 +482,7 @@ def main(argv=None):
         if profile.get("debug-assertions") is not True or profile.get("overflow-checks") is not True:
             raise ValueError("owned proof checks require assertions and checked overflow")
         generated = output / "generated"
-        run("compile-complete-source", [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-functional-ledger8", "--rust-require-recording", source, generated])
+        run("compile-complete-source", [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-functional-ledger9", "--rust-require-recording", source, generated])
         contract = generated / "contract"
         for name in ("runtime-rs", "runtime-rs-macros"):
             equal_inventory(contract / name, {p[len(name)+1:]: v for p,v in expected_runtime.items() if p.startswith(name+"/")})
@@ -470,8 +491,8 @@ def main(argv=None):
         receipt["staged_testkit_hashes"] = inventory(output / "testkit-rs")
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         cohort = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]}
-        ledger = tomllib.loads((contract / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger"]
-        if ledger.get("version") != "=8.1.3" or ledger.get("rev") != REVISION:
+        ledger = tomllib.loads((contract / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger-v9"]
+        if ledger != {"version": "=1.0.1", "optional": True}:
             raise ValueError("SDK ledger cohort differs")
         metadata = json.loads(run("metadata", ["cargo", "metadata", "--offline", "--format-version", "1", "--features", "proof", "--manifest-path", manifest]).stdout)
         receipt["dependency_graph"] = dependency_graph(metadata, consumer / "Cargo.lock", output, cohort)
@@ -510,9 +531,16 @@ def main(argv=None):
         (generated / "keys").mkdir()
         keygen = run("fresh-direct-keygen", [tools["zkir"]["path"], "compile", generated / "zkir/apply_offset.zkir", generated / "keys/apply_offset.prover", generated / "keys/apply_offset.verifier"])
         match = re.search(r"\(k=(\d+), rows=(\d+)\)", keygen.stdout+keygen.stderr)
-        if not match or int(match[1]) != 6:
-            raise ValueError("selected witnessed SDK fixture requires k=6; review geometry/material before changing it")
+        if not match or (int(match[1]), int(match[2])) != (WITNESSED_K, 68):
+            raise ValueError("selected witnessed SDK fixture requires k=7 and 68 rows")
         receipt["keygen"] = {"mode": "fresh direct native", "k": int(match[1]), "rows": int(match[2])}
+        receipt["generated_hashes"] = inventory(generated)
+        for name, expected in receipt["raw_generated_hashes"].items():
+            if receipt["generated_hashes"].get(name) != expected:
+                raise ValueError("original raw generated SDK changed during key generation")
+        additions = {"keys/apply_offset.prover", "keys/apply_offset.verifier", "zkir/apply_offset.bzkir"}
+        if set(receipt["generated_hashes"]) != set(receipt["raw_generated_hashes"]) | additions:
+            raise ValueError("unexpected generated SDK/material file membership")
         build = run("build-proof", ["cargo", "build", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--bin", "functional-sdk-proof", "--manifest-path", manifest, "--message-format", "json"])
         run("proof-clippy", ["cargo", "clippy", "--locked", "--offline", "--profile", "proof-checks", "--features", "proof", "--all-targets", "--manifest-path", manifest, "--", "-D", "warnings"])
         receipt["compiled_proof"] = proof_artifact(build.stdout, consumer)
@@ -522,20 +550,14 @@ def main(argv=None):
         (output / "bin").mkdir()
         receipt["proof_binary"] = common.stable_copy(binary, output / "bin/functional-sdk-proof")
         run("fresh-proof-and-strict-application", [receipt["proof_binary"]["snapshot"], generated, output / "application"])
-        result = json.loads((output / "application/result.json").read_text())
-        validate_result(result)
-        for filename, field in (("standalone.proof", "standalone_proof_bytes"), ("applied-transaction.bin", "transaction_bytes")):
-            if (output / "application" / filename).stat().st_size != result[field]:
-                raise ValueError("retained proof/transaction length differs from actual result")
+        application = output / "application"
+        receipt["application_hashes"] = inventory(application)
+        run("independent-standalone-verification", [receipt["proof_binary"]["snapshot"], "--verify", generated, application])
+        equal_inventory(application, receipt["application_hashes"])
+        result = json.loads((application / "result.json").read_text())
+        validate_ledger9_result(result, application)
         receipt["proof_result"] = result
-        receipt["application_hashes"] = inventory(output / "application")
-        receipt["generated_hashes"] = inventory(generated)
-        for name, expected in receipt["raw_generated_hashes"].items():
-            if digest(generated / name) != expected:
-                raise ValueError("original raw generated SDK changed during execution")
-        additions = {"keys/apply_offset.prover", "keys/apply_offset.verifier", "zkir/apply_offset.bzkir"}
-        if set(receipt["generated_hashes"]) != set(receipt["raw_generated_hashes"]) | additions:
-            raise ValueError("unexpected generated SDK/material file membership")
+        equal_inventory(generated, receipt["generated_hashes"])
         for relative, expected in inventory(EXAMPLE / "consumer").items():
             if digest(consumer / relative) != expected:
                 raise ValueError("documented external consumer source changed")
