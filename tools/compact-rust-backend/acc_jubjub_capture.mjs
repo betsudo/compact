@@ -20,11 +20,14 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {dirname, resolve} from 'node:path';
 import assert from 'node:assert/strict';
 import {parseArgs} from 'node:util';
-// --reference rechecks retained original-0.35 expectations with fresh ledger8 TS.
+// --reference rechecks retained original-0.35 expectations with fresh Ledger 8 TS.
+// --ledger9 keeps that reference and admits the Ledger 9 state encoding.
 // Without it, --oracle executes the original generated pure circuits directly.
-const {values:options}=parseArgs({options:{...Object.fromEntries(['generated','oracle','reference','boundaries','source','original-source','oracle-packages','provenance'].map(name=>[name,{type:'string'}])), 'runtime-inventory':{type:'boolean'}}});
+const {values:options}=parseArgs({options:{...Object.fromEntries(['generated','oracle','reference','boundaries','source','original-source','oracle-packages','provenance','runtime-root'].map(name=>[name,{type:'string'}])), 'runtime-inventory':{type:'boolean'}, ledger9:{type:'boolean'}}});
 const repo=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
-const runtimeRoot=resolve(repo,'runtime');
+const runtimeRoot=options['runtime-root']?resolve(options['runtime-root']):resolve(repo,'runtime');
+const ledger9=options.ledger9===true;
+if(ledger9) assert.ok(options.reference && options['runtime-root'],'Ledger 9 needs an original reference and an explicit runtime root');
 const hash=path=>createHash('sha256').update(readFileSync(path)).digest('hex');
 function runtimeInventory() {
  const files=new Set(), packages=new Set();
@@ -60,7 +63,7 @@ if(!options.reference) for(const name of ['original-source','oracle-packages']) 
 const wrapper=resolve(options.generated);
 const modulePath=resolve(dirname(wrapper),'node_modules/@midnight-ntwrk/compact-runtime');
 if(!existsSync(modulePath)) {mkdirSync(dirname(modulePath),{recursive:true});symlinkSync(runtimeRoot,modulePath);}
-assert.equal(realpathSync(modulePath),realpathSync(runtimeRoot),'wrong ledger8 runtime');
+assert.equal(realpathSync(modulePath),realpathSync(runtimeRoot),'wrong Compact runtime');
 const runtimePath=createRequire(pathToFileURL(wrapper)).resolve('@midnight-ntwrk/compact-runtime');
 const r=await import(pathToFileURL(runtimePath));
 const c=await import(pathToFileURL(wrapper));
@@ -161,7 +164,7 @@ try {
   assert.ok(error,`${id}: input must refuse`);assert.equal(active.length,0);
   const after=Buffer.from(state.serialize()).toString('hex');assert.equal(before,after);
   assert.equal(context.currentPrivateState,17);
-  refusals.push({id,error,before,after,privateBefore:17,privateAfter:context.currentPrivateState,queries:active,scope:'ledger8 TypeScript wrapper input validation'});active=undefined;
+  refusals.push({id,error,before,after,privateBefore:17,privateAfter:context.currentPrivateState,queries:active,scope:ledger9?'Ledger 9 TypeScript wrapper input validation':'ledger8 TypeScript wrapper input validation'});active=undefined;
  }
  if(contract.circuits.raw){
   for(const id of ['q_minus_one','q']){
@@ -197,5 +200,27 @@ else identityPaths.push(resolve(options['original-source']),oracle,originalRunti
 assert.deepEqual(runtimeInventory(),runtimeHashes,'runtime closure changed during capture');
 writeFileSync(resolve(options.provenance),JSON.stringify({format:'compact-acc-jubjub-wrapper-provenance/v1',oracleMode:reference?'retained-original-reference':'live-original',command:process.argv,node:process.version,runtime:{path:realpathSync(runtimePath),...(originalRuntimePath?{originalPath:realpathSync(originalRuntimePath)}:{})},runtimeHashes,inputs:identityPaths.map(path=>({path,sha256:hash(path)}))},null,2)+'\n');
 const result={format:'compact-acc-jubjub-wrapper-capture/v1',kind:'acc-jubjub-cell',oracle:'original Compact0.35/runtime0.20 pure cast circuits plus original runtime ecAdd; supplied point generator(7)',cases,refusals,rawCases};
-if(reference) assert.deepEqual(result,reference,'fresh ledger8 TS differs from retained original-reference observations');
+if(ledger9) {
+ const expected=structuredClone(reference);
+ for(const group of ['cases','refusals','rawCases']) {
+  assert.deepEqual(result[group].map(row=>row.id),expected[group].map(row=>row.id));
+  for(const [index,row] of expected[group].entries()) {
+   const actual=result[group][index];
+   for(const field of ['before','after']) {
+    if(!(field in row)) continue;
+    assert.ok(Buffer.from(row[field],'hex').toString().startsWith('midnight:contract-state[v6]:'));
+    assert.ok(Buffer.from(actual[field],'hex').toString().startsWith('midnight:contract-state[v8]:'));
+    row[field]=actual[field];
+   }
+   if(['raw-q','raw-q-generator','raw-q-point'].includes(row.id)) {
+    assert.match(row.error,/^Error: failed to decode for built-in type EmbeddedFr/);
+    row.error='RangeError: invalid Jubjub scalar';
+   }
+   if(row.scope==='ledger8 TypeScript wrapper input validation') row.scope='Ledger 9 TypeScript wrapper input validation';
+  }
+ }
+ assert.deepEqual(result,expected,'Ledger 9 changed a retained Jubjub behavior');
+} else if(reference) {
+ assert.deepEqual(result,reference,'fresh ledger8 TS differs from retained original-reference observations');
+}
 console.log(JSON.stringify(result,null,2));

@@ -235,9 +235,12 @@ export function ecNeg(a: JubjubPoint): JubjubPoint {
  * The Compact builtin `ecMul` function
  *
  * This function multiplies an elliptic curve point by a scalar (in
- * multiplicative notation)
+ * multiplicative notation).
+ *
+ * @throws RangeError if the scalar is outside [0, JUBJUB_SCALAR_MODULUS).
  */
 export function ecMul(a: JubjubPoint, b: bigint): JubjubPoint {
+  assertCanonicalJubjubScalar(b);
   return CompactTypeJubjubPoint.fromValue(ocrt.ecMul(CompactTypeJubjubPoint.toValue(a), ocrt.bigIntToValue(b)));
 }
 
@@ -245,10 +248,21 @@ export function ecMul(a: JubjubPoint, b: bigint): JubjubPoint {
  * The Compact builtin `ecMulGenerator` function
  *
  * This function multiplies the primary group generator of the embedded curve
- * by a scalar (in multiplicative notation)
+ * by a scalar (in multiplicative notation).
+ *
+ * @throws RangeError if the scalar is outside [0, JUBJUB_SCALAR_MODULUS).
  */
 export function ecMulGenerator(b: bigint): JubjubPoint {
+  assertCanonicalJubjubScalar(b);
   return CompactTypeJubjubPoint.fromValue(ocrt.ecMulGenerator(ocrt.bigIntToValue(b)));
+}
+
+function assertCanonicalJubjubScalar(scalar: bigint): void {
+  // The Ledger 9 WASM primitive reduces its operand. Compact requires an
+  // explicit reduction before multiplying by a noncanonical Field.
+  if (scalar < 0n || scalar >= JUBJUB_SCALAR_MODULUS) {
+    throw new RangeError('invalid Jubjub scalar');
+  }
 }
 
 /**
