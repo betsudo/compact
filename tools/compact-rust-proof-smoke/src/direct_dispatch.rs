@@ -419,7 +419,8 @@ pub(super) fn try_run(
             }
         })(
         )),
-        ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
+        ("--direct-fold", _) => Some(collections::direct_fold(arguments, false)),
+        ("--direct-fold-verify", _) => Some(collections::direct_fold(arguments, true)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
             let root = arguments

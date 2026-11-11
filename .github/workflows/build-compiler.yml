@@ -1284,7 +1284,8 @@ jobs:
 
       - name: Qualify selected direct Fold proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-direct-fold-proof"
 
       - name: Qualify selected Field return-wrapper proofs
         run: |

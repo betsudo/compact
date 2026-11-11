@@ -514,6 +514,7 @@ pub(super) fn tuple_return_wrappers(
 /// Direct proof path for the genuine #661 Fold sources.
 pub(super) fn direct_fold(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --direct-fold <case> <proof-output>";
     let case = arguments.next().ok_or(usage)?;
@@ -521,7 +522,12 @@ pub(super) fn direct_fold(
     if arguments.next().is_some() {
         return Err(usage.into());
     }
-    crate::direct_fold::run(case.to_str().ok_or(usage)?, Path::new(&root))
+    let case = case.to_str().ok_or(usage)?;
+    if verify {
+        crate::direct_fold::verify(case, Path::new(&root))
+    } else {
+        crate::direct_fold::run(case, Path::new(&root))
+    }
 }
 
 /// Direct proof path for the genuine ordered Unit initializer source.
