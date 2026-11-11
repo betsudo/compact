@@ -137,6 +137,11 @@ fn apply(
         return Err(format!("{name} prepared operation differs from the proof artifact").into());
     }
     let proof = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
+    verify_separately(root, name, stem)?;
+    v3::apply_checked(root, name, stem, prepared, deploy, &proof, check_state)
+}
+
+pub(super) fn verify_separately(root: &Path, name: &str, stem: &str) -> Result<(), Box<dyn Error>> {
     let verification = Command::new(std::env::current_exe()?)
         .arg("--positional-call-verify")
         .arg(root)
@@ -145,7 +150,7 @@ fn apply(
     if !verification.success() {
         return Err(format!("{name} separate v3 verification failed: {verification}").into());
     }
-    v3::apply_checked(root, name, stem, prepared, deploy, &proof, check_state)
+    Ok(())
 }
 
 pub(super) fn verify(arguments: &mut impl Iterator<Item = OsString>) -> Result<(), Box<dyn Error>> {
