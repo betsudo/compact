@@ -55,8 +55,8 @@ use r::{
     fab::AlignedValue,
     ledger::DefaultDB,
     transaction::{
-        CallSpec, EncodedSizeLimit, Observation, ObservedContractState, PrepareCallError,
-        prepare_call,
+        EncodedSizeLimit, Observation, ObservedCallError, ObservedContractState, PrepareCallError,
+        RecordedCall,
     },
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -337,11 +337,11 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         .execute_recorded(observed.circuit_context(private))?;
     malformed.execution.context.query.state = initial.ledger_state.clone();
     assert!(matches!(
-        prepare_call(
-            malformed,
-            CallSpec::new(NAME, verifier.clone(), delta, communication_randomness)
-        ),
-        Err(PrepareCallError::ReplayStateMismatch)
+        RecordedCall::new(&observed, malformed, NAME, delta)
+            .prepare(verifier.clone(), communication_randomness),
+        Err(ObservedCallError::Prepare(
+            PrepareCallError::ReplayStateMismatch
+        ))
     ));
     let recorded = c::functional::advance::Program::new(delta)
         .execute_recorded(observed.circuit_context(private))?;
@@ -353,16 +353,11 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         generated::ledger_slots::stored.inspect(&expected)?,
         expected_value
     );
-    let prepared = prepare_call(
-        recorded,
-        CallSpec::new(NAME, verifier.clone(), delta, communication_randomness),
-    )?;
-    let ordinary = c::recorded::advance(observed.circuit_context(private), delta)?;
-    assert_eq!(ordinary.execution.result, expected_value);
-    let ordinary = prepare_call(
-        ordinary,
-        CallSpec::new(NAME, verifier.clone(), delta, communication_randomness),
-    )?;
+    let prepared = RecordedCall::new(&observed, recorded, NAME, delta)
+        .prepare(verifier.clone(), communication_randomness)?;
+    let ordinary = c::recorded::Contract.advance_call(&observed, private, delta)?;
+    assert_eq!(ordinary.recorded().execution.result, expected_value);
+    let ordinary = ordinary.prepare(verifier.clone(), communication_randomness)?;
     assert_same_call(&prepared, &ordinary);
     assert_eq!(prepared.address, address);
     assert_eq!(prepared.entry_point, entry);
