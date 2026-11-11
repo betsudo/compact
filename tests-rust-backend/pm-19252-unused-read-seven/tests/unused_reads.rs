@@ -137,11 +137,15 @@ fn unused_public_and_private_cells_preserve_zero_and_populated_reads() {
     for (kind, raw) in [
         (
             "eight-a",
-            include_str!("../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-a.json"),
+            include_str!(
+                "../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-a.json"
+            ),
         ),
         (
             "eight-b",
-            include_str!("../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-b.json"),
+            include_str!(
+                "../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-b.json"
+            ),
         ),
     ] {
         let oracle: serde_json::Value = serde_json::from_str(raw).unwrap();

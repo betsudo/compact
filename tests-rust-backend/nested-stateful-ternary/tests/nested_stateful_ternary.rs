@@ -24,7 +24,10 @@ use midnight_storage::storage::HashMap;
 
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let mut operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
-    operations = operations.insert(EntryPointBuf(b"run".to_vec()), ContractOperation::new(None, None));
+    operations = operations.insert(
+        EntryPointBuf(b"run".to_vec()),
+        ContractOperation::new(None, None),
+    );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

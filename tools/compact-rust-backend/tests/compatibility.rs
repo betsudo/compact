@@ -393,7 +393,11 @@ fn same_version_alternate_dependency_sources_refuse_before_frontend_and_publicat
     for (dependency, key, alternate) in [
         ("midnight-compact-runtime-macros", "path", "../other-macros"),
         ("midnight-ledger-v9", "path", "../other-ledger"),
-        ("midnight-ledger-v9", "git", "https://invalid.example/ledger"),
+        (
+            "midnight-ledger-v9",
+            "git",
+            "https://invalid.example/ledger",
+        ),
         (
             "midnight-ledger-v9",
             "rev",
@@ -545,7 +549,9 @@ fn midnight_dependencies_in_every_context_are_checked_before_frontend() {
                     spec,
                 );
                 let label = match target {
-                    Some(target) => format!("runtime-rs.target.{target}.{context}.midnight-ledger-v9"),
+                    Some(target) => {
+                        format!("runtime-rs.target.{target}.{context}.midnight-ledger-v9")
+                    }
                     None => format!("runtime-rs.{context}.midnight-ledger-v9"),
                 };
                 public_refusal(&root, &label);

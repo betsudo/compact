@@ -89,7 +89,8 @@ fn encoded(value: &r::ledger::ContractState<r::ledger::DefaultDB>) -> String {
 
 #[test]
 fn scalar_boundaries_match_original_oracle_ts_state_and_recorded_execution() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
     assert_eq!(capture["format"], "compact-acc-jubjub-wrapper-capture/v1");
     let rows = capture["cases"].as_array().unwrap();
     assert_eq!(rows.len(), 7);
@@ -223,7 +224,8 @@ fn scalar_boundaries_match_original_oracle_ts_state_and_recorded_execution() {
 
 #[test]
 fn generated_raw_mul_preserves_canonical_refusal_and_rollback() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
     let rows = capture["rawCases"].as_array().unwrap();
     assert_eq!(rows.len(), 2);
     for row in rows {
