@@ -4,7 +4,8 @@
 use super::*;
 const NAME: &str = "verifySchnorrJubjubDigestSignature";
 fn rows() -> Vec<Value> {
-    let capture: Value = serde_json::from_str(include_str!("../../oracle/lifecycle.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../../oracle/ledger9/lifecycle.json")).unwrap();
     capture["scenarios"]
         .as_array()
         .unwrap()

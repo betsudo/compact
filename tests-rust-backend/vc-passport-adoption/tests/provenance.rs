@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn pinned_source_closure_matches_all_seventeen_hashes() {
@@ -203,17 +204,71 @@ fn oracle_programs_and_captures_match_recorded_provenance() {
             "{name}"
         );
     }
-    let lib = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("lib.rs");
-    // The oracle provenance describes its original compiler epoch. Preserve it
-    // when the current compiler refreshes the complete generated Rust fixture.
-    let current: serde_json::Value =
-        serde_json::from_str(include_str!("../generated-rust.json")).unwrap();
+    let ledger8: Value = serde_json::from_str(include_str!("../generated-rust.json")).unwrap();
     assert_eq!(
-        current["historical_generated_rust_sha256"],
+        ledger8["historical_generated_rust_sha256"],
         provenance["branch_typescript_and_rust"]["checked_in_generated_rust_sha256"]
     );
+}
+
+#[test]
+fn ledger9_capture_matches_retained_cases_and_current_generated_rust() {
+    let binding: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9/binding.json")).unwrap();
+    let package = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let oracle = package.join("oracle");
     assert_eq!(
-        format!("{:x}", Sha256::digest(std::fs::read(lib).unwrap())),
-        current["generated_rust_sha256"]
+        binding["format"],
+        "compact-passport-ledger9-capture-binding/v1"
     );
+    assert_eq!(binding["compact_runtime"], "0.17.0");
+    assert_eq!(binding["onchain_runtime"], "4.0.1");
+    assert_eq!(
+        format!(
+            "{:x}",
+            Sha256::digest(include_bytes!(
+                "../../../examples/rust_backend/vc_passport_adoption/source-manifest.json"
+            ))
+        ),
+        binding["source_manifest_sha256"]
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(include_bytes!("../lib.rs"))),
+        binding["generated_rust_sha256"]
+    );
+    assert_eq!(
+        format!(
+            "{:x}",
+            Sha256::digest(include_bytes!("../generated-rust.json"))
+        ),
+        binding["ledger8_generated_rust_record_sha256"]
+    );
+    let captures = binding["captures"].as_object().unwrap();
+    let historical: Value =
+        serde_json::from_str(include_str!("../oracle/provenance.json")).unwrap();
+    let files = historical["oracle_files"].as_object().unwrap();
+    let expected = files
+        .keys()
+        .filter(|name| name.starts_with("branch-"))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(expected.len(), 12);
+    assert_eq!(captures.keys().collect::<BTreeSet<_>>(), expected);
+    for (name, hash) in captures {
+        let retained: Value =
+            serde_json::from_slice(&std::fs::read(oracle.join(name)).unwrap()).unwrap();
+        let current = std::fs::read(oracle.join("ledger9").join(name)).unwrap();
+        assert_eq!(format!("{:x}", Sha256::digest(&current)), *hash, "{name}");
+        let current: Value = serde_json::from_slice(&current).unwrap();
+        let mut retained = retained.as_object().unwrap().clone();
+        let mut current = current.as_object().unwrap().clone();
+        assert_eq!(
+            retained.remove("profile").unwrap(),
+            "branch-0.31.133-ledger8.0.3"
+        );
+        assert_eq!(
+            current.remove("profile").unwrap(),
+            "branch-ledger9-runtime0.17.0-onchain4.0.1"
+        );
+        assert_eq!(current, retained, "{name}");
+    }
 }

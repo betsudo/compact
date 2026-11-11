@@ -36,7 +36,8 @@ fn state(row: &Value) -> r::ledger::ContractState<r::ledger::DefaultDB> {
 
 #[test]
 fn original_digest_five_cases_match_native_recorded_and_independent_ts() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/lifecycle.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9/lifecycle.json")).unwrap();
     let mut count = 0;
     for scenario in capture["scenarios"].as_array().unwrap() {
         for row in scenario["steps"]

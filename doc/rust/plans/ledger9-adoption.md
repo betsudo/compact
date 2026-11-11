@@ -191,10 +191,42 @@ features and targets. The original DID native lifecycle and the 30-step
 witnessed SDK gate also passed with the corrected packaged compiler.
 Both Ledger 9 proof gates refuse a configured external proof server.
 
-The next capture cohort covers the older reviewed DID and Passport fixtures.
-A fresh TypeScript probe of the original DID generated library matched the
-current Rust fixture byte-for-byte after formatting. Its 203 lifecycle steps
-retained the same case identities and changed only serialized state fields.
-All 102 pure cases matched. These probe captures still need their own reviewed
-binding and Rust acceptance. The full behavioral workspace suite and the
-remaining required Linux integration lanes are open.
+The reviewed original DID tests now use fresh Ledger 9 captures. The unchanged
+capture producers ran with Compact Runtime 0.17.0 and Onchain Runtime 4.0.1.
+The complete generated DID Rust library matched the checked-in library after
+formatting. All 203 lifecycle steps and 24 composition rows retained their
+case identities and changed only serialized contract-state fields. All 102
+pure cases matched. The DID and reduced crypto composition suites passed all
+48 tests on macOS arm64 with Rust 1.99, including full state and transcript
+comparisons and the retained and current identity checks.
+
+The [capture binding](../../../tests-rust-backend/did-adoption/oracle/ledger9/binding.json)
+records the paired compiler, runtime package, generated JavaScript, input and
+test hashes. The original capture files and review records retain their Ledger
+8 identities. To reproduce the Ledger 9 observations, generate both targets
+from the unchanged DID source with `--feature-zkir-v3 --rust-require-recording
+--skip-zk` and the paired Rust runtime root. Generate the reduced
+`unit_composition_crypto.compact` TypeScript target with
+`--feature-zkir-v3 --skip-zk`. Run the original DID lifecycle, pure and
+composition producers from a staged repository root, with the paired package
+at `runtime` and both generated modules resolving that same package. Keep the
+producers and case modules at their original repository-relative paths so the
+capture can hash its inputs. Only the new Ledger 9 data enters these Rust
+conformance tests. The existing Ledger 8 proof inputs stay bound to their
+original evidence.
+
+The original Passport fixture also has a
+[Ledger 9 binding](../../../tests-rust-backend/vc-passport-adoption/oracle/ledger9/binding.json).
+The paired compiler regenerated the complete Rust library and TypeScript
+contract from the pinned 17-file source closure. The original TypeScript
+producers recaptured all 202 named cases across 75 exports. The data matched
+the historical branch captures exactly after comparing each profile label
+separately. The Rust fixture tests check the new capture hashes and complete
+generated library alongside the two historical TypeScript profiles. The
+Passport fixture passed all 20 tests on macOS arm64. The original contract
+exports only pure circuits.
+
+The required standalone Passport SDK checker still pins Ledger 8.1.3. Port
+that checker and qualify the isolated generated consumer and documented
+crate. The full behavioral workspace suite, remaining proof consumers and
+required Linux integration lanes also remain open.

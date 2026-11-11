@@ -130,7 +130,8 @@ fn compare(lab: &mut ContractLab<u64>, row: &Value) {
 #[test]
 fn nine_existing_schnorr_method_cases_match_recording_from_independent_ts_prestates() {
     // Captured prestates are not a claim of sequential on-chain deployment.
-    let capture: Value = serde_json::from_str(include_str!("../oracle/lifecycle.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9/lifecycle.json")).unwrap();
     let mut count = 0;
     for scenario in capture["scenarios"].as_array().unwrap() {
         for row in scenario["steps"].as_array().unwrap().iter().filter(|r| {
@@ -150,8 +151,10 @@ fn nine_existing_schnorr_method_cases_match_recording_from_independent_ts_presta
 
 #[test]
 fn original_constructor_schnorr_method_cycle_retains_only_successful_mutations() {
-    let capture: Value =
-        serde_json::from_str(include_str!("../oracle/schnorr-method-lifecycle.json")).unwrap();
+    let capture: Value = serde_json::from_str(include_str!(
+        "../oracle/ledger9/schnorr-method-lifecycle.json"
+    ))
+    .unwrap();
     let scenario = &capture["scenarios"][0];
     let constructor =
         c::initial_state(ConstructorContext::new(0u64), &Witness::new(json!({}))).unwrap();

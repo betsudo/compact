@@ -233,8 +233,8 @@ fn original_42_relation_calls_match_native_recorded_replay_and_owned_rollback() 
     let mut success = 0;
     let mut failure = 0;
     for capture in [
-        include_str!("../oracle/lifecycle.json"),
-        include_str!("../oracle/jwk-method-lifecycle.json"),
+        include_str!("../oracle/ledger9/lifecycle.json"),
+        include_str!("../oracle/ledger9/jwk-method-lifecycle.json"),
     ] {
         let data: Value = serde_json::from_str(capture).unwrap();
         for scenario in data["scenarios"].as_array().unwrap() {

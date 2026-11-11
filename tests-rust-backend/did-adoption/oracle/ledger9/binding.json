@@ -1,0 +1,260 @@
+{
+  "format": "compact-did-ledger9-capture-binding/v1",
+  "ledger8_head": "09c75e2891283fed65f2db385925a5a4b9409af6",
+  "compiler_sha256": "5659741944a7b239bdaf359bf9a0ef00a4e7a027a8fa2e2fe023512e0305f416",
+  "compiler_scheme_sha256": "96f372d463460d28a0a8545b90623d7075b82d6f6fead2d121f36233ee878692",
+  "compact_runtime": "0.17.0",
+  "runtime_package_sha256": "11432504805742fb38ce8bfafd126c59829867d54cf89953bcbde74dd0fb0257",
+  "onchain_runtime": "4.0.1",
+  "runtime_builtins_sha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+  "did_javascript_sha256": "f366564e7f17d30c707c24e028f90929e9090b78dfb8013c2ce23fdd40b6fceb",
+  "crypto_javascript_sha256": "bb33491416899450e5c2950e0a8e213f96dbe827f7d4574043fc23d84e20ff87",
+  "ledger8_artifacts": [
+    {
+      "path": "runtime-rs/tests/fixtures/unit-composition.json",
+      "sha256": "efdad2518994cd41fad6266425224e3d052571cd80296c3c001dfd9ea43735ff"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/alias-lifecycle.json",
+      "sha256": "557796e7f83983359503fef7a56d3e23aac1166c2ef2cde3e95d9d1ca9c7edad"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/jwk-method-lifecycle.json",
+      "sha256": "56df9bcd03854ba683cf13e3ae9693e01e2f1b77521fb6f58a57a81856a6e1ed"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/lifecycle.json",
+      "sha256": "cf05647f226dc2d7bbad7191d38858ac315629cb38a5cb3dea93407abfe00273"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/point-lifecycle.json",
+      "sha256": "bdc3401d4a8a8764eca570b5c8cc63590e432c7f3b2d8362fb78819798692fb1"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/pure.json",
+      "sha256": "f0634240c2c621651e81d597fc6599d131d4519599345f65e8c412ee0675e108"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/reviewed-matrix.json",
+      "sha256": "5c9eaf44cfbaaf4e16aec5f708a18e982a61bb964ebd49c85fb21ba5f1fd79f0"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/reviewed-rust-binding.json",
+      "sha256": "4c4d0e450406e7d1052465f11baf70c4ea805ab4bcea80b811367a0cd404bbe8"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/schnorr-method-lifecycle.json",
+      "sha256": "d0fa7c4e3377723edcfe102406425c948e49dc5402c0d5951ad0c28ebdfe53b8"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/service-lifecycle.json",
+      "sha256": "d976d448e1ae0296776ee963750fce87d0eb0ae34790b222f1cd48c7ad0433e6"
+    }
+  ],
+  "ledger9_artifacts": [
+    {
+      "path": "examples/rust_backend/did_adoption/packages/contract/src/did.compact",
+      "sha256": "632f34af543924edb185fe9c8eda54aa4ca0503b0b9e8ee3ff06ec470f6d7456"
+    },
+    {
+      "path": "examples/rust_backend/did_adoption/packages/jubjub-schnorr/src/schnorr.compact",
+      "sha256": "f072731d730d72f8b76b183df2c5187b233a0838d9462894cfb0a6d2f0f66bff"
+    },
+    {
+      "path": "examples/rust_backend/did_adoption/source-manifest.json",
+      "sha256": "a5386c2d3cc8d2f3aa090599a6038efc638f36f20ede19a7067a1ba416610106"
+    },
+    {
+      "path": "examples/rust_backend/unit_composition_crypto.compact",
+      "sha256": "100a7153e8de09860c8d9eac1075e27a1727d3239e10d57ac5005fb63b5985eb"
+    },
+    {
+      "path": "runtime-rs/tests/fixtures/capture-unit-composition.mjs",
+      "sha256": "add83bc46d04da43354cda846e1856b90a154b5a0672c015f57d177406a97041"
+    },
+    {
+      "path": "runtime-rs/tests/fixtures/ledger9-unit-composition.json",
+      "sha256": "c3892252790d9d76bc38a43634d747d9d4b9c219198e25c2ebba416bb3008b71"
+    },
+    {
+      "path": "runtime/src/built-ins.ts",
+      "sha256": "85d1d07444228a30f59ae500a9fd5b2b0385a48b44e6dcb9e01be8839686e965"
+    },
+    {
+      "path": "runtime/src/compact-types.ts",
+      "sha256": "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/lib.rs",
+      "sha256": "3e9d1d963651abc37028a34c2d72a35ddc2832913dcd7634c8447d210bf5bedd"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/alias-lifecycle-cases.mjs",
+      "sha256": "cb3d5965f603d0e31c3f2ce95514e3b9a83fab8e63d6fa909d0468799dfb8967"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/capture-lifecycle.mjs",
+      "sha256": "edc8157b6e0c85787e81cfd8edac2636f8c16975f597e1e5ca7eab3c5cab431a"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/capture-pure.mjs",
+      "sha256": "202f0eeab673a1e96938b7a02fc71ce2e040ac015bdfaaa9c419d2e99a6b26d9"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/jwk-method-lifecycle-cases.mjs",
+      "sha256": "d0f585b84770166d12d53c8da6c7e557f7769fa7ff183c77a6bcd3c2ca6f2ae8"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/alias-lifecycle.json",
+      "sha256": "717241bd0741245455823d84a7ceb91b755d268a4d86c126f00d995a98bbadfd"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/jwk-method-lifecycle.json",
+      "sha256": "a508f5151b42df652798990f27afb4ac202881094f330d64d475e376dfda0f67"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json",
+      "sha256": "12e76529399bc2cfbbba96b244de12f8d26e9a3f843cda6706da2839992480d6"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/point-lifecycle.json",
+      "sha256": "5fba55ace235af4df318d3810fa2e8636dbbdf7d8eae5dcb03feba03d8a48b9c"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/pure.json",
+      "sha256": "d0a9830caf609657d0b5d182621ba1c39055cd3d50cd83d9c286234508099d6a"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/schnorr-method-lifecycle.json",
+      "sha256": "3ed1b95b1efa6bf9e82b2d2e8160303c36d80e29c6332e38dc3a3e1e2d0d2cf9"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/ledger9/service-lifecycle.json",
+      "sha256": "9cb8925602dd58dc5b8b79ac2a0c0a36642efd68887e6b451ee408ebe6d3a57a"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/lifecycle-cases.mjs",
+      "sha256": "50c22a739e6b6cf69c875cd205476223d9b529a971b917a77241eace9ceafa9d"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/point-lifecycle-cases.mjs",
+      "sha256": "3fd3cac40c116fa9822d14a78c2ff1c79e473897b5d6ca1e84e69b6a76874e72"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/schnorr-method-lifecycle-cases.mjs",
+      "sha256": "7ce4b5fa1691d9421629a833efff7006c87adb2e99cb6864fdde030ae6444b7a"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/oracle/service-lifecycle-cases.mjs",
+      "sha256": "00299ded033d1fccf92fac95e222b1b792a15d1eccf429a0735a286be978c125"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/alias_calls.rs",
+      "sha256": "e158d5e9d9fac4fb324d66bf847b19cf6f0cf15940763e7f4388f156d8745bf3"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/codec.rs",
+      "sha256": "91695087c80d17f8d0f18968655eef31820044a8577ba0a5671e9e45ba0546ba"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/jwk_method_calls.rs",
+      "sha256": "f65d3163778a2bd163bfd28c6ec0c1375a05044eb3e694a1d2c5027ed71b8d9f"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/lifecycle_calls.rs",
+      "sha256": "b4a38835bfd9230aad0440f628190cb1c48de1b408892686efadf03a2fd50b19"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/lifecycle_witness.rs",
+      "sha256": "4f2d31d790096836439efce442f61f0b05952edc1daf0598a7d2b09373f92f69"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/point_calls.rs",
+      "sha256": "8642d94d79b291c1798800529d2983c706fd9586d484df0abab267918e7637db"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/schnorr_method_calls.rs",
+      "sha256": "7dd634e4c9133a7cf5161263a0c9a67730bd5b46390db94f65ffd7dfb50c2795"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/support/service_calls.rs",
+      "sha256": "33ce74426410d6becc8828bc021c49faee88f03fc0be24e747a13f6a8b4c224b"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/alias_recording.rs",
+      "sha256": "28213ec4d5e3818cd4884f01a7f7ca40a2ad8439318c0c225d20d64925bac1f0"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/composition.rs",
+      "sha256": "e43c3f1182763c356d70939e7ca1349f9de677634ff6dcb6510a48922d333ddb"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/contract_lab.rs",
+      "sha256": "b036e5160725f0e8c140c86d32a48e7c06d80da7745750e1c654dfc20cd51d14"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_qualification.rs",
+      "sha256": "105aa3fad73a04b2f0b74c7d5fb5ddfd5120d4f3f879649d881e48c56f3b1616"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_qualification/manual.rs",
+      "sha256": "6d1ee41ae2d88ed2e1ebac3e9b762f31b5ff19832ef942972c0b8832162f0538"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_qualification/mod.rs",
+      "sha256": "834bc1fff915fdfd06b7a424f82d14bc02039886e38936cc61539aae385f2ee9"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_qualification/provider.rs",
+      "sha256": "4c8755f1ceecd6f0cfafa60e05d3efd22a4048583bf060c5daa4b0c04ab8d207"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_qualification/scenarios.rs",
+      "sha256": "431a8c16fcb4fcd28d0e6b2bbb15dbeff0e16b7eeafeea0a90dfdf949c030b2e"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/digest_recording.rs",
+      "sha256": "2a1361aecbcfe84c6e1298f766f140a235afeb95eb5fd736ae740ab242dcdacf"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/jwk_method_recording.rs",
+      "sha256": "a42d5bbdc4e4f3e5bf475f07cc953437b99d77c24b8331ebfa0ed54cc564cc08"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/lifecycle.rs",
+      "sha256": "ac869e94eea2a2190a6cc3265c5dc4ae4f3877c8c9d0cfcd5e9378cb64e4d59f"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/point_recording.rs",
+      "sha256": "e137afc659b6c1d9eb6fdcdcb7baad48aea9d1b4c6c2e9fa78c496ce007453da"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/provenance.rs",
+      "sha256": "b864ec12133eff1391a010296ab7d7c122b9a66e9f0be2fc746b8f7ed6000884"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/pure_apis.rs",
+      "sha256": "8060752424524816be2307f59d56e96da4899aa50cb1b09c5710dca8c429772b"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/relation_recording.rs",
+      "sha256": "2af8981cd07f409ec9ae7b9cc5a935855c9ef11867c892e7ec17bebb625084bb"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/schnorr_method_recording.rs",
+      "sha256": "8f3296504435a823a85e1c31e2cbc34ada74c8190ec4825d88dec33867eeb2c2"
+    },
+    {
+      "path": "tests-rust-backend/did-adoption/tests/service_recording.rs",
+      "sha256": "74f52eda7259c8455359bab59c3d2fcda51b9653c6045fd1ab2a2f42fc6ec463"
+    },
+    {
+      "path": "tests-rust-backend/support/reviewed_capture.rs",
+      "sha256": "482cea8e2806f220a939e02f459ffad9c7ff25c685e7bf6aab051f2bc528217b"
+    },
+    {
+      "path": "tests-rust-backend/unit-composition-crypto/tests/composition.rs",
+      "sha256": "4898734306f5b309180fb7b5623acc2ca00e9389ca2219350b68a815b277e787"
+    }
+  ]
+}

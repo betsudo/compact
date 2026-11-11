@@ -13,10 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Checked-in evidence is bound to the original source, capture code and typed
-//! assertions. Changes require reviewing and regenerating the explicit matrix.
-#[path = "../../support/reviewed_capture.rs"]
-mod reviewed_capture;
+//! The retained Ledger 8 review and the current Ledger 9 captures each have
+//! their own byte identities. The reviewed case matrix still governs coverage.
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -46,7 +44,22 @@ fn hash_rows(rows: &Value) {
     }
 }
 #[test]
-fn capture_source_and_reviewed_test_identities() {
+fn retained_ledger8_evidence_keeps_its_original_identity() {
+    let binding = data("ledger9/binding.json");
+    assert_eq!(
+        binding["ledger8_head"],
+        "09c75e2891283fed65f2db385925a5a4b9409af6"
+    );
+    hash_rows(&binding["ledger8_artifacts"]);
+}
+
+#[test]
+fn ledger9_capture_source_and_test_identities() {
+    let binding = data("ledger9/binding.json");
+    assert_eq!(binding["format"], "compact-did-ledger9-capture-binding/v1");
+    assert_eq!(binding["compact_runtime"], "0.17.0");
+    assert_eq!(binding["onchain_runtime"], "4.0.1");
+    hash_rows(&binding["ledger9_artifacts"]);
     for file in [
         "lifecycle.json",
         "pure.json",
@@ -56,13 +69,37 @@ fn capture_source_and_reviewed_test_identities() {
         "schnorr-method-lifecycle.json",
         "jwk-method-lifecycle.json",
     ] {
-        reviewed_capture::verify(env!("CARGO_MANIFEST_DIR"), file);
+        let capture = data(&format!("ledger9/{file}"));
+        hash_rows(&capture["provenance"]);
+        assert_eq!(
+            capture["generatedJavaScriptSha256"],
+            binding["did_javascript_sha256"]
+        );
+        assert_eq!(
+            capture["runtimeJavaScriptSha256"],
+            binding["runtime_builtins_sha256"]
+        );
     }
-    hash_rows(&data("reviewed-matrix.json")["artifacts"]);
+    let composition: Value = serde_json::from_str(include_str!(
+        "../../../runtime-rs/tests/fixtures/ledger9-unit-composition.json"
+    ))
+    .unwrap();
+    hash_rows(&composition["provenance"]);
+    assert_eq!(
+        composition["sources"],
+        serde_json::json!([
+            {"sha256": binding["crypto_javascript_sha256"]},
+            {"sha256": binding["did_javascript_sha256"]},
+        ])
+    );
+    assert_eq!(
+        composition["runtimeSha256"],
+        binding["runtime_builtins_sha256"]
+    );
 }
 #[test]
 fn exact_reviewed_native_cohort_and_outcomes() {
-    let capture = data("lifecycle.json");
+    let capture = data("ledger9/lifecycle.json");
     let matrix = data("reviewed-matrix.json");
     let scenarios = capture["scenarios"].as_array().unwrap();
     assert_eq!(scenarios.len(), 11);
@@ -144,7 +181,7 @@ fn exact_reviewed_native_cohort_and_outcomes() {
 }
 #[test]
 fn exact_twelve_direct_pure_exports_and_unique_cases() {
-    let capture = data("pure.json");
+    let capture = data("ledger9/pure.json");
     let matrix = data("reviewed-matrix.json");
     let rows = capture["cases"].as_array().unwrap();
     assert_eq!(rows.len(), 102);

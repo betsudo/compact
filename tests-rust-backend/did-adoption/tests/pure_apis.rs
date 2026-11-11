@@ -97,7 +97,7 @@ fn invoke(row: &Value) -> r::FixedVector<r::Field, 4> {
     .unwrap()
 }
 fn cases() -> Vec<Value> {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/pure.json")).unwrap();
+    let capture: Value = serde_json::from_str(include_str!("../oracle/ledger9/pure.json")).unwrap();
     capture["cases"].as_array().unwrap().clone()
 }
 fn check(name: &str, expected_count: usize) {
