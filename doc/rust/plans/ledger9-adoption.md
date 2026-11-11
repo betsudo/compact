@@ -245,11 +245,32 @@ The original Map size `put` models at k7 and 119 rows with released ZKIR
 IR and all eight checked programs. The maintained generated API gate passed
 eight Rust consumer tests, 19 live TypeScript cases, two boundary cases and
 four refusals. Both source refusals, the E0308 and E0382 compile failures,
-and the changed-TypeScript-result control passed. The proof port must preserve
-both the replacement and insertion cases, including the same-geometry changed-result
-refusal. Each case needs a separately verified standalone proof and a distinct
-v3 proof in a funded default-strict transaction, with full ledger bytes
-checked after exact replay refusal.
+and the changed-TypeScript-result control passed. Both replacement and
+insertion passed fresh v3 proving at `fe9e8d22b`. Each case retained a
+3,824-byte standalone proof and a distinct 3,824-byte transaction-bound
+v3 proof. A separate verifier process accepted both standalone proofs and
+refused corrupted bytes. The changed binding and same-geometry changed
+result refused. Both transactions included one proved positive-fee Dust
+spend, applied under default strictness, and refused exact replay with
+identical complete ledger bytes. Mutated IR and checked-program bytes
+refused before keys or state.
+
+The maintained generated functional gate now selects Ledger 9 for all
+23 source fixtures. Its 56 Rust methods and 160 four-route scenarios
+passed, along with generated-consumer Clippy. Seven additional ADT
+fixtures now compare full Ledger 9 state bytes against fresh TypeScript
+captures. Their eight Rust tests passed, with historical observations
+retained alongside the new captures.
+
+The terminal default-feature arm64 workspace run recorded 3,198 passes,
+234 failures and seven ignored tests before the ADT update. Of the
+234 failures, 224 showed a Ledger 8 state serialization mismatch and
+ten showed retained DID reducer provenance mismatches. Rustdoc also
+failed on 289 targets in the reused build directory. One direct
+reproduction traced the error to a proc-macro metadata hash mismatch,
+and the single-package doc check passed with its separately compiled
+runtime. Rerun the full workspace doc qualification in a fresh,
+exclusive build directory.
 
 The broader workspace behavior, remaining proof consumers and required
 Linux integration lanes remain open.

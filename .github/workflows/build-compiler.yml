@@ -918,7 +918,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Check generated functional Ledger8 consumers
+      - name: Check generated functional Ledger 9 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
