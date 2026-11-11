@@ -852,6 +852,8 @@ impl expression_contract::Witnesses<u64> for NestedSecret {
 }
 
 fn check_composite_cell_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x434f_4d50_4345_4c4c);
     let value = Pair {
         amount: Field::from(42_u64),

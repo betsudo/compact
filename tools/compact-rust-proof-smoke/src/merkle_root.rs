@@ -15,6 +15,7 @@
 
 //! Prove direct plain-tree root checks for both Boolean outcomes.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_merkle_tree_oracle_fixture::types::MerkleTreeDigest;
 use midnight_compact_runtime as runtime;

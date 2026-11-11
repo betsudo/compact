@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prove a generated plain-tree `insertHash` call and apply it on ledger-8.
+//! Prove a generated plain-tree `insertHash` call and apply it on Ledger 9.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
@@ -71,7 +72,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("plain Merkle insertHash proved and applied through ledger-8");
+    println!("plain Merkle insertHash proved and applied through Ledger 9");
     let circuit = "place_hash";
     let hash = FixedBytes::new([2; 32]);
     let index = BoundedUint::<{ u64::MAX as u128 }>::new(1)?;
@@ -127,7 +128,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("plain Merkle insertHashIndex proved and applied through ledger-8");
+    println!("plain Merkle insertHashIndex proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -189,7 +190,7 @@ pub(super) fn run_historic(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("historic Merkle insertHash proved and applied through ledger-8");
+    println!("historic Merkle insertHash proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -252,7 +253,7 @@ pub(super) fn run_historic_indexed(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("historic Merkle insertHashIndex proved and applied through ledger-8");
+    println!("historic Merkle insertHashIndex proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -326,7 +327,7 @@ pub(super) fn run_historic_reset_history(root: &Path) -> Result<(), Box<dyn Erro
         }
         Ok(())
     })?;
-    println!("historic Merkle resetHistory proved and applied through ledger-8");
+    println!("historic Merkle resetHistory proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -402,7 +403,7 @@ pub(super) fn run_historic_reset_tree(root: &Path) -> Result<(), Box<dyn Error>>
         }
         Ok(())
     })?;
-    println!("historic Merkle resetToDefault proved and applied through ledger-8");
+    println!("historic Merkle resetToDefault proved and applied through Ledger 9");
     Ok(())
 }
 

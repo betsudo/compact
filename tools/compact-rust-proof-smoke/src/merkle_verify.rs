@@ -15,6 +15,7 @@
 
 //! Focused source-to-proof-to-ledger check for witnessed Merkle root reads.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_merkle_path_verify_fixture::ledger_contract as merkle_verify_contract;
 use compact_rust_merkle_path_verify_fixture::types::MerkleTreePath;
@@ -125,6 +126,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("literal-index Merkle replacement proved and applied through ledger-8");
+    println!("literal-index Merkle replacement proved and applied through Ledger 9");
     Ok(())
 }

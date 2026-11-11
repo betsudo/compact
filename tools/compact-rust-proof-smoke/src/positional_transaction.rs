@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! The optional positional scenarios share the Ledger 9 proving path.
+//! Ledger 9 state-only proving for positional and named scenarios.
 
 use std::ffi::OsString;
 use std::path::Component;
@@ -127,6 +127,11 @@ fn apply(
     prepared: ContractCallPrototype<DefaultDB>,
     check_state: impl FnOnce(&ContractState<DefaultDB>) -> Result<(), Box<dyn Error>>,
 ) -> Result<ContractState<DefaultDB>, Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "Ledger 9 state-call proof requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     let (_, verifier, operation) = v3::load_operation(root, name)?;
     if prepared.op != operation {
         return Err(format!("{name} prepared operation differs from the proof artifact").into());
