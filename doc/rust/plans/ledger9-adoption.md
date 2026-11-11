@@ -846,9 +846,23 @@ refusals, funded deployment, independently proved default-strict
 application and exact unchanged replay passed for all 33 cases.
 Twenty-four fixture tests also passed.
 
-Seven asset registry and Schnorr commands follow this cohort in the
-core gate. Direct runs with the original sources confirmed that all
-seven still use v2 readers against v3 output.
+At `1d6878f7a`, the seven required asset registry and Schnorr
+commands and the additional strict Schnorr selector passed 14 fresh
+Ledger 9 cases. Both Schnorr selectors enforce exact source and
+input/output binding. The Ledger 9 Schnorr IR uses three different
+temporary names. It is pinned separately from the historical fixture,
+and the current compiler reproduced the linked Rust. Asset tests
+preserve the custody, record, watch, removal and grant checks, as
+well as state seeded for update cases.
+
+Each case passed separate proof verification, binding and corruption
+refusals, funded deployment, a distinct default-strict call proof,
+and exact unchanged replay refusal. The final signed runner also
+verified all ten retained asset proofs. Scoped Clippy and 27 fixture
+tests passed.
+
+The final eight named commands in the core proof gate reproduced the
+v2 reader failure with original sources and current v3 artifacts.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
