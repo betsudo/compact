@@ -562,3 +562,21 @@ effects, and other scenario values agree with their historical
 counterparts. The focused tests across 13 packages follow the workspace
 run on the same target directory. Workspace and integration
 qualification remain open.
+
+At `d89c838f9`, four Coracle and Micro DAO captures replay all 88
+historical scenarios with Compact Runtime 0.17.0 and the published
+[`@midnight-ntwrk/ledger-v9` 1.0.1 WASM package](https://www.npmjs.com/package/@midnight-ntwrk/ledger-v9/v/1.0.1).
+The captures retain 113 fresh state fields and 25 successful partition
+pairs. Six successful calls move from the fallible slot to the
+guaranteed slot. All 25 partitions have changed storage gas figures.
+The captures preserve exact public programs, event order, commitment
+indices by key, and shielded claim membership. The Rust tests now invoke
+the matching published partitioner and compare both slots, program
+length or full program as captured, effects, and all four gas dimensions.
+The focused Rust run follows the collection and effect run. The
+partition captures represent seeded local calls, with funded proof and
+replay covered by their own gates.
+
+Fresh constructor captures for aliases, vectors, for-range, and for-iter
+retain six Ledger 9 state fields, with unchanged operation rosters and
+counter values. Their fixture admission and native rerun are pending.
