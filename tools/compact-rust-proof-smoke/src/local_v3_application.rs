@@ -214,7 +214,7 @@ fn apply_call(
         }
         let result = funded.apply(&balanced, WellFormedStrictness::default())?;
         if !matches!(result, TransactionResult::Success(_))
-            || funded.ledger.contract.get(&address).as_deref() != Some(&deploy.initial_state)
+            || funded.ledger.contract.get(&address) != Some(&deploy.initial_state)
         {
             return Err(format!(
                 "v3 deployment strict apply or installed state differs: {result:?}"
