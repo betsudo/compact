@@ -132,7 +132,7 @@ def run(args):
                                  env=env, capture_output=True, text=True, timeout=30)
         (output / "changed-program.stdout").write_text(refused.stdout)
         (output / "changed-program.stderr").write_text(refused.stderr)
-        require(refused.returncode != 0 and "Map checked program differs from the linked fixture" in refused.stderr
+        require(refused.returncode != 0 and "checked program differs from the linked fixture" in refused.stderr
                 and not (negative / "keys").exists() and not list(negative.glob("map-size-*")),
                 "changed checked program did not refuse before keys/state")
         receipt["changed_program_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True}

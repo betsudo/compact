@@ -14,14 +14,12 @@
 // limitations under the License.
 
 //! Source-bound Map count before and after mutation with Ledger 9 v3 proofs.
+use super::local_v3_application::{self as v3, write_new};
 use super::*;
 use compact_rust_map_size_expression_source_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
 };
 use midnight_compact_runtime::{self as r, BoundedUint, Field};
-use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
-use midnight_onchain_state::state::IrBuf;
-use midnight_storage::arena::Sp;
 use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
 use midnight_zkir_v3::IrSource as IrSourceV3;
 
@@ -72,35 +70,12 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         IR,
     )?;
-    let programs = root.join("contract/checked-programs");
-    let names = std::fs::read_dir(&programs)?
-        .map(|entry| entry.map(|entry| entry.file_name()))
-        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
-    let expected_names = (0..PROGRAMS.len())
-        .map(|index| std::ffi::OsString::from(format!("program-{index}.json")))
-        .collect();
-    if names != expected_names {
-        return Err("Map checked-program inventory differs from the linked fixture".into());
-    }
-    for (index, expected) in PROGRAMS.iter().enumerate() {
-        if std::fs::read(programs.join(format!("program-{index}.json")))? != *expected {
-            return Err("Map checked program differs from the linked fixture".into());
-        }
-    }
+    v3::validate_programs(root, &PROGRAMS)?;
     if root.join("map-size-proof-result.json").exists() {
         return Err("Map size proof result already exists".into());
     }
-    let verifier = read_verifier(root)?;
-    let ir = IrSourceV3::load(File::open(root.join("zkir/put.zkir"))?)?;
-    let binary = std::fs::read(root.join("zkir/put.bzkir"))?;
-    let mut expected_binary = Vec::new();
-    tagged_serialize(&ir, &mut expected_binary)?;
-    if binary != expected_binary || ir.k() != 7 {
-        return Err("Map v3 IR differs from the bound raw circuit or k7 recipe".into());
-    }
+    let (ir, verifier, operation) = v3::operation(root, NAME, 7)?;
     let entry = EntryPointBuf(NAME.as_bytes().to_vec());
-    let operation =
-        ContractOperation::new(Some(verifier.clone()), Some(Sp::new(IrBuf::from(binary))));
     let mut rows = Vec::new();
     for (index, key_id) in [1_u64, 2].into_iter().enumerate() {
         let key = Field::from(key_id);
@@ -177,8 +152,15 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             return Err("functional Map preparation differs from ordinary observed call".into());
         }
         let proof = prove(root, index, &prepared, &verifier, &ir)?;
-        let transaction_proof_bytes =
-            apply(root, index, prepared, deploy, &expected_state, &proof, rng)?;
+        let transaction_proof_bytes = v3::apply(
+            root,
+            NAME,
+            &format!("map-size-{index}"),
+            prepared,
+            deploy,
+            &expected_state,
+            &proof,
+        )?;
         rows.push(serde_json::json!({"key":key_id,"before":1,"after":key_id,"proof_bytes":proof.0.len(),
             "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,
             "transaction_proof_distinct":true,"positive_fee_dust_spends":1,
@@ -196,42 +178,13 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn read_verifier(root: &Path) -> Result<VerifierKey, Box<dyn Error>> {
-    Ok(tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/put.verifier"),
-    )?))?)
-}
-
 pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
-    let verifier = read_verifier(root)?;
+    let verifier = v3::read_verifier(root, NAME)?;
     for index in 0..2 {
-        let proof = Proof(std::fs::read(root.join(format!("map-size-{index}.proof")))?);
-        let bytes = std::fs::read(root.join(format!("map-size-{index}.inputs")))?;
-        let mut reader = bytes.as_slice();
-        let inputs: Vec<Fr> = tagged_deserialize(&mut reader)?;
-        if !reader.is_empty() {
-            return Err("Map proof inputs have trailing bytes".into());
-        }
-        verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
-        let mut corrupted = proof;
-        *corrupted.0.first_mut().ok_or("empty Map proof")? ^= 1;
-        if verifier
-            .verify(&PARAMS_VERIFIER, &corrupted, inputs.into_iter())
-            .is_ok()
-        {
-            return Err("Map verifier accepted corrupt proof".into());
-        }
+        v3::verify_standalone(root, &format!("map-size-{index}"), &verifier)?;
         println!("Map size {index}: separate v3 verification passed; corrupt proof refused");
     }
     Ok(())
-}
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
 }
 
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
@@ -334,135 +287,6 @@ fn prove(
         proof.0.len()
     );
     Ok(proof)
-}
-
-fn apply(
-    root: &Path,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    standalone: &Proof,
-    mut rng: StdRng,
-) -> Result<usize, Box<dyn Error>> {
-    let address = deploy.address();
-    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
-    let installed = deploy
-        .initial_state
-        .operations
-        .get(&entry)
-        .ok_or("missing Map operation")?;
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, funded.time + funded.ledger.parameters.global_ttl)
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, NAME)?;
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-    let proven = executor
-        .block_on(tx_prove(
-            StdRng::from_rng(rand::rngs::OsRng)?,
-            &tx,
-            &resolver,
-        ))
-        .map_err(|error| format!("Map transaction proving failed: {error:?}"))?;
-    let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
-    let sealed = executor.block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut calls = sealed.calls();
-    let (_, call) = calls.next().ok_or("missing funded Map call")?;
-    let ProofVersioned::V3(proof) = &call.proof else {
-        return Err("expected v3 transaction-bound Map proof".into());
-    };
-    if calls.next().is_some() || proof == standalone {
-        return Err(
-            "expected one transaction-bound Map proof distinct from the standalone proof".into(),
-        );
-    }
-    let dust_spends = sealed
-        .intents()
-        .filter_map(|(_, intent)| intent.dust_actions)
-        .map(|actions| {
-            actions
-                .spends
-                .iter()
-                .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
-                .count()
-        })
-        .sum::<usize>();
-    if dust_spends != 1 {
-        return Err("expected one proved, positive-fee Map Dust spend".into());
-    }
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    write_new(
-        root.join(format!("map-size-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("map-size strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("map-size contract missing after apply")?;
-    if actual.data.get_ref() != expected || actual.operations.get(&entry) != Some(installed) {
-        return Err("map-size applied state or installed operation differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(
-            format!("map-size replay refused incorrectly or mutated ledger: {result:?}").into(),
-        );
-    }
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(root.join(format!("map-size-{index}-state.bin")), &bytes)?;
-    let mut after = Vec::new();
-    let mut replay = Vec::new();
-    tagged_serialize(&updated, &mut after)?;
-    tagged_serialize(&replayed, &mut replay)?;
-    if after != replay {
-        return Err("Map replay changed serialized ledger bytes".into());
-    }
-    write_new(
-        root.join(format!("map-size-{index}-ledger-after.bin")),
-        &after,
-    )?;
-    write_new(
-        root.join(format!("map-size-{index}-ledger-replay.bin")),
-        &replay,
-    )?;
-    write_new(
-        root.join(format!("map-size-{index}-transaction.proof")),
-        &proof.0,
-    )?;
-    println!("map-size {index}: funded default-strict apply; replay refused without mutation");
-    Ok(proof.0.len())
 }
 
 #[cfg(test)]

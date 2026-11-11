@@ -125,7 +125,7 @@ def main():
 
     try:
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-runtime-root", ROOT, "--skip-zk", source.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         if args.ts_runtime:
@@ -218,7 +218,7 @@ def main():
             target = output / name
             run(name + "-generate", [compiler, "--target", "rust",
                 *(["--target", "ts"] if args.ts_runtime else []),
-                "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger9", "--rust-runtime-root", ROOT,
                 "--skip-zk", FIXTURES / source_name, target])
             check_manifest(target)
             guard_generated[name] = target

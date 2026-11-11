@@ -313,6 +313,7 @@ mod jubjub_negation;
 mod kernel_shielded_effects;
 mod let_return;
 mod literal_bytes_field;
+mod local_v3_application;
 mod map_effects;
 mod map_size_expression;
 mod map_value_products;

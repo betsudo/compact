@@ -382,8 +382,8 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
                    "did-primitive-reducer-proofs": "compact-did-primitive-reducer-gate/v1",
                    "did-relation-proofs": "compact-did-relation-gate/v1",
                    "acc-jubjub-proofs": "compact-acc-jubjub-gate/v1",
-                   "vector-projection-proofs": "compact-vector-projection-proof-gate/v1",
-                   "constant-valued-vector-index-proofs": "compact-vector-projection-proof-gate/v1",
+                   "vector-projection-proofs": "compact-vector-projection-proof-gate/v2",
+                   "constant-valued-vector-index-proofs": "compact-vector-projection-proof-gate/v2",
                    "map-size-expression-proofs": "compact-map-size-expression-proof-gate/v2",
                    "direct-fold-proofs": "compact-direct-fold-proof-gate/v1"}
         def command(argv, label, directory, receipt, **kwargs):

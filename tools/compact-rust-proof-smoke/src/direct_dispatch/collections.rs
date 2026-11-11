@@ -443,6 +443,27 @@ pub(super) fn constant_valued_vector_indices(
     crate::constant_valued_vector_indices::run(Path::new(&root))
 }
 
+pub(super) fn vector_projection_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --vector-projection-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    let root = Path::new(&root);
+    let verifier = crate::local_v3_application::read_verifier(root, "witnessed")?;
+    for index in 0..2 {
+        crate::local_v3_application::verify_standalone(
+            root,
+            &format!("vector-{index}"),
+            &verifier,
+        )?;
+        println!("Vector {index}: separate v3 verification passed; corrupt proof refused");
+    }
+    Ok(())
+}
+
 /// Direct proof path for the genuine #610 Map size source.
 pub(super) fn map_size_expression(
     arguments: &mut impl Iterator<Item = OsString>,
