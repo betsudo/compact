@@ -14,9 +14,9 @@
 // limitations under the License.
 
 use compact_rust_counter_fixture::ledger_contract as counter_contract;
-use midnight_base_crypto::signatures::Signature;
 use midnight_compact_runtime::context::CircuitContext;
 use midnight_compact_runtime::ledger::{ContractState, DefaultDB, StateValue, read_counter};
+use midnight_ledger::structure::Signature;
 use midnight_ledger::structure::{ProofMarker, Transaction};
 use midnight_onchain_state::state::EntryPointBuf;
 use midnight_serialize::tagged_deserialize;

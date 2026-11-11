@@ -18,7 +18,7 @@ fn observation(names: &[&str]) -> (ObservedContractState, VerifierKey) {
     for name in names {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();

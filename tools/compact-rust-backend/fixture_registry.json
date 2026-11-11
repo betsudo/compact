@@ -2826,7 +2826,7 @@
         "tests-rust-backend/opaque-observed-boundary-source/Cargo.toml": "9af4e4d00d3c92b91bb561991d73b9d224a807af3156fc14404b95473ef8a6a1",
         "tests-rust-backend/opaque-observed-boundary-source/fixture.rs": "7a439eb78ebf416d042bc75c77121a2a6d686028e26ab4e08d43583d3d86bae0",
         "tests-rust-backend/opaque-observed-boundary-source/build.rs": "7dc900ab25ff1fce19fcb83f924b366c4f8b67fd98f0c659a1c4377116bfa799",
-        "tests-rust-backend/opaque-observed-boundary-source/tests/nested.rs": "07e8e7f10e3f2a2dcb04f124edf3955794dbe866fa3e796682a418427b383428"
+        "tests-rust-backend/opaque-observed-boundary-source/tests/nested.rs": "f4d057c24402594ca22f0bea7f727c4bf15456a9a1df5042f1e5cd9ae64e6005"
       },
       "qualification": "Positive complete source includes opaque boundary products. Generated nested.rs is included at integration-test crate root, with no namespace rewrite; preparation/refusal/gas cases are runtime evidence, not frontend-negative classification."
     },
@@ -3077,7 +3077,7 @@
       "consumer": "tests-rust-backend/shielded-merge-oracle/lib.rs",
       "namespace": null,
       "consumer_input_sha256": {
-        "tests-rust-backend/shielded-merge-oracle/Cargo.toml": "eb9d19903dcffd23575511d6706379906254c7900e1519f44cf2da97af44948f",
+        "tests-rust-backend/shielded-merge-oracle/Cargo.toml": "72316ba1e544aeed3edad8bfcba9582a122902b89b5effba6da98fd8abfd2c4d",
         "tests-rust-backend/shielded-merge-oracle/lib.rs": "976af324c4b3d079dfa85730f82f51c53058fcc7a3dded445fffc657960072d1",
         "tests-rust-backend/shielded-merge-oracle/build.rs": "056f35cafa5c7658faa2e9968194e1cae8375fc3ce01564dcb2555a1138e96c8"
       }
@@ -3302,7 +3302,7 @@
       "consumer": "tests-rust-backend/transient-receive-send-oracle/lib.rs",
       "namespace": null,
       "consumer_input_sha256": {
-        "tests-rust-backend/transient-receive-send-oracle/Cargo.toml": "a2330ffe7058af16352f4fe041add5882f83383f486f6bf25d09eeaa2d2a8bc1",
+        "tests-rust-backend/transient-receive-send-oracle/Cargo.toml": "2ee97fb57a915584bb47dfc6d00b86773393266a2a955a53cf1fe09c8e6e6bfd",
         "tests-rust-backend/transient-receive-send-oracle/lib.rs": "db1819af25fb933996cd936b25d240998b4d61383d9a26277a29083765b2dbb4",
         "tests-rust-backend/transient-receive-send-oracle/build.rs": "e1300ab5b46efceb10ef4f47df16c1b994bf45f7a00a6a38bf52941501820dc7"
       }

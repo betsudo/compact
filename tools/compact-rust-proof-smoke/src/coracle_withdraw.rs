@@ -65,7 +65,9 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
         .collect::<Result<Vec<_>, _>>()?;
     let genesis: Offer<ProofPreimage, DefaultDB> = Offer::new(vec![], genesis, vec![]).unwrap();
     let (zswap, seed_indices) = fees.ledger.zswap.try_apply(&genesis, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(zswap.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        zswap.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let qualified = coins.map(|coin| {
         coin.qualify(
             *seed_indices

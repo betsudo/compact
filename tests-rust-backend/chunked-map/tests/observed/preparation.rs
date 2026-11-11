@@ -32,7 +32,7 @@ fn setup(entries: u8) -> (ObservedContractState, VerifierKey) {
     for name in ["table_size", "table_is_empty", "put_default", "reset_table"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     }
     (

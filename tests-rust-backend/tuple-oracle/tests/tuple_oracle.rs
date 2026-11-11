@@ -49,7 +49,7 @@ fn assert_pairs(actual: (Pair, Pair), expected: &serde_json::Value) {
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"ping".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());

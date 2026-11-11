@@ -31,7 +31,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["set_tiny", "set_medium", "set_wide"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =

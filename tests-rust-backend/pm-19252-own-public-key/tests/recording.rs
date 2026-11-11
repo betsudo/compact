@@ -20,7 +20,7 @@ fn setup(identity: Option<[u8; 32]>) -> (ObservedContractState, VerifierKey) {
     let verifier = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"test1".to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+        ContractOperation::new(Some(verifier.clone()), None),
     );
     let initial = c::initial_state(ConstructorContext::new(())).unwrap();
     let state = ObservedContractState::new(

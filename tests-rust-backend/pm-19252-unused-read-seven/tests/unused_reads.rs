@@ -32,12 +32,12 @@ use runtime::{
 fn state_hex(state: StateValue<DefaultDB>, kind: &str) -> String {
     let mut operations = HashMap::new().insert(
         EntryPointBuf(b"test".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     if kind != "seven" {
         operations = operations.insert(
             EntryPointBuf(b"test1".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

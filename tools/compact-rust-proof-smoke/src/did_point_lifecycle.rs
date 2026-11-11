@@ -266,7 +266,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         )?))?;
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(vk)),
+            ContractOperation::new(Some(vk), None),
         );
     }
     let deploy = ContractDeploy::new(

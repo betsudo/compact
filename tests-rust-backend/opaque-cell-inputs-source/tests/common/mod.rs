@@ -33,7 +33,7 @@ pub fn setup() -> (ObservedContractState, VerifierKey) {
     for name in ["setText", "setBytes", "setEnvelope"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     (

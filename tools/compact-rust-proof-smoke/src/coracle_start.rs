@@ -185,7 +185,9 @@ fn run_case(root: &Path, blue: bool) -> Result<(), Box<dyn Error>> {
         zswap = next;
         wallet = wallet.apply(&keys, offer)?;
     }
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(zswap.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        zswap.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let mut prior = deploy.initial_state.clone();
     if blue {
         let historic = historic.qualify(historic_index.ok_or("historic index absent")?);

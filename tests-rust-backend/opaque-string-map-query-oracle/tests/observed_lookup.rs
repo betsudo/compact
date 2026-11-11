@@ -24,7 +24,7 @@ fn state(seed: &str) -> (ObservedContractState, VerifierKey) {
     let key: VerifierKey = StdRng::seed_from_u64(604).r#gen();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"ensure".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     (
         ObservedContractState::new(

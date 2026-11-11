@@ -48,7 +48,7 @@ fn setup() -> (ObservedContractState, VerifierKey) {
     for entry in ["run", "text_roundtrip", "bytes_roundtrip"] {
         operations = operations.insert(
             EntryPointBuf(entry.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     }
     (

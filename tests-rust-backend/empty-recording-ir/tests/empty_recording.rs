@@ -38,7 +38,7 @@ fn setup() -> (ObservedContractState, VerifierKey) {
     let initial = c::initial_state(ConstructorContext::new(7_u64)).unwrap();
     let operations = r::ledger::LedgerHashMap::new().insert(
         EntryPointBuf(b"recordFreshEnough".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     (
         ObservedContractState::new(

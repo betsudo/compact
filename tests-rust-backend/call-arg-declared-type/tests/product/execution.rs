@@ -16,7 +16,7 @@ fn named_fixed_product_commitment_compiles_and_executes_in_all_lanes() {
     let key = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
     let operations = r::ledger::LedgerHashMap::new().insert(
         EntryPointBuf(b"commit_product".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     let state = ObservedContractState::new(
         Default::default(),

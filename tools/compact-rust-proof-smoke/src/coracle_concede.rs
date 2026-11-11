@@ -62,7 +62,9 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
     let genesis: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], genesis, vec![]).ok_or("empty genesis")?;
     let (zswap, indices) = fees.ledger.zswap.try_apply(&genesis, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(zswap.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        zswap.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let qualified = coins.map(|coin| {
         coin.qualify(
             *indices

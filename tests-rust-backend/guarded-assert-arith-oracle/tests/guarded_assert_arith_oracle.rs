@@ -57,7 +57,7 @@ fn policy(enforce_max_age: bool) -> VerifierPolicy {
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"recordFreshEnough".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());

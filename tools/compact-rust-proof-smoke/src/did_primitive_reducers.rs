@@ -15,10 +15,10 @@
 
 use midnight_base_crypto::{
     data_provider::{FetchMode, MidnightDataProvider, OutputMode},
-    signatures::Signature,
     time::Timestamp,
 };
 use midnight_compact_runtime as r;
+use midnight_ledger::structure::Signature;
 use midnight_ledger::{
     construct::{ContractCallExt, ContractCallPrototype},
     dust::{DUST_EXPECTED_FILES, DustResolver},
@@ -162,7 +162,7 @@ pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
         )?))?;
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier)),
+            ContractOperation::new(Some(verifier), None),
         );
     }
     let deploy = ContractDeploy::new(

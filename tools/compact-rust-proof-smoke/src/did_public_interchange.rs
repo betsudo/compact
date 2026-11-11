@@ -391,7 +391,7 @@ mod tests {
         let mut changed_operation = before.clone();
         changed_operation.operations = changed_operation.operations.insert(
             EntryPointBuf(b"extra".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
         assert!(require_unchanged_contract(&before, &changed_operation).is_err());
     }

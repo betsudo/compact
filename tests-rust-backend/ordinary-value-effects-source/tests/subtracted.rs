@@ -20,7 +20,7 @@ fn setup(count: u16) -> (ObservedContractState, VerifierKey) {
     let key = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
     let operations = r::ledger::LedgerHashMap::new().insert(
         EntryPointBuf(b"subtracted".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     (
         ObservedContractState::new(

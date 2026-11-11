@@ -65,8 +65,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 .copied(),
             Some(expected)
         );
-        fees.ledger.zswap =
-            midnight_storage_core::arena::Sp::new(next.post_block_update(fees.time));
+        fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+            next.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+        );
     }
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;

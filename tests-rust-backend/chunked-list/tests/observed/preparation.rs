@@ -29,7 +29,7 @@ fn setup(empty: bool) -> (ObservedContractState, VerifierKey) {
     for name in ["first_item", "prepend", "drop_first"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     }
     (

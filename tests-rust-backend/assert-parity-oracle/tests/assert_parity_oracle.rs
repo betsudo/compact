@@ -31,7 +31,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["trigger_ok", "trigger_fail", "ping"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =

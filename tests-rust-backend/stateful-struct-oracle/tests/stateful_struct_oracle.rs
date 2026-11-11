@@ -49,7 +49,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
         .fold(HashMap::new(), |a, n| {
             a.insert(
                 EntryPointBuf(n.as_bytes().to_vec()),
-                ContractOperation::new(None),
+                ContractOperation::new(None, None),
             )
         });
     let s = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

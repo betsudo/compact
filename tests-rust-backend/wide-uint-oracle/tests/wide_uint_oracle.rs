@@ -45,7 +45,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["readWide", "writeWide"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

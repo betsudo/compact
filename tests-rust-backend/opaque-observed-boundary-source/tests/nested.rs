@@ -40,7 +40,7 @@ fn initial(verifier: &VerifierKey) -> ObservedContractState {
         .clone();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"accept".to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+        ContractOperation::new(Some(verifier.clone()), None),
     );
     ObservedContractState::new(
         Default::default(),

@@ -10,6 +10,7 @@ use midnight_zkir::Instruction;
 fn projection(default: (Fr, Fr)) -> IrSource {
     use Instruction::*;
     IrSource {
+        version: midnight_zkir::IrMinorVersion::V0,
         num_inputs: 4,
         do_communications_commitment: true,
         instructions: vec![

@@ -36,7 +36,7 @@ fn oracle() -> serde_json::Value {
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new().insert(
         EntryPointBuf(b"step".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

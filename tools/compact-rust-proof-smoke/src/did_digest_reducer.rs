@@ -18,9 +18,9 @@ use compact_rust_did_digest_read_reducer_fixture::{
 };
 use midnight_base_crypto::{
     data_provider::{FetchMode, MidnightDataProvider, OutputMode},
-    signatures::Signature,
     time::Timestamp,
 };
+use midnight_ledger::structure::Signature;
 use midnight_ledger::{
     construct::{ContractCallExt, ContractCallPrototype},
     dust::{DUST_EXPECTED_FILES, DustResolver},
@@ -176,7 +176,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     )?))?;
     let operations = HashMap::new().insert(
         EntryPointBuf(b"verify".to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+        ContractOperation::new(Some(verifier.clone()), None),
     );
     let deploy = ContractDeploy::new(
         &mut rng,

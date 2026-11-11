@@ -428,7 +428,6 @@ use compact_rust_tiny_oracle_fixture::ledger_contract as tiny_contract;
 use compact_rust_wide_uint_oracle_fixture::ledger_contract as wide_contract;
 use compact_rust_witness_cell_write_fixture::ledger_contract as witness_contract;
 use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
-use midnight_base_crypto::signatures::Signature;
 use midnight_base_crypto::time::Timestamp;
 use midnight_compact_runtime::Field;
 use midnight_compact_runtime::context::{ConstructorContext, WitnessContext};
@@ -444,6 +443,7 @@ use midnight_compact_runtime::transaction::{
 use midnight_compact_runtime::{BoundedUint, FixedBytes, FixedVector, WideUint};
 use midnight_ledger::construct::{ContractCallExt, ContractCallPrototype};
 use midnight_ledger::semantics::{TransactionContext, TransactionResult};
+use midnight_ledger::structure::Signature;
 use midnight_ledger::structure::{
     ContractDeploy, INITIAL_PARAMETERS, Intent, LedgerState, ProofMarker, ProofPreimageMarker,
     ProofPreimageVersioned, Transaction,
@@ -718,7 +718,7 @@ fn make_deploy(
     )?))?;
     let operations = HashMap::new().insert(
         EntryPointBuf(circuit.as_bytes().to_vec()),
-        ContractOperation::new(Some(verifier)),
+        ContractOperation::new(Some(verifier), None),
     );
     let contract: ContractState<DefaultDB> =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());

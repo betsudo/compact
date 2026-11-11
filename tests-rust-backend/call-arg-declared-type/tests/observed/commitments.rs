@@ -23,7 +23,7 @@ fn observed_declared_field_commitments_match_manual_and_original_ts() {
     for name in CIRCUITS {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();

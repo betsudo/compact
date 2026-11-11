@@ -22,7 +22,7 @@ pub fn observation(
     for name in names {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     (

@@ -12,7 +12,7 @@ pub fn setup() -> (ObservedContractState, VerifierKey) {
     for name in ["close", "close_hash", "hashes", "hash_only"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     let context = c::initial_state(ConstructorContext::new(5_u64))

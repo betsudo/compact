@@ -37,7 +37,7 @@ fn source_generated_removal_matches_typescript_and_preserves_nested_siblings() {
         let key: VerifierKey = StdRng::seed_from_u64(602).r#gen();
         let operations = midnight_storage::storage::HashMap::new().insert(
             EntryPointBuf(b"remove".to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
         // Supplied nested state uses official ledger nodes; no nested-value
         // scalar codec or generated nested insertion is assumed.

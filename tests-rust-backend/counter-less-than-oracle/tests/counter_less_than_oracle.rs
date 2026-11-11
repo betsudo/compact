@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["compare", "nested", "short_circuit", "checked"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

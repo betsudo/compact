@@ -35,11 +35,11 @@ fn observed(
     let operations = midnight_storage::storage::HashMap::new()
         .insert(
             EntryPointBuf(b"post".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         )
         .insert(
             EntryPointBuf(b"take_down".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     ObservedContractState::new(
         Default::default(),

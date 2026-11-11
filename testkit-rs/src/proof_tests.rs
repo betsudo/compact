@@ -136,6 +136,7 @@ fn local_resolution_admits_exact_bytes_and_rejects_one_under() {
 #[test]
 fn local_official_provider_checks_real_assertion_without_proving_or_parameters() {
     let ir = IrSource {
+        version: midnight_zkir::IrMinorVersion::V0,
         num_inputs: 1,
         do_communications_commitment: false,
         instructions: vec![Instruction::Assert { cond: 0 }].into(),

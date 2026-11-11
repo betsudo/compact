@@ -57,7 +57,9 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     let seed_index = *indices
         .get(&seed_commitment)
         .ok_or("missing seeded index")?;
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     let input = Input::new_contract_owned(
         &mut rng,
@@ -297,7 +299,9 @@ fn partial_order_cases(
     let seed_offer: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], vec![same_seed, reverse_seed], vec![]).ok_or("empty partial seed")?;
     let (seeded, seed_indices) = fee_state.ledger.zswap.try_apply(&seed_offer, None)?;
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     for (byte, seed_com, same_order) in [(same, same_com, true), (reversed, reverse_com, false)] {
         let seed_index = *seed_indices

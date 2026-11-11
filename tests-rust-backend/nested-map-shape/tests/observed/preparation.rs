@@ -32,7 +32,7 @@ fn nested_metadata_observes_full_children_without_a_scalar_value_codec() {
         let key = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
         let operations = LedgerHashMap::new().insert(
             EntryPointBuf(b"check_nested_empty".to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
         let state = ObservedContractState::new(
             Default::default(),

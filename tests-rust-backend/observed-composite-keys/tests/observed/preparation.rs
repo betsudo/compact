@@ -28,7 +28,7 @@ fn setup() -> (ObservedContractState, VerifierKey) {
     for name in ["insert_struct", "roundtrip_struct"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     }
     (

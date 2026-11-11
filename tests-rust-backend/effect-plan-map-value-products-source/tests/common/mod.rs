@@ -16,7 +16,7 @@ pub fn setup(value: types::Stored) -> (ObservedContractState, VerifierKey) {
     let verifier: VerifierKey = StdRng::seed_from_u64(595).r#gen();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"readFresh".to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+        ContractOperation::new(Some(verifier.clone()), None),
     );
     (
         ObservedContractState::new(

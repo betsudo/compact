@@ -28,7 +28,7 @@ fn observed() -> (ObservedContractState, VerifierKey) {
     let key: VerifierKey = StdRng::seed_from_u64(57602).r#gen();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"explicit_guard_then_subtract".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     (
         ObservedContractState::new(

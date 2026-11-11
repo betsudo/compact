@@ -22,7 +22,7 @@ fn setup(identity: Option<[u8; 32]>) -> (ObservedContractState, VerifierKey) {
     for name in ["key", "key_bytes"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
     }
     let initial = c::initial_state(ConstructorContext::new(())).unwrap();

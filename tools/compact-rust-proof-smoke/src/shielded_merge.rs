@@ -100,7 +100,9 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
     let seed: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], vec![seed_a, seed_b], vec![]).unwrap();
     let (seeded, seeded_indices) = fees.ledger.zswap.try_apply(&seed, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
     assert_eq!(start, 2);

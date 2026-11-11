@@ -33,11 +33,11 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new()
         .insert(
             EntryPointBuf(b"test_QualifiedShieldedCoinInfo".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"test_ShieldedCoinInfo".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

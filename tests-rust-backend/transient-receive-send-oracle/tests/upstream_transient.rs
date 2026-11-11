@@ -61,7 +61,10 @@ fn upstream_transient_uses_singleton_input_but_allocates_after_normal_outputs() 
     let (ledger, _) = midnight_zswap::ledger::State::<DefaultDB>::new()
         .try_apply(&seed, None)
         .unwrap();
-    let ledger = ledger.post_block_update(Timestamp::from_secs(0));
+    let ledger = ledger.post_block_update(
+        Timestamp::from_secs(0),
+        midnight_ledger_v9::structure::INITIAL_PARAMETERS.global_ttl,
+    );
     assert_eq!(ledger.first_free, 2);
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()
         .apply(&keys, &seed)

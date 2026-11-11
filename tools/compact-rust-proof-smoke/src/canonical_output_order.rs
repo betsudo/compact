@@ -63,7 +63,9 @@ fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
         Offer::new(vec![], vec![seed_output], vec![]).unwrap();
     let (seeded, seed_indices) = fees.ledger.zswap.try_apply(&seed_offer, None)?;
     let seed_index = *seed_indices.get(&seed_com).unwrap();
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
     assert!(start > 0);

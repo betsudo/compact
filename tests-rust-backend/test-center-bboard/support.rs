@@ -53,11 +53,11 @@ pub fn state(value: StateValue<DefaultDB>) -> ContractState<DefaultDB> {
     let operations = midnight_storage::storage::HashMap::new()
         .insert(
             EntryPointBuf(b"post".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"take_down".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     ContractState::new(value, operations, ContractMaintenanceAuthority::default())
 }

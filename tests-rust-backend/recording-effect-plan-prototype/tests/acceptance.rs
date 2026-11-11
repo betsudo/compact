@@ -118,11 +118,11 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = operations
         .insert(
             EntryPointBuf(b"guardedChoice".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"orderedObservation".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

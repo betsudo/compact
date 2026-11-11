@@ -13,7 +13,7 @@ pub fn setup() -> (ObservedContractState, VerifierKey) {
     let key: VerifierKey = StdRng::seed_from_u64(563).r#gen();
     let operations = midnight_storage::storage::HashMap::new().insert(
         EntryPointBuf(b"run".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     let context = c::initial_state(ConstructorContext::new(5_u64)).unwrap();
     let context = context.into_circuit_context(Default::default());

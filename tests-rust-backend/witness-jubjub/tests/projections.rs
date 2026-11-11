@@ -208,7 +208,7 @@ fn observed_coordinates_preserve_witness_fab_but_refuse_empty_public_programs() 
     for name in ["point_x", "point_y"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     let state = ObservedContractState::new(

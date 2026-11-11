@@ -66,7 +66,9 @@ pub(super) fn seed_and_fund(
     let (seeded_zswap, seed_indices) = ledger.zswap.try_apply(&seed_offer, None)?;
     // Local genesis insertion is privileged. Seal its Merkle root as a block
     // update so the later input references an accepted historical root.
-    ledger.zswap = midnight_storage_core::arena::Sp::new(seeded_zswap.post_block_update(time));
+    ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded_zswap.post_block_update(time, ledger.parameters.global_ttl),
+    );
     let seed_index = *seed_indices
         .get(&seed_commitment)
         .ok_or("seed coin commitment was not allocated")?;

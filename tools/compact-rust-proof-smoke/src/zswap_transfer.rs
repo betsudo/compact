@@ -52,7 +52,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let (seeded, indices) = fee_state.ledger.zswap.try_apply(&seed_offer, None)?;
     let seed_index = *indices.get(&seed_commitment).ok_or("seed index missing")?;
     // Explicit offline genesis prerequisite; seal the root before contract spend.
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     let input = Input::new_contract_owned(
         &mut rng,

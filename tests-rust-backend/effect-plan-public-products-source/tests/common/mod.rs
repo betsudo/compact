@@ -14,7 +14,7 @@ pub fn setup() -> (ObservedContractState, VerifierKey) {
     for name in ["run", "tuple11", "vector9", "empty"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     (

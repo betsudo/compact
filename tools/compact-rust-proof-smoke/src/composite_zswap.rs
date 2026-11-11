@@ -354,8 +354,9 @@ fn funded_transfer(root: &Path) -> Result<(), Box<dyn Error>> {
         Offer::new(vec![], vec![seed_output], vec![]).ok_or("empty seed")?;
     let (seeded, indices) = state.ledger.zswap.try_apply(&seed_offer, None)?;
     let seed_index = *indices.get(&seed_commitment).ok_or("missing seed index")?;
-    state.ledger.zswap =
-        midnight_storage_core::arena::Sp::new(seeded.post_block_update(state.time));
+    state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(state.time, state.ledger.parameters.global_ttl),
+    );
     let input = Input::new_contract_owned(
         &mut rng,
         &seed_coin.qualify(seed_index),

@@ -116,7 +116,9 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     .unwrap();
     let (state, _) = fees.ledger.zswap.try_apply(&seed_w, None)?;
     let (state, _) = state.try_apply(&seed_h, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(state.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        state.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     assert_eq!(ledger.zswap.first_free, 2);
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()

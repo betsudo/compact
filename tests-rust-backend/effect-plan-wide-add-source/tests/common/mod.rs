@@ -21,7 +21,7 @@ pub fn setup() -> (ObservedContractState, VerifierKey) {
     for name in ["add128", "mixed", "narrow128", "witnessed"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
     }
     let context = c::initial_state(ConstructorContext::new(5_u64)).unwrap();

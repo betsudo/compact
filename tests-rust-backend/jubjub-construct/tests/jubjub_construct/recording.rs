@@ -30,7 +30,7 @@ fn setup() -> (ObservedContractState, VerifierKey) {
     let key = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
     let operations = r::ledger::LedgerHashMap::new().insert(
         EntryPointBuf(b"construct_echo".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     let ctx = initial_state(ConstructorContext::new(7_u64))
         .unwrap()
