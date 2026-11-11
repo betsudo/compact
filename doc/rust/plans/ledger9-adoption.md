@@ -698,5 +698,19 @@ and exact replay returns `IntentAlreadyExists` with byte-identical
 ledger state. Ledger 9 proof qualification for the k10 `planned`
 circuit remains open in the separate composite Zswap scenario.
 
+The next core run passed root Let, composite returns, and the
+proof-runner Clippy check. It stopped at the assertion fixture's v2
+reader. The port at `ab6e75c16` binds the current raw Rust IR, generated
+library, and both raw v3 circuits before key generation. The older
+IR fixture retains its original source positions. The current IR
+differs only in seven positions following the source header, and
+formatting the generated library with Rust 1.99 reproduces the linked
+Rust fixture byte for byte. The `checked` Uint<64> result models at
+k7/109 rows and `unit_result` at k6/41 rows. Both passed the original
+false-guard refusal, separate standalone verification with changed
+input, binding and corruption controls, and funded default-strict
+deployment and application using distinct transaction proofs. Both
+reads preserved state and refused exact replay without ledger mutation.
+
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
