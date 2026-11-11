@@ -175,9 +175,9 @@ impl SourceAuthority for AuthorityDouble {
 fn program_borrows_checked_operations_and_preserves_order_types_and_branch_guards() {
     let checked = checked(None);
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(std::ptr::eq(program.checked(), &checked));
-    assert_eq!(program.target().ledger_version(), "8.1.3");
+    assert_eq!(program.target().ledger_version(), "9.1.0.1");
     assert_eq!(
         program.root_origin().consumed_source_bytes(),
         ConsumedSourceBytes::Unknown
@@ -248,18 +248,18 @@ fn unknown_source_cannot_become_bound_original_from_candidate_paths() {
     let mut authority = AuthorityDouble::node_spans();
     authority.root_known = false;
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "root")
     );
     authority.root_known = true;
     authority.missing = Some(0);
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "parameters[0]")
     );
     authority.missing = Some(3);
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "checked[3]")
     );
 }
@@ -269,7 +269,7 @@ fn bound_original_root_fallback_is_coarse_and_never_becomes_a_node_span() {
     let checked = checked(None);
     let mut authority = AuthorityDouble::node_spans();
     authority.coarse = true;
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(matches!(
         program.root_origin(),
         OriginEvidence::BoundOriginalRootFallback(_)
@@ -284,7 +284,7 @@ fn bound_original_root_fallback_is_coarse_and_never_becomes_a_node_span() {
 fn capability_refusal_is_typed_and_no_target_is_inferred_from_node_names() {
     let checked = checked(None);
     let authority = AuthorityDouble::node_spans();
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[
             Capability::Pure,
             Capability::CellRead,
@@ -308,7 +308,7 @@ fn both_branches_are_projected_and_unsupported_nodes_refuse_without_shape_fallba
     )));
     let authority = AuthorityDouble::node_spans();
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::OutsideFunctionalSubset { path }) if path == "checked[8]")
     );
 }
@@ -367,7 +367,7 @@ fn counter_checked() -> CheckedPlan {
 fn counter_capabilities_preserve_checked_impact_identity_and_missing_target_refuses() {
     let checked = counter_checked();
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert_eq!(
         program
             .effects()
@@ -390,7 +390,7 @@ fn counter_capabilities_preserve_checked_impact_identity_and_missing_target_refu
             .iter()
             .all(|effect| effect.privacy() == Privacy::Unknown)
     );
-    let missing_increment = Ledger8Target {
+    let missing_increment = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::CounterRead],
     };
     assert!(
@@ -483,7 +483,7 @@ fn witness_checked(result: Type) -> CheckedPlan {
 fn boolean_witness_uses_retained_signature_and_stays_guarded_with_unknown_privacy() {
     let checked = witness_checked(Type::Boolean);
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let witness = &program.effects()[1];
     assert_eq!(witness.capability(), Capability::BooleanWitness);
     assert_eq!(witness.guard(), GuardId(1));
@@ -503,11 +503,11 @@ fn boolean_witness_uses_retained_signature_and_stays_guarded_with_unknown_privac
 fn field_witness_keeps_checked_signature_guard_and_explicit_target_requirement() {
     let checked = witness_checked(Type::Field);
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert_eq!(program.effects()[1].capability(), Capability::TypedWitness);
     assert_eq!(program.effects()[1].guard(), GuardId(1));
     assert_eq!(program.effects()[1].privacy(), Privacy::Unknown);
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::Require, Capability::Select],
     };
     assert!(
@@ -520,11 +520,11 @@ fn field_witness_keeps_checked_signature_guard_and_explicit_target_requirement()
 fn opaque_witness_output_requires_explicit_exact_target_capability() {
     let checked = witness_checked(Type::OpaqueBytes);
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert_eq!(program.effects()[1].capability(), Capability::ExactWitness);
     assert_eq!(program.effects()[1].guard(), GuardId(1));
     assert_eq!(program.effects()[1].privacy(), Privacy::Unknown);
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[
             Capability::Pure,
             Capability::Require,
@@ -544,11 +544,11 @@ fn missing_witness_source_and_target_capability_are_not_inferred_from_guard_or_t
     let mut authority = AuthorityDouble::node_spans();
     authority.missing = Some(1);
     assert!(
-        matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "checked[1]")
     );
     authority.missing = None;
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::Require, Capability::Select],
     };
     assert!(
@@ -615,7 +615,7 @@ fn rendered_sequence_avoids_nested_bind_receivers_for_values_units_and_branches(
     // or a private local name: expanded bind receivers trigger formatter work.
     let checked = checked(None);
     let authority = AuthorityDouble::node_spans();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let mut rendered = super::super::functional_render::render(&program).unwrap();
     let mut receivers = Receivers::default();
     receivers.visit_expr_mut(&mut rendered.body);
@@ -644,7 +644,7 @@ fn witness_rendering_selects_exact_mode_for_nested_opaque_results_only() {
         let checked = witness_checked(result);
         let authority = AuthorityDouble::node_spans();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         let rendered = super::super::functional_render::render(&program).unwrap();
         let body = rendered.body.to_token_stream().to_string();
         let bounds = rendered
@@ -786,7 +786,7 @@ fn remaining_counter_operations_request_only_their_own_capability_and_slot() {
         let checked = remaining_counter_checked(kind, false).unwrap();
         let authority = CounterAuthority::new();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert!(program.requirements().contains(&capability));
         let rendered = super::super::functional_render::render(&program).unwrap();
         assert_eq!(rendered.counters.len(), 1);
@@ -822,7 +822,7 @@ fn remaining_counter_capability_and_source_refusals_stay_precise() {
     ] {
         let checked = remaining_counter_checked(kind, false).unwrap();
         let authority = CounterAuthority::new();
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: &[Capability::Pure],
         };
         assert!(
@@ -853,7 +853,7 @@ fn remaining_counter_nodes_do_not_bypass_source_authority() {
             ..CounterAuthority::new()
         };
         assert!(
-            matches!(FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+            matches!(FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
             Err(ProjectionRefusal::MissingSourceAuthority { path }) if path == "checked[1]")
         );
     }

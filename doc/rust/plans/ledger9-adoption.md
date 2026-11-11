@@ -18,7 +18,7 @@ The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter
 
 The Set and Map transition sources retain the export sets of the existing Rust fixtures. Capture them with `compactc --skip-zk` in a directory that resolves the pinned npm packages. Run `runtime-rs/tests/fixtures/capture-ledger9-counter.mjs` or `capture-ledger9-collection.mjs` with the generated contract entry and matching Compact runtime entry. The collection script also takes `initial`, `set`, `map`, or `list`. The tests compare full serialized contract states.
 
-The migration branch is an integration worktree. The workspace still has generated fixtures with direct Ledger 8 dependency pins. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
+The migration branch is an integration worktree. The active Rust workspace resolves the published Ledger 9 package graph from crates.io. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
 
 Port the remaining fixture and proof consumers and pass the required Linux, package and end-to-end gates before switching the distribution default.
 
@@ -80,4 +80,14 @@ Mixed native values with a zero-width unsigned field require a separate layout f
 
 The first regeneration covers Counter, Boolean Cell, Jubjub Cell, Map and List. The current compiler emits ABI 54 in each library. The isolated macOS arm64 workspace used the published Ledger 9 graph and passed all 20 existing tests with all features and targets. The compiler regenerated these libraries from their Compact sources with Rust 1.99 formatting. The fixture test sources and coordinate oracle remain the same.
 
-The full audit after the Jubjub repair successfully emitted all 255 ordinary fixtures. It still encountered the 29 intentionally refused Ledger 8 functional recipes. Port fixture manifests and independent oracle consumers in cohorts, and qualify the functional Ledger 9 entry separately before switching its recipes.
+All 255 ordinary fixture libraries have been regenerated. The 202 fixture manifests with direct Ledger 8 Git dev dependencies now use the runtime's exact published crate pins. The resolved macOS arm64 workspace contains one `midnight-ledger-v9` 1.0.1, Onchain State/Runtime/VM 4.0.1, Storage 3.0.0, Serialize 1.2.1 and Zswap 9.0.1. Both published ZKIR majors remain available for their distinct check modes. The registry records the 66 changed manifests used by generated-consumer build bindings. The Ledger 8 transition tests reconstruct and verify their historical manifest bytes against the recorded hashes.
+
+## Functional Ledger 9 entry
+
+`compactc --target rust --rust-functional-ledger9` emits source-bound checked programs labelled `9.1.0.1` and enables the generated crate's functional runtime feature. The emitted compatibility record and ABI 54 identify the paired source runtime. The experimental typed adapter API retains its existing names. The Ledger 8 CLI flag still refuses before publication.
+
+The Nix-built Rust CLI paired with the same Scheme frontend reproduced the generated Counter Rust library, checked programs, TypeScript and ZKIR byte-for-byte. Its functional native and recorded results matched ordinary Rust state and gas. Preparing the functional trace against the observed contract retained the same installed operation and produced the same call prototype as the ordinary recording. The generated TypeScript matched the independent Ledger 9 oracle and the applied contract's serialized state.
+
+On macOS arm64, the functional recording generated a fresh ZKIR v3 proof and passed verification in a separate process, including the wrong-key, wrong-binding, wrong-commitment and corrupted-proof controls. A separately proved transaction spent one Dust input, applied under default strict validation, and refused replay with `IntentAlreadyExists` and byte-identical ledger state. This local gate covers Counter. The remaining maintained proof consumers and required Linux integration gates still need migration and qualification.
+
+The source registry now uses the Ledger 9 flag for its 29 functional fixtures. Their complete checked-program sidecars and formatted Rust libraries were regenerated from the registered sources. The fixture producer completed all 284 ordinary and functional registrations with no generation failures.

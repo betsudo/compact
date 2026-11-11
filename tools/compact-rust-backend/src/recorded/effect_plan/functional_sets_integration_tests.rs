@@ -119,7 +119,7 @@ fn six_operations_share_one_slot_and_precise_capabilities() {
     let field = field();
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(program.requirements().contains(&Capability::SetRead));
     assert!(program.requirements().contains(&Capability::SetWrite));
     let rendered = super::super::functional_render::render(&program).unwrap();
@@ -194,7 +194,7 @@ fn target_must_explicitly_accept_each_set_capability() {
     let checked = checked(&root, &field);
     let authority = Authority::new();
     for missing in [Capability::SetRead, Capability::SetWrite] {
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: match missing {
                 Capability::SetRead => &[Capability::Pure, Capability::SetWrite],
                 Capability::SetWrite => &[Capability::Pure, Capability::SetRead],
@@ -227,7 +227,7 @@ fn read_only_and_write_only_sets_do_not_require_the_other_capability() {
         }
         let checked = checked(&root, &field);
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert_eq!(
             program.requirements().contains(&Capability::SetWrite),
             write
@@ -277,20 +277,20 @@ fn genuine_checked_coin_storage_requires_qualified_not_scalar_capability() {
         .find(|b| matches!(b.operation, Operation::SetInsertCoin { .. }))
         .unwrap();
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let effect = program
         .effects()
         .iter()
         .find(|effect| effect.binding().path == binding.path)
         .unwrap();
     assert_eq!(effect.capability(), Capability::QualifiedSetInsert);
-    let capabilities = Ledger8Target::PINNED
+    let capabilities = Ledger9Target::PINNED
         .capabilities
         .iter()
         .copied()
         .filter(|cap| *cap != Capability::QualifiedSetInsert)
         .collect::<Vec<_>>();
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: Box::leak(capabilities.into_boxed_slice()),
     };
     assert!(

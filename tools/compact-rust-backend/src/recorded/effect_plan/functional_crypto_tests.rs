@@ -258,12 +258,12 @@ fn admitted_checked_crypto_has_one_precise_group_and_no_executor_bounds() {
             continue;
         };
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert_eq!(program.requirements().len(), 1, "{name}");
         assert!(program.requirements().contains(&capability));
         let rendered = super::super::functional_render::render(&program).unwrap();
         assert!(rendered.executor_bounds.is_empty());
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: &[Capability::Pure],
         };
         assert!(
@@ -308,7 +308,7 @@ fn native_keccak_syntax_does_not_grant_pinned_zkir_v2_functional_admission() {
             .is_some()
     );
     assert!(
-        matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==binding.path)
+        matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==binding.path)
     );
 }
 
@@ -339,7 +339,7 @@ fn crypto_capability_never_replaces_original_value_authority() {
             id: binding.value.id,
         };
         assert!(
-            matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),
+            matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),
             Err(ProjectionRefusal::MissingSourceAuthority {path}) if path==binding.path),
             "{name}"
         );

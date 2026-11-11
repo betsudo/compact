@@ -19,6 +19,7 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+import re
 import tempfile
 import tomllib
 import unittest
@@ -63,12 +64,32 @@ class CurrentSourceRegistryTests(unittest.TestCase):
             fingerprint(directory / 'tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json'),
             '519e534e844b3cc4ee2f111f39e8634f199853aa9b888698cc2b58ef8f6c574b')
         originals = {row['source']: row for row in baseline['sources']}
+        runtime_pins = tomllib.loads((inventory.ROOT / 'runtime-rs/Cargo.toml').read_text())['dependencies']
+        migrated_manifest_inputs = set()
         for row in current['sources']:
+            original = originals[row['source']]
             if row['source'] in refreshed:
                 self.assertEqual(row['retained_ir_sha256'], refreshed[row['source']])
                 self.assertEqual(fingerprint(inventory.ROOT / row['retained_ir']),
                                  refreshed[row['source']])
-                row['retained_ir_sha256'] = originals[row['source']]['retained_ir_sha256']
+                row['retained_ir_sha256'] = original['retained_ir_sha256']
+            pins = row.get('build_binding', row).get('consumer_input_sha256', {})
+            old_pins = original.get('build_binding', original).get('consumer_input_sha256', {})
+            for path, pin in pins.items():
+                if pin == old_pins[path]:
+                    continue
+                manifest = inventory.ROOT / path
+                self.assertTrue(path.startswith('tests-rust-backend/'))
+                self.assertEqual(manifest.name, 'Cargo.toml')
+                self.assertEqual(fingerprint(manifest), pin)
+                dependencies = tomllib.loads(manifest.read_text())['dev-dependencies']
+                ledger = {name: spec for name, spec in dependencies.items() if name.startswith('midnight-')}
+                self.assertTrue(ledger)
+                for name, spec in ledger.items():
+                    self.assertEqual(spec, runtime_pins[name]['version'])
+                migrated_manifest_inputs.add(path)
+                pins[path] = old_pins[path]
+        self.assertEqual(len(migrated_manifest_inputs), 66)
         self.assertEqual(current, baseline)
 
     def test_mixed_width_current_and_historical_ir_remain_distinct_exact_inputs(self):
@@ -81,7 +102,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_vector_projection_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'constant_vector_projection.compact')
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 5)
@@ -90,7 +111,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         rows = {row.source.name: row for row in inventory.source_registry()}
         current = rows['constant_valued_vector_indices.compact']
         original = rows['constant_vector_projection.compact']
-        self.assertEqual(current.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(current.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(current.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(current.library, current.generated_library)
         self.assertNotEqual(current.library, original.library)
@@ -99,7 +120,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_wide_zero_registers_complete_source_and_explicit_proof_result_carriers(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'wide_zero_multiplication.compact')
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         fixture = row.library.parent
@@ -117,7 +138,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_map_size_registers_complete_functional_flat_output(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'map_size_expression.compact')
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 8)
@@ -125,7 +146,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_typed_pairs_register_complete_programs_and_mixed_result_domain(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'tuple_return_wrappers.compact')
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 8)
@@ -141,7 +162,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         root = inventory.ROOT
         source = root / 'examples/rust_backend/third_party/did_functional_lifecycle/packages/contract/src/did.compact'
         row = next(row for row in inventory.source_registry() if row.source == source)
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         fixture = row.library.parent
@@ -172,7 +193,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
     def test_unit_initializers_bind_all_programs_and_separate_nonproof_exports(self):
         row = next(row for row in inventory.source_registry()
                    if row.source.name == 'unit_mutation_initializers.compact')
-        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+        self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
         self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
         self.assertEqual(row.library, row.generated_library)
         folder = row.library.parent
@@ -263,7 +284,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual(len(rows), 21)
         for row in rows:
             with self.subTest(source=row.source.stem):
-                self.assertEqual(row.frontend_flags, ('--rust-functional-ledger8',))
+                self.assertEqual(row.frontend_flags, ('--rust-functional-ledger9',))
                 self.assertEqual(row.role, inventory.SourceRole.FLAT_LIBRARY)
                 self.assertEqual(row.library, row.generated_library)
                 self.assertEqual(len(list((row.library.parent / 'checked-programs').glob('*.json'))), 1)
@@ -382,7 +403,6 @@ class Ledger813RegistryTransitionTests(unittest.TestCase):
                 self.assertEqual(pin, change['before_sha256'])
                 self.assertTrue(path.startswith('tests-rust-backend/'))
                 self.assertEqual(Path(path).name, 'Cargo.toml')
-                self.assertEqual(fingerprint(inventory.ROOT / path), change['after_sha256'])
                 binding['consumer_input_sha256'][path] = change['after_sha256']
                 affected.append(path)
         self.assertEqual(len(affected), 73)
@@ -415,9 +435,11 @@ class Ledger813RegistryTransitionTests(unittest.TestCase):
                 before = change['before_toml'].encode()
                 self.assertEqual(hashlib.sha256(before).hexdigest(), change['before_sha256'])
                 expected = tomllib.loads(before.decode())
+                historical = before.decode()
                 touched = []
                 if expected['package'].get('rust-version') == '1.88':
                     expected['package']['rust-version'] = '1.89'
+                    historical = historical.replace('rust-version = "1.88"', 'rust-version = "1.89"')
                     touched.append('minimum-rust-version')
                     counts['minimum_rust_version_manifests'] += 1
                 dependencies = expected.get('dev-dependencies', {})
@@ -425,17 +447,27 @@ class Ledger813RegistryTransitionTests(unittest.TestCase):
                     if package in dependencies:
                         self.assertEqual(dependencies[package], old)
                         dependencies[package] = {'version': new, **official}
+                        replacement = (
+                            f'{{ version = "{new}", git = "{official["git"]}", '
+                            f'rev = "{official["rev"]}" }}'
+                        )
+                        historical, count = re.subn(
+                            rf'^({re.escape(package)}\s*=\s*)"{re.escape(old)}"$',
+                            lambda match: match[1] + replacement,
+                            historical, flags=re.M,
+                        )
+                        self.assertEqual(count, 1)
                         touched.append(package)
                         counts[package] += 1
                 self.assertTrue(touched)
                 self.assertCountEqual(touched, change['reviewed_changes'])
                 if any(package in versions for package in touched):
                     counts['dependency_manifests'] += 1
-                current = inventory.ROOT / change['path']
-                self.assertEqual(fingerprint(current), change['after_sha256'])
+                self.assertEqual(hashlib.sha256(historical.encode()).hexdigest(),
+                                 change['after_sha256'])
                 # Whole-document equality excludes unrelated dependency,
                 # feature, package, source, path or workspace changes.
-                self.assertEqual(tomllib.loads(current.read_text()), expected)
+                self.assertEqual(tomllib.loads(historical), expected)
         self.assertEqual(counts['minimum_rust_version_manifests'], 12)
         self.assertEqual(counts['dependency_manifests'], 66)
         self.assertEqual(sum(counts[name] for name in versions), 210)

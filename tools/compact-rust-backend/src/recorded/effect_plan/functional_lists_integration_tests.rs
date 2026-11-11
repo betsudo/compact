@@ -119,7 +119,7 @@ fn six_operations_use_one_binding_and_precise_native_maybe_bound() {
     let field = field();
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     for cap in [
         Capability::ListRead,
         Capability::ListHead,
@@ -201,11 +201,11 @@ fn head_only_requires_head_not_general_read_or_write() {
     let field = field();
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(program.requirements().contains(&Capability::ListHead));
     assert!(!program.requirements().contains(&Capability::ListRead));
     assert!(!program.requirements().contains(&Capability::ListWrite));
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[
             Capability::Pure,
             Capability::ListRead,
@@ -232,7 +232,7 @@ fn each_list_capability_is_an_explicit_target_requirement() {
         Capability::ListHead,
         Capability::ListWrite,
     ] {
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: match missing {
                 Capability::ListRead => &[
                     Capability::Pure,
