@@ -23,7 +23,6 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         14,
         42,
         "compact-constructor-vector-model-inventory/v2",
-        true,
     )
 }
 
@@ -33,8 +32,7 @@ pub(super) fn equality_inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         include_bytes!("../../compact-rust-backend/tests/constructor_equality/sources.json"),
         8,
         24,
-        "compact-constructor-equality-model-inventory/v1",
-        false,
+        "compact-constructor-equality-model-inventory/v2",
     )
 }
 
@@ -46,8 +44,7 @@ pub(super) fn equality_boundaries_inventory(root: &Path) -> Result<(), Box<dyn E
         ),
         8,
         24,
-        "compact-constructor-equality-boundaries-model-inventory/v1",
-        false,
+        "compact-constructor-equality-boundaries-model-inventory/v2",
     )
 }
 
@@ -59,8 +56,7 @@ pub(super) fn tuple_equality_inventory(root: &Path) -> Result<(), Box<dyn Error>
         ),
         16,
         48,
-        "compact-constructor-tuple-equality-model-inventory/v1",
-        false,
+        "compact-constructor-tuple-equality-model-inventory/v2",
     )
 }
 
@@ -70,7 +66,6 @@ fn observe(
     source_count: usize,
     model_count: usize,
     format: &str,
-    ledger9: bool,
 ) -> Result<(), Box<dyn Error>> {
     let declarations: serde_json::Value = serde_json::from_slice(roster)?;
     let declarations = declarations
@@ -167,24 +162,18 @@ fn observe(
             let name = entry.as_str().ok_or("invalid constructor export name")?;
             let path = directory.join(format!("{name}.zkir"));
             let bytes = std::fs::read(&path)?;
-            let input = BufReader::new(std::io::Cursor::new(&bytes));
-            let (k, v3_rows) = if ledger9 {
-                let ir = midnight_zkir_v3::IrSource::load(input)?;
-                let model = ir.model();
-                (model.k(), Some(model.rows()))
-            } else {
-                let ir = IrSource::load(input)?;
-                (ir.model().k(), None)
-            };
+            let ir =
+                midnight_zkir_v3::IrSource::load(BufReader::new(std::io::Cursor::new(&bytes)))?;
+            let model = ir.model();
+            let k = model.k();
             if std::fs::read(&path)? != bytes {
                 return Err("constructor model bytes changed during observation".into());
             }
-            let mut row = serde_json::json!({"source":role,"circuit":name,"k":k,"zkir_bytes":bytes.len(),
-                "proof_required":true,"within_tiny_automatic_cap":k<=8,"selected_for_proof":false});
-            if let Some(count) = v3_rows {
-                row["rows"] = serde_json::json!(count);
-            }
-            rows.push(row);
+            rows.push(
+                serde_json::json!({"source":role,"circuit":name,"k":k,"rows":model.rows(),
+                "zkir_bytes":bytes.len(),"proof_required":true,"within_tiny_automatic_cap":k<=8,
+                "selected_for_proof":false}),
+            );
         }
     }
     if rows.len() != model_count {

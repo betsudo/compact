@@ -195,7 +195,7 @@ def main(*, boundaries=False, tuple_guards=False):
         for role in roles:
             destination = generated / role
             run(role + "-generate", [compiler, "--target", "rust", "--target", "ts", "--skip-zk",
-                "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger9", "--rust-require-recording", "--rust-runtime-root", ROOT,
                 source_for(role), destination])
             manifest = generated_manifest_snapshot(destination)
             snapshots[role] = inventory(destination)
@@ -210,7 +210,7 @@ def main(*, boundaries=False, tuple_guards=False):
                               ("undisclosed_field_eq", "potential witness-value disclosure"),
                               ("mismatched_equality", "incompatible types Field and Boolean")):
             result = run(role + "-refusal", [compiler, "--target", "rust", "--skip-zk",
-                "--rust-functional-ledger8", "--rust-require-recording", FIXTURES / (role + ".compact"),
+                "--rust-functional-ledger9", "--rust-require-recording", FIXTURES / (role + ".compact"),
                 out / "refused" / role], success=False)
             require(result.returncode != 0 and message in result.stderr, "wrong refusal: " + role)
             report["refusals"][role] = message
@@ -218,7 +218,7 @@ def main(*, boundaries=False, tuple_guards=False):
             from constructor_tuple_scope import RUST_REFUSALS
             for role, message in RUST_REFUSALS.items():
                 result = run(role + "-known-alias-refusal", [compiler, "--target", "rust", "--skip-zk",
-                    "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
+                    "--rust-functional-ledger9", "--rust-require-recording", "--rust-runtime-root", ROOT,
                     fixtures / "supplemental" / (role + ".compact"), out / "refused" / role], success=False)
                 require(result.returncode == (255 if role == "aliased_tuple_variable" else 1) and message in result.stderr,
                         "wrong known alias transport refusal: " + role)

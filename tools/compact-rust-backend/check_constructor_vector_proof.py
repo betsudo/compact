@@ -33,6 +33,50 @@ W = sdk.ROOT
 sha = sdk.digest
 git = lambda *a: subprocess.check_output(['git',*a],cwd=W,text=True).strip()
 
+def verify_case(result, path, pins, run, label, binary, material_root):
+    assert (
+        result['status'] == 'passed'
+        and result['strict_application'] == 'default'
+        and result['replay_refusal'] == 'IntentAlreadyExists'
+        and result['replay_unchanged']
+        and result['transaction_proof_version'] == 3
+        and result['positive_fee_dust_spends'] == 1
+    )
+    for key in [
+        'changed_binding_rejected',
+        'changed_input_rejected',
+        'changed_output_rejected',
+        'changed_input_preimage_rejected',
+        'changed_output_preimage_rejected',
+        'corrupted_proof_rejected',
+        'distinct_verifier_rejected',
+    ]:
+        assert result[key] is True, key
+    standalone = (path/'standalone.proof').read_bytes()
+    transaction_proof = (path/'transaction-bound.proof').read_bytes()
+    assert len(standalone)==result['standalone_proof_bytes']>0
+    assert len(transaction_proof)==result['transaction_proof_bytes']>0
+    assert transaction_proof != standalone
+    assert (path/'ledger-after.bin').read_bytes() == (path/'ledger-replay.bin').read_bytes()
+    assert (path/'applied-transaction.bin').stat().st_size==result['transaction_bytes']>0
+    files = list(path.iterdir())
+    assert {file.name for file in files} == {
+        'standalone.proof', 'standalone.inputs', 'transaction-bound.proof',
+        'applied-transaction.bin', 'ledger-after.bin', 'ledger-replay.bin', 'result.json',
+    }
+    assert json.loads((path/'result.json').read_text()) == result
+    for file in files:
+        assert file.is_file() and not file.is_symlink() and file.stat().st_size > 0
+        pins[str(file)] = sha(file)
+    verification = run(label, [
+        binary, '--verify-standalone', material_root, path,
+    ])
+    assert json.loads(verification.stdout) == {
+        'status':'passed', 'standalone_verified':True,
+        'corrupted_proof_rejected':True, 'distinct_verifier_rejected':True,
+    }
+
+
 def prove_selected(E, environment):
     P = E/'preflight'
     D = E/'proofs'
@@ -141,48 +185,8 @@ def prove_selected(E, environment):
             expected=[x['id'] for x in cases if x['role']==role and x['error'] is None]
             assert value['status']=='passed' and [x['case'] for x in value['results']]==expected
             for result in value['results']:
-                assert (
-                    result['status'] == 'passed'
-                    and result['strict_application'] == 'default'
-                    and result['replay_refusal'] == 'IntentAlreadyExists'
-                    and result['replay_unchanged']
-                    and result['transaction_proof_version'] == 3
-                    and result['positive_fee_dust_spends'] == 1
-                )
-                for key in [
-                    'changed_binding_rejected',
-                    'changed_input_rejected',
-                    'changed_output_rejected',
-                    'changed_input_preimage_rejected',
-                    'changed_output_preimage_rejected',
-                    'corrupted_proof_rejected',
-                    'distinct_verifier_rejected',
-                ]:
-                    assert result[key] is True, key
-                path=lane/'applications'/result['case']
-                standalone = (path/'standalone.proof').read_bytes()
-                transaction_proof = (path/'transaction-bound.proof').read_bytes()
-                assert len(standalone)==result['standalone_proof_bytes']>0
-                assert len(transaction_proof)==result['transaction_proof_bytes']>0
-                assert transaction_proof != standalone
-                assert (path/'ledger-after.bin').read_bytes() == (path/'ledger-replay.bin').read_bytes()
-                assert (path/'applied-transaction.bin').stat().st_size==result['transaction_bytes']>0
-                files = list(path.iterdir())
-                assert {file.name for file in files} == {
-                    'standalone.proof', 'standalone.inputs', 'transaction-bound.proof',
-                    'applied-transaction.bin', 'ledger-after.bin', 'ledger-replay.bin', 'result.json',
-                }
-                assert json.loads((path/'result.json').read_text()) == result
-                for file in files:
-                    assert file.is_file() and not file.is_symlink() and file.stat().st_size > 0
-                    pins[str(file)] = sha(file)
-                verification = run(role+'-'+result['case']+'-verify', [
-                    binary, '--verify-standalone', material_root, path,
-                ])
-                assert json.loads(verification.stdout) == {
-                    'status':'passed', 'standalone_verified':True,
-                    'corrupted_proof_rejected':True, 'distinct_verifier_rejected':True,
-                }
+                path = lane / 'applications' / result['case']
+                verify_case(result, path, pins, run, role+'-'+result['case']+'-verify', binary, material_root)
             R['sources'][role]=dict(keys=keys,result=value,artifacts=sdk.inventory(lane))
             save()
         unchanged()

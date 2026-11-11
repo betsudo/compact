@@ -57,9 +57,9 @@ class CompositionControls(unittest.TestCase):
                     if name == "preflight":
                         value.update(selected_cases=count, prerequisites={"zkir": str(zkir)},
                                      frozen_inputs={}, frozen_directories={}, dependency_sources={},
-                                     verified_material_by_k={"6": {"format": "HOST-no-material-authority"}})
+                                     verified_material={"parameters": [{"k": 6}, {"k": 7}]})
                     if name == "models":
-                        value["observed_k"] = [6]
+                        value["observed_k"] = [6, 7]
                     (destination / "receipt.json").write_text(json.dumps(value))
                 return run
             def prove(selected, environment, **kwargs):
@@ -68,7 +68,7 @@ class CompositionControls(unittest.TestCase):
                 self.assertEqual(kwargs, {"tuple_guards": True} if tuple_guards else {"boundaries": True} if boundaries else {})
                 if fail == "proofs":
                     raise RuntimeError("HOST stop proofs")
-                value = dict(status="passed", fresh_standalone_proofs=count,
+                value = dict(status="passed", fresh_standalone_proofs=count, separate_standalone_verifications=count,
                              separately_proved_applications=count, format="HOST-no-proof-authority")
                 (selected / "proofs").mkdir()
                 (selected / "proofs/receipt.json").write_text(json.dumps(value))
@@ -155,8 +155,8 @@ class CompositionControls(unittest.TestCase):
         self.assertFalse(receipt["proof_execution"])
         self.assertFalse(receipt["key_generation"])
         self.assertEqual(receipt["selected_cases"], 30)
-        self.assertEqual(receipt["observed_k"], [6])
-        self.assertEqual(receipt["verified_material_k"], [6])
+        self.assertEqual(receipt["observed_k"], [6, 7])
+        self.assertEqual(receipt["verified_material_k"], [6, 7])
         self.assertEqual(set(receipt) & {"source_receipt", "scope_receipt", "model_receipt", "preflight_receipt"},
                          {"source_receipt", "scope_receipt", "model_receipt", "preflight_receipt"})
 
@@ -189,11 +189,11 @@ class CompositionControls(unittest.TestCase):
             (root / "preflight").mkdir()
             (root / "models").mkdir()
             roles = [str(i) for i in range(8)]
-            rows = [dict(source=role, circuit=entry, k=6) for role in roles
+            rows = [dict(source=role, circuit=entry, k=owner.GEOMETRY[entry][0], rows=owner.GEOMETRY[entry][1]) for role in roles
                     for entry in ("read", "advance", "advance_other")]
             rows[-1] = rows[0].copy()
             (root / "preflight/receipt.json").write_text(json.dumps(dict(status="passed", sources={r: {} for r in roles}, selected_cases=30)))
-            (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=24, observed_k=[6], inventory={"circuits": rows})))
+            (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=24, observed_k=[6, 7], inventory={"circuits": rows, "format": owner.model_owner.inventory_format(boundaries=True)})))
             with patch.object(owner.process_owner, "bounded_command") as child:
                 with self.assertRaises(AssertionError):
                     owner.prove_selected(root, {}, boundaries=True)
@@ -202,16 +202,16 @@ class CompositionControls(unittest.TestCase):
 
     def test_tuple_invalid_or_incomplete_models_refuse_before_keys(self):
         roles = [str(i) for i in range(16)]
-        valid = [dict(source=role, circuit=entry, k=6) for role in roles
+        valid = [dict(source=role, circuit=entry, k=owner.GEOMETRY[entry][0], rows=owner.GEOMETRY[entry][1]) for role in roles
                  for entry in ("read", "advance", "advance_other")]
         mutants = []
         for k in (0, 9, True, "6"):
             rows = [dict(row) for row in valid]
             rows[-1]["k"] = k
-            mutants.append(("bad-row-k-" + str(k), rows, [6]))
-        mutants += [("duplicate", valid[:-1] + [dict(valid[0])], [6]),
-                    ("missing", valid[:-1], [6]),
-                    ("extra", valid + [dict(valid[0])], [6]),
+            mutants.append(("bad-row-k-" + str(k), rows, [6, 7]))
+        mutants += [("duplicate", valid[:-1] + [dict(valid[0])], [6, 7]),
+                    ("missing", valid[:-1], [6, 7]),
+                    ("extra", valid + [dict(valid[0])], [6, 7]),
                     ("observed-k-set-differs", valid, [7])]
         for name, rows, ks in mutants:
             with self.subTest(mutant=name), tempfile.TemporaryDirectory(prefix="HOST tuple no keys ") as temporary:
@@ -219,7 +219,7 @@ class CompositionControls(unittest.TestCase):
                 (root / "preflight").mkdir()
                 (root / "models").mkdir()
                 (root / "preflight/receipt.json").write_text(json.dumps(dict(status="passed", sources={r: {} for r in roles}, selected_cases=105)))
-                (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=48, observed_k=ks, inventory={"circuits": rows})))
+                (root / "models/receipt.json").write_text(json.dumps(dict(status="passed", observed_models=48, observed_k=ks, inventory={"circuits": rows, "format": owner.model_owner.inventory_format(tuple_guards=True)})))
                 with patch.object(owner.process_owner, "bounded_command") as child:
                     with self.assertRaises(AssertionError):
                         owner.prove_selected(root, {}, tuple_guards=True)

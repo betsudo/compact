@@ -29,7 +29,12 @@ import sys
 import time
 import tomllib
 
+if not __debug__ or sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
+    raise ValueError("optimized preflight is not admitted")
+
 import check_functional_source_sdk as sdk
+import check_constructor_equality_models as model_owner
+from check_constructor_vector_models import GEOMETRY
 import check_passport_current_profile as process_owner
 import constructor_proof_dependencies as dependencies
 import did_proof_gate
@@ -149,13 +154,14 @@ def main(*, boundaries=False, tuple_guards=False):
     parser.add_argument("--producer-root", type=Path, required=True)
     parser.add_argument("--compiler-receipt", type=Path, required=True)
     parser.add_argument("--model-receipt", type=Path, required=True)
+    parser.add_argument("--zkir", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     output = args.output.resolve()
     require(not output.exists() and not args.output.is_symlink() and not output.is_relative_to(ROOT),
             "fresh output outside checkout required")
     output.mkdir(parents=True, mode=0o700)
-    report = dict(format="constructor-tuple-equality-proof-preflight/v1" if tuple_guards else "constructor-equality-boundaries-proof-preflight/v1" if boundaries else "constructor-equality-proof-preflight/v1", status="running", commands=[],
+    report = dict(format="constructor-tuple-equality-proof-preflight/v2" if tuple_guards else "constructor-equality-boundaries-proof-preflight/v2" if boundaries else "constructor-equality-proof-preflight/v2", status="running", commands=[],
                   sources={}, key_generation=False, proof_execution=False,
                   scope="selected compiler-produced complete SDKs; native constructor/Program and build-graph admission only; not cryptographic, integration or constructor-cost acceptance")
     receipt = output / "receipt.json"
@@ -221,12 +227,19 @@ def main(*, boundaries=False, tuple_guards=False):
         models = json.loads(args.model_receipt.read_text())
         require(producer["status"] == compiler["status"] == models["status"] == "passed", "accepted predecessors required")
         require(producer["head"] == compiler["head"] == models["producer_source"], "producer identities differ")
+        require(models["inventory"]["format"] == model_owner.inventory_format(
+                    boundaries=boundaries, tuple_guards=tuple_guards), "current v3 constructor model required")
+        require(models["observed_k"] == [6, 7], "exact constructor parameter roster required")
+        observed = check_model_geometry(models, model_count)
+        specs = json.loads((fixture / "sources.json").read_text())
+        check_model_membership(models, specs, producer, source_count, observed)
         report["producer_head"] = producer["head"]
         report["model_observer_head"] = models["qualifier_source"]
         require(subprocess.run(["git","merge-base","--is-ancestor",producer["head"],report["qualifier_head"]],cwd=ROOT).returncode == 0,
                 "producer is not an ancestor")
         paths = [args.producer_receipt, args.compiler_receipt, args.model_receipt, Path(__file__),
                  Path(sdk.__file__), Path(dependencies.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
+                 Path(model_owner.__file__), Path(__file__).with_name("check_constructor_vector_models.py"),
                  ROOT / "Cargo.toml", ROOT / "Cargo.lock", sdk.EXAMPLE / "consumer/Cargo.toml"]
         if extended:
             paths.append(Path(process_owner.__file__))
@@ -243,7 +256,7 @@ def main(*, boundaries=False, tuple_guards=False):
             require(sdk.digest(name)==digest,"original compiler recipe input changed")
             paths.append(Path(name))
         if extended:
-            require(producer.get("cohort") == ("implicit-tuple-guards" if tuple_guards else "operand-boundaries") and models.get("format") == ("constructor-tuple-equality-model-observation/v1" if tuple_guards else "constructor-equality-boundaries-model-observation/v1"), "boundary cohort differs")
+            require(producer.get("cohort") == ("implicit-tuple-guards" if tuple_guards else "operand-boundaries") and models.get("format") == ("constructor-tuple-equality-model-observation/v2" if tuple_guards else "constructor-equality-boundaries-model-observation/v2"), "boundary cohort differs")
             scope_path = Path(models["scope_receipt"]).resolve(strict=True)
             scope = json.loads(scope_path.read_text())
             require(scope["status"] == "passed" and scope["head"] == report["qualifier_head"]
@@ -263,9 +276,6 @@ def main(*, boundaries=False, tuple_guards=False):
                 paths.append(Path(name))
             frozen_roots.update(models["frozen_directories"])
             report["scope_receipt"] = dict(path=str(scope_path), sha256=sdk.digest(scope_path))
-            observed = check_model_geometry(models, model_count)
-            specs = json.loads((fixture / "sources.json").read_text())
-            check_model_membership(models, specs, producer, source_count, observed)
         frozen.update({str(p.resolve()):sdk.digest(p) for p in paths})
         python = Path(sys.executable).resolve()
         frozen[str(python)] = sdk.digest(python)
@@ -278,7 +288,8 @@ def main(*, boundaries=False, tuple_guards=False):
         compiler_path = Path(compiler["compactc"]["path"])
         require(sdk.digest(compiler_path) == compiler["compactc"]["sha256"], "producer compiler changed")
         frozen[str(compiler_path)] = sdk.digest(compiler_path)
-        prereq = did_proof_gate.prerequisites(env)
+        zkir_name = str(args.zkir.resolve(strict=True)) if args.zkir else "zkir-v3"
+        prereq = did_proof_gate.prerequisites(env, zkir_name=zkir_name)
         report["prerequisites"] = prereq
         report["dust_fixture_hashes"] = did_proof_gate.dust_fixture_inventory(Path(prereq["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         frozen.update(report["dust_fixture_hashes"])
@@ -296,24 +307,19 @@ def main(*, boundaries=False, tuple_guards=False):
         for tool, command in (("compiler",[compiler_path,"--version"]),("zkir",[prereq["zkir"],"--version"]),("cargo",[cargo,"--version"]),("rustc",[tools["rustc"]["path"],"-Vv"])):
             report["versions"][tool] = run(tool+"-version", command).stdout.strip()
         require(report["versions"]["compiler"] == compiler["version"], "compiler version differs")
-        material_ks = sorted({m["k"] for m in models["inventory"]["circuits"]
-                              if m["circuit"] in ("advance", "advance_other")}) if extended else [6]
-        verified = {}
-        for k in material_ks:
-            label = "verify-material-" + str(k) if extended else "verify-material"
-            material = json.loads(run(label,[binary,"--prepare-proof-material","--verify-only","--parameter-k",str(k)]).stdout)
-            require(material.get("mode") == "verify-only" and material.get("verification") == "all files checked against locked upstream SHA256 tables"
-                    and Path(material["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve()
-                    and k in [p["k"] for p in material["parameters"]], "official observed-k material verification required")
-            verified[str(k)] = material
-            for asset in material["assets"]+material["parameters"]:
-                p = Path(env["MIDNIGHT_PP"]) / asset["name"]
-                frozen[str(p)] = sdk.digest(p)
-        if extended:
-            report["verified_material_by_k"] = verified
-        else:
-            report["verified_material"] = verified["6"]
-        specs = json.loads((fixture / "sources.json").read_text())
+        require(report["versions"]["zkir"] == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
+        material = json.loads(run("verify-material", [
+            binary, "--prepare-proof-material", "--verify-only", "--parameter-k", "6", "--parameter-k", "7",
+        ]).stdout)
+        require(material.get("mode") == "verify-only"
+                and material.get("verification") == "all files checked against locked upstream SHA256 tables"
+                and Path(material["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve()
+                and {6, 7}.issubset(p["k"] for p in material["parameters"]),
+                "official k6 and k7 material verification required")
+        report["verified_material"] = material
+        for asset in material["assets"] + material["parameters"]:
+            path = Path(env["MIDNIGHT_PP"]) / asset["name"]
+            frozen[str(path)] = sdk.digest(path)
         cases = json.loads((fixture / "proof-cases.json").read_text())
         require(len(specs)==source_count and len([c for c in cases if c["error"] is None])==case_count, "complete source/case membership differs")
         if extended:
@@ -331,7 +337,9 @@ def main(*, boundaries=False, tuple_guards=False):
             check_source(ROOT/spec["path"], spec["sha256"])
             for entry in spec["entries"]:
                 row=[m for m in models["inventory"]["circuits"] if m["source"]==role and m["circuit"]==entry]
-                require(len(row)==1 and (1 <= row[0]["k"] <= 8 if extended else row[0]["k"]==6), "exact intact model observation differs")
+                require(len(row) == 1 and (row[0]["k"], row[0]["rows"]) == GEOMETRY[entry]
+                        and row[0]["zkir_sha256"] == sdk.digest(args.producer_root / role / "zkir" / f"{entry}.zkir"),
+                        "exact intact model observation differs")
             original=args.producer_root/role
             expected_manifest=producer["sources"][role]["manifest"]
             complete=check_assets(original,expected_manifest)
@@ -344,7 +352,7 @@ def main(*, boundaries=False, tuple_guards=False):
             # Generate a fresh complete bundled-runtime SDK using the same original
             # compiler/source. Never edit or splice the admitted API output.
             run(role+"-bundled-generate",[compiler_path,"--target","rust","--target","ts","--skip-zk",
-                "--rust-functional-ledger8","--rust-require-recording",ROOT/spec["path"],generated])
+                "--rust-functional-ledger9","--rust-require-recording",ROOT/spec["path"],generated])
             from check_functional_effects import generated_manifest_snapshot
             bundled_manifest=generated_manifest_snapshot(generated)
             raw=check_assets(generated,bundled_manifest)
@@ -353,7 +361,7 @@ def main(*, boundaries=False, tuple_guards=False):
             for package in ("runtime-rs","runtime-rs-macros"):
                 actual_runtime.update({package+"/"+rel:digest for rel,digest in sdk.inventory(generated/"contract"/package).items()})
             require(actual_runtime==expected_runtime,"complete bundled runtime source or membership differs")
-            same=["contract/lib.rs",*sorted("contract/checked-programs/"+p.name for p in (original/"contract/checked-programs").iterdir())]
+            same=["contract/lib.rs", "contract/compact-rust-ir.json", *sorted("contract/checked-programs/"+p.name for p in (original/"contract/checked-programs").iterdir())]
             for rel in same:
                 require((generated/rel).read_bytes()==(original/rel).read_bytes(),"bundled source/Program code differs")
             for entry in spec["entries"]:
