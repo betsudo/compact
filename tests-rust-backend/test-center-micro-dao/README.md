@@ -16,10 +16,16 @@ scope. To run the token qualification:
 cargo test -p compact-rust-test-center-micro-dao-fixture --all-features --test token_query
 ```
 
-Compile the exact original source using `compactc --target rust`, generate keys for
-`dao_voting_token`, and run `compact-rust-proof-smoke --micro-dao-token OUTPUT`.
-The proof adapter compares the complete retained IR before opening any key file;
-its negative test rejects a changed declaration and the historical projection.
-This is a real proof, verification and ledger application from constructor state
-under the shared **unbalanced smoke policy**. It is not a funded DAO lifecycle test
-or a proof of every export.
+Use `check_compactc_target.py --micro-dao-token --proof` to compile the complete
+original source and generate ZKIR v3 keys for `dao_voting_token`. The maintained
+`--micro-dao-advance --proof` and `--micro-dao-reveal --proof` selectors use the
+same recipe for their respective exports. The adapters bind the full retained
+IR, exact generated Rust, all seven raw circuits, and the selected binary IR and
+verifier before proving. The source control rejects a changed declaration and the
+historical projection.
+
+Each state call produces a fresh standalone proof, verifies it in a separate
+process, and exercises a distinct default-strict Ledger 9 transaction with
+Night-backed Dust and exact unchanged replay refusal. The token uses constructor
+state. The three advance phases and two reveal ballots use explicit prior-state
+fixtures. The reveal also checks the applied-state double-vote refusal.

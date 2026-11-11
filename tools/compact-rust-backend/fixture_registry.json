@@ -3835,7 +3835,7 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/test-center-micro-dao/Cargo.toml": "8850db5c34d74978917e9e06c7d5a8ece98e5310a57149be97b73a7de3e739e7",
-        "tests-rust-backend/test-center-micro-dao/lib.rs": "a5a754cad6ec77e95b1a7e53d55c45c95a2d3d52c1ff29965be11d8719c2e98e",
+        "tests-rust-backend/test-center-micro-dao/lib.rs": "561fec5d8db45fbd2f27320daf9f3b2163179482a5d9e4bd723f1329c10f856d",
         "tests-rust-backend/test-center-micro-dao/build.rs": "9828c9b680d0e1fcdb49bd24e33062f94f489263883dbd4eadccf571acaff2b1"
       }
     },
