@@ -553,15 +553,16 @@ refresh 93 state fields. The shared Call Registry producer uses the same
 version-only staging adjustment as the direct behavior producer.
 All 43 focused tests across the five affected packages pass, including
 the three older state comparisons exposed by the shared direct run.
-A new workspace run is executing on this signed head with the same
-locked offline behavioral scope as the earlier 733-target run.
+The locked offline workspace run at this signed head completed 733
+targets with 3,365 passes, 61 failures, and seven ignores. All failures
+report v6/v8 state comparisons. The 41 failing targets are a subset
+of the earlier 99-target roster.
 
 At `f6ae8e51c`, 16 collection, conditional, Merkle, and shielded
 effect captures refresh 111 state fields. Their captured programs,
 effects, and other scenario values agree with their historical
-counterparts. The focused tests across 13 packages follow the workspace
-run on the same target directory. Workspace and integration
-qualification remain open.
+counterparts. The focused run across 13 packages passed 33 tests and
+found six comparisons against separate historical captures.
 
 At `d89c838f9`, four Coracle and Micro DAO captures replay all 88
 historical scenarios with Compact Runtime 0.17.0 and the published
@@ -573,10 +574,36 @@ The captures preserve exact public programs, event order, commitment
 indices by key, and shielded claim membership. The Rust tests now invoke
 the matching published partitioner and compare both slots, program
 length or full program as captured, effects, and all four gas dimensions.
-The focused Rust run follows the collection and effect run. The
-partition captures represent seeded local calls, with funded proof and
-replay covered by their own gates.
+The first Rust run exposed the exact mint integer represented as a
+decimal string by WASM and a JSON number by Rust. At `7faaa6c4b`,
+the shared comparison preserves every mint key and integer while
+checking its value across both encodings. All four focused tests pass.
+The partition captures represent seeded local calls, with funded
+proof and replay covered by their own gates.
 
-Fresh constructor captures for aliases, vectors, for-range, and for-iter
-retain six Ledger 9 state fields, with unchanged operation rosters and
-counter values. Their fixture admission and native rerun are pending.
+At `cdaa5e344`, nine new constructor and collection captures refresh
+35 state fields. The guarded arithmetic, Merkle root, nested Set action,
+empty Set and Map, and chunked qualified coin tests retain their exact
+historical outputs and query assertions. All 22 focused tests pass,
+closing the six comparisons from the previous collection run.
+
+The local Ledger 9 Counter harness applied a funded deployment at its
+generated address under default strictness. A separate funded call
+produced a distinct transaction-bound v3 proof and applied the expected
+generated Rust transition. Exact replay returned `IntentAlreadyExists`
+with byte-identical ledger state. The new confirmed-state test at
+`704b1d23a` loads the exact applied contract and deployment artifacts.
+All three tests pass, including the malformed current-state refusal and
+rejection of both retained ABI-18 artifacts. The generated observed-call
+consumer points to the new state. The isolated consumer test passed with
+the matching retained verifier. The full compiler proof integration gate
+remains open.
+
+At `19947cbf5`, five PM-19252 and native own-key captures and three
+witness collection captures refresh 24 state fields. They preserve
+the witnessed values, exact query costs and operation programs, and the
+native key routes' proof-free behavior. All 33 focused tests across six
+packages pass. The subsequent focused runs cover 28 of the 41 targets
+that failed in the earlier workspace run. The other 13 targets still
+need fixture migration and focused validation before a fresh workspace
+run. Workspace and integration qualification remain open.
