@@ -1321,11 +1321,9 @@ def main() -> None:
             recording_checks.prove_stateful_assert(
                 compiler, base / "stateful-assert-proof", root=ROOT, run=run,
             )
-            effectful_proof = base / "effectful-return-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(EFFECTFUL_RETURN_SOURCE), str(effectful_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--effectful-return", str(effectful_proof))
+            recording_checks.prove_effectful_return(
+                compiler, EFFECTFUL_RETURN_SOURCE, base / "effectful-return-proof", run=run,
+            )
             counter_less_than_proof = base / "counter-less-than-proof"
             run(compiler, "--target", "rust", "--rust-require-recording",
                 str(ROOT / "examples/rust_backend/counter_less_than_oracle.compact"), str(counter_less_than_proof))

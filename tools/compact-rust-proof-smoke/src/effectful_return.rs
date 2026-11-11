@@ -57,6 +57,12 @@ impl ChooseScenario for Scenario {
     }
 }
 
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    effectful_scenario::run::<Scenario>(root, "effectful return")
+pub(super) fn run(root: &Path, verify: bool) -> Result<(), Box<dyn Error>> {
+    let retained_ir =
+        include_str!("../../compact-rust-backend/tests/effectful-return-schema20-ir.json");
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        retained_ir,
+    )?;
+    effectful_scenario::run::<Scenario>(root, verify)
 }

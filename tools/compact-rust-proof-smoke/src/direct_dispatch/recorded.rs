@@ -89,17 +89,24 @@ pub(super) fn stateful_assert(
 
 pub(super) fn effectful_return(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --effectful-return <proof-output>")?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --effectful-return-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --effectful-return <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --effectful-return <proof-output>".into());
+        return Err(usage.into());
+    }
+    if verify {
+        return effectful_return::run(Path::new(&root), true);
     }
     let proof = std::thread::Builder::new()
         .name("effectful-return-proof".into())
         .stack_size(64 * 1024 * 1024)
-        .spawn(move || effectful_return::run(Path::new(&root)).map_err(|e| e.to_string()))?;
+        .spawn(move || effectful_return::run(Path::new(&root), false).map_err(|e| e.to_string()))?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(error.into()),
@@ -257,17 +264,25 @@ pub(super) fn guarded_point_vm(
 
 pub(super) fn effect_plan_wide_source(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    const USAGE: &str = "usage: compact-rust-proof-smoke --effect-plan-wide-source <proof-output>";
-    let root = arguments.next().ok_or(USAGE)?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --effect-plan-wide-source-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --effect-plan-wide-source <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err(USAGE.into());
+        return Err(usage.into());
+    }
+    if verify {
+        return crate::effect_plan_wide_source::run(Path::new(&root), true);
     }
     let proof = std::thread::Builder::new()
         .name("effect-plan-wide-source-proof".into())
         .stack_size(64 * 1024 * 1024)
         .spawn(move || {
-            crate::effect_plan_wide_source::run(Path::new(&root)).map_err(|e| e.to_string())
+            crate::effect_plan_wide_source::run(Path::new(&root), false).map_err(|e| e.to_string())
         })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),

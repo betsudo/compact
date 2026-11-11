@@ -635,8 +635,14 @@ pub(super) fn try_run(
         ("--guarded-point-read", _) => Some(recorded::guarded_point_read(arguments)),
         ("--guarded-point-nested", _) => Some(recorded::guarded_point_nested(arguments)),
         ("--guarded-point-vm", _) => Some(recorded::guarded_point_vm(arguments)),
-        ("--effectful-return", _) => Some(recorded::effectful_return(arguments)),
-        ("--effect-plan-wide-source", _) => Some(recorded::effect_plan_wide_source(arguments)),
+        ("--effectful-return", _) => Some(recorded::effectful_return(arguments, false)),
+        ("--effectful-return-verify", _) => Some(recorded::effectful_return(arguments, true)),
+        ("--effect-plan-wide-source", _) => {
+            Some(recorded::effect_plan_wide_source(arguments, false))
+        }
+        ("--effect-plan-wide-source-verify", _) => {
+            Some(recorded::effect_plan_wide_source(arguments, true))
+        }
         #[cfg(feature = "experimental-recording-plan")]
         ("--effect-plan-prototype", _) => Some(recorded::effect_plan_prototype(arguments)),
         #[cfg(not(feature = "experimental-recording-plan"))]

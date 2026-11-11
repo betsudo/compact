@@ -192,6 +192,30 @@ def check_stateful_struct(
     print("ordered typed stateful structs admitted; original micro-dao emits native Rust")
 
 
+def prove_effectful_return(
+    compiler: str,
+    source: Path,
+    output: Path,
+    *,
+    run: Callable[..., None],
+) -> None:
+    retained = Path(__file__).resolve().parents[1] / "tests/effectful-return-schema20-ir.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((output / "contract/compact-rust-ir.json").read_text()),
+                        sort_keys=True)
+    keys = output / "keys"
+    if expected != actual or keys.exists():
+        raise ValueError("effectful return source IR differs or preflight produced keys")
+    keys.mkdir()
+    run("zkir-v3", "compile", str(output / "zkir/choose.zkir"),
+        str(keys / "choose.prover"), str(keys / "choose.verifier"))
+    for selector in ("--effectful-return", "--effectful-return-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
+
+
 def check_effectful_return(
     compiler: str,
     base: Path,
@@ -248,9 +272,7 @@ def check_effectful_return(
                    for row in existing_ir["stateful_circuits"])
     check_coracle_source(compiler, base)
     if proof_requested:
-        proof = base / "effectful-return-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording",
-            str(effectful_return_source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--effectful-return", str(proof))
+        prove_effectful_return(
+            compiler, effectful_return_source, base / "effectful-return-proof", run=run,
+        )
     print("typed effectful Field returns record selected effects and scoped branch results")

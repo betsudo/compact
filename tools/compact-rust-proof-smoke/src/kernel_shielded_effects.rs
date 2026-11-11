@@ -223,6 +223,29 @@ pub(super) fn prove_and_verify_call_with_input_control<Ir: Zkir + Deserializable
     changed_input: Option<AlignedValue>,
     fetch_mode: FetchMode,
 ) -> Result<(Proof, Vec<Fr>), Box<dyn Error>> {
+    prove_and_verify_call_with_input_mutation::<Ir>(
+        root,
+        name,
+        call,
+        verifier,
+        changed_input.map(InputMutation::Used),
+        fetch_mode,
+    )
+}
+
+pub(super) enum InputMutation {
+    Used(AlignedValue),
+    Unused(AlignedValue),
+}
+
+pub(super) fn prove_and_verify_call_with_input_mutation<Ir: Zkir + Deserializable + Tagged>(
+    root: &Path,
+    name: &'static str,
+    call: &ContractCallPrototype<DefaultDB>,
+    verifier: &VerifierKey,
+    mutation: Option<InputMutation>,
+    fetch_mode: FetchMode,
+) -> Result<(Proof, Vec<Fr>), Box<dyn Error>> {
     let mut fields = Vec::new();
     call.input.value_only_field_repr(&mut fields);
     call.output.value_only_field_repr(&mut fields);
@@ -251,7 +274,11 @@ pub(super) fn prove_and_verify_call_with_input_control<Ir: Zkir + Deserializable
         return Err("Kernel proof/preimage skips differ".into());
     }
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
-    if let Some(changed_input) = changed_input {
+    if let Some(mutation) = mutation {
+        let (changed_input, used) = match mutation {
+            InputMutation::Used(input) => (input, true),
+            InputMutation::Unused(input) => (input, false),
+        };
         if changed_input.alignment != call.input.alignment
             || changed_input.value.0.len() != call.input.value.0.len()
             || changed_input == call.input
@@ -285,8 +312,10 @@ pub(super) fn prove_and_verify_call_with_input_control<Ir: Zkir + Deserializable
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unsupported changed-input proof version".into()),
         };
-        if changed_preimage.check(&ir).is_ok() {
-            return Err("IR accepted changed public input".into());
+        match changed_preimage.check(&ir) {
+            Err(_) if used => {}
+            Ok(skips) if !used && skips == checked_skips => {}
+            _ => return Err("changed input disagrees with the selected IR branch".into()),
         }
     }
     let mut changed_binding = inputs.clone();

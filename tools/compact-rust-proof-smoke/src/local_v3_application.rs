@@ -91,6 +91,30 @@ pub(super) fn verify_standalone(
     Ok(())
 }
 
+pub(super) fn prove_standalone(
+    root: &Path,
+    name: &'static str,
+    stem: &str,
+    prepared: &ContractCallPrototype<DefaultDB>,
+    verifier: &VerifierKey,
+    mutation: Option<kernel_shielded_effects::InputMutation>,
+) -> Result<Proof, Box<dyn Error>> {
+    let (proof, inputs) =
+        kernel_shielded_effects::prove_and_verify_call_with_input_mutation::<IrSourceV3>(
+            root,
+            name,
+            prepared,
+            verifier,
+            mutation,
+            FetchMode::Synchronous,
+        )?;
+    write_new(root.join(format!("{stem}.proof")), &proof.0)?;
+    let mut bytes = Vec::new();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("{stem}.inputs")), &bytes)?;
+    Ok(proof)
+}
+
 pub(super) fn deploy(
     data: StateValue<DefaultDB>,
     name: &str,
