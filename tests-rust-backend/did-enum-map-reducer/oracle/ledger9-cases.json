@@ -2,7 +2,7 @@
   "format": "compact-did-primitive-reducer-capture/v1",
   "kind": "enum-map",
   "generatedJavaScriptSha256": "4b927d1608d0af21ad48126dd848e50512248679aafcd410eb92dd3b7cf2a446",
-  "runtimeJavaScriptSha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+  "runtimeJavaScriptSha256": "6bf225a6320b99fbb08e021db28eded4074853227b84f67c053f93194ec28558",
   "captureSha256": "97e2ed2b889abc091417a436025d909afbe232ce84031ff6c781e864579b2507",
   "runtimeVersion": "0.17.0",
   "provenance": [
@@ -36,7 +36,7 @@
     },
     {
       "path": "runtime/src/built-ins.ts",
-      "sha256": "85d1d07444228a30f59ae500a9fd5b2b0385a48b44e6dcb9e01be8839686e965"
+      "sha256": "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b"
     },
     {
       "path": "runtime/src/compact-types.ts",

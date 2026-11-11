@@ -15,7 +15,7 @@
     },
     {
       "path": "runtime/src/built-ins.ts",
-      "sha256": "85d1d07444228a30f59ae500a9fd5b2b0385a48b44e6dcb9e01be8839686e965"
+      "sha256": "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b"
     },
     {
       "path": "runtime/src/compact-types.ts",
@@ -35,7 +35,7 @@
     }
   ],
   "generatedJavaScriptSha256": "f366564e7f17d30c707c24e028f90929e9090b78dfb8013c2ce23fdd40b6fceb",
-  "runtimeJavaScriptSha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+  "runtimeJavaScriptSha256": "6bf225a6320b99fbb08e021db28eded4074853227b84f67c053f93194ec28558",
   "scenarios": [
     {
       "id": "constructor-only",

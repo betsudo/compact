@@ -1,12 +1,12 @@
 {
   "format": "compact-did-ledger9-capture-binding/v1",
   "ledger8_head": "09c75e2891283fed65f2db385925a5a4b9409af6",
-  "compiler_sha256": "5659741944a7b239bdaf359bf9a0ef00a4e7a027a8fa2e2fe023512e0305f416",
-  "compiler_scheme_sha256": "96f372d463460d28a0a8545b90623d7075b82d6f6fead2d121f36233ee878692",
+  "compiler_sha256": "42a6102ba8417656e07506a21f403967fd29dbaa9823211647ee5936fd9be001",
+  "compiler_scheme_sha256": "7e3edea2ea4a8c0ae3aa60a83ce3bef80970111180a58e5d100f7b717bb01d1a",
   "compact_runtime": "0.17.0",
-  "runtime_package_sha256": "11432504805742fb38ce8bfafd126c59829867d54cf89953bcbde74dd0fb0257",
+  "runtime_package_sha256": "feb97c00d143ee74abeff583e949db51022be2890eb24441947a05e38022fc01",
   "onchain_runtime": "4.0.1",
-  "runtime_builtins_sha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+  "runtime_builtins_sha256": "6bf225a6320b99fbb08e021db28eded4074853227b84f67c053f93194ec28558",
   "did_javascript_sha256": "f366564e7f17d30c707c24e028f90929e9090b78dfb8013c2ce23fdd40b6fceb",
   "crypto_javascript_sha256": "bb33491416899450e5c2950e0a8e213f96dbe827f7d4574043fc23d84e20ff87",
   "ledger8_artifacts": [
@@ -74,11 +74,11 @@
     },
     {
       "path": "runtime-rs/tests/fixtures/ledger9-unit-composition.json",
-      "sha256": "c3892252790d9d76bc38a43634d747d9d4b9c219198e25c2ebba416bb3008b71"
+      "sha256": "8d30f0dcc5d3bc482fd70b09f0fddd4c00a59b94ffe672a66b99ac7b73584ed1"
     },
     {
       "path": "runtime/src/built-ins.ts",
-      "sha256": "85d1d07444228a30f59ae500a9fd5b2b0385a48b44e6dcb9e01be8839686e965"
+      "sha256": "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b"
     },
     {
       "path": "runtime/src/compact-types.ts",
@@ -106,31 +106,31 @@
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/alias-lifecycle.json",
-      "sha256": "717241bd0741245455823d84a7ceb91b755d268a4d86c126f00d995a98bbadfd"
+      "sha256": "18d8628d8cdb20c57640bffd008fd378bf641b00af1eb7080e56b7a8a2097041"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/jwk-method-lifecycle.json",
-      "sha256": "a508f5151b42df652798990f27afb4ac202881094f330d64d475e376dfda0f67"
+      "sha256": "08da0726a71ead5be0e4a5495d4ef806d9b826aa36f374af90e82f7d546cf351"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json",
-      "sha256": "12e76529399bc2cfbbba96b244de12f8d26e9a3f843cda6706da2839992480d6"
+      "sha256": "fb9ece8aafd3c64e361193bdfa42b53f681bffcafe58f6cbfbc6a78300a3674b"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/point-lifecycle.json",
-      "sha256": "5fba55ace235af4df318d3810fa2e8636dbbdf7d8eae5dcb03feba03d8a48b9c"
+      "sha256": "d629125dff77d72179a5a0239b90acb6e302404e85326a7a284e047cb11898f9"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/pure.json",
-      "sha256": "d0a9830caf609657d0b5d182621ba1c39055cd3d50cd83d9c286234508099d6a"
+      "sha256": "e0c9fdda7c08c1476cb12ae5e769fb95061b18d915dccf5408e34396636cc97a"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/schnorr-method-lifecycle.json",
-      "sha256": "3ed1b95b1efa6bf9e82b2d2e8160303c36d80e29c6332e38dc3a3e1e2d0d2cf9"
+      "sha256": "a16566d70d3604448dd15bad28c8a2e61c8360267d16cd7c6945f81e8b2b7805"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/ledger9/service-lifecycle.json",
-      "sha256": "9cb8925602dd58dc5b8b79ac2a0c0a36642efd68887e6b451ee408ebe6d3a57a"
+      "sha256": "640d0d371a21255a0d049bbc714e81d18a0fbbc550d54bb9389e8ada64fe9ab5"
     },
     {
       "path": "tests-rust-backend/did-adoption/oracle/lifecycle-cases.mjs",
