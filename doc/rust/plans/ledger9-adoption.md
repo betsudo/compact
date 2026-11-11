@@ -454,17 +454,30 @@ The component Vector API protocol passed all 88 commands at
 original 14-case selection omitted the family `branch`, which now
 fits k8 at 213 rows. The corrected selection covers all 15 in-cap
 exports and includes the existing typed `branch_left` case. The
-original direct export remains at k9.
+original direct export remains at k9. At `15bd923c2`, all 15
+selected proofs passed on macOS arm64. The gate checked all 21 pre-key
+refusals and separately verified each fresh standalone proof,
+including the corruption refusal. Each distinct funded v3
+transaction applied with default strictness and refused exact replay
+with byte-identical ledger state.
 
 The outer Vector port also includes `branch_left` and keeps both
 branches in the parity tests. All 16 exports now fit k8, including
 `family/branch` at k8 and 209 rows. The gate generates the unchanged
 vector component `helper/run` with the same admitted compiler into a
 private fixture, checks its k9 and 288 rows, and uses it for the
-over-cap refusal before key generation. Both product proof gates are
-under local qualification at `15bd923c2`.
+over-cap refusal before key generation. Its local qualification at
+`15bd923c2` is in progress.
 
-The workspace rustdoc rerun uses Rust 1.99, the locked Ledger 9 graph,
-and a fresh exclusive target directory at `15bd923c2`. The prior
-148 behavioral failure targets were matched to current Cargo metadata.
-Their current behavior still requires a fresh workspace run.
+The workspace rustdoc rerun passed at `15bd923c2` with Rust 1.99,
+the locked Ledger 9 graph, and a fresh exclusive target directory.
+Rustdoc completed all 303 targets and ran seven passing doctests.
+
+Eight expression and assertion fixtures now use fresh paired
+TypeScript captures at `093467ed0`. Their 82 serialized contract-state
+fields use Ledger 9. The three wide-add diagnostic locations track the
+current source lines and preserve the error text and values. Historical
+captures retain their original bytes. All 14 focused Rust tests passed
+with all features on macOS arm64. The fresh behavioral workspace run
+at this head is in progress, with all 148 previous failure targets
+resolved against current Cargo metadata.
