@@ -15,14 +15,11 @@
 
 //! Prove unchanged qualified sendShielded and apply an exact funded offer.
 use super::local_v3_application as v3;
-use super::observational_binding::ProofBoundCall;
-use super::positional_transaction::verify_separately;
 use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_shielded_send_oracle_fixture::{ledger_contract as contract, types};
 use midnight_base_crypto::hash::persistent_hash;
 use midnight_compact_runtime as runtime;
-use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{ObservedCallError, OfferBackedObservedState, ZswapIntentError};
 
@@ -212,9 +209,9 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
             prepared.prototype(),
             observed_prepared.prototype(),
         )?;
-        prove_and_apply(
+        v3::prove_and_apply_offer(
             root,
-            stem,
+            (NAME, stem),
             observed_prepared,
             &mut fee_state,
             &mut rng,
@@ -222,9 +219,9 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
             bound_native.context.query.state.get_ref(),
         )?
     } else {
-        prove_and_apply(
+        v3::prove_and_apply_offer(
             root,
-            stem,
+            (NAME, stem),
             prepared,
             &mut fee_state,
             &mut rng,
@@ -254,125 +251,6 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         "qualified full self send: exact offer, call proof, default strict Dust-funded ledger apply and nullifier replay rejection passed"
     );
     Ok(())
-}
-
-fn prove_and_apply(
-    root: &Path,
-    stem: &str,
-    prepared: impl ProofBoundCall,
-    funded: &mut midnight_ledger::test_utilities::TestState<DefaultDB>,
-    rng: &mut StdRng,
-    verifier: &VerifierKey,
-    expected: &StateValue<DefaultDB>,
-) -> Result<LedgerState<DefaultDB>, Box<dyn Error>> {
-    let prototype = prepared.prototype();
-    let address = prototype.address;
-    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
-    let ledger = funded.ledger.clone();
-    let operation = ledger
-        .contract
-        .get(&address)
-        .and_then(|state| state.operations.get(&entry))
-        .ok_or("shielded send has no installed operation")?;
-    if prototype.entry_point != entry || prototype.op != *operation {
-        return Err("shielded send prototype differs from the installed v3 operation".into());
-    }
-    let standalone = v3::prove_standalone(root, NAME, stem, prototype, verifier, None)?;
-    verify_separately(root, NAME, stem)?;
-
-    let time = funded.time;
-    let tx = prepared.into_test_transaction(rng, Timestamp::from_secs(time.to_secs() + 3600));
-    let resolver = fee_resolver(root, NAME)?;
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-    let proved = executor
-        .block_on(tx_prove(
-            StdRng::from_rng(rand::rngs::OsRng)?,
-            &tx,
-            &resolver,
-        ))
-        .map_err(|error| format!("{stem} Ledger 9 transaction proving failed: {error:?}"))?;
-    let sealed = proved.seal(StdRng::from_rng(rand::rngs::OsRng)?);
-    let sealed = executor.block_on(funded.balance_tx(
-        StdRng::from_rng(rand::rngs::OsRng)?,
-        sealed,
-        &resolver,
-    ))?;
-    let mut calls = sealed.calls();
-    let (_, call) = calls
-        .next()
-        .ok_or("shielded send transaction has no call")?;
-    let ProofVersioned::V3(transaction_proof) = &call.proof else {
-        return Err("shielded send transaction proof is not v3".into());
-    };
-    if calls.next().is_some()
-        || transaction_proof == &standalone
-        || v3::positive_fee_dust_spends(&sealed) == 0
-    {
-        return Err("shielded send transaction proof or Dust spend differs".into());
-    }
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    v3::write_new(
-        root.join(format!("{stem}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    v3::write_new(
-        root.join(format!("{stem}-transaction.proof")),
-        &transaction_proof.0,
-    )?;
-
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: time,
-            last_block_time: time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, outcome) = ledger.apply(&verified, &context);
-    if !matches!(outcome, TransactionResult::Success(_)) {
-        return Err(format!("{stem} strict apply failed: {outcome:?}").into());
-    }
-    let state = updated
-        .contract
-        .get(&address)
-        .ok_or("shielded send contract missing after application")?;
-    if state.data.get_ref() != expected || state.operations.get(&entry) != Some(operation) {
-        return Err("shielded send changed the expected state or installed operation".into());
-    }
-    let (replayed, replay_result) = updated.apply(
-        &verified,
-        &TransactionContext {
-            ref_state: updated.clone(),
-            ..context
-        },
-    );
-    if !matches!(
-        replay_result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(format!("{stem} replay differs or mutated ledger: {replay_result:?}").into());
-    }
-    let mut after = Vec::new();
-    let mut replay = Vec::new();
-    tagged_serialize(&updated, &mut after)?;
-    tagged_serialize(&replayed, &mut replay)?;
-    if replay != after {
-        return Err("shielded send replay changed serialized ledger bytes".into());
-    }
-    v3::write_new(root.join(format!("{stem}-ledger-after.bin")), &after)?;
-    v3::write_new(root.join(format!("{stem}-ledger-replay.bin")), &replay)?;
-    println!("{stem}: funded default-strict apply; replay refused without mutation");
-    Ok(updated)
 }
 
 fn partial_order_cases(
@@ -525,9 +403,9 @@ fn partial_order_cases(
             native.context.circuit_zswap().outputs()
         );
         let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
-        let updated = prove_and_apply(
+        let updated = v3::prove_and_apply_offer(
             root,
-            "shielded-send-partial",
+            (NAME, "shielded-send-partial"),
             prepared,
             fee_state,
             rng,

@@ -14,6 +14,8 @@
 // limitations under the License.
 
 //! Local Ledger 9 v3 call installation, verification and funded application.
+use super::observational_binding::ProofBoundCall;
+use super::positional_transaction::verify_separately;
 use super::*;
 use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use midnight_onchain_state::state::IrBuf;
@@ -384,6 +386,123 @@ fn apply_call(
     write_new(root.join(format!("{stem}-transaction.proof")), &proof.0)?;
     println!("{stem}: funded default-strict apply; replay refused without mutation");
     Ok((proof.0.len(), actual.clone()))
+}
+
+pub(super) fn prove_and_apply_offer(
+    root: &Path,
+    (name, stem): (&'static str, &str),
+    prepared: impl ProofBoundCall,
+    funded: &mut midnight_ledger::test_utilities::TestState<DefaultDB>,
+    rng: &mut StdRng,
+    verifier: &VerifierKey,
+    expected: &StateValue<DefaultDB>,
+) -> Result<LedgerState<DefaultDB>, Box<dyn Error>> {
+    let prototype = prepared.prototype();
+    let address = prototype.address;
+    let entry = EntryPointBuf(name.as_bytes().to_vec());
+    let ledger = funded.ledger.clone();
+    let operation = ledger
+        .contract
+        .get(&address)
+        .and_then(|state| state.operations.get(&entry))
+        .ok_or("v3 offer has no installed operation")?;
+    if prototype.entry_point != entry || prototype.op != *operation {
+        return Err("v3 offer prototype differs from the installed v3 operation".into());
+    }
+    let standalone = prove_standalone(root, name, stem, prototype, verifier, None)?;
+    verify_separately(root, name, stem)?;
+
+    let time = funded.time;
+    let tx = prepared.into_test_transaction(rng, Timestamp::from_secs(time.to_secs() + 3600));
+    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let proved = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("{stem} Ledger 9 transaction proving failed: {error:?}"))?;
+    let sealed = proved.seal(StdRng::from_rng(rand::rngs::OsRng)?);
+    let sealed = executor.block_on(funded.balance_tx(
+        StdRng::from_rng(rand::rngs::OsRng)?,
+        sealed,
+        &resolver,
+    ))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls.next().ok_or("v3 offer transaction has no call")?;
+    let ProofVersioned::V3(transaction_proof) = &call.proof else {
+        return Err("v3 offer transaction proof is not v3".into());
+    };
+    if calls.next().is_some()
+        || transaction_proof == &standalone
+        || positive_fee_dust_spends(&sealed) == 0
+    {
+        return Err("v3 offer transaction proof or Dust spend differs".into());
+    }
+    let mut transaction_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut transaction_bytes)?;
+    write_new(
+        root.join(format!("{stem}-transaction.bin")),
+        &transaction_bytes,
+    )?;
+    write_new(
+        root.join(format!("{stem}-transaction.proof")),
+        &transaction_proof.0,
+    )?;
+
+    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
+    let context = TransactionContext {
+        ref_state: ledger.clone(),
+        block_context: BlockContext {
+            tblock: time,
+            last_block_time: time,
+            ..BlockContext::default()
+        },
+        whitelist: None,
+    };
+    let (updated, outcome) = ledger.apply(&verified, &context);
+    if !matches!(outcome, TransactionResult::Success(_)) {
+        return Err(format!("{stem} strict apply failed: {outcome:?}").into());
+    }
+    let state = updated
+        .contract
+        .get(&address)
+        .ok_or("v3 offer contract missing after application")?;
+    if state.data.get_ref() != expected || state.operations.get(&entry) != Some(operation) {
+        return Err("v3 offer changed the expected state or installed operation".into());
+    }
+    let (replayed, replay_result) = updated.apply(
+        &verified,
+        &TransactionContext {
+            ref_state: updated.clone(),
+            ..context
+        },
+    );
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != updated
+    {
+        return Err(format!("{stem} replay differs or mutated ledger: {replay_result:?}").into());
+    }
+    let mut after = Vec::new();
+    let mut replay = Vec::new();
+    tagged_serialize(&updated, &mut after)?;
+    tagged_serialize(&replayed, &mut replay)?;
+    if replay != after {
+        return Err("v3 offer replay changed serialized ledger bytes".into());
+    }
+    write_new(root.join(format!("{stem}-ledger-after.bin")), &after)?;
+    write_new(root.join(format!("{stem}-ledger-replay.bin")), &replay)?;
+    println!("{stem}: funded default-strict apply; replay refused without mutation");
+    Ok(updated)
 }
 
 pub(super) fn apply_funded_deployment(
