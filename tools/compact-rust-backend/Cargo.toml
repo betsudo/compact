@@ -17,7 +17,7 @@
 name = "compact-rust-backend"
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 license = "Apache-2.0"
 description = "Typed Rust syntax backend for Compact"
 repository = "https://github.com/MediaNoxLabs/compact"

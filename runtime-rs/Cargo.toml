@@ -17,7 +17,7 @@
 name = "midnight-compact-runtime"
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 license = "Apache-2.0"
 description = "Native Compact semantics on Midnight ledger primitives"
 repository = "https://github.com/MediaNoxLabs/compact"
@@ -28,7 +28,7 @@ include = ["Cargo.toml", "LICENSE", "README.md", "compatibility.json", "src/**",
 [features]
 # Opt-in prototype; no default emitter or runtime behavior changes.
 experimental-functional = []
-ledger-transaction = ["dep:midnight-ledger", "dep:rand"]
+ledger-transaction = ["dep:midnight-ledger-v9", "dep:rand"]
 
 [dependencies]
 midnight-compact-runtime-macros = { version = "=0.2.0", path = "../runtime-rs-macros" }
@@ -47,12 +47,12 @@ midnight-curves = { version = "=0.3.1" }
 midnight-proofs = { version = "=0.8.2" }
 midnight-zk-stdlib = { version = "=2.4.0" }
 midnight-zswap = { version = "=9.0.1" }
-midnight-ledger = { version = "=1.0.1", package = "midnight-ledger-v9", optional = true }
+midnight-ledger-v9 = { version = "=1.0.1", optional = true }
 rand = { version = "=0.8.6", optional = true }
 sha3 = "=0.10.8"
 
 [dev-dependencies]
 hex = "0.4"
-midnight-ledger = { version = "=1.0.1", package = "midnight-ledger-v9" }
+midnight-ledger-v9 = "=1.0.1"
 serde = "1"
 serde_json = "1"

@@ -27,8 +27,8 @@ use std::fmt;
 use midnight_base_crypto::fab::AlignedValue;
 use midnight_base_crypto::time::Timestamp;
 use midnight_coin_structure::coin::Commitment;
-use midnight_ledger::construct::{ContractCallPrototype, PreTranscript, partition_transcripts};
-use midnight_ledger::structure::{
+use midnight_ledger_v9::construct::{ContractCallPrototype, PreTranscript, partition_transcripts};
+use midnight_ledger_v9::structure::{
     INITIAL_PARAMETERS, Intent, LedgerState, ProofPreimageMarker, Signature, Transaction,
 };
 use midnight_onchain_state::state::{ContractOperation, EntryPointBuf};

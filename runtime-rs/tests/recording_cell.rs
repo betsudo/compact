@@ -19,8 +19,8 @@ use midnight_compact_runtime::ledger::{
     ChargedState, ContractAddress, DefaultDB, StateValue, constructor_cell, read_cell,
 };
 use midnight_compact_runtime::recording::RecordingFrame;
-use midnight_ledger::construct::{PreTranscript, partition_transcripts};
-use midnight_ledger::structure::INITIAL_PARAMETERS;
+use midnight_ledger_v9::construct::{PreTranscript, partition_transcripts};
+use midnight_ledger_v9::structure::INITIAL_PARAMETERS;
 use midnight_onchain_vm::cost_model::INITIAL_COST_MODEL;
 use midnight_onchain_vm::ops::Op;
 use midnight_serialize::tagged_serialize;

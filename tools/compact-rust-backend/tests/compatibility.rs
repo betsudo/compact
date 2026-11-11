@@ -48,7 +48,7 @@ impl Root {
         .unwrap();
         fs::write(
             root.0.join("runtime-rs/src/lib.rs"),
-            "pub const RUST_RUNTIME_ABI:u32=53; pub const LEDGER_VERSION:&str=\"ledger-8.1.3\";",
+            "pub const RUST_RUNTIME_ABI:u32=54; pub const LEDGER_VERSION:&str=\"ledger-9.1.0.1\";",
         )
         .unwrap();
         fs::write(
@@ -134,7 +134,7 @@ fn all_declared_version_boundaries_are_exact() {
         ("ir_schema", serde_json::json!(19)),
         ("capability_schema", serde_json::json!(2)),
         ("ledger_version", serde_json::json!("ledger-9.0.0")),
-        ("rust_version", serde_json::json!("1.99")),
+        ("rust_version", serde_json::json!("1.98")),
         ("runtime_version", serde_json::json!("0.1.0")),
         ("macros_version", serde_json::json!("0.1.0")),
     ] {
@@ -161,8 +161,8 @@ fn manifest_and_source_disagreement_cannot_hide_behind_valid_record() {
         ),
         (
             "runtime-rs/Cargo.toml",
-            "rust-version = \"1.89\"",
             "rust-version = \"1.99\"",
+            "rust-version = \"1.98\"",
             "rust-version",
         ),
         (
@@ -179,25 +179,25 @@ fn manifest_and_source_disagreement_cannot_hide_behind_valid_record() {
         ),
         (
             "runtime-rs/Cargo.toml",
-            "midnight-onchain-vm = { version = \"=3.1.2\"",
+            "midnight-onchain-vm = { version = \"=4.0.1\"",
             "midnight-onchain-vm = { version = \"=4.0.0\"",
             "midnight-onchain-vm.version",
         ),
         (
             "runtime-rs/Cargo.toml",
-            "version = \"=8.1.3\", optional",
+            "version = \"=1.0.1\", optional",
             "version = \"=9.0.0\", optional",
-            "midnight-ledger.version",
+            "midnight-ledger-v9.version",
         ),
         (
             "runtime-rs/src/lib.rs",
-            "ABI:u32=53",
+            "ABI:u32=54",
             "ABI:u32=49",
             "RUST_RUNTIME_ABI",
         ),
         (
             "runtime-rs/src/lib.rs",
-            "ledger-8.1.3",
+            "ledger-9.1.0.1",
             "ledger-9.0.0",
             "LEDGER_VERSION",
         ),
@@ -228,7 +228,7 @@ fn public_cli_preflight_preserves_existing_output_without_frontend_or_fallback()
         let root = Root::new();
         root.replace(
             "runtime-rs/compatibility.json",
-            "\"runtime_abi\": 53",
+            "\"runtime_abi\": 54",
             "\"runtime_abi\": 52",
         );
         let out = root.0.join("existing");
@@ -392,22 +392,22 @@ fn broken_installed_root_does_not_fall_back_to_build_checkout() {
 fn same_version_alternate_dependency_sources_refuse_before_frontend_and_publication() {
     for (dependency, key, alternate) in [
         ("midnight-compact-runtime-macros", "path", "../other-macros"),
-        ("midnight-ledger", "path", "../other-ledger"),
-        ("midnight-ledger", "git", "https://invalid.example/ledger"),
+        ("midnight-ledger-v9", "path", "../other-ledger"),
+        ("midnight-ledger-v9", "git", "https://invalid.example/ledger"),
         (
-            "midnight-ledger",
+            "midnight-ledger-v9",
             "rev",
             "0000000000000000000000000000000000000000",
         ),
-        ("midnight-ledger", "branch", "ledger-8"),
-        ("midnight-ledger", "tag", "ledger-8.1.3"),
-        ("midnight-ledger", "registry", "another-registry"),
+        ("midnight-ledger-v9", "branch", "ledger-8"),
+        ("midnight-ledger-v9", "tag", "ledger-9.1.0.1"),
+        ("midnight-ledger-v9", "registry", "another-registry"),
         (
-            "midnight-ledger",
+            "midnight-ledger-v9",
             "registry-index",
             "https://invalid.example/index",
         ),
-        ("midnight-ledger", "package", "another-ledger-package"),
+        ("midnight-ledger-v9", "package", "another-ledger-package"),
     ] {
         let root = Root::new();
         let manifest = root.0.join("runtime-rs/Cargo.toml");
@@ -463,11 +463,11 @@ fn matching_macro_version_still_requires_a_proc_macro_library() {
 #[test]
 fn literal_only_source_labels_refuse_expression_or_wrong_literal_forms() {
     for (before, after, field) in [
-        ("ABI:u32=53", "ABI:u32=53 + 0", "RUST_RUNTIME_ABI"),
-        ("ABI:u32=53", "ABI:u32=true", "RUST_RUNTIME_ABI"),
+        ("ABI:u32=54", "ABI:u32=54 + 0", "RUST_RUNTIME_ABI"),
+        ("ABI:u32=54", "ABI:u32=true", "RUST_RUNTIME_ABI"),
         (
-            "\"ledger-8.1.3\"",
-            "concat!(\"ledger-\", \"8.1.3\")",
+            "\"ledger-9.1.0.1\"",
+            "concat!(\"ledger-\", \"9.1.0.1\")",
             "LEDGER_VERSION",
         ),
     ] {
@@ -533,7 +533,7 @@ fn midnight_dependencies_in_every_context_are_checked_before_frontend() {
         for context in ["dependencies", "dev-dependencies", "build-dependencies"] {
             for spec in [
                 r#"{ version = "=9.0.0" }"#,
-                r#"{ version = "=8.1.3", path = "../other-ledger" }"#,
+                r#"{ version = "=1.0.1", path = "../other-ledger" }"#,
             ] {
                 let root = Root::new();
                 set_dependency(
@@ -541,12 +541,12 @@ fn midnight_dependencies_in_every_context_are_checked_before_frontend() {
                     "runtime-rs",
                     context,
                     target,
-                    "midnight-ledger",
+                    "midnight-ledger-v9",
                     spec,
                 );
                 let label = match target {
-                    Some(target) => format!("runtime-rs.target.{target}.{context}.midnight-ledger"),
-                    None => format!("runtime-rs.{context}.midnight-ledger"),
+                    Some(target) => format!("runtime-rs.target.{target}.{context}.midnight-ledger-v9"),
+                    None => format!("runtime-rs.{context}.midnight-ledger-v9"),
                 };
                 public_refusal(&root, &label);
             }
@@ -566,14 +566,14 @@ fn aliases_resolve_before_midnight_classification_and_macros_reject_extra_graphs
                     context,
                     target,
                     "innocent_alias",
-                    r#"{ package = "midnight-ledger", version = "=8.1.3" }"#,
+                    r#"{ package = "midnight-ledger-v9", version = "=1.0.1" }"#,
                 );
                 let label = match target {
                     Some(target) => format!("{package}.target.{target}.{context}.innocent_alias"),
                     None => format!("{package}.{context}.innocent_alias"),
                 };
                 public_refusal(&root, &label);
-                root.fails("midnight-ledger");
+                root.fails("midnight-ledger-v9");
             }
         }
     }
@@ -584,7 +584,7 @@ fn aliases_resolve_before_midnight_classification_and_macros_reject_extra_graphs
         "dependencies",
         Some("cfg(unix)"),
         "harmless",
-        r#"{ package = "midnight-ledger", version = "=9.0.0" }"#,
+        r#"{ package = "midnight-ledger-v9", version = "=9.0.0" }"#,
     );
     public_refusal(&root, "runtime-rs.target.cfg(unix).dependencies.harmless");
 }
@@ -599,8 +599,8 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
                 "runtime-rs",
                 context,
                 target,
-                "midnight-ledger",
-                r#"{ version = "=8.1.3", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }"#,
+                "midnight-ledger-v9",
+                r#"{ version = "=1.0.1" }"#,
             );
         }
     }
@@ -611,18 +611,18 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
         "runtime-rs",
         "dev-dependencies",
         Some("cfg(unix)"),
-        "midnight-ledger",
-        r#"{ version = "=8.1.3", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a", features = ["test-utilities"] }"#,
+        "midnight-ledger-v9",
+        r#"{ version = "=1.0.1", features = ["test-utilities"] }"#,
     );
     validate_root(&root.0).unwrap();
     let path = root.0.join("runtime-rs/Cargo.toml");
     let mut document: toml_edit::DocumentMut = fs::read_to_string(&path).unwrap().parse().unwrap();
-    let table = document["target"]["cfg(unix)"]["dev-dependencies"]["midnight-ledger"]
+    let table = document["target"]["cfg(unix)"]["dev-dependencies"]["midnight-ledger-v9"]
         .as_inline_table()
         .unwrap()
         .clone()
         .into_table();
-    document["target"]["cfg(unix)"]["dev-dependencies"]["midnight-ledger"] =
+    document["target"]["cfg(unix)"]["dev-dependencies"]["midnight-ledger-v9"] =
         toml_edit::Item::Table(table);
     fs::write(path, document.to_string()).unwrap();
     validate_root(&root.0).unwrap();
@@ -675,12 +675,12 @@ fn malformed_dependency_paths_do_not_disappear_as_absent() {
         "runtime-rs",
         "dependencies",
         Some("cfg(unix)"),
-        "midnight-ledger",
-        r#"{ version = "=8.1.3", path = false }"#,
+        "midnight-ledger-v9",
+        r#"{ version = "=1.0.1", path = false }"#,
     );
     public_refusal(
         &root,
-        "runtime-rs.target.cfg(unix).dependencies.midnight-ledger.path must be a string",
+        "runtime-rs.target.cfg(unix).dependencies.midnight-ledger-v9.path must be a string",
     );
 }
 
@@ -698,7 +698,7 @@ fn release_versions_keep_independent_contract_boundaries() {
             metadata.capability_schema,
             metadata.schema_version
         ),
-        (53, 20, 3, 2)
+        (54, 20, 3, 2)
     );
     let testkit: toml_edit::DocumentMut = fs::read_to_string(repo.join("testkit-rs/Cargo.toml"))
         .unwrap()
