@@ -861,8 +861,22 @@ and exact unchanged replay refusal. The final signed runner also
 verified all ten retained asset proofs. Scoped Clippy and 27 fixture
 tests passed.
 
-The final eight named commands in the core proof gate reproduced the
-v2 reader failure with original sources and current v3 artifacts.
+At `79814169a`, the final eight named commands in the core proof
+gate passed twelve fresh Ledger 9 cases. Current compiler output
+matched the linked Rust for all eleven source fixtures. The checks
+preserve Let returns, unused reads, identity-map writes, stateful
+pure returns, wide casts, unsigned calls and witness assertions.
+Both mixed-width circuits preserve their original rejection controls.
+Each case passed separate verification, funded deployment, a distinct
+default-strict call and exact unchanged replay refusal. The final
+runner also reverified nine retained cases from the initial candidate.
+Twenty-eight fixture tests and two mixed-width source tests passed.
+
+The Map oracle acceptance check had retained the pre-formatting hash
+of one Rust test. Rust 1.99 formatting reproduced the active bytes
+exactly from the previously pinned test. Only that active hash was
+refreshed. The Python suite reported 522 tests with 20 skips, and
+all 37 pinned oracle sources passed acceptance.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
