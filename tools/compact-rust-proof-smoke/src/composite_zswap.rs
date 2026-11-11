@@ -105,12 +105,18 @@ pub(super) fn run(original: &Path, transfer_root: &Path) -> Result<(), Box<dyn E
     original_planned(original)?;
     funded_transfer(transfer_root)
 }
+struct FundedDeployment {
+    deploy: ContractDeploy<DefaultDB>,
+    verifier: VerifierKey,
+    state: TestState<DefaultDB>,
+}
+
 fn deploy_funded(
     root: &Path,
     (name, stem): (&'static str, &str),
     data: StateValue<DefaultDB>,
     rng: &mut StdRng,
-) -> Result<(ContractDeploy<DefaultDB>, VerifierKey, TestState<DefaultDB>), Box<dyn Error>> {
+) -> Result<FundedDeployment, Box<dyn Error>> {
     let (_, verifier, operation) = v3::operation(root, name, 10)?;
     let deploy = v3::deploy(data, name, operation, rng);
     let mut state = fee_funded_state_with_utxos(rng, 2)?;
@@ -119,14 +125,22 @@ fn deploy_funded(
         .build()?;
     let resolver = fee_resolver(root, name)?;
     v3::apply_funded_deployment(root, stem, &deploy, &mut state, rng, &executor, &resolver)?;
-    Ok((deploy, verifier, state))
+    Ok(FundedDeployment {
+        deploy,
+        verifier,
+        state,
+    })
 }
 
 fn original_planned(root: &Path) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0191_0000);
     let initial = planned::initial_state(ConstructorContext::new(Vec::<u8>::new()))?;
     let circuit = ("planned", "composite-planned-zero");
-    let (deploy, verifier, mut state) = deploy_funded(
+    let FundedDeployment {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(
         root,
         circuit,
         initial.ledger_state.get_ref().clone(),
@@ -310,7 +324,11 @@ fn funded_transfer(root: &Path) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0191_0042);
     let initial = transfer::initial_state(ConstructorContext::new(Vec::<u8>::new()))?;
     let circuit = ("transfer", "composite-transfer");
-    let (deploy, verifier, mut state) = deploy_funded(
+    let FundedDeployment {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(
         root,
         circuit,
         initial.ledger_state.get_ref().clone(),
