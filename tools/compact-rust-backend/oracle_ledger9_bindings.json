@@ -6,8 +6,10 @@
   "tests": {
     "tests-rust-backend/assert-parity-oracle/tests/assert_parity_oracle.rs": {
       "historical_sha256": "26845d607fcf156a2d8ddbe2aa8180f3e29d19b1ef414048ff9dc4b818420f22",
-      "current_sha256": "52f4644f13ac4661f22ac3f4ef97a89983fd66c5bf57905f1561af8db5f5d423",
-      "capture_paths": []
+      "current_sha256": "01ec4f3bc2d59aaee4f9050494c706adc84cbb1cf36d91032ae108e456608829",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+      ]
     },
     "tests-rust-backend/asset-registry-oracle/tests/asset_registry_oracle.rs": {
       "historical_sha256": "b3312cfa89277b3ce045f6682479edac6bc530757d586cf29e3e6cdf086f152d",
@@ -117,6 +119,13 @@
         "runtime-rs/tests/fixtures/list-oracle.json"
       ]
     },
+    "tests-rust-backend/literal-coercion-oracle/tests/direct_behavior.rs": {
+      "historical_sha256": "f4518b0732e78005cd50926d2dfb5fbc820f2c8ffb4a620acd3a094c07272e2f",
+      "current_sha256": "9f18707fbb4c173407ffd97ea5f0084dc10778f10665a1e89dc70cbd4227606b",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+      ]
+    },
     "tests-rust-backend/map-fn-oracle/tests/map_fn_oracle.rs": {
       "historical_sha256": "12016bacc06bf537c0f51c6dd510e7c1c9bab9f0cb8d35b653d51bd24d1b0420",
       "current_sha256": "fdcd9959b88357d8775f2e634b6360aff7f06e72ca6d46bb7744e45750f78bd4",
@@ -205,9 +214,12 @@
     },
     "tests-rust-backend/ternary-cond-oracle/tests/ternary_cond_oracle.rs": {
       "historical_sha256": "1fec7dee7318349f74baabe2c56aa544c9dbd1baa605acf652d1355cdbf5d365",
-      "current_sha256": "4200575429731538cf2d7fbb7da463c70eac9db8fd2f37cfa3feceeacc99dae4",
+      "current_sha256": "e5ff8529c257354449cd4f21e24ba2d5f34f1e25356f35cf7ce13490783c9005",
       "capture_paths": [
         "runtime-rs/tests/fixtures/adr221-ternary-true.json",
+        "runtime-rs/tests/fixtures/conditional-counter-oracle.json",
+        "runtime-rs/tests/fixtures/oracle-direct-behavior.json",
+        "runtime-rs/tests/fixtures/ternary-cond-oracle.json",
         "runtime-rs/tests/fixtures/ternary-recorded-annotated-uint8.json",
         "runtime-rs/tests/fixtures/ternary-recorded-comparison.json",
         "runtime-rs/tests/fixtures/ternary-recorded-native-arg.json",
@@ -276,6 +288,11 @@
       "historical_sha256": "97bb649589e80843b4a6340f5bf28fe3a21d95db8a569cff29aec5a50081e9f2",
       "current_sha256": "caa950b27551d79477d526ce23fbf5b4b61f7be2374c7ce8105b2b5024e6e9a7"
     },
+    "runtime-rs/tests/fixtures/conditional-counter-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-conditional-counter-oracle.json",
+      "historical_sha256": "d4e2a026718a0bb6580bb4e0d82db34a7f1c1e7ac2a4a54250136b5162af48d2",
+      "current_sha256": "f5a2d486bbe9bc59cc3aff3ecb44d122bcf59063f894a7830bf8433617cf514f"
+    },
     "runtime-rs/tests/fixtures/cross-circuit-oracle.json": {
       "historical_sha256": "d9636517d88eb24a099e334a24ba636ab49e05d1fcfc61216cf15b981e097c40",
       "current": "runtime-rs/tests/fixtures/ledger9-cross-circuit-oracle.json",
@@ -336,6 +353,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-nested-map-oracle.json",
       "current_sha256": "423d037cb6ddf9edb8405cc2a33c977567399292274e9cdcef0b3a6c2eaace78"
     },
+    "runtime-rs/tests/fixtures/oracle-direct-behavior.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json",
+      "historical_sha256": "3d55db7a0c7e57a2be50b6c60ff1017ae86f00be9887c404d06460ea81db062d",
+      "current_sha256": "e099da5df573356884765e2b138cba88e082faf5fa0ca80df351d07c11dccbfa"
+    },
     "runtime-rs/tests/fixtures/oracle-recorded-traces.json": {
       "historical_sha256": "7e61b764c3e79654ae46b2ab806f053776f14eceb811b9412580e0417b6b39c4",
       "current": "runtime-rs/tests/fixtures/ledger9-oracle-recorded-traces.json",
@@ -350,6 +372,11 @@
       "historical_sha256": "9a61bba3780218745159d488de63004eb84012dc4b56dbff2762fb54e2b88601",
       "current": "runtime-rs/tests/fixtures/ledger9-set-oracle.json",
       "current_sha256": "cb064b6b46c7709bbe7925bb9291f83f4de721b62433babaeb263727af6a31e9"
+    },
+    "runtime-rs/tests/fixtures/ternary-cond-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-cond-oracle.json",
+      "historical_sha256": "ceed92304323e00e44ab5dfb0bdf75f266c1b5de699cd131cb60529b3e6400ee",
+      "current_sha256": "c637a0f60fd006370297fe4a4689e98374abd3808abba9595d46d6b0e921eddb"
     },
     "runtime-rs/tests/fixtures/ternary-recorded-annotated-uint8.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-annotated-uint8.json",

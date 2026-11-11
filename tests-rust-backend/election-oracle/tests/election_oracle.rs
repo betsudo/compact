@@ -241,7 +241,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn election_owner_operations_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-oracle.json"
     ))
     .unwrap();
     let witness = FixedWitness;

@@ -103,7 +103,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-cond-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-cond-oracle.json"
     ))
     .unwrap()
 }
@@ -903,7 +903,7 @@ fn recorded_closed_ternary_struct_members_match_typescript() {
 #[test]
 fn recorded_scalar_pure_and_witness_conditional_arguments_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-counter-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-counter-oracle.json"
     ))
     .unwrap();
     for (label, conditional, seed_flag) in [
@@ -1017,7 +1017,7 @@ fn initial(c: bool, d: bool, x: u64) -> midnight_compact_runtime::context::Const
 #[test]
 fn conditional_scalar_recordings_match_both_typescript_branches_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-counter-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-counter-oracle.json"
     ))
     .unwrap();
     for (name, conditional, seed_flag) in [
@@ -1254,7 +1254,7 @@ fn assert_direct_trace(
 #[test]
 fn walker_vector_element_executes_both_branches_against_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json"
     ))
     .unwrap();
     let rows = oracle["stateful"]

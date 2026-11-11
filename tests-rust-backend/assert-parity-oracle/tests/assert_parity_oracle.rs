@@ -245,7 +245,7 @@ fn assert_direct_trace(
 #[test]
 fn ping_is_executed_and_matches_independent_typescript_recording() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json"
     ))
     .unwrap();
     let rows = oracle["stateful"]
