@@ -46,7 +46,7 @@ def check_transient_receive_send(
     run("cargo", "+1.99.0", "check", "--offline", "--manifest-path", str(output / "contract/Cargo.toml"))
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/receive_then_send.zkir"), str(output / "keys/receive_then_send.prover"), str(output / "keys/receive_then_send.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/receive_then_send.zkir"), str(output / "keys/receive_then_send.prover"), str(output / "keys/receive_then_send.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--transient-receive-send", str(output))
     print("unchanged receive/full immediate-send: one proof-required recorded API; optional strict wallet/transient proof")
 

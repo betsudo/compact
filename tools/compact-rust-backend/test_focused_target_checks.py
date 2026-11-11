@@ -181,7 +181,7 @@ class FocusedTargetChecks(unittest.TestCase):
                             ("cargo", "+1.99.0", "check", "--offline", "--manifest-path",
                              str(output / "contract/Cargo.toml"))]
                 if proof:
-                    expected += [("zkir", "compile", str(output / "zkir/receive_then_send.zkir"),
+                    expected += [("zkir-v3", "compile", str(output / "zkir/receive_then_send.zkir"),
                                   str(output / "keys/receive_then_send.prover"),
                                   str(output / "keys/receive_then_send.verifier")),
                                  ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke",
