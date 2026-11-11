@@ -736,5 +736,16 @@ verification with corruption controls, funded deployment and a
 separately proved call under default ledger strictness, and exact
 replay refusal without state mutation.
 
+At `5d2d856a8`, proof-runner Clippy and the Python harness passed.
+The core compiler gate passed these effectful and scalar cases and
+then stopped at the positional Counter proof runner's v2 reader.
+A minimal current Counter and Cell artifact set reproduces the
+refusal. The signed JavaScript decoder candidate at `84941f2d9`
+pins `@midnight-ntwrk/ledger-v9@1.0.1`. It round-trips seven actual
+funded Rust deployment and call pairs, checks the proof and the
+positive-fee Dust intent, and refuses mismatched addresses and trailing
+bytes. The candidate is staged on its local branch for integration
+with the migrated positional Counter handoff.
+
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
