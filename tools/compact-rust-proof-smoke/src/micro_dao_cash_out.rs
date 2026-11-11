@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //! Original cash_out from seeded final DAO/coin state, not a proved voting lifecycle.
+use super::local_v3_application as v3;
+use super::micro_dao_buy_in::{FundedMicroDao, deploy_funded};
 use super::micro_dao_cash_out_support as support;
+use super::micro_dao_token::validate_offer_artifacts;
 use super::*;
 use compact_rust_test_center_micro_dao_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -26,23 +29,27 @@ use runtime::transaction::{
 };
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    // Pair the complete original source before keys, seeded state or funding.
-    // Proving-key provenance is qualified separately from source identity.
-    counter_scenario::validate_ir(
-        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
-        compact_rust_test_center_micro_dao_fixture::RETAINED_IR,
-    )?;
+    validate_offer_artifacts(root, "cash_out")?;
     const NAME: &str = "cash_out";
     let mut rng = StdRng::seed_from_u64(0x0212_0000);
     let seeded = support::seeded(&support::Settings::default())?;
     let mut pot = slots::pot.inspect(seeded.query.state.get_ref())?;
     pot.mt_index = BoundedUint::new(1)?;
     let seeded = slots::pot.write(seeded, pot.clone())?.context;
-    let deploy = make_deploy(root, NAME, seeded.query.state.get_ref().clone(), &mut rng)?;
+    let stem = "cash-out";
+    let FundedMicroDao {
+        deploy,
+        verifier,
+        state: mut fees,
+    } = deploy_funded(
+        root,
+        (NAME, stem),
+        seeded.query.state.get_ref().clone(),
+        2,
+        &mut rng,
+    )?;
     let address = deploy.address();
     let prior = deploy.initial_state.clone();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fees.ledger.contract = fees.ledger.contract.insert(address, prior.clone());
     let coin = runtime::ledger::coin_info_from_compact(pot.nonce, pot.color, pot.value.value());
     let padding = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([88; 32]),
@@ -167,44 +174,26 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     assert_eq!(returned.value.value(), 99);
     assert_eq!(returned.nonce.0, sent.nonce.0.0);
     assert_eq!(returned.color.0, coin.type_.0.0);
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/cash_out.verifier"),
-    )?))?;
     let call = RecordedCall::new(bound.observed(), recorded, NAME, ());
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0u64))?;
     assert!(prepared.prototype().guaranteed_public_transcript.is_none());
     assert!(prepared.prototype().fallible_public_transcript.is_some());
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let sealed = v3::prove_funded_offer(
         root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (NAME, stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let Transaction::Standard(structure) = &tx else {
-        panic!("standard transaction");
-    };
-    assert!(structure.guaranteed_coins.is_none());
-    assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0212_5052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        |tx| {
+            let Transaction::Standard(structure) = tx else {
+                panic!("standard transaction");
+            };
+            assert!(structure.guaranteed_coins.is_none());
+            assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+            Ok(())
+        },
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0212_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
     tagged_serialize(
         &sealed,
         &mut File::create(root.join("cash-out-sealed.bin"))?,
@@ -268,6 +257,10 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         "{outcome:?}"
     );
     assert_eq!(
+        updated.contract.get(&address).unwrap().operations,
+        prior.operations,
+    );
+    assert_eq!(
         updated.contract.get(&address).unwrap().data,
         native.context.query.state
     );
@@ -314,6 +307,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         slots::costs.inspect(state)?,
         slots::costs.inspect(prior.data.get_ref())?
     );
+    v3::check_offer_replay(root, stem, &updated, &verified, context)?;
     println!(
         "original cash_out: nonzero historical pot99 at index1 to user output index2, default-strict proof/apply, complete reset and saved sent result, exact nullifier replay refusal; seeded prior DAO and separate Dust"
     );

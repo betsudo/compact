@@ -29,3 +29,12 @@ process, and exercises a distinct default-strict Ledger 9 transaction with
 Night-backed Dust and exact unchanged replay refusal. The token uses constructor
 state. The three advance phases and two reveal ballots use explicit prior-state
 fixtures. The reveal also checks the applied-state double-vote refusal.
+
+The maintained offer selectors `--micro-dao-set-topic`, `--micro-dao-buy-in`,
+`--micro-dao-cash-out`, and `--micro-dao-vote-commit` use the same Ledger 9
+source and selected-artifact checks with `--proof`. Each offer case verifies a
+fresh standalone proof separately, then funds and applies a deployment and a
+distinct default-strict transaction. The checks retain guaranteed and fallible
+offer placement, exact commitment and nullifier effects, scenario-specific
+rollback controls, and unchanged transaction replay. Explicit prior-state
+fixtures supply the preceding DAO and coin states.

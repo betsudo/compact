@@ -22,6 +22,22 @@
     "vote_reveal": {
       "zkir/vote_reveal.bzkir": "1f9de4c036e6c2a50ed88a888cfc8fd7034ae4aef29e10f8b0c3cbf1443230f1",
       "keys/vote_reveal.verifier": "af2fb0a6c078e80fe0125b1e69893259e6c03e1dcfb72a5307843f3d980430b2"
+    },
+    "set_topic": {
+      "zkir/set_topic.bzkir": "3b5f975b352c39dd323bee56a29d3efe3423679713a7e82d36c13a5f37db27ec",
+      "keys/set_topic.verifier": "ab95c6f001a61e0795d3a6a759a95977bf54723a7c2e37e1d1d2cb20c75959e4"
+    },
+    "buy_in": {
+      "zkir/buy_in.bzkir": "80c319d2064b85980563c222205c45ad17431a185cb3b404fc4a9c2b033d9278",
+      "keys/buy_in.verifier": "9ab18f1f04c1e0a0f8b83dc6b58b1cfc0555937478d856be04ca1d8693de6921"
+    },
+    "cash_out": {
+      "zkir/cash_out.bzkir": "570d47837bec426752a466af4646b7e4654bc08be75892b2c447a0c27b702c27",
+      "keys/cash_out.verifier": "e4ab68cef5a548bcc1db548e0f4581e8f5f0b29d86dda28ec697019b383d6d1e"
+    },
+    "vote_commit": {
+      "zkir/vote_commit.bzkir": "1d5c77474c8aa009eb5711ef8b1bd60caec0e647709f7b582e5327141c927a74",
+      "keys/vote_commit.verifier": "d7b1c2824a618353dbe083ebdaf28f5a98b7977bd600a201e69c10dbc83fc70c"
     }
   }
 }

@@ -45,6 +45,21 @@ pub(super) fn validate_artifacts(root: &Path, name: &str) -> Result<(), Box<dyn 
         return Err("MicroDAO state proof requires local proving".into());
     }
     validate_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)?;
+    validate_artifact_files(root, name)
+}
+
+pub(super) fn validate_offer_artifacts(root: &Path, name: &str) -> Result<(), Box<dyn Error>> {
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        compact_rust_test_center_micro_dao_fixture::RETAINED_IR,
+    )?;
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("MicroDAO offer proof requires local proving".into());
+    }
+    validate_artifact_files(root, name)
+}
+
+fn validate_artifact_files(root: &Path, name: &str) -> Result<(), Box<dyn Error>> {
     if std::fs::read(root.join("contract/lib.rs"))?
         != compact_rust_test_center_micro_dao_fixture::RENDERED_SOURCE
     {
