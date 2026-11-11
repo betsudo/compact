@@ -256,8 +256,8 @@ identical complete ledger bytes. Mutated IR and checked-program bytes
 refused before keys or state.
 The local orchestration expects the v2 receipt, and the Linux workflow
 is configured to retain the generated proof and replay evidence and
-verification logs. Earlier constructor and wide-zero steps still select
-Ledger 8 and must be ported before the full workflow can reach Map.
+verification logs. The constructor and wide-zero qualification results
+below record the migration of the earlier workflow steps.
 
 The original literal Vector projection and the separate constant-valued
 Vector index source each passed both branches of the `witnessed` circuit
@@ -341,20 +341,42 @@ Both conditional cases passed a focused run with the observed-call repair.
 Each standalone proof passed separate verification, including the wrong
 verifier and corruption controls. A distinct v3 proof funded each transaction
 with one positive-fee Dust spend. The transactions applied under default
-strictness and exact replay was refused with identical ledger bytes. The
-complete 17-case gate runs separately on its pinned source.
+strictness and exact replay was refused with identical ledger bytes.
+The complete 17-case gate passed at `3da993bba`. It retained 28 fresh
+key pairs for the 14 source variants and 17 standalone verifications,
+including the wrong-verifier and corrupted-proof refusals. All 17
+separate funded transactions passed default strictness and refused
+exact replay with byte-identical ledger state.
 
 The Constructor Equality port retains the three cohorts and both source
 scopes. The released v3 tool modeled all 96 exports at k6 and 34 rows for
 `read`, k7 and 78 rows for `advance`, and k7 and 79 rows for
 `advance_other`. Independent TypeScript captures using the Ledger 9
 runtime pair passed all 16 base, 30 boundary, and 105 tuple cases.
-The required proof callers preserve those counts and verify each retained
-standalone proof separately. The complete native and proof gates remain open.
+The 54-command tuple scope gate and the 19-command base API gate passed
+at `11769f654`. The required proof callers preserve all selected counts
+and verify each retained standalone proof separately. Full cryptographic
+qualification of the three cohorts remains open.
 
 Wide-zero multiplication passed the maintained generated API gate for the
 original and conditional sources. The two ordinary entries model at k7
 and 102 rows, and the two witnessed entries at k7 and 82 rows. The Ledger 9
 proof caller verifies k7 material before fresh key generation for the two
-originally selected ordinary entries. Separate verification and funded
-strict replay qualification are in progress.
+originally selected ordinary entries. Both cases passed at `df2d240a1`
+with separately verified 3,824-byte standalone proofs and distinct
+3,824-byte transaction proofs. Each default-strict transaction included
+one positive-fee Dust spend and refused replay without changing ledger
+bytes.
+
+Six maintained API gates passed at `c8576565b`. Source-map publication
+ran 32 commands with the original 28 path cases and three private
+manifest controls. Direct Fold ran 48 commands, Field return wrappers
+14, tuple return wrappers 22, Unit initializers 30, and the nested
+product request field gate 64. Their original behavior and refusal
+rosters remain in force.
+
+The ten Direct Fold sources regenerate exact bound IR, origins,
+capabilities, and checked programs with Ledger 9. Their released v3
+models use k6, k7, and k8. The proof migration verifies those parameters
+before fresh key generation and retains all eleven executions.
+The full Direct Fold proof gate is running separately.
