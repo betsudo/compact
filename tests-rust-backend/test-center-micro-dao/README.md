@@ -38,3 +38,8 @@ distinct default-strict transaction. The checks retain guaranteed and fallible
 offer placement, exact commitment and nullifier effects, scenario-specific
 rollback controls, and unchanged transaction replay. Explicit prior-state
 fixtures supply the preceding DAO and coin states.
+
+Both `buy_in` cases and empty-pot `set_topic` use automatic guaranteed
+placement. Occupied-pot `set_topic`, `cash_out`, and both `vote_commit`
+cases request whole-fallible placement before proof construction so they can
+exercise the selected segment's rollback boundary.

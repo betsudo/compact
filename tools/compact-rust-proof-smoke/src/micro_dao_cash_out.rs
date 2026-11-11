@@ -24,8 +24,7 @@ use compact_rust_test_center_micro_dao_fixture::{
 use midnight_compact_runtime as runtime;
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{
-    OfferBackedObservedState, OfferBindingOptions, OfferPlacement, PersistentOutputAllocation,
-    RecordedCall,
+    OfferBackedObservedState, OfferBindingOptions, PersistentOutputAllocation, RecordedCall,
 };
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
@@ -125,9 +124,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         offer.clone(),
         OfferBindingOptions::default()
             .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-            .with_offer_placement(OfferPlacement::Fallible(
-                std::num::NonZeroU16::new(1).unwrap(),
-            )),
+            .with_wholly_fallible_offer(std::num::NonZeroU16::MIN),
     )?;
     let native = c::cash_out(
         bound

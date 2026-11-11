@@ -163,10 +163,11 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     let (_, indices) = ledger.zswap.try_apply(&offer, None)?;
     assert_eq!(indices.get(&output_commitment), Some(&2));
     assert_eq!(indices.get(&transient_commitment), Some(&3));
-    let placement = OfferPlacement::Fallible(NonZeroU16::new(1).unwrap());
+    let segment = NonZeroU16::MIN;
+    let placement = OfferPlacement::Fallible(segment);
     let options = OfferBindingOptions::default()
         .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-        .with_offer_placement(placement)
+        .with_wholly_fallible_offer(segment)
         .with_wallet_funding(
             WalletFundingInputs::from_inputs(vec![wallet_input])
                 .map_err(|e| format!("wallet: {e:?}"))?,

@@ -129,7 +129,7 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     assert_eq!(wallet.merkle_tree.root(), ledger.zswap.coin_coms.root());
     let segment = occupied.then_some(1);
     let placement = if occupied {
-        OfferPlacement::Fallible(NonZeroU16::new(1).unwrap())
+        OfferPlacement::Fallible(NonZeroU16::MIN)
     } else {
         OfferPlacement::Guaranteed
     };
@@ -203,13 +203,14 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     }
     let mut options = OfferBindingOptions::default()
         .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-        .with_offer_placement(placement)
         .with_wallet_funding(funding);
-    if occupied {
-        options = options.with_transient_coins(
-            ContractTransientCoins::from_transients_for_placement(transients, placement)
-                .map_err(|e| format!("transient selection {e:?}"))?,
-        );
+    if let OfferPlacement::Fallible(segment) = placement {
+        options = options
+            .with_wholly_fallible_offer(segment)
+            .with_transient_coins(
+                ContractTransientCoins::from_transients_for_placement(transients, placement)
+                    .map_err(|e| format!("transient selection {e:?}"))?,
+            );
     }
     let bound = OfferBackedObservedState::with_options(observe(), &ledger, offer.clone(), options)?;
     let native = c::set_topic(
