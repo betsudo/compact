@@ -364,8 +364,13 @@ ledger state. The boundary cohort also passed all 30 cases at the same
 commit, with 16 fresh key pairs across eight sources. All 30 separate
 standalone verifications refused corrupted proofs and distinct verifiers.
 Each distinct funded transaction passed default strictness and refused
-exact replay with byte-identical ledger state. The tuple cohort remains
-open.
+exact replay with byte-identical ledger state. The tuple cohort passed
+all 105 selected cases at the same commit, with 32 fresh key pairs
+across 16 sources. Separate verification refused corrupted proofs and
+distinct verifiers. The input, output, binding, and preimage controls
+passed for each selected case. All 105 distinct funded v3 transactions
+applied under default strictness and refused exact replay with
+byte-identical ledger state.
 
 Wide-zero multiplication passed the maintained generated API gate for the
 original and conditional sources. The two ordinary entries model at k7
@@ -481,3 +486,9 @@ captures retain their original bytes. All 14 focused Rust tests passed
 with all features on macOS arm64. The fresh behavioral workspace run
 at this head is in progress, with all 148 previous failure targets
 resolved against current Cargo metadata.
+
+Preparation also captured 31 additional historical fixtures using the
+paired compiler and their original TypeScript producers. Of these,
+28 differ from their historical observations solely in serialized
+contract state. One has other observed differences and two producers
+failed. These captures await current native test qualification.
