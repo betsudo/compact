@@ -103,11 +103,17 @@ fn check_artifact(root: &Path, path: &str, expected: &str) -> Result<(), Box<dyn
     Ok(())
 }
 
+pub(super) struct FundedReceive {
+    pub(super) deploy: ContractDeploy<DefaultDB>,
+    pub(super) verifier: VerifierKey,
+    pub(super) state: TestState<DefaultDB>,
+}
+
 pub(super) fn deploy_funded(
     root: &Path,
     stem: &str,
     rng: &mut StdRng,
-) -> Result<(ContractDeploy<DefaultDB>, VerifierKey, TestState<DefaultDB>), Box<dyn Error>> {
+) -> Result<FundedReceive, Box<dyn Error>> {
     ensure_source_artifacts(root)?;
     let (ir, verifier, operation) = v3::operation(root, NAME, 13)?;
     if ir.model().rows() != 5_898 {
@@ -121,7 +127,11 @@ pub(super) fn deploy_funded(
         .build()?;
     let resolver = fee_resolver(root, NAME)?;
     v3::apply_funded_deployment(root, stem, &deploy, &mut state, rng, &executor, &resolver)?;
-    Ok((deploy, verifier, state))
+    Ok(FundedReceive {
+        deploy,
+        verifier,
+        state,
+    })
 }
 
 pub(super) fn check_received_output(
@@ -140,7 +150,11 @@ pub(super) fn check_received_output(
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0195_0000);
     let stem = "shielded-receive-zero";
-    let (deploy, verifier, mut state) = deploy_funded(root, stem, &mut rng)?;
+    let FundedReceive {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(root, stem, &mut rng)?;
     let address = deploy.address();
     let generated = contract::Contract::default();
     let zero = coin(1, 0);

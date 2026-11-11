@@ -15,7 +15,9 @@
 
 //! Explicit upstream wallet input funding of an unchanged receiveShielded call.
 use super::local_v3_application as v3;
-use super::shielded_receive::{NAME, check_received_output, coin, deploy_funded, observed};
+use super::shielded_receive::{
+    FundedReceive, NAME, check_received_output, coin, deploy_funded, observed,
+};
 use super::*;
 use compact_rust_shielded_receive_oracle_fixture::ledger_contract as contract;
 use midnight_compact_runtime as runtime;
@@ -36,7 +38,11 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         "wallet-funded-receive"
     };
     let mut rng = StdRng::seed_from_u64(0x0199_0000);
-    let (deploy, verifier, mut state) = deploy_funded(root, stem, &mut rng)?;
+    let FundedReceive {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(root, stem, &mut rng)?;
     let address = deploy.address();
     let coin = coin(3, 42);
     let info = runtime::ledger::coin_info_from_compact(coin.nonce, coin.color, 42);
