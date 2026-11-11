@@ -384,7 +384,7 @@ class MaintainedFixtureAndProofTests(unittest.TestCase):
                    "acc-jubjub-proofs": "compact-acc-jubjub-gate/v1",
                    "vector-projection-proofs": "compact-vector-projection-proof-gate/v1",
                    "constant-valued-vector-index-proofs": "compact-vector-projection-proof-gate/v1",
-                   "map-size-expression-proofs": "compact-map-size-expression-proof-gate/v1",
+                   "map-size-expression-proofs": "compact-map-size-expression-proof-gate/v2",
                    "direct-fold-proofs": "compact-direct-fold-proof-gate/v1"}
         def command(argv, label, directory, receipt, **kwargs):
             calls.append((label, argv))

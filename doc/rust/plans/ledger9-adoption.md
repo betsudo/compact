@@ -254,6 +254,10 @@ result refused. Both transactions included one proved positive-fee Dust
 spend, applied under default strictness, and refused exact replay with
 identical complete ledger bytes. Mutated IR and checked-program bytes
 refused before keys or state.
+The local orchestration expects the v2 receipt, and the Linux workflow
+is configured to retain the generated proof and replay evidence and
+verification logs. Earlier constructor and Vector steps still select
+Ledger 8 and must be ported before the full workflow can reach Map.
 
 The maintained generated functional gate now selects Ledger 9 for all
 23 source fixtures. Its 56 Rust methods and 160 four-route scenarios

@@ -1362,6 +1362,11 @@ jobs:
             ${{ runner.temp }}/compact-unit-initializers-proof/receipt.json
             ${{ runner.temp }}/compact-unit-initializers-proof/generated/
             ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
+            ${{ runner.temp }}/compact-map-size-expression-proof/logs/
+            ${{ runner.temp }}/compact-map-size-expression-proof/*.stdout
+            ${{ runner.temp }}/compact-map-size-expression-proof/*.stderr
+            ${{ runner.temp }}/compact-map-size-expression-proof/proof-material.json
+            ${{ runner.temp }}/compact-map-size-expression-proof/generated/
             ${{ runner.temp }}/compact-direct-fold-proof/receipt.json
             ${{ runner.temp }}/compact-direct-fold-proof/generated/
           if-no-files-found: ignore
