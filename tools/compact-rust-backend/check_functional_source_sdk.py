@@ -405,6 +405,8 @@ def main(argv=None):
         receipt["source_dirty"] = common.dirty_paths()
         if receipt["source_dirty"] or env.get("COMPACTC_SCHEME"):
             raise ValueError("clean selected source and original packaged compiler without Scheme override required")
+        if "MIDNIGHT_PROOF_SERVER" in env:
+            raise ValueError("witnessed SDK requires local proving without MIDNIGHT_PROOF_SERVER")
         # Even an empty variable is an override to the CLI: it selects the cwd.
         # This gate qualifies installed default selection, not a caller's root.
         if "COMPACT_RUST_RUNTIME_DIR" in env:

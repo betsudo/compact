@@ -88,7 +88,8 @@ python3 tools/compact-rust-backend/check_functional_source_sdk.py \
 Run this command from the matching clean Compact source checkout. The isolated
 consumer graph itself contains no checkout paths. `MIDNIGHT_PP` and
 `MIDNIGHT_LEDGER_TEST_STATIC_DIR` must identify the selected public proof material
-and pinned upstream ledger static fixtures. Prepare built-ins and the selected
+and pinned upstream ledger static fixtures. The gate requires local proving
+and refuses a configured `MIDNIGHT_PROOF_SERVER`. Prepare built-ins and the selected
 small parameter before the gate with the matching source-built material runner:
 `compact-rust-proof-smoke --prepare-proof-material --parameter-k 7`.
 The gate freshly verifies their upstream SHA256 declarations in verify-only mode,

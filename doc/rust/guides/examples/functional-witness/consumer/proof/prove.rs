@@ -186,6 +186,9 @@ fn assert_same_call(
 }
 
 fn prove_and_apply(root: PathBuf, out: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("witnessed SDK requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
     fs::create_dir(out)?;
     let verifier_path = root.join("keys/apply_offset.verifier");
     let verifier_bytes = fs::read(&verifier_path)?;
