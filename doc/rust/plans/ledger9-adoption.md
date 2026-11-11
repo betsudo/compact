@@ -336,3 +336,25 @@ probe refused a prepared operation that had lost its installed v3 IR.
 The proof consumer now uses the observed-call path in both typed routes
 and keeps the malformed replay refusal. Full Constructor Vector proof
 qualification requires a fresh run of the corrected gate.
+
+Both conditional cases passed a focused run with the observed-call repair.
+Each standalone proof passed separate verification, including the wrong
+verifier and corruption controls. A distinct v3 proof funded each transaction
+with one positive-fee Dust spend. The transactions applied under default
+strictness and exact replay was refused with identical ledger bytes. The
+complete 17-case gate runs separately on its pinned source.
+
+The Constructor Equality port retains the three cohorts and both source
+scopes. The released v3 tool modeled all 96 exports at k6 and 34 rows for
+`read`, k7 and 78 rows for `advance`, and k7 and 79 rows for
+`advance_other`. Independent TypeScript captures using the Ledger 9
+runtime pair passed all 16 base, 30 boundary, and 105 tuple cases.
+The required proof callers preserve those counts and verify each retained
+standalone proof separately. The complete native and proof gates remain open.
+
+Wide-zero multiplication passed the maintained generated API gate for the
+original and conditional sources. The two ordinary entries model at k7
+and 102 rows, and the two witnessed entries at k7 and 82 rows. The Ledger 9
+proof caller verifies k7 material before fresh key generation for the two
+originally selected ordinary entries. Separate verification and funded
+strict replay qualification are in progress.
