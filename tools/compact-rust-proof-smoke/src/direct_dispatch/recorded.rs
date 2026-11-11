@@ -62,12 +62,19 @@ pub(super) fn stateful_struct(
 
 pub(super) fn stateful_assert(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --stateful-assert <proof-output>")?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --stateful-assert-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --stateful-assert <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --stateful-assert <proof-output>".into());
+        return Err(usage.into());
+    }
+    if verify {
+        return stateful_assert::verify(Path::new(&root));
     }
     let proof = std::thread::Builder::new()
         .name("stateful-assert-proof".into())

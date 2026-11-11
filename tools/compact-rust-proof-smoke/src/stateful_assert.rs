@@ -14,9 +14,17 @@
 // limitations under the License.
 
 //! Prove typed short-circuit assertions with Unit and Uint64 results.
+use super::local_v3_application as v3;
 use super::*;
 use compact_rust_stateful_assert_oracle_fixture::ledger_contract as c;
-use midnight_compact_runtime::BoundedUint;
+use midnight_base_crypto::hash::persistent_hash;
+use midnight_compact_runtime::{BoundedUint, transaction::RecordedCall};
+use midnight_zkir_v3::IrSource as IrSourceV3;
+
+const CIRCUITS: [(&str, u8, usize); 2] = [("checked", 7, 109), ("unit_result", 6, 41)];
+const SOURCE_ARTIFACTS: &str =
+    include_str!("../../compact-rust-backend/tests/stateful-assert-ledger9-artifacts.json");
+
 struct Witness;
 impl c::Witnesses<Vec<u8>> for Witness {
     fn next_gate(
@@ -29,8 +37,49 @@ impl c::Witnesses<Vec<u8>> for Witness {
         (state, true)
     }
 }
+fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
+    let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(SOURCE_ARTIFACTS)?;
+    for (path, expected) in pins {
+        let bytes = std::fs::read(root.join(&path))?;
+        if hex::encode(persistent_hash(&bytes).0) != expected {
+            return Err(format!(
+                "stateful assert artifact differs from the retained source: {path}"
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+fn operation(
+    root: &Path,
+    name: &str,
+    k: u8,
+    rows: usize,
+) -> Result<(VerifierKey, ContractOperation), Box<dyn Error>> {
+    let (ir, verifier, operation) = v3::operation(root, name, k)?;
+    if ir.model().rows() != rows {
+        return Err(format!("{name} v3 row count differs from the modeled circuit").into());
+    }
+    Ok((verifier, operation))
+}
+
+pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
+    validate_artifacts(root)?;
+    for (name, k, rows) in CIRCUITS {
+        let (verifier, _) = operation(root, name, k, rows)?;
+        v3::verify_standalone(root, name, &verifier)?;
+        println!("{name}: separate v3 verification passed and corrupted proof was refused");
+    }
+    Ok(())
+}
+
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    for (index, name) in ["checked", "unit_result"].into_iter().enumerate() {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("stateful assert proof requires local proving".into());
+    }
+    validate_artifacts(root)?;
+    for (index, (name, k, rows)) in CIRCUITS.into_iter().enumerate() {
         let mut rng = StdRng::seed_from_u64(0x0185_0000 + index as u64);
         let initial = c::initial_state(
             ConstructorContext::new(Vec::<u8>::new()),
@@ -39,7 +88,8 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             BoundedUint::new(7)?,
         )?;
         let expected_state = initial.ledger_state.get_ref().clone();
-        let deploy = make_deploy(root, name, expected_state.clone(), &mut rng)?;
+        let (verifier, operation) = operation(root, name, k, rows)?;
+        let deploy = v3::deploy(expected_state.clone(), name, operation, &mut rng);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -50,9 +100,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             },
         );
         let contract = c::Contract::from(Witness);
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
+        let randomness = Fr::from(0_u64);
         let (manual, prepared) = if name == "checked" {
             let recorded = c::recorded::checked(observed.circuit_context(vec![]), &Witness, true)?;
             if recorded.execution.result.value() != 7
@@ -66,9 +114,10 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             ) {
                 return Err("checked false guard did not reject".into());
             }
-            let manual = check_generated_trace(root, name, recorded, true)?;
+            let manual = RecordedCall::new(&observed, recorded, name, true)
+                .prepare(verifier.clone(), randomness)?;
             let typed = contract.recording().checked_call(&observed, vec![], true)?;
-            (manual, typed.prepare(verifier, Fr::from(0_u64))?)
+            (manual, typed.prepare(verifier.clone(), randomness)?)
         } else {
             let recorded =
                 c::recorded::unit_result(observed.circuit_context(vec![]), &Witness, true)?;
@@ -81,24 +130,30 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             ) {
                 return Err("unit false guard did not reject".into());
             }
-            let manual = check_generated_trace(root, name, recorded, true)?;
+            let manual = RecordedCall::new(&observed, recorded, name, true)
+                .prepare(verifier.clone(), randomness)?;
             let typed = contract
                 .recording()
                 .unit_result_call(&observed, vec![], true)?;
-            (manual, typed.prepare(verifier, Fr::from(0_u64))?)
+            (manual, typed.prepare(verifier.clone(), randomness)?)
         };
         if format!("{manual:?}") != format!("{prepared:?}") {
             return Err("assertion observed call differs from direct recording".into());
         }
-        check_transaction(root, name, deploy, prepared, &mut rng, |state| {
-            if state.data.get_ref() != &expected_state {
-                return Err("read-only assertion changed ledger state".into());
-            }
-            Ok(())
-        })?;
-        println!(
-            "{name} assertion proved, verified and ledger-applied under shared unbalanced smoke policy"
-        );
+        let (proof, inputs) =
+            kernel_shielded_effects::prove_and_verify_call_with_input_control::<IrSourceV3>(
+                root,
+                name,
+                &prepared,
+                &verifier,
+                Some(AlignedValue::from(false)),
+                FetchMode::Synchronous,
+            )?;
+        v3::write_new(root.join(format!("{name}.proof")), &proof.0)?;
+        let mut encoded_inputs = Vec::new();
+        tagged_serialize(&inputs, &mut encoded_inputs)?;
+        v3::write_new(root.join(format!("{name}.inputs")), &encoded_inputs)?;
+        v3::apply_after_deployment(root, name, name, prepared, deploy, &expected_state, &proof)?;
     }
     Ok(())
 }

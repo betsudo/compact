@@ -1318,10 +1318,9 @@ def main() -> None:
             recording_checks.prove_stateful_struct(
                 compiler, base / "stateful-struct-proof", root=ROOT, run=run,
             )
-            assertion_proof = base / "stateful-assert-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/stateful_assert_oracle.compact"), str(assertion_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--stateful-assert", str(assertion_proof))
+            recording_checks.prove_stateful_assert(
+                compiler, base / "stateful-assert-proof", root=ROOT, run=run,
+            )
             effectful_proof = base / "effectful-return-proof"
             run(compiler, "--target", "rust", "--rust-require-recording",
                 str(EFFECTFUL_RETURN_SOURCE), str(effectful_proof))

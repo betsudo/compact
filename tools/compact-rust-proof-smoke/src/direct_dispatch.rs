@@ -615,7 +615,8 @@ pub(super) fn try_run(
         ("--wide-casts", _) => Some(expressions::wide_casts(arguments)),
         ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments, false)),
         ("--stateful-struct-verify", _) => Some(recorded::stateful_struct(arguments, true)),
-        ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments)),
+        ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments, false)),
+        ("--stateful-assert-verify", _) => Some(recorded::stateful_assert(arguments, true)),
         ("--effect-plan-unsigned-arithmetic", _) => {
             Some(recorded::effect_plan_unsigned_arithmetic(arguments))
         }

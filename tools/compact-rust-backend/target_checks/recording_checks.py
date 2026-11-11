@@ -21,9 +21,35 @@ acceptance assertions, failure order, and optional proof commands.
 """
 
 from collections.abc import Callable
+import hashlib
 import json
 from pathlib import Path
 from subprocess import CompletedProcess
+
+
+def prove_stateful_assert(
+    compiler: str,
+    output: Path,
+    *,
+    root: Path,
+    run: Callable[..., None],
+) -> None:
+    source = root / "examples/rust_backend/stateful_assert_oracle.compact"
+    pins = root / "tools/compact-rust-backend/tests/stateful-assert-ledger9-artifacts.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    for path, expected in json.loads(pins.read_text()).items():
+        actual = hashlib.sha256((output / path).read_bytes()).hexdigest()
+        if actual != expected:
+            raise ValueError(f"stateful assert artifact differs from the retained source: {path}")
+    keys = output / "keys"
+    keys.mkdir()
+    for name in ("checked", "unit_result"):
+        run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"),
+            str(keys / f"{name}.prover"), str(keys / f"{name}.verifier"))
+    for selector in ("--stateful-assert", "--stateful-assert-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
 
 
 def check_stateful_assert(
@@ -43,9 +69,7 @@ def check_stateful_assert(
         assert row["proof_required"] and row["recorded"] and row["observed_call"]
     run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-assert"))
     if proof_requested:
-        proof = base / "stateful-assert-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording", str(source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--stateful-assert", str(proof))
+        prove_stateful_assert(compiler, base / "stateful-assert-proof", root=root, run=run)
     original = base / "original-dao"
     run(compiler, "--target", "rust", "--skip-zk", str(root / "test-center/test-contracts/micro-dao.compact"), str(original))
     info = json.loads((original / "compiler/contract-info.json").read_text())
