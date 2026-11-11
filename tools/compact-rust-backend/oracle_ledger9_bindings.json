@@ -1,0 +1,302 @@
+{
+  "format": "compact-oracle-ledger9-bindings/v1",
+  "ledger_version": "ledger-9.1.0.1",
+  "ledger8_head": "09c75e2891283fed65f2db385925a5a4b9409af6",
+  "scope": "Reviewed Rust test identity migration for the optional v3 operation argument and existing fresh Ledger 9 capture links. Historical behavior review and capture manifests retain their original scope.",
+  "tests": {
+    "tests-rust-backend/assert-parity-oracle/tests/assert_parity_oracle.rs": {
+      "historical_sha256": "26845d607fcf156a2d8ddbe2aa8180f3e29d19b1ef414048ff9dc4b818420f22",
+      "current_sha256": "52f4644f13ac4661f22ac3f4ef97a89983fd66c5bf57905f1561af8db5f5d423",
+      "capture_paths": []
+    },
+    "tests-rust-backend/asset-registry-oracle/tests/asset_registry_oracle.rs": {
+      "historical_sha256": "b3312cfa89277b3ce045f6682479edac6bc530757d586cf29e3e6cdf086f152d",
+      "current_sha256": "37740dae3d6202afd362593e01c3637824b89ae506e7a75587066a16e0527b46",
+      "capture_paths": []
+    },
+    "tests-rust-backend/asset-registry-oracle/tests/direct_behavior.rs": {
+      "historical_sha256": "93e313c4ecbb2f007ab0d8f5f9eaf9c3e17650963b24952dc420d6419249a72b",
+      "current_sha256": "ee8cda02c63fa5620e2662f1855be82096b162ecee9e091c18cd497544e26089",
+      "capture_paths": []
+    },
+    "tests-rust-backend/asset-registry-oracle/tests/writable_recording.rs": {
+      "historical_sha256": "af2dadb7f904619573abd524700420144fec82da14e52fafeb5cd85ecce88c69",
+      "current_sha256": "fa93552356c5766078e32d94781de737492ab1114bef4069cdf4b65aa9a800ed",
+      "capture_paths": []
+    },
+    "tests-rust-backend/bounded-uint-oracle/tests/bounded_uint_oracle.rs": {
+      "historical_sha256": "d0e779b2c02d742b62290fd6a45df610ea5028a287a4d105e29d044f77f787c3",
+      "current_sha256": "a62d5d66358901b5b5c61b11e4477929a4074163b493fee54eb86bae045b6556",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/bounded-uint-oracle.json"
+      ]
+    },
+    "tests-rust-backend/bug11-oracle/tests/bug11_oracle.rs": {
+      "historical_sha256": "03bb76b5d9f89e0472d0b66243e0fb1544c9caa666ee4c18e1acf74851004802",
+      "current_sha256": "4d7fba7dd841cb7caf334889a7abeccac8580a6eeb3f6d5d44cb1b2b3afe03a4",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/bug11-oracle.json"
+      ]
+    },
+    "tests-rust-backend/call-arg-declared-type/tests/call_arg_declared_type.rs": {
+      "historical_sha256": "b994f2d1ca32150da97ad72b14881f6a234856f12ac4fe93be0bcece17626bd6",
+      "current_sha256": "c45291d015c93afee950e3a15ee41fa9dee42d7cbcfa41a639607a081bb5e63b",
+      "capture_paths": []
+    },
+    "tests-rust-backend/cross-circuit-oracle/tests/cross_circuit_oracle.rs": {
+      "historical_sha256": "eafe3ec0cc33561b909d3c10a9fa3ad13048f69086c1401614a55b39ddc9645c",
+      "current_sha256": "829261caf439cd4481c2b0be920375c500daa27487188987bbf1c4c32982c482",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/cross-circuit-oracle.json"
+      ]
+    },
+    "tests-rust-backend/fold-oracle/tests/fold_oracle.rs": {
+      "historical_sha256": "1ac7dfb930641575d6b2c5ce52a277e86c81c30d587fb67f89f4827ee8be0682",
+      "current_sha256": "0c5f520a56c95f23e40b7a3f056b01eeba0b0eb3ccaefb63baeea37c67b605f8",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/fold-oracle.json"
+      ]
+    },
+    "tests-rust-backend/for-iter-oracle/tests/for_iter_oracle.rs": {
+      "historical_sha256": "fc90d29879ca68905f888387454760ced388caa747c269a525d583e47668d12d",
+      "current_sha256": "47f790d69c6f7954ad78f7f288b5f283decd85394b235aaedbc9485aa8189aad",
+      "capture_paths": []
+    },
+    "tests-rust-backend/for-range-oracle/tests/for_range_oracle.rs": {
+      "historical_sha256": "703a8ff6eeb2c16b03624bea0c7aca9f8aab98ea8ff6f376b7fdb320dbf5d8fc",
+      "current_sha256": "8f6ced21c1abe64f07d5c02c9a5a1126109f09df4cd374ed54843568e32be8ba",
+      "capture_paths": []
+    },
+    "tests-rust-backend/guarded-assert-arith-oracle/tests/guarded_assert_arith_oracle.rs": {
+      "historical_sha256": "413a277d3d29139db7f45bd039bd1084f1146b41775eb827bcdf966b0027ff7f",
+      "current_sha256": "04c75ab543bc3dfed2a15e2b536f21d71570501be11084327ddd53cf8221ff9b",
+      "capture_paths": []
+    },
+    "tests-rust-backend/hash-to-curve-vector-constructor/tests/hash_to_curve_vector_constructor.rs": {
+      "historical_sha256": "4efe9573879ba2ee7e696e04c15a71739eea2bdf45876cd8ede631188246a63a",
+      "current_sha256": "bae2c5ff67b71013616326fe06d71c8f1c8ab94ca4b832d8924820fb29114697",
+      "capture_paths": []
+    },
+    "tests-rust-backend/hmt-default-oracle/tests/hmt_default_oracle.rs": {
+      "historical_sha256": "dfdd53b9e5310a22dcd79c3b4dd7fb617b24447c04a7f014f0800859cd77ef0d",
+      "current_sha256": "71ab1787e15b53c78f5b3715f5795ba2076b7dcba98537128b8ece1c92a8a3f2",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/hmt-default-oracle.json"
+      ]
+    },
+    "tests-rust-backend/if-stmt-oracle/tests/if_stmt_oracle.rs": {
+      "historical_sha256": "a8cfcfcca261f3bc845d0c4bf033fa3a8e22e22e565c210729364f037b42aab7",
+      "current_sha256": "3a4d2259782a27e228e0097a6bb32a04efe307ddbd3ae85072e355c07cc51852",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/if-stmt-oracle.json"
+      ]
+    },
+    "tests-rust-backend/inline-type-scope-oracle/tests/inline_type_scope_oracle.rs": {
+      "historical_sha256": "2a1c045ee57ceaae965bbe04d51235520680fde35ed6c8b1afda402c23032828",
+      "current_sha256": "68e4aafc1a8c693d9da738a8062fb60c67eeb98d2c615d7b5190b069fe7aa123",
+      "capture_paths": []
+    },
+    "tests-rust-backend/list-oracle/tests/list_oracle.rs": {
+      "historical_sha256": "5e0f456e81cd8513112f3adbf8a67496df79c92c2d227355522bd41ad2e2acc4",
+      "current_sha256": "23b24a540cddcf2faadcad9452cbc8033f0d67ef818d585867c03a2e16e8460f",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/list-oracle.json"
+      ]
+    },
+    "tests-rust-backend/map-fn-oracle/tests/map_fn_oracle.rs": {
+      "historical_sha256": "12016bacc06bf537c0f51c6dd510e7c1c9bab9f0cb8d35b653d51bd24d1b0420",
+      "current_sha256": "fdcd9959b88357d8775f2e634b6360aff7f06e72ca6d46bb7744e45750f78bd4",
+      "capture_paths": []
+    },
+    "tests-rust-backend/map-lambda-oracle/tests/map_lambda_oracle.rs": {
+      "historical_sha256": "0f85aa0514e93308bf45a0fee93c88431e15fcdbc74c4fe1474147f5b781a19b",
+      "current_sha256": "544769f805172534382c899a99efc7c4ae68ea44214f6ac8030602f485b84106",
+      "capture_paths": []
+    },
+    "tests-rust-backend/map-oracle/tests/map_oracle.rs": {
+      "historical_sha256": "10110780c75018c51ca7806e1db9f9138a6cfa6b7ed6fc5730f5875fb0a410a4",
+      "current_sha256": "7c66fc3fd0d54409fb7016fd0299342da8effd17bd332bd866abdb49d0c90ea4",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/map-oracle.json"
+      ]
+    },
+    "tests-rust-backend/mixed-width-operand-oracle/tests/mixed_width_operand_oracle.rs": {
+      "historical_sha256": "2cd9591d2708bbf343e523562b71d372f592b72107965d4c96d2edfb438179df",
+      "current_sha256": "c132576aff101d02824379627e97da7598232b78769af42e8307380f6d267f49",
+      "capture_paths": []
+    },
+    "tests-rust-backend/module-boolean-constructor/tests/module_boolean_constructor.rs": {
+      "historical_sha256": "114f394e7d223d68b93fb56a3386d7351f35fd1a9cac96847042fdf4c390b2a5",
+      "current_sha256": "bd9f9ae2bd9a0f82d310e12d225e9265f1b7bb2c10845dcc6e10da8204af9641",
+      "capture_paths": []
+    },
+    "tests-rust-backend/multi-pl-call-oracle/tests/multi_pl_call_oracle.rs": {
+      "historical_sha256": "c6234bf2ef94e1f25314a6376fadd471071b482ba23fa7f9ff4eb11487280839",
+      "current_sha256": "c94d038bb693312a1951f2991c59dc904eee1baa6d70e5dedaf3a8a04df417f6",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/multi-pl-call-oracle.json"
+      ]
+    },
+    "tests-rust-backend/nested-map-oracle/tests/nested_map_oracle.rs": {
+      "historical_sha256": "b9fc9c09deb173d7d2894b6cd2a6d8797443ed51caadbda04f2192d450e93c3d",
+      "current_sha256": "f68d212fbe184348bfb5bae36b4b5ccc5b33fe9e869b7c2bb02037bf4ce5d082",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/nested-map-oracle.json"
+      ]
+    },
+    "tests-rust-backend/pure-circuit-oracle/tests/pure_circuit_oracle.rs": {
+      "historical_sha256": "6bd4c63f35588ed4b336431cfb77d91381d19f24b862e1fb076746d5b69e27af",
+      "current_sha256": "a52f16a87e68d04df7bd807662b6b56dca9a099bd2c9f73e59b09eee87c3ebea",
+      "capture_paths": []
+    },
+    "tests-rust-backend/schnorr-attest-oracle/tests/schnorr_attest_oracle.rs": {
+      "historical_sha256": "ee8f0a03371d40a0e0f99d3e3ab4f12d8d2d20c1a10f1e9b866746fe46d51ee9",
+      "current_sha256": "7f9e6f25e15cc7222e30219fb3c56dbdb1bed4d95c6d433bf0c7e85aff23737d",
+      "capture_paths": []
+    },
+    "tests-rust-backend/sealed-ledger-constructor/tests/sealed_ledger_constructor.rs": {
+      "historical_sha256": "4ff74b14d72fa94cf4d642119f6958c8bd4c056b08c6976787472bf77ad9e3a1",
+      "current_sha256": "99bb57f3e2aafb2db2684e50536c4239464d0191f208a99060c5d2e588cf311c",
+      "capture_paths": []
+    },
+    "tests-rust-backend/set-oracle/tests/set_oracle.rs": {
+      "historical_sha256": "f7384ac12f17e5ad6747348c56d6e8ab23851281668c89f52506afda84643b84",
+      "current_sha256": "880cbef7e2087b07d1af79f7803d7e936b879bbc9e5b5bdaa3593ca162e9cb06",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/set-oracle.json"
+      ]
+    },
+    "tests-rust-backend/set-size-oracle/tests/set_size_oracle.rs": {
+      "historical_sha256": "876b581b75e600639e552b27a05edc13c125840f39b468a5b4a96298f10256d1",
+      "current_sha256": "4be520ee38a5bddfa45338e8dedb339d3555d78bd4efc4e64574aa5ec8f1f1a3",
+      "capture_paths": []
+    },
+    "tests-rust-backend/struct-collision-oracle/tests/struct_collision_oracle.rs": {
+      "historical_sha256": "3f88920060c85e1ffb850f339fcf11370accda9762808736d30704677497a138",
+      "current_sha256": "3417220fa51d520ac592993807f8faf1ecadc270fbc1d139029f69c69f26e403",
+      "capture_paths": []
+    },
+    "tests-rust-backend/support/oracle_recorded_trace.rs": {
+      "historical_sha256": "a3b4a63ef8ea618354996fe40dbff5b542cfa55f2dca221f663911991e7e1822",
+      "current_sha256": "cd8580e77c0787b73c8f3f147471e67e1db40c26730b1fd6de080e4536580ebd",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/oracle-recorded-traces.json"
+      ]
+    },
+    "tests-rust-backend/ternary-cond-oracle/tests/ternary_cond_oracle.rs": {
+      "historical_sha256": "1fec7dee7318349f74baabe2c56aa544c9dbd1baa605acf652d1355cdbf5d365",
+      "current_sha256": "4abb7cb93bb51d8141922a246b57b1c2d4ffca42b17abcc771b3dacc41e915ac",
+      "capture_paths": []
+    },
+    "tests-rust-backend/tuple-oracle/tests/tuple_oracle.rs": {
+      "historical_sha256": "39f82a2077d089db8be58a2cee66b698db2c29057f984018a2f087506f76a49f",
+      "current_sha256": "28a8e0ca23af39118eb47c778b14b5e5833e51d86bfe621d23c9c7e2b15e3394",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/tuple-oracle.json"
+      ]
+    },
+    "tests-rust-backend/uints-oracle/tests/uints_oracle.rs": {
+      "historical_sha256": "9aff6dd4f344c45d844f0adc7dcc3e87d28fdfa93b3bc108977309d209c9d9cc",
+      "current_sha256": "572555039a22dacf75487df812a3ee110664d95b4ccb06d16cb28763d78928fa",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/uints-oracle.json"
+      ]
+    },
+    "tests-rust-backend/widening-arith-oracle/tests/widening_arith_oracle.rs": {
+      "historical_sha256": "730988b89ccbfa3008f8cbf7f5ee1c6f9a6177e2baa88d8aec6df8541bb2e275",
+      "current_sha256": "d6d2b42e8782eb374617ceb156cb3e29c40497feeb61aa47c89a05552b75c095",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/widening-arith-oracle.json"
+      ]
+    },
+    "tests-rust-backend/witnesses-oracle/tests/witnesses_oracle.rs": {
+      "historical_sha256": "b80a13ab8c89122290164a176d6dd537a08a6c69ceec1f1cf40d8844070b1226",
+      "current_sha256": "b206a203c0f4acc89ff1cf3f8c249903719aa38ef27ae91f42ad95f72f6614d6",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/witnesses-oracle.json"
+      ]
+    }
+  },
+  "captures": {
+    "runtime-rs/tests/fixtures/bounded-uint-oracle.json": {
+      "historical_sha256": "3fe0422bead9263ce05a8ef36593bd2e8d1c00dc9cc7db6a70841a46f592b69f",
+      "current": "runtime-rs/tests/fixtures/ledger9-bounded-uint-oracle.json",
+      "current_sha256": "a91de4231051ca60093c679a2a86451f224d0e192c1db0e3fcdda1da5a7b0419"
+    },
+    "runtime-rs/tests/fixtures/bug11-oracle.json": {
+      "historical_sha256": "8b263a0aab45494b997d1600f1a06f64933ffa1b1de62787dc1f3c655c8e38a2",
+      "current": "runtime-rs/tests/fixtures/ledger9-bug11-oracle.json",
+      "current_sha256": "4d66a7b8d026aacfd3bf4a77a3f0b02c3566b9db62f7159dfe32e17b01a5a170"
+    },
+    "runtime-rs/tests/fixtures/cross-circuit-oracle.json": {
+      "historical_sha256": "d9636517d88eb24a099e334a24ba636ab49e05d1fcfc61216cf15b981e097c40",
+      "current": "runtime-rs/tests/fixtures/ledger9-cross-circuit-oracle.json",
+      "current_sha256": "f23fad28cddc6edab65064f75703156d4a1c00c992931051c7b875c186de82a7"
+    },
+    "runtime-rs/tests/fixtures/fold-oracle.json": {
+      "historical_sha256": "1f7ffffdb6addb1d5484506c181c44171efda7dfc563edf7bbeea48fb432a6a6",
+      "current": "runtime-rs/tests/fixtures/ledger9-fold-oracle.json",
+      "current_sha256": "1021be0257708e85d3ed2b8e27756d92a8efd354375a2cc929616681290c94f3"
+    },
+    "runtime-rs/tests/fixtures/hmt-default-oracle.json": {
+      "historical_sha256": "cde2d0e359d155d1380218b3e00617ede9b5c3dd05e4dcf945f4d638e203ea17",
+      "current": "runtime-rs/tests/fixtures/ledger9-hmt-default-oracle.json",
+      "current_sha256": "9a52c5947a266d9bd263c12f548ffb1fd2f750d0ba112c96bb0801add5af790e"
+    },
+    "runtime-rs/tests/fixtures/if-stmt-oracle.json": {
+      "historical_sha256": "5fef8c054808883c30ae683855a21fa610d4cd8902db35f5dcc104006a29dd1e",
+      "current": "runtime-rs/tests/fixtures/ledger9-if-stmt-oracle.json",
+      "current_sha256": "ddf45a75aea1cece1002a8fca8b3c830eb919567b5e2fb79caa4fd7f4b7f9441"
+    },
+    "runtime-rs/tests/fixtures/list-oracle.json": {
+      "historical_sha256": "beda6d208b42299ed38544dbfc301cb89013b83e0f7755306a20ac71a2161229",
+      "current": "runtime-rs/tests/fixtures/ledger9-list-oracle.json",
+      "current_sha256": "192ab33cc89497e0010eb864d4157a9db54c02e6dff44bbe91fa6f6e81c78cad"
+    },
+    "runtime-rs/tests/fixtures/map-oracle.json": {
+      "historical_sha256": "6bbe73836c8260532f43cc470f679bd8796f21ed3784ee0765fb2acfb4e8b9bc",
+      "current": "runtime-rs/tests/fixtures/ledger9-map-oracle.json",
+      "current_sha256": "6231b052d2d186b95c43c7cbb7ce1e78cc225f4f7dcbc449375c3b689cdfe075"
+    },
+    "runtime-rs/tests/fixtures/multi-pl-call-oracle.json": {
+      "historical_sha256": "913578a9c7c81315bf51187de853a5623ef74954f8ae28677c5c8533daacfa3e",
+      "current": "runtime-rs/tests/fixtures/ledger9-multi-pl-call-oracle.json",
+      "current_sha256": "133b62572fc4aeb3a9b2025afe7b3b2cb99731494c8c02c8194b63a36095784b"
+    },
+    "runtime-rs/tests/fixtures/nested-map-oracle.json": {
+      "historical_sha256": "43ce90a36951be53433700fbaffb15a097ab1a9a8cbd12f1503662ed6e164df5",
+      "current": "runtime-rs/tests/fixtures/ledger9-nested-map-oracle.json",
+      "current_sha256": "423d037cb6ddf9edb8405cc2a33c977567399292274e9cdcef0b3a6c2eaace78"
+    },
+    "runtime-rs/tests/fixtures/oracle-recorded-traces.json": {
+      "historical_sha256": "7e61b764c3e79654ae46b2ab806f053776f14eceb811b9412580e0417b6b39c4",
+      "current": "runtime-rs/tests/fixtures/ledger9-oracle-recorded-traces.json",
+      "current_sha256": "04e838263d6f6938843a332704e7e62f30c0aff69a5db2cf769bca5ca423682e"
+    },
+    "runtime-rs/tests/fixtures/set-oracle.json": {
+      "historical_sha256": "9a61bba3780218745159d488de63004eb84012dc4b56dbff2762fb54e2b88601",
+      "current": "runtime-rs/tests/fixtures/ledger9-set-oracle.json",
+      "current_sha256": "cb064b6b46c7709bbe7925bb9291f83f4de721b62433babaeb263727af6a31e9"
+    },
+    "runtime-rs/tests/fixtures/tuple-oracle.json": {
+      "historical_sha256": "ee047edc8bcea9a6cfc7adf36dcd265bd525e7baab122b26e9e6dfedc93ea8a9",
+      "current": "runtime-rs/tests/fixtures/ledger9-tuple-oracle.json",
+      "current_sha256": "be67d1881e8c714f6f30efd5d88ff831a17ef27e177ff06f07fc810b3e6ea36f"
+    },
+    "runtime-rs/tests/fixtures/uints-oracle.json": {
+      "historical_sha256": "b84444a7548fc50c3b2b20418440c34e42546857fd0ff13fa467a4241825e7c0",
+      "current": "runtime-rs/tests/fixtures/ledger9-uints-oracle.json",
+      "current_sha256": "9de995ebf09e9d2661d123776fcd9b1575fb83a0fc6fee50c490fc04656c745c"
+    },
+    "runtime-rs/tests/fixtures/widening-arith-oracle.json": {
+      "historical_sha256": "002366358cf88c859185edd90a214fec8fc116efd5a28a030d7525d00d1f38a9",
+      "current": "runtime-rs/tests/fixtures/ledger9-widening-arith-oracle.json",
+      "current_sha256": "dd4bec3c8eb11f7bb6dee803cdf8b6ceb6a4f75b2c29eb0fff82e326a1e12b4c"
+    },
+    "runtime-rs/tests/fixtures/witnesses-oracle.json": {
+      "historical_sha256": "e8827be906fa036dc3b53120bfa7ec78d4e640c179c5b7d7c87637726734c9ee",
+      "current": "runtime-rs/tests/fixtures/ledger9-witnesses-oracle.json",
+      "current_sha256": "2a0d54aa2002013b93d2a95ecfc975753718ba197d81ca7daa0fefb94da83e06"
+    }
+  }
+}

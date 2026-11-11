@@ -1353,8 +1353,17 @@ jobs:
             ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
             ${{ runner.temp }}/compact-wide-zero-proof/generated/
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/logs/
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/*.stdout
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/*.stderr
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/proof-material.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/generated/
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
+            ${{ runner.temp }}/compact-vector-projection-proof/logs/
+            ${{ runner.temp }}/compact-vector-projection-proof/*.stdout
+            ${{ runner.temp }}/compact-vector-projection-proof/*.stderr
+            ${{ runner.temp }}/compact-vector-projection-proof/proof-material.json
+            ${{ runner.temp }}/compact-vector-projection-proof/generated/
             ${{ runner.temp }}/compact-field-wrappers-proof/receipt.json
             ${{ runner.temp }}/compact-field-wrappers-proof/generated/
             ${{ runner.temp }}/compact-tuple-wrappers-proof/receipt.json

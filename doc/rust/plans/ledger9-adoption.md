@@ -256,8 +256,26 @@ identical complete ledger bytes. Mutated IR and checked-program bytes
 refused before keys or state.
 The local orchestration expects the v2 receipt, and the Linux workflow
 is configured to retain the generated proof and replay evidence and
-verification logs. Earlier constructor and Vector steps still select
+verification logs. Earlier constructor and wide-zero steps still select
 Ledger 8 and must be ported before the full workflow can reach Map.
+
+The original literal Vector projection and the separate constant-valued
+Vector index source each passed both branches of the `witnessed` circuit
+with ZKIR 3.2.0 at k7 and 71 rows. The complete Rust, IR and five checked
+programs matched for each source. Their generated API gates passed live
+TypeScript parity, source refusals and Rust compile failures. Fresh v3
+standalone proofs passed separate verification, and the changed binding,
+input, output and corrupted-proof controls refused. All four distinct
+transaction-bound v3 proofs funded and applied with default strictness,
+then refused exact replay with identical ledger bytes. The two Map cases
+also passed a fresh rerun through the shared v3 application code.
+
+Source preflight now checks the reviewed Ledger 9 bindings for 36 Rust
+test and support files and 16 active TypeScript captures alongside the
+original review and capture records. The Rust edits add the optional v3
+operation argument or select fresh Ledger 9 captures, with formatting
+adjustments. The gate passed all 37 pinned sources. Workspace behavior
+remains a separate qualification.
 
 The maintained generated functional gate now selects Ledger 9 for all
 23 source fixtures. Its 56 Rust methods and 160 four-route scenarios
