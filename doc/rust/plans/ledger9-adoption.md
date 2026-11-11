@@ -637,3 +637,46 @@ workspace failure roster. A fresh locked workspace run is required
 to verify that result across the full corpus. The compiler integration
 preflight compared the complete mixed-width source IR without keys.
 The full compiler proof integration gate remains open.
+
+## Workspace recheck and root Let proof
+
+At `180622cf4`, the locked arm64 workspace libraries and tests ran the
+same 733 targets as the previous run. The result was 3,417 passes,
+11 failures and seven ignores. Every earlier failing target passed.
+The 11 failures were DID provenance checks for the TypeScript
+`built-ins.ts` digest after the Jubjub fix.
+
+At `3fdf52343`, 18 fresh captures from the rebuilt runtime reproduce
+the exact behavior and state bytes of the previous Ledger 9 captures.
+The capture bindings identify the actual rebuilt TypeScript and the
+compiler used. The point-map and nested-map wrappers have new
+digests. The original DID wrapper, raw IR and Rust library retain
+their prior bytes. The independently generated raw source-origin
+output differs and remains outside this recapture's admission. The
+historical Ledger 8 fixtures and original bindings retain their
+digests. All 14 focused provenance tests and seven Rustdoc tests
+passed. The Rustdoc run covered 303 targets.
+
+At `2e29bdcdf`, the Coracle and Micro DAO fixture registry pins match
+the manifests that already declare the exact Ledger 9 dependency.
+Fixture freshness passed for all 284 entries. Workspace Clippy passed
+with all features and targets enabled and warnings denied. Seven
+named shielded and Zswap scenarios passed source admission. Their
+proof lanes remain open.
+
+With the pinned ZKIR tools available, the previous core gate reached
+the root Let fixture and exposed its v2 proof consumer. The port at
+`f874af360` binds the full original Rust IR and exact v3 circuit
+before proof consumption. The official tool models `step` at k7 and
+68 rows. A fresh 3,824-byte standalone proof verified in a separate
+process. The checks refused a changed binding, changed input and
+corrupted proof bytes. The generated native, recorded and observed
+routes agree on the independent Field return and the stored Cell.
+A funded deployment installed the complete v3 operation under default
+strictness. A distinct 3,824-byte transaction-bound v3 proof applied
+the call to that state under default strictness. Exact replay returned
+`IntentAlreadyExists` with byte-identical ledger state.
+
+The full workspace behavior and core compiler proof gates still need
+their exact-head reruns. The other named proof scenarios and required
+integration lanes remain open.
