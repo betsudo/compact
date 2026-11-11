@@ -304,7 +304,7 @@ fn qualified_cell_write_matches_typescript_allocation_and_replacement() {
 #[test]
 fn qualified_cell_parent_path_matches_independent_chunked_typescript() {
     let expected: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/qualified-coin-cell-chunked-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-qualified-coin-cell-chunked-oracle.json"
     ))
     .unwrap();
     for (name, left, index, occupied) in [

@@ -4,6 +4,13 @@
   "ledger8_head": "09c75e2891283fed65f2db385925a5a4b9409af6",
   "scope": "Reviewed Rust test identity migration for the optional v3 operation argument and existing fresh Ledger 9 capture links. Historical behavior review and capture manifests retain their original scope.",
   "tests": {
+    "tests-rust-backend/aliases-oracle/tests/aliases_oracle.rs": {
+      "historical_sha256": "0cfbe3391fe87abf4f25ad6db855beeee3b0bc48f7a92bc925ae80359243d476",
+      "current_sha256": "5b895cd034735db15cd739d5de5f93189b0cd129b6f29d6214eb8242de556a18",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/aliases-oracle.json"
+      ]
+    },
     "tests-rust-backend/assert-parity-oracle/tests/assert_parity_oracle.rs": {
       "historical_sha256": "26845d607fcf156a2d8ddbe2aa8180f3e29d19b1ef414048ff9dc4b818420f22",
       "current_sha256": "0f6738a2f00e913dbd0475f798db817bc9c5295afbf6bfb3ab34e4710464c5a0",
@@ -93,18 +100,23 @@
     },
     "tests-rust-backend/for-iter-oracle/tests/for_iter_oracle.rs": {
       "historical_sha256": "fc90d29879ca68905f888387454760ced388caa747c269a525d583e47668d12d",
-      "current_sha256": "47f790d69c6f7954ad78f7f288b5f283decd85394b235aaedbc9485aa8189aad",
-      "capture_paths": []
+      "current_sha256": "0f629ee85d1d9614264c76b4062d564521794f68c5c40fe01718c89cffaf8abf",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/for-iter-oracle.json"
+      ]
     },
     "tests-rust-backend/for-range-oracle/tests/for_range_oracle.rs": {
       "historical_sha256": "703a8ff6eeb2c16b03624bea0c7aca9f8aab98ea8ff6f376b7fdb320dbf5d8fc",
-      "current_sha256": "8f6ced21c1abe64f07d5c02c9a5a1126109f09df4cd374ed54843568e32be8ba",
-      "capture_paths": []
+      "current_sha256": "61f75dfab9645513b3e979a1c60d0e4f2c24059645b731386d11330ff0c8793a",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/for-range-oracle.json"
+      ]
     },
     "tests-rust-backend/guarded-assert-arith-oracle/tests/guarded_assert_arith_oracle.rs": {
       "historical_sha256": "413a277d3d29139db7f45bd039bd1084f1146b41775eb827bcdf966b0027ff7f",
-      "current_sha256": "46a4f623ace25063fdfcd91d85157e5de7733c8cb7d6137386782cf30309deae",
+      "current_sha256": "8e9f88cac63f5359678ddbb7b52a0ea1d2ddc182edae81382d402dfa8b033fdc",
       "capture_paths": [
+        "runtime-rs/tests/fixtures/guarded-assert-arith-oracle.json",
         "runtime-rs/tests/fixtures/guarded-recording-oracle.json"
       ]
     },
@@ -230,9 +242,10 @@
     },
     "tests-rust-backend/set-size-oracle/tests/set_size_oracle.rs": {
       "historical_sha256": "876b581b75e600639e552b27a05edc13c125840f39b468a5b4a96298f10256d1",
-      "current_sha256": "b7dddcf9c6fc2ecd3b078524690d175c5a5187513c7f2a73d39eb7e9dd40c90a",
+      "current_sha256": "2b24c59036378d237f27ebb4ee29a007c9c52c5915ab5d1afe1a81750f0d2235",
       "capture_paths": [
-        "runtime-rs/tests/fixtures/adr221-set-size-nonempty.json"
+        "runtime-rs/tests/fixtures/adr221-set-size-nonempty.json",
+        "runtime-rs/tests/fixtures/set-size-oracle.json"
       ]
     },
     "tests-rust-backend/struct-collision-oracle/tests/struct_collision_oracle.rs": {
@@ -280,6 +293,13 @@
         "runtime-rs/tests/fixtures/uints-oracle.json"
       ]
     },
+    "tests-rust-backend/vector-oracle/tests/vector_oracle.rs": {
+      "historical_sha256": "49e9fc769ab148c39a44a2afafd59139ace17725fb59fd7ba170853cc480d10f",
+      "current_sha256": "085e09354567ac2f5c2e6f0370b8da3f6c7d21e2277ea42281daaf89d61a6551",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/vector-oracle.json"
+      ]
+    },
     "tests-rust-backend/widening-arith-oracle/tests/widening_arith_oracle.rs": {
       "historical_sha256": "730988b89ccbfa3008f8cbf7f5ee1c6f9a6177e2baa88d8aec6df8541bb2e275",
       "current_sha256": "d6d2b42e8782eb374617ceb156cb3e29c40497feeb61aa47c89a05552b75c095",
@@ -310,6 +330,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-adr221-ternary-true.json",
       "historical_sha256": "a2724e256ecec21161570965d2d07764967a7cf07045a1c64deb9c1abc3112d3",
       "current_sha256": "b61f43617a2b52b57122346feea3b489ee7f78c9b5f1a5fb6ba3907574a6c5ae"
+    },
+    "runtime-rs/tests/fixtures/aliases-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-aliases-oracle.json",
+      "historical_sha256": "84331f6418b0b698e3368654cc3a7944fe9258f8c26388a5046714ef7e6c08e8",
+      "current_sha256": "8f3bccc0454c32765002c6a8135391890c60288db181b9ec7e7bc22a97bd8753"
     },
     "runtime-rs/tests/fixtures/assert-parity-oracle.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-assert-parity-oracle.json",
@@ -401,6 +426,21 @@
       "current": "runtime-rs/tests/fixtures/ledger9-fold-oracle.json",
       "current_sha256": "1021be0257708e85d3ed2b8e27756d92a8efd354375a2cc929616681290c94f3"
     },
+    "runtime-rs/tests/fixtures/for-iter-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-for-iter-oracle.json",
+      "historical_sha256": "8a9c506fe8da6cb5278670a8e1eae7c5fa1e5ce63e6f71b94ec230bf37509b7e",
+      "current_sha256": "a132372f558e21d56235ffe218cc91a4a6f6b92892dd2fbde107d426cd578343"
+    },
+    "runtime-rs/tests/fixtures/for-range-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-for-range-oracle.json",
+      "historical_sha256": "3df0b80ddfbf12990730b9c3df046749b120cfaa2ebe7d61b2221656818a08c7",
+      "current_sha256": "e674a963e2d004304d8435ea28ef6f93b284ae0f2067ac9e8f6340e13e7051e4"
+    },
+    "runtime-rs/tests/fixtures/guarded-assert-arith-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-guarded-assert-arith-oracle.json",
+      "historical_sha256": "1c6fc742bb19e55ecb8caedd871df1a71c7d1f42eaab7d7cdeb728f429ad8977",
+      "current_sha256": "c3f5325c8d6855b1e3f881f81f2bbe627ae63de67468700755fe073325eacfdd"
+    },
     "runtime-rs/tests/fixtures/guarded-recording-oracle.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-guarded-recording-oracle.json",
       "historical_sha256": "564d4e6c4ad159dc93533dd788c7775d11719d9662381571d17a824aba125ee2",
@@ -491,6 +531,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-set-oracle.json",
       "current_sha256": "cb064b6b46c7709bbe7925bb9291f83f4de721b62433babaeb263727af6a31e9"
     },
+    "runtime-rs/tests/fixtures/set-size-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-set-size-oracle.json",
+      "historical_sha256": "214df98892e3c3a274664d506f4bfb63a0ea65a7acc56141474484a5af63913b",
+      "current_sha256": "ac5589bf45d82e2d66eff70288ff52155484368786dcab37c2d2f70ae210fbc2"
+    },
     "runtime-rs/tests/fixtures/struct-collision-oracle.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-struct-collision-oracle.json",
       "historical_sha256": "429c936d7036b44fc077f061012708d3de2970154fa74110d1880e94ff1578ff",
@@ -545,6 +590,11 @@
       "historical_sha256": "b84444a7548fc50c3b2b20418440c34e42546857fd0ff13fa467a4241825e7c0",
       "current": "runtime-rs/tests/fixtures/ledger9-uints-oracle.json",
       "current_sha256": "9de995ebf09e9d2661d123776fcd9b1575fb83a0fc6fee50c490fc04656c745c"
+    },
+    "runtime-rs/tests/fixtures/vector-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-vector-oracle.json",
+      "historical_sha256": "8fc6d924d7723597e92ca3b862bacaf89d4b9c32b17089180ac674c1b8170bd0",
+      "current_sha256": "9301ce009e7c971e7e7f4c1be1545bd4b89ec8c5ff94099ebbc83a76a557ef73"
     },
     "runtime-rs/tests/fixtures/widening-arith-oracle.json": {
       "historical_sha256": "002366358cf88c859185edd90a214fec8fc116efd5a28a030d7525d00d1f38a9",

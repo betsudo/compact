@@ -38,7 +38,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_oracle_constructor_for_range_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/for-range-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-for-range-oracle.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

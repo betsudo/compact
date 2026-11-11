@@ -64,7 +64,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_set_and_map_is_empty_oracle_matches_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/set-size-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-set-size-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -93,7 +93,7 @@ fn exact_set_and_map_is_empty_oracle_matches_typescript_state() {
 #[test]
 fn recorded_set_and_map_is_empty_match_native_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/set-size-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-set-size-oracle.json"
     ))
     .unwrap();
     let trace: serde_json::Value = serde_json::from_str(include_str!(

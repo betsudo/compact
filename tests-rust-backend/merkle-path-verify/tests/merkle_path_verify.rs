@@ -95,7 +95,7 @@ fn context_after_replace() -> runtime::context::CircuitContext<()> {
 #[test]
 fn witness_merkle_root_check_matches_typescript_before_and_after_replacement() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-path-verify.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-path-verify.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -112,7 +112,7 @@ fn witness_merkle_root_check_matches_typescript_before_and_after_replacement() {
 #[test]
 fn recorded_merkle_root_check_matches_native_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-path-verify.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-path-verify.json"
     ))
     .unwrap();
     for (label, expected) in [("afterAppend", true), ("afterReplace", false)] {

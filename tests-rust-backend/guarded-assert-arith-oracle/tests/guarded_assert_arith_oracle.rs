@@ -76,7 +76,7 @@ fn assertion_error<T>(result: Result<T, runtime::CompactError>, oracle: &serde_j
 #[test]
 fn exact_guarded_nested_arithmetic_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/guarded-assert-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-guarded-assert-arith-oracle.json"
     ))
     .unwrap();
     let att = attestation(100);

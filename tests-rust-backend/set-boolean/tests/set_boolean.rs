@@ -185,7 +185,7 @@ fn generated_set_contract_inserts_and_checks_membership() {
 #[test]
 fn conditional_set_actions_keep_the_selected_branch_and_following_query() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-set-actions.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-set-actions.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(()))
