@@ -260,7 +260,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         ),
     };
     let capture: Value = serde_json::from_str(capture)?;
-    let scenario = capture["scenarios"]
+    let capture_scenario = capture["scenarios"]
         .as_array()
         .unwrap()
         .iter()
@@ -327,7 +327,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
     );
     let mut checked_calls = Vec::new();
     for (number, &id) in calls.iter().enumerate() {
-        let row = scenario["steps"]
+        let row = capture_scenario["steps"]
             .as_array()
             .unwrap()
             .iter()
@@ -779,7 +779,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         }));
     }
     if matches!(lifecycle, Lifecycle::RelationSchnorr) {
-        let row = scenario["steps"]
+        let row = capture_scenario["steps"]
             .as_array()
             .unwrap()
             .iter()

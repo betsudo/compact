@@ -216,10 +216,12 @@ pub(super) fn capture_if_requested(
     write_public(&directory.join("ledger-after.bin"), &after)?;
     write_public(&directory.join("block-context.bin"), &context.block_context)?;
     let mut metadata = serde_json::json!({
-        "format": "compact-did-public-interchange/v2",
+        "format": "compact-did-public-interchange/v3",
         "scenario": scenario,
         "case": case,
-        "producer_ledger": "8.1.3",
+        "producer_ledger": "1.0.1",
+        "producer_ledger_package": "midnight-ledger-v9",
+        "call_proof_version": 3,
         "operation": operation,
         "network_id": before.network_id,
         "whitelist": null,
