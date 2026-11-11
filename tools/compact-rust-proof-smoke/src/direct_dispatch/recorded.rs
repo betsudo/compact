@@ -342,17 +342,26 @@ pub(super) fn root_let_action_return(
 
 pub(super) fn counter_less_than(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --counter-less-than <proof-output>")?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --counter-less-than-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --counter-less-than <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --counter-less-than <proof-output>".into());
+        return Err(usage.into());
+    }
+    if verify {
+        return counter_less_than::run(Path::new(&root), true);
     }
     let proof = std::thread::Builder::new()
         .name("counter-less-than-proof".into())
         .stack_size(64 * 1024 * 1024)
-        .spawn(move || counter_less_than::run(Path::new(&root)).map_err(|e| e.to_string()))?;
+        .spawn(move || {
+            counter_less_than::run(Path::new(&root), false).map_err(|e| e.to_string())
+        })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(error.into()),

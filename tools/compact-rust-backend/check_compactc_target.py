@@ -1324,17 +1324,12 @@ def main() -> None:
             recording_checks.prove_effectful_return(
                 compiler, EFFECTFUL_RETURN_SOURCE, base / "effectful-return-proof", run=run,
             )
-            counter_less_than_proof = base / "counter-less-than-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/counter_less_than_oracle.compact"), str(counter_less_than_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--counter-less-than", str(counter_less_than_proof))
-            literal_bytes_field_proof = base / "literal-bytes-field-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/literal_bytes_field_oracle.compact"),
-                str(literal_bytes_field_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--literal-bytes-field", str(literal_bytes_field_proof))
+            scalar_checks.check_counter_less_than(
+                compiler, base, root=ROOT, proof_requested=True, run=run,
+            )
+            scalar_checks.prove_literal_bytes_field(
+                compiler, base / "literal-bytes-field-proof", root=ROOT, run=run,
+            )
             cell_read_proof = base / "cell-read-proof"
             run(compiler, "--target", "rust", str(CELL_READ_SOURCE), str(cell_read_proof))
             check_manifest(cell_read_proof)

@@ -15,36 +15,69 @@
 
 //! Prove an explicit Counter lessThan query without changing the VM transcript.
 
+use super::kernel_shielded_effects::InputMutation;
+use super::local_v3_application as v3;
 use super::*;
 use compact_rust_counter_less_than_oracle_fixture::ledger_contract as contract;
+use midnight_compact_runtime::transaction::RecordedCall;
 
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    for value in [3_u64, 4] {
-        prove_case(root, value)?;
+const CIRCUIT: &str = "compare";
+const CASES: [(u64, u64, &str); 2] = [(3, 4, "compare-equal"), (4, 3, "compare-above")];
+const RETAINED_IR: &str =
+    include_str!("../../compact-rust-backend/tests/counter-less-than-schema15-ir.json");
+
+pub(super) fn run(root: &Path, verify: bool) -> Result<(), Box<dyn Error>> {
+    // The current compiler emits the same contract in schema 20. Keep the
+    // schema-15 fixture for its original tests and compare every current field.
+    let mut expected: serde_json::Value = serde_json::from_str(RETAINED_IR)?;
+    if expected["schema_version"] != 15 {
+        return Err("unexpected Counter lessThan retained IR schema".into());
+    }
+    expected["schema_version"] = 20.into();
+    let actual: serde_json::Value =
+        serde_json::from_reader(File::open(root.join("contract/compact-rust-ir.json"))?)?;
+    if actual != expected {
+        return Err("Counter lessThan source/proof IR mismatch".into());
+    }
+    let (ir, verifier, operation) = v3::operation(root, CIRCUIT, 7)?;
+    if ir.model().rows() != 78 {
+        return Err("Counter lessThan v3 row count differs".into());
+    }
+    if verify {
+        for (_, _, stem) in CASES {
+            v3::verify_standalone(root, stem, &verifier)?;
+            println!("{stem}: separate v3 verification passed and corrupted proof was refused");
+        }
+        return Ok(());
+    }
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("Counter lessThan proof requires local proving".into());
+    }
+    for (value, changed_value, stem) in CASES {
+        prove_case(
+            root,
+            value,
+            changed_value,
+            stem,
+            &verifier,
+            operation.clone(),
+        )?;
     }
     Ok(())
 }
-fn prove_case(root: &Path, value: u64) -> Result<(), Box<dyn Error>> {
-    const CIRCUIT: &str = "compare";
+
+fn prove_case(
+    root: &Path,
+    value: u64,
+    changed_value: u64,
+    stem: &str,
+    verifier: &VerifierKey,
+    operation: ContractOperation,
+) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x4144_5231_3731 + value);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(
-        root,
-        CIRCUIT,
-        initial.ledger_state.get_ref().clone(),
-        &mut rng,
-    )?;
-    let threshold = BoundedUint::<18446744073709551615>::new(value as u128)?;
-    let recorded =
-        contract::recorded::compare(initial.into_circuit_context(deploy.address()), threshold)?;
-    if recorded.execution.result != (value > 3)
-        || !recorded.execution.private_transcript_outputs.is_empty()
-    {
-        return Err("Counter lessThan recorded result or private transcript changed".into());
-    }
-    let expected_state = recorded.execution.context.query.state.get_ref().clone();
-    let manual = check_generated_trace(root, CIRCUIT, recorded, threshold)?;
-
+    let expected_state = initial.ledger_state.get_ref().clone();
+    let deploy = v3::deploy(expected_state.clone(), CIRCUIT, operation, &mut rng);
     let observed = ObservedContractState::new(
         deploy.address(),
         deploy.initial_state.clone(),
@@ -54,24 +87,47 @@ fn prove_case(root: &Path, value: u64) -> Result<(), Box<dyn Error>> {
             block_height: 0,
         },
     );
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/compare.verifier"),
-    )?))?;
+    let threshold = BoundedUint::<18446744073709551615>::new(value as u128)?;
+    let native = contract::compare(observed.circuit_context(()), threshold)?;
+    let recorded = contract::recorded::compare(observed.circuit_context(()), threshold)?;
+    if native.result != (value > 3)
+        || recorded.execution.result != native.result
+        || !native.private_transcript_outputs.is_empty()
+        || !recorded.execution.private_transcript_outputs.is_empty()
+        || native.context.query.state.get_ref() != &expected_state
+        || recorded.execution.context.query.state != native.context.query.state
+        || recorded.execution.context.query.effects != native.context.query.effects
+        || recorded.execution.gas_cost != native.gas_cost
+        || read_cell_at_path::<u64, _>(&expected_state, &[0])? != 3
+    {
+        return Err("Counter lessThan native and recorded execution differs".into());
+    }
+    let randomness = Fr::from(0_u64);
+    let manual = RecordedCall::new(&observed, recorded, CIRCUIT, threshold)
+        .prepare(verifier.clone(), randomness)?;
     let typed = contract::recorded::Contract.compare_call(&observed, (), threshold)?;
-    let prepared = typed.prepare(verifier, Fr::from(0_u64))?;
+    let prepared = typed.prepare(verifier.clone(), randomness)?;
     if format!("{manual:?}") != format!("{prepared:?}") {
         return Err("Counter lessThan observed call differs from direct recording".into());
     }
 
-    check_transaction(root, CIRCUIT, deploy, prepared, &mut rng, |state| {
-        if state.data.get_ref() != &expected_state {
-            return Err("Counter lessThan proof changed Cell state".into());
-        }
-        if read_cell_at_path::<u64, _>(state.data.get_ref(), &[0])? != 3 {
-            return Err("Counter lessThan proof observed the wrong Cell".into());
-        }
-        Ok(())
-    })?;
-    println!("Counter lessThan compare proved and applied through ledger-8");
+    let other = BoundedUint::<18446744073709551615>::new(changed_value as u128)?;
+    let proof = v3::prove_standalone(
+        root,
+        CIRCUIT,
+        stem,
+        &prepared,
+        verifier,
+        Some(InputMutation::Used(other.into())),
+    )?;
+    v3::apply_after_deployment(
+        root,
+        CIRCUIT,
+        stem,
+        prepared,
+        deploy,
+        &expected_state,
+        &proof,
+    )?;
     Ok(())
 }

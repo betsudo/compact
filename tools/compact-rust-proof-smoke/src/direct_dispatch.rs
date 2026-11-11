@@ -559,10 +559,12 @@ pub(super) fn try_run(
         ("--unused-field-reads", _) => Some(expressions::unused_field_reads(arguments)),
         ("--let-return", _) => Some(expressions::let_return(arguments)),
         ("--field-to-bytes32", _) => Some(expressions::field_to_bytes32(arguments)),
-        ("--literal-bytes-field", _) => Some(expressions::literal_bytes_field(arguments)),
-        ("--literal-bytes-field-strict", _) => {
-            Some(expressions::literal_bytes_field_strict(arguments))
-        }
+        (
+            "--literal-bytes-field"
+            | "--literal-bytes-field-strict"
+            | "--literal-bytes-field-verify",
+            _,
+        ) => Some(expressions::literal_bytes_field(arguments, selector)),
         ("--coracle-start", _) => Some(contracts::coracle_start(arguments)),
         ("--coracle-concede", _) => Some(contracts::coracle_concede(arguments)),
         ("--coracle-withdraw", _) => Some(contracts::coracle_withdraw(arguments)),
@@ -653,7 +655,8 @@ pub(super) fn try_run(
         ("--root-let-action-return-verify", _) => {
             Some(recorded::root_let_action_return(arguments, true))
         }
-        ("--counter-less-than", _) => Some(recorded::counter_less_than(arguments)),
+        ("--counter-less-than", _) => Some(recorded::counter_less_than(arguments, false)),
+        ("--counter-less-than-verify", _) => Some(recorded::counter_less_than(arguments, true)),
         ("--pair-hash-cell", _) => Some(recorded::pair_hash_cell(arguments)),
         ("--stateful-pair-hash", _) => Some(recorded::stateful_pair_hash(arguments)),
         ("--boolean-pair-assert", _) => Some(expressions::boolean_pair_assert(arguments)),

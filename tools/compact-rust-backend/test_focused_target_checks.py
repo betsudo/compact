@@ -215,24 +215,49 @@ class FocusedTargetChecks(unittest.TestCase):
                     {"cwd": Path("repo"), "capture_output": True, "text": True})])
 
     def test_scalar_counter_ir_must_contain_both_read_and_comparison(self):
-        for comparison in (False, True):
-            with self.subTest(comparison=comparison), tempfile.TemporaryDirectory() as tmp:
+        for comparison, matching in ((False, True), (True, False), (True, True)):
+            with self.subTest(comparison=comparison, matching=matching), tempfile.TemporaryDirectory() as tmp:
                 base = Path(tmp)
+                root = base / "repo"
+                retained = root / "tools/compact-rust-backend/tests/counter-less-than-schema15-ir.json"
+                retained.parent.mkdir(parents=True)
+                retained.write_text(json.dumps({
+                    "schema_version": 15, "kind": "counter_read",
+                    "child": {"kind": "counter_less_than"},
+                }))
                 events = []
                 ir = {"schema_version": 20, "kind": "counter_read"}
                 if comparison:
                     ir["child"] = {"kind": "counter_less_than"}
+                if not matching:
+                    ir["changed"] = True
                 run = self.compiler(events, ["compare", "nested", "short_circuit", "checked"], ir=ir)
+                def invoke():
+                    scalar_checks.check_counter_less_than("compiler-under-test", base,
+                        root=root, proof_requested=True, run=run)
                 with redirect_stdout(io.StringIO()):
-                    if comparison:
-                        scalar_checks.check_counter_less_than("compiler-under-test", base,
-                            root=Path("repo"), proof_requested=True, run=run)
-                    else:
+                    if not comparison:
                         with self.assertRaises(AssertionError):
-                            scalar_checks.check_counter_less_than("compiler-under-test", base,
-                                root=Path("repo"), proof_requested=True, run=run)
-                self.assertEqual(len(events), 2 if comparison else 1)
-                self.assertNotIn("--skip-zk", events[0])
+                            invoke()
+                    elif not matching:
+                        with self.assertRaisesRegex(ValueError, "source IR differs"):
+                            invoke()
+                    else:
+                        invoke()
+                output = base / "counter-less-than"
+                self.assertIn("--skip-zk", events[0])
+                if comparison and matching:
+                    self.assertEqual(events[1:], [
+                        ("zkir-v3", "compile", str(output / "zkir/compare.zkir"),
+                         str(output / "keys/compare.prover"), str(output / "keys/compare.verifier")),
+                        ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                         "--counter-less-than", str(output)),
+                        ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                         "--counter-less-than-verify", str(output)),
+                    ])
+                else:
+                    self.assertEqual(len(events), 1)
+                    self.assertFalse((output / "keys").exists())
 
 
 if __name__ == "__main__":
