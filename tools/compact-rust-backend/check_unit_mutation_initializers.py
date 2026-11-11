@@ -130,7 +130,7 @@ def main():
     try:
         require_clean_source(report)
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         runtime = args.ts_runtime.resolve(strict=True)
@@ -193,7 +193,7 @@ def main():
                 destination = output / f"{name}-{target}-source"
                 command = [compiler, "--target", target, "--skip-zk"]
                 if target == "rust":
-                    command += ["--rust-functional-ledger8", "--rust-runtime-root", ROOT]
+                    command += ["--rust-functional-ledger9", "--rust-runtime-root", ROOT]
                 run(f"{name}-{target}-source", [*command, source, destination])
                 entry = destination / "contract" / ("index.js" if target == "ts" else "lib.rs")
                 if not entry.is_file() or not entry.stat().st_size:

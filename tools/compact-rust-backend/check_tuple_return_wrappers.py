@@ -93,7 +93,7 @@ def main():
 
     try:
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         if args.ts_runtime:
