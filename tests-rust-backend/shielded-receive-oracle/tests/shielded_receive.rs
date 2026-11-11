@@ -47,14 +47,19 @@ fn initial(row: &Value) -> CircuitContext<()> {
 }
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/shielded-receive-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-shielded-receive-oracle.json"
     ))
     .unwrap()
 }
 
 #[test]
 fn unchanged_receive_matches_typescript_native_recorded_and_replay() {
-    for row in fixture()["rows"].as_array().unwrap() {
+    let data = fixture();
+    let rows = data["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 5);
+    assert_eq!(rows[3]["value"], (1_u128 << 64).to_string());
+    assert_eq!(rows[4]["value"], u128::MAX.to_string());
+    for row in rows {
         let invoke = |context, coin| match row["name"].as_str().unwrap() {
             "accept" => ledger_contract::accept(context, coin),
             "accept_renamed" => ledger_contract::accept_renamed(context, coin),
@@ -187,8 +192,11 @@ fn unchanged_receive_matches_typescript_native_recorded_and_replay() {
 }
 
 #[test]
-fn wide_coin_values_preserve_ledger_u128_despite_typescript_intent_limit() {
-    let data = fixture();
+fn historical_typescript_b8_refusals_preserve_canonical_commitments() {
+    let data: Value = serde_json::from_str(include_str!(
+        "../../../runtime-rs/tests/fixtures/shielded-receive-oracle.json"
+    ))
+    .unwrap();
     for row in data["overRuntimeLimit"].as_array().unwrap() {
         assert_eq!(row["rejected"], true);
         assert!(row["message"].as_str().unwrap().contains("b32b32b8"));
@@ -217,5 +225,30 @@ fn wide_coin_values_preserve_ledger_u128_despite_typescript_intent_limit() {
                 .get(&commitment),
             Some(&13)
         );
+    }
+}
+
+#[test]
+fn ledger9_typescript_refuses_values_outside_u128_before_mutation() {
+    let data = fixture();
+    let refusals = data["overRuntimeLimit"].as_array().unwrap();
+    assert_eq!(refusals.len(), 2);
+    assert_eq!(
+        refusals[0]["value"],
+        "340282366920938463463374607431768211456"
+    );
+    assert_eq!(refusals[1]["value"], "-1");
+    for row in refusals {
+        assert_eq!(row["rejected"], true);
+        assert!(
+            row["message"]
+                .as_str()
+                .unwrap()
+                .starts_with("type error: accept argument 1")
+        );
+        assert_eq!(row["before"], row["after"]);
+        assert_eq!(row["start"], row["end"]);
+        assert_eq!(row["queryCount"], 0);
+        assert_eq!(row["outputCount"], 0);
     }
 }
