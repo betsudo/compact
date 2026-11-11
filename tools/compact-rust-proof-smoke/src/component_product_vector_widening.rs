@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Fourteen actual in-cap calls from two complete, unedited source SDKs.
-//! The unselected branch and original direct export remain outside proof scope.
+//! The original direct export remains outside the k8 proof scope.
 use super::{local_v3_application as v3, *};
 use compact_rust_component_product_vector_family_sdk as family;
 use compact_rust_component_product_vector_original_sdk as original;
@@ -37,6 +37,7 @@ const SELECTED: &[(&str, &str, &str, u64)] = &[
     ("family", "tuple_single", "tuple_single", 13),
     ("family", "field_identity", "field_identity", 14),
     ("family", "empty_leaf", "empty_leaf", 15),
+    ("family", "branch", "branch_left", 7),
 ];
 const FAMILY_IR: &[u8] = include_bytes!(
     "../../compact-rust-backend/tests/component_product_vector_widening/proof-goldens/family/source-ir.json"
@@ -194,7 +195,7 @@ fn selected_models(pool: &Path) -> Result<Vec<serde_json::Value>, Box<dyn Error>
         .collect()
 }
 fn tiny_bound(rows: &[serde_json::Value]) -> Result<(), Box<dyn Error>> {
-    if rows.len() != 14 || rows.iter().any(|r| r["k"].as_u64().is_none_or(|k| k > 8)) {
+    if rows.len() != SELECTED.len() || rows.iter().any(|r| r["k"].as_u64().is_none_or(|k| k > 8)) {
         return Err("component-product-vector model exceeds tiny automatic k<=8".into());
     }
     Ok(())
@@ -327,7 +328,7 @@ fn changed_output(source: &str, name: &str) -> Result<Option<AlignedValue>, Box<
         (
             "family",
             "parameter" | "helper" | "local" | "checked_helper" | "witness_before"
-            | "witness_after",
+            | "witness_after" | "branch",
         ) => wide(4, 128, 255, 65535).into(),
         ("family", "deep") => deep_output(4).into(),
         ("family", "boolean_field") => boolean_output(254).into(),
@@ -686,6 +687,14 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
                 field_output(0),
                 FieldIdentityOutput
             ),
+            ("family", "branch") => plain!(
+                family,
+                branch,
+                branch_call,
+                [true, narrow(3, 128, 255, 65535), narrow(17, 255, 0, 65534)],
+                wide(3, 128, 255, 65535),
+                Wide
+            ),
             ("family", "empty_leaf") => plain!(
                 family,
                 empty_leaf,
@@ -738,7 +747,7 @@ pub(super) fn run(pool: &Path, ts: &Path) -> Result<(), Box<dyn Error>> {
    "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,"positive_fee_dust_spends":1,
    "standalone_proof":format!("{source}/component-product-vector-{index}.proof"),"applied_transaction":format!("{source}/component-product-vector-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","changed_binding_rejected":true,"changed_result_rejected":if result_applicable{Some(true)}else{None},"changed_result_same_geometry":if result_applicable{Some(true)}else{None},"result_negative_applicability":if result_applicable{"applicable_nonempty_result"}else{"inapplicable_unique_empty_carrier"},"changed_cell_write_preimage_rejected":true,"changed_preimage_rejected":if result_applicable{Some(true)}else{None},"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-component-product-vector-proof/v2","status":"passed","scope":"14 selected exports of the complete 16-export corpus, one typed call each; branch and original direct exports remain unproved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":SELECTED.iter().map(|(s,n,_,_)|[s,n]).collect::<Vec<_>>(),"unproved_selected_source_exports":[],"calls":rows});
+    let result = serde_json::json!({"format":"compact-component-product-vector-proof/v2","status":"passed","scope":"15 in-cap exports of the complete 16-export corpus, one typed call each; original direct export remains unproved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":SELECTED.iter().map(|(s,n,_,_)|[s,n]).collect::<Vec<_>>(),"unproved_selected_source_exports":[],"calls":rows});
     write_new(
         pool.join("component-product-vector-proof-result.json"),
         &serde_json::to_vec_pretty(&result)?,

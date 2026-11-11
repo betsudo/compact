@@ -1698,7 +1698,7 @@ jobs:
           cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
-      - name: Qualify component-product Vector APIs and fourteen selected proofs
+      - name: Qualify component-product Vector APIs and fifteen selected proofs
         id: component_product_vector
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"

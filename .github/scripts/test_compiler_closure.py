@@ -514,10 +514,10 @@ class CompilerFanoutTests(unittest.TestCase):
 
 
 class NestedProductWiringTests(unittest.TestCase):
-    def test_component_vector_gate_requires_all_fourteen_proofs_and_parameters(self):
+    def test_component_vector_gate_requires_all_fifteen_proofs_and_parameters(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         linux = workflow.split('  component-vector-proof:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
-        before, step = linux.split('      - name: Qualify component-product Vector APIs and fourteen selected proofs\n', 1)
+        before, step = linux.split('      - name: Qualify component-product Vector APIs and fifteen selected proofs\n', 1)
         step = step.split('      - name: Retain failed component-product Vector diagnostics', 1)[0]
         material = before.split('      - name: Prepare verified built-in proof material\n', 1)[1].split('      - name:', 1)[0]
         for k in (5, 6, 7, 8):
@@ -578,9 +578,9 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build, constructor-vector]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
-        self.assertNotIn('Qualify component-product Vector APIs and fourteen selected proofs', main)
+        self.assertNotIn('Qualify component-product Vector APIs and fifteen selected proofs', main)
         product = workflow.split('  component-vector-proof:\n', 1)[1].split('  outer-vector-proof:\n', 1)[0]
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', product)
+        self.assertIn('Qualify component-product Vector APIs and fifteen selected proofs', product)
         self.assertIn('Qualify constant vector projection proofs', main)
 
     def test_outer_vector_literal_shell_forwards_tools_and_stops_on_failures(self):
@@ -710,7 +710,7 @@ if stage == 'zkir': print('/mock/zkir-v3-package')
         legacy=workflow.split('  build:\n',1)[1].split('  product-proofs:\n',1)[0]
         self.assertNotIn('constructor_vector_proof', legacy)
         self.assertIn('Qualify isolated witnessed functional SDK',legacy)
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
+        self.assertIn('Qualify component-product Vector APIs and fifteen selected proofs',workflow)
         self.assertIn('Qualify wide-zero multiplication proofs',legacy)
 
     def constructor_equality_step(self):
@@ -807,7 +807,7 @@ if stage == 'zkir': print('/mock/zkir-v3-package')
         self.assertIn('${{ runner.temp }}/compact-constructor-equality-proof/',upload)
         self.assertIn('!${{ runner.temp }}/compact-constructor-equality-proof/**/cargo-target/**',upload)
         self.assertLess(linux.index('Retain constructor equality proof diagnostics'),linux.index('Qualify isolated witnessed functional SDK'))
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs',workflow)
+        self.assertIn('Qualify component-product Vector APIs and fifteen selected proofs',workflow)
         self.assertIn('Qualify wide-zero multiplication proofs',linux)
 
     def test_source_map_gate_is_required_and_retains_publication_evidence(self):
@@ -826,7 +826,7 @@ if stage == 'zkir': print('/mock/zkir-v3-package')
         self.assertIn('test "$GENERATED_API_RESULT" = success', workflow)
         self.assertIn('path: ${{ runner.temp }}/compact-source-map-diagnostics.tar.gz', upload)
         self.assertNotIn('compact-source-map-publication/', upload)
-        self.assertIn('Qualify component-product Vector APIs and fourteen selected proofs', workflow)
+        self.assertIn('Qualify component-product Vector APIs and fifteen selected proofs', workflow)
 
     def test_required_compiler_status_fails_closed_for_every_dependency_outcome(self):
         import itertools

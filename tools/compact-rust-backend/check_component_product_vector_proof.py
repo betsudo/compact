@@ -41,7 +41,7 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 ROOT = main_gate.ROOT
 SELECTED = [("original_nested", "run")] + [("family", name) for name in [
     "parameter", "helper", "local", "checked_helper", "witness_before", "witness_after", "deep", "boolean_field",
-    "empty", "tuple_empty", "tuple_single", "field_identity", "empty_leaf"]]
+    "empty", "tuple_empty", "tuple_single", "field_identity", "empty_leaf", "branch"]]
 SELECTED_SOURCES = ["family", "original_nested"]
 SDK_PACKAGES = {
     "family": ("component-product-vector-family-sdk", "compact_rust_component_product_vector_family_sdk", 14),
@@ -134,7 +134,7 @@ def validate_summary(summary, generated):
     require(summary["selected_source_exports_proved"] == list(map(list, SELECTED))
             and summary["unproved_selected_source_exports"] == [], "selected export coverage differs")
     require([(r["source"], r["circuit"]) for r in summary["calls"]] == SELECTED, "scenario roster differs")
-    seen = [1,1,2,3,4,5,6,9,10,11,12,13,14,15]
+    seen = [1,1,2,3,4,5,6,9,10,11,12,13,14,15,7]
     for index, row in enumerate(summary["calls"]):
         source, name = SELECTED[index]
         root = generated / source
@@ -475,7 +475,7 @@ def run(args):
                 and [{k: r[k] for k in ["source", "circuit", "k", "rows", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
                 "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
         require(inventory(full_generated) == full_before, "model observation changed producers")
-        require(len(SELECTED) == len(set(SELECTED)) == 14 and set(SELECTED) == {
+        require(len(SELECTED) == len(set(SELECTED)) == 15 and set(SELECTED) == {
             (r["source"], r["circuit"]) for r in full_models["circuits"] if r["proof_required"] and r["k"] <= 8
         }, "selected cohort must retain every actual in-cap export")
         report["all_source_models"] = full_models
@@ -490,7 +490,7 @@ def run(args):
                          if (x["source"],x["circuit"]) == (r["source"],r["circuit"])) == (r["k"], r["rows"])
                 and r["selected_for_proof"] is True for r in models["circuits"]), "selected/full models disagree")
         selected_models = models["circuits"]
-        require(len(selected_models) == 14 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models), "selected model exceeds tiny bound")
+        require(len(selected_models) == len(SELECTED) and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models), "selected model exceeds tiny bound")
         report["models"] = models
         # Private diagnostic: an existing intact over-limit model exercises the
         # selected-model guard, without changing original source or proof inputs.
@@ -625,7 +625,7 @@ def run(args):
             report["transaction_artifacts_present"] = len(actual_transactions)
             report["completed_proof_artifact_hashes"] = hashes(actual_proofs + bound_proofs + actual_transactions + paths)
             report["proof_execution"] = bool(reports["proof-started"]) or report.get("proof_execution", False)
-            if report.get("status") == "passed" and (invalid or any(len(rows) != 14 for rows in reports.values())):
+            if report.get("status") == "passed" and (invalid or any(len(rows) != len(SELECTED) for rows in reports.values())):
                 report["status"] = "failed"
                 report["error"] = "full result lacks completed actual runtime stages"
         (output / "receipt.json").write_text(json.dumps(report, indent=2) + "\n")
