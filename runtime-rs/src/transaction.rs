@@ -25,12 +25,11 @@ use std::error::Error;
 use std::fmt;
 
 use midnight_base_crypto::fab::AlignedValue;
-use midnight_base_crypto::signatures::Signature;
 use midnight_base_crypto::time::Timestamp;
 use midnight_coin_structure::coin::Commitment;
 use midnight_ledger::construct::{ContractCallPrototype, PreTranscript, partition_transcripts};
 use midnight_ledger::structure::{
-    INITIAL_PARAMETERS, Intent, LedgerState, ProofPreimageMarker, Transaction,
+    INITIAL_PARAMETERS, Intent, LedgerState, ProofPreimageMarker, Signature, Transaction,
 };
 use midnight_onchain_state::state::{ContractOperation, EntryPointBuf};
 use midnight_storage::storage::{HashMap, Map};
@@ -755,7 +754,7 @@ impl Error for ObservedCallError {}
 
 impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, Output, D> {
     /// Check the observed state and installed verifier, then replay and
-    /// partition the trace through the ordinary ledger-8 call adapter.
+    /// partition the trace through the ledger call adapter.
     pub fn prepare(
         self,
         verifier: VerifierKey,
@@ -793,7 +792,7 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
                 self.entry_point.to_owned(),
             ));
         }
-        prepare_call_inner(
+        let mut prepared = prepare_call_inner(
             self.recorded,
             CallSpec::new(
                 self.entry_point,
@@ -803,7 +802,11 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
             ),
             offer_bound,
         )
-        .map_err(ObservedCallError::Prepare)
+        .map_err(ObservedCallError::Prepare)?;
+        // Keep the IR and verifier roles from the operation selected by the
+        // observed state. The verifier-only fixture path has no such state.
+        prepared.op = (*operation).clone();
+        Ok(prepared)
     }
 }
 
@@ -988,7 +991,7 @@ fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
     Ok(ContractCallPrototype {
         address,
         entry_point: EntryPointBuf(spec.entry_point.as_bytes().to_vec()),
-        op: ContractOperation::new(Some(spec.verifier_key)),
+        op: ContractOperation::new(Some(spec.verifier_key), None),
         guaranteed_public_transcript: guaranteed,
         fallible_public_transcript: fallible,
         private_transcript_outputs: recorded.execution.private_transcript_outputs,

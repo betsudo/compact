@@ -226,7 +226,7 @@ mod tests {
         let verifier: VerifierKey = rng.r#gen();
         bound.observed.contract.operations = bound.observed.contract.operations.insert(
             EntryPointBuf(b"placement".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
         let empty = RecordingFrame::new(bound.observed().circuit_context(()))
             .kernel_self()

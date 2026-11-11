@@ -325,7 +325,8 @@ fn fallible_funded(
     let wc = w.coin_com;
     let seed = Offer::new(vec![], vec![h, w], vec![]).unwrap();
     let (state, indices) = ledger.zswap.try_apply(&seed, None).unwrap();
-    ledger.zswap = Sp::new(state.post_block_update(Timestamp::from_secs(0)));
+    ledger.zswap =
+        Sp::new(state.post_block_update(Timestamp::from_secs(0), ledger.parameters.global_ttl));
     assert_eq!(ledger.zswap.first_free, 2);
     let history = history.qualify(*indices.get(&hc).unwrap());
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()

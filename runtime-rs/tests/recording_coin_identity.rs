@@ -153,7 +153,7 @@ mod preparation {
     fn observed(key: Option<u8>, verifier: &VerifierKey) -> ObservedContractState {
         let operations = midnight_storage::storage::HashMap::new().insert(
             EntryPointBuf(b"identity".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
         let contract = ContractState::new(
             context().query.state.get_ref().clone(),

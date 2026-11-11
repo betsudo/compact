@@ -26,7 +26,7 @@ fn state_hex(fields: Vec<StateValue<DefaultDB>>, entry_point: &str) -> String {
     let mut operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
     operations = operations.insert(
         EntryPointBuf(entry_point.as_bytes().to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state = ContractState::new(
         StateValue::Array(fields.into()),
@@ -45,21 +45,21 @@ fn reference_hex(json: &str) -> String {
 
 #[test]
 fn set_constructor_matches_typescript_oracle_bytes() {
-    let expected = reference_hex(include_str!("fixtures/set-ts-initial-state.json"));
+    let expected = reference_hex(include_str!("fixtures/ledger9-set-initial.json"));
     let actual = state_hex(vec![constructor_cell(false), constructor_set()], "check");
     assert_eq!(actual, expected);
 }
 
 #[test]
 fn map_constructor_matches_typescript_oracle_bytes() {
-    let expected = reference_hex(include_str!("fixtures/map-ts-initial-state.json"));
+    let expected = reference_hex(include_str!("fixtures/ledger9-map-initial.json"));
     let actual = state_hex(vec![constructor_map()], "put");
     assert_eq!(actual, expected);
 }
 
 #[test]
 fn list_constructor_matches_typescript_oracle_bytes() {
-    let expected = reference_hex(include_str!("fixtures/list-ts-initial-state.json"));
+    let expected = reference_hex(include_str!("fixtures/ledger9-list-initial.json"));
     let actual = state_hex(vec![constructor_cell(false), constructor_list()], "ping");
     assert_eq!(actual, expected);
 }

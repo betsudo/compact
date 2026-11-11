@@ -62,17 +62,17 @@ pub mod fab {
 
 /// Increment when generated Rust and the runtime's public contract change.
 pub const RUST_RUNTIME_ABI: u32 = 53;
-/// The ledger line selected by this Compact branch's `flake.nix`.
-pub const LEDGER_VERSION: &str = "ledger-8.1.3";
+/// Ledger version used by the native Rust runtime dependencies.
+pub const LEDGER_VERSION: &str = "ledger-9.1.0.1";
 
-/// Compact `Field` is the scalar field used by the ledger-8 circuit runtime.
+/// Compact `Field` is the scalar field used by the Midnight circuit runtime.
 pub use midnight_transient_crypto::curve::Fr;
 pub use midnight_transient_crypto::curve::Fr as Field;
 
 pub use midnight_base_crypto::repr::BinaryHashRepr;
 /// Required by the ledger derives in their generated implementation.
 pub use midnight_base_crypto::repr::MemWrite;
-/// Reuse ledger-8's field representation traits and derives for user structs.
+/// Reuse the ledger's field representation traits and derives for user structs.
 pub use midnight_transient_crypto::repr::{FieldRepr, FromFieldRepr};
 
 /// Errors raised while evaluating a Compact circuit.
