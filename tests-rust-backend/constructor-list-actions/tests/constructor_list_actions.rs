@@ -27,7 +27,13 @@ use midnight_storage::storage::HashMap;
 
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let mut operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
-    for name in ["item_count", "history_count"] {
+    for name in [
+        "item_count",
+        "history_count",
+        "first_item",
+        "drop_first",
+        "clear_items",
+    ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
             ContractOperation::new(None, None),
