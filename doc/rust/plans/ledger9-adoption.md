@@ -677,6 +677,26 @@ strictness. A distinct 3,824-byte transaction-bound v3 proof applied
 the call to that state under default strictness. Exact replay returned
 `IntentAlreadyExists` with byte-identical ledger state.
 
-The full workspace behavior and core compiler proof gates still need
-their exact-head reruns. The other named proof scenarios and required
-integration lanes remain open.
+The Rust 1.99 workspace library and test run at `5d037d219` passed
+3,428 tests across 733 targets, with seven ignored. The installer was
+excluded. The accompanying proof-runner Clippy check found a redundant
+dereference in the root Let deployment check, corrected at `dee637ef3`.
+The core compiler gate passed the root Let proof and then stopped at
+the composite-return fixture's v2 proof reader.
+
+The port at `02141a85d` binds the full retained Rust IR and generates
+fresh v3 keys for `snapshot`, `reverse`, and `nested`. The modeled
+circuits are k7/119 rows, k7/113 rows, and k8/131 rows respectively.
+The native, recorded, and observed routes agree on the results and
+witness order. The empty `snapshot(false)` call still refuses
+preparation with `EmptyTranscript`. Each standalone proof verifies in
+a separate process and refuses corrupted bytes and a changed binding.
+The `snapshot` proof also refuses a changed Boolean input. Each case
+deploys the exact operation and applies a separately proved, funded
+call under default strictness. The three reads preserve contract state,
+and exact replay returns `IntentAlreadyExists` with byte-identical
+ledger state. Ledger 9 proof qualification for the k10 `planned`
+circuit remains open in the separate composite Zswap scenario.
+
+Exact-head core and integration qualification remains open. The
+local test results here are from macOS arm64.
