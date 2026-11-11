@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Focused laws for the existing approved two-epoch Rust provenance contract."""
 import copy
 import json
@@ -8,6 +24,17 @@ import unittest
 
 import local_parity_gate as common
 import reviewed_rust_capture as reviewed
+
+# These four inputs changed during the Ledger 9 port. Keep the Ledger 8
+# originals from 09c75e289 so the historical contract also runs in shallow
+# checkouts. The original binding and capture still authenticate their bytes.
+LEGACY_INPUTS = Path(__file__).with_name("tests") / "reviewed_rust_capture" / "ledger8"
+LEGACY_FILES = {
+    "runtime/src/built-ins.ts",
+    "runtime/src/compact-types.ts",
+    "tests-rust-backend/did-point-digest-reducer/lib.rs",
+    "tests-rust-backend/did-alias-guard-reducer/lib.rs",
+}
 
 
 class ReviewedCaptureTests(unittest.TestCase):
@@ -28,7 +55,8 @@ class ReviewedCaptureTests(unittest.TestCase):
         for name in paths:
             destination = self.root/name
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(common.ROOT/name, destination)
+            source = LEGACY_INPUTS / f"{name}.txt" if name in LEGACY_FILES else common.ROOT / name
+            shutil.copyfile(source, destination)
         self.fresh = copy.deepcopy(self.retained)
         replacements = {row['path']: row['current_sha256'] for row in self.binding['replacements']}
         for row in self.fresh['provenance']:
