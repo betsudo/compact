@@ -67,6 +67,8 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                 '328f4facdc1669b29d91d51aeff64d8d7def93fe6fa2bc67b22e3622adfb26ce',
             'tests-rust-backend/kernel-shielded-effects-oracle/lib.rs':
                 '17d3ab2c3fca08c4a4409a76ddb35fb989663cc878422640decc47119bf3ad8a',
+            'tests-rust-backend/shielded-receive-oracle/lib.rs':
+                'fe141c7696554d7fc7ee0bb072b28eae86d88cfd7972655a521500aef28db65d',
             'tests-rust-backend/test-center-micro-dao/lib.rs':
                 '561fec5d8db45fbd2f27320daf9f3b2163179482a5d9e4bd723f1329c10f856d',
         }

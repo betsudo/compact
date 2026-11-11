@@ -3099,7 +3099,7 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/shielded-receive-oracle/Cargo.toml": "e5d48e5e2154b363ddaf4cd62d52f6d3aa22db6094593fd5f9d02726235b4a66",
-        "tests-rust-backend/shielded-receive-oracle/lib.rs": "8bbd50d1a158a41b19b8b57dec8a8a38b57a10e9218911f9ed26da91b8cea349",
+        "tests-rust-backend/shielded-receive-oracle/lib.rs": "fe141c7696554d7fc7ee0bb072b28eae86d88cfd7972655a521500aef28db65d",
         "tests-rust-backend/shielded-receive-oracle/build.rs": "5fc7a5f6277a9b8981c137f9c1050dc89c7d1f2a145256b79d361c99a3d09262"
       }
     },
