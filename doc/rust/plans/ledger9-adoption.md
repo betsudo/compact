@@ -226,7 +226,30 @@ generated library alongside the two historical TypeScript profiles. The
 Passport fixture passed all 20 tests on macOS arm64. The original contract
 exports only pure circuits.
 
-The required standalone Passport SDK checker still pins Ledger 8.1.3. Port
-that checker and qualify the isolated generated consumer and documented
-crate. The full behavioral workspace suite, remaining proof consumers and
-required Linux integration lanes also remain open.
+The maintained standalone Passport SDK gate passed on macOS arm64 at
+`8c69103b3`. It binds the published Ledger 9 registry lock identity and
+the resolved Onchain Runtime 4.0.1 JavaScript and WASM. The raw generated
+SDK, isolated adoption consumer and documented consumer passed strict
+Clippy. The adoption and guide consumers passed 18 Rust methods in total.
+All 202 live TypeScript cases matched both the historical upstream capture
+and the reviewed Ledger 9 capture. Both correct-type twins compiled, both
+typed misuse cases refused at the intended E0308 spans, and a changed
+TypeScript expectation failed the actual Rust assertion before the restored
+expectation passed. The gate retains the original pure source closure and
+the guide's historical lock separately. The gate checks the native Onchain
+Runtime, State and VM pins and the actual resolved packages in each consumer.
+The separate formatting copy uses a retained configuration.
+
+The original Map size `put` models at k7 and 119 rows with released ZKIR
+3.2.0. Fresh Ledger 9 generation matched the complete formatted Rust, linked
+IR and all eight checked programs. The maintained generated API gate passed
+eight Rust consumer tests, 19 live TypeScript cases, two boundary cases and
+four refusals. Both source refusals, the E0308 and E0382 compile failures,
+and the changed-TypeScript-result control passed. The proof port must preserve
+both the replacement and insertion cases, including the same-geometry changed-result
+refusal. Each case needs a separately verified standalone proof and a distinct
+v3 proof in a funded default-strict transaction, with full ledger bytes
+checked after exact replay refusal.
+
+The broader workspace behavior, remaining proof consumers and required
+Linux integration lanes remain open.

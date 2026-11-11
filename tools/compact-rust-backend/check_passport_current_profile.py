@@ -37,6 +37,7 @@ FIXTURE = ROOT / "tests-rust-backend/vc-passport-adoption"
 ORACLE = FIXTURE / "oracle"
 GUIDE = ROOT / "doc/rust/guides/examples/passport/consumer/src/lib.rs"
 CONTROLS = Path(__file__).with_name("tests") / "passport_current_profile"
+FORMAT_CONFIG = CONTROLS / "rustfmt.toml"
 SOURCE_MANIFEST_SHA256 = "f122c9c890e841d50f2f2980df4229de584333a9eb6c9a4525794f8ce8a77f78"
 ORACLE_PROVENANCE_SHA256 = "b35b1c5a9959086fcc30f29265b24602d4e2e34844074a9f23f16330ebd4fbd1"
 COMMAND_TIMEOUT_SECONDS = 600
@@ -50,6 +51,7 @@ LEDGER_CRATE = "midnight-ledger-v9"
 LEDGER_CRATE_VERSION = "1.0.1"
 ONCHAIN_RUNTIME = "@midnightntwrk/onchain-runtime-v4"
 ONCHAIN_VERSION = "4.0.1"
+RUST_ONCHAIN_PACKAGES = ("midnight-onchain-runtime", "midnight-onchain-state", "midnight-onchain-vm")
 
 
 def digest(path):
@@ -88,15 +90,19 @@ def compare_capture(actual, expected, profile):
             raise ValueError(f"Passport capture behavior differs: {key}")
 
 
-def validate_dependencies(metadata, lock_path, allowed, qualified):
+def validate_dependencies(metadata, lock_path, allowed, qualified, required=()):
     """Existing consumer cohort policy, with every local manifest isolated."""
+    resolved = set()
     for package in metadata["packages"]:
         identity = (package["name"], package["version"], package.get("source"))
+        resolved.add(identity)
         if package.get("source") is None:
             if Path(package["manifest_path"]).resolve() not in allowed:
                 raise ValueError(f"unexpected local Passport dependency: {identity}")
         elif identity not in qualified:
             raise ValueError(f"Passport dependency differs from qualified cohort: {identity}")
+    if not set(required) <= resolved:
+        raise ValueError("Passport consumer did not resolve the required native onchain packages")
     for package in tomllib.loads(lock_path.read_text())["package"]:
         if package.get("source"):
             identity = (package["name"], package["version"], package["source"])
@@ -128,20 +134,29 @@ def original_oracle_provenance():
 
 def ledger9_identity():
     runtime = ROOT / "runtime-rs"
-    ledger = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"].get(LEDGER_CRATE)
+    dependencies = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"]
+    ledger = dependencies.get(LEDGER_CRATE)
     compatibility = json.loads((runtime / "compatibility.json").read_text())
     if (ledger != {"version": f"={LEDGER_CRATE_VERSION}", "optional": True}
             or compatibility["ledger_version"] != f"ledger-{LEDGER_VERSION}"
             or compatibility["ledger_dependencies"].get(LEDGER_CRATE) != ledger["version"]
             or compatibility["ledger_git_sources"]):
         raise ValueError("Passport qualification requires the published Ledger 9 runtime cohort")
-    locked = [row for row in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
-              if row["name"] == LEDGER_CRATE]
-    if (len(locked) != 1 or locked[0]["version"] != LEDGER_CRATE_VERSION
-            or locked[0].get("source") != "registry+https://github.com/rust-lang/crates.io-index"
-            or not re.fullmatch("[0-9a-f]{64}", locked[0].get("checksum", ""))):
-        raise ValueError("Passport Ledger 9 registry lock identity differs")
-    return {key: locked[0][key] for key in ("name", "version", "source", "checksum")}
+    if any(dependencies.get(name) != {"version": f"={ONCHAIN_VERSION}"}
+           or compatibility["ledger_dependencies"].get(name) != f"={ONCHAIN_VERSION}"
+           for name in RUST_ONCHAIN_PACKAGES):
+        raise ValueError("Passport native onchain pins differ from the TypeScript pairing")
+    packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+    identities = {}
+    for name, version in [(LEDGER_CRATE, LEDGER_CRATE_VERSION),
+                          *((name, ONCHAIN_VERSION) for name in RUST_ONCHAIN_PACKAGES)]:
+        locked = [row for row in packages if row["name"] == name]
+        if (len(locked) != 1 or locked[0]["version"] != version
+                or locked[0].get("source") != "registry+https://github.com/rust-lang/crates.io-index"
+                or not re.fullmatch("[0-9a-f]{64}", locked[0].get("checksum", ""))):
+            raise ValueError(f"Passport Ledger 9 registry lock identity differs: {name}")
+        identities[name] = {key: locked[0][key] for key in ("name", "version", "source", "checksum")}
+    return identities
 
 
 def onchain_runtime_entry(run, node, runtime, label):
@@ -165,7 +180,7 @@ def onchain_runtime_entry(run, node, runtime, label):
 def formatted_copy(source, destination, run):
     original = digest(source)
     shutil.copyfile(source, destination)
-    run("format-generated-copy", ["rustfmt", "--edition", "2024", destination])
+    run("format-generated-copy", ["rustfmt", "--edition", "2024", "--config-path", FORMAT_CONFIG, destination])
     if digest(source) != original:
         raise ValueError("formatting changed the original Passport SDK source")
     return digest(destination)
@@ -259,7 +274,12 @@ def bounded_command(command, environment):
     process = subprocess.Popen([str(a) for a in command], cwd=ROOT, env=environment,
                                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                start_new_session=os.name == "posix")
+    stop_sent = False
+
     def stop_owned():
+        nonlocal stop_sent
+        if stop_sent:
+            return
         try:
             if os.name == "posix":
                 os.killpg(process.pid, signal.SIGKILL)
@@ -267,6 +287,7 @@ def bounded_command(command, environment):
                 process.kill()
         except ProcessLookupError:
             pass
+        stop_sent = True
     try:
         try:
             stdout, stderr = process.communicate(timeout=COMMAND_TIMEOUT_SECONDS)
@@ -356,7 +377,10 @@ def main(argv=None):
         manifest = SOURCE / "source-manifest.json"
         pins = original_source_files()
         provenance = original_oracle_provenance()
-        receipt["ledger"] = ledger9_identity()
+        identities = ledger9_identity()
+        receipt["ledger"] = identities[LEDGER_CRATE]
+        receipt["rust_onchain_packages"] = [identities[name] for name in RUST_ONCHAIN_PACKAGES]
+        required = [(row["name"], row["version"], row["source"]) for row in receipt["rust_onchain_packages"]]
         if any(package["dependencies"].get(ONCHAIN_RUNTIME) != ONCHAIN_VERSION
                for package in (ts_package, ts_source)):
             raise ValueError("Passport TS runtime must pin the selected onchain runtime")
@@ -373,7 +397,7 @@ def main(argv=None):
                  GUIDE_PACKAGE / "Cargo.toml", GUIDE_PACKAGE / "Cargo.lock",
                  ROOT / "runtime-rs/Cargo.toml", ROOT / "runtime-rs-macros/Cargo.toml",
                  ROOT / "runtime/package.json", FIXTURE / "lib.rs", *SOURCE.rglob("*.compact"), *ORACLE.rglob("*"),
-                 *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs")]
+                 *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs"), FORMAT_CONFIG]
         runtime_files = bundled_runtime_files(ROOT)
         paths += [ROOT / name for name in runtime_files]
         receipt["source_hashes"] = {str(p): digest(p) for p in paths if p.is_file()}
@@ -480,7 +504,7 @@ def main(argv=None):
                    (contract / "runtime-rs/Cargo.toml").resolve(), (contract / "runtime-rs-macros/Cargo.toml").resolve()}
         if not all(path.is_relative_to(output.resolve()) for path in allowed):
             raise ValueError("Passport local manifest escapes isolated SDK")
-        receipt["consumer_lock_sha256"] = validate_dependencies(metadata, lock, allowed, qualified)
+        receipt["consumer_lock_sha256"] = validate_dependencies(metadata, lock, allowed, qualified, required)
         # Clippy on a consumer does not lint its SDK dependency as a selected
         # package. Select that unchanged generated crate independently as well.
         sdk_lock = contract / "Cargo.lock"
@@ -488,7 +512,7 @@ def main(argv=None):
             raise ValueError("unexpected generated Passport SDK lock")
         shutil.copyfile(ROOT / "Cargo.lock", sdk_lock)
         sdk_metadata = json.loads(run("sdk-resolve", ["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", contract / "Cargo.toml"]).stdout)
-        receipt["sdk_lock_sha256"] = validate_dependencies(sdk_metadata, sdk_lock, allowed, qualified)
+        receipt["sdk_lock_sha256"] = validate_dependencies(sdk_metadata, sdk_lock, allowed, qualified, required)
         receipt["sdk_lock_added_by_qualification"] = True
         generated_hashes[str(sdk_lock)] = receipt["sdk_lock_sha256"]
         run("sdk-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", contract / "Cargo.toml", "--all-targets", "--", "-D", "warnings"])
@@ -505,7 +529,9 @@ def main(argv=None):
         shutil.copyfile(ROOT / "Cargo.lock", guide / "Cargo.lock")
         guide_manifest = guide / "Cargo.toml"
         guide_metadata = json.loads(run("guide-resolve", ["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", guide_manifest]).stdout)
-        guide_lock = validate_dependencies(guide_metadata, guide / "Cargo.lock", (allowed - {consumer_manifest.resolve()}) | {guide_manifest.resolve()}, qualified)
+        guide_lock = validate_dependencies(guide_metadata, guide / "Cargo.lock",
+                                           (allowed - {consumer_manifest.resolve()}) | {guide_manifest.resolve()},
+                                           qualified, required)
         guide_result = run("guide-consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", guide_manifest, "--", "--show-output"])
         guide_count = rust_test_count(guide_result.stdout, 2)
         run("guide-clippy", ["cargo", "clippy", "--locked", "--offline", "--manifest-path", guide_manifest, "--all-targets", "--", "-D", "warnings"])
