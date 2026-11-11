@@ -712,5 +712,29 @@ input, binding and corruption controls, and funded default-strict
 deployment and application using distinct transaction proofs. Both
 reads preserved state and refused exact replay without ledger mutation.
 
+The core run at `4fa6279a8` passed the assertion cases and then
+exposed the effectful-return fixture's v2 proof reader. At
+`567407cee`, both `choose` branches on the original source and the
+separate wide-value source passed v3 proofs at k7/107 rows. The primed
+branch does not read `next`, so a changed value still satisfies its
+selected transcript. The original proof refuses the changed public
+commitment for either branch. The gates retain typed results, witness
+selection, gas, and native, recorded, and observed state parity.
+
+At `07702f47e`, both Counter `lessThan` outcomes passed with
+`compare` at k7/78 rows. The current compiler's IR differs from the
+retained Counter IR only in its schema version. The literal
+Bytes-to-Field snapshot passed at k6/47 rows, including its manual
+transcript comparison and generated typed result. The original strict
+selector reaches the same Ledger 9 snapshot checks. Fresh Rust output
+for both scalar fixtures matches the linked libraries after Rust 1.99
+formatting. The source gate passed the six literal cast rejection
+cases and the corresponding TypeScript overflow timing checks.
+
+All seven primary cases across these sources passed separate
+verification with corruption controls, funded deployment and a
+separately proved call under default ledger strictness, and exact
+replay refusal without state mutation.
+
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
