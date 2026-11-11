@@ -646,13 +646,18 @@ if stage == 'zkir': print('/mock/bin/zkir')
             wrapper = '''import json, os, pathlib, sys
 args = sys.argv[1:]
 kind = pathlib.Path(sys.argv[0]).name
-stage = 'recipe' if kind == 'python3' else ('runtime' if args[0] == 'build' else ('zkir' if args[-2] == '-c' else 'gate'))
+if kind == 'python3':
+    stage = 'recipe'
+elif args[0] == 'build':
+    stage = {'.#zkir-v3': 'zkir', '.#runtime.package': 'runtime'}[args[-1]]
+else:
+    stage = 'gate'
 with open(os.environ['TEST_LOG'], 'a') as log:
     log.write(json.dumps(dict(stage=stage, args=args, ld=os.environ.get('LD_LIBRARY_PATH'), target=os.environ.get('CARGO_TARGET_DIR'))) + "\\n")
 if os.environ.get('TEST_FAIL') == stage:
     raise SystemExit({'recipe':71,'runtime':72,'zkir':73,'gate':74}[stage])
 if stage == 'runtime': print('/mock/runtime-package')
-if stage == 'zkir': print('/mock/bin/zkir')
+if stage == 'zkir': print('/mock/zkir-v3-package')
 '''
             for name in ('python3', 'nix'):
                 path = bin_dir / name
@@ -671,12 +676,12 @@ if stage == 'zkir': print('/mock/bin/zkir')
                     self.assertEqual([r['stage'] for r in rows], stages if not failure else stages[:stages.index(failure) + 1])
                     self.assertEqual(rows[0]['args'], ['tools/compact-rust-backend/record_compiler_recipe.py', '--compiler', env['COMPACTC'], '--output', env['RUNNER_TEMP'] + '/compact-constructor-vector-recipe'])
                     for row in rows:
-                        if row['stage'] in ('zkir', 'gate'):
+                        if row['stage'] == 'gate':
                             self.assertIsNone(row['ld'])
                     for row in rows:
                         self.assertEqual(row['target'], env['RUNNER_TEMP'] + '/compact-constructor-vector-target' if row['stage']=='gate' else env['CARGO_TARGET_DIR'])
                     if not failure:
-                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_vector_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-vector-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-constructor-vector-proof'])
+                        self.assertEqual(rows[-1]['args'], ['develop', '.#compiler', '--command', 'python3', '-X', 'faulthandler', '-u', 'tools/compact-rust-backend/check_constructor_vector_proof.py', '--compiler-receipt', env['RUNNER_TEMP'] + '/compact-constructor-vector-recipe/receipt.json', '--ts-runtime', '/mock/runtime-package/lib/node_modules/@midnight-ntwrk/compact-runtime', '--zkir', '/mock/zkir-v3-package/bin/zkir', '--output', env['RUNNER_TEMP'] + '/compact-constructor-vector-proof'])
 
     def test_constructor_gate_requires_material_full_execution_and_diagnostics(self):
         workflow=(owner.ROOT/'.github/workflows/build-compiler.yml').read_text()
