@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Check the exact ledger-v8 binary boundary used by the Midnight wallet SDK.
-// The caller installs @midnight-ntwrk/ledger-v8@8.1.3 into a temporary prefix.
+// Check the Ledger 9 binary boundary against the pinned JavaScript ledger.
 
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -22,7 +21,7 @@ import { pathToFileURL } from 'node:url';
 
 const arguments_ = process.argv.slice(2);
 if (arguments_.length !== 2 && arguments_.length !== 3) {
-  throw new Error('usage: node check_wallet_handoff.mjs [sealed-deploy.bin] <sealed-call.bin> <ledger-v8-package-dir>');
+  throw new Error('usage: node check_wallet_handoff.mjs [sealed-deploy.bin] <sealed-call.bin> <ledger-v9-package-dir>');
 }
 const [deployPath, transactionPath, packageRoot] = arguments_.length === 3
   ? arguments_
@@ -30,38 +29,49 @@ const [deployPath, transactionPath, packageRoot] = arguments_.length === 3
 
 const packageDirectory = resolve(packageRoot);
 const manifest = JSON.parse(await readFile(resolve(packageDirectory, 'package.json'), 'utf8'));
-if (manifest.name !== '@midnight-ntwrk/ledger-v8' || manifest.version !== '8.1.3') {
-  throw new Error(`expected @midnight-ntwrk/ledger-v8@8.1.3, got ${manifest.name}@${manifest.version}`);
+if (manifest.name !== '@midnight-ntwrk/ledger-v9' || manifest.version !== '1.0.1') {
+  throw new Error(`expected @midnight-ntwrk/ledger-v9@1.0.1, got ${manifest.name}@${manifest.version}`);
 }
 
-const ledger = await import(pathToFileURL(resolve(packageDirectory, 'midnight_ledger_wasm_fs.js')).href);
-const bytes = new Uint8Array(await readFile(transactionPath));
-const transaction = ledger.Transaction.deserialize('signature', 'proof', 'binding', bytes);
-const intents = transaction.intents;
-if (intents?.size !== 1 || intents.get(1)?.actions.length !== 1 ||
-    !(intents.get(1).actions[0] instanceof ledger.ContractCall)) {
-  throw new Error('expected one proven counter call in segment 1');
+const ledger = await import(pathToFileURL(resolve(packageDirectory, 'midnight_ledger_wasm_v9_fs.js')).href);
+const contractSegment = 1;
+// Ledger 9's local fee balancing helper puts Dust spends in segment 0xFEED.
+const feeSegment = 0xFEED;
+
+async function readHandoff(path, Action, label) {
+  const bytes = await readFile(path);
+  const transaction = ledger.Transaction.deserialize('signature', 'proof', 'binding', bytes);
+  const intents = transaction.intents;
+  const contract = intents?.get(contractSegment);
+  const fee = intents?.get(feeSegment);
+  const dust = fee?.dustActions;
+  const action = contract?.actions[0];
+  if (intents?.size !== 2 || contract?.actions.length !== 1 || !(action instanceof Action)) {
+    throw new Error(`expected one ${label} in contract segment ${contractSegment}`);
+  }
+  if (fee?.actions.length !== 0 || dust?.spends.length !== 1 ||
+      dust.registrations.length !== 0 || dust.spends[0].vFee <= 0n ||
+      !(dust.spends[0].proof instanceof ledger.Proof)) {
+    throw new Error(`expected one proved positive-fee Dust spend for ${label}`);
+  }
+  if (!Buffer.from(transaction.serialize()).equals(bytes)) {
+    throw new Error(`Ledger 9 changed sealed ${label} bytes after deserialization`);
+  }
+  return { action, length: bytes.length };
 }
-if (!Buffer.from(transaction.serialize()).equals(Buffer.from(bytes))) {
-  throw new Error('ledger-v8 changed sealed transaction bytes after deserialization');
+
+const call = await readHandoff(transactionPath, ledger.ContractCall, 'call');
+if (!(call.action.proof instanceof ledger.Proof)) {
+  throw new Error('expected a proved contract call');
 }
 if (deployPath) {
-  const deployBytes = new Uint8Array(await readFile(deployPath));
-  const deployment = ledger.Transaction.deserialize('signature', 'proof', 'binding', deployBytes);
-  const deployIntents = deployment.intents;
-  if (deployIntents?.size !== 1 || deployIntents.get(1)?.actions.length !== 1 ||
-      !(deployIntents.get(1).actions[0] instanceof ledger.ContractDeploy)) {
-    throw new Error('expected one sealed contract deployment in segment 1');
-  }
-  if (!Buffer.from(deployment.serialize()).equals(Buffer.from(deployBytes))) {
-    throw new Error('ledger-v8 changed sealed deployment bytes after deserialization');
-  }
-  const deployAddress = deployIntents.get(1).actions[0].address;
-  const callAddress = intents.get(1).actions[0].address;
+  const deploy = await readHandoff(deployPath, ledger.ContractDeploy, 'deployment');
+  const deployAddress = deploy.action.address;
+  const callAddress = call.action.address;
   if (deployAddress !== callAddress) {
     throw new Error(`deployment and call addresses differ: ${deployAddress} != ${callAddress}`);
   }
-  console.log(`ledger-v8 8.1.3 decoded ${deployBytes.length} deployment and ${bytes.length} call bytes at ${deployAddress}`);
+  console.log(`ledger-v9 1.0.1 round-tripped ${deploy.length} funded deployment and ${call.length} funded call bytes at ${deployAddress}`);
 } else {
-  console.log(`ledger-v8 8.1.3 decoded and reserialized ${bytes.length} proven transaction bytes`);
+  console.log(`ledger-v9 1.0.1 round-tripped ${call.length} funded call bytes`);
 }
