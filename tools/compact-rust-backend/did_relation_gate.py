@@ -181,7 +181,12 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
             receipt["public_interchange_directory"] = str(public_dir)
         else:
             env.pop("COMPACT_DID_PUBLIC_INTERCHANGE", None)
-        receipt["key_generation"] = {"mode": "direct-native", "actual_zkir": components["zkir"]["snapshot"], "scope": "Fresh native key generation; proofs and assertions always execute."}
+        receipt["key_generation"] = {
+            "original": "retained exact-material" if reuse_material else "fresh direct native v3",
+            "reducers": "retained exact-material" if reuse_reducers else "fresh direct native v3",
+            "actual_zkir": components["zkir"]["snapshot"],
+            "scope": "Proofs and assertions always execute.",
+        }
         def execute(argv, label, stdout=None):
             command([str(arg) for arg in argv], label, directory, receipt, env=env, stdout_path=stdout)
         zkir = components["zkir"]["snapshot"]
@@ -191,8 +196,10 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
         original = directory / "did"
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / did.SOURCE, original], "compile-original-did")
-        execute(["rustfmt", "--edition", "2024", original / "contract/lib.rs"], "format-original-did")
-        require((original / "contract/lib.rs").read_bytes() == (ROOT / did.FIXTURE).read_bytes(),
+        formatted = directory / "did-formatted.rs"
+        shutil.copyfile(original / "contract/lib.rs", formatted)
+        execute(["rustfmt", "--edition", "2024", formatted], "format-original-did")
+        require(formatted.read_bytes() == (ROOT / did.FIXTURE).read_bytes(),
                 "original DID generated Rust differs from reviewed fixture")
         caps = read_json(original / "contract/rust-capabilities.json")
         common.validate_report(caps, ROOT / did.SOURCE)
@@ -201,11 +208,7 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                 and all(r["proof"] and r["recorded"] and r["observed_call"] for r in tab),
                 "original DID twelve-export proof/recording inventory changed")
         receipt["original_capabilities"] = caps
-        raw_circuits = sorted((original / "zkir").glob("*.zkir"))
-        require({path.stem for path in raw_circuits} == did.EXPORTS, "DID raw circuit inventory differs")
-        receipt["original_generated_hashes"] = hashes(raw_circuits + [
-            original / name for name in ("contract/lib.rs", "contract/compact-rust-ir.json",
-                                         "compiler/contract-manifest.json")])
+        receipt["original_generated_hashes"] = did.generated_artifacts(original, formatted)
         geometry = did.model_circuits(execute, receipt, zkir, original, did.EXPECTED_K)
         receipt["original_geometry"] = geometry
         execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline",

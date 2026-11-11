@@ -44,6 +44,8 @@ def summary(scenario):
 
 
 def put_artifacts(output, scenario, calls):
+    for suffix in ("deployment.bin", "ledger-after-deploy.bin"):
+        (output / f"did-{scenario}-{suffix}").write_bytes(b"deployment")
     for call in calls:
         stem = f"did-{scenario}-{call['case']}"
         (output / f"{stem}.proof").write_bytes(b"a" * call["proof_bytes"])
@@ -174,6 +176,15 @@ class OrchestrationTests(unittest.TestCase):
                 put(output / "did-points-rotate-ledger-replay.bin", "changed replay")
         self.mutation = mutate
         self.assertIn("replay bytes differ", self.run_gate()["error"])
+
+    def test_missing_generated_ir_cannot_pass_with_a_matching_library(self):
+        def mutate(label, output):
+            if label == "compile-did":
+                (output / "contract/compact-rust-ir.json").unlink()
+        self.mutation = mutate
+        result = self.run_gate()
+        self.assertIn("missing or invalid DID compiler artifact", result["error"])
+        self.assertNotIn("build-proof-runner", self.calls)
 
     def test_missing_prerequisite_refuses_before_commands_and_retains_failure(self):
         self.env.pop("MIDNIGHT_PP")

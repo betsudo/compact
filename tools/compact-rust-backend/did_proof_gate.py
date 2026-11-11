@@ -153,6 +153,16 @@ def capability_inventory(output):
     return report
 
 
+def generated_artifacts(output, formatted):
+    raw_circuits = sorted((output / "zkir").glob("*.zkir"))
+    require({path.stem for path in raw_circuits} == EXPORTS, "DID raw circuit inventory differs")
+    artifacts = [*raw_circuits, formatted, *(output / name for name in (
+        "contract/lib.rs", "contract/compact-rust-ir.json", "compiler/contract-manifest.json"))]
+    require(all(path.is_file() and not path.is_symlink() and path.stat().st_size > 0
+                for path in artifacts), "missing or invalid DID compiler artifact")
+    return hashes(artifacts)
+
+
 def model_circuits(execute, receipt, zkir, output, expected_k):
     execute([zkir, "mock-compile-many", output / "zkir"], "model-" + output.name)
     rows = re.findall(r'circuit "([^"]+)" \(k=(\d+), rows=(\d+)\)',
@@ -178,7 +188,10 @@ def validate_call(call):
 
 
 def proof_artifacts(output, scenario, calls):
-    paths = []
+    paths = [output / f"did-{scenario}-{suffix}" for suffix in (
+        "deployment.bin", "ledger-after-deploy.bin")]
+    require(all(path.is_file() and not path.is_symlink() and path.stat().st_size > 0
+                for path in paths), f"did-{scenario}: missing or invalid deployment artifact")
     for call in calls:
         stem = f"did-{scenario}-{call['case']}"
         proof = output / f"{stem}.proof"
@@ -252,19 +265,17 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         require(version.read_text().strip() == ZKIR_VERSION, "expected published ZKIR v3 3.2.0")
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / SOURCE, output], "compile-did")
-        execute(["rustfmt", "--edition", "2024", output / "contract/lib.rs"], "format-did")
-        require((output / "contract/lib.rs").read_bytes() == (ROOT / FIXTURE).read_bytes(),
+        formatted = directory / "did-formatted.rs"
+        shutil.copyfile(output / "contract/lib.rs", formatted)
+        execute(["rustfmt", "--edition", "2024", formatted], "format-did")
+        require(formatted.read_bytes() == (ROOT / FIXTURE).read_bytes(),
                 "fresh DID fixture differs from the linked proof fixture")
         receipt["capabilities"] = capability_inventory(output)
         metadata = read_json(output / "compiler/rust-compatibility.json")
         require(metadata.get("compatibility") == read_json(ROOT / "runtime-rs/compatibility.json"),
                 "generated runtime compatibility differs from current source record")
         receipt["generated_metadata"] = metadata
-        raw_circuits = sorted((output / "zkir").glob("*.zkir"))
-        require({path.stem for path in raw_circuits} == EXPORTS, "DID raw circuit inventory differs")
-        receipt["generated_hashes"] = hashes(raw_circuits + [
-            output / name for name in ("contract/lib.rs", "contract/compact-rust-ir.json",
-                                       "compiler/contract-manifest.json")])
+        receipt["generated_hashes"] = generated_artifacts(output, formatted)
         geometry = model_circuits(execute, receipt, zkir, output, EXPECTED_K)
         receipt["geometry"] = geometry
         execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline",
