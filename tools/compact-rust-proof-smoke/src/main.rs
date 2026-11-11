@@ -935,6 +935,8 @@ fn check_boolean_observation_proof(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn check_conditional_counter_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x434f_4e44_434e_5452);
     for (circuit, condition, flag, expected_counter) in [
         ("streamWrite", false, false, 2),
@@ -1010,6 +1012,8 @@ fn check_conditional_counter_proof(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn check_unsigned_sequential_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let circuit = "reset_and_set";
     let mut rng = StdRng::seed_from_u64(0x0052_4553_4554_5345);
     let initial = cross_circuit_contract::initial_state(ConstructorContext::new(()))?;
@@ -1057,6 +1061,8 @@ fn check_unsigned_sequential_proof(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn check_conditional_field_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x434f_4e44_4649_454c);
     for (condition, expected_field) in [(false, 0_u64), (true, 777_u64)] {
         let circuit = "walkerWrite";
@@ -1114,6 +1120,8 @@ fn check_conditional_field_proof(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn check_conditional_assert_eq_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let circuit = "streamAssertEq";
     let mut rng = StdRng::seed_from_u64(0x0099_4153_5345_5254);
     for flag in [false, true] {
@@ -1167,7 +1175,7 @@ fn check_conditional_assert_eq_proof(root: &Path) -> Result<(), Box<dyn Error>> 
             Ok(())
         })?;
     }
-    println!("streamAssertEq both branches proved and applied through ledger-8");
+    println!("streamAssertEq both branches proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -1248,6 +1256,8 @@ fn check_closed_unsigned_ternary_comparison_proof(root: &Path) -> Result<(), Box
 }
 
 fn check_nested_uint64_cell_counter_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x0132_4e45_5354_4544);
     let circuit = "run";
     for choice in [true, false] {
@@ -1295,11 +1305,13 @@ fn check_nested_uint64_cell_counter_proof(root: &Path) -> Result<(), Box<dyn Err
             Ok(())
         })?;
     }
-    println!("nested Uint<4> to Uint<64> Cell and Counter proved and applied through ledger-8");
+    println!("nested Uint<4> to Uint<64> Cell and Counter proved and applied through Ledger 9");
     Ok(())
 }
 
 fn check_nested_uint4_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x0121_4e45_5354_4544);
     for (circuit, args, flag, expected_field) in [
         ("walkerNestedIf", Some((true, true)), false, 1_u64),
@@ -1384,11 +1396,13 @@ fn check_nested_uint4_proof(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
     }
-    println!("nested Uint<4> conditional branches proved and applied through ledger-8");
+    println!("nested Uint<4> conditional branches proved and applied through Ledger 9");
     Ok(())
 }
 
 fn check_conditional_field_vector_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x0131_5645_4354_4f52);
     let circuit = "streamVectorElement";
     for flag in [false, true] {
@@ -1453,11 +1467,13 @@ fn check_conditional_field_vector_proof(root: &Path) -> Result<(), Box<dyn Error
             Ok(())
         })?;
     }
-    println!("closed conditional Field vectors proved and applied through ledger-8");
+    println!("closed conditional Field vectors proved and applied through Ledger 9");
     Ok(())
 }
 
 fn check_annotated_uint8_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x0127_5549_4e54_3038);
     for condition in [true, false] {
         let circuit = "walkerConstAnnotated";
@@ -1515,11 +1531,13 @@ fn check_annotated_uint8_proof(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
     }
-    println!("annotated Uint<8> conditional branches proved and applied through ledger-8");
+    println!("annotated Uint<8> conditional branches proved and applied through Ledger 9");
     Ok(())
 }
 
 fn check_closed_curve_argument_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let mut rng = StdRng::seed_from_u64(0x0126_4355_5256_4541);
     for (circuit, condition, flag) in [
         ("walkerNativeArg", Some(true), false),
@@ -1608,7 +1626,7 @@ fn check_closed_curve_argument_proof(root: &Path) -> Result<(), Box<dyn Error>> 
             Ok(())
         })?;
     }
-    println!("closed conditional curve arguments proved and applied through ledger-8");
+    println!("closed conditional curve arguments proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -1687,6 +1705,8 @@ fn check_closed_ternary_struct_member_proof(root: &Path) -> Result<(), Box<dyn E
 }
 
 fn check_conditional_set_proof(root: &Path) -> Result<(), Box<dyn Error>> {
+    use positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     let circuit = "choose";
     let mut rng = StdRng::seed_from_u64(0x0103_4348_4f4f_5345);
     for (name, value, insert, seed_true) in [
@@ -1744,7 +1764,7 @@ fn check_conditional_set_proof(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
     }
-    println!("choose three branches proved and applied through ledger-8");
+    println!("choose three branches proved and applied through Ledger 9");
     Ok(())
 }
 
