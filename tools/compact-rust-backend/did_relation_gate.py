@@ -18,6 +18,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -77,7 +78,7 @@ def validate_original(summary, scenario):
     installed = (["setVerificationMethod", "removeVerificationMethod", RELATION]
                  if scenario == "relations" else
                  ["setSchnorrJubjubVerificationMethod", "verifySchnorrJubjubDigestSignature", RELATION])
-    require(summary.get("format") == "compact-did-proof-result/v1"
+    require(summary.get("format") == "compact-did-proof-result/v2"
             and summary.get("scenario") == scenario and summary.get("selector") == selector,
             "wrong original DID relation scenario")
     require(summary.get("installed_operations") == installed
@@ -88,10 +89,7 @@ def validate_original(summary, scenario):
     require(isinstance(calls, list) and [(c.get("case"), c.get("operation")) for c in calls]
             == list(zip(cases, operations)), "original relation call inventory changed")
     for call in calls:
-        require(type(call.get("proof_bytes")) is int and call["proof_bytes"] > 0
-                and call.get("applied") is True and call.get("changed_binding_rejected") is True
-                and call.get("replay_refusal") == "IntentAlreadyExists",
-                f"original relation proof/apply/replay failed: {call.get('case')}")
+        did.validate_call(call)
     require(summary.get("final_state_file") == f"did-{scenario}-final-state.bin",
             "original relation final state path changed")
 
@@ -160,7 +158,8 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                "scenarios": {}, "reducers": {}}
     env = dict(os.environ if environment is None else environment)
     try:
-        prereq = did.prerequisites(env)
+        require("MIDNIGHT_PROOF_SERVER" not in env, "DID v3 gate requires local proving")
+        prereq = did.prerequisites(env, zkir_name="zkir-v3")
         receipt["prerequisites"] = prereq
         receipt["dust_fixture_hashes"] = did.dust_fixture_inventory(Path(prereq["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         receipt["source_hashes"] = source_inventory()
@@ -185,6 +184,10 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
         receipt["key_generation"] = {"mode": "direct-native", "actual_zkir": components["zkir"]["snapshot"], "scope": "Fresh native key generation; proofs and assertions always execute."}
         def execute(argv, label, stdout=None):
             command([str(arg) for arg in argv], label, directory, receipt, env=env, stdout_path=stdout)
+        zkir = components["zkir"]["snapshot"]
+        version = directory / "zkir-version.txt"
+        execute([zkir, "--version"], "zkir-version", version)
+        require(version.read_text().strip() == did.ZKIR_VERSION, "expected published ZKIR v3 3.2.0")
         original = directory / "did"
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / did.SOURCE, original], "compile-original-did")
@@ -198,16 +201,26 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                 and all(r["proof"] and r["recorded"] and r["observed_call"] for r in tab),
                 "original DID twelve-export proof/recording inventory changed")
         receipt["original_capabilities"] = caps
-        execute(["cargo", "+1.99.0", "build", "--locked", "--offline", "-j", "4", "-p",
+        raw_circuits = sorted((original / "zkir").glob("*.zkir"))
+        require({path.stem for path in raw_circuits} == did.EXPORTS, "DID raw circuit inventory differs")
+        receipt["original_generated_hashes"] = hashes(raw_circuits + [
+            original / name for name in ("contract/lib.rs", "contract/compact-rust-ir.json",
+                                         "compiler/contract-manifest.json")])
+        geometry = did.model_circuits(execute, receipt, zkir, original, did.EXPECTED_K)
+        receipt["original_geometry"] = geometry
+        execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline",
+                 "-j", "4", "-p",
                  "compact-rust-proof-smoke"], "build-proof-runner")
-        components["proof-runner"] = snapshot(target.resolve() / "debug/compact-rust-proof-smoke",
+        components["proof-runner"] = snapshot(target.resolve() / "proof-checks/compact-rust-proof-smoke",
                                                directory / "bin/compact-rust-proof-smoke")
         runner = components["proof-runner"]["snapshot"]
         material_path = directory / "proof-material.json"
-        execute([runner, "--prepare-proof-material"], "prepare-proof-material", material_path)
+        execute([runner, "--prepare-proof-material", "--parameter-k", 11, "--parameter-k", 12],
+                "prepare-proof-material", material_path)
         prepared = read_json(material_path)
         require(prepared.get("format") == "compact-proof-material/v1"
                 and prepared.get("mode") == "prepare"
+                and {11, 12}.issubset({row["k"] for row in prepared["parameters"]})
                 and Path(prepared["cache_directory"]).resolve() == Path(prereq["MIDNIGHT_PP"]),
                 "proof material preparation changed")
         receipt["proof_material"] = prepared
@@ -233,13 +246,20 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                     copy_or_generate(source, destination, lambda: None)
             if reuse_material is None:
                 (original / "keys").mkdir(exist_ok=True)
-                execute([components["zkir"]["snapshot"], "compile",
-                         original / f"zkir/{operation}.zkir", original / f"keys/{operation}.prover",
-                         original / f"keys/{operation}.verifier"], f"keygen-{operation}")
+                execute([zkir, "compile", original / f"zkir/{operation}.zkir",
+                         original / f"keys/{operation}.prover", original / f"keys/{operation}.verifier"],
+                        f"keygen-{operation}")
+                keygen = re.search(r"\(k=(\d+), rows=(\d+)\)",
+                                   Path(receipt["commands"][-1]["log"]).read_text())
+                require(keygen is not None and tuple(map(int, keygen.groups())) == geometry[operation],
+                        f"DID key generation geometry differs from the v3 model: {operation}")
             artifacts.extend(checked_file(original / f"{subdir}/{operation}.{extension}")
                              for subdir, extension in (("zkir", "zkir"), ("zkir", "bzkir"),
                                                        ("keys", "prover"), ("keys", "verifier")))
-        receipt["original_material_hashes"] = hashes(artifacts)
+        parameter_directory = Path(prereq["MIDNIGHT_PP"])
+        parameter_files = [checked_file(parameter_directory / row["name"])
+                           for row in prepared["assets"] + prepared["parameters"]]
+        receipt["original_material_hashes"] = hashes(artifacts + parameter_files)
         for scenario, (selector, _, _) in SCENARIOS.items():
             path = original / f"did-{scenario}-result.json"
             require(not path.exists(), "stale original relation summary")
@@ -247,7 +267,8 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
             summary = read_json(path)
             validate_original(summary, scenario)
             state = checked_file(original / summary["final_state_file"])
-            receipt["scenarios"][scenario] = {"summary": summary, "hashes": hashes([path, state])}
+            receipt["scenarios"][scenario] = {"summary": summary, "hashes": hashes(
+                [path, state, *did.proof_artifacts(original, scenario, summary["calls"])])}
         require(sum(len(value["summary"]["calls"]) for value in receipt["scenarios"].values()) == 19,
                 "original relation call count changed")
         for kind, (stem, fixture, operation) in REDUCERS.items():
@@ -295,6 +316,7 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                 "reducer proof call count changed")
         require(source_inventory() == receipt["source_hashes"] and common.git_head() == receipt["git_head"],
                 "source or HEAD changed during relation gate")
+        did.unchanged(receipt["original_generated_hashes"])
         did.unchanged(receipt["original_material_hashes"])
         for value in receipt["scenarios"].values():
             did.unchanged(value["hashes"])

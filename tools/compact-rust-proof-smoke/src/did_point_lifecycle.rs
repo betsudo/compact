@@ -14,10 +14,12 @@
 // limitations under the License.
 //! Original constructor data is deployed, then selected source transitions are proved.
 //! The stored constructor id stays zero; the ledger deployment address is distinct.
+use super::local_v3_application as v3;
 use super::*;
 use compact_rust_did_adoption_fixture::{
     ledger_contract as c, ledger_slots as slots, runtime as r, types,
 };
+use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use serde_json::{Value, json};
 #[path = "../../../tests-rust-backend/did-adoption/support/alias_calls.rs"]
 mod alias_calls;
@@ -125,16 +127,31 @@ fn invoke_relation_recorded(
     }
 }
 fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("Ledger 9 DID lifecycle requires local proving".into());
+    }
+    let (scenario, selector) = match lifecycle {
+        Lifecycle::Points => ("points", "--did-point-lifecycle"),
+        Lifecycle::Aliases => ("aliases", "--did-alias-lifecycle"),
+        Lifecycle::Services => ("services", "--did-service-lifecycle"),
+        Lifecycle::SchnorrMethods => ("schnorr-methods", "--did-schnorr-method-lifecycle"),
+        Lifecycle::JwkMethods => ("jwk-methods", "--did-jwk-method-lifecycle"),
+        Lifecycle::Digest => ("digest", "--did-digest-verification"),
+        Lifecycle::Relations => ("relations", "--did-relation-lifecycle"),
+        Lifecycle::RelationSchnorr => ("relation-schnorr", "--did-relation-schnorr"),
+    };
     let (capture, scenario_id, calls, operations): (&str, &str, &[&str], &[&str]) = match lifecycle
     {
         Lifecycle::Points => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/lifecycle.json"),
+            include_str!("../../../tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json"),
             "authorization-lifecycle",
             &["rotate", "recover", "deactivate"],
             &["rotateControllerKey", "recoverControllerKey", "deactivate"],
         ),
         Lifecycle::Aliases => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/alias-lifecycle.json"),
+            include_str!(
+                "../../../tests-rust-backend/did-adoption/oracle/ledger9/alias-lifecycle.json"
+            ),
             "alias-recording",
             &["insert-unicode", "remove-unicode"],
             &[
@@ -145,7 +162,9 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             ],
         ),
         Lifecycle::Services => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/service-lifecycle.json"),
+            include_str!(
+                "../../../tests-rust-backend/did-adoption/oracle/ledger9/service-lifecycle.json"
+            ),
             "service-recording",
             &["insert-unicode", "update-empty-fields", "remove-unicode"],
             &[
@@ -159,7 +178,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         ),
         Lifecycle::SchnorrMethods => (
             include_str!(
-                "../../../tests-rust-backend/did-adoption/oracle/schnorr-method-lifecycle.json"
+                "../../../tests-rust-backend/did-adoption/oracle/ledger9/schnorr-method-lifecycle.json"
             ),
             "schnorr-method-recording",
             &["insert-unicode", "update-point", "remove-unicode"],
@@ -176,7 +195,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         ),
         Lifecycle::JwkMethods => (
             include_str!(
-                "../../../tests-rust-backend/did-adoption/oracle/jwk-method-lifecycle.json"
+                "../../../tests-rust-backend/did-adoption/oracle/ledger9/jwk-method-lifecycle.json"
             ),
             "jwk-method-recording",
             &["insert-unicode", "update-jwk", "remove-unicode"],
@@ -194,7 +213,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             ],
         ),
         Lifecycle::Relations => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/lifecycle.json"),
+            include_str!("../../../tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json"),
             "methods-relations",
             &[
                 "accept-ed",
@@ -221,7 +240,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             ],
         ),
         Lifecycle::RelationSchnorr => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/lifecycle.json"),
+            include_str!("../../../tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json"),
             "schnorr",
             &["insert", "read-valid", "relation-insert"],
             &[
@@ -231,7 +250,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             ],
         ),
         Lifecycle::Digest => (
-            include_str!("../../../tests-rust-backend/did-adoption/oracle/lifecycle.json"),
+            include_str!("../../../tests-rust-backend/did-adoption/oracle/ledger9/lifecycle.json"),
             "schnorr",
             &["insert", "read-valid"],
             &[
@@ -261,13 +280,8 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
     let operation_names = operations;
     let mut operations = HashMap::new();
     for name in operation_names {
-        let vk: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
-        operations = operations.insert(
-            EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(vk), None),
-        );
+        let (_, _, operation) = v3::load_operation(root, name)?;
+        operations = operations.insert(EntryPointBuf(name.as_bytes().to_vec()), operation);
     }
     let deploy = ContractDeploy::new(
         &mut rng,
@@ -287,26 +301,16 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         .build()?;
     // Separate upstream Dust funding, never inserted or rewritten DID contract data.
     async_runtime.block_on(state.give_fee_token(&mut rng, 4));
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
-            .add_deploy(deploy);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1u16, intent));
-    let resolver = super::qualified_coin_funding::fee_resolver(root, "deactivate")?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x259d),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+    let resolver = super::qualified_coin_funding::fee_resolver(root, operation_names[0])?;
+    v3::apply_funded_deployment(
+        root,
+        &format!("did-{scenario}"),
+        &deploy,
+        &mut state,
+        &mut rng,
+        &async_runtime,
+        &resolver,
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x259e));
-    let balanced = async_runtime.block_on(state.balance_tx(rng.clone(), sealed, &resolver))?;
-    let result = state.apply(&balanced, WellFormedStrictness::default())?;
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("strict DID deployment failed: {result:?}").into());
-    }
     if state
         .ledger
         .contract
@@ -492,10 +496,8 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
                 version,
             ))
         };
-        let manual = check_generated_trace(root, name, recorded, input)?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
+        let manual = positional_transaction::check_generated_trace(root, name, recorded, input)?;
+        let verifier = v3::read_verifier(root, name)?;
         let facade = c::Contract::from(Witness::new(row["options"].clone()));
         let call = match id {
             "rotate" => facade.recording().rotateControllerKey_call(
@@ -656,39 +658,54 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         if format!("{manual:?}") != format!("{prepared:?}") {
             return Err("typed call preparation differs from manual FAB binding".into());
         }
-        let proof_bytes = super::kernel_shielded_effects::prove_and_verify_call_measured(
-            root, name, &prepared, &verifier,
-        )?;
+        let stem = format!("did-{scenario}-{id}");
+        let standalone = v3::prove_standalone(root, name, &stem, &prepared, &verifier, None)?;
+        positional_transaction::verify_separately(root, name, &stem)?;
         let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-            Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
+            Intent::empty(&mut rng, state.time + state.ledger.parameters.global_ttl)
                 .add_call::<ProofPreimage>(prepared);
         let tx = Transaction::from_intents("local-test", HashMap::new().insert(1u16, intent));
         let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
-        let provider = LocalProvingProvider {
-            rng: StdRng::seed_from_u64(0x2590 + number as u64),
-            resolver: &resolver,
-            params: &params,
-        };
-        let proven = futures_executor::block_on(
-            tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-        )?;
-        let sealed = proven.seal(StdRng::seed_from_u64(0x259a + number as u64));
+        let proven = async_runtime
+            .block_on(tx_prove(
+                StdRng::from_rng(rand::rngs::OsRng)?,
+                &tx,
+                &resolver,
+            ))
+            .map_err(|error| format!("DID {name} transaction proving failed: {error:?}"))?;
+        let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
         let balanced = async_runtime.block_on(state.balance_tx(rng.clone(), sealed, &resolver))?;
+        let mut proved_calls = balanced.calls();
+        let (_, proved_call) = proved_calls.next().ok_or("missing funded DID call")?;
+        let ProofVersioned::V3(transaction_proof) = &proved_call.proof else {
+            return Err("expected a v3 transaction-bound DID proof".into());
+        };
+        let funded_dust_spends = v3::positive_fee_dust_spends(&balanced);
+        if proved_calls.next().is_some()
+            || transaction_proof.0.is_empty()
+            || transaction_proof == &standalone
+            || funded_dust_spends != 1
+        {
+            return Err(
+                "DID requires a distinct v3 transaction proof and one proved Dust spend".into(),
+            );
+        }
+        v3::write_new(
+            root.join(format!("{stem}-transaction-bound.proof")),
+            &transaction_proof.0,
+        )?;
+        let mut transaction_bytes = Vec::new();
+        tagged_serialize(&balanced, &mut transaction_bytes)?;
+        v3::write_new(
+            root.join(format!("{stem}-transaction.bin")),
+            &transaction_bytes,
+        )?;
         let accepted_at = state.time;
         super::did_public_interchange::capture_if_requested(
             &balanced,
             &state.ledger,
             &state.context(),
-            match lifecycle {
-                Lifecycle::Points => "points",
-                Lifecycle::Aliases => "aliases",
-                Lifecycle::Services => "services",
-                Lifecycle::SchnorrMethods => "schnorr-methods",
-                Lifecycle::JwkMethods => "jwk-methods",
-                Lifecycle::Digest => "digest",
-                Lifecycle::Relations => "relations",
-                Lifecycle::RelationSchnorr => "relation-schnorr",
-            },
+            scenario,
             id,
             name,
         )?;
@@ -735,9 +752,18 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
         ) {
             return Err(format!("expected exact replay-protection refusal, got {replay:?}").into());
         }
-        if replayed != unchanged {
-            return Err("rejected replay changed ledger state".into());
+        let mut ledger_after = Vec::new();
+        let mut ledger_replay = Vec::new();
+        tagged_serialize(&unchanged, &mut ledger_after)?;
+        tagged_serialize(&replayed, &mut ledger_replay)?;
+        if replayed != unchanged || ledger_after != ledger_replay {
+            return Err("rejected replay changed ledger state or bytes".into());
         }
+        v3::write_new(root.join(format!("{stem}-ledger-after.bin")), &ledger_after)?;
+        v3::write_new(
+            root.join(format!("{stem}-ledger-replay.bin")),
+            &ledger_replay,
+        )?;
         println!(
             "original DID {name}: nonempty proof verified, changed input rejected, strict separate-Dust ledger application, same-time replay refusal: {replay:?}"
         );
@@ -745,9 +771,11 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             return Err("replay validation mutated ledger".into());
         }
         checked_calls.push(json!({
-            "case": id, "operation": name, "proof_bytes": proof_bytes,
+            "case": id, "operation": name, "proof_bytes": standalone.0.len(),
+            "transaction_proof_bytes": transaction_proof.0.len(),
+            "transaction_proof_version": 3, "funded_dust_spends": funded_dust_spends,
             "changed_binding_rejected": true, "applied": true,
-            "replay_refusal": "IntentAlreadyExists",
+            "replay_refusal": "IntentAlreadyExists", "replay_unchanged": true,
         }));
     }
     if matches!(lifecycle, Lifecycle::RelationSchnorr) {
@@ -931,16 +959,6 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
             );
         }
     }
-    let (scenario, selector) = match lifecycle {
-        Lifecycle::Points => ("points", "--did-point-lifecycle"),
-        Lifecycle::Aliases => ("aliases", "--did-alias-lifecycle"),
-        Lifecycle::Services => ("services", "--did-service-lifecycle"),
-        Lifecycle::SchnorrMethods => ("schnorr-methods", "--did-schnorr-method-lifecycle"),
-        Lifecycle::JwkMethods => ("jwk-methods", "--did-jwk-method-lifecycle"),
-        Lifecycle::Digest => ("digest", "--did-digest-verification"),
-        Lifecycle::Relations => ("relations", "--did-relation-lifecycle"),
-        Lifecycle::RelationSchnorr => ("relation-schnorr", "--did-relation-schnorr"),
-    };
     let final_state_file = format!("did-{scenario}-final-state.bin");
     let mut public_state = Vec::new();
     tagged_serialize(&final_state, &mut public_state)?;
@@ -948,7 +966,7 @@ fn run_lifecycle(root: &Path, lifecycle: Lifecycle) -> Result<(), Box<dyn Error>
     fs::write(
         root.join(format!("did-{scenario}-result.json")),
         serde_json::to_vec_pretty(&json!({
-            "format": "compact-did-proof-result/v1", "scenario": scenario,
+            "format": "compact-did-proof-result/v2", "scenario": scenario,
             "selector": selector, "installed_operations": operation_names,
             "strictness": "default", "deployment_applied": true,
             "constructor_execution_proved": false, "calls": checked_calls,

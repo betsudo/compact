@@ -32,14 +32,24 @@ def put(path, value):
 
 def summary(scenario):
     spec = gate.SCENARIOS[scenario]
-    return {"format": "compact-did-proof-result/v1", "scenario": scenario,
+    return {"format": "compact-did-proof-result/v2", "scenario": scenario,
             "selector": spec["selector"], "installed_operations": spec["installed_operations"],
             "strictness": "default", "deployment_applied": True,
             "constructor_execution_proved": False, "final_state_file": f"did-{scenario}-final-state.bin",
             "calls": [{"case": case, "operation": operation, "proof_bytes": 123,
-                       "changed_binding_rejected": True, "applied": True,
-                       "replay_refusal": "IntentAlreadyExists"}
+                       "transaction_proof_bytes": 234, "transaction_proof_version": 3,
+                       "funded_dust_spends": 1, "changed_binding_rejected": True, "applied": True,
+                       "replay_refusal": "IntentAlreadyExists", "replay_unchanged": True}
                       for case, operation in zip(spec["cases"], spec["operations"])]}
+
+
+def put_artifacts(output, scenario, calls):
+    for call in calls:
+        stem = f"did-{scenario}-{call['case']}"
+        (output / f"{stem}.proof").write_bytes(b"a" * call["proof_bytes"])
+        (output / f"{stem}-transaction-bound.proof").write_bytes(b"b" * call["transaction_proof_bytes"])
+        for suffix in (".inputs", "-transaction.bin", "-ledger-after.bin", "-ledger-replay.bin"):
+            (output / f"{stem}{suffix}").write_bytes(b"data")
 
 
 class OrchestrationTests(unittest.TestCase):
@@ -51,7 +61,7 @@ class OrchestrationTests(unittest.TestCase):
         self.patch = patch.object(gate, "ROOT", self.root)
         self.patch.start()
         self.addCleanup(self.patch.stop)
-        for name in ("compiler", "scheme", "tools/zkir"):
+        for name in ("compiler", "scheme", "tools/zkir-v3"):
             path = self.root / name
             put(path, "#!/bin/sh\nexit 0\n")
             path.chmod(0o755)
@@ -88,7 +98,11 @@ class OrchestrationTests(unittest.TestCase):
         if label == self.failure:
             raise gate.common.GateError("controlled failure: " + label)
         output = directory / "did"
-        if label == "compile-did":
+        if label == "zkir-version":
+            put(stdout_path, gate.ZKIR_VERSION)
+        elif label == "model-did":
+            put(log, "\n".join(f'circuit "{op}" (k={k}, rows=1)' for op, k in gate.EXPECTED_K.items()))
+        elif label == "compile-did":
             put(output / "contract/lib.rs", "fixture")
             rows = [{"name": name, "proof_required": True, "recorded": name in gate.EXPORTS,
                      "observed_call": name in gate.EXPORTS,
@@ -102,30 +116,35 @@ class OrchestrationTests(unittest.TestCase):
             put(output / "compiler/contract-info.json", {"circuits": [
                 {"name": name, "proof": True} for name in sorted(gate.EXPORTS)]})
             put(output / "compiler/rust-compatibility.json", {"compatibility": {"runtime_abi": 50}})
-            for op in gate.KEYS:
+            put(output / "contract/compact-rust-ir.json", "ir")
+            put(output / "compiler/contract-manifest.json", "manifest")
+            for op in gate.EXPORTS:
                 put(output / f"zkir/{op}.zkir", op)
         elif label == "build-proof-runner":
-            binary = self.target / "debug/compact-rust-proof-smoke"
+            binary = self.target / "proof-checks/compact-rust-proof-smoke"
             put(binary, "#!/bin/sh\nexit 0\n")
             binary.chmod(0o755)
         elif label == "prepare-proof-material":
             put(self.root / "pp/builtin-key", "public key")
-            put(self.root / "pp/bls_midnight_2p11", "public SRS")
+            for k in (11, 12):
+                put(self.root / f"pp/bls_midnight_2p{k}", "public SRS")
             put(stdout_path, {"format": "compact-proof-material/v1", "mode": "prepare",
                               "cache_directory": str(self.root / "pp"),
                               "asset_count": 1, "assets": [{"name": "builtin-key"}],
-                              "parameter_count": 1, "parameters": [{"name": "bls_midnight_2p11"}]})
+                              "parameter_count": 2, "parameters": [
+                                  {"name": f"bls_midnight_2p{k}", "k": k} for k in (11, 12)]})
         elif label.startswith("keygen-"):
             op = label.removeprefix("keygen-")
             for ext in ("prover", "verifier"):
                 put(output / f"keys/{op}.{ext}", ext)
             put(output / f"zkir/{op}.bzkir", "binary IR")
             put(self.root / "pp/bls_midnight_2p11", "public SRS")
-            put(log, "Compiling circuit (k=11, rows=1)")
+            put(log, f"Compiling circuit (k={gate.EXPECTED_K[op]}, rows=1)")
         elif label.startswith("prove-"):
             scenario = label.removeprefix("prove-")
             put(output / f"did-{scenario}-result.json", summary(scenario))
             put(output / f"did-{scenario}-final-state.bin", "public state")
+            put_artifacts(output, scenario, summary(scenario)["calls"])
         self.mutation(label, output)
 
     def run_gate(self):
@@ -139,6 +158,22 @@ class OrchestrationTests(unittest.TestCase):
         self.assertEqual(len(result["keygen"]), 11)
         self.assertEqual(sum(len(row["calls"]) for row in result["scenarios"].values()), 16)
         self.assertEqual(self.calls[-3:], ["prove-schnorr-methods", "prove-jwk-methods", "prove-digest"])
+
+    def test_non_v3_tool_refuses_before_compiler(self):
+        def mutate(label, output):
+            if label == "zkir-version":
+                put(output.parent / "zkir-version.txt", "midnight-zkir 2")
+        self.mutation = mutate
+        result = self.run_gate()
+        self.assertIn("expected published ZKIR v3", result["error"])
+        self.assertEqual(self.calls, ["zkir-version"])
+
+    def test_replay_artifact_must_match_applied_bytes(self):
+        def mutate(label, output):
+            if label == "prove-points":
+                put(output / "did-points-rotate-ledger-replay.bin", "changed replay")
+        self.mutation = mutate
+        self.assertIn("replay bytes differ", self.run_gate()["error"])
 
     def test_missing_prerequisite_refuses_before_commands_and_retains_failure(self):
         self.env.pop("MIDNIGHT_PP")

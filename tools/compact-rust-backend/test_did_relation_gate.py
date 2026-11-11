@@ -23,6 +23,7 @@ import unittest
 from unittest.mock import patch
 
 import did_relation_gate as gate
+from test_did_proof_gate import put_artifacts
 
 
 class RelationGateTests(unittest.TestCase):
@@ -36,7 +37,15 @@ class RelationGateTests(unittest.TestCase):
                 return {"snapshot": str(destination), "sha256": gate.common.sha256(destination)}
 
             def command(argv, label, directory, receipt, *, env, stdout_path=None):
-                if label.startswith("compile-"):
+                log = directory / f"{label}.log"
+                log.write_text("ok")
+                receipt["commands"].append({"log": str(log)})
+                if label == "zkir-version":
+                    stdout_path.write_text(gate.did.ZKIR_VERSION)
+                elif label == "model-did":
+                    log.write_text("\n".join(
+                        f'circuit "{op}" (k={k}, rows=1)' for op, k in gate.did.EXPECTED_K.items()))
+                elif label.startswith("compile-"):
                     output = Path(argv[-1])
                     (output / "contract").mkdir(parents=True)
                     (output / "compiler").mkdir()
@@ -49,6 +58,8 @@ class RelationGateTests(unittest.TestCase):
                         fixture = gate.ROOT / f"tests-rust-backend/{fixture_name}/lib.rs"
                         operations = [operation]
                     (output / "contract/lib.rs").write_bytes(fixture.read_bytes())
+                    (output / "contract/compact-rust-ir.json").write_bytes(b"ir")
+                    (output / "compiler/contract-manifest.json").write_bytes(b"manifest")
                     capabilities = [{"name": op, "recorded": True, "observed_call": True,
                                      "proof_required": True, "recording_status": "available"}
                                     for op in operations]
@@ -60,8 +71,12 @@ class RelationGateTests(unittest.TestCase):
                         (output / f"zkir/{operation}.zkir").write_bytes(b"ir")
                     self.assertFalse((output / "keys").exists())
                 elif label == "prepare-proof-material":
+                    parameters = [{"name": f"bls_midnight_2p{k}", "k": k} for k in (11, 12)]
+                    for row in parameters:
+                        (root / row["name"]).write_bytes(b"material")
                     stdout_path.write_text(json.dumps({"format": "compact-proof-material/v1",
-                        "mode": "prepare", "cache_directory": str(root)}))
+                        "mode": "prepare", "cache_directory": str(root), "assets": [],
+                        "parameters": parameters}))
                 elif label.startswith("keygen-"):
                     # Like zkir, write into an existing output parent; do not
                     # let the command double hide missing harness setup.
@@ -69,6 +84,9 @@ class RelationGateTests(unittest.TestCase):
                     Path(argv[-1]).write_bytes(b"verifier")
                     Path(argv[-3]).with_suffix(".bzkir").write_bytes(b"binary ir")
                     keygens.append(label)
+                    op = label.removeprefix("keygen-")
+                    if op in gate.did.EXPECTED_K:
+                        log.write_text(f"Compiling circuit (k={gate.did.EXPECTED_K[op]}, rows=1)")
                 elif label.startswith("prove-"):
                     name = label.removeprefix("prove-")
                     output = Path(argv[-1])
@@ -76,6 +94,7 @@ class RelationGateTests(unittest.TestCase):
                         summary = self.original(name)
                         (output / f"did-{name}-result.json").write_text(json.dumps(summary))
                         (output / summary["final_state_file"]).write_bytes(b"state")
+                        put_artifacts(output, name, summary["calls"])
                     else:
                         summary = self.reducer(name)
                         (output / "proof-result.json").write_text(json.dumps(summary))
@@ -98,7 +117,7 @@ class RelationGateTests(unittest.TestCase):
 
     def original(self, scenario):
         selector, cases, operations = gate.SCENARIOS[scenario]
-        return {'format': 'compact-did-proof-result/v1', 'scenario': scenario,
+        return {'format': 'compact-did-proof-result/v2', 'scenario': scenario,
                 'selector': selector, 'strictness': 'default', 'deployment_applied': True,
                 'installed_operations': (["setVerificationMethod", "removeVerificationMethod",
                                           gate.RELATION] if scenario == "relations" else
@@ -107,8 +126,9 @@ class RelationGateTests(unittest.TestCase):
                 'constructor_execution_proved': False,
                 'final_state_file': f'did-{scenario}-final-state.bin',
                 'calls': [{'case': case, 'operation': operation, 'proof_bytes': 1,
-                           'applied': True, 'changed_binding_rejected': True,
-                           'replay_refusal': 'IntentAlreadyExists'}
+                           'transaction_proof_bytes': 1, 'transaction_proof_version': 3,
+                           'funded_dust_spends': 1, 'applied': True, 'changed_binding_rejected': True,
+                           'replay_refusal': 'IntentAlreadyExists', 'replay_unchanged': True}
                           for case, operation in zip(cases, operations)]}
 
     def reducer(self, kind):

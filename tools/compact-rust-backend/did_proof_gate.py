@@ -62,9 +62,11 @@ SCENARIOS = {
                "operations": ["setSchnorrJubjubVerificationMethod",
                               "verifySchnorrJubjubDigestSignature"]},
 }
-EXPORTS = set(KEYS) | {"setVerificationMethod", "removeVerificationMethod",
-    "setVerificationMethodRelation",
-    "setService", "removeService"}
+EXPORTS = set(KEYS) | {"setVerificationMethodRelation"}
+LARGE_CIRCUITS = {"setService", "setSchnorrJubjubVerificationMethod",
+                  "setVerificationMethod", "setVerificationMethodRelation"}
+EXPECTED_K = {name: 12 if name in LARGE_CIRCUITS else 11 for name in EXPORTS}
+ZKIR_VERSION = "midnight-zkir 3.2.0"
 
 
 def require(condition, message):
@@ -151,9 +153,55 @@ def capability_inventory(output):
     return report
 
 
+def model_circuits(execute, receipt, zkir, output, expected_k):
+    execute([zkir, "mock-compile-many", output / "zkir"], "model-" + output.name)
+    rows = re.findall(r'circuit "([^"]+)" \(k=(\d+), rows=(\d+)\)',
+                      Path(receipt["commands"][-1]["log"]).read_text())
+    model = {name: (int(k), int(size)) for name, k, size in rows}
+    require(len(model) == len(rows) and set(model) == set(expected_k)
+            and all(k == expected_k[name] and size > 0 for name, (k, size) in model.items()),
+            "DID v3 modeled circuit inventory or parameter recipe differs")
+    return model
+
+
+def validate_call(call):
+    require(type(call.get("proof_bytes")) is int and call["proof_bytes"] > 0,
+            "DID summary lacks nonempty proof")
+    require(type(call.get("transaction_proof_bytes")) is int and call["transaction_proof_bytes"] > 0
+            and type(call.get("transaction_proof_version")) is int
+            and call["transaction_proof_version"] == 3
+            and type(call.get("funded_dust_spends")) is int and call["funded_dust_spends"] == 1,
+            "DID summary lacks a v3 transaction proof with one proved Dust spend")
+    require(call.get("changed_binding_rejected") is True and call.get("applied") is True
+            and call.get("replay_refusal") == "IntentAlreadyExists"
+            and call.get("replay_unchanged") is True, "DID checked result missing")
+
+
+def proof_artifacts(output, scenario, calls):
+    paths = []
+    for call in calls:
+        stem = f"did-{scenario}-{call['case']}"
+        proof = output / f"{stem}.proof"
+        transaction_proof = output / f"{stem}-transaction-bound.proof"
+        inputs = output / f"{stem}.inputs"
+        transaction = output / f"{stem}-transaction.bin"
+        after = output / f"{stem}-ledger-after.bin"
+        replay = output / f"{stem}-ledger-replay.bin"
+        artifacts = [proof, transaction_proof, inputs, transaction, after, replay]
+        require(all(path.is_file() and not path.is_symlink() and path.stat().st_size > 0
+                    for path in artifacts), f"{stem}: missing or invalid v3 proof artifact")
+        require(proof.stat().st_size == call["proof_bytes"]
+                and transaction_proof.stat().st_size == call["transaction_proof_bytes"]
+                and common.sha256(proof) != common.sha256(transaction_proof),
+                f"{stem}: standalone and transaction proofs differ from receipt")
+        require(common.sha256(after) == common.sha256(replay), f"{stem}: replay bytes differ")
+        paths.extend(artifacts)
+    return paths
+
+
 def validate_summary(summary, scenario):
     spec = SCENARIOS[scenario]
-    require(summary.get("format") == "compact-did-proof-result/v1", "missing DID success format")
+    require(summary.get("format") == "compact-did-proof-result/v2", "missing DID success format")
     for key, value in {"scenario": scenario, "selector": spec["selector"],
                        "installed_operations": spec["installed_operations"],
                        "strictness": "default", "deployment_applied": True,
@@ -165,10 +213,7 @@ def validate_summary(summary, scenario):
     require([r.get("case") for r in calls] == spec["cases"], "DID summary omits or reorders cases")
     require([r.get("operation") for r in calls] == spec["operations"], "DID summary changes operations")
     for call in calls:
-        require(type(call.get("proof_bytes")) is int and call["proof_bytes"] > 0,
-                "DID summary lacks nonempty proof")
-        require(call.get("changed_binding_rejected") is True and call.get("applied") is True
-                and call.get("replay_refusal") == "IntentAlreadyExists", "DID checked result missing")
+        validate_call(call)
     require(summary.get("final_state_file") == f"did-{scenario}-final-state.bin",
             "DID final public-state path is not the fixed scenario path")
 
@@ -182,7 +227,8 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                "scope": "offline default-strict deployment/calls; constructor execution unproved; eleven of twelve recorded exports"}
     env = dict(os.environ if environment is None else environment)
     try:
-        receipt["prerequisites"] = prerequisites(env)
+        require("MIDNIGHT_PROOF_SERVER" not in env, "DID v3 gate requires local proving")
+        receipt["prerequisites"] = prerequisites(env, zkir_name="zkir-v3")
         receipt["source_hashes"] = source_inventory()
         receipt["dust_fixture_hashes"] = dust_fixture_inventory(
             Path(receipt["prerequisites"]["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
@@ -200,7 +246,10 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         def execute(argv, label, stdout_path=None):
             command([str(v) for v in argv], label, directory, receipt, env=env, stdout_path=stdout_path)
         output = directory / "did"
-        execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
+        zkir = components["zkir"]["snapshot"]
+        version = directory / "zkir-version.txt"
+        execute([zkir, "--version"], "zkir-version", version)
+        require(version.read_text().strip() == ZKIR_VERSION, "expected published ZKIR v3 3.2.0")
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / SOURCE, output], "compile-did")
         execute(["rustfmt", "--edition", "2024", output / "contract/lib.rs"], "format-did")
@@ -211,13 +260,22 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         require(metadata.get("compatibility") == read_json(ROOT / "runtime-rs/compatibility.json"),
                 "generated runtime compatibility differs from current source record")
         receipt["generated_metadata"] = metadata
-        execute(["cargo", "+1.99.0", "build", "--locked", "--offline", "-p", "compact-rust-proof-smoke"],
+        raw_circuits = sorted((output / "zkir").glob("*.zkir"))
+        require({path.stem for path in raw_circuits} == EXPORTS, "DID raw circuit inventory differs")
+        receipt["generated_hashes"] = hashes(raw_circuits + [
+            output / name for name in ("contract/lib.rs", "contract/compact-rust-ir.json",
+                                       "compiler/contract-manifest.json")])
+        geometry = model_circuits(execute, receipt, zkir, output, EXPECTED_K)
+        receipt["geometry"] = geometry
+        execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline",
+                 "-p", "compact-rust-proof-smoke"],
                 "build-proof-runner")
-        components["proof-runner"] = snapshot(target.resolve() / "debug/compact-rust-proof-smoke",
+        components["proof-runner"] = snapshot(target.resolve() / "proof-checks/compact-rust-proof-smoke",
                                                 directory / "bin/compact-rust-proof-smoke")
         runner = components["proof-runner"]["snapshot"]
         material = directory / "proof-material.json"
-        execute([runner, "--prepare-proof-material"], "prepare-proof-material", material)
+        execute([runner, "--prepare-proof-material", "--parameter-k", 11, "--parameter-k", 12],
+                "prepare-proof-material", material)
         receipt["proof_material"] = read_json(material)
         prepared = receipt["proof_material"]
         require(prepared.get("format") == "compact-proof-material/v1" and prepared.get("mode") == "prepare",
@@ -225,18 +283,21 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         require(Path(prepared["cache_directory"]).resolve() == Path(receipt["prerequisites"]["MIDNIGHT_PP"]),
                 "proof preparation used a different material directory")
         require(prepared.get("asset_count") == len(prepared["assets"]) > 0
-                and prepared.get("parameter_count") == len(prepared["parameters"]) > 0,
+                and prepared.get("parameter_count") == len(prepared["parameters"]) > 0
+                and {11, 12}.issubset({row["k"] for row in prepared["parameters"]}),
                 "proof preparation receipt omits its material inventory")
         (output / "keys").mkdir(exist_ok=True)
         receipt["keygen"] = []
         for operation in KEYS:
-            execute([components["zkir"]["snapshot"], "compile", output / f"zkir/{operation}.zkir",
+            execute([zkir, "compile", output / f"zkir/{operation}.zkir",
                      output / f"keys/{operation}.prover", output / f"keys/{operation}.verifier"],
                     f"keygen-{operation}")
             log = Path(receipt["commands"][-1]["log"]).read_text()
             model = re.search(r"\(k=(\d+), rows=(\d+)\)", log)
-            require(model is not None, f"missing measured key model: {operation}")
-            receipt["keygen"].append({"operation": operation, "k": int(model[1]), "rows": int(model[2])})
+            require(model is not None and tuple(map(int, model.groups())) == geometry[operation],
+                    f"DID key generation geometry differs from the v3 model: {operation}")
+            k, rows = geometry[operation]
+            receipt["keygen"].append({"operation": operation, "k": k, "rows": rows})
         artifacts = [output / f"keys/{op}.{ext}" for op in KEYS for ext in ("prover", "verifier")]
         artifacts += [output / f"zkir/{op}.{ext}" for op in KEYS for ext in ("zkir", "bzkir")]
         require(all(p.is_file() and p.stat().st_size > 0 for p in artifacts), "missing generated proof material")
@@ -259,12 +320,14 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                     "DID final public-state artifact missing or invalid")
             summary["final_state_sha256"] = common.sha256(final_state)
             receipt["scenarios"][scenario] = summary
-            receipt["result_hashes"].update(hashes([summary_path, final_state]))
+            receipt["result_hashes"].update(hashes(
+                [summary_path, final_state, *proof_artifacts(output, scenario, summary["calls"])]))
         require(set(receipt["scenarios"]) == set(SCENARIOS), "required DID scenario omitted")
         unchanged(receipt["source_hashes"])
         require(source_inventory() == receipt["source_hashes"], "source inventory additions or removals detected")
         unchanged(receipt["dust_fixture_hashes"])
         require(common.git_head() == receipt["git_head"], "git HEAD changed during DID gate")
+        unchanged(receipt["generated_hashes"])
         unchanged(receipt["material_hashes"])
         unchanged(receipt["result_hashes"])
         unchanged({v["snapshot"]: v["sha256"] for v in components.values()})
