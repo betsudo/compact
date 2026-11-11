@@ -153,7 +153,15 @@ cases. Compared with the historical capture, the changed fields are serialized
 contract states. The seven Rust lifecycle tests pass across the ordinary and
 functional routes. The original Ledger 8 capture remains available.
 
-The released native ZKIR v3 tool cannot yet model this source's `deactivate`
-circuit. It reports an unsupported native scalar for `EcMulGenerator`. This
-blocks key generation for this proof lane and requires a v3 emitter or source
-dialect compatibility fix.
+The complete native lifecycle gate passed on macOS arm64 at `c2c73023f`.
+It checked all twelve live DID observations, three typed misuse controls and
+Clippy. The two positive cases ran across four Rust routes, and the ten failure
+cases exercised all four routes.
+
+The released native ZKIR v3 tool rejects this source's `deactivate` circuit
+because `EcMulGenerator` receives a native scalar. A model-only probe with
+explicit conversion at both multiplication instructions reached k11 and 1,871
+rows. The next compiler change must preserve canonical scalar rejection.
+`jubjub_scalar_from_native` reduces modulo the Jubjub order, while Compact's
+multiplication builtins reject an out-of-range scalar. No DID keys or proofs
+were produced during the Ledger 9 lifecycle qualification.
