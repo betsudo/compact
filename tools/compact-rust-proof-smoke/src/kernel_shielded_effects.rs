@@ -15,11 +15,19 @@
 
 //! Call proofs preserve Kernel effects; transaction acceptance needs matching offers.
 
+use super::local_v3_application as v3;
+use super::positional_transaction::verify_separately;
 use super::*;
 use compact_rust_kernel_shielded_effects_oracle_fixture::ledger_contract as contract;
 use midnight_compact_runtime as runtime;
 use midnight_compact_runtime::transaction::OfferBackedObservedState;
-use midnight_ledger::error::{EffectsCheckError, MalformedTransaction};
+use midnight_ledger::{
+    error::{
+        EffectsCheckError, MalformedTransaction, TransactionApplicationError, TransactionInvalid,
+    },
+    structure::ProofVersioned,
+    test_utilities::tx_prove,
+};
 use midnight_serialize::{Deserializable, Tagged};
 use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
 use midnight_zswap::{Offer, Output};
@@ -48,8 +56,82 @@ fn validate_ir(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+// SHA-256 of the complete v3 raw ZKIR emitted for the original Compact fixture.
+const RAW_CIRCUITS: [(&str, &str); 8] = [
+    (
+        "batch",
+        "50cd27a172693cf9e8bff6f163b3419236dc4991b0ddf8f0cdfb719b1b04a4e1",
+    ),
+    (
+        "claim_receive",
+        "f20e321958f68a10e5c1423efb9bf54988c29970365837d7a1d692a8e23ad23d",
+    ),
+    (
+        "mint",
+        "cb1be02ca4ee3d1402c8f3c940e91f579fd4bd35077e0dc58996cd4168835b36",
+    ),
+    (
+        "nullifier",
+        "2835ffefd19d3d0510eddbd6ad88f62a053fa0f5eef7630a1d5b770cce4ba5ca",
+    ),
+    (
+        "read_state",
+        "6b4ea40ac4e1514008f85da5fdaf124aa213c7b73274abdcf7e5ffc782f4693d",
+    ),
+    (
+        "selected",
+        "d98c94cc78b45a335df8d0f690ef68bfcadce3f913c2ac0f215b1f89e9ba9551",
+    ),
+    (
+        "spend",
+        "2030c2ee0c4fa04d5bcb2257dcaa6e9465c5662578c79b5d5b9d4491ed82c942",
+    ),
+    (
+        "witness_order",
+        "23a726e55fa3342556eb8efb9f4d5a56573f64ca7cd4864ff82e5c11797540b8",
+    ),
+];
+
+fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
     validate_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)?;
+    if std::fs::read(root.join("contract/lib.rs"))?
+        != compact_rust_kernel_shielded_effects_oracle_fixture::RENDERED_SOURCE
+    {
+        return Err("Kernel generated Rust differs from the linked fixture".into());
+    }
+    let zkir = root.join("zkir");
+    let mut raw_count = 0;
+    for entry in std::fs::read_dir(&zkir)? {
+        let entry = entry?;
+        if entry
+            .path()
+            .extension()
+            .is_some_and(|extension| extension == "zkir")
+        {
+            raw_count += 1;
+        }
+    }
+    if raw_count != RAW_CIRCUITS.len() {
+        return Err("Kernel raw circuit inventory differs from the original fixture".into());
+    }
+    for (name, digest) in RAW_CIRCUITS {
+        let raw = std::fs::read(zkir.join(format!("{name}.zkir")))?;
+        if hex::encode(midnight_base_crypto::hash::persistent_hash(&raw).0) != digest {
+            return Err(
+                format!("Kernel raw circuit differs from the original fixture: {name}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "Kernel shielded effects require local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
+    validate_artifacts(root)?;
     for (name, selected) in [
         ("mint", false),
         ("nullifier", false),
@@ -68,7 +150,13 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
 fn prove_case(root: &Path, name: &'static str, selected: bool) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0184_4341);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let (_, verifier, operation) = v3::load_operation(root, name)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        name,
+        operation.clone(),
+        &mut rng,
+    );
     let observed = ObservedContractState::new(
         deploy.address(),
         deploy.initial_state.clone(),
@@ -93,9 +181,6 @@ fn prove_case(root: &Path, name: &'static str, selected: bool) -> Result<(), Box
         "witness_order" => recording.witness_order_call(&observed, ())?,
         _ => unreachable!(),
     };
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{name}.verifier")),
-    )?))?;
     if name == "selected" && !selected {
         if !matches!(
             call.prepare(verifier, Fr::from(0_u64)),
@@ -113,7 +198,12 @@ fn prove_case(root: &Path, name: &'static str, selected: bool) -> Result<(), Box
         return Ok(());
     }
     let prepared = call.prepare(verifier.clone(), Fr::from(0_u64))?;
-    prove_and_verify_call(root, name, &prepared, &verifier)?;
+    if prepared.op != operation {
+        return Err("Kernel observed operation differs from the installed v3 operation".into());
+    }
+    let stem = format!("kernel-{name}");
+    v3::prove_standalone(root, name, &stem, &prepared, &verifier, None)?;
+    verify_separately(root, name, &stem)?;
     if matches!(name, "nullifier" | "spend" | "claim_receive" | "batch")
         || (name == "selected" && selected)
     {
@@ -341,12 +431,28 @@ fn funded_mint(root: &Path) -> Result<(), Box<dyn Error>> {
     const NAME: &str = "mint";
     let mut rng = StdRng::seed_from_u64(0x0184_4d49);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
-    let mut fee_state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fee_state.ledger.contract = fee_state
-        .ledger
-        .contract
-        .insert(deploy.address(), deploy.initial_state.clone());
+    const STEM: &str = "kernel-funded-mint";
+    let (_, verifier, operation) = v3::load_operation(root, NAME)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        NAME,
+        operation.clone(),
+        &mut rng,
+    );
+    let mut fee_state = super::qualified_coin_funding::fee_funded_state_with_utxos(&mut rng, 2)?;
+    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    v3::apply_funded_deployment(
+        root,
+        STEM,
+        &deploy,
+        &mut fee_state,
+        &mut rng,
+        &executor,
+        &resolver,
+    )?;
     let ledger = fee_state.ledger.clone();
     let time = fee_state.time;
     let domain = runtime::ledger::HashOutput([0x84; 32]);
@@ -383,31 +489,35 @@ fn funded_mint(root: &Path) -> Result<(), Box<dyn Error>> {
         FixedBytes::new(domain.0),
         Amount::new(42)?,
     )?;
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/mint.verifier"),
-    )?))?;
-    let tx = bound
-        .prepare(call, verifier, Fr::from(0_u64))?
-        .into_transaction(
-            &mut rng,
-            "local-test",
-            Timestamp::from_secs(time.to_secs() + 3600),
-        );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0184_5052),
-        resolver: &resolver,
-        params: &params,
+    let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
+    if prepared.prototype().op != operation {
+        return Err("funded Kernel mint operation differs from installed v3 operation".into());
+    }
+    let standalone = v3::prove_standalone(root, NAME, STEM, prepared.prototype(), &verifier, None)?;
+    verify_separately(root, NAME, STEM)?;
+    let tx = prepared.into_transaction(&mut rng, "local-test", time + ledger.parameters.global_ttl);
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("funded Kernel mint transaction proving failed: {error:?}"))?;
+    let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
+    let sealed = executor.block_on(fee_state.balance_tx(rng, sealed, &resolver))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls.next().ok_or("missing funded Kernel mint call")?;
+    let ProofVersioned::V3(proof) = &call.proof else {
+        return Err("funded Kernel mint requires a transaction-bound v3 proof".into());
     };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0184_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fee_state.balance_tx(rng.clone(), sealed, &resolver))?;
+    if proof == &standalone || calls.next().is_some() || v3::positive_fee_dust_spends(&sealed) != 1
+    {
+        return Err("funded Kernel mint proof or Dust spend differs".into());
+    }
+    let mut tx_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut tx_bytes)?;
+    v3::write_new(root.join(format!("{STEM}-transaction.bin")), &tx_bytes)?;
+    v3::write_new(root.join(format!("{STEM}-transaction.proof")), &proof.0)?;
     let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
     let context = TransactionContext {
         ref_state: ledger.clone(),
@@ -422,22 +532,44 @@ fn funded_mint(root: &Path) -> Result<(), Box<dyn Error>> {
     if !matches!(outcome, TransactionResult::Success(_)) {
         return Err(format!("funded mint application failed: {outcome:?}").into());
     }
-    if updated
-        .contract
-        .get(&deploy.address())
-        .ok_or("mint contract disappeared")?
-        .data
-        != deploy.initial_state.data
-    {
-        return Err("Kernel mint changed public contract state".into());
+    if updated.contract.get(&deploy.address()) != Some(&deploy.initial_state) {
+        return Err("Kernel mint changed the installed operation or public contract state".into());
     }
     if updated.zswap.first_free != index + 1
         || updated.zswap.coin_coms.index(index).map(|(hash, _)| hash) != Some(commitment.0)
     {
         return Err("minted output ledger index/commitment differs".into());
     }
+    let (replayed, replay_outcome) = updated.apply(
+        &verified,
+        &TransactionContext {
+            ref_state: updated.clone(),
+            ..context
+        },
+    );
+    if !matches!(
+        replay_outcome,
+        TransactionResult::Failure(TransactionInvalid::ReplayProtectionViolation(
+            TransactionApplicationError::IntentAlreadyExists
+        ))
+    ) || replayed != updated
+    {
+        return Err(format!(
+            "funded Kernel mint replay was refused incorrectly: {replay_outcome:?}"
+        )
+        .into());
+    }
+    let mut after = Vec::new();
+    let mut replay = Vec::new();
+    tagged_serialize(&updated, &mut after)?;
+    tagged_serialize(&replayed, &mut replay)?;
+    if after != replay {
+        return Err("funded Kernel mint replay changed serialized ledger bytes".into());
+    }
+    v3::write_new(root.join(format!("{STEM}-ledger-after.bin")), &after)?;
+    v3::write_new(root.join(format!("{STEM}-ledger-replay.bin")), &replay)?;
     println!(
-        "nonzero Kernel mint42 + matching minted output + Night-backed Dust passed default strict validation and ledger application at output index {index}"
+        "nonzero Kernel mint42 + matching minted output + Night-backed Dust passed default strict validation and ledger application at output index {index}; replay refused without mutation"
     );
     Ok(())
 }
