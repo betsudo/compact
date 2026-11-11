@@ -104,8 +104,9 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
             let ir = IrSourceV3::load(BufReader::new(File::open(
                 root.join(name).join(format!("zkir/{entry}.zkir")),
             )?))?;
+            let model = ir.model();
             rows.push(
-                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"rows":ir.model().rows(),"proof_required":true,
+                serde_json::json!({"source":name,"circuit":entry,"k":model.k(),"rows":model.rows(),"proof_required":true,
                 "selected_for_proof":selected(name,entry)}),
             );
         }
@@ -181,7 +182,8 @@ pub(super) fn models(pool: &Path) -> Result<(), Box<dyn Error>> {
         let ir = IrSourceV3::load(BufReader::new(File::open(
             pool.join(name).join("zkir/run.zkir"),
         )?))?;
-        rows.push(serde_json::json!({"source":name,"circuit":"run","k":ir.model().k(),"rows":ir.model().rows(),"selected_for_proof":true}));
+        let model = ir.model();
+        rows.push(serde_json::json!({"source":name,"circuit":"run","k":model.k(),"rows":model.rows(),"selected_for_proof":true}));
     }
     println!(
         "{}",
@@ -626,7 +628,13 @@ pub(super) fn verify(pool: &Path) -> Result<(), Box<dyn Error>> {
         let input_bytes = std::fs::read(root.join(format!("{stem}.inputs")))?;
         let mut input_reader = input_bytes.as_slice();
         let inputs: Vec<Fr> = tagged_deserialize(&mut input_reader)?;
-        if !input_reader.is_empty() || wrong.verify(&PARAMS_VERIFIER, &proof, inputs).is_ok() {
+        if !input_reader.is_empty() {
+            return Err("vector-component-products proof inputs have trailing bytes".into());
+        }
+        if wrong
+            .verify(&PARAMS_VERIFIER, &proof, inputs.into_iter())
+            .is_ok()
+        {
             return Err("vector-component-products accepted wrong immutable verifier".into());
         }
         println!(
