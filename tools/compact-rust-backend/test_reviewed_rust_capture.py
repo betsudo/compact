@@ -25,7 +25,7 @@ import unittest
 import local_parity_gate as common
 import reviewed_rust_capture as reviewed
 
-# These four inputs changed during the Ledger 9 port. Keep the Ledger 8
+# These inputs changed during the Ledger 9 port. Keep the Ledger 8
 # originals from 09c75e289 so the historical contract also runs in shallow
 # checkouts. The original binding and capture still authenticate their bytes.
 LEGACY_INPUTS = Path(__file__).with_name("tests") / "reviewed_rust_capture" / "ledger8"
@@ -33,7 +33,11 @@ LEGACY_FILES = {
     "runtime/src/built-ins.ts",
     "runtime/src/compact-types.ts",
     "tests-rust-backend/did-point-digest-reducer/lib.rs",
+    "tests-rust-backend/did-point-digest-reducer/tests/provenance.rs",
+    "tests-rust-backend/did-point-digest-reducer/tests/behavior.rs",
     "tests-rust-backend/did-alias-guard-reducer/lib.rs",
+    "tests-rust-backend/did-alias-guard-reducer/tests/provenance.rs",
+    "tests-rust-backend/did-alias-guard-reducer/tests/behavior.rs",
 }
 
 
