@@ -1,0 +1,7 @@
+{
+  "contract/compact-rust-ir.json": "3c6fc63c4f904e1486322f3165c41b797caa0a5e167a046955e7ccea5946bd4a",
+  "contract/lib.rs": "e6f672e34a199a157914a316d7d2f586bab0a8e398b8a1fbe3dcef26bd5f9729",
+  "zkir/transfer.bzkir": "7d3934b9eae4eb03dd8e3158e45b07a433f21c0109e8a608d6d28085358c2777",
+  "zkir/transfer.zkir": "f460310b2fe709a1536b873b426f15ba73a8e05f22a4752971fc077e4162996f",
+  "keys/transfer.verifier": "34590090d22de6089700e1dc9bb87cf9a4ac98c286a2f5ace878bd84ea7811e5"
+}

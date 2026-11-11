@@ -14,6 +14,8 @@
 // limitations under the License.
 
 //! Original zero-output composite and exact funded nonzero composite transfer.
+use super::local_v3_application as v3;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_composite_zswap_transfer_oracle_fixture::{
     ledger_contract as transfer, types as transfer_types,
@@ -21,6 +23,7 @@ use compact_rust_composite_zswap_transfer_oracle_fixture::{
 use compact_rust_stateful_struct_oracle_fixture::{
     ledger_contract as planned, types as planned_types,
 };
+use midnight_base_crypto::hash::persistent_hash;
 use midnight_compact_runtime as runtime;
 use midnight_ledger::test_utilities::TestState;
 use midnight_zswap::{Input, Offer, Output};
@@ -51,11 +54,6 @@ fn observation() -> Observation {
         block_height: 0,
     }
 }
-fn verifier(root: &Path, name: &str) -> Result<VerifierKey, Box<dyn Error>> {
-    Ok(tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{name}.verifier")),
-    )?))?)
-}
 fn validate_ir(bytes: &[u8], expected: &str) -> Result<(), Box<dyn Error>> {
     let expected: serde_json::Value = serde_json::from_str(expected)?;
     let actual: serde_json::Value = serde_json::from_slice(bytes)?;
@@ -64,8 +62,30 @@ fn validate_ir(bytes: &[u8], expected: &str) -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
+fn validate_artifacts(root: &Path, pins: &str) -> Result<(), Box<dyn Error>> {
+    let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(pins)?;
+    let raw_count = std::fs::read_dir(root.join("zkir"))?
+        .collect::<Result<Vec<_>, _>>()?
+        .iter()
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "zkir"))
+        .count();
+    if raw_count != pins.keys().filter(|path| path.ends_with(".zkir")).count() {
+        return Err("composite raw circuit inventory differs from the pinned fixture".into());
+    }
+    for (path, expected) in pins {
+        let actual = hex::encode(persistent_hash(&std::fs::read(root.join(&path))?).0);
+        if actual != expected {
+            return Err(format!("composite source/proof artifact differs: {path}").into());
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn run(original: &Path, transfer_root: &Path) -> Result<(), Box<dyn Error>> {
-    // Bind both complete sources before either scenario reads proving keys.
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("composite Zswap requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    // Bind both complete sources and artifacts before either scenario reads proving keys.
     validate_ir(
         &std::fs::read(original.join("contract/compact-rust-ir.json"))?,
         compact_rust_stateful_struct_oracle_fixture::RETAINED_IR,
@@ -74,94 +94,45 @@ pub(super) fn run(original: &Path, transfer_root: &Path) -> Result<(), Box<dyn E
         &std::fs::read(transfer_root.join("contract/compact-rust-ir.json"))?,
         compact_rust_composite_zswap_transfer_oracle_fixture::RETAINED_IR,
     )?;
+    validate_artifacts(
+        original,
+        include_str!("../../compact-rust-backend/tests/composite-planned-ledger9-artifacts.json"),
+    )?;
+    validate_artifacts(
+        transfer_root,
+        include_str!("../../compact-rust-backend/tests/composite-transfer-ledger9-artifacts.json"),
+    )?;
     original_planned(original)?;
     funded_transfer(transfer_root)
 }
-#[allow(
-    clippy::too_many_arguments,
-    reason = "proof harness binds explicit ledger and artifact inputs"
-)]
-pub(super) fn apply_bound(
+fn deploy_funded(
     root: &Path,
-    name: &'static str,
-    prepared: impl super::observational_binding::ProofBoundCall,
-    mut state: TestState<DefaultDB>,
-    rng: StdRng,
-    verifier: &VerifierKey,
-    commitment: runtime::ledger::CoinCommitment,
-    index: u64,
-    address: runtime::ledger::ContractAddress,
-) -> Result<LedgerState<DefaultDB>, Box<dyn Error>> {
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        name,
-        prepared.prototype(),
-        verifier,
-    )?;
-    let expected_state = state.ledger.contract.get(&address).unwrap().data.clone();
-    let mut rng = rng;
-    let tx =
-        prepared.into_test_transaction(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600));
-    let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0191_5052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0191_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
+    (name, stem): (&'static str, &str),
+    data: StateValue<DefaultDB>,
+    rng: &mut StdRng,
+) -> Result<(ContractDeploy<DefaultDB>, VerifierKey, TestState<DefaultDB>), Box<dyn Error>> {
+    let (_, verifier, operation) = v3::operation(root, name, 10)?;
+    let deploy = v3::deploy(data, name, operation, rng);
+    let mut state = fee_funded_state_with_utxos(rng, 2)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(state.balance_tx(rng, sealed, &resolver))?;
-    // Genesis was inserted into the authoritative ledger only. Apply through
-    // the ledger API, as ADR188 does; TestState::apply would also replay that
-    // input tree into an unrelated empty convenience wallet.
-    let verified =
-        sealed.well_formed(&state.ledger, WellFormedStrictness::default(), state.time)?;
-    let context = TransactionContext {
-        ref_state: state.ledger.clone(),
-        block_context: BlockContext {
-            tblock: state.time,
-            last_block_time: state.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = state.ledger.apply(&verified, &context);
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("{name} apply failed: {result:?}").into());
-    }
-    assert_eq!(updated.contract.get(&address).unwrap().data, expected_state);
-    assert_eq!(updated.zswap.first_free, index + 1);
-    assert_eq!(
-        updated.zswap.coin_coms.index(index).map(|(hash, _)| hash),
-        Some(commitment.0)
-    );
-    println!(
-        "{name}: exact offer + separate Dust, default strictness and ledger apply passed, output index {index}"
-    );
-    Ok(updated)
+        .build()?;
+    let resolver = fee_resolver(root, name)?;
+    v3::apply_funded_deployment(root, stem, &deploy, &mut state, rng, &executor, &resolver)?;
+    Ok((deploy, verifier, state))
 }
+
 fn original_planned(root: &Path) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0191_0000);
     let initial = planned::initial_state(ConstructorContext::new(Vec::<u8>::new()))?;
-    let deploy = make_deploy(
+    let circuit = ("planned", "composite-planned-zero");
+    let (deploy, verifier, mut state) = deploy_funded(
         root,
-        "planned",
+        circuit,
         initial.ledger_state.get_ref().clone(),
         &mut rng,
     )?;
     let address = deploy.address();
-    let mut state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    state.ledger.contract = state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
-    let verifier = verifier(root, "planned")?;
     let generated = planned::Contract::from(Witnesses);
     let coin = planned_types::ShieldedCoinInfo {
         nonce: FixedBytes::new([7; 32]),
@@ -286,7 +257,7 @@ fn original_planned(root: &Path) -> Result<(), Box<dyn Error>> {
     let output = Output::new_contract_owned(&mut rng, &native_coin, None, address)?;
     let offer = Offer::new(vec![], vec![output], vec![]).ok_or("empty contract offer")?;
     let contract_bound = OfferBackedObservedState::new(
-        ObservedContractState::new(address, deploy.initial_state, observation()),
+        ObservedContractState::new(address, deploy.initial_state.clone(), observation()),
         &state.ledger,
         offer,
     )?;
@@ -323,26 +294,29 @@ fn original_planned(root: &Path) -> Result<(), Box<dyn Error>> {
     println!(
         "planned negatives: exact -42 deficit, extra wallet input mismatch, missing receive claim under default strictness"
     );
-    let _ = apply_bound(
-        root, "planned", prepared, state, rng, &verifier, commitment, 0, address,
+    let updated = v3::prove_and_apply_offer(
+        root,
+        circuit,
+        prepared,
+        &mut state,
+        &mut rng,
+        &verifier,
+        deploy.initial_state.data.get_ref(),
     )?;
+    super::shielded_receive::check_received_output(&updated, commitment, 0)?;
     Ok(())
 }
 fn funded_transfer(root: &Path) -> Result<(), Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0191_0042);
     let initial = transfer::initial_state(ConstructorContext::new(Vec::<u8>::new()))?;
-    let deploy = make_deploy(
+    let circuit = ("transfer", "composite-transfer");
+    let (deploy, verifier, mut state) = deploy_funded(
         root,
-        "transfer",
+        circuit,
         initial.ledger_state.get_ref().clone(),
         &mut rng,
     )?;
     let address = deploy.address();
-    let mut state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    state.ledger.contract = state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
     let seed_coin = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([1; 32]),
         FixedBytes::new([2; 32]),
@@ -375,7 +349,7 @@ fn funded_transfer(root: &Path) -> Result<(), Box<dyn Error>> {
     let commitment = output.coin_com;
     let offer = Offer::new(vec![input], vec![output], vec![]).ok_or("empty transfer")?;
     let bound = OfferBackedObservedState::new(
-        ObservedContractState::new(address, deploy.initial_state, observation()),
+        ObservedContractState::new(address, deploy.initial_state.clone(), observation()),
         &state.ledger,
         offer.clone(),
     )?;
@@ -413,19 +387,18 @@ fn funded_transfer(root: &Path) -> Result<(), Box<dyn Error>> {
         address.0.0
     );
     assert_eq!(call.recorded().execution.context.private_state, vec![3, 4]);
-    let verifier = verifier(root, "transfer")?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0))?;
-    let updated = apply_bound(
+    let updated = v3::prove_and_apply_offer(
         root,
-        "transfer",
+        circuit,
         prepared,
-        state,
-        rng,
+        &mut state,
+        &mut rng,
         &verifier,
-        commitment,
-        seed_index + 1,
-        address,
+        deploy.initial_state.data.get_ref(),
     )?;
+    super::shielded_receive::check_received_output(&updated, commitment, seed_index + 1)?;
+    assert!(updated.zswap.nullifiers.contains_key(&nullifier));
     let error = updated
         .zswap
         .try_apply(&offer, None)

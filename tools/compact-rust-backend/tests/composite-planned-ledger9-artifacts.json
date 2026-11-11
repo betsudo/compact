@@ -1,0 +1,16 @@
+{
+  "contract/compact-rust-ir.json": "681e2c10a293a238b4a1e816cad65e67de031bf10bc4a9c6c9c0acc832fce6ea",
+  "contract/lib.rs": "44dcd058abedddfefe7f890c7783d8862d1e5d679f0b65e55a48e693d7a85f8b",
+  "zkir/nested.bzkir": "8a9405c01de591f7860bb09aca2f535584f32740a594e40cfe34dbd17098ab4c",
+  "zkir/nested.zkir": "a57173daf350b61a6d4782433e495985d148b320496020f142a31df20064c610",
+  "zkir/planned.bzkir": "18bef8edff87d5d230cbc44dee3106451c3da19bbae0e7cfeb611c8b8e96511e",
+  "zkir/planned.zkir": "daeda2c856d2b10c5fc22a706d3ffc298ba62fe8861bbc14a34546df7a695db3",
+  "zkir/reverse.bzkir": "98edf602a94f04eacb80192f60e32f8e511e1f294f990f087b3c073dfb8bc9f8",
+  "zkir/reverse.zkir": "ac4c53d989510f05a10acdc5c27003a4c9d457223e64c04101ea66f374290fef",
+  "zkir/snapshot.bzkir": "bbd375a8d3645f2171dff17cd10d5f9b8b29fb53d5318688cc63c61a87ba99ed",
+  "zkir/snapshot.zkir": "5ae364ec42f24d28e4849f42c32fc2b5c79865f93b03d318268b1822a65cf16a",
+  "keys/nested.verifier": "fd506153b666817fdeac31096d027264778424f39713a74e8e23ee38d9d6e36b",
+  "keys/planned.verifier": "f02304eb5dd244588d6bcb57080e535294fd2f8ab23cb446aa5acebbc3ed389d",
+  "keys/reverse.verifier": "ff2d499bf6df8ac77693d93265980ddee4c894c053574259c11ee57839a9e71a",
+  "keys/snapshot.verifier": "2d0f2eaf5b703306c9ec89658ea6a4ad252a9d6b9e5be1f1968e92e0cfb9d6b0"
+}
