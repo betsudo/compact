@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn literal_constructor_matches_typescript_state_and_read() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-cell-literal.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-cell-literal.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

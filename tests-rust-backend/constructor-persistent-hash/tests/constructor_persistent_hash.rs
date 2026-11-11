@@ -41,7 +41,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn constructor_persistent_hash_matches_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-persistent-hash.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-persistent-hash.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

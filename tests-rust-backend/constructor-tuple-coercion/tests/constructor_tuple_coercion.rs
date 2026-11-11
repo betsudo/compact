@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn untyped_tuple_literals_coerce_to_field_elements() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-tuple-coercion.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-tuple-coercion.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();
