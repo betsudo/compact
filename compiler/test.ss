@@ -84114,6 +84114,45 @@ groups than for single tests.
 
   (test
     '(
+      "import CompactStandardLibrary;"
+      "export struct Stored { payload: Bytes<32>; point: JubjubPoint; count: Field; }"
+      "ledger entry: Stored;"
+      "export circuit roundTrip(value: Stored): Stored {"
+      "  entry = disclose(value);"
+      "  return entry.read();"
+      "}"
+      "export circuit readGuarded(useLedger: Boolean): Stored {"
+      "  if (disclose(useLedger)) return entry.read();"
+      "  return default<Stored>;"
+      "}"
+      "export circuit reset(): Stored {"
+      "  entry.resetToDefault();"
+      "  return entry.read();"
+      "}"
+      )
+    (stage-javascript
+      (append
+        '(
+          "test('ledger round trip with a nested Jubjub point and multi-field bytes', () => {"
+          "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+          "  const payload = Uint8Array.from({ length: 32 }, (_, i) => i + 1);"
+          "  const point = runtime.ecMulGenerator(3n);"
+          "  const value = { payload, point, count: 42n };"
+          "  const empty = { payload: new Uint8Array(32), point: runtime.ecMulGenerator(0n), count: 0n };"
+          "  const written = C.circuits.roundTrip(Ctxt, value);"
+          "  expect(written.result).toEqual(value);"
+          "  expect(C.circuits.readGuarded(written.context, true).result).toEqual(value);"
+          "  expect(C.circuits.readGuarded(written.context, false).result).toEqual(empty);"
+          )
+        ;; The v2 emitter still encodes this ledger default with zero coordinates.
+        (if (feature-zkir-v3)
+            '("  expect(C.circuits.reset(written.context).result).toEqual(empty);")
+            '())
+        '("});")))
+    )
+
+  (test
+    '(
       "export type UX<#n> = Uint<n>;"
       "export type UY<#n> = Uint<0..n>;"
       "export struct SX<#n, T> { curidx: Uint<n> }"

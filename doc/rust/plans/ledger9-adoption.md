@@ -69,3 +69,9 @@ The maintained v3 proof gate still needs to bind its producer, exact generated a
 ## Earlier Compact Ledger 9 branch
 
 The local `ledger9-rustbackend` ref at `6f4e5948f` records the Rust backend port and constructor rejection corpus. The retained `origin/ledger9-rustbackend` ref at `fc879310b` also records the TypeScript fixture update for the options-object `createCircuitContext` API and an independent Rust toolchain pin. Its runtime still uses the Ledger 9 RC3 Git graph and Rust 1.95.0. Use its negative cases and fixture recipes as references when auditing current gates. Keep this migration on the Rust AST line with released packages and Rust 1.99.0.
+
+## Nested Jubjub ledger values
+
+The read-only fixture audit found five v3 compiler crashes in DID, its digest reducer, a Jubjub Cell, a nested enum and a nested point map. This branch adapts the physical ledger encoding from the earlier Compact fix at `ee345ee15` to the current ZKIR v3 emitter. It writes each Jubjub point as two field coordinates and binds each public read as a typed point. The default path encodes the identity point as `(0, 1)`. The regression runs the generated TypeScript through round trip, both guarded read branches and reset with the v3 preimage checker. The v2 checker covers round trip and guarded reads. A separate probe reproduced the existing v2 default-reset transcript mismatch.
+
+Mixed native values with a zero-width unsigned field require a separate layout fix. The current compiler rejects the ambiguous alignment at the source. Generic native-type hash inputs and Merkle path recomputation also remain separate from the repaired ledger operand and leaf encoding.
