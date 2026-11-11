@@ -104,7 +104,7 @@ def check_terminal_lexical_return(
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
         for name in ["two", "three", "nested", "observed"]:
-            run("zkir", "compile", str(output / f"zkir/{name}.zkir"), str(output / f"keys/{name}.prover"), str(output / f"keys/{name}.verifier"))
+            run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"), str(output / f"keys/{name}.prover"), str(output / f"keys/{name}.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--terminal-lexical-return", str(output))
     print("terminal lexical returns: five proof-required recorded APIs; four new strict Dust proof cases when requested")
 

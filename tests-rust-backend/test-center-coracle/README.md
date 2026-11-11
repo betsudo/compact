@@ -12,10 +12,10 @@ For the unit-action family retirement, the focused runtime gate is
 colors, selected witness order, identity/board/turn/position failures, gas limits
 and empty-Maybe behavior. No additional whole-game qualification is implied.
 
-The `--coracle-guess` proof adapter compares the exact complete retained IR before
-reading keys. Its fresh keys are generated only for the unchanged source's
-`guess.zkir`; this slice does not generate or claim proofs of every export.
-Both colors execute from explicit prior states, prove, verify and ledger-apply,
-then reject a repeated same-color move against applied state. The policy remains
-the existing unbalanced smoke policy. Seeded state is not a claim of a funded
-or historically proved game setup.
+The `--coracle-guess` adapter binds the complete retained IR, generated Rust,
+all raw circuits, and the selected binary IR and verifier key. It generates
+fresh Ledger 9 v3 keys for `guess.zkir`. Both colors execute from explicit
+prior states, verify fresh standalone proofs separately, fund deployment
+and a distinct strict call, and check exact unchanged replay refusal.
+Each applied state also refuses the repeated same-color move. The prior
+state represents game setup for the fixture.

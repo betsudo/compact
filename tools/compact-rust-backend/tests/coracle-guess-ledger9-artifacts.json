@@ -1,0 +1,10 @@
+{
+  "contract/compact-rust-ir.json": "61557dd2ef164f6f23a5bf04180fbcabb06e531e2e087675ee1767379622ff13",
+  "contract/lib.rs": "32bf0136ee789eceeda9f11fdab36736b9761972615e2d3e479a34ffdca2aabb",
+  "zkir/concede.zkir": "5ab670c1fa457a8d624fe037919702bc1af6c4ce40b28b9eb928275d693ae975",
+  "zkir/guess.zkir": "66eec7b11d8f64797d155a0376c403064cf3fac11b9d5ec5fa36ce00d6e33e31",
+  "zkir/start.zkir": "cd3eff338017b5a134bcfa9137937ae9a49fc2539fd0daf86d8286b6602fa952",
+  "zkir/withdraw.zkir": "e273a7896de44ab41f2e21338f8394d45214ce65b28b89f223126fec10703a7c",
+  "zkir/guess.bzkir": "ac3c2ee80646ae35975908230991a6a956d10c08256bfe66a88ea218225f0ebf",
+  "keys/guess.verifier": "834fa89b6c0c8fbf0b69a93f02ef503efcd0f1ada4fc0e8beadbdc3bc6864aab"
+}

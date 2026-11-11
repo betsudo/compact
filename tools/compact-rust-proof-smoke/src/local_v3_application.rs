@@ -21,6 +21,38 @@ use midnight_storage::arena::Sp;
 use midnight_transient_crypto::proofs::{Proof, Zkir};
 use midnight_zkir_v3::IrSource as IrSourceV3;
 
+pub(super) fn validate_pinned_artifacts(root: &Path, pins: &str) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("Ledger 9 artifact qualification requires local proving".into());
+    }
+    let pins: std::collections::BTreeMap<String, String> = serde_json::from_str(pins)?;
+    let expected_raw = pins
+        .keys()
+        .filter_map(|path| path.strip_prefix("zkir/"))
+        .filter(|name| name.ends_with(".zkir"))
+        .map(std::ffi::OsString::from)
+        .collect::<std::collections::BTreeSet<_>>();
+    let actual_raw = std::fs::read_dir(root.join("zkir"))?
+        .map(|entry| entry.map(|entry| entry.file_name()))
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    let actual_raw = actual_raw
+        .into_iter()
+        .filter(|name| Path::new(name).extension().is_some_and(|ext| ext == "zkir"))
+        .collect::<std::collections::BTreeSet<_>>();
+    if actual_raw != expected_raw {
+        return Err("Ledger 9 raw circuit inventory differs from the pinned fixture".into());
+    }
+    for (path, digest) in pins {
+        let bytes = std::fs::read(root.join(&path))?;
+        if hex::encode(midnight_base_crypto::hash::persistent_hash(&bytes).0) != digest {
+            return Err(
+                format!("Ledger 9 artifact differs from the pinned fixture: {path}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn validate_programs(
     root: &Path,
     expected_programs: &[&[u8]],

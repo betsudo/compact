@@ -14,6 +14,8 @@
 // limitations under the License.
 //! Original Coracle moves from explicit prior states, not funded game starts.
 use super::coracle_guess_support as support;
+use super::local_v3_application as v3;
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_test_center_coracle_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -30,6 +32,10 @@ fn validate_ir(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     validate_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)?;
+    v3::validate_pinned_artifacts(
+        root,
+        include_str!("../../compact-rust-backend/tests/coracle-guess-ledger9-artifacts.json"),
+    )?;
     for (i, red) in [true, false].into_iter().enumerate() {
         let settings = support::Settings {
             red,
@@ -78,9 +84,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         let expected = native.context.query.state.get_ref().clone();
         let manual = check_generated_trace(root, "guess", recorded, position)?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/guess.verifier"),
-        )?))?;
+        let verifier = v3::read_verifier(root, "guess")?;
         let generated = c::Contract::from(support::Witness::new(settings.clone()));
         let prepared = generated
             .recording()
@@ -130,7 +134,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
         println!(
-            "original Coracle.guess red={red} proved, verified and ledger-applied; applied-state repeated-turn rejected; explicit prior-state fixture and shared unbalanced smoke policy, no funded game setup claim"
+            "original Coracle.guess red={red} passed funded default-strict application and the applied-state repeated-turn refusal from an explicit prior-state fixture"
         );
     }
     Ok(())

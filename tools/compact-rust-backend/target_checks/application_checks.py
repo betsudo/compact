@@ -88,7 +88,7 @@ def check_coracle_guess(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/guess.zkir"), str(output / "keys/guess.prover"), str(output / "keys/guess.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/guess.zkir"), str(output / "keys/guess.prover"), str(output / "keys/guess.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-guess", str(output))
     print("original Coracle guess, concede, withdraw and start recorded")
 
