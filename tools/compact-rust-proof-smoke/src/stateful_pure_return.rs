@@ -15,6 +15,7 @@
 
 //! Prove a scalar pure Field return after a recorded Cell write.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_stateful_pure_call_fixture::ledger_contract as stateful_pure;
 use pure_field_arguments::{check_stored_field, observed_state, verifier};
@@ -47,6 +48,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     check_transaction(root, "save", deploy, prepared, &mut rng, |state| {
         check_stored_field(state, &expected_state, 0, 49)
     })?;
-    println!("scalar pure Field return after a state action proved on ledger-8");
+    println!("scalar pure Field return after a state action proved on Ledger 9");
     Ok(())
 }

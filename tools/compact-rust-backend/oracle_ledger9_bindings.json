@@ -185,7 +185,7 @@
     },
     "tests-rust-backend/map-oracle/tests/map_oracle.rs": {
       "historical_sha256": "10110780c75018c51ca7806e1db9f9138a6cfa6b7ed6fc5730f5875fb0a410a4",
-      "current_sha256": "7c66fc3fd0d54409fb7016fd0299342da8effd17bd332bd866abdb49d0c90ea4",
+      "current_sha256": "721927e8bc6035982f3298c2a41f7677ccdf5fdaccd687ea9d864dbc233fcb2e",
       "capture_paths": [
         "runtime-rs/tests/fixtures/map-oracle.json"
       ]

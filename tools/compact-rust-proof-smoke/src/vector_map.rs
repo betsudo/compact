@@ -17,6 +17,8 @@
 use super::*;
 
 pub(super) fn run(identity: &Path, arithmetic_constructor: &Path) -> Result<(), Box<dyn Error>> {
+    use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
     macro_rules! prove_map {
         ($fixture:ident, $root:expr, $seed:expr) => {{
             use $fixture::ledger_contract as contract;
@@ -71,7 +73,7 @@ pub(super) fn run(identity: &Path, arithmetic_constructor: &Path) -> Result<(), 
         arithmetic_constructor,
         0x0149_0002
     );
-    println!("both original identity-map calls proved and applied through ledger-8");
+    println!("both original identity-map calls proved and applied through Ledger 9");
     Ok(())
 }
 
