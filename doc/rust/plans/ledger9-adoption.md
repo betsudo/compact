@@ -900,11 +900,53 @@ check passed with the shared offer helper.
 
 The next baseline probes passed the native StatefulStruct check and
 found the same v2 reader mismatch in Kernel shielded effects, field
-observation and shielded send. Continue with these focused ports,
-then rerun the complete core and native proof gates on the integrated
-source. The shielded merge cases used verified k15 parameters locally.
-The native shard workflow currently prepares k5 through k8. Derive
-and provision the full verified parameter roster before integration.
+observation and shielded send. Those three maintained proof selectors
+passed together at `5289b8642` on macOS arm64. They recorded 19
+fresh standalone proofs with separate verification, changed binding
+and corruption refusals, and 12 distinct funded default-strict call
+proofs with exact unchanged replay refusal.
+
+Kernel shielded effects preserves the five unmatched-offer refusals
+and the empty selected branch. The funded mint uses the exact output
+commitment and index. Field Observation covers all eight existing
+proof cases and retains the empty optional branch and selected-input
+refusals. A fresh TypeScript run reproduced its 23 observation rows,
+which the generated Rust fixture checks. Shielded Send covers direct
+full, direct partial, and trusted-observation calls. It preserves the
+input-index, output-order and spent-nullifier controls. The focused
+runs also refused substituted source and proof artifacts.
+
+The native model measured the complete raw v3 circuit sets of 14
+original sources used by the proof shards. The verified built-in
+proof material already contributes k13 through k15, including the
+k15 needed for shielded merge and send. The native shard workflow
+now explicitly requests k9, k10, k16 and k17 alongside k5 through k8.
+The separate core and wallet workflow requests k5 through k11,
+matching the local core material. Both rosters passed local
+verification using the locked digest tables.
+
+At `a9ed875ea`, the maintained MicroDAO advance, voting-token and
+reveal selectors passed six fresh standalone v3 proofs with separate
+verification and distinct funded strict application and replay. The
+cases preserve the original explicit prior states, token derivation
+at the deployed address, vote tallies, private and witness behavior,
+and duplicate reveal refusal. Fresh TypeScript captured all 40
+retained rows byte for byte. The three selected v3 circuit recipes
+also reproduced their raw and binary IR and prover and verifier keys.
+The four MicroDAO offer scenarios still require their migration.
+
+The active fixture registry now pins the three proof wrappers'
+exact bytes. The historical comparison permits just those verified
+wrapper changes alongside the previously accepted deltas. The full
+Python suite passed with 522 tests and 20 skips, and all 37 pinned
+oracle sources passed.
+
+On `5289b8642`, all three Shielded Receive policies still reached
+v2 readers. A separate candidate ports them using the shared v3
+offer application used by Shielded Send. Qualify that candidate,
+continue the remaining native selectors, and rerun the complete core
+and all three native shards on the integrated source. The required
+Linux jobs are prepared locally and await integration qualification.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
