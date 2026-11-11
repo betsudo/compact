@@ -236,17 +236,24 @@ producer, compiler-build and intact-model receipts:
 python3 tools/compact-rust-backend/check_constructor_vector_proof_preflight.py \
   --producer-receipt FUNCTIONAL_RECEIPT --producer-root COMPLETE_SDK_ROOT \
   --compiler-receipt ORIGINAL_BUILD_RECEIPT --model-receipt MODEL_RECEIPT \
+  --zkir RELEASED_ZKIR_V3 \
   --output NEW_DIRECTORY
 ```
 
-It requires existing official proof material, the ledger test fixtures, native
-`zkir` and Rust 1.99. Each external SDK closure has exactly five local packages
+The Ledger 9 preflight requires verified k6 and k7 proof material, Ledger 9
+Dust fixtures, native ZKIR v3 3.2.0 and Rust 1.99. Each SDK closure has five local packages
 and one untouched bundled runtime. Physical Git sources must match the admitted
 commit and index; registry sources must match cached crate archives with locked
 checksums. The selected local recipe requires those archives to be readable;
 this is not a vendored-distribution claim. Full memberships, tool identities,
 parameters and source bytes are checked before builds and completion. This
 command executes native preflight only and never generates keys or proves.
+
+The Ledger 9 `check_constructor_vector_proof.py` composes the current
+14-source API, model, and preflight gates and runs all 17 selected later-entry
+proofs. It verifies standalone proofs in a separate process and retains the
+distinct transaction proof, the funded transaction and both serialized ledger
+states from the replay check.
 
 At separate qualifier `a8133996b`, the retained reviewed local proof recipe
 passes 15 fresh standalone proofs with immutable verification and 15 separately

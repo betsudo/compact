@@ -86,7 +86,8 @@ class CompositionControls(unittest.TestCase):
                 if failure=='proofs':raise RuntimeError('HOST proof command failure')
                 proof=output/'proofs';proof.mkdir()
                 (proof/'receipt.json').write_text('{"scope":"HOST-no-proof-authority"}')
-                return dict(status='passed',fresh_standalone_proofs=17,separately_proved_applications=17)
+                return dict(status='passed',fresh_standalone_proofs=17,
+                            separate_standalone_verifications=17,separately_proved_applications=17)
             argv=['gate','--compiler-receipt',str(recipe),'--ts-runtime',str(runtime),'--zkir',str(zkir),'--output',str(output)]
             env=dict(CARGO_TARGET_DIR=str(source/'target' if inside_target else root/'shared-target'),LD_LIBRARY_PATH='HOST-untrusted')
             with ExitStack() as stack:
@@ -117,10 +118,12 @@ class CompositionControls(unittest.TestCase):
         self.assertEqual(receipt['status'],'passed')
         self.assertTrue(receipt['proof_execution'])
         self.assertEqual(receipt['standalone_proof_cases'],17)
+        self.assertEqual(receipt['separate_standalone_verifications'],17)
         self.assertEqual(receipt['separate_default_strict_applications'],17)
         self.assertEqual(args['models'][0],'--producer-root')
         self.assertTrue(args['models'][1].endswith('/protocol/generated'))
         self.assertIn('--compiler-receipt',args['preflight'])
+        self.assertIn('--zkir',args['preflight'])
         self.assertNotIn('--prepare-only',sum(args.values(),[]))
 
     def test_each_failure_stops_later_stages_and_keeps_failure_receipt(self):
@@ -141,6 +144,16 @@ class CompositionControls(unittest.TestCase):
     def test_source_target_is_refused_before_owner_or_key_effects(self):
         calls,_,_=self.exercise(inside_target=True)
         self.assertEqual(calls,[])
+
+    def test_remote_prover_configuration_is_refused_before_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'output'
+            argv = ['gate', '--compiler-receipt', 'unused', '--ts-runtime', 'unused',
+                    '--zkir', 'unused', '--output', str(output)]
+            with patch.object(sys, 'argv', argv), patch.dict(os.environ, MIDNIGHT_PROOF_SERVER=''):
+                with self.assertRaisesRegex(ValueError, 'requires local proving'):
+                    owner.main()
+            self.assertFalse(output.exists())
 
     def test_optimized_python_is_refused_before_local_imports_or_output(self):
         for script in ['check_constructor_vector_models.py','check_constructor_vector_proof.py']:

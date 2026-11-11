@@ -273,7 +273,7 @@ jobs:
         id: constructor_vector_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-vector-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-vector-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-vector-proof"
 

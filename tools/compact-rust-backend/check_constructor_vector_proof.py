@@ -41,8 +41,10 @@ def prove_selected(E, environment):
     preflight=json.loads(preflight_path.read_text())
     models=json.loads(model_path.read_text())
     assert preflight['status']==models['status']=='passed'
+    assert preflight['format']=='constructor-vector-proof-preflight/v2'
     assert len(preflight['sources'])==14 and preflight['selected_cases']==17
-    assert models['observed_models']==42 and models['observed_k']==[6]
+    assert models['observed_models']==42 and models['observed_k']==[6,7]
+    assert models['inventory']['format']==model_owner.INVENTORY_FORMAT
     assert preflight['producer_head']==preflight['qualifier_head']==models['producer_source']==git('rev-parse','HEAD')
     D.mkdir()
     env = dict(environment)
@@ -59,7 +61,7 @@ def prove_selected(E, environment):
     config = sdk.cargo_configuration(env)
     assert config == preflight['cargo_configuration']
     R = dict(
-        format='constructor-vector-fresh-proofs/v1',
+        format='constructor-vector-fresh-proofs/v2',
         status='running',
         started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         producer_head=preflight['producer_head'],
@@ -97,10 +99,11 @@ def prove_selected(E, environment):
         return p
     try:
         material_runner=json.loads(model_path.read_text())['binary']['path']
-        material=json.loads(run('verify-material',[material_runner,'--prepare-proof-material','--verify-only','--parameter-k','6']).stdout)
+        material=json.loads(run('verify-material',[material_runner,'--prepare-proof-material',
+            '--verify-only','--parameter-k','6','--parameter-k','7']).stdout)
         assert material['mode']=='verify-only' and material['verification']=='all files checked against locked upstream SHA256 tables'
         assert Path(material['cache_directory']).resolve()==Path(env['MIDNIGHT_PP']).resolve()
-        assert 6 in [x['k'] for x in material['parameters']]
+        assert {6,7}.issubset(x['k'] for x in material['parameters'])
         R['verified_material']=material
         cases_path=W/'tools/compact-rust-backend/tests/constructor_vector_operands/cases.json'
         cases=json.loads(cases_path.read_text())
@@ -109,7 +112,9 @@ def prove_selected(E, environment):
             shutil.copytree(P/role/'generated/zkir',material_root/'zkir')
             (material_root/'keys').mkdir()
             assert set(x.name for x in (material_root/'zkir').iterdir())=={'read.zkir','advance.zkir','advance_other.zkir'}
-            for f in (material_root/'zkir').iterdir():pins[str(f)]=sha(f)
+            for f in (material_root/'zkir').iterdir():
+                pins[str(f)]=sha(f)
+                assert pins[str(f)] == pins[str(P/role/'generated/zkir'/f.name)]
             keys={}
             for entry in ['advance','advance_other']:
                 result = run(
@@ -123,22 +128,26 @@ def prove_selected(E, environment):
                     ],
                 )
                 match=re.search(r'\(k=(\d+), rows=(\d+)\)',result.stdout+result.stderr)
-                assert match and int(match[1])==6 and int(match[1])<=8,(role,entry,'geometry')
-                keys[entry]=dict(k=int(match[1]),rows=int(match[2]))
+                assert match, (role,entry,'missing key generation geometry')
+                k, rows = int(match[1]), int(match[2])
+                assert (k,rows)==model_owner.GEOMETRY[entry] and k<=8,(role,entry,'geometry')
+                keys[entry]=dict(k=k,rows=rows)
                 for f in [material_root/'zkir'/(entry+'.bzkir'),material_root/'keys'/(entry+'.prover'),material_root/'keys'/(entry+'.verifier')]:
                     assert f.is_file();pins[str(f)]=sha(f)
             assert pins[str(material_root/'keys/advance.verifier')]!=pins[str(material_root/'keys/advance_other.verifier')]
             binary=row['binary']['snapshot'];assert sha(binary)==row['binary']['sha256'] and not Path(binary).stat().st_mode&0o222
             result=run(role+'-proof-application',[binary,'--prove',P/role/'generated',role,cases_path,material_root,lane/'applications'])
             value=json.loads(result.stdout)
-            expected={x['id'] for x in cases if x['role']==role and x['error'] is None}
-            assert value['status']=='passed' and {x['case'] for x in value['results']}==expected
+            expected=[x['id'] for x in cases if x['role']==role and x['error'] is None]
+            assert value['status']=='passed' and [x['case'] for x in value['results']]==expected
             for result in value['results']:
                 assert (
                     result['status'] == 'passed'
                     and result['strict_application'] == 'default'
                     and result['replay_refusal'] == 'IntentAlreadyExists'
                     and result['replay_unchanged']
+                    and result['transaction_proof_version'] == 3
+                    and result['positive_fee_dust_spends'] == 1
                 )
                 for key in [
                     'changed_binding_rejected',
@@ -151,13 +160,35 @@ def prove_selected(E, environment):
                 ]:
                     assert result[key] is True, key
                 path=lane/'applications'/result['case']
-                assert (path/'standalone.proof').stat().st_size==result['standalone_proof_bytes']>0
+                standalone = (path/'standalone.proof').read_bytes()
+                transaction_proof = (path/'transaction-bound.proof').read_bytes()
+                assert len(standalone)==result['standalone_proof_bytes']>0
+                assert len(transaction_proof)==result['transaction_proof_bytes']>0
+                assert transaction_proof != standalone
+                assert (path/'ledger-after.bin').read_bytes() == (path/'ledger-replay.bin').read_bytes()
                 assert (path/'applied-transaction.bin').stat().st_size==result['transaction_bytes']>0
+                files = list(path.iterdir())
+                assert {file.name for file in files} == {
+                    'standalone.proof', 'standalone.inputs', 'transaction-bound.proof',
+                    'applied-transaction.bin', 'ledger-after.bin', 'ledger-replay.bin', 'result.json',
+                }
+                assert json.loads((path/'result.json').read_text()) == result
+                for file in files:
+                    assert file.is_file() and not file.is_symlink() and file.stat().st_size > 0
+                    pins[str(file)] = sha(file)
+                verification = run(role+'-'+result['case']+'-verify', [
+                    binary, '--verify-standalone', material_root, path,
+                ])
+                assert json.loads(verification.stdout) == {
+                    'status':'passed', 'standalone_verified':True,
+                    'corrupted_proof_rejected':True, 'distinct_verifier_rejected':True,
+                }
             R['sources'][role]=dict(keys=keys,result=value,artifacts=sdk.inventory(lane))
             save()
         unchanged()
         assert len(R['sources'])==14 and sum(len(x['result']['results']) for x in R['sources'].values())==17
-        R.update(status='passed',fresh_key_pairs=28,fresh_standalone_proofs=17,separately_proved_applications=17,source_bytes_unchanged=True)
+        R.update(status='passed',fresh_key_pairs=28,fresh_standalone_proofs=17,
+                 separate_standalone_verifications=17,separately_proved_applications=17,source_bytes_unchanged=True)
     except BaseException as error:
         R.update(status='failed',error=repr(error));raise
     finally:
@@ -185,14 +216,15 @@ def main():
     output=args.output.resolve()
     if output.exists() or args.output.is_symlink() or output.is_relative_to(W):
         raise ValueError('fresh output outside source required')
-    output.mkdir(parents=True,mode=0o700)
     env=dict(os.environ,RUSTUP_TOOLCHAIN='1.99.0',CARGO_INCREMENTAL='0',PYTHONDONTWRITEBYTECODE='1',CARGO_CACHE_AUTO_CLEAN_FREQUENCY='never')
+    if 'MIDNIGHT_PROOF_SERVER' in env:
+        raise ValueError('constructor Vector requires local proving without MIDNIGHT_PROOF_SERVER')
+    output.mkdir(parents=True,mode=0o700)
     env.setdefault('CARGO_BUILD_JOBS','2')
     env.setdefault('CARGO_TARGET_DIR',str(output/'cargo-target'))
     if Path(env['CARGO_TARGET_DIR']).resolve().is_relative_to(W):
         raise ValueError('shared Cargo target must stay outside source')
     zkir=args.zkir.resolve(strict=True)
-    env['PATH']=str(zkir.parent)+os.pathsep+env['PATH']
     env.pop('LD_LIBRARY_PATH',None)
     head=git('rev-parse','HEAD');tree=git('rev-parse','HEAD^{tree}')
     if git('status','--porcelain'):raise ValueError('clean committed source required')
@@ -203,7 +235,7 @@ def main():
     pins={str(recipe_path):sha(recipe_path),str(zkir):sha(zkir),str(Path(__file__)):sha(__file__)}
     configuration=sdk.cargo_configuration(env)
     report = dict(
-        format='constructor-vector-complete-proof-gate/v1',
+        format='constructor-vector-complete-proof-gate/v2',
         status='running',
         head=head,
         tree=tree,
@@ -270,17 +302,20 @@ def main():
         )
         compiler_path.write_text(json.dumps(descriptor,indent=2)+'\n');pins[str(compiler_path)]=sha(compiler_path)
         invoke('preflight',preflight_owner,['--producer-root',protocol/'generated','--producer-receipt',producer_path,
-                    '--compiler-receipt',compiler_path,'--model-receipt',model_path,'--output',output/'preflight'])
+                    '--compiler-receipt',compiler_path,'--model-receipt',model_path,'--zkir',zkir,
+                    '--output',output/'preflight'])
         preflight=json.loads((output/'preflight/receipt.json').read_text())
         assert Path(preflight['prerequisites']['zkir']).resolve()==zkir
         result=prove_selected(output,env)
-        assert result['status']=='passed' and result['fresh_standalone_proofs']==result['separately_proved_applications']==17
+        assert result['status']=='passed'
+        assert result['fresh_standalone_proofs']==result['separate_standalone_verifications']==result['separately_proved_applications']==17
         unchanged()
         report.update(
             status='passed',
             proof_execution=True,
             fresh_keypairs=28,
             standalone_proof_cases=17,
+            separate_standalone_verifications=17,
             separate_default_strict_applications=17,
             source_receipt=dict(path=str(producer_path), sha256=sha(producer_path)),
             model_receipt=dict(path=str(model_path), sha256=sha(model_path)),
