@@ -490,9 +490,16 @@ with all features on macOS arm64. The fresh behavioral workspace run
 at this head is in progress, with all 148 previous failure targets
 resolved against current Cargo metadata.
 
-Preparation also captured 31 additional historical fixtures using the
-paired compiler and their original TypeScript producers. Of these,
-29 differ solely in serialized contract state. Witness effect order
-also records the current tool and runtime provenance. Canonical output
-order also changes the observed spend ordering and needs separate
-comparison. These captures await current native test qualification.
+Another 31 fixtures now bind fresh captures from their original
+TypeScript producers at `061640db6`. These captures refresh 177
+serialized contract-state fields. Witness effect order also records
+the current compiler, Scheme, and runtime provenance. The canonical
+output capture preserves spend-set membership and the exact ordered
+query trace. Its Rust test keeps the established set comparison and
+all execution-order checks. The all-features native tests for these
+fixtures follow the behavioral workspace run.
+
+Fourteen additional scenario captures were generated. Eleven differ
+solely in serialized contract state. Coracle guess, Coracle withdraw,
+and Micro DAO vote commitment also differ in budget or effect data.
+These captures still need native parity qualification.
