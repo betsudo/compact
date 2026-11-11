@@ -103,8 +103,10 @@
     },
     "tests-rust-backend/guarded-assert-arith-oracle/tests/guarded_assert_arith_oracle.rs": {
       "historical_sha256": "413a277d3d29139db7f45bd039bd1084f1146b41775eb827bcdf966b0027ff7f",
-      "current_sha256": "04c75ab543bc3dfed2a15e2b536f21d71570501be11084327ddd53cf8221ff9b",
-      "capture_paths": []
+      "current_sha256": "46a4f623ace25063fdfcd91d85157e5de7733c8cb7d6137386782cf30309deae",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/guarded-recording-oracle.json"
+      ]
     },
     "tests-rust-backend/hash-to-curve-vector-constructor/tests/hash_to_curve_vector_constructor.rs": {
       "historical_sha256": "4efe9573879ba2ee7e696e04c15a71739eea2bdf45876cd8ede631188246a63a",
@@ -207,8 +209,10 @@
     },
     "tests-rust-backend/schnorr-attest-oracle/tests/schnorr_attest_oracle.rs": {
       "historical_sha256": "ee8f0a03371d40a0e0f99d3e3ab4f12d8d2d20c1a10f1e9b866746fe46d51ee9",
-      "current_sha256": "7f9e6f25e15cc7222e30219fb3c56dbdb1bed4d95c6d433bf0c7e85aff23737d",
-      "capture_paths": []
+      "current_sha256": "723eb5a88575f8b371918c0338e554f86bc8eb1cea2f0002ca328d3519990702",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/schnorr-attest-oracle.json"
+      ]
     },
     "tests-rust-backend/sealed-ledger-constructor/tests/sealed_ledger_constructor.rs": {
       "historical_sha256": "4ff74b14d72fa94cf4d642119f6958c8bd4c056b08c6976787472bf77ad9e3a1",
@@ -226,13 +230,18 @@
     },
     "tests-rust-backend/set-size-oracle/tests/set_size_oracle.rs": {
       "historical_sha256": "876b581b75e600639e552b27a05edc13c125840f39b468a5b4a96298f10256d1",
-      "current_sha256": "4be520ee38a5bddfa45338e8dedb339d3555d78bd4efc4e64574aa5ec8f1f1a3",
-      "capture_paths": []
+      "current_sha256": "b7dddcf9c6fc2ecd3b078524690d175c5a5187513c7f2a73d39eb7e9dd40c90a",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/adr221-set-size-nonempty.json"
+      ]
     },
     "tests-rust-backend/struct-collision-oracle/tests/struct_collision_oracle.rs": {
       "historical_sha256": "3f88920060c85e1ffb850f339fcf11370accda9762808736d30704677497a138",
-      "current_sha256": "3417220fa51d520ac592993807f8faf1ecadc270fbc1d139029f69c69f26e403",
-      "capture_paths": []
+      "current_sha256": "8b78cd7faf3d643c3d1cdc70d8004621863e4e66d46a858dfa36fa77e3d38847",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/struct-collision-oracle.json",
+        "runtime-rs/tests/fixtures/struct-collision-recorded.json"
+      ]
     },
     "tests-rust-backend/support/oracle_recorded_trace.rs": {
       "historical_sha256": "a3b4a63ef8ea618354996fe40dbff5b542cfa55f2dca221f663911991e7e1822",
@@ -291,6 +300,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-adr221-call-arg-false.json",
       "historical_sha256": "9a258359cbb546bd0bc25d138e6721a3f0d77c580d784f020cf0ce9ef445815d",
       "current_sha256": "26b4f90220dbf02f96bd03fcb9ef26bfc6358bb392b967b0506370ace9a0d8d2"
+    },
+    "runtime-rs/tests/fixtures/adr221-set-size-nonempty.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-adr221-set-size-nonempty.json",
+      "historical_sha256": "6449acd500faf70546e10374455d2d0b77bc657efc7851880e2725b56f049677",
+      "current_sha256": "ba901bfe066b9380097dd889bc762dedb18f43d756900f1271da92f760717712"
     },
     "runtime-rs/tests/fixtures/adr221-ternary-true.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-adr221-ternary-true.json",
@@ -387,6 +401,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-fold-oracle.json",
       "current_sha256": "1021be0257708e85d3ed2b8e27756d92a8efd354375a2cc929616681290c94f3"
     },
+    "runtime-rs/tests/fixtures/guarded-recording-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-guarded-recording-oracle.json",
+      "historical_sha256": "564d4e6c4ad159dc93533dd788c7775d11719d9662381571d17a824aba125ee2",
+      "current_sha256": "0ab3a0326d50b69ef8c4e313adf3445d65dacf14ac2a6f3452bb3572ecbdb588"
+    },
     "runtime-rs/tests/fixtures/hash-to-curve-vector-constructor.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-hash-to-curve-vector-constructor.json",
       "historical_sha256": "49c4b44b583967a5958d7e7b034dc8cfdb69e65e2b8f3503bb534a85b17cfbea",
@@ -457,6 +476,11 @@
       "historical_sha256": "997acd7e4a534b3550d6c3a6bc2feefa2ec37cd5fcc1616ef1f21047784c00d9",
       "current_sha256": "f04e7fc3456cc0f519f93a0a94b0c6ea769802d7483e4e2fa94ab573ea42dd6e"
     },
+    "runtime-rs/tests/fixtures/schnorr-attest-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-schnorr-attest-oracle.json",
+      "historical_sha256": "c33ec405342257712505bca7a95361554025bb228f62b1cde79a0230019aecf5",
+      "current_sha256": "e0a07318b770d193f646e24869a69c3303780a606ee9b91bad27d1e815a7f430"
+    },
     "runtime-rs/tests/fixtures/sealed-ledger-constructor.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-sealed-ledger-constructor.json",
       "historical_sha256": "998751b7dda3434b5326f70bf6dd730b80317ba93c755d9983f082d284103bc6",
@@ -466,6 +490,16 @@
       "historical_sha256": "9a61bba3780218745159d488de63004eb84012dc4b56dbff2762fb54e2b88601",
       "current": "runtime-rs/tests/fixtures/ledger9-set-oracle.json",
       "current_sha256": "cb064b6b46c7709bbe7925bb9291f83f4de721b62433babaeb263727af6a31e9"
+    },
+    "runtime-rs/tests/fixtures/struct-collision-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-struct-collision-oracle.json",
+      "historical_sha256": "429c936d7036b44fc077f061012708d3de2970154fa74110d1880e94ff1578ff",
+      "current_sha256": "30b678b41c1fba06f07a5d411f10e1b59fa6f212430b6cdc73627b1b3f41a755"
+    },
+    "runtime-rs/tests/fixtures/struct-collision-recorded.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-struct-collision-recorded.json",
+      "historical_sha256": "76864099e87f48e11b5a85c525b5a2cbe2dac0ff1f95a3dcb9afa568900a6c3b",
+      "current_sha256": "82fd4bbfb1c31054b485b8993bbf49e44c480c841fcb974feff070c3eaa28d2a"
     },
     "runtime-rs/tests/fixtures/ternary-cond-oracle.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-ternary-cond-oracle.json",

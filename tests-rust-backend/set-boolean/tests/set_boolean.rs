@@ -216,7 +216,7 @@ fn conditional_set_actions_keep_the_selected_branch_and_following_query() {
 #[test]
 fn conditional_set_recording_matches_typescript_and_replays_all_branches() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-set-recording-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-set-recording-oracle.json"
     ))
     .unwrap();
     let contract = Contract::default();

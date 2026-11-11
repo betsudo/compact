@@ -109,7 +109,7 @@ fn encoded_recipient(r: &CoinRecipient) -> Value {
 #[test]
 fn native_intents_match_independent_typescript_order_state_gas_and_private_outputs() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/native-zswap-intents-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-native-zswap-intents-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

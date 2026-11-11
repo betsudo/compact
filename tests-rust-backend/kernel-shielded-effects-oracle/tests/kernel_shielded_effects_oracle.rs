@@ -81,7 +81,7 @@ impl ledger_contract::Witnesses<Vec<String>> for Witnesses {
 #[test]
 fn kernel_effects_match_independent_typescript_and_keep_gas_reporting_distinct() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/kernel-shielded-effects-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-kernel-shielded-effects-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

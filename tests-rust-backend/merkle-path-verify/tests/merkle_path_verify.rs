@@ -220,7 +220,7 @@ fn recorded_merkle_root_check_matches_native_typescript_and_replay() {
 #[test]
 fn recorded_literal_index_replacement_matches_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-literal-index.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-literal-index.json"
     ))
     .unwrap();
     let value = runtime::BoundedUint::<255>::new(8).unwrap();

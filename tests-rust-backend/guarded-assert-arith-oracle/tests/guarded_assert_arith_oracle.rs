@@ -168,7 +168,7 @@ fn vm_shape(operations: Value) -> Value {
 #[test]
 fn guarded_counter_recording_matches_typescript_success_and_failure() {
     let oracle: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/guarded-recording-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-guarded-recording-oracle.json"
     ))
     .unwrap();
     for case in ["fresh", "unchecked_age", "future", "expired"] {

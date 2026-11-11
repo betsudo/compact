@@ -25,7 +25,7 @@ use runtime::ledger::{CoinInfo, CoinRecipient, ContractAddress, DefaultDB, State
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/qualified-coin-set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-qualified-coin-set-oracle.json"
     ))
     .unwrap()
 }

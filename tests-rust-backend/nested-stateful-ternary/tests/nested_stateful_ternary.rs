@@ -61,7 +61,7 @@ fn ordered_vm_shape(operations: serde_json::Value) -> serde_json::Value {
 #[test]
 fn nested_stateful_recording_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-stateful-recorded.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-stateful-recorded.json"
     ))
     .unwrap();
     for (choice, key) in [(true, "true"), (false, "false")] {
@@ -150,7 +150,7 @@ fn nested_stateful_recording_matches_typescript_and_replays() {
 #[test]
 fn nested_stateful_ternary_matches_typescript_state_bytes() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-stateful-ternary.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-stateful-ternary.json"
     ))
     .unwrap();
     for (choice, key) in [(true, "true"), (false, "false")] {

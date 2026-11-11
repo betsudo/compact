@@ -161,7 +161,7 @@ fn recorded_set_and_map_is_empty_match_native_typescript_and_replay() {
 #[test]
 fn nonempty_set_and_map_checks_write_false_with_exact_recorded_trace() {
     let capture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/adr221-set-size-nonempty.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-adr221-set-size-nonempty.json"
     ))
     .unwrap();
     assert_eq!(capture["mode"], "set-size");
