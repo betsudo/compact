@@ -968,10 +968,36 @@ across Receive, lexical return, Coracle guess, Composite Zswap and
 Canonical Output Order. The affected generated Rust fixture tests
 passed.
 
-The current local work prepares the remaining Transient Receive/Send,
-Coracle offer, and MicroDAO offer ports. Rerun the complete integrated
-core and all three native shards after those ports. The required
-Linux jobs are prepared locally and await integration qualification.
+Transient Receive/Send and the original Coracle offers passed on macOS
+arm64. Coracle at `925d40fda` covers six fresh v3 proofs and separate
+verification, funded default-strict application, unchanged replay and
+the selected fallible rollback controls. Ledger 9 constructs a wholly
+fallible offer only for the explicit blue-start and withdrawal policies.
+The guaranteed and automatic placement paths retain their existing checks.
+
+Original DID at `26860d7c0` passed 16 lifecycle and 19 relation cases
+using compiler 0.31.211. Each case separately verifies its fresh
+standalone v3 proof and refuses a corrupt proof. A distinct v3 proof
+applies in a funded default-strict transaction and refuses replay with
+identical ledger bytes. The compiler models the original twelve exports
+at k11 and k12. Every required verifier is installed, with binary v3
+IR on the selected calls to fit ordinary deployment fee limits. The
+nineteen relation cases also emitted versioned public-only interchange
+with the exact Ledger 9 producer and transaction identity. The gate
+uses the active Ledger 9 captures alongside the retained Ledger 8
+history. Constructor execution lies outside these case selections.
+
+The first draft CI run for PR #725 found a stale Rust MSRV lane,
+a missing compiler version bump and license-header regressions. Both
+Rust 1.99 consumer checks and the full-diff header audit passed locally,
+and the bumped 0.31.211 compiler built with Nix. The archive consumer
+preflight generated six contracts through the shared-source compiler
+interface and resolved the exact packaged runtime and macro dependency
+graph offline. Full package/consumer execution remains open.
+
+The remaining MicroDAO offers and DID reducers are in local qualification.
+Rerun the complete integrated core and all three native shards after
+those ports. Exact-head required Linux CI remains part of integration.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
