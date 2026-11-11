@@ -744,8 +744,25 @@ refusal. The signed JavaScript decoder candidate at `84941f2d9`
 pins `@midnight-ntwrk/ledger-v9@1.0.1`. It round-trips seven actual
 funded Rust deployment and call pairs, checks the proof and the
 positive-fee Dust intent, and refuses mismatched addresses and trailing
-bytes. The candidate is staged on its local branch for integration
-with the migrated positional Counter handoff.
+bytes.
+
+At `6b3d3c157`, the positional baseline proves both direct and
+observed Counter calls plus the Cell write and read. The exact
+generated Rust IR, library and raw ZKIR are checked before key
+admission. The four cases retain the Counter's exact public statement,
+typed state and return checks, and missing operation, wrong verifier,
+wrong address, stale state, and trailing observed-state byte refusals.
+Direct and observed Counter preparations produce the same pre-proof
+bytes and independently apply to the same contract state. Each case
+passes separate standalone verification, strict funded deployment and
+call application, and exact replay refusal without changing state.
+
+The decoder at `7f14a0be9` round-trips the newly exported funded
+Counter deployment and call using the pinned Ledger 9 JavaScript
+package. The files match the exact Rust application receipts. The
+decoder also refuses a mismatched deployment. The positional fixture
+uses the local funded ledger and its clock. The historical devnet
+handoff remains documented on the Ledger 8 branch.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
