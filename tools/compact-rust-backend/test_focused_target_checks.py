@@ -189,22 +189,34 @@ class FocusedTargetChecks(unittest.TestCase):
                 self.assertEqual(events, expected)
 
     def test_coracle_source_boundary_precedes_proof_generation(self):
-        for proof in (False, True):
-            with self.subTest(proof=proof), tempfile.TemporaryDirectory() as tmp:
-                base = Path(tmp)
-                events = []
-                def source(compiler, output_base):
-                    events.append(("source", compiler, output_base))
-                    (output_base / "coracle").mkdir()
-                with redirect_stdout(io.StringIO()):
-                    application_checks.check_coracle_start("compiler-under-test", base,
-                        proof_requested=proof, run=lambda *a: events.append(a),
-                        check_coracle_source=source)
-                self.assertEqual(events[0], ("source", "compiler-under-test", base))
-                self.assertEqual(len(events), 3 if proof else 1)
-                if proof:
-                    self.assertEqual(events[1][0:2], ("zkir", "compile"))
-                    self.assertEqual(events[2][-2], "--coracle-start")
+        checks = {
+            "start": application_checks.check_coracle_start,
+            "concede": application_checks.check_coracle_concede,
+            "withdraw": application_checks.check_coracle_withdraw,
+            "guess": application_checks.check_coracle_guess,
+        }
+        for circuit, check in checks.items():
+            for proof in (False, True):
+                with self.subTest(circuit=circuit, proof=proof), tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    output = base / "coracle"
+                    events = []
+                    def source(compiler, output_base):
+                        events.append(("source", compiler, output_base))
+                        output.mkdir()
+                    with redirect_stdout(io.StringIO()):
+                        check("compiler-under-test", base,
+                              proof_requested=proof, run=lambda *a: events.append(a),
+                              check_coracle_source=source)
+                    expected = [("source", "compiler-under-test", base)]
+                    if proof:
+                        expected.extend([
+                            ("zkir-v3", "compile", str(output / f"zkir/{circuit}.zkir"),
+                             str(output / f"keys/{circuit}.prover"), str(output / f"keys/{circuit}.verifier")),
+                            ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke",
+                             "--", f"--coracle-{circuit}", str(output)),
+                        ])
+                    self.assertEqual(events, expected)
 
     def test_captured_compiler_call_preserves_options_and_failure_diagnostics(self):
         for returncode in (0, 7):
