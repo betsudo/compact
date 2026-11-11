@@ -16,6 +16,7 @@
 """Focused scenario dispatch and fake-compiler acceptance boundaries."""
 
 from contextlib import ExitStack, redirect_stdout
+import hashlib
 import inspect
 import io
 import json
@@ -119,10 +120,26 @@ class FocusedTargetChecks(unittest.TestCase):
                 with self.subTest(proof=proof, recorded=recorded), tempfile.TemporaryDirectory() as tmp:
                     base = Path(tmp)
                     events = []
-                    run = self.compiler(events, names, recorded=recorded)
+                    root = base / "repo"
+                    output = base / "field-observation"
+                    compile_fixture = self.compiler(events, names, recorded=recorded)
+                    artifacts = ("contract/compact-rust-ir.json", "contract/lib.rs",
+                                 *(f"zkir/{name}.zkir" for name in names))
+                    pins = root / "tools/compact-rust-backend/tests/field-observation-ledger9-artifacts.json"
+                    pins.parent.mkdir(parents=True)
+                    pins.write_text(json.dumps({
+                        path: hashlib.sha256(path.encode()).hexdigest() for path in artifacts
+                    }))
+                    def run(*args):
+                        compile_fixture(*args)
+                        if args[0] == "compiler-under-test":
+                            for path in artifacts:
+                                artifact = output / path
+                                artifact.parent.mkdir(parents=True, exist_ok=True)
+                                artifact.write_text(path)
                     def invoke():
                         recording_checks.check_field_observation("compiler-under-test", base,
-                            root=Path("repo"), proof_requested=proof, run=run)
+                            root=root, proof_requested=proof, run=run)
                     with redirect_stdout(io.StringIO()):
                         if recorded:
                             invoke()
@@ -130,14 +147,22 @@ class FocusedTargetChecks(unittest.TestCase):
                             with self.assertRaises(AssertionError):
                                 invoke()
                     self.assertEqual(events[0], ("compiler-under-test", "--target", "rust",
-                        "--rust-require-recording", *([] if proof else ["--skip-zk"]),
-                        "repo/examples/rust_backend/field_observation_oracle.compact",
-                        str(base / "field-observation")))
-                    self.assertEqual(len(events), 2 if proof and recorded else 1)
+                        "--rust-require-recording", "--skip-zk",
+                        str(root / "examples/rust_backend/field_observation_oracle.compact"),
+                        str(output)))
+                    self.assertEqual(len(events), 4 if proof and recorded else 1)
                     if proof and recorded:
-                        self.assertEqual(events[1], ("cargo", "run", "--quiet", "-p",
-                            "compact-rust-proof-smoke", "--", "--field-observation",
-                            str(base / "field-observation")))
+                        self.assertEqual(events[1], ("zkir-v3", "compile-many",
+                            str(output / "zkir"), str(output / "keys")))
+                        self.assertEqual([event[-2] for event in events[2:]],
+                            ["--field-observation", "--field-observation-verify"])
+                        expected = json.loads(pins.read_text())
+                        expected["zkir/direct.zkir"] = "0" * 64
+                        pins.write_text(json.dumps(expected))
+                        events.clear()
+                        with self.assertRaisesRegex(ValueError, "zkir/direct[.]zkir"):
+                            invoke()
+                        self.assertEqual(len(events), 1)
 
     def test_intent_check_keeps_native_check_before_explicit_key_generation(self):
         for proof in (False, True):

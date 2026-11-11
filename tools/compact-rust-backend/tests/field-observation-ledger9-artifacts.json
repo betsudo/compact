@@ -1,0 +1,18 @@
+{
+  "contract/compact-rust-ir.json": "a96fd00c8f0130c4db6b50a1f6e0d784626b62b2eb29c35aa2aaff7fb87d3feb",
+  "contract/lib.rs": "ebf623902c5b2c1f3ef672c48b5171730d0b1e9e6d8e69e4f663fff3630d0b79",
+  "zkir/direct.zkir": "6b4ea40ac4e1514008f85da5fdaf124aa213c7b73274abdcf7e5ffc782f4693d",
+  "zkir/optional.zkir": "4067f0161e7778df655bd8c10c032880e8374427268d75bd3f361cc5b4321760",
+  "zkir/pair.zkir": "aae0f513a142438d05d3d5574e5f55f3d26dcf0d80fc8b9b3ff446b93475e9ea",
+  "zkir/selected.zkir": "4a26f258e7f0a09202f7c673f42868e24548e468a3db8c4a424abb14daa48861",
+  "zkir/snapshot.zkir": "6b4ea40ac4e1514008f85da5fdaf124aa213c7b73274abdcf7e5ffc782f4693d",
+  "zkir/via_field_helper.zkir": "6b4ea40ac4e1514008f85da5fdaf124aa213c7b73274abdcf7e5ffc782f4693d",
+  "zkir/via_snapshot_helper.zkir": "6b4ea40ac4e1514008f85da5fdaf124aa213c7b73274abdcf7e5ffc782f4693d",
+  "keys/direct.verifier": "718da4ea4a014bb0cac24e407378ede9082b447031c3ec130fe944b838384472",
+  "keys/optional.verifier": "b9f937e9ce2f7476d63c13610dd5f185a6150e357d2b1d0f0f9c52a9c16a9589",
+  "keys/pair.verifier": "dd923ca9b71489d2cbfa5a9c1de76e35806234d2a668e91dcd8635aa403e7db4",
+  "keys/selected.verifier": "007b34b7b07a5e90714dbe5caa58693bf4df09c682e8e7d104e7da86a12a4bb6",
+  "keys/snapshot.verifier": "718da4ea4a014bb0cac24e407378ede9082b447031c3ec130fe944b838384472",
+  "keys/via_field_helper.verifier": "718da4ea4a014bb0cac24e407378ede9082b447031c3ec130fe944b838384472",
+  "keys/via_snapshot_helper.verifier": "718da4ea4a014bb0cac24e407378ede9082b447031c3ec130fe944b838384472"
+}

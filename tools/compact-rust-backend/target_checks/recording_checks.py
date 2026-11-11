@@ -120,16 +120,31 @@ def check_field_observation(
     source = root / "examples/rust_backend/field_observation_oracle.compact"
     output = base / "field-observation"
     run(compiler, "--target", "rust", "--rust-require-recording",
-        *([] if proof_requested else ["--skip-zk"]), str(source), str(output))
+        "--skip-zk", str(source), str(output))
     report = json.loads((output / "contract/rust-capabilities.json").read_text())
-    assert {row["name"] for row in report["circuits"]} == {
+    names = {
         "direct", "snapshot", "via_field_helper", "via_snapshot_helper",
         "pair", "selected", "optional"}
+    assert {row["name"] for row in report["circuits"]} == names
     assert all(row["recorded"] and row["observed_call"] and row["proof_required"]
                for row in report["circuits"])
     if proof_requested:
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--field-observation", str(output))
+        keys = output / "keys"
+        zkir = output / "zkir"
+        if keys.exists() or {path.name for path in zkir.iterdir()} != {
+            f"{name}.zkir" for name in names
+        }:
+            raise ValueError("field observation preflight produced unexpected proof artifacts")
+        pins = root / "tools/compact-rust-backend/tests/field-observation-ledger9-artifacts.json"
+        for path, expected in json.loads(pins.read_text()).items():
+            if not path.startswith("keys/") and hashlib.sha256(
+                (output / path).read_bytes()
+            ).hexdigest() != expected:
+                raise ValueError(f"field observation artifact differs from the retained source: {path}")
+        run("zkir-v3", "compile-many", str(zkir), str(keys))
+        for selector in ("--field-observation", "--field-observation-verify"):
+            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                selector, str(output))
     print("Field observations compose into typed structs and scoped helpers; empty selected path refuses preparation")
 
 

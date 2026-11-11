@@ -7,3 +7,5 @@ include!(concat!(env!("OUT_DIR"), "/contract.rs"));
 
 pub const RETAINED_IR: &str =
     include_str!("../../tools/compact-rust-backend/tests/field-observation-schema20-ir.json");
+
+pub const GENERATED_RUST: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/contract.rs"));

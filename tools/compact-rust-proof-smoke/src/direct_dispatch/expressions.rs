@@ -312,21 +312,30 @@ pub(super) fn terminal_lexical_return(
 
 pub(super) fn field_observation(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --field-observation <proof-output>")?;
+    const USAGE: &str =
+        "usage: compact-rust-proof-smoke --field-observation[-verify] <proof-output>";
+    let root = arguments.next().ok_or(USAGE)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --field-observation <proof-output>".into());
+        return Err(USAGE.into());
     }
     let proof = std::thread::Builder::new()
         .name("field-observation-proof".into())
         .stack_size(64 * 1024 * 1024)
-        .spawn(move || field_observation::run(Path::new(&root)).map_err(|e| e.to_string()))?;
+        .spawn(move || {
+            let root = Path::new(&root);
+            if verify {
+                field_observation::verify(root)
+            } else {
+                field_observation::run(root)
+            }
+            .map_err(|e| e.to_string())
+        })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(error.into()),
-        Err(_) => Err("stateful struct proof thread panicked".into()),
+        Err(_) => Err("field observation proof thread panicked".into()),
     }
 }
 
