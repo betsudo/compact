@@ -1062,8 +1062,26 @@ def main() -> None:
             strict = subprocess.run([compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-dao")], cwd=ROOT, capture_output=True, text=True)
             assert strict.returncode == 0, strict.stderr
             if args.proof:
+                key_compiler = "zkir"
+                pins = None
+                if selected in {"advance", "dao_voting_token", "vote_reveal"}:
+                    key_compiler = "zkir-v3"
+                    pin_path = ROOT / "tools/compact-rust-backend/tests/micro-dao-state-ledger9-artifacts.json"
+                    pins = json.loads(pin_path.read_text())
+                    raw_paths = {path.relative_to(output).as_posix()
+                                 for path in (output / "zkir").glob("*.zkir")}
+                    if raw_paths != {path for path in pins["source"] if path.endswith(".zkir")}:
+                        raise ValueError("MicroDAO raw circuit inventory differs from the original fixture")
+                    for path, expected in pins["source"].items():
+                        if hashlib.sha256((output / path).read_bytes()).hexdigest() != expected:
+                            raise ValueError(f"MicroDAO artifact differs from the retained fixture: {path}")
                 (output / "keys").mkdir(exist_ok=True)
-                run("zkir", "compile", str(output / f"zkir/{selected}.zkir"), str(output / f"keys/{selected}.prover"), str(output / f"keys/{selected}.verifier"))
+                run(key_compiler, "compile", str(output / f"zkir/{selected}.zkir"),
+                    str(output / f"keys/{selected}.prover"), str(output / f"keys/{selected}.verifier"))
+                if pins is not None:
+                    for path, expected in pins["material"][selected].items():
+                        if hashlib.sha256((output / path).read_bytes()).hexdigest() != expected:
+                            raise ValueError(f"MicroDAO artifact differs from the retained fixture: {path}")
                 run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--micro-dao-vote-commit" if args.micro_dao_vote_commit else "--micro-dao-cash-out" if args.micro_dao_cash_out else "--micro-dao-buy-in" if args.micro_dao_buy_in else "--micro-dao-set-topic" if args.micro_dao_set_topic else "--micro-dao-advance" if args.micro_dao_advance else "--micro-dao-reveal" if args.micro_dao_reveal else "--micro-dao-token", str(output))
             print("original microDAO: advance, vote_reveal, dao_voting_token, set_topic, buy_in, cash_out and vote_commit recorded, no proof-required gaps retained")
             return
