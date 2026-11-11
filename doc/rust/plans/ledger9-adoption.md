@@ -764,5 +764,28 @@ decoder also refuses a mismatched deployment. The positional fixture
 uses the local funded ledger and its clock. The historical devnet
 handoff remains documented on the Ledger 8 branch.
 
+The exact core run at `0205fb9ec` reached the parameterized Counter's
+v2 reader after the four baseline proofs and wallet handoff. At
+`0242fd5fb`, all nine optional positional scenario modules share
+the Ledger 9 v3 proof path. Each call installs the verifier and
+the binary IR reconstructed from its raw ZKIR, retains the scenario's
+original typed state and transcript checks, and checks funded
+deployment and a separately proved call under default strictness.
+
+The core run exercised 186 optional positional proof cases. The same
+186 cases passed separate verification, funded deployment, funded
+application, and exact replay refusal with byte-identical ledger
+state. The count includes 44 direct and observed pairs that produced
+identical pre-proof bytes and independently applied to equal contract
+state. Eleven retained Counter and witnessed Cell proofs also
+verified with the final binary. The positional verifier refused a
+different verifier key and mismatched raw and binary IR. Scoped
+Clippy passed after removing the now-unused v2 parity helper.
+
+The full core run reached the named test-center Counter after the
+positional suite. That named runner still reads v2. The exact
+current source reproduces the linked generated Rust and models
+`increment` at k6/31 rows, with the original Unit witness retained.
+
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
