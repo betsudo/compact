@@ -279,7 +279,7 @@ def main():
                     "rust",
                     "--target",
                     "ts",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
                     "--rust-require-recording",
                     "--skip-zk",
                     source,
@@ -287,7 +287,8 @@ def main():
                 ],
             )
             independent = output / "independent" / role
-            run(role + "-independent", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, independent])
+            run(role + "-independent", [scheme, "--emit-rust-ir", "--feature-zkir-v3",
+                                         "--skip-ts", "--skip-zk", source, independent])
             for name in ["compact-rust-ir.json", "compact-rust-origins.raw.json"]:
                 require(
                     (target / "contract" / name).read_bytes()
@@ -581,7 +582,7 @@ def main():
                     compiler,
                     "--target",
                     "rust",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
                     "--rust-require-recording",
                     "--skip-zk",
                     source,
