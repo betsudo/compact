@@ -811,12 +811,20 @@ reveal model at k14. Missing and substituted source were refused before
 key loading. Several cases deploy their exact seeded pre-call state to
 test a particular transition in isolation.
 
-The next named commands are Zerocash mint and spend. Both independently
-reproduced a v2 reader refusal on current v3 output. Mint models at
-k13/7784 rows and spend at k15/24025 rows. The spend cases use the
-contract's own commitment state. Their current-root and historical-root
-paths, ordered witnesses, ciphertext and commitment checks remain
-required.
+At `680dee9d9`, Zerocash mint, both spend roots, and both empty and
+Unicode bulletin-board post and take-down cycles passed all seven fresh
+proof cases. The current compiler reproduced the retained IR and linked
+Rust for both fixtures. Each case passed separate verification and
+corruption and changed-binding refusals, funded deployment, an
+independently proved default-strict call, and exact unchanged replay
+refusal. The Zerocash spend cases used the original contract-owned
+commitment tree and preserved ordered witnesses, private transcript,
+ciphertext and commitment index. Each command refused substituted IR
+before key access.
+
+The next nine required commands for declared call arguments and
+discarded witness results reproduced the v2 reader refusal on current
+v3 output. Their proof routes are the next core migration cohort.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
