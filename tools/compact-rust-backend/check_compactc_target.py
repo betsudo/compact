@@ -250,7 +250,7 @@ def check_observed_call_consumer(proof: Path, base: Path) -> None:
     environment = os.environ.copy()
     environment.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
     environment["COMPACT_RUST_OBSERVED_STATE"] = str(
-        ROOT / "tools/compact-rust-proof-smoke/tests/fixtures/confirmed-counter-state-abi18.bin"
+        ROOT / "tools/compact-rust-proof-smoke/tests/fixtures/confirmed-counter-state-ledger9.bin"
     )
     environment["COMPACT_RUST_OBSERVED_VERIFIER"] = str(proof / "keys/increment.verifier")
     subprocess.run(["cargo", "test", "--quiet"], cwd=consumer, env=environment, check=True)
