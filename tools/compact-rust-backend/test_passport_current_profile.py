@@ -83,6 +83,32 @@ class PassportControlTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum differs"):
                 gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
 
+    def test_ledger9_admission_requires_the_published_runtime_and_lock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime = root / "runtime-rs"
+            runtime.mkdir()
+            manifest = runtime / "Cargo.toml"
+            manifest.write_text((gate.ROOT / "runtime-rs/Cargo.toml").read_text())
+            shutil.copyfile(gate.ROOT / "runtime-rs/compatibility.json", runtime / "compatibility.json")
+            lock = root / "Cargo.lock"
+            locked = ('version=4\n[[package]]\nname="midnight-ledger-v9"\nversion="1.0.1"\n'
+                      'source="registry+https://github.com/rust-lang/crates.io-index"\n'
+                      'checksum="' + "0" * 64 + '"\n')
+            lock.write_text(locked)
+            with patch.object(gate, "ROOT", root):
+                self.assertEqual(gate.ledger9_identity()["version"], "1.0.1")
+                for changed in (locked.replace("1.0.1", "1.0.2"),
+                                locked.replace("registry+", "git+"),
+                                locked.replace("0" * 64, "bad")):
+                    lock.write_text(changed)
+                    with self.assertRaisesRegex(ValueError, "registry lock identity"):
+                        gate.ledger9_identity()
+                lock.write_text(locked)
+                manifest.write_text(manifest.read_text().replace("midnight-ledger-v9 =", "midnight-ledger ="))
+                with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime"):
+                    gate.ledger9_identity()
+
     def test_refusal_requires_one_exact_type_error_and_real_failure(self):
         def result(code="E0308", exit_code=101):
             row = {"reason": "compiler-message", "message": {"level": "error", "code": {"code": code}}}

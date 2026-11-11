@@ -45,7 +45,11 @@ GUIDE_PACKAGE = GUIDE.parents[1]
 FAMILIES = ("ts", "age", "request", "private-parts", "protocol", "roots", "bindings",
             "signed-flow", "authorization", "protocol-roundtrip", "complete-flow", "codec")
 NEGATIVES = ("wrong_bytes", "wrong_shape")
-LEDGER_REVISION = "b5d3e965a18e4cac17fac4f38446fc55c524439a"
+LEDGER_VERSION = "9.1.0.1"
+LEDGER_CRATE = "midnight-ledger-v9"
+LEDGER_CRATE_VERSION = "1.0.1"
+ONCHAIN_RUNTIME = "@midnightntwrk/onchain-runtime-v4"
+ONCHAIN_VERSION = "4.0.1"
 
 
 def digest(path):
@@ -120,6 +124,42 @@ def original_oracle_provenance():
     if len(provenance["oracle_files"]) != 39 or len(provenance["codec_sources"]) != 2:
         raise ValueError("original Passport oracle/codec pin inventory differs")
     return provenance
+
+
+def ledger9_identity():
+    runtime = ROOT / "runtime-rs"
+    ledger = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"].get(LEDGER_CRATE)
+    compatibility = json.loads((runtime / "compatibility.json").read_text())
+    if (ledger != {"version": f"={LEDGER_CRATE_VERSION}", "optional": True}
+            or compatibility["ledger_version"] != f"ledger-{LEDGER_VERSION}"
+            or compatibility["ledger_dependencies"].get(LEDGER_CRATE) != ledger["version"]
+            or compatibility["ledger_git_sources"]):
+        raise ValueError("Passport qualification requires the published Ledger 9 runtime cohort")
+    locked = [row for row in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+              if row["name"] == LEDGER_CRATE]
+    if (len(locked) != 1 or locked[0]["version"] != LEDGER_CRATE_VERSION
+            or locked[0].get("source") != "registry+https://github.com/rust-lang/crates.io-index"
+            or not re.fullmatch("[0-9a-f]{64}", locked[0].get("checksum", ""))):
+        raise ValueError("Passport Ledger 9 registry lock identity differs")
+    return {key: locked[0][key] for key in ("name", "version", "source", "checksum")}
+
+
+def onchain_runtime_entry(run, node, runtime, label):
+    # Resolve with ESM from the same parent module as the Compact runtime import.
+    resolve = """
+        import {fileURLToPath, pathToFileURL} from "node:url";
+        process.stdout.write(fileURLToPath(
+            import.meta.resolve(process.argv[1], pathToFileURL(process.argv[2]).href)));
+    """
+    result = run(label, [node, "--experimental-import-meta-resolve", "--input-type=module",
+                         "-e", resolve, ONCHAIN_RUNTIME, (runtime / "dist/index.js").resolve(strict=True)])
+    entry = Path(result.stdout).resolve(strict=True)
+    package = json.loads((entry.parent / "package.json").read_text())
+    if ((package["name"], package["version"]) != (ONCHAIN_RUNTIME, ONCHAIN_VERSION)
+            or (entry.parent / package["exports"]["node"]).resolve(strict=True) != entry
+            or not (entry.parent / "midnight_onchain_runtime_wasm_bg.wasm").is_file()):
+        raise ValueError("Passport TS onchain runtime differs from the Ledger 9 pairing")
+    return entry
 
 
 def formatted_copy(source, destination, run):
@@ -260,11 +300,11 @@ def main(argv=None):
     if output.exists() or output.is_symlink():
         raise ValueError("Passport qualification destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-passport-current-profile/v4", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-passport-current-profile/v5", "status": "incomplete", "commands": [],
                "scope": "original pure Passport current-profile execution and isolated raw generated SDK consumer",
                "qualified_sdk_bytes": "raw compiler output; formatting is a separate retained copy",
                "proof_applicability": "not applicable: original source has no stateful exports",
-               "historical_provenance": "original provenance.rs retains its historical generated-library hash; source/oracle pins are checked separately here",
+               "historical_provenance": "historical generated-library record and original source/oracle pins remain separately bound",
                "limits": "sampled original behavior, not exhaustive protocol/branch coverage, network or security attestation"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", PYTHONDONTWRITEBYTECODE="1")
     env.setdefault("CARGO_BUILD_JOBS", "4")
@@ -302,7 +342,10 @@ def main(argv=None):
         if not shutil.which("node"):
             raise RuntimeError("Node.js is required for live Passport comparisons")
         node = Path(shutil.which("node")).resolve(strict=True)
-        if json.loads((runtime / "package.json").read_text())["version"] != json.loads((ROOT / "runtime/package.json").read_text())["version"]:
+        ts_package = json.loads((runtime / "package.json").read_text())
+        ts_source = json.loads((ROOT / "runtime/package.json").read_text())
+        if (ts_package["version"] != ts_source["version"]
+                or ts_package["name"] != ts_source["name"]):
             raise ValueError("Passport TS runtime version differs from selected source")
         version = re.search(r"make-version 'compiler (\d+) (\d+) (\d+)", (ROOT / "compiler/compiler-version.ss").read_text())
         if version is None:
@@ -313,9 +356,11 @@ def main(argv=None):
         manifest = SOURCE / "source-manifest.json"
         pins = original_source_files()
         provenance = original_oracle_provenance()
-        ledger = tomllib.loads((ROOT / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger"]
-        if ledger["version"] != "=8.1.3" or ledger["rev"] != LEDGER_REVISION:
-            raise ValueError("Passport qualification requires the declared Ledger8.1.3 runtime cohort")
+        receipt["ledger"] = ledger9_identity()
+        if any(package["dependencies"].get(ONCHAIN_RUNTIME) != ONCHAIN_VERSION
+               for package in (ts_package, ts_source)):
+            raise ValueError("Passport TS runtime must pin the selected onchain runtime")
+        onchain = onchain_runtime_entry(run, node, runtime, "resolve-ts-onchain-runtime")
         if {p.stem for p in CONTROLS.glob("*.rs")} != set(NEGATIVES):
             raise ValueError("Passport typed refusal source membership differs")
         for name, expected in provenance["oracle_files"].items():
@@ -327,7 +372,7 @@ def main(argv=None):
         paths = [Path(__file__), ROOT / "Cargo.toml", ROOT / "Cargo.lock", ROOT / "compiler/compiler-version.ss", manifest, GUIDE,
                  GUIDE_PACKAGE / "Cargo.toml", GUIDE_PACKAGE / "Cargo.lock",
                  ROOT / "runtime-rs/Cargo.toml", ROOT / "runtime-rs-macros/Cargo.toml",
-                 ROOT / "runtime/package.json", *SOURCE.rglob("*.compact"), *ORACLE.rglob("*"),
+                 ROOT / "runtime/package.json", FIXTURE / "lib.rs", *SOURCE.rglob("*.compact"), *ORACLE.rglob("*"),
                  *(FIXTURE / "tests").glob("*.rs"), *CONTROLS.glob("*.rs")]
         runtime_files = bundled_runtime_files(ROOT)
         paths += [ROOT / name for name in runtime_files]
@@ -347,9 +392,10 @@ def main(argv=None):
             rust_tools[name]["version"] = run("version-" + name, command).stdout.strip()
         receipt["rust_tools"] = rust_tools
         receipt["tool_identity_limits"] = "selected executable hashes/reported versions; not transitive system-library or wrapper security attestation"
-        receipt["ts_runtime_identity_limits"] = "compact-runtime package.json/dist bytes only; transitive onchain-runtime/WASM dependencies are not independently content-hashed"
+        receipt["ts_runtime_identity_limits"] = "Compact Runtime package.json/dist and resolved Onchain Runtime package files including WASM; other transitive packages are outside this inventory"
         receipt["timeout_process_scope"] = "owned POSIX process group" if os.name == "posix" else "direct child only"
-        receipt["ts_runtime_hashes"] = {str(p): digest(p) for p in [runtime / "package.json", *(runtime / "dist").rglob("*")] if p.is_file()}
+        receipt["ts_runtime_hashes"] = {str(p): digest(p) for p in
+            [runtime / "package.json", *(runtime / "dist").rglob("*"), *onchain.parent.rglob("*")] if p.is_file()}
         source = output / "passport-source"
         source.mkdir()
         shutil.copyfile(manifest, source / "source-manifest.json")
@@ -361,7 +407,7 @@ def main(argv=None):
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(original, target)
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--skip-zk",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--feature-zkir-v3", "--skip-zk",
                          source / "src/digital-passport-credential.compact", generated])
         contract = generated / "contract"
         ir = json.loads((contract / "compact-rust-ir.json").read_text())
@@ -379,6 +425,8 @@ def main(argv=None):
         generated_hashes = {str(p): digest(p) for p in generated.rglob("*") if p.is_file()}
         receipt["formatted_generated_rust_sha256"] = formatted_copy(
             contract / "lib.rs", output / "formatted-generated-lib.rs", run)
+        if receipt["formatted_generated_rust_sha256"] != digest(FIXTURE / "lib.rs"):
+            raise ValueError("complete generated Passport Rust differs from the reviewed fixture")
         link = contract / "node_modules/@midnight-ntwrk/compact-runtime"
         link.parent.mkdir(parents=True)
         link.symlink_to(runtime, target_is_directory=True)
@@ -387,7 +435,8 @@ def main(argv=None):
         surface = json.loads(run("typescript-exports", [node, "--input-type=module", "-e", expression]).stdout)
         if surface != sorted(exports):
             raise ValueError("Passport live TypeScript public export inventory differs")
-        profile = f"current-{selected_version}-ledger8.1.3"
+        profile = f"current-{selected_version}-ledger{LEDGER_VERSION}"
+        reviewed_profile = f"branch-ledger9-runtime{ts_package['version']}-onchain{ONCHAIN_VERSION}"
         receipt["typescript"] = []
         for family in FAMILIES:
             capture = output / f"{family}.json"
@@ -398,6 +447,8 @@ def main(argv=None):
             run(f"typescript-{family}", [*command, profile, capture])
             actual = json.loads(capture.read_text())
             compare_capture(actual, json.loads((ORACLE / f"upstream-{family}-capture.json").read_text()), profile)
+            reviewed = json.loads((ORACLE / "ledger9" / f"branch-{family}-capture.json").read_text())
+            compare_capture(reviewed, actual, reviewed_profile)
             receipt["typescript"].append({"family": family, "cases": len(actual.get("rows", [])), "sha256": digest(capture)})
         if not link.is_symlink() or link.resolve() != runtime:
             raise ValueError("Passport TS runtime link changed during execution")
@@ -522,6 +573,8 @@ def main(argv=None):
         if current_generated != generated_hashes:
             raise ValueError("Passport generated SDK membership or bytes changed during execution")
         receipt["generated_hashes"] = generated_hashes
+        if onchain_runtime_entry(run, node, runtime, "recheck-ts-onchain-runtime") != onchain:
+            raise ValueError("Passport TS onchain runtime resolution changed during execution")
         for group in ("source_hashes", "tools", "ts_runtime_hashes"):
             for path, expected in receipt[group].items():
                 if digest(path) != expected:
