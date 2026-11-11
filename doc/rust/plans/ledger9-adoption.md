@@ -539,5 +539,26 @@ conditional producer also records current tool provenance for the
 opposite-state case. The focused run passed 16 tests and reported five
 remaining v6/v8 comparisons. Those tests still reference the distinct
 Election owner-operation, base ternary, conditional Counter, and
-shared direct behavior fixtures. Workspace and integration
+shared direct behavior fixtures. At `7fc3f055a`, all four captures
+refresh 42 state fields. The Election owner scenario reproduces both
+ten-level Merkle paths from actual execution, including the leaves,
+siblings, and directions. For the shared direct capture, the staged
+producer changes only the required runtime version from 0.16.101 to
+0.17.0. Its reviewed original bytes and case inventory are retained.
+Both the full Election and ternary package tests pass. All three Rust
+consumers pass the shared direct tests.
+
+At `cea38ce25`, 14 Registry, assertion, literal, and pure-call captures
+refresh 93 state fields. The shared Call Registry producer uses the same
+version-only staging adjustment as the direct behavior producer.
+All 43 focused tests across the five affected packages pass, including
+the three older state comparisons exposed by the shared direct run.
+A new workspace run is executing on this signed head with the same
+locked offline behavioral scope as the earlier 733-target run.
+
+At `f6ae8e51c`, 16 collection, conditional, Merkle, and shielded
+effect captures refresh 111 state fields. Their captured programs,
+effects, and other scenario values agree with their historical
+counterparts. The focused tests across 13 packages follow the workspace
+run on the same target directory. Workspace and integration
 qualification remain open.
