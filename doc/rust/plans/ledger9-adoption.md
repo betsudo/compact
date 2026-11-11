@@ -355,8 +355,13 @@ scopes. The released v3 tool modeled all 96 exports at k6 and 34 rows for
 runtime pair passed all 16 base, 30 boundary, and 105 tuple cases.
 The 54-command tuple scope gate and the 19-command base API gate passed
 at `11769f654`. The required proof callers preserve all selected counts
-and verify each retained standalone proof separately. Full cryptographic
-qualification of the three cohorts remains open.
+and verify each retained standalone proof separately. The base cohort
+passed all 16 cases at `11769f654`, with 16 fresh key pairs and separate
+verification of all 16 standalone proofs. It refused corrupted proofs
+and distinct verifiers. Sixteen distinct funded transactions applied
+with default strictness and refused exact replay with byte-identical
+ledger state. Cryptographic qualification of the boundary and tuple
+cohorts remains open.
 
 Wide-zero multiplication passed the maintained generated API gate for the
 original and conditional sources. The two ordinary entries model at k7
@@ -383,3 +388,26 @@ The 64-command Direct Fold proof gate passed at `9a3518c68`.
 It separately verified all eleven standalone proofs and rejected their
 corrupted forms. Eleven distinct funded v3 transactions applied with
 default strictness and refused replay with byte-identical ledger state.
+
+At `119d114de`, the maintained Field wrapper, tuple wrapper, and Unit
+initializer gates passed all two, four, and four selected cases on
+macOS arm64. The gates verified k7 material before fresh key generation
+and preserved the complete modeled export rosters. Separate processes
+verified all ten standalone proofs and refused corruption. Each distinct
+funded v3 transaction passed default strictness with one positive-fee
+Dust spend and refused replay with byte-identical ledger state. The
+Unit gate exercises later calls and state committed by initialization.
+
+Twelve constructor fixtures now use fresh TypeScript state captures
+produced with Compact Runtime 0.17.0 and Onchain Runtime 4.0.1. Only
+serialized state fields changed in the captures, and the historical
+Ledger 8 captures retain their original bytes. The Rust List fixture
+now includes all five source exports in its installed operation map for
+the exact state comparison. All 15 locked Rust integration tests across
+the twelve packages passed on macOS arm64 at `ae48c02a6`.
+
+The released v3 model probe covered all 70 stateful vector, nested
+product, component-vector, and outer-vector exports. All 36 selected
+exports fit the existing automatic k8 limit. The maintained product
+proof callers still need migration and fresh qualification. Required
+Linux integration and distribution qualification remain open.
