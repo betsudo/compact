@@ -523,10 +523,16 @@ def run(args):
         donor_files = inventory(donor_root)
         execute("model-over-cap-donor", [report["zkir"]["snapshot"], "mock-compile", donor])
         model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
+        after_model = inventory(donor_root)
+        binary = "zkir/run.bzkir"
+        binary_hash = after_model.pop(binary, None)
         require(model is not None and tuple(map(int, model.groups())) == (9, 288)
-                and inventory(donor_root) == donor_files, "intact donor model differs")
+                and after_model == donor_files and binary not in donor_files
+                and binary_hash and (donor_root / binary).stat().st_size > 0,
+                "intact donor model or its mock binary differs")
         report["over_cap_donor"] = {"source": str(donor_source), "source_sha256": digest(ROOT / donor_source),
-                                    "generated": donor_files, "k": 9, "rows": 288}
+                                    "generated": donor_files, "mock_binary_sha256": binary_hash,
+                                    "k": 9, "rows": 288}
         excessive = output / "selected-model-over-cap"
         for source in SELECTED_SOURCES:
             shutil.copytree(generated / source, excessive / source)
