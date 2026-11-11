@@ -471,8 +471,11 @@ branches in the parity tests. All 16 exports now fit k8, including
 `family/branch` at k8 and 209 rows. The gate generates the unchanged
 vector component `helper/run` with the same admitted compiler into a
 private fixture, checks its k9 and 288 rows, and uses it for the
-over-cap refusal before key generation. Its local qualification at
-`15bd923c2` is in progress.
+over-cap refusal before key generation. The API protocol passed all 91
+commands at `15bd923c2`. The proof gate stopped before key generation
+when the model command wrote its binary IR alongside the intact donor.
+The corrected gate authenticates that binary and binds the original raw
+IR in the refusal. Its local retry at `221d9a690` is in progress.
 
 The workspace rustdoc rerun passed at `15bd923c2` with Rust 1.99,
 the locked Ledger 9 graph, and a fresh exclusive target directory.
@@ -489,6 +492,7 @@ resolved against current Cargo metadata.
 
 Preparation also captured 31 additional historical fixtures using the
 paired compiler and their original TypeScript producers. Of these,
-28 differ from their historical observations solely in serialized
-contract state. One has other observed differences and two producers
-failed. These captures await current native test qualification.
+29 differ solely in serialized contract state. Witness effect order
+also records the current tool and runtime provenance. Canonical output
+order also changes the observed spend ordering and needs separate
+comparison. These captures await current native test qualification.
