@@ -46,7 +46,12 @@ function inventory(folder) {
 }
 
 const runtime=realpathSync(runtimeRoot),before=inventory(runtime);
-assert.equal(JSON.parse(readFileSync(resolve(runtime,'package.json'))).version,'0.16.102');
+const runtimeManifest=resolve(runtime,'package.json');
+assert.equal(JSON.parse(readFileSync(runtimeManifest)).version,'0.17.0');
+const onchainManifest=createRequire(runtimeManifest).resolve.paths('@midnightntwrk/onchain-runtime-v4')
+  .map(path=>resolve(path,'@midnightntwrk/onchain-runtime-v4/package.json')).find(existsSync);
+assert.ok(onchainManifest,'missing paired Onchain Runtime');
+assert.equal(JSON.parse(readFileSync(onchainManifest)).version,'4.0.1');
 const cases=JSON.parse(readFileSync(casesPath));
 assert.equal(cases.length,105);
 const ids=new Set();
