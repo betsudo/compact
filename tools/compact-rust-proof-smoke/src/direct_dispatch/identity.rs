@@ -286,3 +286,14 @@ pub(super) fn did_functional_lifecycle(
         Err(_) => Err("DID functional lifecycle proof worker panicked".into()),
     }
 }
+
+pub(super) fn did_functional_lifecycle_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --did-functional-lifecycle-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::did_functional_lifecycle::verify(Path::new(&root))
+}

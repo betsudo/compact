@@ -536,6 +536,9 @@ pub(super) fn try_run(
         ("--did-digest-reducer", _) => Some(identity::did_digest_reducer(arguments)),
         ("--did-digest-verification", _) => Some(identity::did_digest_verification(arguments)),
         ("--did-deactivate", _) => Some(identity::did_deactivate(arguments)),
+        ("--did-functional-lifecycle-verify", _) => {
+            Some(identity::did_functional_lifecycle_verify(arguments))
+        }
         ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(
             arguments,
             crate::did_functional_lifecycle::Case::Valid,

@@ -1184,7 +1184,7 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 --parameter-k 11 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Qualify constructor guard origins, APIs and sixteen selected proofs

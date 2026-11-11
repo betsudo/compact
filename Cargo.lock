@@ -3161,6 +3161,7 @@ dependencies = [
  "midnight-transient-crypto 3.0.1",
  "midnight-zk-stdlib 2.4.0",
  "midnight-zkir 2.2.0",
+ "midnight-zkir 3.2.0",
  "midnight-zswap",
  "rand 0.8.6",
  "rand_chacha 0.3.1",

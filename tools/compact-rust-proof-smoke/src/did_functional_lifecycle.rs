@@ -15,6 +15,7 @@
 //! Current-profile functional DID deactivation through the existing strict path.
 use super::*;
 use did_contract::{ledger_contract as c, runtime as r, types};
+use midnight_transient_crypto::proofs::Proof;
 use serde_json::{Value, json};
 use std::cell::RefCell;
 
@@ -153,7 +154,7 @@ pub(super) fn run(root: &Path, case: Case) -> Result<(), Box<dyn Error>> {
         return Err("DID functional proof result already exists".into());
     }
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../tests-rust-backend/did-functional-lifecycle-source/data/unit-composition.json"
+        "../../../tests-rust-backend/did-functional-lifecycle-source/data/ledger9-unit-composition.json"
     ))?;
     let row = capture["cases"]
         .as_array()
@@ -171,9 +172,14 @@ pub(super) fn run(root: &Path, case: Case) -> Result<(), Box<dyn Error>> {
         signature(row)?,
         r::BoundedUint::<18446744073709551615>::new(1)?,
     ));
-    let mut result =
-        did_deactivate::run_with(root, row, prepare, check_final, Some(changed_input))?;
-    result["format"] = json!("compact-did-functional-lifecycle-proof/v2");
+    let mut result = did_deactivate::run_with(
+        root,
+        row,
+        prepare,
+        check_final,
+        did_deactivate::ProofProtocol::V3 { changed_input },
+    )?;
+    result["format"] = json!("compact-did-functional-lifecycle-proof/v3");
     result["status"] = json!("passed");
     result["source_case"] = json!(case.id());
     result["timestamp_witness"] = json!(case.timestamp());
@@ -189,6 +195,31 @@ pub(super) fn run(root: &Path, case: Case) -> Result<(), Box<dyn Error>> {
         .open(result_path)?
         .write_all(&serde_json::to_vec_pretty(&result)?)?;
     println!("{result}");
+    Ok(())
+}
+
+pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
+    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
+        root.join("keys/deactivate.verifier"),
+    )?))?;
+    let proof = Proof(std::fs::read(root.join("deactivate-input-control.proof"))?);
+    let public_inputs = std::fs::read(root.join("deactivate-input-control.inputs"))?;
+    let mut reader = public_inputs.as_slice();
+    let inputs: Vec<Fr> = tagged_deserialize(&mut reader)?;
+    if !reader.is_empty() {
+        return Err("DID proof inputs have trailing bytes".into());
+    }
+    verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
+    let mut corrupted = proof;
+    let first = corrupted.0.first_mut().ok_or("empty DID proof")?;
+    *first ^= 1;
+    if verifier
+        .verify(&PARAMS_VERIFIER, &corrupted, inputs.into_iter())
+        .is_ok()
+    {
+        return Err("DID verifier accepted corrupt proof".into());
+    }
+    println!("separate DID v3 proof verification passed; corrupted proof refused");
     Ok(())
 }
 
@@ -281,11 +312,17 @@ fn prepare(
     {
         return Err("DID functional stale version did not refuse first".into());
     }
-    let prepared =
-        check_generated_trace(root, "deactivate", functional, (signature.clone(), version))?;
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/deactivate.verifier"),
     )?))?;
+    let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+    let prepared = r::transaction::RecordedCall::new(
+        observed,
+        functional,
+        "deactivate",
+        (signature.clone(), version),
+    )
+    .prepare(verifier.clone(), randomness)?;
     let facade = c::Contract::from(call_witness::Witness {
         options: row["options"].clone(),
         calls: RefCell::default(),
@@ -293,7 +330,7 @@ fn prepare(
     let ordinary = facade
         .recording()
         .deactivate_call(observed, 7_u64, signature, version)?
-        .prepare(verifier, Fr::from(0_u64))?;
+        .prepare(verifier, randomness)?;
     if format!("{prepared:?}") != format!("{ordinary:?}") {
         return Err("DID functional/ordinary prepared statements differ".into());
     }

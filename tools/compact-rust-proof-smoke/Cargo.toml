@@ -182,6 +182,7 @@ midnight-onchain-runtime = "=4.0.1"
 midnight-onchain-vm = "=4.0.1"
 midnight-storage = "=3.0.0"
 midnight-zkir = "=2.2.0"
+midnight-zkir-v3 = { package = "midnight-zkir", version = "=3.2.0" }
 midnight-serialize = "=1.2.1"
 midnight-transient-crypto = "=3.0.1"
 midnight-base-crypto = "=1.1.1"

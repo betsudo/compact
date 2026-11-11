@@ -20,7 +20,8 @@ use compact_rust_kernel_shielded_effects_oracle_fixture::ledger_contract as cont
 use midnight_compact_runtime as runtime;
 use midnight_compact_runtime::transaction::OfferBackedObservedState;
 use midnight_ledger::error::{EffectsCheckError, MalformedTransaction};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_serialize::{Deserializable, Tagged};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
 use midnight_zswap::{Offer, Output};
 
 type Amount = BoundedUint<18446744073709551615>;
@@ -201,18 +202,27 @@ pub(super) fn prove_and_verify_call_measured(
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
 ) -> Result<usize, Box<dyn Error>> {
-    prove_and_verify_call_with_input_control(root, name, call, verifier, None)
+    let (proof, _) = prove_and_verify_call_with_input_control::<IrSource>(
+        root,
+        name,
+        call,
+        verifier,
+        None,
+        FetchMode::OnDemand,
+    )?;
+    Ok(proof.0.len())
 }
 
 // A selected same-geometry public-input control uses the original immutable
 // verifier and exact communication commitment, without regenerating a proof.
-pub(super) fn prove_and_verify_call_with_input_control(
+pub(super) fn prove_and_verify_call_with_input_control<Ir: Zkir + Deserializable + Tagged>(
     root: &Path,
     name: &'static str,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
     changed_input: Option<AlignedValue>,
-) -> Result<usize, Box<dyn Error>> {
+    fetch_mode: FetchMode,
+) -> Result<(Proof, Vec<Fr>), Box<dyn Error>> {
     let mut fields = Vec::new();
     call.input.value_only_field_repr(&mut fields);
     call.output.value_only_field_repr(&mut fields);
@@ -222,16 +232,16 @@ pub(super) fn prove_and_verify_call_with_input_control(
             ProofPreimageVersioned::V2(preimage) => preimage,
             _ => return Err("unexpected Kernel call proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
+    let ir: Ir = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("zkir/{name}.bzkir")),
     )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<Ir> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.prover")),
     )?))?;
     let checked_skips = preimage.check(&ir)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
+    let params = MidnightDataProvider::new(fetch_mode, OutputMode::Log, vec![])?;
     // Use upstream IR's exact public inputs, including conditional skip semantics.
-    let (proof, mut inputs, proof_skips) = futures_executor::block_on(ir.prove(
+    let (proof, inputs, proof_skips) = futures_executor::block_on(ir.prove(
         ChaCha20Rng::from_seed([0x84; 32]),
         &params,
         pk,
@@ -278,20 +288,15 @@ pub(super) fn prove_and_verify_call_with_input_control(
         if changed_preimage.check(&ir).is_ok() {
             return Err("IR accepted changed public input".into());
         }
-        use std::io::Write;
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(root.join(format!("{name}-input-control.proof")))?
-            .write_all(&proof.0)?;
     }
-    inputs[0] = if inputs[0] == Fr::from(0_u64) {
+    let mut changed_binding = inputs.clone();
+    changed_binding[0] = if inputs[0] == Fr::from(0_u64) {
         Fr::from(1_u64)
     } else {
         Fr::from(0_u64)
     };
     if verifier
-        .verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())
+        .verify(&PARAMS_VERIFIER, &proof, changed_binding.into_iter())
         .is_ok()
     {
         return Err("Kernel proof accepted changed binding".into());
@@ -300,7 +305,7 @@ pub(super) fn prove_and_verify_call_with_input_control(
         "{name} cryptographic proof verified ({} bytes), changed binding rejected",
         proof.0.len()
     );
-    Ok(proof.0.len())
+    Ok((proof, inputs))
 }
 
 fn funded_mint(root: &Path) -> Result<(), Box<dyn Error>> {
