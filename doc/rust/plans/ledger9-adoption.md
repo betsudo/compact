@@ -54,4 +54,18 @@ This branch's synchronous Compact runtime uses minor `0.17.0` and the published 
 
 Build `.#compactc` and `.#runtime.package`. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
 
-The native macOS arm64 Nix runtime and compiler packages built, the runtime tests passed, and the compiler suite passed in both existing JavaScript check modes. The distributed native and WASM ZKIR tool pins and the maintained proof gates still need their Ledger 9 cutover.
+The native macOS arm64 Nix runtime and compiler packages built, the runtime tests passed, and the compiler suite passed in both existing JavaScript check modes.
+
+## Released ZKIR tool pairing
+
+The packaged native v3 compiler builds the published `midnight-zkir` 3.2.0 crate with a standalone, registry-only Ledger 9 lock on Rust 1.99.0. The JavaScript check harness installs the published ZKIR v3 3.2.0 and ZKIR v2 2.2.0 WASM packages from its lockfile. The existing v2 native producer and historical receipts remain available. Rust and both-target invocations report the v3 package version.
+
+The v3 emitter now uses the released point and scalar conversion instructions. It lowers each hash to a typed Bytes32 result and splits the digest back into Compact's high-byte-first field representation. This keeps the typed Compact value, its hash alignment, and the public transcript ordering consistent. The v2 emitter retains its original snapshots and check mode.
+
+On macOS arm64, the compiler suite passed all 3,883 checks, including all 168 v3 snapshots and the JavaScript checks in both ZKIR modes. The portable compiler reproduced the exact Counter and guarded Counter ZKIR and Rust libraries used in proof qualification. The packaged native CLI reproduced the straight-line Counter's binary IR, proving key and verifier key byte-for-byte. The published v3 WASM package agreed with the native binary IR for both the straight-line and guarded Counter. Both guarded Counter branches passed with a fresh transaction-bound v3 proof and real Dust funding. Each had 20 active transcript operations, one proved no-op, matching generated TypeScript state and typed return, and byte-identical ledger state after exact replay refusal. The reset branch starts and ends with the same contract value while the ledger records fees and replay protection. Both Linux musl tool derivations were evaluated locally.
+
+The maintained v3 proof gate still needs to bind its producer, exact generated artifacts, separate verifier and transaction application. Current fixture freshness and the accepted functional SDK routes still need regeneration and qualification on Ledger 9.
+
+## Earlier Compact Ledger 9 branch
+
+The local `ledger9-rustbackend` ref at `6f4e5948f` records the Rust backend port and constructor rejection corpus. The retained `origin/ledger9-rustbackend` ref at `fc879310b` also records the TypeScript fixture update for the options-object `createCircuitContext` API and an independent Rust toolchain pin. Its runtime still uses the Ledger 9 RC3 Git graph and Rust 1.95.0. Use its negative cases and fixture recipes as references when auditing current gates. Keep this migration on the Rust AST line with released packages and Rust 1.99.0.

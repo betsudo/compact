@@ -77,6 +77,16 @@
                   (cons (make-private-input var-name primitive-type) instr*)))
               instr* var-name* primitive-type*))))
 
+      ;; Compact's field representation puts the high byte before the low
+      ;; 31 bytes. The ZKIR split instruction returns the low limb first.
+      (define (emit-persistent-hash src high low alignment* input* instr*)
+        (let ([bytes (make-temp-id src 'hash-bytes)])
+          (with-output-language (Lzkir Instruction)
+            (cons*
+              `(bytes32_into_low_high ,low ,high ,bytes)
+              `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
+              instr*))))
+
       (define (make-native name arg*)
         ;; Get the list of alignment atoms for a 0-based arg index.
         (define (arg->alignment arg* index)
@@ -88,7 +98,7 @@
             ;; Generally assume that the arity is correct here.
             (case name
               [(constructJubjubPoint)
-               (cons `(decode "Point<Jubjub>" ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+               (cons `(from_coordinates ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(degradeToTransient)
                (cons `(copy ,(car var-name*) ,(cadr triv*)) instr*)]
               [(ecAdd)
@@ -100,7 +110,7 @@
                      [tmp-y (make-temp-id src 'y)]
                      [tmp-neg-x (make-temp-id src 'neg)])
                  (cons*
-                   `(decode "Point<Jubjub>" ,(car var-name*) ,tmp-neg-x ,tmp-y)
+                   `(from_coordinates ,(car var-name*) ,tmp-neg-x ,tmp-y)
                    `(neg ,tmp-neg-x ,tmp-x)
                    `(encode ,tmp-x ,tmp-y ,(car triv*))
                    instr*))]
@@ -112,7 +122,7 @@
                (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
-               (cons `(decode "Scalar<Jubjub>" ,(car var-name*) ,(car triv*)) instr*)]
+               (cons `(jubjub_scalar_from_native ,(car var-name*) ,(car triv*)) instr*)]
               [(hashToCurve)
                (assert (= (length var-name*) 1))
                (cons `(hash_to_curve ,(car var-name*) ,triv* ...) instr*)]
@@ -124,9 +134,11 @@
                (cons `(encode ,(make-temp-id src 'ignore) ,(car var-name*) ,(car triv*)) instr*)]
               [(keccak256)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)])
-                 (cons `(keccak256 ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,triv* ...)
+               (let ([alignment* (arg->alignment arg* 0)]
+                     [bytes (make-temp-id src 'hash-bytes)])
+                 (cons*
+                   `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
+                   `(keccak256 ,bytes (,alignment* ...) ,triv* ...)
                    instr*))]
               [(persistentCommit)
                (assert (= (length var-name*) 2))
@@ -136,15 +148,11 @@
                (let ([var* (syntax-case triv* ()
                              [(a ... b c) #'(b c a ...)])]
                      [alignment* (append (arg->alignment arg* 1) (arg->alignment arg* 0))])
-                 (cons `(persistent_hash ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,var* ...)
-                   instr*))]
+                 (emit-persistent-hash src (car var-name*) (cadr var-name*) alignment* var* instr*))]
               [(persistentHash)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)])
-                 (cons `(persistent_hash ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,triv* ...)
-                   instr*))]
+               (emit-persistent-hash src (car var-name*) (cadr var-name*)
+                 (arg->alignment arg* 0) triv* instr*)]
               [(transientCommit)
                (assert (= (length var-name*) 1))
                ;; The last input needs to be moved first.
@@ -225,8 +233,7 @@
             (let ([hash0 (make-temp-id default-src 'hash)]
                   [hash1 (make-temp-id default-src 'hash)])
               (zkir-instr*
-                (cons `(persistent_hash ,hash0 ,hash1 (,alignment* ...) ,var* ...)
-                  (zkir-instr*)))
+                (emit-persistent-hash default-src hash0 hash1 alignment* var* (zkir-instr*)))
               ;; Note that the operand encoding (1 32 hash0 hash1) is reversed.
               (cons* hash1 hash0 32 1 code*))))
         ;; The number of zeros and alignment for the default value of an Lflattened type.
@@ -699,7 +706,7 @@
       [(= ,test (,var-name) (default ,opaque-type))
        (assert (string=? opaque-type "JubjubPoint"))
        (with-output-language (Lzkir Instruction)
-         (cons `(decode "Point<Jubjub>" ,var-name 0 1) instr*))]
+         (cons `(from_coordinates ,var-name 0 1) instr*))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures
@@ -918,6 +925,9 @@
        `((op . "add") (output . ,outp) (a . ,inp0) (b . ,inp1))]
       [(assert ,[* inp])
        `((op . "assert") (cond . ,inp))]
+      [(bytes32_into_low_high ,outp0 ,outp1 ,[* inp])
+       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
+         `((op . "bytes32_into_low_high") (bytes . ,inp) (outputs . ,(vector outp0 outp1))))]
       [(cond_select ,[* outp] ,[* inp0] ,[* inp1] ,[* inp2])
        `((op . "cond_select") (output . ,outp) (bit . ,inp0) (a . ,inp1) (b . ,inp2))]
       [(constrain_bits ,[* inp] ,imm)
@@ -928,8 +938,6 @@
        `((op . "constrain_to_boolean") (val . ,inp))]
       [(copy ,[* outp] ,[* inp])
        `((op . "copy") (output . ,outp) (val . ,inp))]
-      [(decode ,zkir-type ,[* outp] ,[* inp*] ...)
-       `((op . "decode") (type . ,zkir-type) (output . ,outp) (inputs . ,(list->vector inp*)))]
       [(div_mod_power_of_two ,outp0 ,outp1 ,[* inp] ,imm)
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "div_mod_power_of_two") (outputs . ,(vector outp0 outp1)) (val . ,inp)
@@ -941,12 +949,15 @@
       [(encode ,outp0 ,outp1 ,[* inp])
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "encode") (outputs . ,(vector outp0 outp1)) (input . ,inp)))]
+      [(from_coordinates ,[* outp] ,[* inp0] ,[* inp1])
+       `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
        `((op . "hash_to_curve") (output . ,outp) (inputs . ,(list->vector inp*)))]
-      [(keccak256 ,outp0 ,outp1 (,alignment* ...) ,[* inp*] ...)
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "keccak256") (outputs . ,(vector outp0 outp1))
-           (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*))))]
+      [(jubjub_scalar_from_native ,[* outp] ,[* inp])
+       `((op . "jubjub_scalar_from_native") (output . ,outp) (native . ,inp))]
+      [(keccak256 ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "keccak256") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(less_than ,[* outp] ,[* inp0] ,[* inp1] ,imm)
        `((op . "less_than") (output . ,outp) (a . ,inp0) (b . ,inp1) (bits . ,imm))]
       [(mul ,[* outp] ,[* inp0] ,[* inp1])
@@ -955,10 +966,9 @@
        `((op . "neg") (output . ,outp) (a . ,inp))]
       [(output ,[* inp*] ...)
        `((op . "output") (vals . ,(list->vector inp*)))]
-      [(persistent_hash ,outp0 ,outp1 (,alignment* ...) ,[* inp*] ...)
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "persistent_hash") (outputs . ,(vector outp0 outp1))
-           (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*))))]
+      [(persistent_hash ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "persistent_hash") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(private_input ,zkir-type ,[* outp])
        ;; Kind of warty: rather than a literal true guard or making it truly optional by leaving it
        ;; out of the JSON representation, ZKIR wants to put a JSON null value there.
