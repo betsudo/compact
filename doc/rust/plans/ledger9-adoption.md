@@ -783,9 +783,27 @@ different verifier key and mismatched raw and binary IR. Scoped
 Clippy passed after removing the now-unused v2 parity helper.
 
 The full core run reached the named test-center Counter after the
-positional suite. That named runner still reads v2. The exact
-current source reproduces the linked generated Rust and models
-`increment` at k6/31 rows, with the original Unit witness retained.
+positional suite. At `5ccfb8561`, a focused local run qualified 24 cases
+across 14 named commands for that Counter, composite Cell, plain and
+historic Merkle operations, and inline type-scope hash assertions. The
+current compiler produced the Rust linked into the runner for all seven
+source fixtures. The Counter also checks its exact generated Rust IR,
+library and raw ZKIR before loading the verifier. This distinguishes the
+Unit-witness source from the ordinary Counter, which has the same raw
+`increment` ZKIR.
+
+Each case retained its original typed state and transcript checks and
+passed standalone proof verification in a separate process, changed
+binding and corruption refusal, funded deployment and an independently
+proved call under default strictness. Replaying the call returned
+`IntentAlreadyExists` and preserved identical ledger bytes. The runner
+refused a substituted Counter IR and an external proof provider.
+
+The next named core case is election topic. Compiling the original
+election source independently reproduced the v2 reader refusal for its
+v3 output. The original topic, phase and voter circuits model at k13.
+Commit and reveal model at k14. Their source, witness and state
+assertions remain part of the required gate.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
