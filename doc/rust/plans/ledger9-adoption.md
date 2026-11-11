@@ -941,11 +941,36 @@ wrapper changes alongside the previously accepted deltas. The full
 Python suite passed with 522 tests and 20 skips, and all 37 pinned
 oracle sources passed.
 
-On `5289b8642`, all three Shielded Receive policies still reached
-v2 readers. A separate candidate ports them using the shared v3
-offer application used by Shielded Send. Qualify that candidate,
-continue the remaining native selectors, and rerun the complete core
-and all three native shards on the integrated source. The required
+At `3ca032bdf`, six maintained native selectors passed on macOS
+arm64. The composed run verified 17 fresh standalone v3 proofs
+separately and applied 16 distinct funded default-strict call proofs
+with exact unchanged replay refusal.
+
+Shielded Receive now covers the direct, wallet-funded and trusted
+observation policies. The wide `2^64` case remains a standalone
+proof. The zero receive and both wallet-funded cases validate the
+funded application, and the original external wallet input and
+spent-nullifier refusals remain in scope. The shared offer application
+also passed the full, partial and trusted Shielded Send regression.
+
+Terminal lexical returns preserve all four proved return paths,
+including the witness-driven observed call. Coracle guess proves
+both colors from explicit prior states and retains each exact
+repeated-turn refusal. Both sources retain exact generated Rust,
+complete raw ZKIR and selected binary and verifier pins.
+
+Composite Zswap proves the original zero-output plan and funded
+transfer. Canonical Output Order proves both commitment sort orders
+with the exact sent and change indices and stored change. The
+retained receipts record distinct application proofs and byte-exact
+replay results for both suites. Fresh TypeScript reproduced 52 rows
+across Receive, lexical return, Coracle guess, Composite Zswap and
+Canonical Output Order. The affected generated Rust fixture tests
+passed.
+
+The current local work prepares the remaining Transient Receive/Send,
+Coracle offer, and MicroDAO offer ports. Rerun the complete integrated
+core and all three native shards after those ports. The required
 Linux jobs are prepared locally and await integration qualification.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
