@@ -3802,7 +3802,7 @@
       "consumer": "tests-rust-backend/test-center-coracle/lib.rs",
       "namespace": null,
       "consumer_input_sha256": {
-        "tests-rust-backend/test-center-coracle/Cargo.toml": "b1726a7f6753cbc8dd6f3c9e5cae02ce5652a4c5aa78f3c31aa478efbf601e83",
+        "tests-rust-backend/test-center-coracle/Cargo.toml": "eeb0245dd13174c98b223be763c787d888daeaa27da11f7abe1a1c2ef487a3e3",
         "tests-rust-backend/test-center-coracle/lib.rs": "c335896c792eae2b25eb92f617e4d23c8f8e17faba4a687ddd38c6dabaaffc78",
         "tests-rust-backend/test-center-coracle/build.rs": "dc0001969155e9064f70cab3b90204da3504f27571093d9750cbcb623037fd53"
       }
@@ -3834,7 +3834,7 @@
       "consumer": "tests-rust-backend/test-center-micro-dao/lib.rs",
       "namespace": null,
       "consumer_input_sha256": {
-        "tests-rust-backend/test-center-micro-dao/Cargo.toml": "6f95f7c820aa1a5e8ee454c5ed6308b467accc473c03cdea9cc1498ef9bf5988",
+        "tests-rust-backend/test-center-micro-dao/Cargo.toml": "8850db5c34d74978917e9e06c7d5a8ece98e5310a57149be97b73a7de3e739e7",
         "tests-rust-backend/test-center-micro-dao/lib.rs": "a5a754cad6ec77e95b1a7e53d55c45c95a2d3d52c1ff29965be11d8719c2e98e",
         "tests-rust-backend/test-center-micro-dao/build.rs": "9828c9b680d0e1fcdb49bd24e33062f94f489263883dbd4eadccf571acaff2b1"
       }
