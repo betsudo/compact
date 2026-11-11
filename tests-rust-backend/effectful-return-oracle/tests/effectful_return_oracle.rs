@@ -48,7 +48,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn conditional_returns_keep_ordered_effects_and_skip_the_other_branch() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effectful-return-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effectful-return-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(0_u64)).unwrap();
@@ -117,7 +117,7 @@ fn conditional_returns_keep_ordered_effects_and_skip_the_other_branch() {
 #[test]
 fn effectful_returns_record_exact_selected_program_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effectful-return-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effectful-return-oracle.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(0u64))

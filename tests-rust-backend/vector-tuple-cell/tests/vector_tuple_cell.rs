@@ -62,7 +62,7 @@ fn assert_replay<Output>(call: &RecordedCircuitResult<(), Output>) {
 #[test]
 fn vector_and_tuple_cells_match_typescript_state_and_reads() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/vector-tuple-cell.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-vector-tuple-cell.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();
@@ -100,7 +100,7 @@ fn vector_and_tuple_cells_match_typescript_state_and_reads() {
 #[test]
 fn recorded_vector_and_tuple_cells_match_native_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/vector-tuple-cell.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-vector-tuple-cell.json"
     ))
     .unwrap();
     let native = initial_state(ConstructorContext::new(())).unwrap();
