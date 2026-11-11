@@ -284,7 +284,6 @@ fn prove(
 
 #[cfg(test)]
 mod tests {
-    use super::local_v3_application::{self as v3, write_new};
     use super::*;
     #[test]
     fn complete_ir_mismatch_refuses_before_keys_or_state() {
