@@ -331,7 +331,7 @@ def main():
             target = generated / name
             source = (SOURCES / (name + ".compact")).relative_to(ROOT)
             run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []), source, target])
+                *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []), source, target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, output / "independent" / name])
             require((target / "contract/compact-rust-ir.json").read_bytes() ==
                     (output / "independent" / name / "contract/compact-rust-ir.json").read_bytes(), "independent IR differs: " + name)
@@ -353,7 +353,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "ts-results.json"
         run("ts", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                   "--version", "0.16.102", "--output", ts])
+                   "--version", "0.17.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == len(cases), "TS case count differs")
         consumer = output / "consumer"
@@ -451,7 +451,7 @@ def main():
             bind_build_inputs([changed_source])
             changed = folder / "generated"
             run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
-                "--rust-functional-ledger8", "--rust-require-recording", changed_source, changed])
+                "--rust-functional-ledger9", "--rust-require-recording", changed_source, changed])
             changed_manifest = source_manifest_snapshot(changed, True)
             changed_snapshot = inventory(changed)
             changed_consumer = folder / "consumer"
@@ -503,7 +503,7 @@ def main():
                 command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
                            else [compiler, "--target", lane, "--skip-zk"])
                 if lane == "rust":
-                    command += ["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"]
+                    command += ["--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording"]
                 rejected = run("scope-" + name + "-" + lane,
                                command + [source.relative_to(ROOT), output / ("scope-" + name + "-" + lane)],
                                success=outcome["exit"] == 0)
