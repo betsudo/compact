@@ -38,7 +38,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_set_member_oracle_matches_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-set-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -75,7 +75,7 @@ fn exact_set_member_oracle_matches_typescript_state() {
 #[test]
 fn recorded_set_member_and_cell_write_match_oracle_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-set-oracle.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(()))

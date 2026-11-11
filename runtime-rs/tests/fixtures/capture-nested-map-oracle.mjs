@@ -16,10 +16,12 @@
 // Compile nested_map_oracle.compact with --skip-zk into a fresh target and
 // link the generated contract to this branch's compact runtime.
 import { pathToFileURL } from 'node:url';
-import * as runtime from '../../../runtime/dist/index.js';
 
-const [contractPath] = process.argv.slice(2);
+const [contractPath, runtimePath] = process.argv.slice(2);
 if (!contractPath) throw new Error('expected contract/index.js');
+const runtime = runtimePath
+  ? await import(pathToFileURL(runtimePath).href)
+  : await import('../../../runtime/dist/index.js');
 const { Contract, ledger } = await import(pathToFileURL(contractPath).href);
 const contract = new Contract({});
 const coinPublicKey = { bytes: new Uint8Array(32) };

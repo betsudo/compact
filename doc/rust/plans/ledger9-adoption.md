@@ -121,5 +121,25 @@ verified it in a separate process. Its independently proved transaction used
 one Dust spend, passed default-strict validation, applied the expected Field
 Cell value 42, and refused replay with byte-identical full ledger state. The
 probe also passed the preparation, input, output, binding, proof-corruption,
-and private witness refusal controls. The complete isolated source-SDK gate
-and the remaining required proof workflows still require qualification.
+and private witness refusal controls. The complete isolated source-SDK gate subsequently passed all 30 steps on
+macOS arm64 at `4028a7b4b`. It used the original packaged compiler with no
+runtime or Scheme override, ran three positive ContractLab tests and the three
+typed compile-fail controls, and linted the consumer, bundled SDK and copied
+testkit. It generated fresh k7 keys and proved, separately verified, and
+strictly applied the selected call with a distinct funded transaction proof.
+The remaining required proof workflows and native Linux checks are open.
+
+## Expanded TypeScript parity cohort
+
+The next 18 fixture packages compare fresh Ledger 9 TypeScript captures for
+collections, hashes, arithmetic, control flow and witnessed state transitions.
+The Map, nested Map, Set and witness recording cases use a separate nine-case
+capture. The original nine-case capture and capture script remain bound to
+their reviewed Ledger 8 versions. The witnessed Cell state comparison includes
+the generated `write_offset` entry. Its gas-limit test uses a zero minimum
+deletion credit, as required by the Ledger 9 cost-bound comparison, and retains
+both the aggregate-meter assertion and the insufficient-read-budget refusal.
+
+The locked macOS arm64 retest passed all 57 tests across these 18 packages,
+with all features and targets enabled. The broader workspace behavioral suite
+still needs fresh captures and the remaining provenance and proof migrations.

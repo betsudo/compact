@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_uints_oracle_matches_typescript_state_and_width() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/uints-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-uints-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -74,7 +74,7 @@ fn exact_uints_oracle_matches_typescript_state_and_width() {
 #[test]
 fn recorded_uint_cell_write_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/uints-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-uints-oracle.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(()))

@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn historic_merkle_tree_matches_typescript_after_each_insert() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/hmt-default-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-hmt-default-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -92,7 +92,7 @@ fn historic_merkle_tree_matches_typescript_after_each_insert() {
 #[test]
 fn recorded_historic_default_indexed_insertion_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/hmt-default-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-hmt-default-oracle.json"
     ))
     .unwrap();
     for (prior, index, state, query, first_free) in [

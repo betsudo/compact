@@ -50,7 +50,7 @@ fn value(state: &StateValue<DefaultDB>) -> u128 {
 #[test]
 fn exported_stateful_circuit_call_matches_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/cross-circuit-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-cross-circuit-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -183,7 +183,7 @@ fn assert_recorded_step(
 #[test]
 fn exported_stateful_circuit_call_records_and_replays_typescript_trace() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/cross-circuit-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-cross-circuit-oracle.json"
     ))
     .unwrap();
     let native = initial_state(ConstructorContext::new(())).unwrap();

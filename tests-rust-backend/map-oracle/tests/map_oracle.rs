@@ -36,7 +36,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_map_oracle_matches_typescript_insertion_and_replacement() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/map-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-map-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

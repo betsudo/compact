@@ -54,7 +54,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_witness_oracle_matches_state_private_state_and_transcript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witnesses-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witnesses-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();

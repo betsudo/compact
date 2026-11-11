@@ -50,7 +50,7 @@ fn assert_empty_nested_map(state: &StateValue<DefaultDB>) {
 #[test]
 fn nested_map_initial_shape_and_cell_write_match_typescript() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-map-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-map-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

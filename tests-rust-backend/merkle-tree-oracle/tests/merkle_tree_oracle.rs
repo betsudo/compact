@@ -95,7 +95,7 @@ fn current_root(state: &StateValue<DefaultDB>) -> MerkleTreeDigest {
 #[test]
 fn recorded_direct_root_checks_match_typescript_and_replay_both_outcomes() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     for (label, expected) in [
@@ -198,7 +198,7 @@ fn assert_state(
 #[test]
 fn recorded_plain_append_matches_ledger8_program_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -237,7 +237,7 @@ fn recorded_plain_append_matches_ledger8_program_and_replays() {
 #[test]
 fn recorded_indexed_insertions_match_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let place_start = || {
@@ -293,7 +293,7 @@ fn recorded_indexed_insertions_match_typescript_and_replay() {
 #[test]
 fn recorded_plain_hash_append_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let at_hash_append = || {
@@ -337,7 +337,7 @@ fn recorded_plain_hash_append_matches_typescript_and_replays() {
 #[test]
 fn recorded_plain_indexed_hash_placement_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let at_hash_placement = || {
@@ -386,7 +386,7 @@ fn recorded_plain_indexed_hash_placement_matches_typescript_and_replays() {
 #[test]
 fn recorded_plain_reset_matches_typescript_and_replays_empty_and_populated_trees() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let populated = || {
@@ -518,7 +518,7 @@ fn assert_indexed_recording(
 #[test]
 fn recorded_plain_fullness_matches_native_vm_and_replays_without_a_write() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let expected_program = &oracle["nativeQueries"]["fullAtInit"]["queries"][0]["program"];
@@ -605,7 +605,7 @@ fn recorded_plain_fullness_matches_native_vm_and_replays_without_a_write() {
 #[test]
 fn merkle_tree_operations_match_typescript_state_bytes() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-tree-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-tree-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

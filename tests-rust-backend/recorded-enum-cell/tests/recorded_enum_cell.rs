@@ -59,7 +59,7 @@ fn assert_replay<Output>(recorded: &runtime::recording::RecordedCircuitResult<()
 #[test]
 fn enum_cell_native_and_recorded_calls_match_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/recorded-enum-cell-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-recorded-enum-cell-oracle.json"
     ))
     .unwrap();
     let native = initial_state(ConstructorContext::new(())).unwrap();

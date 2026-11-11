@@ -85,7 +85,7 @@ fn normalized_ops(mut value: serde_json::Value) -> serde_json::Value {
 #[test]
 fn exact_widening_arithmetic_oracle_matches_typescript_boundaries() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/widening-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-widening-arith-oracle.json"
     ))
     .unwrap();
     let byte = runtime::BoundedUint::<255>::new(255).unwrap();
@@ -145,7 +145,7 @@ fn exact_widening_arithmetic_oracle_matches_typescript_boundaries() {
 #[test]
 fn recorded_unsigned_pure_call_preserves_counter_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/widening-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-widening-arith-oracle.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(()))
