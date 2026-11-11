@@ -15,6 +15,7 @@
 
 //! Prove a typed pair hash assertion followed by an ordered Counter update.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_call_arg_declared_type_fixture::ledger_contract as contract;
 
@@ -66,6 +67,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("Boolean pair hash assertion proved and applied through ledger-8");
+    println!("Boolean pair hash assertion proved and applied through Ledger 9");
     Ok(())
 }
