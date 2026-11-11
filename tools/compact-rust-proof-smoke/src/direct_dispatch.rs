@@ -306,7 +306,8 @@ pub(super) fn try_run(
         (
             "--nested-component-products"
             | "--nested-component-products-models"
-            | "--nested-component-products-inventory",
+            | "--nested-component-products-inventory"
+            | "--nested-component-products-verify",
             _,
         ) => Some((|| {
             let root = arguments
@@ -322,6 +323,9 @@ pub(super) fn try_run(
                 }
                 "--nested-component-products-models" => {
                     crate::nested_component_products::models(root)
+                }
+                "--nested-component-products-verify" => {
+                    crate::nested_component_products::verify(root)
                 }
                 _ => crate::nested_component_products::run(root),
             }

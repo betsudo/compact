@@ -101,7 +101,7 @@ def qualify_dependency_inputs(prerequisites, inventories):
 
 
 def validate_summary(summary, generated):
-    require(summary["format"] == "compact-nested-component-products-proof/v1" and summary["status"] == "passed"
+    require(summary["format"] == "compact-nested-component-products-proof/v2" and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False
             and summary["all_source_exports_deployed"] is False, "invalid proof scope")
     require(summary["selected_source_exports_proved"] == list(map(list, SELECTED))
@@ -117,14 +117,24 @@ def validate_summary(summary, generated):
         expected=("Vector<1,[Vector<1,[[Field,Uint<16>],Uint<16>]>,Uint<32>]>" if index==3
                   else "Vector<1,[Vector<1,[[Uint<16>,Uint<32>],Uint<16>]>,Uint<32>]>")
         require(row["result_type"]==expected, "selected complete result carrier differs")
-        for field,suffix in [("proof_bytes",".proof"),("transaction_bytes","-transaction.bin")]:
-            require(type(row[field]) is int and row[field]>0 and (root / f"nested-component-products-{index}{suffix}").stat().st_size==row[field], "artifact missing/truncated")
+        stem = root / f"nested-component-products-{index}"
+        for field, suffix in [("proof_bytes", ".proof"), ("transaction_bytes", "-transaction.bin"),
+                              ("transaction_proof_bytes", "-transaction.proof")]:
+            require(type(row[field]) is int and row[field] > 0
+                    and Path(f"{stem}{suffix}").stat().st_size == row[field], "artifact missing/truncated")
+        require(Path(f"{stem}.proof").read_bytes() != Path(f"{stem}-transaction.proof").read_bytes()
+                and row["transaction_proof_version"] == 3 and row["positive_fee_dust_spends"] == 1,
+                "distinct funded Ledger 9 transaction proof required")
+        after = Path(f"{stem}-ledger-after.bin").read_bytes()
+        require(after and after == Path(f"{stem}-ledger-replay.bin").read_bytes(),
+                "serialized replay changed ledger state")
         require(row["standalone_proof"]==f"family/nested-component-products-{index}.proof"
                 and row["applied_transaction"]==f"family/nested-component-products-{index}-transaction.bin"
                 and row["transaction_proof_relationship"]=="independently proved"
                 and row["strict_application"]=="default" and row["replay_refusal"]=="IntentAlreadyExists", "proof/application identity differs")
-        require(all(row[k] is True for k in ["corrupt_proof_rejected","changed_binding_rejected","changed_result_rejected","changed_result_same_geometry","changed_preimage_rejected","wrong_verifier_rejected","replay_unchanged"]), "verification control missing")
-        require(all((root / f"nested-component-products-{index}{suffix}").stat().st_size>0 for suffix in [".preimage","-state.bin"]), "preimage/state missing")
+        require(all(row[k] is True for k in ["changed_binding_rejected","changed_result_rejected","changed_result_same_geometry","changed_preimage_rejected","wrong_verifier_rejected","replay_unchanged"]), "verification control missing")
+        require(all(Path(f"{stem}{suffix}").stat().st_size > 0
+                for suffix in [".preimage", ".inputs", "-state.bin"]), "preimage, inputs or state missing")
 
 
 def run(args):
@@ -138,7 +148,7 @@ def run(args):
     configuration_environment = dict(env)
     configuration = main_gate.reject_compiler_overrides(configuration_environment)
     output.mkdir(parents=True)
-    report = {"format": "compact-nested-component-products-proof-gate/v1", "status": "incomplete", "commands": [],
+    report = {"format": "compact-nested-component-products-proof-gate/v2", "status": "incomplete", "commands": [],
               "cargo_configuration_sha256": configuration, "scope": __doc__, "proof_execution": False, "full_integration_acceptance": "OPEN"}
     try:
         # This maintained gate admits the exact clean HEAD/compiler/Rust tools,
@@ -364,7 +374,7 @@ def run(args):
                 "artifact":component,"depfile":str(retained),"depfile_sha256":digest(retained),"prerequisites":sorted(sdk_tracked)}
             tracked.update(sdk_tracked)
             required.extend([*sdk_required, main_gate.FIXTURES / f"proof-goldens/{source}/source-ir.json",
-                             *sorted((main_gate.FIXTURES / f"proof-goldens/{source}/checked-programs").glob("*.json"))])
+                             *sorted((main_gate.FIXTURES / f"ledger9-proof-goldens/{source}/checked-programs").glob("*.json"))])
         require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual paired SDK/Program dependency")
         input_maps = {field: report[field] for field in ["source_hashes", "generated_input_hashes",
                 "dependency_source_hashes", "generated_build_inputs_before_compile"]}
@@ -415,17 +425,18 @@ def run(args):
         execute("all-source-models", [runner, "--nested-component-products-inventory", full_generated], output / "all-source-models.json")
         full_models = json.loads((output / "all-source-models.json").read_text())
         definitions = json.loads((main_gate.FIXTURES / "sources.json").read_text())
-        require(full_models["format"] == "compact-nested-component-products-model-inventory/v1"
+        require(full_models["format"] == "compact-nested-component-products-model-inventory/v2"
                 and [(r["source"], r["circuit"]) for r in full_models["circuits"]]
                 == [(s["source"], entry) for s in definitions for entry in s["entries"]], "complete model roster differs")
         by_source = {s["source"]:s for s in definitions}
         require(all(r["proof_required"] is by_source[r["source"]]["stateful"]
-                    and (type(r["k"]) is int and r["k"] >= 0 if r["proof_required"] else r["k"] is None)
+                    and (type(r["k"]) is int and r["k"] >= 0 and type(r["rows"]) is int and r["rows"] > 0
+                         if r["proof_required"] else r["k"] is None and r["rows"] is None)
                     and r["selected_for_proof"] == ((r["source"], r["circuit"]) in SELECTED)
                     for r in full_models["circuits"]), "model observation/applicability differs")
-        expected_models = json.loads((main_gate.FIXTURES / "model-expectations.json").read_text())
-        require(expected_models["format"] == "compact-nested-component-products-model-expectations/v1"
-                and [{k: r[k] for k in ["source", "circuit", "k", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
+        expected_models = json.loads((main_gate.FIXTURES / "ledger9-model-expectations.json").read_text())
+        require(expected_models["format"] == "compact-nested-component-products-model-expectations/v2"
+                and [{k: r[k] for k in ["source", "circuit", "k", "rows", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
                 "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
         require(inventory(full_generated) == full_before, "model observation changed producers")
         report["all_source_models"] = full_models
@@ -433,10 +444,11 @@ def run(args):
         report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"]]
         execute("models", [runner, "--nested-component-products-models", generated], output / "models.json")
         models = json.loads((output / "models.json").read_text())
-        require(models["format"] == "compact-nested-component-products-models/v1"
+        require(models["format"] == "compact-nested-component-products-models/v2"
                 and [(r["source"],r["circuit"]) for r in models["circuits"]] == SELECTED
                 and models["proof_execution"] is False, "selected model roster differs")
-        require(all(next(x["k"] for x in full_models["circuits"] if (x["source"],x["circuit"]) == (r["source"],r["circuit"])) == r["k"]
+        require(all(next((x["k"], x["rows"]) for x in full_models["circuits"]
+                         if (x["source"],x["circuit"]) == (r["source"],r["circuit"])) == (r["k"], r["rows"])
                 and r["selected_for_proof"] is True for r in models["circuits"]), "selected/full models disagree")
         selected_models = models["circuits"]
         require(len(selected_models) == 4 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models), "selected model exceeds tiny bound")
@@ -461,6 +473,9 @@ def run(args):
         unchanged(control_inputs)
         report["selected_model_over_cap_refusal"] = {"exit":refused.returncode,"models":refused_models,"input_hashes_before":control_inputs,
             "donor_sha256":digest(donor),"before_keys_or_proofs":True,"scope":"private intact existing original k9 ZKIR diagnostic, not admitted selected SDK semantics"}
+        zkir_version = output / "zkir-version.stdout"
+        execute("zkir-version", [report["zkir"]["snapshot"], "--version"], zkir_version)
+        require(zkir_version.read_text().strip() == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
         material = output / "proof-material.json"
         execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
                 *[arg for k in sorted({r["k"] for r in selected_models}) for arg in ["--parameter-k", str(k)]]], material)
@@ -480,14 +495,14 @@ def run(args):
             report["keygen"] = []
             report["key_hashes"] = {}
             report["binary_ir_hashes"] = {}
-            execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
             for row in selected_models:
                 circuit = row["circuit"]
                 source_root = generated / row["source"]
                 execute("keygen-" + row["source"] + "-" + circuit, [report["zkir"]["snapshot"], "compile", source_root / f"zkir/{circuit}.zkir",
                                               source_root / f"keys/{circuit}.prover", source_root / f"keys/{circuit}.verifier"])
                 model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
-                require(model is not None and int(model[1]) == row["k"], "actual key model differs from verified pre-key model")
+                require(model is not None and tuple(map(int, model.groups())) == (row["k"], row["rows"]),
+                        "actual key model differs from verified pre-key model")
                 report["key_hashes"].update(hashes([source_root / f"keys/{circuit}.{ext}" for ext in ["prover", "verifier"]]))
                 report["binary_ir_hashes"].update(hashes([source_root / f"zkir/{circuit}.bzkir"]))
                 report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
@@ -498,10 +513,17 @@ def run(args):
             execute("prove-verify-apply", [runner, "--nested-component-products", generated])
             summary = json.loads((generated / "nested-component-products-proof-result.json").read_text())
             validate_summary(summary, generated)
+            report["result_hashes"] = hashes([p for p in generated.rglob("nested-component-products-*") if p.is_file()])
+            verification = output / "verify-standalone.stdout"
+            execute("independent-standalone-verification", [runner, "--nested-component-products-verify", generated], verification)
+            require(verification.read_text().splitlines() == [
+                f"{source}/{circuit}: standalone v3 proof verified and corruption refused"
+                for source, circuit in SELECTED], "separate verifier did not qualify the exact selected roster")
+            unchanged(report["result_hashes"])
             report["proof_result"] = summary
             report["proof_execution"] = True
+            report["separate_standalone_verifications"] = len(SELECTED)
             report["unproved_exports"] = report["unselected_required_exports"]
-            report["result_hashes"] = hashes([p for p in generated.rglob("nested-component-products-*") if p.is_file()])
             unchanged(report["key_hashes"])
             unchanged(report["binary_ir_hashes"])
         for field in ["source_hashes", "generated_input_hashes", "bound_api_inputs", "dependency_source_hashes", "generated_build_inputs_before_compile", "material_hashes", "dust_fixture_hashes", "compiler_tools"]:
