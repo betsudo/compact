@@ -32,13 +32,15 @@ use midnight_compact_runtime::Field;
 use midnight_compact_runtime::context::ConstructorContext;
 use midnight_compact_runtime::ledger::{StateValue, read_cell, read_cell_at_path};
 use midnight_compact_runtime::transaction::{
-    Observation, ObservedContractState, decode_verifier_key,
+    Observation, ObservedContractState, RecordedCall, decode_verifier_key,
 };
 use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
+use super::local_v3_application as v3;
 use super::{
     TinySecret, check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
+    positional_suite::baseline_operation,
 };
 
 pub(super) fn check_write_and_read(
@@ -46,66 +48,82 @@ pub(super) fn check_write_and_read(
     cell_read_root: &Path,
     rng: &mut StdRng,
 ) -> Result<(), Box<dyn Error>> {
-    let cell_initial = cell_contract::initial_state(ConstructorContext::new(()))?;
-    let cell_deploy = make_deploy(
-        cell_root,
+    let observation = Observation {
+        transaction_hash: [0; 32],
+        block_hash: [0; 32],
+        block_height: 0,
+    };
+    let initial = cell_contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = baseline_operation(cell_root, "set_flag", 35)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
         "set_flag",
-        cell_initial.ledger_state.get_ref().clone(),
+        operation,
         rng,
+    );
+    let observed =
+        ObservedContractState::new(deploy.address(), deploy.initial_state.clone(), observation);
+    let native = cell_contract::set_flag(observed.circuit_context(()))?;
+    let recorded = cell_contract::recorded::set_flag(observed.circuit_context(()))?;
+    let expected = native.context.query.state.get_ref();
+    if !read_cell_at_path::<bool, _>(expected, &[0])?
+        || recorded.execution.context.query.state != native.context.query.state
+        || recorded.execution.context.query.effects != native.context.query.effects
+        || recorded.execution.gas_cost != native.gas_cost
+        || recorded.execution.private_transcript_outputs != native.private_transcript_outputs
+    {
+        return Err("Cell write native and recorded execution differ".into());
+    }
+    let prepared = RecordedCall::new(&observed, recorded, "set_flag", ())
+        .prepare(verifier.clone(), Fr::from(0_u64))?;
+    let proof = v3::prove_standalone(
+        cell_root, "set_flag", "set_flag", &prepared, &verifier, None,
     )?;
-    let cell_context = cell_initial.into_circuit_context(cell_deploy.address());
-    let cell_recorded = cell_contract::Contract::default()
-        .recording
-        .set_flag(cell_context)?;
-    let cell_call = check_generated_trace(cell_root, "set_flag", cell_recorded, ())?;
-    check_transaction(
-        cell_root,
-        "set_flag",
-        cell_deploy,
-        cell_call,
-        rng,
-        |contract| {
-            let StateValue::Array(fields) = contract.data.get_ref() else {
-                return Err("cell contract state is not an array".into());
-            };
-            if !read_cell::<bool, _>(fields.get(0).ok_or("cell field missing")?)? {
-                return Err("proven Cell call did not set the ledger flag".into());
-            }
-            Ok(())
-        },
+    v3::apply_after_deployment(
+        cell_root, "set_flag", "set_flag", prepared, deploy, expected, &proof,
     )?;
 
-    let cell_read_initial = cell_read_contract::initial_state(ConstructorContext::new(()))?;
-    let cell_read_deploy = make_deploy(
-        cell_read_root,
+    let initial = cell_read_contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = baseline_operation(cell_read_root, "read_flag", 34)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
         "read_flag",
-        cell_read_initial.ledger_state.get_ref().clone(),
+        operation,
         rng,
-    )?;
-    let cell_read_context = cell_read_initial.into_circuit_context(cell_read_deploy.address());
-    let cell_read_recorded = cell_read_contract::Contract::default()
-        .recording
-        .read_flag(cell_read_context)?;
-    if cell_read_recorded.execution.result {
-        return Err("new Cell contract unexpectedly read true".into());
+    );
+    let observed =
+        ObservedContractState::new(deploy.address(), deploy.initial_state.clone(), observation);
+    let native = cell_read_contract::read_flag(observed.circuit_context(()))?;
+    let recorded = cell_read_contract::recorded::read_flag(observed.circuit_context(()))?;
+    let expected = native.context.query.state.get_ref();
+    if native.result
+        || recorded.execution.result != native.result
+        || read_cell_at_path::<bool, _>(expected, &[0])?
+        || recorded.execution.context.query.state != native.context.query.state
+        || recorded.execution.context.query.effects != native.context.query.effects
+        || recorded.execution.gas_cost != native.gas_cost
+        || recorded.execution.private_transcript_outputs != native.private_transcript_outputs
+    {
+        return Err("Cell read native and recorded execution differ".into());
     }
-    let cell_read_call =
-        check_generated_trace(cell_read_root, "read_flag", cell_read_recorded, ())?;
-    check_transaction(
+    let prepared = RecordedCall::new(&observed, recorded, "read_flag", ())
+        .prepare(verifier.clone(), Fr::from(0_u64))?;
+    let proof = v3::prove_standalone(
         cell_read_root,
         "read_flag",
-        cell_read_deploy,
-        cell_read_call,
-        rng,
-        |contract| {
-            let StateValue::Array(fields) = contract.data.get_ref() else {
-                return Err("Cell read contract state is not an array".into());
-            };
-            if read_cell::<bool, _>(fields.get(0).ok_or("cell read field missing")?)? {
-                return Err("proven Cell read unexpectedly changed ledger state".into());
-            }
-            Ok(())
-        },
+        "read_flag",
+        &prepared,
+        &verifier,
+        None,
+    )?;
+    v3::apply_after_deployment(
+        cell_read_root,
+        "read_flag",
+        "read_flag",
+        prepared,
+        deploy,
+        expected,
+        &proof,
     )?;
     Ok(())
 }

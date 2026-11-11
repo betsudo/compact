@@ -39,6 +39,9 @@ pub(super) fn try_run(
     let selector = first?.to_str()?;
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
+        ("--positional-baseline-verify", _) => {
+            Some(super::positional_suite::verify_baseline(arguments))
+        }
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }

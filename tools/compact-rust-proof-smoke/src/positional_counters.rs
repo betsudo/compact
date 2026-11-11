@@ -15,14 +15,12 @@
 
 //! Counter binding, decoder, handoff, parameterized, and nested-call scenarios.
 //!
-//! The caller owns the shared RNG and handoff configuration. Wallet/deployment
-//! output paths are still read only after the baseline counter proof succeeds.
+//! The caller owns the shared RNG and exports the verified baseline handoff.
 
-use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use compact_rust_counter_fixture::ledger_contract as counter_contract;
 use compact_rust_counter_parameter_fixture::ledger_contract as counter_parameter_contract;
@@ -38,31 +36,30 @@ use midnight_serialize::{tagged_deserialize, tagged_serialize};
 use midnight_storage::storage::HashMap;
 use midnight_transient_crypto::curve::Fr;
 use midnight_transient_crypto::proofs::VerifierKey;
-use rand::rngs::StdRng;
+use rand::{SeedableRng, rngs::StdRng};
 
+use super::local_v3_application as v3;
 use super::{
-    HandoffConfig, check_generated_trace, check_observed_call_parity, check_transaction,
-    check_transaction_with_handoff, make_deploy, prove_counter,
+    ContractCallPrototype, DefaultDB, Intent, PedersenRandomness, ProofPreimage,
+    ProofPreimageMarker, Signature, Timestamp, Transaction, check_counter_statement,
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
+    positional_suite::baseline_operation,
 };
 
-pub(super) fn check_binding_and_handoff(
+pub(super) fn check_binding(
     counter_root: &Path,
     cell_root: &Path,
-    handoff_config: &HandoffConfig,
     rng: &mut StdRng,
 ) -> Result<(), Box<dyn Error>> {
+    const CIRCUIT: &str = "increment";
+    let (ir, counter_verifier, operation) = baseline_operation(counter_root, CIRCUIT, 31)?;
     let counter_initial = counter_contract::initial_state(ConstructorContext::new(()))?;
-    let counter_deploy = make_deploy(
-        counter_root,
-        "increment",
+    let counter_deploy = v3::deploy(
         counter_initial.ledger_state.get_ref().clone(),
+        CIRCUIT,
+        operation,
         rng,
-    )?;
-    let counter_context = counter_initial.into_circuit_context(counter_deploy.address());
-    let counter_recorded = counter_contract::Contract::default()
-        .recording
-        .increment(counter_context)?;
-    let counter_manual = check_generated_trace(counter_root, "increment", counter_recorded, ())?;
+    );
     let counter_observed = ObservedContractState::new(
         counter_deploy.address(),
         counter_deploy.initial_state.clone(),
@@ -72,9 +69,27 @@ pub(super) fn check_binding_and_handoff(
             block_height: 0,
         },
     );
-    let counter_verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        counter_root.join("keys/increment.verifier"),
-    )?))?;
+    let native = counter_contract::increment(counter_observed.circuit_context(()))?;
+    let counter_recorded =
+        counter_contract::recorded::increment(counter_observed.circuit_context(()))?;
+    let expected = native.context.query.state.get_ref();
+    let StateValue::Array(fields) = expected else {
+        return Err("counter contract state is not an array".into());
+    };
+    if read_counter(fields.get(0).ok_or("counter field missing")?)? != 1
+        || counter_recorded.execution.context.query.state != native.context.query.state
+        || counter_recorded.execution.context.query.effects != native.context.query.effects
+        || counter_recorded.execution.gas_cost != native.gas_cost
+        || !counter_recorded
+            .execution
+            .private_transcript_outputs
+            .is_empty()
+        || !native.private_transcript_outputs.is_empty()
+    {
+        return Err("Counter native and recorded execution differ".into());
+    }
+    let counter_manual = RecordedCall::new(&counter_observed, counter_recorded, CIRCUIT, ())
+        .prepare(counter_verifier.clone(), Fr::from(0_u64))?;
     let mut state_bytes = Vec::new();
     tagged_serialize(counter_observed.contract(), &mut state_bytes)?;
     let decoded = ObservedContractState::decode(
@@ -113,9 +128,7 @@ pub(super) fn check_binding_and_handoff(
     ) {
         return Err("observed call accepted a missing operation".into());
     }
-    let wrong_verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        cell_root.join("keys/set_flag.verifier"),
-    )?))?;
+    let (_, wrong_verifier, _) = baseline_operation(cell_root, "set_flag", 35)?;
     let wrong_key_call = counter_contract::Contract::default()
         .recording
         .increment_call(&counter_observed, ())?;
@@ -171,36 +184,47 @@ pub(super) fn check_binding_and_handoff(
     let counter_call = counter_contract::Contract::default()
         .recording
         .increment_call(&counter_observed, ())?
-        .prepare(counter_verifier, Fr::from(0u64))?;
-    check_observed_call_parity(
-        counter_root,
-        "increment",
-        &counter_deploy,
-        &counter_manual,
-        &counter_call,
-    )?;
-    prove_counter(counter_root, &counter_call)?;
-    let counter_handoff = env::var_os("COMPACT_RUST_WALLET_HANDOFF").map(PathBuf::from);
-    let counter_deploy_handoff = env::var_os("COMPACT_RUST_DEPLOY_HANDOFF").map(PathBuf::from);
-    check_transaction_with_handoff(
-        counter_root,
-        "increment",
-        counter_deploy,
-        counter_call,
-        rng,
-        counter_handoff.as_deref(),
-        counter_deploy_handoff.as_deref(),
-        handoff_config,
-        |contract| {
-            let StateValue::Array(fields) = contract.data.get_ref() else {
-                return Err("counter contract state is not an array".into());
-            };
-            if read_counter(fields.get(0).ok_or("counter field missing")?)? != 1 {
-                return Err("proven counter call did not increment ledger state".into());
-            }
-            Ok(())
-        },
-    )?;
+        .prepare(counter_verifier.clone(), Fr::from(0u64))?;
+    let preproof_bytes =
+        |call: ContractCallPrototype<DefaultDB>| -> Result<Vec<u8>, Box<dyn Error>> {
+            let mut rng = StdRng::seed_from_u64(0x0041_4452_3433);
+            let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
+                Intent::empty(&mut rng, Timestamp::from_secs(0)).add_call::<ProofPreimage>(call);
+            let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
+            let mut bytes = Vec::new();
+            tagged_serialize(&tx, &mut bytes)?;
+            Ok(bytes)
+        };
+    if format!("{counter_manual:?}") != format!("{counter_call:?}")
+        || preproof_bytes(counter_manual.clone())? != preproof_bytes(counter_call.clone())?
+    {
+        return Err("Counter observed and direct pre-proof transactions differ".into());
+    }
+    for (stem, call) in [
+        ("increment-direct", counter_manual),
+        (CIRCUIT, counter_call),
+    ] {
+        check_counter_statement(&ir, &call)?;
+        let proof =
+            v3::prove_standalone(counter_root, CIRCUIT, stem, &call, &counter_verifier, None)?;
+        v3::apply_after_deployment(
+            counter_root,
+            CIRCUIT,
+            stem,
+            call,
+            counter_deploy.clone(),
+            expected,
+            &proof,
+        )?;
+    }
+    if std::fs::read(counter_root.join("increment-direct-state.bin"))?
+        != std::fs::read(counter_root.join("increment-state.bin"))?
+    {
+        return Err("Counter independently applied contract states differ".into());
+    }
+    println!(
+        "Counter direct and observed pre-proof bytes and independently applied contract state match"
+    );
     Ok(())
 }
 

@@ -535,13 +535,10 @@ impl Resolver for ArtifactResolver {
     }
 }
 
-fn prove_counter(
-    root: &Path,
+fn check_counter_statement(
+    ir: &midnight_zkir_v3::IrSource,
     call: &ContractCallPrototype<DefaultDB>,
 ) -> Result<(), Box<dyn Error>> {
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("zkir/increment.bzkir"),
-    )?))?;
     let expected_statement = [0x70u64, 1, 1, 0, 0x0e, 1, 0xa1]
         .into_iter()
         .map(Fr::from)
@@ -565,50 +562,16 @@ fn prove_counter(
     if !preimage.inputs.is_empty()
         || !preimage.private_transcript.is_empty()
         || !preimage.public_transcript_outputs.is_empty()
+        || preimage.communications_commitment
+            != Some((commitment, call.communication_commitment_rand))
     {
-        return Err("counter proof unexpectedly requires private, input, or output fields".into());
+        return Err("counter proof fields or communications commitment differ".into());
     }
-    let skips = preimage.check(&ir)?;
+    let skips = preimage.check(ir)?;
     if skips != [None, None, None] {
         return Err(format!("unexpected counter public input skips: {skips:?}").into());
     }
 
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let (proof, proof_skips) = futures_executor::block_on(preimage.prove::<IrSource>(
-        ChaCha20Rng::from_seed([42; 32]),
-        &params,
-        &ArtifactResolver {
-            root: root.to_owned(),
-            circuit: "increment",
-        },
-    ))?;
-    if proof_skips != skips {
-        return Err("proof and preimage checks disagree about skipped public inputs".into());
-    }
-
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/increment.verifier"),
-    )?))?;
-    let mut public_inputs = vec![
-        preimage.binding_input,
-        preimage
-            .communications_commitment
-            .expect("counter fixture supplies a communications commitment")
-            .0,
-    ];
-    public_inputs.extend(preimage.public_transcript_inputs.iter().copied());
-    verifier.verify(&PARAMS_VERIFIER, &proof, public_inputs.iter().copied())?;
-    public_inputs[0] = Fr::from(1u64);
-    if verifier
-        .verify(&PARAMS_VERIFIER, &proof, public_inputs.iter().copied())
-        .is_ok()
-    {
-        return Err("counter proof accepted a different binding input".into());
-    }
-    println!(
-        "counter proof verified ({} bytes); changed binding rejected",
-        proof.0.len()
-    );
     Ok(())
 }
 
@@ -741,10 +704,7 @@ fn write_sealed_handoff(
         return Err(format!("sealed {label} changed across Rust serialization").into());
     }
     fs::write(path, bytes)?;
-    println!(
-        "sealed {label} ledger-v8 transaction written to {}",
-        path.display()
-    );
+    println!("sealed {label} transaction written to {}", path.display());
     Ok(())
 }
 

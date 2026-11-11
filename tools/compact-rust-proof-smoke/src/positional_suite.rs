@@ -19,15 +19,107 @@
 //! one RNG. Keep the calls in execution order, which differs from input order.
 
 use std::error::Error;
+use std::ffi::OsString;
+use std::fs;
 use std::path::Path;
+use std::process::Command;
 
+use midnight_base_crypto::hash::persistent_hash;
+use midnight_zkir_v3::IrSource as IrSourceV3;
 use rand::{SeedableRng, rngs::StdRng};
 
+use super::local_v3_application as v3;
 use super::positional_inputs::PositionalInputs;
 use super::{
-    HandoffConfig, positional_cells, positional_counters, positional_keys, positional_lists,
-    positional_maps, positional_merkle, positional_sets, positional_unsigned, positional_witnesses,
+    ContractOperation, DefaultDB, HandoffConfig, ProofMarker, PureGeneratorPedersen, Signature,
+    Timestamp, Transaction, VerifierKey, positional_cells, positional_counters, positional_keys,
+    positional_lists, positional_maps, positional_merkle, positional_sets, positional_unsigned,
+    positional_witnesses, tagged_deserialize, write_sealed_handoff,
 };
+
+pub(super) fn baseline_operation(
+    root: &Path,
+    name: &str,
+    rows: usize,
+) -> Result<(IrSourceV3, VerifierKey, ContractOperation), Box<dyn Error>> {
+    let pins: std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>> =
+        serde_json::from_str(include_str!(
+            "../../compact-rust-backend/tests/positional-baseline-ledger9-artifacts.json"
+        ))?;
+    for (path, expected) in pins.get(name).ok_or("missing positional artifact pins")? {
+        if hex::encode(persistent_hash(&fs::read(root.join(path))?).0) != *expected {
+            return Err(format!("{name} source/proof artifact differs: {path}").into());
+        }
+    }
+    let (ir, verifier, operation) = v3::operation(root, name, 6)?;
+    if ir.model().rows() != rows {
+        return Err(format!("{name} v3 row count differs").into());
+    }
+    Ok((ir, verifier, operation))
+}
+
+pub(super) fn verify_baseline(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    const USAGE: &str =
+        "usage: compact-rust-proof-smoke --positional-baseline-verify <counter> <cell> <cell-read>";
+    let counter = arguments.next().ok_or(USAGE)?;
+    let cell = arguments.next().ok_or(USAGE)?;
+    let cell_read = arguments.next().ok_or(USAGE)?;
+    if arguments.next().is_some() {
+        return Err(USAGE.into());
+    }
+    for (path, name, rows, stems) in [
+        (
+            counter,
+            "increment",
+            31,
+            &["increment", "increment-direct"][..],
+        ),
+        (cell, "set_flag", 35, &["set_flag"][..]),
+        (cell_read, "read_flag", 34, &["read_flag"][..]),
+    ] {
+        let root = Path::new(&path);
+        let (_, verifier, _) = baseline_operation(root, name, rows)?;
+        for stem in stems {
+            v3::verify_standalone(root, stem, &verifier)?;
+            println!("{stem}: separate v3 verification passed and corrupted proof was refused");
+        }
+    }
+    Ok(())
+}
+
+fn export_counter_handoff(root: &Path) -> Result<(), Box<dyn Error>> {
+    for (variable, artifact, label) in [
+        (
+            "COMPACT_RUST_WALLET_HANDOFF",
+            "increment-transaction.bin",
+            "call",
+        ),
+        (
+            "COMPACT_RUST_DEPLOY_HANDOFF",
+            "increment-deployment.bin",
+            "deployment",
+        ),
+    ] {
+        if let Some(path) = std::env::var_os(variable) {
+            let bytes = fs::read(root.join(artifact))?;
+            let mut reader = bytes.as_slice();
+            let tx: Transaction<Signature, ProofMarker, PureGeneratorPedersen, DefaultDB> =
+                tagged_deserialize(&mut reader)?;
+            if !reader.is_empty() {
+                return Err(format!("sealed {label} has trailing bytes").into());
+            }
+            let mut roundtrip = Vec::new();
+            super::tagged_serialize(&tx, &mut roundtrip)?;
+            if roundtrip != bytes {
+                return Err(format!("sealed {label} bytes differ before handoff").into());
+            }
+            write_sealed_handoff(Path::new(&path), &tx, label)?;
+        }
+    }
+    Ok(())
+}
 
 pub(super) fn run(inputs: PositionalInputs) -> Result<(), Box<dyn Error>> {
     let PositionalInputs {
@@ -63,20 +155,32 @@ pub(super) fn run(inputs: PositionalInputs) -> Result<(), Box<dyn Error>> {
     let cell_root = Path::new(&cell_root);
     let cell_read_root = Path::new(&cell_read_root);
     let handoff_config = HandoffConfig::from_env()?;
+    if handoff_config.network_id != "local-test"
+        || handoff_config.validation_time != Timestamp::from_secs(0)
+    {
+        return Err("funded positional v3 proof uses the offline Ledger 9 fixture".into());
+    }
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("positional v3 proof requires local proving".into());
+    }
     let mut rng = StdRng::seed_from_u64(0x434f4d50414354);
-    positional_counters::check_binding_and_handoff(
-        counter_root,
-        cell_root,
-        &handoff_config,
-        &mut rng,
-    )?;
+    positional_counters::check_binding(counter_root, cell_root, &mut rng)?;
+    positional_cells::check_write_and_read(cell_root, cell_read_root, &mut rng)?;
+    let verification = Command::new(std::env::current_exe()?)
+        .arg("--positional-baseline-verify")
+        .args([counter_root, cell_root, cell_read_root])
+        .status()?;
+    if !verification.success() {
+        return Err(
+            format!("separate positional baseline verification failed: {verification}").into(),
+        );
+    }
+    export_counter_handoff(counter_root)?;
 
     if let Some(root) = counter_parameter_root.as_ref() {
         let root = Path::new(root);
         positional_counters::check_parameterized(root, &mut rng)?;
     }
-
-    positional_cells::check_write_and_read(cell_root, cell_read_root, &mut rng)?;
 
     if let Some(witness_root) = witness_root {
         let witness_root = Path::new(&witness_root);

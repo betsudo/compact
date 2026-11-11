@@ -915,34 +915,37 @@ COMPACTC=/path/to/ledger-8/compactc \
 cargo test --workspace --exclude compact
 ```
 
-### Ledger-v8 wallet byte handoff
+### Ledger 9 wallet byte handoff
 
-The proof smoke can export its sealed counter deployment and proven call as
-two sequential ledger transactions. The matching JavaScript ledger package
-must accept the exact bytes that Rust writes and confirm that the call targets
-the deployment address:
+The positional proof smoke exports the funded Counter deployment and call
+after both transactions pass default strict validation and application on
+the offline Ledger 9 fixture. It also checks exact replay refusal and verifies
+the standalone proofs in a separate process. The pinned JavaScript decoder
+checks the contract and fee intents, matching addresses, and byte-for-byte
+reserialization.
 
 ```sh
 nix develop .#compiler --command env COMPACTC=compactc \
   COMPACT_RUST_WALLET_HANDOFF=/tmp/compact-counter-wallet-handoff.bin \
   COMPACT_RUST_DEPLOY_HANDOFF=/tmp/compact-counter-deploy-handoff.bin \
-  python3 tools/compact-rust-backend/check_compactc_target.py --proof
+  python3 tools/compact-rust-backend/check_compactc_target.py --consumer --proof --core-only
 npm ci --prefix tools/compact-rust-backend/wallet-handoff --ignore-scripts
 node tools/compact-rust-backend/check_wallet_handoff.mjs \
   /tmp/compact-counter-deploy-handoff.bin \
   /tmp/compact-counter-wallet-handoff.bin \
-  tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v8
+  tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v9
 ```
 
-The pinned `@midnight-ntwrk/ledger-v8@8.0.3` decoder checks both transactions'
-signature, proof and binding markers, one deploy and one call, matching
-addresses, and byte-for-byte reserialization. The proof gate applies the
-deployment with ledger semantics before checking and applying the call. These
-exported transactions are **offline fixtures**: their network ID is
-`local-test`, their intent TTL is timestamp zero, and fee balancing is disabled.
-For an isolated ledger-8 devnet, opt in to that network ID and a future Unix
-expiry no more than one hour ahead. The proof smoke applies each transaction
-with a matching block timestamp and still checks all 58 offline calls:
+The exported transactions use `local-test` and the funded fixture's ledger
+clock. The required core gate also exercises the remaining positional and
+named consumers. Its qualification status is recorded in the
+[Ledger 9 adoption plan](../../doc/rust/plans/ledger9-adoption.md).
+
+### Historical Ledger 8 devnet handoff
+
+Use the retained Ledger 8 branch for the original devnet handoff commands.
+The historical smoke accepts an isolated devnet ID and a future Unix expiry
+no more than one hour ahead.
 
 ```sh
 COMPACT_RUST_HANDOFF_TTL_SECS=$(python3 -c 'import time; print(int(time.time()) + 1800)')
