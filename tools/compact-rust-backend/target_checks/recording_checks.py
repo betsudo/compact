@@ -109,6 +109,32 @@ def check_field_observation(
     print("Field observations compose into typed structs and scoped helpers; empty selected path refuses preparation")
 
 
+def prove_stateful_struct(
+    compiler: str,
+    output: Path,
+    *,
+    root: Path,
+    run: Callable[..., None],
+) -> None:
+    source = root / "examples/rust_backend/stateful_struct_oracle.compact"
+    retained = root / "tools/compact-rust-backend/tests/stateful-struct-schema20-ir.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((output / "contract/compact-rust-ir.json").read_text()),
+                        sort_keys=True)
+    keys = output / "keys"
+    if expected != actual or keys.exists():
+        raise ValueError("stateful struct source IR differs or preflight produced keys")
+    keys.mkdir()
+    for name in ("snapshot", "reverse", "nested"):
+        run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"),
+            str(keys / f"{name}.prover"), str(keys / f"{name}.verifier"))
+    for selector in ("--stateful-struct", "--stateful-struct-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
+
+
 def check_stateful_struct(
     compiler: str,
     base: Path,
@@ -135,9 +161,7 @@ def check_stateful_struct(
     strict = capture([compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-struct")], cwd=root, capture_output=True,text=True)
     assert strict.returncode == 0, strict.stderr
     if proof_requested:
-        proof = base / "stateful-struct-proof"
-        run(compiler,"--target","rust",str(source),str(proof))
-        run("cargo","run","--quiet","-p","compact-rust-proof-smoke","--","--stateful-struct",str(proof))
+        prove_stateful_struct(compiler, base / "stateful-struct-proof", root=root, run=run)
     original = capture([compiler, "--target", "rust", "--skip-zk", str(root / "test-center/test-contracts/micro-dao.compact"), str(base / "original-dao")], cwd=root, capture_output=True, text=True)
     assert original.returncode == 0, original.stderr
     assert (base / "original-dao/contract/lib.rs").is_file()

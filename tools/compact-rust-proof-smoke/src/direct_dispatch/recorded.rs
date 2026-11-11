@@ -35,12 +35,19 @@ use crate::{
 
 pub(super) fn stateful_struct(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --stateful-struct <proof-output>")?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --stateful-struct-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --stateful-struct <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --stateful-struct <proof-output>".into());
+        return Err(usage.into());
+    }
+    if verify {
+        return stateful_struct::verify(Path::new(&root));
     }
     let proof = std::thread::Builder::new()
         .name("stateful-struct-proof".into())

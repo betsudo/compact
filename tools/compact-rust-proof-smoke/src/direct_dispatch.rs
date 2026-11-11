@@ -613,7 +613,8 @@ pub(super) fn try_run(
         ("--wide-zero", _) => Some(expressions::wide_zero(arguments)),
         ("--wide-zero-verify", _) => Some(expressions::wide_zero_verify(arguments)),
         ("--wide-casts", _) => Some(expressions::wide_casts(arguments)),
-        ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments)),
+        ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments, false)),
+        ("--stateful-struct-verify", _) => Some(recorded::stateful_struct(arguments, true)),
         ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments)),
         ("--effect-plan-unsigned-arithmetic", _) => {
             Some(recorded::effect_plan_unsigned_arithmetic(arguments))

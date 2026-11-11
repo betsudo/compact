@@ -1315,9 +1315,9 @@ def main() -> None:
             application_checks.prove_root_let_action_return(
                 compiler, ROOT_LET_ACTION_RETURN_SOURCE, root_let_proof, run=run,
             )
-            struct_proof = base / "stateful-struct-proof"
-            run(compiler,"--target","rust",str(ROOT / "examples/rust_backend/stateful_struct_oracle.compact"),str(struct_proof))
-            run("cargo","run","--quiet","-p","compact-rust-proof-smoke","--","--stateful-struct",str(struct_proof))
+            recording_checks.prove_stateful_struct(
+                compiler, base / "stateful-struct-proof", root=ROOT, run=run,
+            )
             assertion_proof = base / "stateful-assert-proof"
             run(compiler, "--target", "rust", "--rust-require-recording",
                 str(ROOT / "examples/rust_backend/stateful_assert_oracle.compact"), str(assertion_proof))
