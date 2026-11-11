@@ -878,5 +878,42 @@ exactly from the previously pinned test. Only that active hash was
 refreshed. The Python suite reported 522 tests with 20 skips, and
 all 37 pinned oracle sources passed acceptance.
 
-Exact-head core and integration qualification remains open. The
-local test results here are from macOS arm64.
+At `faa59842f`, the complete macOS arm64 core gate passed with
+`--core-only --consumer --proof`. It recorded 311 fresh standalone
+proofs with separate verification and corruption refusal, 311 funded
+deployments and distinct strict call proofs with exact unchanged replay
+refusal, and 44 manual and observed parity pairs. The Ledger 9
+JavaScript wallet decoded and re-encoded the exact deployment and call
+bytes.
+
+The first offer-aware case in each native shard initially sent v3
+artifacts to a v2 reader. At `1eaea378c`, Qualified Coin Cell, native
+Zswap transfer and both shielded merge lanes use the Ledger 9 v3
+path. Five fresh standalone proofs passed separate verification and
+corruption refusal. Four funded offer cases passed default-strict
+deployment, distinct call proof and application, and exact replay
+refusal with unchanged ledger bytes. Qualified Coin Cell also
+preserves its exact unfunded balancing refusal. The composed signed
+runner passed all-targets, all-features Clippy and separately reverified
+all five retained standalone proofs. The focused state-only Counter
+check passed with the shared offer helper.
+
+The next baseline probes passed the native StatefulStruct check and
+found the same v2 reader mismatch in Kernel shielded effects, field
+observation and shielded send. Continue with these focused ports,
+then rerun the complete core and native proof gates on the integrated
+source. The shielded merge cases used verified k15 parameters locally.
+The native shard workflow currently prepares k5 through k8. Derive
+and provision the full verified parameter roster before integration.
+
+For local iteration, reuse the exact Nix compiler and SDK closure and
+warm Cargo build products first. In one retained 573-second outer-vector
+gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
+Zerocash k13 and k15 runs took 3.47 to 6.97 seconds and reproduced the
+retained artifacts byte for byte. The whole-CI share remains unknown.
+Reconsider a Nix key bundle after measuring the actual affected gates.
+Any bundle must bind the compiler recipe, fixture and import closure,
+raw ZKIR, key tool and serialization version, platform and verified
+parameter bytes. Run the full required test and proof gates after
+compiler changes. Keep proof creation, verification, refusal and
+replay checks fresh.
