@@ -277,6 +277,31 @@ operation argument or select fresh Ledger 9 captures, with formatting
 adjustments. The gate passed all 37 pinned sources. Workspace behavior
 remains a separate qualification.
 
+## Constructor Vector qualification
+
+The maintained generated API gate passed all 132 commands on macOS arm64
+with the original compiler recipe at `a0d81c197`. It kept all 14 sources,
+the independent Scheme comparison, and the 24 Rust and TypeScript cases.
+The case roster covers 17 successes and seven constructor errors. The gate
+also exercised 68 post-initialization routes, 34 public replays, generated
+SDK and consumer Clippy, source mutations, and malformed IR refusals.
+
+Released ZKIR 3.2.0 modeled the 42 original exports in a separate probe.
+The 14 reads were k6 with 34 rows. Each source's `advance` and
+`advance_other` were k7 with 78 and 79 rows respectively.
+
+Port the maintained model observer, proof preflight, and isolated proof
+consumer together. Bind the exact source, raw IR and checked programs to
+the v3 model and verify the released k7 parameters and Dust spend material
+before key generation. Retain all 17 proof cases, the changed statement,
+wrong verifier and corrupted proof controls, and separate verification.
+Each successful case still needs a distinct funded transaction proof,
+default strict application and byte-identical ledger state after replay
+refusal. Constructor equality and wide-zero retain their own qualification
+gates.
+
+## Remaining workspace qualification
+
 The maintained generated functional gate now selects Ledger 9 for all
 23 source fixtures. Its 56 Rust methods and 160 four-route scenarios
 passed, along with generated-consumer Clippy. Seven additional ADT
