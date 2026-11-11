@@ -171,3 +171,30 @@ the resulting noncanonical active call preimage. On the common canonical domain,
 the generated Rust and TypeScript calls agree at zero and at the last canonical
 scalar. The v3 checks also cover an inactive noncanonical operand and explicit
 Field reduction.
+
+Both original DID deactivation cases passed the maintained Ledger 9 proof
+gate on macOS arm64 at `65568d356`. The cases retain the 200 and zero timestamp
+witnesses and the complete original source, Rust IR and twelve checked programs.
+Each case generated fresh k11 keys, a 4,208-byte standalone proof and a distinct
+v3 proof in a funded transaction with one proved Dust spend. A separate process
+verified the retained standalone proof and rejected corrupted bytes. The
+changed binding and changed version input controls refused. Both transactions
+applied with default strictness, the expected installed operation and state
+were preserved, and exact replay returned `IntentAlreadyExists` with identical
+serialized ledger bytes. The gate checks the modeled geometry and published
+material before key generation. The workflow prepares k11 for this DID lane.
+
+The full compiler suite passed 3,887 checks, including all 168 ZKIR v3
+snapshots and the JavaScript suites in both ZKIR modes. All 284 Rust fixture
+registrations were fresh. The locked workspace type-check passed with all
+features and targets. The original DID native lifecycle and the 30-step
+witnessed SDK gate also passed with the corrected packaged compiler.
+Both Ledger 9 proof gates refuse a configured external proof server.
+
+The next capture cohort covers the older reviewed DID and Passport fixtures.
+A fresh TypeScript probe of the original DID generated library matched the
+current Rust fixture byte-for-byte after formatting. Its 203 lifecycle steps
+retained the same case identities and changed only serialized state fields.
+All 102 pure cases matched. These probe captures still need their own reviewed
+binding and Rust acceptance. The full behavioral workspace suite and the
+remaining required Linux integration lanes are open.
