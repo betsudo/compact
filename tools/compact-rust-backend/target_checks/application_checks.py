@@ -93,6 +93,31 @@ def check_coracle_guess(
     print("original Coracle guess, concede, withdraw and start recorded")
 
 
+def prove_root_let_action_return(
+    compiler: str,
+    source: Path,
+    output: Path,
+    *,
+    run: Callable[..., None],
+) -> None:
+    retained = Path(__file__).resolve().parents[1] / "tests/root-let-action-return-schema20-ir.json"
+    preflight = output.with_name(output.name + "-preflight")
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(preflight))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((preflight / "contract/compact-rust-ir.json").read_text()), sort_keys=True)
+    if actual != expected or (preflight / "keys").exists():
+        raise ValueError("root Let source IR differs or preflight produced keys")
+    run(compiler, "--target", "rust", "--rust-require-recording",
+        str(source), str(output))
+    for name in ("contract/compact-rust-ir.json", "zkir/step.zkir"):
+        if (output / name).read_bytes() != (preflight / name).read_bytes():
+            raise ValueError(f"root Let proof compilation changed {name}")
+    for selector in ("--root-let-action-return", "--root-let-action-return-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
+
+
 def check_coracle_root_let(
     compiler: str,
     base: Path,
@@ -142,11 +167,9 @@ def check_coracle_root_let(
     ]
     check_coracle_source(compiler, base)
     if proof_requested:
-        proof = base / "root-let-action-return-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording",
-            str(root_let_action_return_source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--root-let-action-return", str(proof))
+        prove_root_let_action_return(
+            compiler, root_let_action_return_source, base / "root-let-action-return-proof", run=run,
+        )
     print("root Let actions retained; complete Coracle compiles with guess recorded and 3 explicit recording gaps")
 
 

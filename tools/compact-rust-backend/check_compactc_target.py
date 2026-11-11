@@ -1312,10 +1312,9 @@ def main() -> None:
             check_manifest(cell_proof)
             proof_artifacts.require_circuit_files(cell_proof, 'set_flag')
             root_let_proof = base / "root-let-action-return-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT_LET_ACTION_RETURN_SOURCE), str(root_let_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--root-let-action-return", str(root_let_proof))
+            application_checks.prove_root_let_action_return(
+                compiler, ROOT_LET_ACTION_RETURN_SOURCE, root_let_proof, run=run,
+            )
             struct_proof = base / "stateful-struct-proof"
             run(compiler,"--target","rust",str(ROOT / "examples/rust_backend/stateful_struct_oracle.compact"),str(struct_proof))
             run("cargo","run","--quiet","-p","compact-rust-proof-smoke","--","--stateful-struct",str(struct_proof))

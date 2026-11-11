@@ -124,6 +124,47 @@ pub(super) fn apply(
     expected: &StateValue<DefaultDB>,
     standalone: &Proof,
 ) -> Result<usize, Box<dyn Error>> {
+    apply_call(
+        root,
+        name,
+        stem,
+        prepared,
+        (deploy, false),
+        expected,
+        standalone,
+    )
+}
+
+pub(super) fn apply_after_deployment(
+    root: &Path,
+    name: &'static str,
+    stem: &str,
+    prepared: ContractCallPrototype<DefaultDB>,
+    deploy: ContractDeploy<DefaultDB>,
+    expected: &StateValue<DefaultDB>,
+    standalone: &Proof,
+) -> Result<usize, Box<dyn Error>> {
+    apply_call(
+        root,
+        name,
+        stem,
+        prepared,
+        (deploy, true),
+        expected,
+        standalone,
+    )
+}
+
+fn apply_call(
+    root: &Path,
+    name: &'static str,
+    stem: &str,
+    prepared: ContractCallPrototype<DefaultDB>,
+    deployment: (ContractDeploy<DefaultDB>, bool),
+    expected: &StateValue<DefaultDB>,
+    standalone: &Proof,
+) -> Result<usize, Box<dyn Error>> {
+    let (deploy, apply_deployment) = deployment;
     let mut rng = StdRng::from_rng(rand::rngs::OsRng)?;
     let address = deploy.address();
     let entry = EntryPointBuf(name.as_bytes().to_vec());
@@ -135,16 +176,68 @@ pub(super) fn apply(
     if prepared.address != address || prepared.entry_point != entry || prepared.op != *installed {
         return Err("v3 prepared call differs from the installed operation".into());
     }
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, funded.time + funded.ledger.parameters.global_ttl)
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
     let resolver = qualified_coin_funding::fee_resolver(root, name)?;
     let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
+    let mut funded = qualified_coin_funding::fee_funded_state_with_utxos(
+        &mut rng,
+        if apply_deployment { 2 } else { 1 },
+    )?;
+    if apply_deployment {
+        let deploy_intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
+            Intent::empty(&mut rng, funded.time + funded.ledger.parameters.global_ttl)
+                .add_deploy(deploy.clone());
+        let deploy_tx =
+            Transaction::from_intents("local-test", HashMap::new().insert(1_u16, deploy_intent));
+        let proved = executor
+            .block_on(tx_prove(
+                StdRng::from_rng(rand::rngs::OsRng)?,
+                &deploy_tx,
+                &resolver,
+            ))
+            .map_err(|error| format!("v3 deployment proving failed: {error:?}"))?;
+        let sealed = proved.seal(StdRng::from_rng(rand::rngs::OsRng)?);
+        let balanced = executor.block_on(funded.balance_tx(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            sealed,
+            &resolver,
+        ))?;
+        if balanced
+            .deploys()
+            .map(|(_, action)| action.address())
+            .collect::<Vec<_>>()
+            != [address]
+            || positive_fee_dust_spends(&balanced) != 1
+        {
+            return Err("v3 deployment address or proved Dust spend differs".into());
+        }
+        let result = funded.apply(&balanced, WellFormedStrictness::default())?;
+        if !matches!(result, TransactionResult::Success(_))
+            || funded.ledger.contract.get(&address).as_deref() != Some(&deploy.initial_state)
+        {
+            return Err(format!(
+                "v3 deployment strict apply or installed state differs: {result:?}"
+            )
+            .into());
+        }
+        let mut bytes = Vec::new();
+        tagged_serialize(&balanced, &mut bytes)?;
+        write_new(root.join(format!("{stem}-deployment.bin")), &bytes)?;
+        let mut ledger_bytes = Vec::new();
+        tagged_serialize(&funded.ledger, &mut ledger_bytes)?;
+        write_new(
+            root.join(format!("{stem}-ledger-after-deploy.bin")),
+            &ledger_bytes,
+        )?;
+        println!("{stem}: funded default-strict deployment applied");
+    } else {
+        funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
+    }
+    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
+        Intent::empty(&mut rng, funded.time + funded.ledger.parameters.global_ttl)
+            .add_call::<ProofPreimage>(prepared);
+    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
     let proven = executor
         .block_on(tx_prove(
             StdRng::from_rng(rand::rngs::OsRng)?,
@@ -165,18 +258,7 @@ pub(super) fn apply(
                 .into(),
         );
     }
-    let dust_spends = sealed
-        .intents()
-        .filter_map(|(_, intent)| intent.dust_actions)
-        .map(|actions| {
-            actions
-                .spends
-                .iter()
-                .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
-                .count()
-        })
-        .sum::<usize>();
-    if dust_spends != 1 {
+    if positive_fee_dust_spends(&sealed) != 1 {
         return Err("expected one proved, positive-fee v3 call Dust spend".into());
     }
     let mut transaction_bytes = Vec::new();
@@ -238,4 +320,19 @@ pub(super) fn apply(
     write_new(root.join(format!("{stem}-transaction.proof")), &proof.0)?;
     println!("{stem}: funded default-strict apply; replay refused without mutation");
     Ok(proof.0.len())
+}
+
+fn positive_fee_dust_spends(
+    tx: &Transaction<Signature, ProofMarker, PureGeneratorPedersen, DefaultDB>,
+) -> usize {
+    tx.intents()
+        .filter_map(|(_, intent)| intent.dust_actions)
+        .map(|actions| {
+            actions
+                .spends
+                .iter()
+                .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
+                .count()
+        })
+        .sum()
 }

@@ -286,14 +286,19 @@ pub(super) fn effect_plan_prototype(
 
 pub(super) fn root_let_action_return(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --root-let-action-return <proof-output>")?;
+    let usage = if verify {
+        "usage: compact-rust-proof-smoke --root-let-action-return-verify <proof-output>"
+    } else {
+        "usage: compact-rust-proof-smoke --root-let-action-return <proof-output>"
+    };
+    let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
-        return Err(
-            "usage: compact-rust-proof-smoke --root-let-action-return <proof-output>".into(),
-        );
+        return Err(usage.into());
+    }
+    if verify {
+        return root_let_action_return::verify(Path::new(&root));
     }
     let proof = std::thread::Builder::new()
         .name("root-let-action-return-proof".into())

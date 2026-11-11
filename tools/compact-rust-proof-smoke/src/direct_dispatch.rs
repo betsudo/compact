@@ -641,7 +641,10 @@ pub(super) fn try_run(
         ("--effect-plan-prototype", _) => Some(Err(
             "--effect-plan-prototype requires the experimental-recording-plan Cargo feature".into(),
         )),
-        ("--root-let-action-return", _) => Some(recorded::root_let_action_return(arguments)),
+        ("--root-let-action-return", _) => Some(recorded::root_let_action_return(arguments, false)),
+        ("--root-let-action-return-verify", _) => {
+            Some(recorded::root_let_action_return(arguments, true))
+        }
         ("--counter-less-than", _) => Some(recorded::counter_less_than(arguments)),
         ("--pair-hash-cell", _) => Some(recorded::pair_hash_cell(arguments)),
         ("--stateful-pair-hash", _) => Some(recorded::stateful_pair_hash(arguments)),
