@@ -38,10 +38,10 @@ use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
 use super::local_v3_application as v3;
-use super::{
-    TinySecret, check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
-    positional_suite::baseline_operation,
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
 };
+use super::{TinySecret, positional_suite::baseline_operation};
 
 pub(super) fn check_write_and_read(
     cell_root: &Path,

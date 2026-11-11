@@ -42,6 +42,7 @@ pub(super) fn try_run(
         ("--positional-baseline-verify", _) => {
             Some(super::positional_suite::verify_baseline(arguments))
         }
+        ("--positional-call-verify", _) => Some(super::positional_transaction::verify(arguments)),
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }

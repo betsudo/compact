@@ -39,10 +39,12 @@ use midnight_transient_crypto::proofs::VerifierKey;
 use rand::{SeedableRng, rngs::StdRng};
 
 use super::local_v3_application as v3;
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
+};
 use super::{
     ContractCallPrototype, DefaultDB, Intent, PedersenRandomness, ProofPreimage,
     ProofPreimageMarker, Signature, Timestamp, Transaction, check_counter_statement,
-    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
     positional_suite::baseline_operation,
 };
 

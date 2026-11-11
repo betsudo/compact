@@ -370,6 +370,7 @@ mod positional_maps;
 mod positional_merkle;
 mod positional_sets;
 mod positional_suite;
+mod positional_transaction;
 mod positional_unsigned;
 mod positional_witnesses;
 mod proof_material;
@@ -590,85 +591,6 @@ fn check_generated_trace<Private, Output: Into<AlignedValue>, Input: Into<Aligne
     )?;
     println!("generated {circuit} trace replayed and partitioned");
     Ok(call)
-}
-
-fn check_observed_call_parity(
-    root: &Path,
-    circuit: &'static str,
-    deploy: &ContractDeploy<DefaultDB>,
-    manual: &ContractCallPrototype<DefaultDB>,
-    observed: &ContractCallPrototype<DefaultDB>,
-) -> Result<(), Box<dyn Error>> {
-    // The prototype Debug representation includes the complete public and
-    // private transcripts, effects, gas, input/output and key location.
-    if format!("{manual:?}") != format!("{observed:?}") {
-        return Err(format!("{circuit} observed call differs from manual adapter").into());
-    }
-    let prove_and_apply = |call: ContractCallPrototype<DefaultDB>| -> Result<(Vec<u8>, ContractState<DefaultDB>), Box<dyn Error>> {
-        let mut intent_rng = StdRng::seed_from_u64(0x0041_4452_3433);
-        let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-            Intent::empty(&mut intent_rng, Timestamp::from_secs(0)).add_call::<ProofPreimage>(call);
-        let transaction =
-            Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-        let mut preproof_bytes = Vec::new();
-        tagged_serialize(&transaction, &mut preproof_bytes)?;
-        let resolver = ArtifactResolver {
-            root: root.to_owned(),
-            circuit,
-        };
-        let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-        let provider = LocalProvingProvider {
-            rng: StdRng::seed_from_u64(0x0050_524f_5645),
-            resolver: &resolver,
-            params: &params,
-        };
-        let proven = futures_executor::block_on(
-            transaction.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-        )?;
-        let sealed = proven.seal(StdRng::seed_from_u64(0x5345_414c));
-        let mut ledger = LedgerState::<DefaultDB>::new("local-test");
-        ledger.contract = ledger
-            .contract
-            .insert(deploy.address(), deploy.initial_state.clone());
-        let mut strictness = WellFormedStrictness::default();
-        strictness.enforce_balancing = false;
-        let validation_time = Timestamp::from_secs(0);
-        let verified = sealed.well_formed(&ledger, strictness, validation_time)?;
-        let context = TransactionContext {
-            ref_state: ledger.clone(),
-            block_context: BlockContext {
-                tblock: validation_time,
-                last_block_time: validation_time,
-                ..BlockContext::default()
-            },
-            whitelist: None,
-        };
-        let (updated, outcome) = ledger.apply(&verified, &context);
-        if !matches!(outcome, TransactionResult::Success(_)) {
-            return Err(format!("{circuit} parity call application failed: {outcome:?}").into());
-        }
-        let state = updated
-            .contract
-            .get(&deploy.address())
-            .ok_or("parity call removed the contract")?
-            .clone();
-        Ok((preproof_bytes, state))
-    };
-    let manual_result = prove_and_apply(manual.clone())?;
-    let observed_result = prove_and_apply(observed.clone())?;
-    if manual_result.0 != observed_result.0 {
-        return Err(format!("{circuit} observed call changed pre-proof transaction bytes").into());
-    }
-    if manual_result.1 != observed_result.1 {
-        return Err(format!("{circuit} observed call changed applied contract state").into());
-    }
-    // midnight-proofs 0.7.0 blinds quotient limbs with OsRng, so proof and
-    // sealed bytes from two independent valid runs need not match exactly.
-    println!(
-        "{circuit} observed call matches manual prototype, {} pre-proof bytes and independently applied state",
-        observed_result.0.len()
-    );
-    Ok(())
 }
 
 fn make_deploy(

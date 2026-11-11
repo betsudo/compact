@@ -54,14 +54,25 @@ pub(super) fn operation(
     name: &str,
     k: u8,
 ) -> Result<(IrSourceV3, VerifierKey, ContractOperation), Box<dyn Error>> {
-    let verifier = read_verifier(root, name)?;
+    let (ir, verifier, operation) = load_operation(root, name)?;
+    if ir.k() != k {
+        return Err("v3 IR differs from the bound parameter recipe".into());
+    }
+    Ok((ir, verifier, operation))
+}
+
+pub(super) fn load_operation(
+    root: &Path,
+    name: &str,
+) -> Result<(IrSourceV3, VerifierKey, ContractOperation), Box<dyn Error>> {
     let ir = IrSourceV3::load(File::open(root.join(format!("zkir/{name}.zkir")))?)?;
     let binary = std::fs::read(root.join(format!("zkir/{name}.bzkir")))?;
     let mut expected = Vec::new();
     tagged_serialize(&ir, &mut expected)?;
-    if binary != expected || ir.k() != k {
-        return Err("v3 IR differs from the bound raw circuit or parameter recipe".into());
+    if binary != expected {
+        return Err("v3 binary IR differs from the bound raw circuit".into());
     }
+    let verifier = read_verifier(root, name)?;
     let operation =
         ContractOperation::new(Some(verifier.clone()), Some(Sp::new(IrBuf::from(binary))));
     Ok((ir, verifier, operation))
@@ -154,9 +165,10 @@ pub(super) fn apply(
         stem,
         prepared,
         (deploy, false),
-        expected,
         standalone,
+        |state| check_data(state, expected),
     )
+    .map(|(proof_bytes, _)| proof_bytes)
 }
 
 pub(super) fn apply_after_deployment(
@@ -174,9 +186,41 @@ pub(super) fn apply_after_deployment(
         stem,
         prepared,
         (deploy, true),
-        expected,
         standalone,
+        |state| check_data(state, expected),
     )
+    .map(|(proof_bytes, _)| proof_bytes)
+}
+
+pub(super) fn apply_checked(
+    root: &Path,
+    name: &'static str,
+    stem: &str,
+    prepared: ContractCallPrototype<DefaultDB>,
+    deploy: ContractDeploy<DefaultDB>,
+    standalone: &Proof,
+    check_state: impl FnOnce(&ContractState<DefaultDB>) -> Result<(), Box<dyn Error>>,
+) -> Result<ContractState<DefaultDB>, Box<dyn Error>> {
+    apply_call(
+        root,
+        name,
+        stem,
+        prepared,
+        (deploy, true),
+        standalone,
+        check_state,
+    )
+    .map(|(_, state)| state)
+}
+
+fn check_data(
+    state: &ContractState<DefaultDB>,
+    expected: &StateValue<DefaultDB>,
+) -> Result<(), Box<dyn Error>> {
+    if state.data.get_ref() != expected {
+        return Err("v3 call applied state differs".into());
+    }
+    Ok(())
 }
 
 fn apply_call(
@@ -185,9 +229,9 @@ fn apply_call(
     stem: &str,
     prepared: ContractCallPrototype<DefaultDB>,
     deployment: (ContractDeploy<DefaultDB>, bool),
-    expected: &StateValue<DefaultDB>,
     standalone: &Proof,
-) -> Result<usize, Box<dyn Error>> {
+    check_state: impl FnOnce(&ContractState<DefaultDB>) -> Result<(), Box<dyn Error>>,
+) -> Result<(usize, ContractState<DefaultDB>), Box<dyn Error>> {
     let (deploy, apply_deployment) = deployment;
     let mut rng = StdRng::from_rng(rand::rngs::OsRng)?;
     let address = deploy.address();
@@ -312,9 +356,10 @@ fn apply_call(
         .contract
         .get(&address)
         .ok_or("v3 call contract missing after apply")?;
-    if actual.data.get_ref() != expected || actual.operations.get(&entry) != Some(installed) {
-        return Err("v3 call applied state or installed operation differs".into());
+    if actual.operations.get(&entry) != Some(installed) {
+        return Err("v3 call changed the installed operation".into());
     }
+    check_state(actual)?;
     let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
     if !matches!(
         result,
@@ -343,7 +388,7 @@ fn apply_call(
     write_new(root.join(format!("{stem}-ledger-replay.bin")), &replay)?;
     write_new(root.join(format!("{stem}-transaction.proof")), &proof.0)?;
     println!("{stem}: funded default-strict apply; replay refused without mutation");
-    Ok(proof.0.len())
+    Ok((proof.0.len(), actual.clone()))
 }
 
 fn positive_fee_dust_spends(
