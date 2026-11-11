@@ -158,10 +158,16 @@ It checked all twelve live DID observations, three typed misuse controls and
 Clippy. The two positive cases ran across four Rust routes, and the ten failure
 cases exercised all four routes.
 
-The released native ZKIR v3 tool rejects this source's `deactivate` circuit
-because `EcMulGenerator` receives a native scalar. A model-only probe with
-explicit conversion at both multiplication instructions reached k11 and 1,871
-rows. The next compiler change must preserve canonical scalar rejection.
-`jubjub_scalar_from_native` reduces modulo the Jubjub order, while Compact's
-multiplication builtins reject an out-of-range scalar. No DID keys or proofs
-were produced during the Ledger 9 lifecycle qualification.
+The v3 emitter now bounds each active multiplication operand by the Jubjub
+scalar order and converts it to the typed scalar consumed by ZKIR. An inactive
+guard selects zero before the check. The explicit reduction builtin encodes its
+result back into a Compact Field so it can still participate in Field arithmetic.
+The released v3 tool models the unchanged DID `deactivate` source at k11 and
+1,918 rows. The DID k11 recipe and the small-fixture limit stay in force.
+
+Generated Rust retains canonical scalar rejection. The published Ledger 9
+TypeScript provider reduces a raw scalar at or above the order. ZKIR refuses
+the resulting noncanonical active call preimage. On the common canonical domain,
+the generated Rust and TypeScript calls agree at zero and at the last canonical
+scalar. The v3 checks also cover an inactive noncanonical operand and explicit
+Field reduction.

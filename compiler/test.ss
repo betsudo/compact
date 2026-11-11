@@ -60301,19 +60301,25 @@ groups than for single tests.
         "    { \"op\": \"encode\", \"outputs\": [\"%t.2\", \"%ingore.3\"], \"input\": \"%p1.0\" },"
         "    { \"op\": \"encode\", \"outputs\": [\"%t.4\", \"%ingore.5\"], \"input\": \"%p2.1\" },"
         "    { \"op\": \"transient_hash\", \"output\": \"%t.6\", \"inputs\": [\"%t.2\", \"%t.4\"] },"
-        "    { \"op\": \"ec_mul\", \"output\": \"%t.7\", \"a\": \"%p1.0\", \"scalar\": \"%t.6\" },"
-        "    { \"op\": \"ec_mul_generator\", \"output\": \"%t.8\", \"scalar\": \"0x11\" },"
-        "    { \"op\": \"add\", \"output\": \"%t.9\", \"a\": \"%t.7\", \"b\": \"%t.8\" },"
+        "    { \"op\": \"less_than\", \"output\": \"%canonical-scalar.7\", \"a\": \"%t.6\", \"b\": \"0xb72cf7d65e0e97d08210c8cc932068a6003b3401013b6706a9af3365eab47d0e\", \"bits\": 252 },"
+        "    { \"op\": \"assert\", \"cond\": \"%canonical-scalar.7\" },"
+        "    { \"op\": \"jubjub_scalar_from_native\", \"output\": \"%scalar.8\", \"native\": \"%t.6\" },"
+        "    { \"op\": \"ec_mul\", \"output\": \"%t.9\", \"a\": \"%p1.0\", \"scalar\": \"%scalar.8\" },"
+        "    { \"op\": \"less_than\", \"output\": \"%canonical-scalar.10\", \"a\": \"0x11\", \"b\": \"0xb72cf7d65e0e97d08210c8cc932068a6003b3401013b6706a9af3365eab47d0e\", \"bits\": 252 },"
+        "    { \"op\": \"assert\", \"cond\": \"%canonical-scalar.10\" },"
+        "    { \"op\": \"jubjub_scalar_from_native\", \"output\": \"%scalar.11\", \"native\": \"0x11\" },"
+        "    { \"op\": \"ec_mul_generator\", \"output\": \"%t.12\", \"scalar\": \"%scalar.11\" },"
+        "    { \"op\": \"add\", \"output\": \"%t.13\", \"a\": \"%t.9\", \"b\": \"%t.12\" },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x32\"] },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x60\", \"0x01\", \"0x01\", \"0x00\"] },"
-        "    { \"op\": \"public_input\", \"type\": \"Scalar<BLS12-381>\", \"output\": \"%t.10\", \"guard\": null },"
-        "    { \"op\": \"public_input\", \"type\": \"Scalar<BLS12-381>\", \"output\": \"%t.11\", \"guard\": null },"
-        "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x0d\", \"0x01\", \"0x20\", \"%t.10\", \"%t.11\"] },"
-        "    { \"op\": \"hash_to_curve\", \"output\": \"%t.12\", \"inputs\": [\"%t.10\", \"%t.11\"] },"
-        "    { \"op\": \"add\", \"output\": \"%t.13\", \"a\": \"%t.9\", \"b\": \"%t.12\" },"
-        "    { \"op\": \"hash_to_curve\", \"output\": \"%t.14\", \"inputs\": [] },"
-        "    { \"op\": \"add\", \"output\": \"%t.15\", \"a\": \"%t.13\", \"b\": \"%t.14\" },"
-        "    { \"op\": \"output\", \"vals\": [\"%t.15\"] }"
+        "    { \"op\": \"public_input\", \"type\": \"Scalar<BLS12-381>\", \"output\": \"%t.14\", \"guard\": null },"
+        "    { \"op\": \"public_input\", \"type\": \"Scalar<BLS12-381>\", \"output\": \"%t.15\", \"guard\": null },"
+        "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x0d\", \"0x01\", \"0x20\", \"%t.14\", \"%t.15\"] },"
+        "    { \"op\": \"hash_to_curve\", \"output\": \"%t.16\", \"inputs\": [\"%t.14\", \"%t.15\"] },"
+        "    { \"op\": \"add\", \"output\": \"%t.17\", \"a\": \"%t.13\", \"b\": \"%t.16\" },"
+        "    { \"op\": \"hash_to_curve\", \"output\": \"%t.18\", \"inputs\": [] },"
+        "    { \"op\": \"add\", \"output\": \"%t.19\", \"a\": \"%t.17\", \"b\": \"%t.18\" },"
+        "    { \"op\": \"output\", \"vals\": [\"%t.19\"] }"
         "  ]"
         "}"))
     )
@@ -63580,9 +63586,12 @@ groups than for single tests.
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x10\", \"0x01\", \"0x01\", \"0x01\", \"0x00\"] },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x11\", \"0x01\", \"0x01\", \"0x01\", \"0x01\"] },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x91\"] },"
-        "    { \"op\": \"ec_mul\", \"output\": \"%t.1\", \"a\": \"%c.0\", \"scalar\": \"0x03\" },"
-        "    { \"op\": \"add\", \"output\": \"%t.2\", \"a\": \"%c.0\", \"b\": \"%t.1\" },"
-        "    { \"op\": \"output\", \"vals\": [\"%t.2\"] }"
+        "    { \"op\": \"less_than\", \"output\": \"%canonical-scalar.1\", \"a\": \"0x03\", \"b\": \"0xb72cf7d65e0e97d08210c8cc932068a6003b3401013b6706a9af3365eab47d0e\", \"bits\": 252 },"
+        "    { \"op\": \"assert\", \"cond\": \"%canonical-scalar.1\" },"
+        "    { \"op\": \"jubjub_scalar_from_native\", \"output\": \"%scalar.2\", \"native\": \"0x03\" },"
+        "    { \"op\": \"ec_mul\", \"output\": \"%t.3\", \"a\": \"%c.0\", \"scalar\": \"%scalar.2\" },"
+        "    { \"op\": \"add\", \"output\": \"%t.4\", \"a\": \"%c.0\", \"b\": \"%t.3\" },"
+        "    { \"op\": \"output\", \"vals\": [\"%t.4\"] }"
         "  ]"
         "}"))
     )
@@ -63613,9 +63622,12 @@ groups than for single tests.
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x11\", \"0x01\", \"0x01\", \"0x01\", \"0x01\"] },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x91\"] },"
         "    { \"op\": \"private_input\", \"type\": \"Point<Jubjub>\", \"output\": \"%c.0\", \"guard\": null },"
-        "    { \"op\": \"ec_mul\", \"output\": \"%t.1\", \"a\": \"%c.0\", \"scalar\": \"0x03\" },"
-        "    { \"op\": \"add\", \"output\": \"%t.2\", \"a\": \"%c.0\", \"b\": \"%t.1\" },"
-        "    { \"op\": \"output\", \"vals\": [\"%t.2\"] }"
+        "    { \"op\": \"less_than\", \"output\": \"%canonical-scalar.1\", \"a\": \"0x03\", \"b\": \"0xb72cf7d65e0e97d08210c8cc932068a6003b3401013b6706a9af3365eab47d0e\", \"bits\": 252 },"
+        "    { \"op\": \"assert\", \"cond\": \"%canonical-scalar.1\" },"
+        "    { \"op\": \"jubjub_scalar_from_native\", \"output\": \"%scalar.2\", \"native\": \"0x03\" },"
+        "    { \"op\": \"ec_mul\", \"output\": \"%t.3\", \"a\": \"%c.0\", \"scalar\": \"%scalar.2\" },"
+        "    { \"op\": \"add\", \"output\": \"%t.4\", \"a\": \"%c.0\", \"b\": \"%t.3\" },"
+        "    { \"op\": \"output\", \"vals\": [\"%t.4\"] }"
         "  ]"
         "}"))
     )
@@ -67379,8 +67391,11 @@ groups than for single tests.
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x11\", \"0x01\", \"0x01\", \"0x01\", \"0x01\"] },"
         "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x91\"] },"
         "    { \"op\": \"private_input\", \"type\": \"Point<Jubjub>\", \"output\": \"%t.1\", \"guard\": null },"
-        "    { \"op\": \"ec_mul\", \"output\": \"%t.2\", \"a\": \"%t.1\", \"scalar\": \"%scalar.0\" },"
-        "    { \"op\": \"output\", \"vals\": [\"%t.2\"] }"
+        "    { \"op\": \"less_than\", \"output\": \"%canonical-scalar.2\", \"a\": \"%scalar.0\", \"b\": \"0xb72cf7d65e0e97d08210c8cc932068a6003b3401013b6706a9af3365eab47d0e\", \"bits\": 252 },"
+        "    { \"op\": \"assert\", \"cond\": \"%canonical-scalar.2\" },"
+        "    { \"op\": \"jubjub_scalar_from_native\", \"output\": \"%scalar.3\", \"native\": \"%scalar.0\" },"
+        "    { \"op\": \"ec_mul\", \"output\": \"%t.4\", \"a\": \"%t.1\", \"scalar\": \"%scalar.3\" },"
+        "    { \"op\": \"output\", \"vals\": [\"%t.4\"] }"
         "  ]"
         "}"))
     )
@@ -84149,6 +84164,53 @@ groups than for single tests.
             '("  expect(C.circuits.reset(written.context).result).toEqual(empty);")
             '())
         '("});")))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger point: JubjubPoint;"
+      "ledger reduced: Field;"
+      "export circuit multiply(p: JubjubPoint, scalar: Field): JubjubPoint {"
+      "  point = disclose(ecMul(p, scalar));"
+      "  return point;"
+      "}"
+      "export circuit generate(active: Boolean, scalar: Field): JubjubPoint {"
+      "  if (disclose(active)) point = disclose(ecMulGenerator(scalar));"
+      "  return point;"
+      "}"
+      "export circuit reduce(scalar: Field): Field {"
+      "  reduced = disclose(jubjubScalarFromNative(scalar) + 1);"
+      "  return reduced;"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "test('Jubjub scalar boundaries in the v3 prover preimage', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const order = runtime.JUBJUB_SCALAR_MODULUS;"
+            "  const generator = runtime.ecMulGenerator(1n);"
+            "  const identity = runtime.ecMulGenerator(0n);"
+            "  for (const scalar of [0n, order - 1n]) {"
+            "    const expected = runtime.ecMulGenerator(scalar);"
+            "    expect(C.circuits.multiply(Ctxt, generator, scalar).result).toEqual(expected);"
+            "    expect(C.circuits.generate(Ctxt, true, scalar).result).toEqual(expected);"
+            "  }"
+            "  expect(C.circuits.generate(Ctxt, false, order).result).toEqual(identity);"
+            "  expect(C.circuits.reduce(Ctxt, order + 1n).result).toEqual(2n);"
+            "  const { checkProofData } = await import('./key-provider.js');"
+            "  const raw = new contractCode.Contract({});"
+            "  for (const [name, { proofData }] of ["
+            "    ['multiply', raw.circuits.multiply(Ctxt, generator, order)],"
+            "    ['generate', raw.circuits.generate(Ctxt, true, order)],"
+            "  ] as const) {"
+            "    await expect(checkProofData(contractCode.contractDir, name, proofData))"
+            "      .rejects.toThrow(/Failed direct assertion/);"
+            "  }"
+            "});"
+            ))
+        (succeeds))
     )
 
   (test

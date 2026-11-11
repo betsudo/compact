@@ -1202,7 +1202,7 @@
       (div_mod_power_of_two outp0 outp1 inp imm)  ;; outps=(quotient remainder)
       (ec_mul outp inp0 inp1)
       (ec_mul_generator outp0 inp)
-      (encode outp0 outp1 inp)
+      (encode (outp* ...) inp)
       (from_coordinates outp inp0 inp1)
       (hash_to_curve outp inp* ...)
       (impact inp inp* ...)

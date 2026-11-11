@@ -87,6 +87,27 @@
               `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
               instr*))))
 
+      (define jubjub-scalar-order
+        #x0e7db4ea6533afa906673b0101343b00a6682093ccc81082d0970e5ed6f72cb7)
+
+      (define (emit-canonical-jubjub-scalar src test scalar native instr*)
+        (with-output-language (Lzkir Instruction)
+          ;; The conversion reduces modulo the scalar order. Require a canonical
+          ;; operand for multiplication. A guarded-off call uses zero without
+          ;; constraining the original operand.
+          (let ([canonical (make-temp-id src 'canonical-scalar)])
+            (let-values ([(native instr*)
+                          (if (eq? test 1)
+                              (values native instr*)
+                              (let ([active (make-temp-id src 'active-scalar)])
+                                (values active
+                                  (cons `(cond_select ,active ,test ,native 0) instr*))))])
+              (cons*
+                `(jubjub_scalar_from_native ,scalar ,native)
+                `(assert ,canonical)
+                `(less_than ,canonical ,native ,jubjub-scalar-order ,(integer-length jubjub-scalar-order))
+                instr*)))))
+
       (define (make-native name arg*)
         ;; Get the list of alignment atoms for a 0-based arg index.
         (define (arg->alignment arg* index)
@@ -112,26 +133,35 @@
                  (cons*
                    `(from_coordinates ,(car var-name*) ,tmp-neg-x ,tmp-y)
                    `(neg ,tmp-neg-x ,tmp-x)
-                   `(encode ,tmp-x ,tmp-y ,(car triv*))
+                   `(encode (,tmp-x ,tmp-y) ,(car triv*))
                    instr*))]
               [(ecMul)
                (assert (= (length var-name*) 1))
-               (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons `(ec_mul ,(car var-name*) ,(car triv*) ,scalar)
+                   (emit-canonical-jubjub-scalar src test scalar (cadr triv*) instr*)))]
               [(ecMulGenerator)
                (assert (= (length var-name*) 1))
-               (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons `(ec_mul_generator ,(car var-name*) ,scalar)
+                   (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
-               (cons `(jubjub_scalar_from_native ,(car var-name*) ,(car triv*)) instr*)]
+               ;; The Compact reduction returns a Field.
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons*
+                   `(encode (,(car var-name*)) ,scalar)
+                   `(jubjub_scalar_from_native ,scalar ,(car triv*))
+                   instr*))]
               [(hashToCurve)
                (assert (= (length var-name*) 1))
                (cons `(hash_to_curve ,(car var-name*) ,triv* ...) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
-               (cons `(encode ,(car var-name*) ,(make-temp-id src 'ingore) ,(car triv*)) instr*)]
+               (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]
               [(jubjubPointY)
                (assert (= (length var-name*) 1))
-               (cons `(encode ,(make-temp-id src 'ignore) ,(car var-name*) ,(car triv*)) instr*)]
+               (cons `(encode (,(make-temp-id src 'ignore) ,(car var-name*)) ,(car triv*)) instr*)]
               [(keccak256)
                (assert (= (length var-name*) 2))
                (let ([alignment* (arg->alignment arg* 0)]
@@ -233,7 +263,7 @@
                              [y (make-temp-id src 'pt)])
                         (loop (cdr alignment*) (cdr input*)
                           (with-output-language (Lzkir Instruction)
-                            (cons `(encode ,x ,y ,(car input*)) instr*))
+                            (cons `(encode (,x ,y) ,(car input*)) instr*))
                           (with-output-language (Lflattened Alignment)
                             (cons* `(afield) `(afield) encoded-alignment*))
                           (cons* y x encoded-input*)))]
@@ -964,9 +994,8 @@
        `((op . "ec_mul") (output . ,outp) (a . ,inp0) (scalar . ,inp1))]
       [(ec_mul_generator ,[* outp] ,[* inp])
        `((op . "ec_mul_generator") (output . ,outp) (scalar . ,inp))]
-      [(encode ,outp0 ,outp1 ,[* inp])
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "encode") (outputs . ,(vector outp0 outp1)) (input . ,inp)))]
+      [(encode (,outp* ...) ,[* inp])
+       `((op . "encode") (outputs . ,(list->vector (map Output outp*))) (input . ,inp))]
       [(from_coordinates ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
