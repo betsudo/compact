@@ -167,10 +167,10 @@ The released v3 tool models the unchanged DID `deactivate` source at k11 and
 
 Generated Rust retains canonical scalar rejection. The published Ledger 9
 TypeScript provider reduces a raw scalar at or above the order. ZKIR refuses
-the resulting noncanonical active call preimage. On the common canonical domain,
-the generated Rust and TypeScript calls agree at zero and at the last canonical
-scalar. The v3 checks also cover an inactive noncanonical operand and explicit
-Field reduction.
+the resulting noncanonical active call preimage. The v3 checks also cover an
+inactive noncanonical operand and explicit Field reduction. The branch's
+TypeScript runtime now enforces the same canonical bound before calling the
+published provider. See the fixture validation below.
 
 Both original DID deactivation cases passed the maintained Ledger 9 proof
 gate on macOS arm64 at `65568d356`. The cases retain the 200 and zero timestamp
@@ -603,7 +603,37 @@ At `19947cbf5`, five PM-19252 and native own-key captures and three
 witness collection captures refresh 24 state fields. They preserve
 the witnessed values, exact query costs and operation programs, and the
 native key routes' proof-free behavior. All 33 focused tests across six
-packages pass. The subsequent focused runs cover 28 of the 41 targets
-that failed in the earlier workspace run. The other 13 targets still
-need fixture migration and focused validation before a fresh workspace
-run. Workspace and integration qualification remain open.
+packages pass.
+
+At `5beb360f4`, seven helper and oracle captures refresh 19 state
+fields. Tiny's gas, query tags, public transcripts, and private output
+counts also reproduce the historical capture exactly. All 29 focused
+tests pass.
+
+At `f6cc81b91`, fresh TypeScript runs cover both composition layouts,
+the ten shielded-send cases, and the five successful shielded-receive
+cases. Receive accepts the two values that exceeded the original b8
+descriptor. It refuses negative and overflowing values before queries,
+outputs, or state changes. The historical b8 refusals and commitments
+remain checked. Send compares exact commitment-to-index pairs and
+claim membership, while preserving transcript order. All 11 focused
+tests pass.
+
+At `dcf2e70f6`, the local TypeScript runtime rejects a raw Jubjub
+scalar outside the canonical range for both multiplication builtins.
+Explicit reduction still works. With the original generated wrapper,
+the unmodified 0.17.0 package reproduced the acceptance of the raw
+order. The runtime rebuilt from this branch over the same pinned
+onchain package passed the complete 82-test TypeScript runtime suite.
+The regenerated Jubjub capture retains seven reduced calls, two raw
+calls and five refusal controls. It matches the original-reference
+results, exact query programs and gas, and rollback behavior. The
+serialized Ledger 9 states and the new range diagnostic are recorded
+separately. The 14 focused Rust behavior, provenance and native tests
+pass. The published runtime package remains unchanged.
+
+Later focused runs now pass for all 41 targets from the earlier
+workspace failure roster. A fresh locked workspace run is required
+to verify that result across the full corpus. The compiler integration
+preflight compared the complete mixed-width source IR without keys.
+The full compiler proof integration gate remains open.
