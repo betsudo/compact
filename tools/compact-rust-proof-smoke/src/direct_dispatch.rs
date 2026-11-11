@@ -422,15 +422,26 @@ pub(super) fn try_run(
             feature = "component-product-vector-widening",
             compact_component_product_vector_generated
         ))]
-        ("--component-product-vector" | "--component-product-vector-models", _) => Some((|| {
+        (
+            "--component-product-vector"
+            | "--component-product-vector-models"
+            | "--component-product-vector-verify",
+            _,
+        ) => Some((|| {
             let root = arguments
                 .next()
                 .ok_or("component Vector proof command requires a complete root")?;
-            if selector == "--component-product-vector-models" {
+            let root = std::path::Path::new(&root);
+            if selector == "--component-product-vector-verify" {
+                if arguments.next().is_some() {
+                    return Err("unexpected verification argument".into());
+                }
+                crate::component_product_vector_widening::verify(root)
+            } else if selector == "--component-product-vector-models" {
                 if arguments.next().is_some() {
                     return Err("unexpected selected models argument".into());
                 }
-                crate::component_product_vector_widening::models(std::path::Path::new(&root))
+                crate::component_product_vector_widening::models(root)
             } else {
                 let ts = arguments
                     .next()
@@ -438,13 +449,9 @@ pub(super) fn try_run(
                 if arguments.next().is_some() {
                     return Err("unexpected proof argument".into());
                 }
-                crate::component_product_vector_widening::run(
-                    std::path::Path::new(&root),
-                    std::path::Path::new(&ts),
-                )
+                crate::component_product_vector_widening::run(root, std::path::Path::new(&ts))
             }
-        })(
-        )),
+        })()),
         ("--direct-fold", _) => Some(collections::direct_fold(arguments, false)),
         ("--direct-fold-verify", _) => Some(collections::direct_fold(arguments, true)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),

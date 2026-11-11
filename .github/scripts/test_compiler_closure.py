@@ -525,7 +525,8 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertIn('record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"', step)
         self.assertIn('check_component_product_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json"', step)
         self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', step)
-        self.assertIn('shutil.which("zkir")', step)
+        self.assertIn('ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"', step)
+        self.assertNotIn('shutil.which("zkir")', step)
         self.assertLess(before.index('Import authenticated same-run compiler closure'), before.index('Prepare verified built-in proof material'))
         for weakened in ('--prepare-only', 'continue-on-error', 'if:', '/lib/zkir'):
             self.assertNotIn(weakened, step)
