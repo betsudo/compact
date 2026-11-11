@@ -360,8 +360,12 @@ passed all 16 cases at `11769f654`, with 16 fresh key pairs and separate
 verification of all 16 standalone proofs. It refused corrupted proofs
 and distinct verifiers. Sixteen distinct funded transactions applied
 with default strictness and refused exact replay with byte-identical
-ledger state. Cryptographic qualification of the boundary and tuple
-cohorts remains open.
+ledger state. The boundary cohort also passed all 30 cases at the same
+commit, with 16 fresh key pairs across eight sources. All 30 separate
+standalone verifications refused corrupted proofs and distinct verifiers.
+Each distinct funded transaction passed default strictness and refused
+exact replay with byte-identical ledger state. The tuple cohort remains
+open.
 
 Wide-zero multiplication passed the maintained generated API gate for the
 original and conditional sources. The two ordinary entries model at k7
@@ -423,8 +427,11 @@ macOS arm64 at `72aa8d16a`. The 24 complete sources produced 35 TypeScript
 cases and 35 Rust tests, with 136 stateful routes, 58 public transcript
 comparisons, 14 compile-fail controls, 13 malformed-IR controls, and
 three typed source mutations. The complete proof gate retains three
-selected k8 exports and separate standalone verification. Its first
-complete Ledger 9 proof result is pending.
+selected k8 exports and separate standalone verification. The native
+runner, complete model check, and pre-key refusal controls passed. The
+first run reached material verification and refused a local cache that
+lacked the k8 SRS. Qualification continues using an isolated copy of the
+verified upstream k8 material. A complete proof result is pending.
 
 The outer-vector over-cap refusal needs a different donor when its
 caller moves to v3. Its existing intact `family/branch` donor measures
