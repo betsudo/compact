@@ -114,7 +114,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 
 fn oracle() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-writable-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-writable-oracle.json"
     ))
     .unwrap()
 }
@@ -474,7 +474,7 @@ fn asset_writable_guard_records_two_successes_and_rejects_closed_or_frozen() {
 
 fn freshness_oracle() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-freshness-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-freshness-oracle.json"
     ))
     .unwrap()
 }
@@ -566,14 +566,14 @@ fn asset_freshness_pure_guard_records_only_successful_calls() {
 
 fn grant_write_oracle() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-custody-grant-write.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-custody-grant-write.json"
     ))
     .unwrap()
 }
 
 fn record_write_oracle() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-record-write.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-record-write.json"
     ))
     .unwrap()
 }
@@ -603,7 +603,7 @@ fn asset_record(revised: bool, invalid_class: bool) -> AssetRecord {
 
 fn watch_write_oracle() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-watch-write.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-watch-write.json"
     ))
     .unwrap()
 }

@@ -30,7 +30,7 @@ use serde_json::Value;
 use std::{cell::RefCell, collections::BTreeSet};
 fn capture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/direct-call-registry.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-direct-call-registry.json"
     ))
     .unwrap()
 }

@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
@@ -14,6 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#![allow(non_snake_case)]
 
 use compact_rust_asset_registry_oracle_fixture::ledger_contract::{
     LedgerView, Witnesses, assertGrantEffective, assertStoredRecordFresh, close, initial_state,
@@ -163,7 +163,7 @@ impl Witnesses<()> for Stub {
 #[test]
 fn chunked_collections_and_counters_execute_through_the_asset_registry() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-registry-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-registry-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(()), &Stub).unwrap();
@@ -303,7 +303,7 @@ fn composite_map_read_preserves_nonempty_opaque_note() {
 #[test]
 fn recorded_asset_removal_matches_typescript_native_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-remove-record.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-remove-record.json"
     ))
     .unwrap();
     let expected = &oracle["remove"];
@@ -412,7 +412,7 @@ fn recorded_asset_removal_matches_typescript_native_and_replay() {
 #[test]
 fn recorded_asset_removal_rejects_missing_and_watched_records() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-remove-record.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-remove-record.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(()), &ParityStub).unwrap();
@@ -464,7 +464,7 @@ fn context_with_grant() -> runtime::context::CircuitContext<()> {
 #[test]
 fn recorded_grant_effectiveness_matches_typescript_native_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-grant-effective.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-grant-effective.json"
     ))
     .unwrap();
     let expected = &oracle["effective"];
@@ -553,7 +553,7 @@ fn recorded_grant_effectiveness_matches_typescript_native_and_replay() {
 #[test]
 fn recorded_grant_effectiveness_rejects_missing_and_future_grants() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-grant-effective.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-grant-effective.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(()), &ParityStub).unwrap();
@@ -608,7 +608,7 @@ fn freshness_policy() -> FreshnessPolicy {
 #[test]
 fn recorded_stored_freshness_matches_typescript_native_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-stored-record-fresh.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-stored-record-fresh.json"
     ))
     .unwrap();
     let expected = &oracle["fresh"];
@@ -698,7 +698,7 @@ fn recorded_stored_freshness_matches_typescript_native_and_replay() {
 #[test]
 fn recorded_stored_freshness_preserves_missing_future_and_stale_guards() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/asset-stored-record-fresh.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-asset-stored-record-fresh.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(()), &ParityStub).unwrap();

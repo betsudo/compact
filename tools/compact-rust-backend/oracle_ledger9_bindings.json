@@ -6,25 +6,40 @@
   "tests": {
     "tests-rust-backend/assert-parity-oracle/tests/assert_parity_oracle.rs": {
       "historical_sha256": "26845d607fcf156a2d8ddbe2aa8180f3e29d19b1ef414048ff9dc4b818420f22",
-      "current_sha256": "01ec4f3bc2d59aaee4f9050494c706adc84cbb1cf36d91032ae108e456608829",
+      "current_sha256": "0f6738a2f00e913dbd0475f798db817bc9c5295afbf6bfb3ab34e4710464c5a0",
       "capture_paths": [
-        "runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "runtime-rs/tests/fixtures/assert-parity-oracle.json",
+        "runtime-rs/tests/fixtures/oracle-direct-behavior.json",
+        "runtime-rs/tests/fixtures/recorded-pure-assert.json"
       ]
     },
     "tests-rust-backend/asset-registry-oracle/tests/asset_registry_oracle.rs": {
       "historical_sha256": "b3312cfa89277b3ce045f6682479edac6bc530757d586cf29e3e6cdf086f152d",
-      "current_sha256": "37740dae3d6202afd362593e01c3637824b89ae506e7a75587066a16e0527b46",
-      "capture_paths": []
+      "current_sha256": "bee8a30191ab456a91255fd7eabe228109866b9f489da27ffb803f60efc3bef8",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/asset-grant-effective.json",
+        "runtime-rs/tests/fixtures/asset-registry-oracle.json",
+        "runtime-rs/tests/fixtures/asset-remove-record.json",
+        "runtime-rs/tests/fixtures/asset-stored-record-fresh.json"
+      ]
     },
     "tests-rust-backend/asset-registry-oracle/tests/direct_behavior.rs": {
       "historical_sha256": "93e313c4ecbb2f007ab0d8f5f9eaf9c3e17650963b24952dc420d6419249a72b",
-      "current_sha256": "ee8cda02c63fa5620e2662f1855be82096b162ecee9e091c18cd497544e26089",
-      "capture_paths": []
+      "current_sha256": "5827ca34e3b2aef20caf9df430b1f720c9fcbb7ce5691bb239e062e828ce6987",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/direct-call-registry.json"
+      ]
     },
     "tests-rust-backend/asset-registry-oracle/tests/writable_recording.rs": {
       "historical_sha256": "af2dadb7f904619573abd524700420144fec82da14e52fafeb5cd85ecce88c69",
-      "current_sha256": "fa93552356c5766078e32d94781de737492ab1114bef4069cdf4b65aa9a800ed",
-      "capture_paths": []
+      "current_sha256": "654376204cc1a0347c89a78d9eaccd1b53d32e6f609d1ca44f9b01da6c56ab72",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/asset-custody-grant-write.json",
+        "runtime-rs/tests/fixtures/asset-freshness-oracle.json",
+        "runtime-rs/tests/fixtures/asset-record-write.json",
+        "runtime-rs/tests/fixtures/asset-watch-write.json",
+        "runtime-rs/tests/fixtures/asset-writable-oracle.json"
+      ]
     },
     "tests-rust-backend/bounded-uint-oracle/tests/bounded_uint_oracle.rs": {
       "historical_sha256": "d0e779b2c02d742b62290fd6a45df610ea5028a287a4d105e29d044f77f787c3",
@@ -46,6 +61,13 @@
       "capture_paths": [
         "runtime-rs/tests/fixtures/adr221-call-arg-false.json",
         "runtime-rs/tests/fixtures/call-arg-declared-type.json"
+      ]
+    },
+    "tests-rust-backend/call-arg-declared-type/tests/direct_pure_behavior.rs": {
+      "historical_sha256": "ae013a6b596794be0acd58e354129b9535e301ce0b3bff10af021f8ad7e0f675",
+      "current_sha256": "d997fb975d9d605573b3463f303687e0d68516726d868b8cbcf7ea1f7469c022",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/direct-call-registry.json"
       ]
     },
     "tests-rust-backend/chunked-ledger-oracle/tests/chunked_ledger_oracle.rs": {
@@ -124,6 +146,13 @@
       "current_sha256": "9f18707fbb4c173407ffd97ea5f0084dc10778f10665a1e89dc70cbd4227606b",
       "capture_paths": [
         "runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+      ]
+    },
+    "tests-rust-backend/literal-coercion-oracle/tests/literal_coercion_oracle.rs": {
+      "historical_sha256": "967e1f0adcdf497edeff252830d4321bd1341a19d907d38c158cab68bddcae3b",
+      "current_sha256": "95bb0970aeb3d9e755e397b393bbc3bec4ebf55eb5a1ecca3910a9d3a7a1a4ec",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/literal-coercion-oracle.json"
       ]
     },
     "tests-rust-backend/map-fn-oracle/tests/map_fn_oracle.rs": {
@@ -268,6 +297,56 @@
       "historical_sha256": "a2724e256ecec21161570965d2d07764967a7cf07045a1c64deb9c1abc3112d3",
       "current_sha256": "b61f43617a2b52b57122346feea3b489ee7f78c9b5f1a5fb6ba3907574a6c5ae"
     },
+    "runtime-rs/tests/fixtures/assert-parity-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-assert-parity-oracle.json",
+      "historical_sha256": "b4ac7309adb8c5edfe91f68a2770e3af493e0a72333f7eaeffd93e6ab0f023f2",
+      "current_sha256": "bdf9418d0c0061d6b5f296447e885f16e493b82a6916eaa138fffdb8ad445a7d"
+    },
+    "runtime-rs/tests/fixtures/asset-custody-grant-write.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-custody-grant-write.json",
+      "historical_sha256": "c8269e0a198569b45831f0d67005320df91628dca6d5ad44e6fa7ff2759eaa5d",
+      "current_sha256": "352abe1ca02a93e69bc7cdb17244309ac4759c3ddf54a487e8295be7961805c2"
+    },
+    "runtime-rs/tests/fixtures/asset-freshness-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-freshness-oracle.json",
+      "historical_sha256": "dadb0b535964778264ee280abe79b46079e255817f59467db69e0dff76067ec5",
+      "current_sha256": "4284e4efe5745427496ae14123048e1cb37d412616fe650733b2cc9c1485c042"
+    },
+    "runtime-rs/tests/fixtures/asset-grant-effective.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-grant-effective.json",
+      "historical_sha256": "e22b357a44908a5be285669ec78f28b469d17f768316450b6c9d35b486e04236",
+      "current_sha256": "fcb5937118fe89c5e4102228e131cb8ce8bfe351cd02bdc57347a94760e9b47b"
+    },
+    "runtime-rs/tests/fixtures/asset-record-write.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-record-write.json",
+      "historical_sha256": "a1c088fb6fab8285a41ec74d22f83a35b0ff0db76d2e009cf8c9fb423468b956",
+      "current_sha256": "7dad556a8899b1e138d92cf8bdac404056cfc34866812aa686b65cbf889935c9"
+    },
+    "runtime-rs/tests/fixtures/asset-registry-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-registry-oracle.json",
+      "historical_sha256": "a6933f788ddcb3e26ddd9620d0bc671db2f3e8dae1b9572d0265b0e7bac98071",
+      "current_sha256": "f0c6d3520779a73298d96ab292654832b057078c72400d7d4510a9e2d0c263e9"
+    },
+    "runtime-rs/tests/fixtures/asset-remove-record.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-remove-record.json",
+      "historical_sha256": "24810108303e929b559fd6d6d2adf33f5dce08645c779730afea18aee5ac139f",
+      "current_sha256": "ada9cba4597e39dded6f908a1df08acea2f0e8dc5d7cad7f34b945e561730493"
+    },
+    "runtime-rs/tests/fixtures/asset-stored-record-fresh.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-stored-record-fresh.json",
+      "historical_sha256": "c3e3589a7e6252197e269f886c926dd1e38f4d7abcfcbb9521b8700a3b4b8821",
+      "current_sha256": "900694df1dffaaac11a16133596daaa20b9e39364a8a1838e15c3c6ac9388fda"
+    },
+    "runtime-rs/tests/fixtures/asset-watch-write.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-watch-write.json",
+      "historical_sha256": "a1962f4102906aa931b902d81d06c960845fb341f2da0b56a87941fdf97bb7e1",
+      "current_sha256": "a84cec29ef8f4d02263b6da7f9bd9e97451471576358a0eaec6e9d3a3a4a5b8c"
+    },
+    "runtime-rs/tests/fixtures/asset-writable-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-asset-writable-oracle.json",
+      "historical_sha256": "3d0d8a90b09cce67f53cf622f60ae0d24399508aab65543333a3805311fe5ebd",
+      "current_sha256": "16b79bacc0a8e404c4ed7d32400ac3207e2b4c41c9ce0e5295cab7ebd28bf019"
+    },
     "runtime-rs/tests/fixtures/bounded-uint-oracle.json": {
       "historical_sha256": "3fe0422bead9263ce05a8ef36593bd2e8d1c00dc9cc7db6a70841a46f592b69f",
       "current": "runtime-rs/tests/fixtures/ledger9-bounded-uint-oracle.json",
@@ -298,6 +377,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-cross-circuit-oracle.json",
       "current_sha256": "f23fad28cddc6edab65064f75703156d4a1c00c992931051c7b875c186de82a7"
     },
+    "runtime-rs/tests/fixtures/direct-call-registry.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-direct-call-registry.json",
+      "historical_sha256": "b24ff711894c23864b524e88271ed85973d4b43c2f7f90c6d14a27092311e73e",
+      "current_sha256": "4cc50b2b77224672318fd69a94ede1e27c1fdcbfcc65396c826d0b083ce9edab"
+    },
     "runtime-rs/tests/fixtures/fold-oracle.json": {
       "historical_sha256": "1f7ffffdb6addb1d5484506c181c44171efda7dfc563edf7bbeea48fb432a6a6",
       "current": "runtime-rs/tests/fixtures/ledger9-fold-oracle.json",
@@ -327,6 +411,11 @@
       "historical_sha256": "beda6d208b42299ed38544dbfc301cb89013b83e0f7755306a20ac71a2161229",
       "current": "runtime-rs/tests/fixtures/ledger9-list-oracle.json",
       "current_sha256": "192ab33cc89497e0010eb864d4157a9db54c02e6dff44bbe91fa6f6e81c78cad"
+    },
+    "runtime-rs/tests/fixtures/literal-coercion-oracle.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-literal-coercion-oracle.json",
+      "historical_sha256": "28ab95cb80ad99f77e8d875cbf925e06afbee07f58ac5bf038e029995bc58990",
+      "current_sha256": "7406510a67c8451be844428ea7480572773bed1acc7412c5d02307171283b522"
     },
     "runtime-rs/tests/fixtures/map-oracle.json": {
       "historical_sha256": "6bbe73836c8260532f43cc470f679bd8796f21ed3784ee0765fb2acfb4e8b9bc",
@@ -362,6 +451,11 @@
       "historical_sha256": "7e61b764c3e79654ae46b2ab806f053776f14eceb811b9412580e0417b6b39c4",
       "current": "runtime-rs/tests/fixtures/ledger9-oracle-recorded-traces.json",
       "current_sha256": "04e838263d6f6938843a332704e7e62f30c0aff69a5db2cf769bca5ca423682e"
+    },
+    "runtime-rs/tests/fixtures/recorded-pure-assert.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-recorded-pure-assert.json",
+      "historical_sha256": "997acd7e4a534b3550d6c3a6bc2feefa2ec37cd5fcc1616ef1f21047784c00d9",
+      "current_sha256": "f04e7fc3456cc0f519f93a0a94b0c6ea769802d7483e4e2fa94ab573ea42dd6e"
     },
     "runtime-rs/tests/fixtures/sealed-ledger-constructor.json": {
       "current": "runtime-rs/tests/fixtures/ledger9-sealed-ledger-constructor.json",
