@@ -14,9 +14,12 @@
 // limitations under the License.
 //! Qualified merge and receive/immediate merge, with exact upstream input unions.
 //! Both paths require default-strict validation and separate Dust funding.
+use super::local_v3_application as v3;
+use super::positional_transaction::verify_separately;
 use super::*;
 use compact_rust_shielded_merge_oracle_fixture::{ledger_contract as c, types};
 use midnight_compact_runtime as runtime;
+use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use midnight_zswap::{Input, Offer, Output, Transient};
 use runtime::transaction::{
     ContractTransientCoins, OfferBackedObservedState, OfferBindingOptions,
@@ -51,6 +54,9 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_shielded_merge_oracle_fixture::RETAINED_IR,
     )?;
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("shielded merge requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
     let name = if immediate {
         "receive_then_merge"
     } else {
@@ -58,19 +64,25 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
     };
     let mut rng = StdRng::seed_from_u64(0x0207_0000 + u64::from(immediate));
     let initial = c::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let (_, verifier, operation) = v3::load_operation(root, name)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        name,
+        operation,
+        &mut rng,
+    );
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    // Three input-side proofs in the transient case use more fee capacity;
-    // funding remains separate from the user's colored coin conservation.
-    tokio::runtime::Builder::new_current_thread()
+    let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(fees.give_fee_token(&mut rng, 10));
-    fees.ledger.contract = fees
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
+        .build()?;
+    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
+    // Three input-side proofs in the transient case use more fee capacity.
+    // Fund deployment and the merge separately from the colored offer.
+    executor.block_on(fees.give_fee_token(&mut rng, 10));
+    v3::apply_funded_deployment(
+        root, name, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let a = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([1; 32]),
         FixedBytes::new([2; 32]),
@@ -251,36 +263,46 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
     )?;
     assert_eq!(replay.context.state, native.context.query.state);
     assert_eq!(replay.context.effects, native.context.query.effects);
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{name}.verifier")),
-    )?))?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        name,
-        prepared.prototype(),
-        &verifier,
-    )?;
+    let standalone = v3::prove_standalone(root, name, name, prepared.prototype(), &verifier, None)?;
+    verify_separately(root, name, name)?;
     let tx = prepared.into_transaction(
         &mut rng,
         "local-test",
         Timestamp::from_secs(fees.time.to_secs() + 3600),
     );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0207_5052 + u64::from(immediate)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("{name} Ledger 9 transaction proving failed: {error:?}"))?;
     let sealed = proven.seal(StdRng::seed_from_u64(0x0207_5345 + u64::from(immediate)));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
+    let sealed = executor.block_on(fees.balance_tx(rng, sealed, &resolver))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls
+        .next()
+        .ok_or("shielded merge transaction has no call")?;
+    let ProofVersioned::V3(transaction_proof) = &call.proof else {
+        return Err("shielded merge transaction proof is not v3".into());
+    };
+    if transaction_proof == &standalone
+        || calls.next().is_some()
+        || v3::positive_fee_dust_spends(&sealed) == 0
+    {
+        return Err("shielded merge transaction proof or Dust spend differs".into());
+    }
+    let mut transaction_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut transaction_bytes)?;
+    v3::write_new(
+        root.join(format!("{name}-transaction.bin")),
+        &transaction_bytes,
+    )?;
+    v3::write_new(
+        root.join(format!("{name}-transaction.proof")),
+        &transaction_proof.0,
+    )?;
     let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), fees.time)?;
     let context = TransactionContext {
         ref_state: ledger.clone(),
@@ -296,10 +318,12 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
         matches!(result, TransactionResult::Success(_)),
         "{result:?}"
     );
-    assert_eq!(
-        updated.contract.get(&address).unwrap().data,
-        native.context.query.state
-    );
+    let applied = updated
+        .contract
+        .get(&address)
+        .ok_or("shielded merge contract disappeared")?;
+    assert_eq!(applied.data, native.context.query.state);
+    assert_eq!(applied.operations, deploy.initial_state.operations);
     assert_eq!(
         updated.zswap.first_free,
         start + if immediate { 2 } else { 1 }
@@ -319,15 +343,46 @@ fn run_case(root: &Path, immediate: bool) -> Result<(), Box<dyn Error>> {
             .map(|owner| **owner),
         Some(address)
     );
-    for nullifier in expected_nullifiers {
-        assert!(updated.zswap.nullifiers.contains_key(&nullifier));
+    for nullifier in &expected_nullifiers {
+        assert!(updated.zswap.nullifiers.contains_key(nullifier));
     }
     assert!(matches!(
         updated.zswap.try_apply(&offer, None),
-        Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(_))
+        Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found))
+            if expected_nullifiers.contains(&found)
     ));
+    let (replayed, replay_result) = updated.apply(
+        &verified,
+        &TransactionContext {
+            ref_state: updated.clone(),
+            ..context
+        },
+    );
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != updated
+    {
+        return Err(format!("{name} replay refused incorrectly: {replay_result:?}").into());
+    }
+    let mut after_bytes = Vec::new();
+    let mut replay_bytes = Vec::new();
+    tagged_serialize(&updated, &mut after_bytes)?;
+    tagged_serialize(&replayed, &mut replay_bytes)?;
+    if after_bytes != replay_bytes {
+        return Err(format!("{name} replay changed the ledger bytes").into());
+    }
+    v3::write_new(root.join(format!("{name}-ledger-after.bin")), &after_bytes)?;
+    v3::write_new(
+        root.join(format!("{name}-ledger-replay.bin")),
+        &replay_bytes,
+    )?;
     println!(
-        "{name}: seeded frontier 2, genuine inputs, merged self 42, separate Dust, default-strict proof/application and nullifier replay rejection passed"
+        "{name}: seeded frontier 2, genuine inputs, merged self 42, separate Dust, funded default-strict Ledger 9 application and exact nullifier and transaction replay refusal passed"
     );
     Ok(())
 }
