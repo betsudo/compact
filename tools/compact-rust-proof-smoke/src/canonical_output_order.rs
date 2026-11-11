@@ -23,6 +23,7 @@ use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{
     OfferBackedObservedState, OfferBindingOptions, PersistentOutputAllocation,
 };
+use std::ffi::OsString;
 
 const NAME: &str = "distribute";
 
