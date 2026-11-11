@@ -799,11 +799,24 @@ proved call under default strictness. Replaying the call returned
 `IntentAlreadyExists` and preserved identical ledger bytes. The runner
 refused a substituted Counter IR and an external proof provider.
 
-The next named core case is election topic. Compiling the original
-election source independently reproduced the v2 reader refusal for its
-v3 output. The original topic, phase and voter circuits model at k13.
-Commit and reveal model at k14. Their source, witness and state
-assertions remain part of the required gate.
+At `91349673e`, all five named election commands passed. The current
+compiler reproduced the retained election IR and linked Rust. The
+eleven cases cover the Unicode topic, four phase transitions including
+the stable final phase, two voter insertions with ordered witnesses,
+and both commit and reveal ballots. Each passed separate proof
+verification and corruption refusal, funded deployment, an
+independently proved default-strict call and exact unchanged replay
+refusal. The topic, phase and voter circuits model at k13. Commit and
+reveal model at k14. Missing and substituted source were refused before
+key loading. Several cases deploy their exact seeded pre-call state to
+test a particular transition in isolation.
+
+The next named commands are Zerocash mint and spend. Both independently
+reproduced a v2 reader refusal on current v3 output. Mint models at
+k13/7784 rows and spend at k15/24025 rows. The spend cases use the
+contract's own commitment state. Their current-root and historical-root
+paths, ordered witnesses, ciphertext and commitment checks remain
+required.
 
 Exact-head core and integration qualification remains open. The
 local test results here are from macOS arm64.
