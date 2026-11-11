@@ -75,3 +75,9 @@ The local `ledger9-rustbackend` ref at `6f4e5948f` records the Rust backend port
 The read-only fixture audit found five v3 compiler crashes in DID, its digest reducer, a Jubjub Cell, a nested enum and a nested point map. This branch adapts the physical ledger encoding from the earlier Compact fix at `ee345ee15` to the current ZKIR v3 emitter. It writes each Jubjub point as two field coordinates and binds each public read as a typed point. The default path encodes the identity point as `(0, 1)`. The regression runs the generated TypeScript through round trip, both guarded read branches and reset with the v3 preimage checker. The v2 checker covers round trip and guarded reads. A separate probe reproduced the existing v2 default-reset transcript mismatch.
 
 Mixed native values with a zero-width unsigned field require a separate layout fix. The current compiler rejects the ambiguous alignment at the source. Generic native-type hash inputs and Merkle path recomputation also remain separate from the repaired ledger operand and leaf encoding.
+
+## Ordinary Rust fixtures
+
+The first regeneration covers Counter, Boolean Cell, Jubjub Cell, Map and List. The current compiler emits ABI 54 in each library. The isolated macOS arm64 workspace used the published Ledger 9 graph and passed all 20 existing tests with all features and targets. The compiler regenerated these libraries from their Compact sources with Rust 1.99 formatting. The fixture test sources and coordinate oracle remain the same.
+
+The full audit after the Jubjub repair successfully emitted all 255 ordinary fixtures. It still encountered the 29 intentionally refused Ledger 8 functional recipes. Port fixture manifests and independent oracle consumers in cohorts, and qualify the functional Ledger 9 entry separately before switching its recipes.
