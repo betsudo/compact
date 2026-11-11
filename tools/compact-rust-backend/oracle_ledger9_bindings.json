@@ -205,8 +205,16 @@
     },
     "tests-rust-backend/ternary-cond-oracle/tests/ternary_cond_oracle.rs": {
       "historical_sha256": "1fec7dee7318349f74baabe2c56aa544c9dbd1baa605acf652d1355cdbf5d365",
-      "current_sha256": "4abb7cb93bb51d8141922a246b57b1c2d4ffca42b17abcc771b3dacc41e915ac",
-      "capture_paths": []
+      "current_sha256": "4200575429731538cf2d7fbb7da463c70eac9db8fd2f37cfa3feceeacc99dae4",
+      "capture_paths": [
+        "runtime-rs/tests/fixtures/adr221-ternary-true.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-annotated-uint8.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-comparison.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-native-arg.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-nested-if.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-struct-member.json",
+        "runtime-rs/tests/fixtures/ternary-recorded-vector-element.json"
+      ]
     },
     "tests-rust-backend/tuple-oracle/tests/tuple_oracle.rs": {
       "historical_sha256": "39f82a2077d089db8be58a2cee66b698db2c29057f984018a2f087506f76a49f",
@@ -242,6 +250,11 @@
       "current": "runtime-rs/tests/fixtures/ledger9-adr221-call-arg-false.json",
       "historical_sha256": "9a258359cbb546bd0bc25d138e6721a3f0d77c580d784f020cf0ce9ef445815d",
       "current_sha256": "26b4f90220dbf02f96bd03fcb9ef26bfc6358bb392b967b0506370ace9a0d8d2"
+    },
+    "runtime-rs/tests/fixtures/adr221-ternary-true.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-adr221-ternary-true.json",
+      "historical_sha256": "a2724e256ecec21161570965d2d07764967a7cf07045a1c64deb9c1abc3112d3",
+      "current_sha256": "b61f43617a2b52b57122346feea3b489ee7f78c9b5f1a5fb6ba3907574a6c5ae"
     },
     "runtime-rs/tests/fixtures/bounded-uint-oracle.json": {
       "historical_sha256": "3fe0422bead9263ce05a8ef36593bd2e8d1c00dc9cc7db6a70841a46f592b69f",
@@ -337,6 +350,36 @@
       "historical_sha256": "9a61bba3780218745159d488de63004eb84012dc4b56dbff2762fb54e2b88601",
       "current": "runtime-rs/tests/fixtures/ledger9-set-oracle.json",
       "current_sha256": "cb064b6b46c7709bbe7925bb9291f83f4de721b62433babaeb263727af6a31e9"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-annotated-uint8.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-annotated-uint8.json",
+      "historical_sha256": "088ac226cb34a1f70f91e674500ed970f85084ceb0d6d54f605f7547b8921c87",
+      "current_sha256": "156167469cc83ca223eb0cbfd1a527103344605ef594019abc070df782c3938f"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-comparison.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-comparison.json",
+      "historical_sha256": "b0399a22b181f6e809bace46ec5c13244d0fdebec47122fbb0f9c0562c580096",
+      "current_sha256": "435a955ccdba8b6362d0039d64303a600df8dbfed7370de2efe1ac39850ac036"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-native-arg.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-native-arg.json",
+      "historical_sha256": "4cd96dd2b5ebe29973ed08095a8a82934f99f25324c4719093e8798039fec4d4",
+      "current_sha256": "17540a45f8b1a7aa8f71573f7b395cd75d878cec3dede599c478a9cfef4c69a9"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-nested-if.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-nested-if.json",
+      "historical_sha256": "d050b6efe42261e463f8d6103dbe26ae531636552f0d991e3b103052aecd56aa",
+      "current_sha256": "15cc3fa41e90e21330eddd17cd0a69d11aa9c08a496eda6ad08116285d93a528"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-struct-member.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-struct-member.json",
+      "historical_sha256": "afb11c6c8ca867c9a24d9eb402150eadf814eda4ff4f407a3f5e21c77065bcae",
+      "current_sha256": "6577ef1f14ccb009480729fa376e9a55938ce454a37ad8f8b527a72a2798a3ad"
+    },
+    "runtime-rs/tests/fixtures/ternary-recorded-vector-element.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-ternary-recorded-vector-element.json",
+      "historical_sha256": "06b2af3a87a22cd1e0f4d17d476cfa4028357999f67fdd9333420d7b3ba7b01e",
+      "current_sha256": "4eb43f14be48ad5730c2b67adb980154ba57e7746ea1002bf86f7e0dffea3294"
     },
     "runtime-rs/tests/fixtures/tuple-oracle.json": {
       "historical_sha256": "ee047edc8bcea9a6cfc7adf36dcd265bd525e7baab122b26e9e6dfedc93ea8a9",
