@@ -15,6 +15,7 @@
 
 //! Prove both ballots through membership guards and ordered private callbacks.
 use super::election_membership_support as support;
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_election_oracle_fixture::{ledger_contract as contract, types::PermissibleVotes};
 
