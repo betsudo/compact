@@ -60,12 +60,21 @@ class CurrentSourceRegistryTests(unittest.TestCase):
             'test-center/test-contracts/micro-dao.compact':
                 '39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d',
         }
+        # These wrappers expose their exact generated source to the v3 proof
+        # admission check and carry the complete license header.
+        refreshed_proof_wrappers = {
+            'tests-rust-backend/field-observation-oracle/lib.rs':
+                '328f4facdc1669b29d91d51aeff64d8d7def93fe6fa2bc67b22e3622adfb26ce',
+            'tests-rust-backend/kernel-shielded-effects-oracle/lib.rs':
+                '17d3ab2c3fca08c4a4409a76ddb35fb989663cc878422640decc47119bf3ad8a',
+        }
         self.assertEqual(
             fingerprint(directory / 'tests/micro-dao-source-pre-analyzed-bounds-schema20-ir.json'),
             '519e534e844b3cc4ee2f111f39e8634f199853aa9b888698cc2b58ef8f6c574b')
         originals = {row['source']: row for row in baseline['sources']}
         runtime_pins = tomllib.loads((inventory.ROOT / 'runtime-rs/Cargo.toml').read_text())['dependencies']
         migrated_manifest_inputs = set()
+        migrated_proof_wrappers = set()
         for row in current['sources']:
             original = originals[row['source']]
             if row['source'] in refreshed:
@@ -81,6 +90,11 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                 manifest = inventory.ROOT / path
                 self.assertTrue(path.startswith('tests-rust-backend/'))
                 self.assertEqual(fingerprint(manifest), pin)
+                if path in refreshed_proof_wrappers:
+                    self.assertEqual(pin, refreshed_proof_wrappers[path])
+                    migrated_proof_wrappers.add(path)
+                    pins[path] = old_pins[path]
+                    continue
                 if path == 'tests-rust-backend/opaque-observed-boundary-source/tests/nested.rs':
                     self.assertEqual(pin, 'f4d057c24402594ca22f0bea7f727c4bf15456a9a1df5042f1e5cd9ae64e6005')
                     pins[path] = old_pins[path]
@@ -94,6 +108,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                 migrated_manifest_inputs.add(path)
                 pins[path] = old_pins[path]
         self.assertEqual(len(migrated_manifest_inputs), 66)
+        self.assertEqual(migrated_proof_wrappers, refreshed_proof_wrappers.keys())
         self.assertEqual(current, baseline)
 
     def test_mixed_width_current_and_historical_ir_remain_distinct_exact_inputs(self):
