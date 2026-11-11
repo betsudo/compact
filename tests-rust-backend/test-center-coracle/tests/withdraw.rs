@@ -149,7 +149,7 @@ fn original_withdraw_native_recorded_matches_independent_ts() {
 }
 fn withdraw_parity() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/coracle-withdraw.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-coracle-withdraw.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

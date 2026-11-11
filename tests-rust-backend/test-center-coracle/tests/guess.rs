@@ -139,7 +139,7 @@ fn check(out: CircuitResult<Private, ()>, row: &Value) {
 #[test]
 fn original_guess_native_recorded_matches_ts() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/coracle-guess.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-coracle-guess.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {
@@ -163,13 +163,16 @@ fn original_guess_native_recorded_matches_ts() {
             row["name"]
         );
         if let Some(error) = row["error"].as_str() {
-            let err = out.err().unwrap().to_string();
-            assert_eq!(err, recorded.err().unwrap().to_string());
-            if row["name"] == "zeroGas" {
-                assert!(err.contains("OutOfGas"));
-                assert!(error.contains("gas budget"));
+            let err = out.err().unwrap();
+            assert_eq!(err, recorded.err().unwrap());
+            if row["options"]["gasLimit"].is_object() {
+                assert_eq!(error, "Error: ran out of gas budget");
+                assert_eq!(
+                    err,
+                    runtime::CompactError::LedgerQueryRejected("Execution(OutOfGas)".into())
+                );
             } else {
-                assert_eq!(err, error);
+                assert_eq!(err.to_string(), error);
             }
         } else {
             assert_eq!(row["queries"].as_array().unwrap().len(), 8);
