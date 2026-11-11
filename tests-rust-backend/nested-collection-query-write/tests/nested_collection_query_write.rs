@@ -72,7 +72,7 @@ fn assert_replay(call: &RecordedCircuitResult<(), ()>) {
 #[test]
 fn recorded_empty_queries_match_native_oracle_and_replay_in_both_states() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-collection-query-write.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-collection-query-write.json"
     ))
     .unwrap();
     let trace: serde_json::Value = serde_json::from_str(include_str!(
@@ -141,7 +141,7 @@ fn recorded_empty_queries_match_native_oracle_and_replay_in_both_states() {
 #[test]
 fn nested_queries_write_booleans_with_typescript_parity() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-collection-query-write.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-collection-query-write.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();
@@ -291,7 +291,7 @@ fn recorded_seed_keeps_set_then_map_insertion_and_replacement() {
             let set_empty = check_set_empty(member.context).unwrap();
             let map_empty = check_map_empty(set_empty.context).unwrap();
             let oracle: serde_json::Value = serde_json::from_str(include_str!(
-                "../../../runtime-rs/tests/fixtures/nested-collection-query-write.json"
+                "../../../runtime-rs/tests/fixtures/ledger9-nested-collection-query-write.json"
             ))
             .unwrap();
             assert_eq!(

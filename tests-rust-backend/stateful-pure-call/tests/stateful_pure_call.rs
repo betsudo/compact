@@ -46,7 +46,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn stateful_pure_helper_calls_match_typescript_and_ledger_bytes() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-pure-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-pure-call.json"
     ))
     .unwrap();
     let input = Field::from(7_u64);
@@ -71,7 +71,7 @@ fn stateful_pure_helper_calls_match_typescript_and_ledger_bytes() {
 #[test]
 fn recorded_pure_field_return_after_write_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-pure-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-pure-call.json"
     ))
     .unwrap();
     let native = save(

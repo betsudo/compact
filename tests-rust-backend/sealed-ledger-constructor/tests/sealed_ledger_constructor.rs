@@ -37,7 +37,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn sealed_fields_match_typescript_initial_and_updated_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/sealed-ledger-constructor.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-sealed-ledger-constructor.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

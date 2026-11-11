@@ -43,7 +43,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn stateful_calls_execute_twice_and_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-circuit-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-circuit-call.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(()))
@@ -68,7 +68,7 @@ fn stateful_calls_execute_twice_and_match_typescript_state() {
 #[test]
 fn nested_recorded_calls_preserve_oracle_state_and_replay_effects() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-circuit-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-circuit-call.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(()))

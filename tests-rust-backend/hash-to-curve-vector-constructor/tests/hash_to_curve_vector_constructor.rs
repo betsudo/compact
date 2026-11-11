@@ -37,7 +37,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn curve_coordinate_vector_constructor_matches_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/hash-to-curve-vector-constructor.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-hash-to-curve-vector-constructor.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

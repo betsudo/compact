@@ -93,7 +93,7 @@ fn outcome<T: ToString>(result: Result<T, CompactError>) -> serde_json::Value {
 #[test]
 fn mixed_width_oracle_matches_typescript_at_boundaries() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/mixed-width-operand-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-mixed-width-operand-oracle.json"
     ))
     .unwrap();
 
@@ -197,7 +197,7 @@ fn mixed_width_oracle_matches_typescript_at_boundaries() {
 #[test]
 fn recorded_mixed_width_matching_preserves_guard_and_counter_vm() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/mixed-width-operand-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-mixed-width-operand-oracle.json"
     ))
     .unwrap();
     let success = &oracle["recordedEvidence"]["recordMatchingSuccess"];
@@ -301,7 +301,7 @@ fn recorded_mixed_width_matching_preserves_guard_and_counter_vm() {
 #[test]
 fn recorded_mixed_width_product_guard_precedes_counter_vm() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/mixed-width-operand-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-mixed-width-operand-oracle.json"
     ))
     .unwrap();
     let success = &oracle["recordedEvidence"]["recordPinnedSuccess"];

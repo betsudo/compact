@@ -74,7 +74,7 @@ fn normalized_ops(mut value: serde_json::Value) -> serde_json::Value {
 #[test]
 fn uint128_to_field_cast_preserves_high_bits_and_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/field-cast-uint128.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-field-cast-uint128.json"
     ))
     .unwrap();
     let value = oracle["input"].as_str().unwrap().parse::<u128>().unwrap();
@@ -101,7 +101,7 @@ fn uint128_to_field_cast_preserves_high_bits_and_matches_typescript() {
 #[test]
 fn recorded_wide_field_cast_matches_typescript_queries_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/field-cast-uint128.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-field-cast-uint128.json"
     ))
     .unwrap();
     let input = BoundedUint::<{ u128::MAX }>::new(

@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 use compact_rust_call_arg_declared_type_fixture::ledger_contract as c;
 use midnight_compact_runtime as r;
@@ -12,7 +24,7 @@ use r::transaction::{Observation, ObservedContractState, VerifierKey};
 #[test]
 fn observed_declared_field_commitments_match_manual_and_original_ts() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     let mut bytes = Vec::new();

@@ -40,7 +40,7 @@ fn state_hex(state: runtime::ledger::StateValue<runtime::ledger::DefaultDB>) -> 
 #[test]
 fn terminal_bindings_match_typescript_results_state_gas_and_private_order() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/terminal-lexical-return-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-terminal-lexical-return-oracle.json"
     ))
     .unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 13);

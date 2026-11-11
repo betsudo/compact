@@ -36,7 +36,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn constructor_kernel_self_matches_typescript_address_cell() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/kernel-self-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-kernel-self-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();

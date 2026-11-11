@@ -30,7 +30,7 @@ use runtime::recording::RecordedCircuitResult;
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/chunked-cell.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-chunked-cell.json"
     ))
     .unwrap()
 }

@@ -43,7 +43,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn nested_map_queries_match_typescript_with_string_key() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/opaque-string-map-query-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-opaque-string-map-query-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();
@@ -168,7 +168,7 @@ fn check_call<Output>(
 #[test]
 fn closed_opaque_map_calls_match_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/opaque-string-map-query-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-opaque-string-map-query-oracle.json"
     ))
     .unwrap();
     let key = OpaqueString::from("asset-1");

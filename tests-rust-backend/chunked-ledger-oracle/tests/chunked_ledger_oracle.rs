@@ -34,7 +34,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn nested_state_matches_typescript_bytes_and_field_values() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/chunked-ledger-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-chunked-ledger-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

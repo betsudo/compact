@@ -131,7 +131,7 @@ fn normalized_vm_ops(mut value: serde_json::Value) -> serde_json::Value {
 #[test]
 fn declared_call_arguments_match_typescript_state_bytes() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     let captured = oracle["circuits"].as_object().unwrap();
@@ -180,7 +180,7 @@ fn declared_call_arguments_match_typescript_state_bytes() {
 #[test]
 fn recorded_persistent_commitments_match_typescript_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     for name in ["commitSmall", "commitU128", "commitFieldOnly"] {
@@ -224,7 +224,7 @@ fn recorded_persistent_commitments_match_typescript_trace_and_gas() {
 #[test]
 fn recorded_pair_hashes_match_typescript_value_state_gas_and_full_vm() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     for name in ["hashPersistentVec", "hashTransientVec"] {
@@ -290,7 +290,7 @@ fn recorded_pair_hashes_match_typescript_value_state_gas_and_full_vm() {
 #[test]
 fn recorded_closed_pure_field_call_matches_typescript_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     let native_context = initial_state(ConstructorContext::new(()))
@@ -326,7 +326,7 @@ fn recorded_closed_pure_field_call_matches_typescript_trace_and_gas() {
 #[test]
 fn recorded_field_pair_hash_calls_match_typescript_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     for name in [
@@ -523,7 +523,7 @@ fn recorded_impure_field_helper_uses_the_observed_nonzero_cell_value() {
 #[test]
 fn recorded_inlined_boolean_hash_assertion_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     let native_context = initial_state(ConstructorContext::new(()))
@@ -559,7 +559,7 @@ fn recorded_inlined_boolean_hash_assertion_matches_typescript() {
 #[test]
 fn recorded_vector_witness_let_matches_typescript_and_advances_private_state_once() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/call-arg-declared-type.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-call-arg-declared-type.json"
     ))
     .unwrap();
     for name in ["witnessConst", "witnessBare"] {

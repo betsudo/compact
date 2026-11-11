@@ -46,7 +46,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn local_pure_helper_is_callable_without_becoming_an_export() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/internal-pure-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-internal-pure-call.json"
     ))
     .unwrap();
     assert_eq!(
@@ -73,7 +73,7 @@ fn local_pure_helper_is_callable_without_becoming_an_export() {
 #[test]
 fn recorded_scalar_pure_argument_matches_typescript_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/internal-pure-call.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-internal-pure-call.json"
     ))
     .unwrap();
     let native = save(

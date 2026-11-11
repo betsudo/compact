@@ -154,7 +154,7 @@ fn normalized_vm_ops(ops: &mut serde_json::Value) {
 #[test]
 fn recorded_packet_head_matches_typescript_on_empty_and_populated_lists() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-list-shapes.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-list-shapes.json"
     ))
     .unwrap();
     let packet = Packet {
@@ -255,7 +255,7 @@ fn recorded_packet_head_matches_typescript_on_empty_and_populated_lists() {
 #[test]
 fn recorded_choice_head_matches_typescript_with_distinct_maybe_name() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-list-shapes.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-list-shapes.json"
     ))
     .unwrap();
     for (populated, key) in [(false, "emptyChoiceHead"), (true, "populatedChoiceHead")] {
@@ -440,7 +440,7 @@ fn assert_result(actual: &CircuitResult<u64, bool>, oracle: &serde_json::Value, 
 #[test]
 fn generated_list_witness_types_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-list-shapes.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-list-shapes.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(0_u64)).unwrap();
@@ -630,7 +630,7 @@ mod recording_parity {
     #[test]
     fn five_recorded_and_observed_list_witnesses_match_native_and_ts() {
         let oracle: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../runtime-rs/tests/fixtures/witness-list-shapes.json"
+            "../../../runtime-rs/tests/fixtures/ledger9-witness-list-shapes.json"
         ))
         .unwrap();
         for populated in [false, true] {

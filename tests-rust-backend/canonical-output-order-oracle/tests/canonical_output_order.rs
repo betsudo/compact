@@ -100,7 +100,7 @@ fn encoded_recipient(r: &CoinRecipient) -> Value {
 #[test]
 fn two_provisional_outputs_match_independent_typescript() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/canonical-output-order-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-canonical-output-order-oracle.json"
     ))
     .unwrap();
     for row in rows["rows"].as_array().unwrap() {

@@ -37,7 +37,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn module_constructor_and_counter_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/module-boolean-constructor.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-module-boolean-constructor.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

@@ -86,7 +86,7 @@ impl contract::TryWitnesses<u64> for CountingWitness {
 
 fn oracle_rows() -> Vec<Value> {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-effect-order.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-effect-order.json"
     ))
     .unwrap();
     let rows = capture["rows"].as_array().unwrap().clone();

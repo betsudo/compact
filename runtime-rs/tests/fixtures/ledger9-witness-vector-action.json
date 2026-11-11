@@ -1,0 +1,191 @@
+{
+  "keepResult": {
+    "calls": 1,
+    "privateState": 8,
+    "stateHex": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a5c0008084104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010808410000302c7265757365526573756c74000c000000081c2000042408010404289003043f806783ee1bf562b450a012887cb4f0943f4b6107359b612ac9c5f6488945334820002c286b656570526573756c7408302000043408010404389003043f80a9e9ad6b1a0bab23116dc32da47eb6ec865c87feba9bf2604540242ccca8871000383464697363617264526573756c7408402000044408010404489003043f809986acd5ae6c67f0d1ea781fc7eccc5a0761ce5ffd20e8c443790976f6aed650000400405050502c503c50505050505050504c5008020c1408501854501003000400",
+    "privateTranscriptOutputs": [
+      {
+        "valueAtoms": [
+          [
+            8
+          ]
+        ],
+        "alignment": [
+          {
+            "tag": "atom",
+            "value": {
+              "tag": "field"
+            }
+          }
+        ]
+      }
+    ],
+    "trace": {
+      "publicTranscriptShape": [
+        {
+          "kind": "push",
+          "storage": false
+        },
+        {
+          "kind": "push",
+          "storage": true
+        },
+        {
+          "kind": "ins",
+          "cached": false,
+          "n": 1
+        }
+      ],
+      "privateTranscriptCount": 1,
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "36",
+            "bytesDeleted": "36"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1233942932",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      }
+    }
+  },
+  "discardResult": {
+    "calls": 1,
+    "privateState": 8,
+    "stateHex": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a5c0008074104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010807410000302c7265757365526573756c74000c000000081c2000042408010404289003043f806783ee1bf562b450a012887cb4f0943f4b6107359b612ac9c5f6488945334820002c286b656570526573756c7408302000043408010404389003043f80a9e9ad6b1a0bab23116dc32da47eb6ec865c87feba9bf2604540242ccca8871000383464697363617264526573756c7408402000044408010404489003043f809986acd5ae6c67f0d1ea781fc7eccc5a0761ce5ffd20e8c443790976f6aed650000400405050502c503c50505050505050504c5008020c1408501854501003000400",
+    "privateTranscriptOutputs": [
+      {
+        "valueAtoms": [
+          [
+            8
+          ]
+        ],
+        "alignment": [
+          {
+            "tag": "atom",
+            "value": {
+              "tag": "field"
+            }
+          }
+        ]
+      }
+    ],
+    "trace": {
+      "publicTranscriptShape": [
+        {
+          "kind": "push",
+          "storage": false
+        },
+        {
+          "kind": "push",
+          "storage": true
+        },
+        {
+          "kind": "ins",
+          "cached": false,
+          "n": 1
+        }
+      ],
+      "privateTranscriptCount": 1,
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "36",
+            "bytesDeleted": "36"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1233942932",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      }
+    }
+  },
+  "reuseResult": {
+    "calls": 1,
+    "privateState": 8,
+    "stateHex": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a5c0008094104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010809410000302c7265757365526573756c74000c000000081c2000042408010404289003043f806783ee1bf562b450a012887cb4f0943f4b6107359b612ac9c5f6488945334820002c286b656570526573756c7408302000043408010404389003043f80a9e9ad6b1a0bab23116dc32da47eb6ec865c87feba9bf2604540242ccca8871000383464697363617264526573756c7408402000044408010404489003043f809986acd5ae6c67f0d1ea781fc7eccc5a0761ce5ffd20e8c443790976f6aed650000400405050502c503c50505050505050504c5008020c1408501854501003000400",
+    "privateTranscriptOutputs": [
+      {
+        "valueAtoms": [
+          [
+            8
+          ]
+        ],
+        "alignment": [
+          {
+            "tag": "atom",
+            "value": {
+              "tag": "field"
+            }
+          }
+        ]
+      }
+    ],
+    "trace": {
+      "publicTranscriptShape": [
+        {
+          "kind": "push",
+          "storage": false
+        },
+        {
+          "kind": "push",
+          "storage": true
+        },
+        {
+          "kind": "ins",
+          "cached": false,
+          "n": 1
+        },
+        {
+          "kind": "push",
+          "storage": false
+        },
+        {
+          "kind": "push",
+          "storage": true
+        },
+        {
+          "kind": "ins",
+          "cached": false,
+          "n": 1
+        }
+      ],
+      "privateTranscriptCount": 1,
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "36",
+            "bytesDeleted": "36"
+          }
+        },
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "36",
+            "bytesDeleted": "36"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1233942932",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      }
+    }
+  }
+}
