@@ -18,7 +18,7 @@ The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter
 
 The Set and Map transition sources retain the export sets of the existing Rust fixtures. Capture them with `compactc --skip-zk` in a directory that resolves the pinned npm packages. Run `runtime-rs/tests/fixtures/capture-ledger9-counter.mjs` or `capture-ledger9-collection.mjs` with the generated contract entry and matching Compact runtime entry. The collection script also takes `initial`, `set`, `map`, or `list`. The tests compare full serialized contract states.
 
-The migration branch is an integration worktree. The workspace still has generated fixtures with direct Ledger 8 dependency pins. The Rust compiler compatibility record now selects Ledger 9. The Nix frontend/TypeScript distribution still needs its own migration. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for this runtime slice.
+The migration branch is an integration worktree. The workspace still has generated fixtures with direct Ledger 8 dependency pins. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
 
 Port the remaining fixture and proof consumers and pass the required Linux, package and end-to-end gates before switching the distribution default.
 
@@ -47,3 +47,11 @@ Next, migrate the maintained proof gate and TypeScript/Nix package pairing, then
 ## Rust 1.99 toolchain
 
 The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the official release manifest hash and uses the matching Cargo, compiler and standard library. Linux uses the matching musl standard library and keeps the static linker and ELF checks. The standalone compiler lock is selected from the workspace lock and its registry package identities, checksums and retained edges are audited before a locked build.
+
+## TypeScript package pairing
+
+This branch's synchronous Compact runtime uses minor `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
+
+Build `.#compactc` and `.#runtime.package`. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
+
+The native macOS arm64 Nix runtime and compiler packages built, the runtime tests passed, and the compiler suite passed in both existing JavaScript check modes. The distributed native and WASM ZKIR tool pins and the maintained proof gates still need their Ledger 9 cutover.

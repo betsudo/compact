@@ -59,6 +59,7 @@
   mkPackage = {
     pkgs,
     src,
+    nodeModulesAttrs ? {},
     nixDependenciesMap ? {},
     overrideBuildAttrs ? { common = lib.trivial.id; package = lib.trivial.id; tests = lib.trivial.id; lints = lib.trivial.id; }
   }: let
@@ -82,7 +83,7 @@
           in (path: type: checkPath path);
         })
         .outPath;
-    };
+    } // nodeModulesAttrs;
     packageMeta = loadPackageMeta {
       inherit (node-modules-attrs) src;
     };

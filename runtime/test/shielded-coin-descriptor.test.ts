@@ -14,7 +14,7 @@
 // limitations under the License.
 import { describe, expect, test } from 'vitest';
 import * as r from '../src/index.js';
-import * as ocrt from '@midnight-ntwrk/onchain-runtime-v3';
+import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 
 const max64 = (1n << 64n) - 1n;
 const max128 = (1n << 128n) - 1n;

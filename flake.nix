@@ -34,12 +34,6 @@
       url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3"; # zkir-v2
       inputs.zkir.follows = "zkir";
     };
-    onchain-runtime-v3 = {
-      # dependency for compact-runtime release
-      # all notes for the zkir input applies to onchain-runtime input too.
-      url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
-      inputs.zkir.follows = "zkir";
-    };
     zkir-wasm = {
       # dependency for test-center
       url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
@@ -74,7 +68,6 @@
   outputs = {
     self,
     zkir,
-    onchain-runtime-v3,
     zkir-wasm,
     zkir-v3,
     zkir-v3-wasm,
@@ -99,11 +92,6 @@
         sources = (import ./_sources/generated.nix) {inherit (pkgs) fetchgit fetchurl fetchFromGitHub;};
         nanopass = sources.nanopass.src;
         rough-draft = sources.rough-draft.src;
-        onchain-runtime-npm-compat = import ./nix/compat/npm-scope-compat.nix {
-          inherit pkgs;
-          profile = "onchain-runtime-v3";
-          upstream = onchain-runtime-v3.packages.${system}.onchain-runtime-wasm;
-        };
         zkir-v2-npm-compat = import ./nix/compat/npm-scope-compat.nix {
           inherit pkgs;
           profile = "zkir-v2";
@@ -162,7 +150,6 @@
           overlays.pretzel-fetcher = (import pretzel/fetcher.nix).overlay;
           overlays.pretzel-js = lib.pretzel-js.overlay;
           packages.pretzel-dry-install = dry-install.package;
-          packages.onchain-runtime-npm-scope-compat = onchain-runtime-npm-compat.package;
           packages.zkir-v2-npm-scope-compat = zkir-v2-npm-compat.package;
           packages.runtime = let
             inclusive-src = inclusive.lib.inclusive ./. [
@@ -180,19 +167,13 @@
             #name = "compact-runtime";
             #version = runtime-version;
             src = "${inclusive-src}/runtime";
+            # Dependency installation only has the two npm manifests. The
+            # runtime's prepare script runs when packing the full source.
+            nodeModulesAttrs.npm_config_ignore_scripts = "true";
             overrideBuildAttrs = {
-              common = pkgs.lib.trivial.id;
-              package = oldAttrs: oldAttrs // {
-                buildInputs = [ chez ];
+              common = oldAttrs: oldAttrs // {
+                buildInputs = (oldAttrs.buildInputs or []) ++ [chez];
                 CHEZSCHEMELIBDIRS = "${inclusive-src}/compiler:${inclusive-src}/third_party/compiler";
-              };
-              tests = pkgs.lib.trivial.id;
-              lints = pkgs.lib.trivial.id;
-            };
-
-            nixDependenciesMap = {
-              "@midnight-ntwrk/onchain-runtime-v3" = {
-                inherit (onchain-runtime-npm-compat) tarPath libPath;
               };
             };
           };
