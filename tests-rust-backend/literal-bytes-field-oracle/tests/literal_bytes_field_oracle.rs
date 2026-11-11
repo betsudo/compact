@@ -33,7 +33,7 @@ fn expected_field(value: &serde_json::Value) -> Field {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/literal-bytes-field-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-literal-bytes-field-oracle.json"
     ))
     .unwrap()
 }

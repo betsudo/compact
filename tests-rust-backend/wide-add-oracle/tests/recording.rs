@@ -49,7 +49,7 @@ impl c::TryWitnesses<Vec<u8>> for Values {
 #[test]
 fn wide_recording_matches_ts_full_width_and_lazy_outputs() {
     let rows: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/wide-add-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-wide-add-oracle.json"
     ))
     .unwrap();
     let initial = c::initial_state(r::context::ConstructorContext::new(Vec::<u8>::new())).unwrap();

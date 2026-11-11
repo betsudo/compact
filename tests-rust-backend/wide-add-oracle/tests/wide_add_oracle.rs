@@ -52,7 +52,7 @@ fn state_hex(state: runtime::ledger::StateValue<runtime::ledger::DefaultDB>) -> 
 #[test]
 fn native_wide_add_matches_independent_typescript_values_and_checked_errors() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/wide-add-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-wide-add-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

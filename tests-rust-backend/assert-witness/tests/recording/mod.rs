@@ -102,7 +102,7 @@ use compact_rust_assert_witness_fixture::ledger_contract as c;
 #[test]
 fn recorded_checked_value_preserves_assertion_prefix_and_empty_preparation() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../runtime-rs/tests/fixtures/assert-witness.json"
+        "../../../../runtime-rs/tests/fixtures/ledger9-assert-witness.json"
     ))
     .unwrap();
     let (state, key) = observation(&["checked_value"]);

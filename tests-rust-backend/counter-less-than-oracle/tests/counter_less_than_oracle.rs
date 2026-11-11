@@ -26,7 +26,7 @@ use runtime::recording::RecordedCircuitResult;
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/counter-less-than-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-counter-less-than-oracle.json"
     ))
     .unwrap()
 }

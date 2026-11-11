@@ -28,7 +28,7 @@ use runtime::ledger::{ContractAddress, DefaultDB, StateValue};
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/let-return-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-let-return-oracle.json"
     ))
     .unwrap()
 }

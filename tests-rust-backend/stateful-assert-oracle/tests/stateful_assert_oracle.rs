@@ -131,7 +131,7 @@ fn check_recorded<T: Clone + Into<runtime::fab::AlignedValue>>(
 #[test]
 fn nested_assertions_match_typescript_short_circuit_witnesses_queries_and_rejections() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-assert-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-assert-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {
