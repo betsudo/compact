@@ -40,8 +40,9 @@
     },
     "tests-rust-backend/call-arg-declared-type/tests/call_arg_declared_type.rs": {
       "historical_sha256": "b994f2d1ca32150da97ad72b14881f6a234856f12ac4fe93be0bcece17626bd6",
-      "current_sha256": "f06090208dfe69a89e7a475eb57f488a0c2210fc49ab0e9f5341e264a28a139b",
+      "current_sha256": "46d9b57e2860e2b7b3a6e08882ff9d01c3299fb71f1157ebab4cf3c202b9b6cc",
       "capture_paths": [
+        "runtime-rs/tests/fixtures/adr221-call-arg-false.json",
         "runtime-rs/tests/fixtures/call-arg-declared-type.json"
       ]
     },
@@ -237,6 +238,11 @@
     }
   },
   "captures": {
+    "runtime-rs/tests/fixtures/adr221-call-arg-false.json": {
+      "current": "runtime-rs/tests/fixtures/ledger9-adr221-call-arg-false.json",
+      "historical_sha256": "9a258359cbb546bd0bc25d138e6721a3f0d77c580d784f020cf0ce9ef445815d",
+      "current_sha256": "26b4f90220dbf02f96bd03fcb9ef26bfc6358bb392b967b0506370ace9a0d8d2"
+    },
     "runtime-rs/tests/fixtures/bounded-uint-oracle.json": {
       "historical_sha256": "3fe0422bead9263ce05a8ef36593bd2e8d1c00dc9cc7db6a70841a46f592b69f",
       "current": "runtime-rs/tests/fixtures/ledger9-bounded-uint-oracle.json",

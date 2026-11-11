@@ -386,7 +386,7 @@ fn recorded_field_pair_hash_calls_match_typescript_trace_and_gas() {
 #[test]
 fn impure_if_false_skips_the_store_with_exact_typescript_trace() {
     let capture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/adr221-call-arg-false.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-adr221-call-arg-false.json"
     ))
     .unwrap();
     assert_eq!(capture["mode"], "call-arg");
