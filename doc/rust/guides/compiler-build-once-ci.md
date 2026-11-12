@@ -84,17 +84,3 @@ and transfer costs need measurement before adoption.
 Release workflows retain their separate portable profiles and publication rules.
 Paused optional debugging/fuzzing workflows remain independent and are not enabled
 or migrated by this candidate.
-
-## Deferred experiment
-
-Forge CI adoption is deliberately deferred on `experiment/zkir-forge`. The
-primary compiler and backend have no Forge options, helper, dependency or
-workflow route. Compiler build-once sharing, bounded Rust checks, Cargo reuse
-and early lint controls are retained independently. Parking the experiment
-completes none of its former compiler/proof/Linux/performance acceptance.
-
-Selected contract-level reuse benefits are valid; whole-CI value is unproven.
-The earlier “1% key generation” interpretation was incomplete: 46 seconds
-measured only Forge-managed generation. Direct bypass generation was not
-separately timed; the total ZKIR/prover-key/verifier-key share remains unknown.
-Backend development does not depend on completing this experiment.

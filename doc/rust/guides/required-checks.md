@@ -50,13 +50,10 @@ The local-only delivery prepares the workflow and tests; it does not mutate
 GitHub rulesets or dispatch CI. A repository administrator must enable enforcement
 when the workflow is merged. Issue #654 records that remaining operational step.
 
-## Forge separation
+## Proof execution
 
-This required gate has no Forge dependency and uses ordinary tests. Forge
-adoption is deferred on `experiment/zkir-forge`; any later adoption must preserve actual
-proofs, verification, assertions and an uncached key-generation lane. Build caches
-are not cached test results. Do not add a key-cache setup cost to lanes that
-perform no key generation.
+Proof jobs generate keys with native ZKIR and run the proof, verification and
+assertion checks. Build caches reuse build inputs and compiled dependencies.
 
 ## Temporary repository workflow profiles
 

@@ -56,8 +56,3 @@ The optional [ProofLab fixture](local-proof-tests.md) reuses official Midnight p
 ## Current candidate status
 
 See [candidate qualification](candidate-qualification.md) for current bounded CI, full-gate and documentation status.
-
-## Deferred artifact-cache experiment
-
-Forge integration is deferred on `experiment/zkir-forge`; ordinary backend builds
-and required proof checks use the native tools directly.

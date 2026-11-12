@@ -897,8 +897,7 @@ profiles. This changes compilation, not the selected proofs or their assertions.
 Set `COMPACT_RUST_PROOF_PROFILE=dev` when running `check_compactc_target.py` for
 the original dev-profile qualification. Direct `cargo run` remains dev by default.
 Unknown profile overrides fail; no proof or test result is cached. The ordinary
-gate invokes native ZKIR directly for fresh key generation. Forge comparison
-helpers are parked on `experiment/zkir-forge`.
+gate invokes native ZKIR directly for fresh key generation.
 
 ```sh
 cargo fmt --all -- --check
