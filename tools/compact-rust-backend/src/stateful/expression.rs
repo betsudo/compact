@@ -577,6 +577,7 @@ fn render_operation_expression(
         Expr::TransientHash { .. }
         | Expr::PersistentHash { .. }
         | Expr::Keccak256 { .. }
+        | Expr::Sha512 { .. }
         | Expr::DegradeToTransient { .. }
         | Expr::UpgradeFromTransient { .. }
         | Expr::HashToCurve { .. }
@@ -1787,6 +1788,7 @@ fn render_crypto_operation(
         Expr::TransientHash { value: input }
         | Expr::PersistentHash { value: input }
         | Expr::Keccak256 { value: input, .. }
+        | Expr::Sha512 { value: input }
         | Expr::DegradeToTransient { value: input }
         | Expr::UpgradeFromTransient { value: input }
         | Expr::HashToCurve { value: input }
@@ -1828,6 +1830,17 @@ fn render_crypto_operation(
                     return Ok((
                         crate::pure_native::crypto::render_keccak(rendered, *encoding),
                         Type::Bytes { length: 32 },
+                        effect,
+                    ));
+                }
+                Expr::Sha512 { .. } => {
+                    native_representation::check_tuple_traits(
+                        native_representation::Operation::Sha512,
+                        &actual,
+                    )?;
+                    return Ok((
+                        syn::parse_quote!(runtime::sha512(#rendered)?),
+                        Type::Bytes { length: 64 },
                         effect,
                     ));
                 }

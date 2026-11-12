@@ -2,11 +2,11 @@
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-//! All sixteen source variants really execute through a no-syntax consumer.
+//! All source variants really execute through a no-syntax consumer.
 use super::*;
 
 #[test]
-fn all_sixteen_operations_return_checked_types_and_visit_children_once() {
+fn all_operations_return_checked_types_and_visit_children_once() {
     let left = parameter("left");
     let right = parameter("right");
     for (source, lt, rt, expected, binary) in [
@@ -43,6 +43,13 @@ fn all_sixteen_operations_return_checked_types_and_visit_children_once() {
             Type::Field,
             Type::Unit,
             Type::Bytes { length: 32 },
+            false,
+        ),
+        (
+            CryptoSource::Sha512(&left),
+            Type::Field,
+            Type::Unit,
+            Type::Bytes { length: 64 },
             false,
         ),
         (

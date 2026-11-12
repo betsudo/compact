@@ -45,6 +45,7 @@ fn expression_with_calls(
         Expr::TransientCommit { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::PersistentHash { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::Keccak256 { .. } => pure_crypto_expression(expr, parameters, circuits),
+        Expr::Sha512 { .. } => Err(RenderError::EffectfulExpression),
         Expr::PersistentCommit { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::DegradeToTransient { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::UpgradeFromTransient { .. } => pure_crypto_expression(expr, parameters, circuits),

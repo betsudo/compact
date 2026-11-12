@@ -22,6 +22,7 @@ pub(crate) enum CryptoSource<'a> {
     PersistentHash(&'a Expr),
     PersistentCommit(&'a Expr, &'a Expr),
     Keccak256(&'a Expr, KeccakEncoding),
+    Sha512(&'a Expr),
     DegradeToTransient(&'a Expr),
     UpgradeFromTransient(&'a Expr),
     HashToCurve(&'a Expr),
@@ -51,6 +52,7 @@ pub(crate) enum CheckedCrypto<V> {
         opening: V,
     },
     Keccak256(V, KeccakEncoding),
+    Sha512(V),
     DegradeToTransient(V),
     UpgradeFromTransient(V),
     HashToCurve {
@@ -64,6 +66,7 @@ pub(super) enum Unary {
     TransientHash,
     PersistentHash,
     Keccak256(KeccakEncoding),
+    Sha512,
     Degrade,
     Upgrade,
     HashToCurve,
@@ -96,6 +99,7 @@ impl<'a> CryptoSource<'a> {
                 Inputs::Binary(Binary::PersistentCommit, value, opening)
             }
             Self::Keccak256(value, encoding) => Inputs::Unary(Unary::Keccak256(encoding), value),
+            Self::Sha512(value) => Inputs::Unary(Unary::Sha512, value),
             Self::DegradeToTransient(value) => Inputs::Unary(Unary::Degrade, value),
             Self::UpgradeFromTransient(value) => Inputs::Unary(Unary::Upgrade, value),
             Self::HashToCurve(value) => Inputs::Unary(Unary::HashToCurve, value),

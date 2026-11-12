@@ -53,6 +53,11 @@
   ([value A (discloses "a hash of")])
   (Bytes 32))
 
+(declare-native-entry circuit sha512 [A]
+  "__compactRuntime.sha512"
+  ([value A (discloses "a hash of")])
+  (Bytes 64))
+
 ;; ====
 (declare-native-entry circuit jubjubPointX
   "__compactRuntime.jubjubPointX"

@@ -200,6 +200,18 @@ fn fold_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+// SHA-512 adds one operand to historical traversals and one old-oracle refusal.
+const SHA512_ENUM: &[u8] = include_bytes!("sha512-expression-enum.json");
+fn sha512_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "665d8a3ed631131bc5569292e644d3d3ce8dde1c6703229df45070990de31558" {
+        return Err("unreviewed SHA-512 enum compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_sha512_enum(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &sha512_enum_manifest(SHA512_ENUM)?)
+}
+
 // Keccak adds an encoding field to three historical traversal patterns.
 const KECCAK_ENCODING: &[u8] = include_bytes!("keccak-encoding-schema20.json");
 fn keccak_encoding_manifest(bytes: &[u8]) -> Result<Value, String> {
@@ -212,7 +224,8 @@ fn before_keccak_encoding(path: &str, current: &str) -> Result<String, String> {
     legacy_source(path, current, &keccak_encoding_manifest(KECCAK_ENCODING)?)
 }
 fn before_fold_enum(path: &str, current: &str) -> Result<String, String> {
-    let before_keccak = before_keccak_encoding(path, current)?;
+    let before_sha512 = before_sha512_enum(path, current)?;
+    let before_keccak = before_keccak_encoding(path, &before_sha512)?;
     legacy_source(path, &before_keccak, &fold_enum_manifest(FOLD_ENUM)?)
 }
 
@@ -330,6 +343,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["sha512_enum_projection"] = sha512_enum_manifest(SHA512_ENUM).unwrap();
     authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
     authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
     authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
@@ -569,6 +583,7 @@ fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forge
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, row) in projection["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_sha512_enum(path, &current).unwrap();
         let current = before_keccak_encoding(path, &current).unwrap();
         let previous = legacy_source(path, &current, &projection).unwrap();
         assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
@@ -605,6 +620,7 @@ fn keccak_encoding_projection_preserves_exact_fold_oracles() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for path in owners.keys() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_sha512_enum(path, &current).unwrap();
         let predecessor = before_keccak_encoding(path, &current).unwrap();
         assert_eq!(
             digest(predecessor.as_bytes()),
@@ -620,5 +636,34 @@ fn keccak_encoding_projection_preserves_exact_fold_oracles() {
         );
         assert!(before_keccak_encoding(path, &predecessor).is_err());
         assert!(before_keccak_encoding(path, &(current + "\n// drift\n")).is_err());
+    }
+}
+
+#[test]
+fn sha512_enum_projection_preserves_exact_predecessors() {
+    let projection = sha512_enum_manifest(SHA512_ENUM).unwrap();
+    let keccak = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
+    let fold = fold_enum_manifest(FOLD_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(KECCAK_ENCODING)
+    );
+    assert!(sha512_enum_manifest(br#"{"owners":{}}"#).is_err());
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    for (path, owner) in owners {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let predecessor = before_sha512_enum(path, &current).unwrap();
+        let pinned = keccak["owners"].get(path).unwrap_or(&fold["owners"][path]);
+        assert_eq!(digest(predecessor.as_bytes()), pinned["current_sha256"]);
+        let edits = owner["predecessor_reconstruction"].as_array().unwrap();
+        assert_eq!(edits.len(), 1);
+        let edit = edits[0]["current"].as_str().unwrap();
+        assert!(edit.contains("Expr::Sha512"));
+        assert_eq!(edits[0]["previous"], "");
+        assert_eq!(current.replacen(edit, "", 1), predecessor);
+        assert!(before_sha512_enum(path, &predecessor).is_err());
+        assert!(before_sha512_enum(path, &(current + "\n// drift\n")).is_err());
     }
 }

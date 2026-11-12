@@ -21,8 +21,8 @@ use midnight_compact_runtime::{
     CompactError, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueString,
     construct_jubjub_point, degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg,
     hash_to_curve, jubjub_point_x, jubjub_point_y, jubjub_scalar_from_native, keccak256,
-    keccak256_aligned, persistent_commit, persistent_hash, transient_commit, transient_hash,
-    upgrade_from_transient,
+    keccak256_aligned, persistent_commit, persistent_hash, sha512, transient_commit,
+    transient_hash, upgrade_from_transient,
 };
 use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
 use midnight_transient_crypto::hash as upstream_transient;
@@ -412,6 +412,38 @@ fn aligned_keccak_matches_upstream_declared_byte_width() {
     );
     assert_eq!(
         keccak256_aligned(OpaqueString::from("opaque")),
+        Err(CompactError::InvalidHashInput)
+    );
+}
+
+#[test]
+fn sha512_matches_known_vectors_and_fixed_width_aggregate_encoding() {
+    let empty: FixedBytes<64> = sha512(FixedBytes::new([])).unwrap();
+    assert_eq!(
+        hex::encode(empty.0),
+        "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+    );
+    let abc = sha512(FixedBytes::new(*b"abc")).unwrap();
+    assert_eq!(
+        hex::encode(abc.0),
+        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+    );
+    assert_eq!(
+        abc,
+        sha512((FixedBytes::new(*b"a"), FixedBytes::new(*b"bc"))).unwrap()
+    );
+
+    let padded = sha512(FixedBytes::new([1, 0])).unwrap();
+    assert_eq!(
+        hex::encode(padded.0),
+        "aa27d9d89128263a499288b0fa2d7be8a9c4a0ab123aa1c5d92750d03d556065318ab15796232c1bd83c89b5024be5a8c06fbf9ee4cc969b0168abdaad749f5d"
+    );
+    assert_ne!(padded, sha512(FixedBytes::new([1])).unwrap());
+    let mut field = [0u8; 32];
+    field[1] = 1;
+    assert_eq!(sha512(Field::from(256u64)), sha512(FixedBytes::new(field)));
+    assert_eq!(
+        sha512(OpaqueString::from("opaque")),
         Err(CompactError::InvalidHashInput)
     );
 }

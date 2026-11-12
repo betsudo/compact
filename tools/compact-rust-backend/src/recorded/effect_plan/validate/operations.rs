@@ -115,6 +115,10 @@ pub(super) fn validate(
             use_value(value)?;
             keccak_input_type(&value.ty, *encoding) && *ty == (Type::Bytes { length: 32 })
         }
+        Operation::Sha512(value) => {
+            use_value(value)?;
+            fixed_aligned_fab_type(&value.ty) && *ty == (Type::Bytes { length: 64 })
+        }
         Operation::Add(a, b) | Operation::Subtract(a, b) | Operation::Multiply(a, b) => {
             use_value(a)?;
             use_value(b)?;

@@ -20,6 +20,7 @@ pub(crate) enum Operation {
     PersistentHash,
     PersistentCommit,
     Keccak256(KeccakEncoding),
+    Sha512,
     HashToCurve,
 }
 
@@ -33,6 +34,7 @@ impl Operation {
             Self::PersistentHash => "persistentHash",
             Self::PersistentCommit => "persistentCommit",
             Self::Keccak256(_) => "keccak256",
+            Self::Sha512 => "sha512",
             Self::HashToCurve => "hashToCurve",
         }
     }
@@ -68,7 +70,9 @@ pub(crate) fn check_tuple_traits(operation: Operation, ty: &Type) -> Result<(), 
     let contains_opaque = nodes
         .iter()
         .any(|ty| matches!(ty, Type::OpaqueString | Type::OpaqueBytes));
-    if contains_opaque && matches!(operation, Operation::Keccak256(KeccakEncoding::Aligned)) {
+    if contains_opaque
+        && matches!(operation, Operation::Keccak256(KeccakEncoding::Aligned) | Operation::Sha512)
+    {
         return Err(RenderError::UnsupportedOpaqueHashInput {
             operation: operation.name(),
         });

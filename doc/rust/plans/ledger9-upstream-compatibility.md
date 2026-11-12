@@ -108,6 +108,17 @@ first verifies each intact fixture refuses its 0.25.0 pragma, then runs
 pragma-only derivatives. Intact language admission and the k=14 stateful
 proof lane remain open.
 
+The ordinary SHA-512 port follows the upstream native signature and
+fixed-width input encoding. Both generated targets return `Bytes<64>`.
+ZKIR v3 uses the pinned three-limb digest split. The
+[ordinary fixture](../../../runtime/test/fixtures/ledger9-upstream/sha512_ordinary.compact)
+covers fixed-width and empty bytes, tuples, a Field, and public writes over
+64-byte input and a tuple containing a Jubjub point. It shares the existing
+ledger alignment rules for point coordinates. The local ZKIR tool measured
+both public writes at k=14, so they require a slow proof lane. The original
+upstream SHA-512 cases that hash two secp256k1 points remain tracked with
+foreign-point representation.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

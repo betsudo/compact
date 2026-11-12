@@ -134,6 +134,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::PersistentHash { .. }
                 | E::PersistentCommit { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
                 | E::HashToCurve { .. }
@@ -237,6 +238,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::TransientCommit { .. }
                 | E::PersistentHash { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::PersistentCommit { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
@@ -300,6 +302,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::TransientCommit { .. }
                 | E::PersistentHash { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::PersistentCommit { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
@@ -384,6 +387,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorFold { .. }
                 | E::Compare { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::HashToCurve { .. }
                 | E::ConstructJubjubPoint { .. }
                 | E::EcNeg { .. }

@@ -182,6 +182,7 @@ pub(super) enum Operation {
     /// Persistent FAB hashing of independently checked fixed aligned values.
     PersistentHash(Value),
     Keccak256(Value, KeccakEncoding),
+    Sha512(Value),
     HashToCurve(Value),
     /// Official ledger8 digest/field conversions and transient FAB operations.
     DegradeToTransient(Value),

@@ -90,7 +90,7 @@ macro_rules! dispatch {
             $crate::ir::Expr::PersistentHash { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::Keccak256 { .. } => {
+            $crate::ir::Expr::Keccak256 { .. } | $crate::ir::Expr::Sha512 { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::PersistentCommit { .. } => {

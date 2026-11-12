@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
 import { MAX_FIELD, JUBJUB_SCALAR_MODULUS } from './constants.js';
@@ -186,6 +187,15 @@ export function keccak256<A>(rtType: CompactType<A>, value: A): Uint8Array {
  * Each atom occupies its declared byte width. Field atoms occupy 32 bytes.
  */
 export function keccak256Aligned<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  return keccak_256(alignedHashInput(rtType, value));
+}
+
+/** Hash an aligned Compact value and return the 64-byte SHA-512 digest. */
+export function sha512<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  return nobleSha512(alignedHashInput(rtType, value));
+}
+
+function alignedHashInput<A>(rtType: CompactType<A>, value: A): Uint8Array {
   const atoms = rtType.toValue(value);
   const alignment = rtType.alignment();
   if (atoms.length !== alignment.length) {
@@ -207,7 +217,7 @@ export function keccak256Aligned<A>(rtType: CompactType<A>, value: A): Uint8Arra
     bytes.set(atom, offset);
     offset += widths[index];
   }
-  return keccak_256(bytes);
+  return bytes;
 }
 
 export function jubjubPointX(pt: JubjubPoint): bigint {

@@ -263,6 +263,7 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
                 encoding.is_normalized_atoms(),
             );
         }
+        Expr::Sha512 { value } => unary!("sha512", "value", value),
         Expr::PersistentCommit { value, opening } => {
             binary!("persistent_commit", "value", value, "opening", opening)
         }

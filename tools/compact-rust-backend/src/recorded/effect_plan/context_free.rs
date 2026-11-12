@@ -46,6 +46,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::FieldToBytes32(_)
                 | Operation::PersistentHash(_)
                 | Operation::Keccak256(..)
+                | Operation::Sha512(_)
                 | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_)
                 | Operation::UpgradeFromTransient(_)

@@ -108,6 +108,7 @@ pub(super) fn render(
         | Operation::PersistentHash(_)
         | Operation::HashToCurve(_)
         | Operation::Keccak256(..)
+        | Operation::Sha512(_)
         | Operation::JubjubPointX(_)
         | Operation::JubjubPointY(_)
         | Operation::JubjubScalarFromNative(_)

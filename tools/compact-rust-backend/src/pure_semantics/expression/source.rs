@@ -146,6 +146,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
             Source::Crypto(CryptoSource::TransientCommit(value, opening))
         }
         Expr::PersistentHash { value } => Source::Crypto(CryptoSource::PersistentHash(value)),
+        Expr::Sha512 { value } => Source::Crypto(CryptoSource::Sha512(value)),
         Expr::PersistentCommit { value, opening } => {
             Source::Crypto(CryptoSource::PersistentCommit(value, opening))
         }

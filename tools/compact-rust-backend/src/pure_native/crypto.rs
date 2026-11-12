@@ -33,6 +33,7 @@ impl CryptoSink for NativeLeafSink {
                 syn::parse_quote!(runtime::persistent_commit(#value, #opening))
             }
             CheckedCrypto::Keccak256(value, encoding) => render_keccak(value, encoding),
+            CheckedCrypto::Sha512(value) => syn::parse_quote!(runtime::sha512(#value)?),
             CheckedCrypto::DegradeToTransient(value) => {
                 syn::parse_quote!(runtime::degrade_to_transient(#value))
             }

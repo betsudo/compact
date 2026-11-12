@@ -277,6 +277,9 @@
               (register-handler! 'keccak256
                 (lambda (src align res* . args*)
                   (source-errorf src "keccak256 is not supported in ZKIR v2: try recompiling with the flag `--feature-zkir-v3`")))
+              (register-handler! 'sha512
+                (lambda (src align res* . args*)
+                  (source-errorf src "sha512 is not supported in ZKIR v2: try recompiling with the flag `--feature-zkir-v3`")))
               (register-handler! 'ownPublicKey
                 (lambda (src align res* . args*)
                   ; handled as a witness

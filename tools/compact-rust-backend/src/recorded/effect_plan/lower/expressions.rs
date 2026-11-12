@@ -90,7 +90,9 @@ impl Lowerer<'_> {
                 Self::query_operation
             }
             Expr::FieldToBytes32 { .. } => Self::conversion_operation,
-            Expr::PersistentHash { .. } | Expr::Keccak256 { .. } => Self::persistent_operation,
+            Expr::PersistentHash { .. } | Expr::Keccak256 { .. } | Expr::Sha512 { .. } => {
+                Self::persistent_operation
+            }
             Expr::PersistentCommit { .. } => Self::persistent_operation,
             Expr::MapMember { .. }
             | Expr::MapLookup { .. }

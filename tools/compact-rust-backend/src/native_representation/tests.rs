@@ -7,7 +7,7 @@ use crate::ir::{Expr, StructField};
 
 mod emission;
 
-const OPERATIONS: [Operation; 8] = [
+const OPERATIONS: [Operation; 9] = [
     Operation::Equal,
     Operation::NotEqual,
     Operation::TransientHash,
@@ -16,6 +16,7 @@ const OPERATIONS: [Operation; 8] = [
     Operation::PersistentCommit,
     Operation::Keccak256(crate::ir::KeccakEncoding::NormalizedAtoms),
     Operation::HashToCurve,
+    Operation::Sha512,
 ];
 
 fn tuple(arity: usize) -> Type {
@@ -53,6 +54,7 @@ fn expression(operation: Operation, value: Expr) -> Expr {
         },
         Operation::Keccak256(encoding) => Expr::Keccak256 { value, encoding },
         Operation::HashToCurve => Expr::HashToCurve { value },
+        Operation::Sha512 => Expr::Sha512 { value },
     }
 }
 
@@ -151,7 +153,19 @@ fn opaque_source_policy_and_ordinary_leaf_support_are_not_changed() {
             Type::JubjubPoint,
             Type::Unit,
         ] {
-            check_tuple_traits(operation, &carrier).unwrap();
+            let result = check_tuple_traits(operation, &carrier);
+            if matches!(operation, Operation::Sha512)
+                && matches!(carrier, Type::OpaqueString | Type::OpaqueBytes)
+            {
+                assert_eq!(
+                    result,
+                    Err(RenderError::UnsupportedOpaqueHashInput {
+                        operation: "sha512"
+                    }),
+                );
+            } else {
+                result.unwrap();
+            }
         }
     }
 }

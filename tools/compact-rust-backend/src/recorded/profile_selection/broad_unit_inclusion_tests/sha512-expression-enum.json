@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "issue": 729,
+  "baseline_commit": "a7b6fc37bf127f6eb190b7b8722ba3db975d6235",
+  "scope": "Reverse only the new SHA-512 operand arms in three exhaustive historical traversals and its refusal in the retired pure oracle.",
+  "predecessor_manifest": {
+    "path": "keccak-encoding-schema20.json",
+    "sha256": "c00e3084f3be4d4a6cb1216d6f21fb4314726945ec96bd9e399de0a3d1440ca4"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "6c17e92ea1594b44cf47486d02b349c844eb1524a659fc80f1c094577bf7d396",
+      "previous_sha256": "ecb2be8c0db117ee3047a86b07f058bbab1e015361524f07dfaa60f1a79c0949",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Sha512 { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "d23245223d6c5e3bee6e5d738f1163dfb7e5a4054cdcf5350c47f1c3affad01e",
+      "previous_sha256": "ca9b77aabba38248b075c217c2e9ea85d3ee0ee80d9ad94da5792d356e8746a7",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Sha512 { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "c931ed7a5789d94b9b0d4a2707832a4338529d17821945f87770cbc319ef93ae",
+      "previous_sha256": "0ec00994c74fd44ed9b361e7f75e988b2146cdcffa6e3f75709566449b555ac6",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Sha512 { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "5feba5ee449609249fb766629b0392ca8883dbaef5e84238a62440f281227b0d",
+      "previous_sha256": "179c579f9854eb1f657ccf0e16a054a2a59d1bfa1f6b8e62876f6ee56671e11a",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Sha512 { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

@@ -1138,7 +1138,7 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Expr::PersistentHash { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            Expr::Keccak256 { value, .. } => {
+            Expr::Keccak256 { value, .. } | Expr::Sha512 { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
             Expr::PersistentCommit { value, opening } => {

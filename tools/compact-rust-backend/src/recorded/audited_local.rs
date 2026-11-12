@@ -38,6 +38,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::TransientHash { value }
         | Expr::PersistentHash { value }
         | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }

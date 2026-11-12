@@ -54,7 +54,7 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                 | Operation::TupleProject { .. }
                 | Operation::VectorProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
                 | Operation::PersistentCommit { .. } | Operation::FieldToBytes32(_)
-                | Operation::PersistentHash(_) | Operation::Keccak256(..) | Operation::HashToCurve(_)
+                | Operation::PersistentHash(_) | Operation::Keccak256(..) | Operation::Sha512(_) | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_) | Operation::UpgradeFromTransient(_) | Operation::TransientHash(_)
                 | Operation::TransientCommit { .. } | Operation::Add(_, _) | Operation::Subtract(_, _) | Operation::Multiply(_, _)
                 | Operation::UnsignedAdd(_, _) | Operation::UnsignedSubtract(_, _) | Operation::UnsignedMultiply(_, _)

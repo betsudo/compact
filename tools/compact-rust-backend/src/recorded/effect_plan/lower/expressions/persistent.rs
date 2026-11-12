@@ -34,6 +34,13 @@ impl Lowerer<'_> {
                     Type::Bytes { length: 32 },
                 )
             }
+            Expr::Sha512 { value } => {
+                let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
+                if !validate::fixed_aligned_fab_type(&value.ty) {
+                    return Err(invalid(path, "SHA-512 requires a supported fixed aligned FAB value"));
+                }
+                (Operation::Sha512(value), Type::Bytes { length: 64 })
+            }
             Expr::PersistentCommit { value, opening } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
                 let opening =

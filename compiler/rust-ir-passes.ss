@@ -821,6 +821,11 @@
                 (unless (= (length expr*) 1)
                   (source-errorf src "keccak256 expects one argument"))
                 (keccak-ir (expression-ir (car expr*) src))]
+               [(eq? name 'sha512)
+                (unless (= (length expr*) 1)
+                  (source-errorf src "sha512 expects one argument"))
+                (object (cons "kind" "sha512")
+                        (cons "value" (expression-ir (car expr*) src)))]
                [(eq? name 'persistentCommit)
                 (unless (= (length expr*) 2)
                   (source-errorf src "persistentCommit expects two arguments"))
@@ -2432,13 +2437,14 @@
                 (unless (= (length expr*) 1)
                   (source-errorf src "keccak256 expects one argument"))
                 (keccak-ir (stateful-expression-ir (car expr*) src witness-ids))]
-               [(memq name '(transientHash persistentHash degradeToTransient upgradeFromTransient
+               [(memq name '(transientHash persistentHash sha512 degradeToTransient upgradeFromTransient
                               hashToCurve jubjubPointX jubjubPointY ecNeg jubjubScalarFromNative))
                 (unless (= (length expr*) 1)
                   (source-errorf src "Rust backend native expects one argument"))
                 (object (cons "kind" (case name
                                         [(transientHash) "transient_hash"]
                                         [(persistentHash) "persistent_hash"]
+                                        [(sha512) "sha512"]
                                         [(degradeToTransient) "degrade_to_transient"]
                                         [(upgradeFromTransient) "upgrade_from_transient"]
                                         [(hashToCurve) "hash_to_curve"]
@@ -2712,7 +2718,7 @@
           [(call ,src ,function-name ,expr* ...)
            (if (or (eq-hashtable-ref witness-ids function-name #f)
                    (memq (id-sym function-name)
-                         '(transientHash transientCommit persistentHash persistentCommit keccak256
+                         '(transientHash transientCommit persistentHash persistentCommit keccak256 sha512
                            degradeToTransient upgradeFromTransient hashToCurve
                            jubjubPointX jubjubPointY ecAdd ecNeg ecMul ecMulGenerator constructJubjubPoint
                            jubjubScalarFromNative)))

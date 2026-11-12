@@ -42,6 +42,10 @@ pub(in super::super) fn expression(
         Operation::Keccak256(input, encoding) => {
             crate::pure_native::crypto::render_keccak(value(input), *encoding)
         }
+        Operation::Sha512(input) => {
+            let input = value(input);
+            syn::parse_quote!(runtime::sha512(#input)?)
+        }
         Operation::JubjubPointX(input) | Operation::JubjubPointY(input) => {
             let coordinate = if matches!(binding.operation, Operation::JubjubPointX(_)) {
                 crate::jubjub_value::Coordinate::X

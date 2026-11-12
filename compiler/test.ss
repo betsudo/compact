@@ -68785,6 +68785,22 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
+      "  return disclose(sha512<Bytes<2>>(value));"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('SHA-512 preserves a fixed-width trailing zero', () => {"
+        "  const digest = contractCode.pureCircuits.hashBytes(Uint8Array.of(1, 0));"
+        "  expect(Buffer.from(digest).toString('hex')).toBe('aa27d9d89128263a499288b0fa2d7be8a9c4a0ab123aa1c5d92750d03d556065318ab15796232c1bd83c89b5024be5a8c06fbf9ee4cc969b0168abdaad749f5d');"
+        "});"
+        ))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<12>): Bytes<32> {"
       "  return disclose(keccak256<Bytes<12>>(value));"
       "}"

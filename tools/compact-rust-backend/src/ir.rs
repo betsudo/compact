@@ -855,6 +855,9 @@ pub enum Expr {
         #[serde(default, skip_serializing_if = "KeccakEncoding::is_normalized_atoms")]
         encoding: KeccakEncoding,
     },
+    Sha512 {
+        value: Box<Expr>,
+    },
     PersistentCommit {
         value: Box<Expr>,
         opening: Box<Expr>,

@@ -170,6 +170,15 @@
                    `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
                    `(keccak256 ,bytes (,alignment* ...) ,triv* ...)
                    instr*))]
+              [(sha512)
+               (assert (= (length var-name*) 3))
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes_into_natives (,(reverse var-name*) ...) ,bytes)
+                     `(sha512 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
               [(persistentCommit)
                (assert (= (length var-name*) 2))
                ;; The two source arguments are swapped for the persistent_hash gate.  We assume
@@ -976,6 +985,9 @@
       [(bytes32_into_low_high ,outp0 ,outp1 ,[* inp])
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "bytes32_into_low_high") (bytes . ,inp) (outputs . ,(vector outp0 outp1))))]
+      [(bytes_into_natives (,outp* ...) ,[* inp])
+       (let ([outp* (maplr Output outp*)])
+         `((op . "bytes_into_natives") (outputs . ,(list->vector outp*)) (bytes . ,inp)))]
       [(cond_select ,[* outp] ,[* inp0] ,[* inp1] ,[* inp2])
        `((op . "cond_select") (output . ,outp) (bit . ,inp0) (a . ,inp1) (b . ,inp2))]
       [(constrain_bits ,[* inp] ,imm)
@@ -1004,6 +1016,9 @@
        `((op . "jubjub_scalar_from_native") (output . ,outp) (native . ,inp))]
       [(keccak256 ,[* outp] (,alignment* ...) ,[* inp*] ...)
        `((op . "keccak256") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
+      [(sha512 ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "sha512") (output . ,outp)
          (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(less_than ,[* outp] ,[* inp0] ,[* inp1] ,imm)
        `((op . "less_than") (output . ,outp) (a . ,inp0) (b . ,inp1) (bits . ,imm))]

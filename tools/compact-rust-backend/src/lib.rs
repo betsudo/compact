@@ -793,6 +793,7 @@ fn collect_expression_types<'ir>(
         Expr::TransientHash { value }
         | Expr::PersistentHash { value }
         | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
@@ -1574,6 +1575,7 @@ fn pure_crypto_expression(
         Expr::PersistentHash { value } => CryptoSource::PersistentHash(value),
         Expr::PersistentCommit { value, opening } => CryptoSource::PersistentCommit(value, opening),
         Expr::Keccak256 { value, encoding } => CryptoSource::Keccak256(value, *encoding),
+        Expr::Sha512 { value } => CryptoSource::Sha512(value),
         Expr::DegradeToTransient { value } => CryptoSource::DegradeToTransient(value),
         Expr::UpgradeFromTransient { value } => CryptoSource::UpgradeFromTransient(value),
         Expr::HashToCurve { value } => CryptoSource::HashToCurve(value),

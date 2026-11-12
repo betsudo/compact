@@ -59,6 +59,10 @@ pub(super) fn unary<V>(
                 Type::Bytes { length: 32 },
             )
         }
+        Unary::Sha512 => {
+            check_tuple_traits(Operation::Sha512, &value.ty)?;
+            (CheckedCrypto::Sha512(value.output), Type::Bytes { length: 64 })
+        }
         Unary::Degrade => {
             expect(value.ty, Type::Bytes { length: 32 })?;
             (CheckedCrypto::DegradeToTransient(value.output), Type::Field)

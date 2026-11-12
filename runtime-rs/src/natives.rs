@@ -23,6 +23,7 @@ use midnight_base_crypto::hash::{self as persistent, HashOutput, PersistentHashW
 use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
 use midnight_transient_crypto::fab::ValueReprAlignedValue;
 use midnight_transient_crypto::hash;
+use sha2::Sha512;
 use sha3::{Digest, Keccak256};
 
 fn value_repr<T: Aligned + Into<Value>>(value: T) -> ValueReprAlignedValue {
@@ -65,6 +66,15 @@ pub fn keccak256<T: Into<Value>>(value: T) -> FixedBytes<32> {
 pub fn keccak256_aligned<T: Aligned + Into<Value>>(
     value: T,
 ) -> Result<FixedBytes<32>, CompactError> {
+    Ok(FixedBytes(Keccak256::digest(aligned_hash_input(value)?).into()))
+}
+
+/// Hash the aligned binary representation with SHA-512.
+pub fn sha512<T: Aligned + Into<Value>>(value: T) -> Result<FixedBytes<64>, CompactError> {
+    Ok(FixedBytes(Sha512::digest(aligned_hash_input(value)?).into()))
+}
+
+fn aligned_hash_input<T: Aligned + Into<Value>>(value: T) -> Result<Vec<u8>, CompactError> {
     let alignment = T::alignment();
     if alignment.0.iter().any(|segment| {
         !matches!(
@@ -77,7 +87,7 @@ pub fn keccak256_aligned<T: Aligned + Into<Value>>(
     let value = AlignedValue::new(value.into(), alignment).ok_or(CompactError::InvalidHashInput)?;
     let mut input = Vec::new();
     ValueReprAlignedValue(value).binary_repr(&mut input);
-    Ok(FixedBytes(Keccak256::digest(input).into()))
+    Ok(input)
 }
 
 /// Commit to the FAB binary value using ledger-8's persistent commitment.

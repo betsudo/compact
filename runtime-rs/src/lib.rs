@@ -45,7 +45,7 @@ pub use midnight_compact_runtime_macros::{
 pub use natives::{
     construct_jubjub_point, degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg,
     hash_to_curve, jubjub_point_x, jubjub_point_y, jubjub_scalar_from_native, keccak256,
-    keccak256_aligned, persistent_commit, persistent_hash, transient_commit, transient_hash,
+    keccak256_aligned, persistent_commit, persistent_hash, sha512, transient_commit, transient_hash,
     upgrade_from_transient,
 };
 pub use opaque::{OpaqueBytes, OpaqueString};
