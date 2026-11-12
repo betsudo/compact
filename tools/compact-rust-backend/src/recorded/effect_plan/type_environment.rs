@@ -127,7 +127,9 @@ impl TypeEnvironment {
                 | Type::Field
                 | Type::JubjubPoint
                 | Type::Secp256k1Base
+                | Type::Secp256r1Base
                 | Type::Secp256k1Scalar
+                | Type::Secp256r1Scalar
                 | Type::Secp256k1Point
                 | Type::Bytes { .. }
                 | Type::OpaqueString

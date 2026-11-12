@@ -18,8 +18,12 @@ import {
   CompactTypeOpaqueString,
   CompactTypeSecp256k1Base,
   CompactTypeSecp256k1Scalar,
+  CompactTypeSecp256r1Base,
+  CompactTypeSecp256r1Scalar,
   MAX_SECP256K1_BASE,
   MAX_SECP256K1_SCALAR,
+  MAX_SECP256R1_BASE,
+  MAX_SECP256R1_SCALAR,
 } from '../src/index.js';
 
 describe('opaque strings', () => {
@@ -41,6 +45,8 @@ describe('opaque strings', () => {
 describe.each([
   ['Secp256k1Base', CompactTypeSecp256k1Base, MAX_SECP256K1_BASE],
   ['Secp256k1Scalar', CompactTypeSecp256k1Scalar, MAX_SECP256K1_SCALAR],
+  ['Secp256r1Base', CompactTypeSecp256r1Base, MAX_SECP256R1_BASE],
+  ['Secp256r1Scalar', CompactTypeSecp256r1Scalar, MAX_SECP256R1_SCALAR],
 ] as const)('%s', (name, descriptor, max) => {
   test('uses two little-endian atoms in low then high order', () => {
     const low = Uint8Array.from({ length: 24 }, (_, i) => i + 1);

@@ -125,7 +125,9 @@ pub(crate) fn rust_type(ty: &Type) -> Result<syn::Type, RenderError> {
         }
         Type::LedgerMap { .. }
         | Type::Secp256k1Base
+        | Type::Secp256r1Base
         | Type::Secp256k1Scalar
+        | Type::Secp256r1Scalar
         | Type::Secp256k1Point => {
             return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
         }

@@ -215,7 +215,7 @@
          (cons "type-name" "Bytes")
          (cons "length" len))]
       [(topaque ,src ,opaque-type)
-       (if (secp256k1-native-type? opaque-type)
+       (if (foreign-native-type? opaque-type)
            (list (cons "type-name" opaque-type))
            (list (cons "type-name" "Opaque") (cons "tsType" opaque-type)))]
       [(tvector ,src ,len ,type)

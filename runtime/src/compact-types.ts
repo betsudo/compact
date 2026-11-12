@@ -14,7 +14,7 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
-import { MAX_SECP256K1_BASE, MAX_SECP256K1_SCALAR } from './constants.js';
+import { MAX_SECP256K1_BASE, MAX_SECP256K1_SCALAR, MAX_SECP256R1_BASE, MAX_SECP256R1_SCALAR } from './constants.js';
 import { CompactError } from './error.js';
 
 /**
@@ -300,6 +300,16 @@ export const CompactTypeSecp256k1Base: CompactType<bigint> = new ForeignField8_2
  * Runtime type of the standard library's `Secp256k1Scalar` type.
  */
 export const CompactTypeSecp256k1Scalar: CompactType<bigint> = new ForeignField8_24(MAX_SECP256K1_SCALAR, 'Secp256k1Scalar');
+
+/**
+ * Runtime type of a secp256r1 base field element
+ */
+export const CompactTypeSecp256r1Base: CompactType<bigint> = new ForeignField8_24(MAX_SECP256R1_BASE, 'Secp256r1Base');
+
+/**
+ * Runtime type of a secp256r1 scalar field element
+ */
+export const CompactTypeSecp256r1Scalar: CompactType<bigint> = new ForeignField8_24(MAX_SECP256R1_SCALAR, 'Secp256r1Scalar');
 
 /** Runtime type of the standard library's `Secp256k1Point` type. */
 export const CompactTypeSecp256k1Point: CompactType<Secp256k1Point> = {

@@ -3532,7 +3532,9 @@ fn render_with_refusals(
                     | Type::Field
                     | Type::JubjubPoint
                     | Type::Secp256k1Base
+                    | Type::Secp256r1Base
                     | Type::Secp256k1Scalar
+                    | Type::Secp256r1Scalar
                     | Type::Secp256k1Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes

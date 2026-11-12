@@ -39,7 +39,7 @@
         (nanopass-case (Lnodisclose Type) type
           [(talias ,src ,nominal? ,type-name ,type^) (secp256k1-carrier type^)]
           [(topaque ,src ,opaque-type)
-           (and (secp256k1-native-type? opaque-type) opaque-type)]
+           (and (foreign-native-type? opaque-type) opaque-type)]
           [else #f]))
 
       (define (same-secp256k1-carrier? type1 type2)
@@ -299,6 +299,8 @@
              [(string=? opaque-type "JubjubPoint") (kind "jubjub_point")]
              [(string=? opaque-type "Secp256k1Base") (kind "secp256k1_base")]
              [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
+             [(string=? opaque-type "Secp256r1Base") (kind "secp256r1_base")]
+             [(string=? opaque-type "Secp256r1Scalar") (kind "secp256r1_scalar")]
              [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]

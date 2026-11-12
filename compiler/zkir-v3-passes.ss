@@ -353,7 +353,7 @@
                           (with-output-language (Lflattened Alignment)
                             (case opaque-type
                               [("JubjubPoint") (cons* `(afield) `(afield) encoded-alignment*)]
-                              [("Secp256k1Base" "Secp256k1Scalar")
+                              [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar")
                                (cons* `(abytes 8) `(abytes 24) encoded-alignment*)]
                               [else (assert cannot-happen)]))
                           (cons* high low encoded-input*)))]
@@ -407,7 +407,7 @@
                                (with-output-language (Lflattened Alignment)
                                  (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
                                (cons* 1 high low high low input*)))]
-                          [(secp256k1-field-max opaque-type) =>
+                          [(foreign-field-max opaque-type) =>
                            (lambda (maximum)
                              ;; Zero is represented by modulus minus one on the ledger.
                              (let-values ([(high low) (div-and-mod maximum (expt 2 192))])
@@ -789,10 +789,12 @@
                 [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type* ...)))
                  (values (append var-name* name*) (append primitive-type* type*))]))))
 
-      (define (secp256k1-zkir-type name)
+      (define (foreign-zkir-type name)
         (case name
           [("Secp256k1Base") "Base<Secp256k1>"]
           [("Secp256k1Scalar") "Scalar<Secp256k1>"]
+          [("Secp256r1Base") "Base<Secp256r1>"]
+          [("Secp256r1Scalar") "Scalar<Secp256r1>"]
           [("Secp256k1Point") "Point<Secp256k1>"]
           [else #f]))
 
@@ -802,7 +804,7 @@
           [(tfield ,nat) "Scalar<BLS12-381>"]
           [(topaque ,opaque-type) (guard (string=? opaque-type "JubjubPoint"))
            "Point<Jubjub>"]
-          [(topaque ,opaque-type) (or (secp256k1-zkir-type opaque-type) "Scalar<BLS12-381>")]
+          [(topaque ,opaque-type) (or (foreign-zkir-type opaque-type) "Scalar<BLS12-381>")]
           [else (assert cannot-happen)]))
       )
 
@@ -874,7 +876,7 @@
                      `(from_bytes "Scalar<Secp256k1>" ,scalar ,bytes)
                      `(to_bytes ,bytes 0)
                      instr*))]
-           [(secp256k1-zkir-type opaque-type) =>
+           [(foreign-zkir-type opaque-type) =>
             (lambda (zkir-type)
               (let ([bytes (make-temp-id default-src 'bytes)])
                 (cons* `(from_bytes ,zkir-type ,var-name ,bytes) `(to_bytes ,bytes 0) instr*)))]
@@ -890,7 +892,7 @@
        (with-output-language (Lzkir Instruction)
          (let ([bytes (make-temp-id src 'bytes)])
            (cons*
-             `(from_bytes ,(assert (secp256k1-zkir-type opaque-type)) ,var-name ,bytes)
+             `(from_bytes ,(assert (foreign-zkir-type opaque-type)) ,var-name ,bytes)
              `(bytes_from_natives ,bytes 32 ,triv2 ,triv1)
              instr*)))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))

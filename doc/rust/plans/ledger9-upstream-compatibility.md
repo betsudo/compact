@@ -220,6 +220,14 @@ checks ordered witnesses, independently substituted signatures and
 keys, and the exact address return and ledger effects. Intact-source
 admission remains open.
 
+The [P-256 field fixtures](../../../test-contracts/stdlib/secp256r1)
+exercise the original base-field roundtrip and all six cast refusals.
+Generated Rust has separate base and scalar types with checked
+construction. Both runtimes preserve the shifted 24-byte and 8-byte
+ledger atoms. The explicit slow lane covers the original base roundtrip,
+the scalar roundtrip, and the two-field reset. Positive casts, arithmetic,
+points, and P-256 signature suites remain separate.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

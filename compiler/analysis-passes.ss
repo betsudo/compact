@@ -1189,9 +1189,9 @@
     (Type : Type (ir p) -> Type ()
       [,tref (Type-Ref->Type ir p)]
       [(topaque ,src ,opaque-type)
-       (when (and (secp256k1-native-type? opaque-type) (not (stdlib-src? src)))
+       (when (and (foreign-native-type? opaque-type) (not (stdlib-src? src)))
          (source-errorf src "~a is a built-in foreign ~a type; import CompactStandardLibrary"
-                        opaque-type (if (secp256k1-field-max opaque-type) "field" "point")))
+                        opaque-type (if (foreign-field-max opaque-type) "field" "point")))
        `(topaque ,src ,opaque-type)]
       [(tunsigned ,src ,[Type-Size->nat : tsize p 1 -> * nat])
        (unless (<= 1 nat (unsigned-bits))
@@ -1353,7 +1353,7 @@
                            (format "Uint<~d>" bits))))
                (format "Uint<0..~d>" (+ nat 1)))]
           [(topaque ,src ,opaque-type)
-           (if (secp256k1-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
+           (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tundeclared) "Undeclared"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
@@ -1605,10 +1605,11 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point") `(topaque ,src ,type-name)]
+                      [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar")
+                       `(topaque ,src ,type-name)]
                       [("Opaque")
                        (let ([name (get-assoc "tsType" alist)])
-                         (when (secp256k1-field-max name)
+                         (when (foreign-field-max name)
                            (malformed "a built-in foreign field requires its own type-name"))
                          (when (string=? name "Secp256k1Point")
                            (malformed "a built-in foreign point requires its own type-name"))
@@ -3463,7 +3464,7 @@
           [(tfield ,src) "Field"]
           [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
           [(topaque ,src ,opaque-type)
-           (if (secp256k1-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
+           (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
           [(tbytes ,src ,len) (format "Bytes<~s>" len)]

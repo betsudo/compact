@@ -48,6 +48,26 @@ export const SECP256K1_SCALAR_MODULUS: bigint = 0xffffffffffffffffffffffffffffff
 export const MAX_SECP256K1_SCALAR: bigint = SECP256K1_SCALAR_MODULUS - 1n;
 
 /**
+ * The order of the secp256r1 base field
+ */
+export const SECP256R1_BASE_MODULUS: bigint = 2n ** 256n - 2n ** 224n + 2n ** 192n + 2n ** 96n - 1n;
+
+/**
+ * The maximum value of a `Secp256r1Base` foreign field value
+ */
+export const MAX_SECP256R1_BASE: bigint = SECP256R1_BASE_MODULUS - 1n;
+
+/**
+ * The order of the secp256r1 scalar field
+ */
+export const SECP256R1_SCALAR_MODULUS: bigint = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+
+/**
+ * The maximum value of a `Secp256r1Scalar` foreign field value
+ */
+export const MAX_SECP256R1_SCALAR: bigint = SECP256R1_SCALAR_MODULUS - 1n;
+
+/**
  * A valid placeholder contract address
  *
  * @deprecated Cannot handle {@link NetworkId}s, use

@@ -249,6 +249,8 @@ primitive_cell_value!(
     crate::Secp256k1Base,
     crate::Secp256k1Point,
     crate::Secp256k1Scalar,
+    crate::Secp256r1Base,
+    crate::Secp256r1Scalar,
 );
 
 impl<const MAX: u128> CellValue for BoundedUint<MAX> {

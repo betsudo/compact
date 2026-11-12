@@ -1277,6 +1277,8 @@
                      [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
                      [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
                      [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
+                     [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
+                     [("Secp256r1Scalar") "__compactRuntime.CompactTypeSecp256r1Scalar"]
                      ; FIXME: what should happen with other opaque types?
                      [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                   [(tvector ,src ,len ,type)
@@ -1364,6 +1366,8 @@
                      (let ([max (case opaque-type
                                   [("Secp256k1Base") "MAX_SECP256K1_BASE"]
                                   [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
+                                  [("Secp256r1Base") "MAX_SECP256R1_BASE"]
+                                  [("Secp256r1Scalar") "MAX_SECP256R1_SCALAR"]
                                   [else #f])])
                        (if max
                            (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= __compactRuntime.~a" var max)
@@ -1395,7 +1399,7 @@
                 [(tfield ,src) "Field"]
                 [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
                 [(topaque ,src ,opaque-type)
-                 (if (secp256k1-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
+                 (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
                 [(tunknown) "Unknown"]
                 [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
                 [(tbytes ,src ,len) (format "Bytes<~s>" len)]
@@ -2841,7 +2845,7 @@
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
                   [("Secp256k1Point") "({x: 0n, y: 0n, identity: true})"]
-                  [("Secp256k1Base" "Secp256k1Scalar") "0n"]
+                  [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                [(tvector ,src ,len ,type)
@@ -3377,7 +3381,7 @@
          [("string" "Uint8Array") opaque-type]
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
          [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
-         [("Secp256k1Base" "Secp256k1Scalar") "bigint"]
+         [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
       [(tvector ,src ,len ,[Type : type -> * type])

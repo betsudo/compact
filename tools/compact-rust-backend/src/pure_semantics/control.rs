@@ -170,7 +170,7 @@ where
 }
 
 pub(crate) fn allows_sequence_step(ty: &Type) -> bool {
-    matches!(ty, Type::Unit | Type::Secp256k1Base | Type::Secp256k1Scalar)
+    matches!(ty, Type::Unit | Type::Secp256k1Base | Type::Secp256k1Scalar | Type::Secp256r1Base | Type::Secp256r1Scalar)
 }
 
 fn expect(actual: Type, expected: Type) -> Result<(), RenderError> {

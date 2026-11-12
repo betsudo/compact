@@ -138,6 +138,8 @@ impl TypeEnvironment {
                 Type::LedgerMap { .. }
                 | Type::Secp256k1Base
                 | Type::Secp256k1Scalar
+                | Type::Secp256r1Base
+                | Type::Secp256r1Scalar
                 | Type::Secp256k1Point => {
                     return Err(invalid(
                         path,

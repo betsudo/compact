@@ -27,13 +27,22 @@ use midnight_transient_crypto::fab::AlignmentExt;
 use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite};
 
 // The pinned Compact runtime's maximum values, in little-endian order.
-const BASE_MAX: [u8; 32] = [
+const K1_BASE_MAX: [u8; 32] = [
     0x2e, 0xfc, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 ];
-const SCALAR_MAX: [u8; 32] = [
+const K1_SCALAR_MAX: [u8; 32] = [
     0x40, 0x41, 0x36, 0xd0, 0x8c, 0x5e, 0xd2, 0xbf, 0x3b, 0xa0, 0x48, 0xaf, 0xe6, 0xdc, 0xae, 0xba,
     0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+];
+
+const R1_BASE_MAX: [u8; 32] = [
+    0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+];
+const R1_SCALAR_MAX: [u8; 32] = [
+    0x50, 0x25, 0x63, 0xfc, 0xc2, 0xca, 0xb9, 0xf3, 0x84, 0x9e, 0x17, 0xa7, 0xad, 0xfa, 0xe6, 0xbc,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
 ];
 
 const LOW_BYTES: usize = 24;
@@ -46,6 +55,14 @@ pub struct Secp256k1Base([u8; 32]);
 /// A canonical element of the secp256k1 scalar field.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Secp256k1Scalar([u8; 32]);
+
+/// A canonical element of the secp256r1 coordinate field.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Secp256r1Base([u8; 32]);
+
+/// A canonical element of the secp256r1 scalar field.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Secp256r1Scalar([u8; 32]);
 
 fn compare_le(left: &[u8; 32], right: &[u8; 32]) -> Ordering {
     left.iter().rev().cmp(right.iter().rev())
@@ -110,22 +127,12 @@ fn decode(value: &ValueSlice, max: [u8; 32]) -> Option<[u8; 32]> {
     }
 }
 
-macro_rules! impl_secp256k1_field {
+macro_rules! impl_secp256k1_arithmetic {
     ($field:ident, $max:ident, $inner:ty, $zero_inverse:ident) => {
         impl $field {
-            /// Decode a canonical little-endian field element.
-            pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
-                compare_le(&bytes, &$max).is_le().then_some(Self(bytes))
-            }
-
             /// Reduce an unsigned little-endian integer modulo this field's order.
             pub fn from_le_bytes_reduced(bytes: [u8; 32]) -> Self {
                 Self(reduce(bytes, $max))
-            }
-
-            /// Return the field element's canonical little-endian bytes.
-            pub fn to_le_bytes(self) -> [u8; 32] {
-                self.0
             }
 
             /// Return the multiplicative inverse, or a field-specific error for zero.
@@ -177,6 +184,22 @@ macro_rules! impl_secp256k1_field {
 
             fn neg(self) -> Self {
                 Self::from_inner(-self.into_inner())
+            }
+        }
+    };
+}
+
+macro_rules! impl_foreign_field {
+    ($field:ident, $max:ident) => {
+        impl $field {
+            /// Decode a canonical little-endian field element.
+            pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
+                compare_le(&bytes, &$max).is_le().then_some(Self(bytes))
+            }
+
+            /// Return the field element's canonical little-endian bytes.
+            pub fn to_le_bytes(self) -> [u8; 32] {
+                self.0
             }
         }
 
@@ -261,5 +284,15 @@ macro_rules! impl_secp256k1_field {
     };
 }
 
-impl_secp256k1_field!(Secp256k1Base, BASE_MAX, Fp, Secp256k1BaseZeroInverse);
-impl_secp256k1_field!(Secp256k1Scalar, SCALAR_MAX, Fq, Secp256k1ScalarZeroInverse);
+impl_foreign_field!(Secp256k1Base, K1_BASE_MAX);
+impl_foreign_field!(Secp256k1Scalar, K1_SCALAR_MAX);
+impl_foreign_field!(Secp256r1Base, R1_BASE_MAX);
+impl_foreign_field!(Secp256r1Scalar, R1_SCALAR_MAX);
+
+impl_secp256k1_arithmetic!(Secp256k1Base, K1_BASE_MAX, Fp, Secp256k1BaseZeroInverse);
+impl_secp256k1_arithmetic!(
+    Secp256k1Scalar,
+    K1_SCALAR_MAX,
+    Fq,
+    Secp256k1ScalarZeroInverse
+);

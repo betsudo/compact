@@ -38,6 +38,8 @@ impl CarrierSink for NativeCarrierSink {
             Leaf::JubjubPoint => syn::parse_quote!(runtime::JubjubPoint),
             Leaf::Secp256k1Base => syn::parse_quote!(runtime::Secp256k1Base),
             Leaf::Secp256k1Scalar => syn::parse_quote!(runtime::Secp256k1Scalar),
+            Leaf::Secp256r1Base => syn::parse_quote!(runtime::Secp256r1Base),
+            Leaf::Secp256r1Scalar => syn::parse_quote!(runtime::Secp256r1Scalar),
             Leaf::Secp256k1Point => syn::parse_quote!(runtime::Secp256k1Point),
             Leaf::OpaqueString => syn::parse_quote!(runtime::OpaqueString),
             Leaf::OpaqueBytes => syn::parse_quote!(runtime::OpaqueBytes),

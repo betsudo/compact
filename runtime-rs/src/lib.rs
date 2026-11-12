@@ -22,6 +22,7 @@
 #![forbid(unsafe_code)]
 
 pub mod context;
+mod foreign_fields;
 #[cfg(feature = "experimental-functional")]
 pub mod functional;
 mod hash_input;
@@ -31,7 +32,6 @@ mod opaque;
 mod primitives;
 pub mod public_state;
 pub mod recording;
-mod secp256k1_fields;
 mod secp256k1_point;
 mod secp256k1_recovery;
 pub mod slots;
@@ -40,6 +40,7 @@ pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
 #[cfg(feature = "ledger-transaction")]
 pub mod transaction;
 
+pub use foreign_fields::{Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar};
 pub use hash_input::{ExactHashInput, HashInputValue, exact_hash_input, exact_private_output};
 pub use midnight_compact_runtime_macros::{
     CompactCellValue, CompactEnum, CompactHashInput, CompactMerklePath, CompactMerklePathEntry,
@@ -56,7 +57,6 @@ pub use primitives::{
     BoundedUint, FixedBytes, FixedVector, JubjubPoint, UnsignedOperand, WideUint, add_unsigned,
     add_wide_unsigned, cast_unsigned, multiply_unsigned, narrow_wide_uint, subtract_unsigned,
 };
-pub use secp256k1_fields::{Secp256k1Base, Secp256k1Scalar};
 pub use secp256k1_point::Secp256k1Point;
 pub use secp256k1_recovery::secp256k1_ecdsa_recover;
 
