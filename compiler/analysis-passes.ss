@@ -1986,6 +1986,9 @@
                    nat))]
               [(tfield ,src1) (values '() #f)]
               [(tunsigned ,src ,nat) (values '() nat)]
+              [(topaque ,src ,opaque-type)
+               (guard (secp256k1-field-max opaque-type))
+               (values '() opaque-type)]
               [else (source-errorf src "~a requires its ~a operand to be a Field or Uint; the actual type is ~a"
                                    op
                                    l/r
@@ -1993,8 +1996,20 @@
           (let-values ([(type-name1* nat1) (condense type1 "left")]
                        [(type-name2* nat2) (condense type2 "right")])
             (let-values ([(result-expr result-type)
-                          (if (and nat1 nat2)
-                              (let ([result-nat (case op
+                          (cond
+                            [(or (string? nat1) (string? nat2))
+                             (unless (equal? nat1 nat2)
+                               (source-errorf src "incompatible combination of types ~a and ~a for binary arithmetic operator ~a"
+                                              (format-type type1) (format-type type2) op))
+                             (let ([result-type (with-output-language (Ltypes Type) `(topaque ,src ,nat1))])
+                               (values
+                                 (with-output-language (Ltypes Expression)
+                                   `(secp256k1-arithmetic ,src ,op ,result-type
+                                      ,(maybe-safecast src result-type type1 expr1)
+                                      ,(maybe-safecast src result-type type2 expr2)))
+                                 result-type))]
+                            [(and nat1 nat2)
+                             (let ([result-nat (case op
                                                   [+ (+ nat1 nat2)]
                                                   [* (* nat1 nat2)]
                                                   [- nat1]
@@ -2029,18 +2044,19 @@
                                             (k mbits
                                                (maybe-cast nat1 type1 expr1)
                                                (maybe-cast nat2 type2 expr2))))
-                                      result-type))))
-                              (let ([result-type (with-output-language (Ltypes Type) `(tfield ,src))])
+                                      result-type))))]
+                            [else
+                             (let ([result-type (with-output-language (Ltypes Type) `(tfield ,src))])
                                 (values
                                   (k #f
                                      (maybe-safecast src result-type type1 expr1)
                                      (maybe-safecast src result-type type2 expr2))
-                                  result-type)))])
+                                  result-type))])])
               (if (and (null? type-name1*) (null? type-name2*))
                   (values result-expr result-type)
                   (begin
                     ; this is, in effect, (sametype? type1 type2)
-                    (unless (and (equal? type-name1* type-name2*) (eqv? nat1 nat2))
+                    (unless (and (equal? type-name1* type-name2*) (equal? nat1 nat2))
                       (source-errorf src "incompatible combination of types ~a and ~a for binary arithmetic operator ~s"
                                      (format-type type1)
                                      (format-type type2)
@@ -2048,7 +2064,7 @@
                     ; from here, type1 = type2, nat1 = nat2
                     (values
                       (with-output-language (Ltypes Expression)
-                        (if nat1
+                        (if (number? nat1)
                             (if (eq? op '-)
                                 result-expr
                                 (let ([result-nat (nanopass-case (Ltypes Type) result-type
@@ -3896,6 +3912,13 @@
        (arithmetic-binop src "-" mbits expr1 expr2)]
       [(* ,src ,mbits ,expr1 ,expr2)
        (arithmetic-binop src "*" mbits expr1 expr2)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
+       (unless (and (memq arithmetic-op '(+ - *))
+                    (T type [(topaque ,src ,opaque-type) (secp256k1-field-max opaque-type)])
+                    (sametype? (de-alias type1) type)
+                    (sametype? (de-alias type2) type))
+         (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+       type]
       [(< ,src ,bits ,expr1 ,expr2)
        (relational-operator src bits expr1 expr2)]
       [(<= ,src ,bits ,expr1 ,expr2)
@@ -5419,6 +5442,13 @@
        (add-path-point src "the computation" "the result of a subtraction involving" (combine-abs abs1 abs2))]
       [(* ,src ,mbits ,[* abs1] ,[* abs2])
        (add-path-point src "the computation" "the result of a multiplication involving" (combine-abs abs1 abs2))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[* abs1] ,[* abs2])
+       (add-path-point src "the computation"
+         (case arithmetic-op
+           [(+) "the result of an addition involving"]
+           [(-) "the result of a subtraction involving"]
+           [(*) "the result of a multiplication involving"])
+         (combine-abs abs1 abs2))]
       [(< ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]
       [(<= ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]
       [(> ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]

@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::cmp::Ordering;
+use std::ops::{Add, Mul, Sub};
 
+use ff::PrimeField;
 use midnight_base_crypto::fab::{
     Aligned, Alignment, AlignmentAtom, AlignmentSegment, InvalidBuiltinDecode, Value, ValueAtom,
     ValueSlice,
 };
+use midnight_curves::k256::{Fp, Fq};
 use midnight_transient_crypto::fab::AlignmentExt;
 
 use crate::{BinaryHashRepr, FieldRepr, Fr, FromFieldRepr, MemWrite};
@@ -97,7 +100,7 @@ fn decode(value: &ValueSlice, max: [u8; 32]) -> Option<[u8; 32]> {
 }
 
 macro_rules! impl_secp256k1_field {
-    ($field:ident, $max:ident) => {
+    ($field:ident, $max:ident, $inner:ty) => {
         impl $field {
             /// Decode a canonical little-endian field element.
             pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
@@ -112,6 +115,42 @@ macro_rules! impl_secp256k1_field {
             /// Return the field element's canonical little-endian bytes.
             pub fn to_le_bytes(self) -> [u8; 32] {
                 self.0
+            }
+
+            fn into_inner(self) -> $inner {
+                let mut bytes = self.0;
+                bytes.reverse();
+                <$inner>::from_repr(bytes.into()).expect("field element is canonical")
+            }
+
+            fn from_inner(value: $inner) -> Self {
+                let mut bytes: [u8; 32] = value.to_repr().into();
+                bytes.reverse();
+                Self(bytes)
+            }
+        }
+
+        impl Add for $field {
+            type Output = Self;
+
+            fn add(self, rhs: Self) -> Self {
+                Self::from_inner(self.into_inner() + rhs.into_inner())
+            }
+        }
+
+        impl Sub for $field {
+            type Output = Self;
+
+            fn sub(self, rhs: Self) -> Self {
+                Self::from_inner(self.into_inner() - rhs.into_inner())
+            }
+        }
+
+        impl Mul for $field {
+            type Output = Self;
+
+            fn mul(self, rhs: Self) -> Self {
+                Self::from_inner(self.into_inner() * rhs.into_inner())
             }
         }
 
@@ -196,5 +235,5 @@ macro_rules! impl_secp256k1_field {
     };
 }
 
-impl_secp256k1_field!(Secp256k1Base, BASE_MAX);
-impl_secp256k1_field!(Secp256k1Scalar, SCALAR_MAX);
+impl_secp256k1_field!(Secp256k1Base, BASE_MAX, Fp);
+impl_secp256k1_field!(Secp256k1Scalar, SCALAR_MAX, Fq);

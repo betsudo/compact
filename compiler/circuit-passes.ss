@@ -909,6 +909,13 @@
                               len
                               (format-type type))])
        (with-output-language (Linlined Type) `(tfield ,src))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
+       (unless (and (memq arithmetic-op '(+ - *))
+                    (T type [(topaque ,src ,opaque-type) (secp256k1-field-max opaque-type)])
+                    (sametype? type1 type)
+                    (sametype? type2 type))
+         (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+       type]
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
          (nanopass-case (Linlined Type) type
@@ -1517,6 +1524,9 @@
        (values
          `(assert ,src ,expr ,mesg)
          (CTV-tuple no-var-name '()))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[expr1 ctv1] ,[expr2 ctv2])
+       ;; A native numeric literal cannot represent a foreign field zero.
+       (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (CTV-unknown no-var-name))]
       [(secp256k1-bytes-cast ,src ,[type] ,[expr ctv])
        ;; Keep the field kind attached to the conversion even for constant bytes.
        (values `(secp256k1-bytes-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
@@ -1746,6 +1756,8 @@
              `(tuple ,src)
              `(assert ,src ,expr ,mesg))
          idset)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Value : expr1 idset1] ,[Value : expr2 idset2])
+       (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (idset-union idset1 idset2))]
       [(secp256k1-bytes-cast ,src ,type ,[Value : expr idset])
        (values `(secp256k1-bytes-cast ,src ,type ,expr) idset)]
       [(field->bytes ,src ,len ,[Value : expr idset])
@@ -1842,6 +1854,8 @@
        (values
          (make-seq #t src expr* expr)
          (idset-union-all (cons idset idset*)))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Effect : expr1 idset1] ,[Effect : expr2 idset2])
+       (values (make-seq #t src (list expr1) expr2) (idset-union idset1 idset2))]
       [(secp256k1-bytes-cast ,src ,type ,expr) (Effect expr)]
       [(field->bytes ,src ,len ,expr)
        (if (> len (field-bytes))
@@ -2136,6 +2150,13 @@
          (lambda (triv)
            (k (with-output-language (Lcircuit Rhs)
                 `(bytes->field ,src ,len ,triv)))))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,expr1 ,expr2)
+       (Triv expr1 test
+         (lambda (triv1)
+           (Triv expr2 test
+             (lambda (triv2)
+               (k (with-output-language (Lcircuit Rhs)
+                    `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,triv1 ,triv2)))))))]
       [(secp256k1-bytes-cast ,src ,[type] ,expr)
        (Triv expr test
          (lambda (triv)
@@ -2543,6 +2564,15 @@
                     (with-output-language (Lflattened Statement)
                       (list `(= ,test ,var-name (bytes->field ,src ,len ,triv1 ,triv2)))))
                   (list-head triv* n)))])))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Single-Triv : triv1] ,[Single-Triv : triv2])
+       (unless (feature-zkir-v3)
+         (source-errorf src "secp256k1 field arithmetic requires ZKIR v3"))
+       (nanopass-case (Lcircuit Type) type
+         [(topaque ,src^ ,opaque-type)
+          (hashtable-set! var-ht var-name (Wump-single var-name))
+          (with-output-language (Lflattened Statement)
+            (list `(= ,test ,var-name (secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2))))]
+         [else (assert cannot-happen)])]
       [(secp256k1-bytes-cast ,src ,type ,[* wump])
        (unless (feature-zkir-v3)
          (source-errorf src "secp256k1 byte casts require ZKIR v3; recompile with --feature-zkir-v3"))
@@ -2751,6 +2781,11 @@
                     [(* ,mbits ,triv1 ,triv2) (* ,mbits^ ,triv1^ ,triv2^)
                      (and (eqv? mbits mbits^)
                           (commutative-trivs-equal? triv1 triv1^ triv2 triv2^))]
+                    [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+                     (secp256k1-arithmetic ,src^ ,arithmetic-op^ ,opaque-type^ ,triv1^ ,triv2^)
+                     (and (eq? arithmetic-op arithmetic-op^)
+                          (string=? opaque-type opaque-type^)
+                          (trivs-equal? triv1 triv1^ triv2 triv2^))]
                     [(< ,bits ,triv1 ,triv2) (< ,bits^ ,triv1^ ,triv2^)
                      (and (eqv? bits bits^)
                           (trivs-equal? triv1 triv1^ triv2 triv2^))]
@@ -2805,6 +2840,8 @@
               [(+ ,mbits ,triv1 ,triv2) (mbits-hash mbits (commutative-triv-hash triv1 triv2 119001092))]
               [(- ,mbits ,triv1 ,triv2) (mbits-hash mbits (triv-hash triv1 (triv-hash triv2 410225874)))]
               [(* ,mbits ,triv1 ,triv2) (mbits-hash mbits (commutative-triv-hash triv1 triv2 513566316))]
+              [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+               (triv-hash triv1 (triv-hash triv2 (update (symbol-hash arithmetic-op) (string-hash opaque-type))))]
               [(< ,bits ,triv1 ,triv2) (bits-hash bits (triv-hash triv1 (triv-hash triv2 730407)))]
               [(== ,triv1 ,triv2) (commutative-triv-hash triv1 triv2 45862114)]
               [(select ,triv0 ,triv1 ,triv2)
@@ -3193,6 +3230,8 @@
                           '()
                           triv*)])
              `(vector->bytes ,triv ,triv* ...)))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,[FWD-Triv : triv1] ,[FWD-Triv : triv2])
+       `(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)]
       [(downcast-unsigned ,src ,safe ,nat? ,nat ,[FWD-Triv : triv])
        (or (ifconstant triv
              (lambda (nat^)
@@ -3217,6 +3256,7 @@
             [(== ,triv1 ,triv2) #t]
             [(select ,triv0 ,triv1 ,triv2) #t]
             [(bytes-ref ,triv ,nat) #t]
+            [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2) #t]
             [(bytes->field ,src ,len ,triv1 ,triv2) (<= len (field-bytes))]
             [(vector->bytes ,triv ,triv* ...) #t]
             [(downcast-unsigned ,src ,safe ,nat? ,nat ,triv) #f])))
@@ -3286,6 +3326,8 @@
        `(bytes->field ,src ,len ,triv1 ,triv2)]
       [(vector->bytes ,[BWD-Triv : triv] ,[BWD-Triv : triv*] ...)
        `(vector->bytes ,triv ,triv* ...)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,[BWD-Triv : triv1] ,[BWD-Triv : triv2])
+       `(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)]
       [(downcast-unsigned ,src ,safe ,nat? ,nat ,[BWD-Triv : triv])
        `(downcast-unsigned ,src ,safe ,nat? ,nat ,triv)]
       [else (internal-errorf 'BWD-Single "unexpected ir ~s" ir)])
@@ -3807,6 +3849,17 @@
        (arithmetic-binop "-" mbits triv1 triv2)]
       [(* ,mbits ,triv1 ,triv2)
        (arithmetic-binop "*" mbits triv1 triv2)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+       (let* ([type1 (Triv triv1)] [type2 (Triv triv2)])
+         (define (same-field? type)
+           (nanopass-case (Lflattened Primitive-Type) type
+             [(topaque ,opaque-type^) (string=? opaque-type opaque-type^)]
+             [else #f]))
+         (unless (and (memq arithmetic-op '(+ - *))
+                      (secp256k1-field-max opaque-type)
+                      (same-field? type1) (same-field? type2))
+           (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+         type1)]
       [(< ,bits ,triv1 ,triv2)
        (let* ([type1 (Triv triv1)] [type2 (Triv triv2)])
          (let ([maybe-nat1 (check-tfield (format "first argument ~s to relational operator" triv1) type1)]

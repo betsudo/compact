@@ -35,6 +35,17 @@
     (definitions
       (define (object . fields) (origin-object fields))
 
+      (define (secp256k1-carrier type)
+        (nanopass-case (Lnodisclose Type) type
+          [(talias ,src ,nominal? ,type-name ,type^) (secp256k1-carrier type^)]
+          [(topaque ,src ,opaque-type)
+           (and (secp256k1-field-max opaque-type) opaque-type)]
+          [else #f]))
+
+      (define (same-secp256k1-carrier? type1 type2)
+        (let ([carrier (secp256k1-carrier type1)])
+          (and carrier (equal? carrier (secp256k1-carrier type2)))))
+
       (define (secp256k1-cast-ir src type value)
         (object (cons "kind" "secp256k1_bytes_cast")
                 (cons "ty" (type-ir type src))
@@ -81,6 +92,7 @@
           [(seq ,src ,expr* ... ,expr) src]
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
           [(assert ,src ,expr ,mesg) src]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) src]
           [(secp256k1-bytes-cast ,src ,type ,expr) src]
           [(field->bytes ,src ,len ,expr) src]
           [(cast-from-bytes ,src ,type ,len ,expr) src]
@@ -481,6 +493,12 @@
             [(tvector ,src ,len ,type^) value]
             [else type])))
 
+      (define (secp256k1-arithmetic-ir op left right)
+        (object
+          (cons "kind" (case op [(+) "add"] [(-) "subtract"] [(*) "multiply"] [else (assert cannot-happen)]))
+          (cons "left" left)
+          (cons "right" right)))
+
       ;; arithmetic-binop annotates both operands with the result bound.
       ;; For multiplication by zero that bound is smaller than an operand's;
       ;; this safe-cast is erased by the circuit pipeline, not a checked
@@ -637,6 +655,9 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-secp256k1-carrier? type type^))
+           (typed-expression-ir expr type^ src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
            (nanopass-case (Lnodisclose Type) (vector-carrier-type (unsigned-canonical-type type))
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
@@ -669,6 +690,10 @@
              [(ttuple ,src^ ,type* ...)
               (typed-expression-ir expr type src type^)]
              [else (source-errorf src "Rust backend does not yet support this cast")])]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (secp256k1-arithmetic-ir arithmetic-op
+             (typed-expression-ir expr1 type src)
+             (typed-expression-ir expr2 type src))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (expression-ir expr src))]
           [(cast-from-bytes ,src ,type ,len ,expr)
@@ -2575,6 +2600,9 @@
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-secp256k1-carrier? type type^))
+           (stateful-typed-expression-ir expr type^ src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
            (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
               (if (maybe-nonnegative-integer-literal expr src)
@@ -2592,6 +2620,10 @@
                           (cons "max" (number->string nat))
                           (cons "value" (stateful-expression-ir expr src witness-ids))))]
              [else (expression-ir value-expr owner-src)])]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (secp256k1-arithmetic-ir arithmetic-op
+             (stateful-typed-expression-ir expr1 type src witness-ids)
+             (stateful-typed-expression-ir expr2 type src witness-ids))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
           [(cast-from-bytes ,src ,type ,len ,expr)
@@ -2765,6 +2797,9 @@
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(safe-cast ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(secp256k1-bytes-cast ,src ,type ,expr)

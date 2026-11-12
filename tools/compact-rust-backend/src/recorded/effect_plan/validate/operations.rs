@@ -122,7 +122,9 @@ pub(super) fn validate(
         Operation::Add(a, b) | Operation::Subtract(a, b) | Operation::Multiply(a, b) => {
             use_value(a)?;
             use_value(b)?;
-            a.ty == Type::Field && b.ty == Type::Field && *ty == Type::Field
+            *ty == a.ty
+                && crate::pure_semantics::arithmetic::check_field_arithmetic_pair(&a.ty, &b.ty)
+                    .is_ok()
         }
         Operation::UnsignedAdd(a, b) => {
             use_value(a)?;

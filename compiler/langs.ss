@@ -611,8 +611,11 @@
       (- (targ-size src nat)
          (targ-type src type))))
 
+  (define (arithmetic-operator? op) (memq op '(+ - *)))
+
   (define-language/pretty Ltypes (entry Program)
     (terminals
+      (arithmetic-operator (arithmetic-op))
       (field (nat kindex))
       (len (len))
       (bits (bits))
@@ -711,6 +714,7 @@
       (seq src expr* ... expr)                => (seq #f expr* ... #f expr)
       (let* src ([local* expr*] ...) expr)    => (let* ([bracket local* 0 expr*] 0 ...) #f expr)
       (assert src expr mesg)                  => (assert expr mesg)
+      (secp256k1-arithmetic src arithmetic-op type expr1 expr2) => (secp256k1-arithmetic arithmetic-op type expr1 expr2)
       (secp256k1-bytes-cast src type expr)    => (secp256k1-bytes-cast type expr)
       (field->bytes src len expr)             => (field->bytes len expr)
       (cast-from-bytes src type len expr)     => (cast-from-bytes type len #f expr)
@@ -958,6 +962,7 @@
 
   (define-language/pretty Lcircuit (entry Program)
     (terminals
+      (arithmetic-operator (arithmetic-op))
       (field (nat))
       (len (len))
       (kindex (kindex))
@@ -1031,6 +1036,7 @@
         (public-ledger ledger-field-name (path-elt* ...) adt-op #f triv* ...)
       (contract-call src elt-name (triv type) triv* ...) =>
         (contract-call elt-name 4 (triv 0 type) #f triv* ...)
+      (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
       (secp256k1-bytes-cast src type triv)   => (secp256k1-bytes-cast type triv)
       (field->bytes src len triv)            => (field->bytes len triv)
       (bytes->field src len triv)            => (bytes->field len triv)
@@ -1115,6 +1121,7 @@
          (call src function-name triv* ...)
          (public-ledger src ledger-field-name (maybe sugar) (path-elt* ...) src^ adt-op triv* ...)
          (contract-call src elt-name (triv type) triv* ...)
+         (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
          (secp256k1-bytes-cast src type triv)
          (field->bytes src len triv)
          (bytes->field src len triv)
@@ -1128,6 +1135,7 @@
          (== triv1 triv2)                        => (== triv1 3 triv2)
          (select triv0 triv1 triv2)              => (select triv0 triv1 triv2)
          (bytes-ref triv nat)
+         (secp256k1-arithmetic src arithmetic-op opaque-type triv1 triv2)
          (bytes->field src len triv1 triv2)      => (bytes->field len #f triv1 #f triv2)
          (vector->bytes triv triv* ...)          => (vector->bytes triv triv* ...) ; result holds one field's worth of bytes
          (downcast-unsigned src safe (maybe nat?) nat triv) =>

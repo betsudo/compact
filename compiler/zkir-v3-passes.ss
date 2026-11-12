@@ -872,6 +872,14 @@
         (assert cannot-happen)])
 
     (Single : Single (ir var-name instr*) -> * (instr*)
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+       (with-output-language (Lzkir Instruction)
+         (case arithmetic-op
+           [(+) (cons `(add ,var-name ,triv1 ,triv2) instr*)]
+           [(-) (let ([neg (make-temp-id src 'neg)])
+                  (cons* `(add ,var-name ,triv1 ,neg) `(neg ,neg ,triv2) instr*))]
+           [(*) (cons `(mul ,var-name ,triv1 ,triv2) instr*)]
+           [else (assert cannot-happen)]))]
       [(+ ,mbits ,triv0 ,triv1)
        (with-output-language (Lzkir Instruction)
          (cons `(add ,var-name ,triv0 ,triv1) instr*))]

@@ -83,6 +83,30 @@ pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
     matches!(ty, Type::Unit).then_some(!negated)
 }
 
+pub(crate) fn check_field_arithmetic_operand(ty: &Type) -> Result<(), RenderError> {
+    if matches!(
+        ty,
+        Type::Field | Type::Secp256k1Base | Type::Secp256k1Scalar
+    ) {
+        return Ok(());
+    }
+    Err(RenderError::TypeMismatch {
+        expected: Type::Field,
+        actual: ty.clone(),
+    })
+}
+
+pub(crate) fn check_field_arithmetic_pair(left: &Type, right: &Type) -> Result<(), RenderError> {
+    check_field_arithmetic_operand(left)?;
+    if left != right {
+        return Err(RenderError::TypeMismatch {
+            expected: left.clone(),
+            actual: right.clone(),
+        });
+    }
+    Ok(())
+}
+
 pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
     source: ArithmeticSource<'_>,
     children: &mut C,
@@ -119,19 +143,8 @@ pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
             )
         }
         ArithmeticSource::Field { kind, .. } => {
-            if left.ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: left.ty,
-                });
-            }
-            if right.ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: right.ty,
-                });
-            }
-            (ArithmeticFacts::Field(kind), Type::Field)
+            check_field_arithmetic_pair(&left.ty, &right.ty)?;
+            (ArithmeticFacts::Field(kind), left.ty)
         }
         ArithmeticSource::Equality { negated, .. } => {
             // Children supply bounded inferred types. Preserve exact derived

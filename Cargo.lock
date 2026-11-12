@@ -5743,6 +5743,7 @@ dependencies = [
 name = "midnight-compact-runtime"
 version = "0.2.0"
 dependencies = [
+ "ff 0.13.1",
  "hex",
  "midnight-base-crypto",
  "midnight-circuits 7.3.0",

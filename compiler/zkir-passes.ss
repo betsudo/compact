@@ -759,6 +759,8 @@
           [,path-index (VMalign path-index 1)]
           [(,src ,type ,[* triv*] ...) (make-vmref type triv*)])
         (Single : Single (ir) -> * (str)
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+           (source-errorf src "secp256k1 field arithmetic requires ZKIR v3")]
           [,triv (print-gate "copy" `[var ,(Triv triv)])] ; not exercised when optimize-circuit is run
           ; TODO: is there any use to be made of mbits, which if not #f is the
           ; maximum number of bits occupied by the arguments and the result?

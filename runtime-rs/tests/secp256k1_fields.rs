@@ -194,6 +194,66 @@ fn byte_casts_reduce_each_modulus_and_keep_strict_decode_separate() {
 }
 
 #[test]
+fn base_arithmetic_reduces_and_keeps_the_canonical_encoding() {
+    let base = |hex| Secp256k1Base::from_le_bytes(le_bytes(hex)).unwrap();
+    let zero = Secp256k1Base::default();
+    let one = base("0000000000000000000000000000000000000000000000000000000000000001");
+    let max = base("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e");
+    assert_eq!(max + one, zero);
+    assert_eq!(zero - one, max);
+    assert_eq!(max - max, zero);
+    assert_eq!(max * max, one);
+    assert_eq!(max * zero, zero);
+    check_representation(max + one, max.to_le_bytes());
+    check_representation(max * max, [0; 32]);
+
+    let x = base("9c4467d18df9282eb7124b451afecac5f4827503316aacda34a863e367e0c85c");
+    let y = base("f58b1b91dc876f4824102f1395c6d175943cc503cbaf6092d3f319bb042f9d68");
+    assert_eq!(
+        x + y,
+        base("91cf83636a809776db227a58b0c59c3b88bf3a06fd1a0d6d089b7d9f6c106995")
+    );
+    assert_eq!(
+        x - y,
+        base("a6b94c3fb171b8e693021c318537f9506045afff65bb4c4760b54a2763b12723")
+    );
+    assert_eq!(
+        x * y,
+        base("2ea9a138e9db7bd49a51f8cf4f2bd3ffae3b6707cfe796a3046ebabff71ccd90")
+    );
+}
+
+#[test]
+fn scalar_arithmetic_reduces_with_the_scalar_order() {
+    let scalar = |hex| Secp256k1Scalar::from_le_bytes(le_bytes(hex)).unwrap();
+    let zero = Secp256k1Scalar::default();
+    let one = scalar("0000000000000000000000000000000000000000000000000000000000000001");
+    let max = scalar("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140");
+    assert_eq!(max + one, zero);
+    assert_eq!(zero - one, max);
+    assert_eq!(max - max, zero);
+    assert_eq!(max * max, one);
+    assert_eq!(max * zero, zero);
+    check_representation(max + one, max.to_le_bytes());
+    check_representation(max * max, [0; 32]);
+
+    let x = scalar("9c4467d18df9282eb7124b451afecac5f4827503316aacda34a863e367e0c85c");
+    let y = scalar("f58b1b91dc876f4824102f1395c6d175943cc503cbaf6092d3f319bb042f9d68");
+    assert_eq!(
+        x + y,
+        scalar("91cf83636a809776db227a58b0c59c3cce105d204dd16d3148c91f119bda2483")
+    );
+    assert_eq!(
+        x - y,
+        scalar("a6b94c3fb171b8e693021c318537f94f1af48ce61503ec832087a8b533e76c35")
+    );
+    assert_eq!(
+        x * y,
+        scalar("75fa26ca654d5c64672d3951b8efbb31bc29c6a54de3af6d7e84724904a3ef0e")
+    );
+}
+
+#[test]
 fn foreign_field_decoders_refuse_malformed_and_noncanonical_inputs() {
     for atoms in [
         vec![vec![]],

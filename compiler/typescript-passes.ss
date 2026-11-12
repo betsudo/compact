@@ -324,6 +324,8 @@
            "addField"
            "subField"
            "mulField"
+           "secp256k1BaseAdd" "secp256k1BaseSub" "secp256k1BaseMul"
+           "secp256k1ScalarAdd" "secp256k1ScalarSub" "secp256k1ScalarMul"
            ))
       (define (compact-stdlib name)
         (unless (member name compact-stdlib-entries)
@@ -2922,6 +2924,19 @@
            (format "((e, i) => e.slice(i, i+~d))(" len)
            ((make-Qsep ",") expr (make-Qconcat "Number(" index ")"))
            ")"))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type
+                             ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1]
+                             ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
+       (let ([stem (nanopass-case (Ltypescript Type) type
+                     [(topaque ,src^ ,opaque-type)
+                      (case opaque-type
+                        [("Secp256k1Base") "secp256k1Base"]
+                        [("Secp256k1Scalar") "secp256k1Scalar"]
+                        [else (assert cannot-happen)])]
+                     [else (assert cannot-happen)])]
+             [suffix (case arithmetic-op [(+) "Add"] [(-) "Sub"] [(*) "Mul"] [else (assert cannot-happen)])])
+         (parenthesize level (precedence call)
+           (make-Qconcat (compact-stdlib (string-append stem suffix)) "(" ((make-Qsep ",") expr1 expr2) ")")))]
       [(+ ,src ,mbits ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1] ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
        (guard (not mbits))
        (parenthesize level (precedence call)

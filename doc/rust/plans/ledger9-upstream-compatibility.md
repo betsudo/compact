@@ -143,6 +143,21 @@ accepted the same cases and refused changed transcripts or commitments.
 All seven exports are k=10–12. Fresh proofs and funded application remain
 open in the slow lane.
 
+The secp256k1 Base and Scalar types now support same-field addition,
+subtraction and multiplication through both generated targets and ZKIR v3.
+The [arithmetic fixtures](../../../test-contracts/stdlib/secp256k1/arithmetic)
+preserve the pinned upstream test blocks, including typed-zero
+self-subtraction. Generated Rust and TypeScript agree on all 37 original
+K1 cases. Rust VM replay and the pinned ZKIR preimage check cover each
+case. The interpreter rejects a changed ledger write for each one.
+All nine stateful exports are k=11. Fresh standalone proofs for base
+addition, scalar multiplication and inlined self-subtraction verified in
+separate processes. The verifier refused changed binding, different
+verifier and corrupted proof controls. A separate funded base addition
+transaction applied under default strict verification and replay returned
+`IntentAlreadyExists` with byte-identical ledger state. The remaining
+arithmetic proof and application matrix is open.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

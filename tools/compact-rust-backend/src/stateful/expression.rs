@@ -27,6 +27,9 @@ use crate::ir::{
     StatefulCircuit, StructField, Type, WitnessDeclaration,
 };
 use crate::native_representation;
+use crate::pure_semantics::arithmetic::{
+    check_field_arithmetic_operand, check_field_arithmetic_pair,
+};
 use crate::pure_semantics::conversion::Secp256k1BytesCast;
 use crate::source_diagnostics::{Owner, RefusalSite};
 use crate::value_lowering::secp256k1_bytes_cast_syntax;
@@ -1594,12 +1597,7 @@ fn render_arithmetic_operation(
                 query_effect,
                 environment,
             )?;
-            if left_ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: left_ty,
-                });
-            }
+            check_field_arithmetic_operand(&left_ty)?;
             let left_name = syn::Ident::new(
                 &format!("__compact_value_{}", *next_temp),
                 Span::call_site(),
@@ -1614,12 +1612,7 @@ fn render_arithmetic_operation(
                 query_effect,
                 environment,
             )?;
-            if right_ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: right_ty,
-                });
-            }
+            check_field_arithmetic_pair(&left_ty, &right_ty)?;
             let right_name = syn::Ident::new(
                 &format!("__compact_value_{}", *next_temp),
                 Span::call_site(),
@@ -1632,7 +1625,7 @@ fn render_arithmetic_operation(
                 Expr::Multiply { .. } => syn::parse_quote!(#left_name * #right_name),
                 _ => unreachable!(),
             };
-            Ok((rendered, Type::Field, left_effect || right_effect))
+            Ok((rendered, left_ty, left_effect || right_effect))
         }
         Expr::Equal { left, right } | Expr::NotEqual { left, right } => {
             let (left, left_ty, left_effect) = render_state_expression_observed(

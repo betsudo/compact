@@ -17,11 +17,46 @@ import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
-import { MAX_FIELD, JUBJUB_SCALAR_MODULUS } from './constants.js';
+import { MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS } from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
 import { CompactError } from './error.js';
 
 const FIELD_MODULUS: bigint = MAX_FIELD + 1n;
+
+function subModulo(x: bigint, y: bigint, modulus: bigint): bigint {
+  const difference = x - y;
+  return difference >= 0n ? difference : difference + modulus;
+}
+
+/** Add two canonical secp256k1 base field elements. */
+export function secp256k1BaseAdd(x: bigint, y: bigint): bigint {
+  return (x + y) % SECP256K1_BASE_MODULUS;
+}
+
+/** Subtract two canonical secp256k1 base field elements. */
+export function secp256k1BaseSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256K1_BASE_MODULUS);
+}
+
+/** Multiply two canonical secp256k1 base field elements. */
+export function secp256k1BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256K1_BASE_MODULUS;
+}
+
+/** Add two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarAdd(x: bigint, y: bigint): bigint {
+  return (x + y) % SECP256K1_SCALAR_MODULUS;
+}
+
+/** Subtract two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Multiply two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256K1_SCALAR_MODULUS;
+}
 
 /**
  * Field addition

@@ -16,6 +16,7 @@
 //! Binary operation temporaries stay off recursive dispatch for unrelated families.
 use super::super::validate;
 use super::*;
+use crate::pure_semantics::arithmetic::check_field_arithmetic_pair;
 
 impl Lowerer<'_> {
     pub(super) fn binary(
@@ -40,9 +41,10 @@ impl Lowerer<'_> {
         let a = self.expression(left, scope, bindings, &format!("{path}.left"))?;
         let b = self.expression(right, scope, bindings, &format!("{path}.right"))?;
         Ok(match expression {
-            Expr::Add { .. } | Expr::Subtract { .. } | Expr::Multiply { .. }
-                if a.ty == Type::Field && b.ty == Type::Field =>
-            {
+            Expr::Add { .. } | Expr::Subtract { .. } | Expr::Multiply { .. } => {
+                check_field_arithmetic_pair(&a.ty, &b.ty)
+                    .map_err(|_| invalid(path, "invalid arithmetic operand types"))?;
+                let ty = a.ty.clone();
                 let operation = if matches!(expression, Expr::Multiply { .. }) {
                     Operation::Multiply(a, b)
                 } else if matches!(expression, Expr::Subtract { .. }) {
@@ -50,7 +52,7 @@ impl Lowerer<'_> {
                 } else {
                     Operation::Add(a, b)
                 };
-                (operation, Type::Field)
+                (operation, ty)
             }
             Expr::Compare { operator, .. }
                 if validate::bound(&a.ty).is_some() && validate::bound(&b.ty).is_some() =>

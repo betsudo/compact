@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Checked Field multiplication laws; native arithmetic already has its domain tests.
 use super::*;
 
@@ -74,6 +86,46 @@ fn authority(source: &StatefulCircuit) -> declarations::Declarations {
     declarations::Declarations::default()
         .with_type_environment(types)
         .with_root(source)
+}
+#[test]
+fn recorded_secp256k1_arithmetic_rejects_mixed_inputs_and_forged_results() {
+    for (ty, other) in [
+        (Type::Secp256k1Base, Type::Secp256k1Scalar),
+        (Type::Secp256k1Scalar, Type::Secp256k1Base),
+    ] {
+        let left = Box::new(reference("left"));
+        let right = Box::new(reference("right"));
+        for value in [
+            Expr::Add {
+                left: left.clone(),
+                right: right.clone(),
+            },
+            Expr::Subtract {
+                left: left.clone(),
+                right: right.clone(),
+            },
+            Expr::Multiply { left, right },
+        ] {
+            let mut source = root(ty.clone(), ty.clone());
+            source.result = ty.clone();
+            source.return_value = StateReturn::Expression { value };
+            let checked = checked(&source);
+            assert_eq!(checked.plan().body.bindings.len(), 1);
+            assert_eq!(checked.plan().body.bindings[0].value.ty, ty);
+            render(&checked).unwrap();
+
+            let mut forged = checked.plan().clone();
+            forged.body.bindings[0].value.ty = other.clone();
+            let error = validate::validate(&forged, checked.declarations()).unwrap_err();
+            assert!(error.detail.contains("operation input/output types"));
+
+            source.parameters[1].ty = other.clone();
+            assert!(matches!(
+                check(&source, &HashMap::new(), &HashMap::new()),
+                Err(PlanError::Unsupported(_))
+            ));
+        }
+    }
 }
 #[test]
 fn multiplication_admits_exact_fields_and_rejects_other_domains_on_either_side() {

@@ -1,0 +1,217 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger base: Secp256k1Base;"
+      "export ledger scalar: Secp256k1Scalar;"
+      "export circuit addb(b0: Secp256k1Base, b1: Secp256k1Base): Secp256k1Base {"
+      "  base = disclose(b0 + b1);"
+      "  return base;"
+      "}"
+      "export circuit subb(b0: Secp256k1Base, b1: Secp256k1Base): Secp256k1Base {"
+      "  base = disclose(b0 - b1);"
+      "  return base;"
+      "}"
+      "export circuit mulb(b0: Secp256k1Base, b1: Secp256k1Base): Secp256k1Base {"
+      "  base = disclose(b0 * b1);"
+      "  return base;"
+      "}"
+      "export circuit adds(s0: Secp256k1Scalar, s1: Secp256k1Scalar): Secp256k1Scalar {"
+      "  scalar = disclose(s0 + s1);"
+      "  return scalar;"
+      "}"
+      "export circuit subs(s0: Secp256k1Scalar, s1: Secp256k1Scalar): Secp256k1Scalar {"
+      "  scalar = disclose(s0 - s1);"
+      "  return scalar;"
+      "}"
+      "export circuit muls(s0: Secp256k1Scalar, s1: Secp256k1Scalar): Secp256k1Scalar {"
+      "  scalar = disclose(s0 * s1);"
+      "  return scalar;"
+      "}"
+      )
+    (pass-returns reduce-to-zkir
+      (program
+        (circuit (addb) ((%b0.9 "Base<Secp256k1>")
+                         (%b1.8 "Base<Secp256k1>"))
+          ("Base<Secp256k1>")
+          (add %tmp.12 %b0.9 %b1.8)
+          (encode (%fld.13 %fld.14) %tmp.12)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.13 %fld.14)
+          (impact 1 145)
+          (public_input "Base<Secp256k1>" %t.15)
+          (encode (%fld.16 %fld.17) %t.15)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.16 %fld.17)
+          (output %t.15))
+        (circuit (subb) ((%b0.11 "Base<Secp256k1>")
+                         (%b1.10 "Base<Secp256k1>"))
+          ("Base<Secp256k1>")
+          (neg %neg.18 %b1.10)
+          (add %tmp.19 %b0.11 %neg.18)
+          (encode (%fld.20 %fld.21) %tmp.19)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.20 %fld.21)
+          (impact 1 145)
+          (public_input "Base<Secp256k1>" %t.22)
+          (encode (%fld.23 %fld.24) %t.22)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.23 %fld.24)
+          (output %t.22))
+        (circuit (mulb) ((%b0.5 "Base<Secp256k1>")
+                         (%b1.4 "Base<Secp256k1>"))
+          ("Base<Secp256k1>")
+          (mul %tmp.25 %b0.5 %b1.4)
+          (encode (%fld.26 %fld.27) %tmp.25)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.26 %fld.27)
+          (impact 1 145)
+          (public_input "Base<Secp256k1>" %t.28)
+          (encode (%fld.29 %fld.30) %t.28)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.29 %fld.30)
+          (output %t.28))
+        (circuit (adds) ((%s0.7 "Scalar<Secp256k1>")
+                         (%s1.6 "Scalar<Secp256k1>"))
+          ("Scalar<Secp256k1>")
+          (add %tmp.31 %s0.7 %s1.6)
+          (encode (%fld.32 %fld.33) %tmp.31)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.32 %fld.33)
+          (impact 1 145)
+          (public_input "Scalar<Secp256k1>" %t.34)
+          (encode (%fld.35 %fld.36) %t.34)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.35 %fld.36)
+          (output %t.34))
+        (circuit (subs) ((%s0.1 "Scalar<Secp256k1>")
+                         (%s1.0 "Scalar<Secp256k1>"))
+          ("Scalar<Secp256k1>")
+          (neg %neg.37 %s1.0)
+          (add %tmp.38 %s0.1 %neg.37)
+          (encode (%fld.39 %fld.40) %tmp.38)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.39 %fld.40)
+          (impact 1 145)
+          (public_input "Scalar<Secp256k1>" %t.41)
+          (encode (%fld.42 %fld.43) %t.41)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.42 %fld.43)
+          (output %t.41))
+        (circuit (muls) ((%s0.3 "Scalar<Secp256k1>")
+                         (%s1.2 "Scalar<Secp256k1>"))
+          ("Scalar<Secp256k1>")
+          (mul %tmp.44 %s0.3 %s1.2)
+          (encode (%fld.45 %fld.46) %tmp.44)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.45 %fld.46)
+          (impact 1 145)
+          (public_input "Scalar<Secp256k1>" %t.47)
+          (encode (%fld.48 %fld.49) %t.47)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.48 %fld.49)
+          (output %t.47))))
+    (stage-javascript
+      ;; Test against some random base and scalar values.
+      (let ([base0 46650258000037232366158629642678773672890852140699407265360345715536022899553]
+            [base1 49961613701950065613888640415520526451680684154063724245984978230985445785591]
+            [scalar0 13185332814719467048625289428055336956216913103903703707915286873163564687413]
+            [scalar1 96181917743701203273367767841317204335168468443275911828686980079872884046249]
+            [expect
+              (lambda (circuit left right result)
+                (format
+                  "  expect((await contract.circuits.~a(context, ~dn, ~dn)).result).toEqual(~dn);"
+                  circuit left right result))])
+        `(
+          "test('secp256k1 field arithmetic', async () => {"
+          "  const [contract, context] = await startContract(contractCode, {}, 0);"
+          ,(expect 'addb base0 0 base0)
+          ,(expect 'addb base1 0 base1)
+          ,(expect 'addb base0 (max-secp256k1-base) (1- base0))
+          ,(expect 'addb base1 (max-secp256k1-base) (1- base1))
+          ,(expect 'addb base0 base1 (modulo (+ base0 base1) (1+ (max-secp256k1-base))))
+          ,(expect 'subb base0 0 base0)
+          ,(expect 'subb base1 0 base1)
+          ,(expect 'subb base0 (max-secp256k1-base) (1+ base0))
+          ,(expect 'subb base1 (max-secp256k1-base) (1+ base1))
+          ,(expect 'subb base0 base1 (modulo (- base0 base1) (1+ (max-secp256k1-base))))
+          ,(expect 'mulb base0 0 0)
+          ,(expect 'mulb base1 0 0)
+          ,(expect 'mulb base0 1 base0)
+          ,(expect 'mulb base1 1 base1)
+          ,(expect 'mulb base0 (max-secp256k1-base)
+             (modulo (* base0 (max-secp256k1-base)) (1+ (max-secp256k1-base))))
+          ,(expect 'mulb base1 (max-secp256k1-base)
+             (modulo (* base1 (max-secp256k1-base)) (1+ (max-secp256k1-base))))
+          ,(expect 'mulb base0 base1 (modulo (* base0 base1) (1+ (max-secp256k1-base))))
+          ,(expect 'adds scalar0 0 scalar0)
+          ,(expect 'adds scalar1 0 scalar1)
+          ,(expect 'adds scalar0 (max-secp256k1-scalar) (1- scalar0))
+          ,(expect 'adds scalar1 (max-secp256k1-scalar) (1- scalar1))
+          ,(expect 'adds scalar0 scalar1 (modulo (+ scalar0 scalar1) (1+ (max-secp256k1-scalar))))
+          ,(expect 'subs scalar0 0 scalar0)
+          ,(expect 'subs scalar1 0 scalar1)
+          ,(expect 'subs scalar0 (max-secp256k1-scalar) (1+ scalar0))
+          ,(expect 'subs scalar1 (max-secp256k1-scalar) (1+ scalar1))
+          ,(expect 'subs scalar0 scalar1 (modulo (- scalar0 scalar1) (1+ (max-secp256k1-scalar))))
+          ,(expect 'muls scalar0 0 0)
+          ,(expect 'muls scalar1 0 0)
+          ,(expect 'muls scalar0 1 scalar0)
+          ,(expect 'muls scalar1 1 scalar1)
+          ,(expect 'muls scalar0 (max-secp256k1-scalar)
+             (modulo (* scalar0 (max-secp256k1-scalar)) (1+ (max-secp256k1-scalar))))
+          ,(expect 'muls scalar1 (max-secp256k1-scalar)
+             (modulo (* scalar1 (max-secp256k1-scalar)) (1+ (max-secp256k1-scalar))))
+          ,(expect 'muls scalar0 scalar1 (modulo (* scalar0 scalar1) (1+ (max-secp256k1-scalar))))
+        "});"
+        )))
+    )
+
+  ; Issue #866: x - x on a foreign field was folded to a Uint<0..1> constant.
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger k1: Secp256k1Scalar;"
+      "export ledger r1: Secp256r1Base;"
+      "export ledger c: Curve25519Scalar;"
+      "circuit diff(a: Secp256k1Scalar, b: Secp256k1Scalar): Secp256k1Scalar {"
+      "  return a - b;"
+      "}"
+      "export circuit selfSub(k: Secp256k1Scalar): Secp256k1Scalar {"
+      "  k1 = disclose(k - k);"
+      "  return k1;"
+      "}"
+      "export circuit inlinedSelfSub(k: Secp256k1Scalar): Secp256k1Scalar {"
+      "  k1 = disclose(diff(k, k));"
+      "  return k1;"
+      "}"
+      "export circuit mulSelfSub(k: Secp256k1Scalar, z: Secp256k1Scalar): Secp256k1Scalar {"
+      "  k1 = disclose(k * (z - z));"
+      "  return k1;"
+      "}"
+      "export circuit selfSubR1(k: Secp256r1Base): Secp256r1Base {"
+      "  r1 = disclose(k - k);"
+      "  return r1;"
+      "}"
+      "export circuit selfSubC(k: Curve25519Scalar): Curve25519Scalar {"
+      "  c = disclose(k - k);"
+      "  return c;"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('foreign field self-subtraction', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  expect((await contract.circuits.selfSub(context, 12345n)).result).toEqual(0n);"
+        "  expect((await contract.circuits.inlinedSelfSub(context, 12345n)).result).toEqual(0n);"
+        "  expect((await contract.circuits.mulSelfSub(context, 12345n, 678n)).result).toEqual(0n);"
+        "  expect((await contract.circuits.selfSubR1(context, 12345n)).result).toEqual(0n);"
+        "  expect((await contract.circuits.selfSubC(context, 12345n)).result).toEqual(0n);"
+        "  });"
+        ))
+    )
