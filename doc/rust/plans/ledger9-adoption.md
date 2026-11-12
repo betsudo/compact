@@ -1126,6 +1126,31 @@ The changed/missing artifact and genuine k9 controls refused before
 key generation. The corrupt proof, wrong verifier, changed binding,
 and same-width changed result controls also passed.
 
+### Standalone Vector alias source qualification
+
+Signed source `300284485` passed the standalone macOS arm64 Ledger 9 gate.
+The 20 original sources matched independent and historical raw IR. The
+native gate passed 26 TypeScript/Rust cases, 20 strict SDK checks, five
+source refusals, three malformed IR refusals, and two changed-producer
+controls. Both original helper exports used fresh k7 keys and produced
+standalone v3 proofs that verified separately. Distinct funded default-strict
+transaction proofs applied both calls with positive-fee Dust and rejected
+replay with byte-identical ledger state. The changed/missing artifact,
+corruption, binding, verifier, same-width result and genuine k9 controls
+passed.
+
+### Stateful Vector product elements proof coverage to extend
+
+The original `proof_candidate.run` and `checked_helper.run` model at k8 under
+the released ZKIR 3.2.0 compiler. Both were k9 in the historical model
+expectations. The current proof roster must cover both branches of
+`proof_candidate.run` and the valid `checked_helper.run` call in addition to
+the two originally selected exports. Retain the checked helper's three
+existing guard and narrowing refusal cases and the separate genuine
+over-cap diagnostic. The full roster characterization also observed the
+empty component moving from k5 to k6. Current characterization establishes
+model eligibility. The additional proof and application results are pending.
+
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
 gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
