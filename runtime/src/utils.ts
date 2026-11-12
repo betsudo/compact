@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import { ContractAddress } from '@midnightntwrk/onchain-runtime-v4';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import type { Secp256k1Point } from './compact-types.js';
 import { SECP256K1_BASE_MODULUS } from './constants.js';
 import { EncodedContractAddress } from './zswap.js';
@@ -67,6 +68,17 @@ export function isValidSecp256k1Point(value: unknown): value is Secp256k1Point {
     return false;
   }
   return identity || (y * y) % modulus === (((x * x) % modulus) * x + 7n) % modulus;
+}
+
+/** Convert an affine Compact point to the secp256k1 group representation. */
+export function secp256k1ToProjective(p: Secp256k1Point): ReturnType<typeof secp256k1.Point.fromAffine> {
+  return p.identity ? secp256k1.Point.ZERO : secp256k1.Point.fromAffine({ x: p.x, y: p.y });
+}
+
+/** Convert a group element to the canonical affine Compact representation. */
+export function secp256k1FromProjective(p: ReturnType<typeof secp256k1.Point.fromAffine>): Secp256k1Point {
+  const { x, y } = p.toAffine();
+  return { x, y, identity: x === 0n && y === 0n };
 }
 
 export const fromHex = (s: string): Uint8Array => Buffer.from(s, 'hex');

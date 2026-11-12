@@ -19,7 +19,7 @@ use super::{
     arithmetic::Secp256k1Unary,
     children::Children,
     hash_encoding::DynamicInputEncoding,
-    jubjub::CheckedJubjub,
+    jubjub::CheckedCurve,
     sink::{CryptoSink, Typed},
 };
 use crate::{
@@ -72,7 +72,7 @@ pub(crate) enum CheckedCrypto<V> {
         value: V,
         encoding: DynamicInputEncoding,
     },
-    Jubjub(CheckedJubjub<V>),
+    Curve(CheckedCurve<V>),
     Secp256k1Unary(Secp256k1Unary, V),
 }
 

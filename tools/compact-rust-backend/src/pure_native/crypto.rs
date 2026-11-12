@@ -56,7 +56,7 @@ impl CryptoSink for NativeLeafSink {
                 let value = render_input(value, encoding);
                 syn::parse_quote!(runtime::hash_to_curve(#value))
             }
-            CheckedCrypto::Jubjub(checked) => jubjub_value::render(checked),
+            CheckedCrypto::Curve(checked) => jubjub_value::render(checked),
             CheckedCrypto::Secp256k1Unary(kind, value) => secp256k1_unary_syntax(kind, value),
         }
     }

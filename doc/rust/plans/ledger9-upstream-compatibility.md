@@ -173,6 +173,16 @@ default strict verification. Replay returned `IntentAlreadyExists`
 with byte-identical ledger state. Fallible constructor inversion and
 the rest of the proof and Linux matrix remain open.
 
+The secp256k1 `ecAdd`, `ecMul` and `ecMulGenerator` overloads now use
+typed points and scalars in both generated targets and ZKIR v3. The
+[group fixtures](../../../test-contracts/stdlib/secp256k1/group)
+preserve the original computed-identity refusals and cover canonical
+identity storage and the existing Jubjub overload. All seven stateful
+exports had fresh proofs verified in separate processes on macOS arm64.
+The generated Rust `storeXOfMul` call also passed funded default-strict
+application and refused replay with identical ledger state. Ethereum
+address derivation and ECDSA verification remain separate slices.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

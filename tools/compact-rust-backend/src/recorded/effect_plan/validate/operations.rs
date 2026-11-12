@@ -15,6 +15,7 @@
 
 //! Nonrecursive operation signatures stay off nested block traversal frames.
 use super::*;
+use crate::pure_semantics::jubjub::Curve;
 
 pub(super) fn validate(
     binding: &Binding,
@@ -161,7 +162,8 @@ pub(super) fn validate(
         }
         Operation::EcMulGenerator(scalar) => {
             use_value(scalar)?;
-            scalar.ty == Type::Field && *ty == Type::JubjubPoint
+            let curve = Curve::for_scalar(&scalar.ty);
+            scalar.ty == curve.scalar() && *ty == curve.point()
         }
         Operation::EcNeg(value) => {
             use_value(value)?;
@@ -175,14 +177,14 @@ pub(super) fn validate(
         Operation::EcMul { point, scalar } => {
             use_value(point)?;
             use_value(scalar)?;
-            point.ty == Type::JubjubPoint && scalar.ty == Type::Field && *ty == Type::JubjubPoint
+            let curve = Curve::for_point(&point.ty);
+            point.ty == curve.point() && scalar.ty == curve.scalar() && *ty == curve.point()
         }
         Operation::EcAdd { left, right } => {
             use_value(left)?;
             use_value(right)?;
-            left.ty == Type::JubjubPoint
-                && right.ty == Type::JubjubPoint
-                && *ty == Type::JubjubPoint
+            let point = Curve::for_point(&left.ty).point();
+            left.ty == point && right.ty == point && *ty == point
         }
         Operation::Secp256k1Unary { kind, value } => {
             use_value(value)?;

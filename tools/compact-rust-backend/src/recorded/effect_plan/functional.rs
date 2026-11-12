@@ -401,6 +401,13 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::FieldToBytes32(_)
                 | Operation::DegradeToTransient(_)
                 | Operation::UpgradeFromTransient(_) => Capability::FieldEncoding,
+                Operation::EcMulGenerator(_)
+                | Operation::EcMul { .. }
+                | Operation::EcAdd { .. }
+                    if binding.value.ty == crate::ir::Type::Secp256k1Point =>
+                {
+                    continue;
+                }
                 Operation::JubjubPointX(_)
                 | Operation::JubjubPointY(_)
                 | Operation::JubjubScalarFromNative(_)

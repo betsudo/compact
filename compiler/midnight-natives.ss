@@ -89,6 +89,23 @@
   ([pt (TypeRef Secp256k1Point) (discloses "the y-coordinate of")])
   (TypeRef Secp256k1Base))
 
+(declare-native-entry circuit ecAdd
+  "__compactRuntime.secp256k1Add"
+  ([a (TypeRef Secp256k1Point) (discloses "an elliptic curve sum including")]
+   [b (TypeRef Secp256k1Point) (discloses "an elliptic curve sum including")])
+  (TypeRef Secp256k1Point))
+
+(declare-native-entry circuit ecMul
+  "__compactRuntime.secp256k1Mul"
+  ([a (TypeRef Secp256k1Point) (discloses "an elliptic curve product including")]
+   [b (TypeRef Secp256k1Scalar) (discloses "an elliptic curve product including")])
+  (TypeRef Secp256k1Point))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.secp256k1MulGenerator"
+  ([b (TypeRef Secp256k1Scalar) (discloses "the product of the group generator with")])
+  (TypeRef Secp256k1Point))
+
 ;; ====
 (declare-native-entry circuit jubjubPointX
   "__compactRuntime.jubjubPointX"

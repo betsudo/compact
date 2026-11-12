@@ -200,6 +200,28 @@
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
       (define secp256k1-unary-natives (make-eq-hashtable))
+      (define curve-group-natives (make-eq-hashtable))
+
+      (define (curve-group-ir name src args lower lower-field)
+        (case name
+          [(ecAdd)
+           (unless (= (length args) 2)
+             (source-errorf src "ecAdd expects two arguments"))
+           (object (cons "kind" "ec_add")
+                   (cons "left" (lower (car args)))
+                   (cons "right" (lower (cadr args))))]
+          [(ecMul secp256k1Mul)
+           (unless (= (length args) 2)
+             (source-errorf src "ecMul expects two arguments"))
+           (object (cons "kind" "ec_mul")
+                   (cons "point" (lower (car args)))
+                   (cons "scalar" ((if (eq? name 'ecMul) lower-field lower) (cadr args))))]
+          [(ecMulGenerator secp256k1MulGenerator)
+           (unless (= (length args) 1)
+             (source-errorf src "ecMulGenerator expects one argument"))
+           (object (cons "kind" "ec_mul_generator")
+                   (cons "scalar" ((if (eq? name 'ecMulGenerator) lower-field lower) (car args))))]
+          [else (assert cannot-happen)]))
 
       (define (secp256k1-unary-ir kind src args lower)
         (unless (= (length args) 1)
@@ -896,12 +918,11 @@
                                           "jubjub_point_x"
                                           "jubjub_point_y"))
                         (cons "value" (expression-ir (car expr*) src)))]
-               [(eq? name 'ecAdd)
-                (unless (= (length expr*) 2)
-                  (source-errorf src "ecAdd expects two arguments"))
-                (object (cons "kind" "ec_add")
-                        (cons "left" (expression-ir (car expr*) src))
-                        (cons "right" (expression-ir (cadr expr*) src)))]
+               [(eq-hashtable-ref curve-group-natives function-name #f) =>
+                (lambda (kind)
+                  (curve-group-ir kind src expr*
+                    (lambda (value) (expression-ir value src))
+                    (lambda (value) (field-argument-ir value src))))]
                [(eq? name 'constructJubjubPoint)
                 (unless (= (length expr*) 2)
                   (source-errorf src "constructJubjubPoint expects two arguments"))
@@ -913,17 +934,6 @@
                   (source-errorf src "ecNeg expects one argument"))
                 (object (cons "kind" "ec_neg")
                         (cons "value" (expression-ir (car expr*) src)))]
-               [(eq? name 'ecMul)
-                (unless (= (length expr*) 2)
-                  (source-errorf src "ecMul expects two arguments"))
-                (object (cons "kind" "ec_mul")
-                        (cons "point" (expression-ir (car expr*) src))
-                        (cons "scalar" (field-argument-ir (cadr expr*) src)))]
-               [(eq? name 'ecMulGenerator)
-                (unless (= (length expr*) 1)
-                  (source-errorf src "ecMulGenerator expects one argument"))
-                (object (cons "kind" "ec_mul_generator")
-                        (cons "scalar" (field-argument-ir (car expr*) src)))]
                [(eq-hashtable-ref secp256k1-unary-natives function-name #f) =>
                 (lambda (kind)
                   (secp256k1-unary-ir kind src expr* (lambda (value) (expression-ir value src))))]
@@ -1328,7 +1338,15 @@
                          [("__compactRuntime.secp256k1PointX") "secp256k1_point_x"]
                          [("__compactRuntime.secp256k1PointY") "secp256k1_point_y"]
                          [else #f])])
-             (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))]
+             (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))
+           (let ([group (case (native-entry-function native-entry)
+                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add") 'ecAdd]
+                          [("__compactRuntime.ecMul") 'ecMul]
+                          [("__compactRuntime.ecMulGenerator") 'ecMulGenerator]
+                          [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                          [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                          [else #f])])
+             (when group (eq-hashtable-set! curve-group-natives function-name group)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
            (eq-hashtable-set! call-argument-types function-name
              (map (lambda (arg)
@@ -1536,7 +1554,8 @@
           [(call ,src ,function-name ,expr* ...)
            (cond
              [(or (eq-hashtable-ref witness-ids function-name #f)
-                  (eq-hashtable-ref secp256k1-unary-natives function-name #f))
+                  (eq-hashtable-ref secp256k1-unary-natives function-name #f)
+                  (eq-hashtable-ref curve-group-natives function-name #f))
               (object (cons "kind" "expression")
                       (cons "value" (stateful-expression-ir expr src witness-ids)))]
              [(eq-hashtable-ref native-witness-ids function-name #f)
@@ -2521,11 +2540,10 @@
                                         [(ecNeg) "ec_neg"]
                                         [else "jubjub_scalar_from_native"]))
                         (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
-               [(eq? name 'ecMulGenerator)
-                (unless (= (length expr*) 1)
-                  (source-errorf src "ecMulGenerator expects one argument"))
-                (object (cons "kind" "ec_mul_generator")
-                        (cons "scalar" (stateful-expression-ir (car expr*) src witness-ids)))]
+               [(eq-hashtable-ref curve-group-natives function-name #f) =>
+                (lambda (kind)
+                  (let ([lower (lambda (value) (stateful-expression-ir value src witness-ids))])
+                    (curve-group-ir kind src expr* lower lower)))]
                [(memq name '(transientCommit persistentCommit))
                 (unless (= (length expr*) 2)
                   (source-errorf src "Rust backend native expects two arguments"))
@@ -2534,20 +2552,12 @@
                                           "persistent_commit"))
                         (cons "value" (stateful-expression-ir (car expr*) src witness-ids))
                         (cons "opening" (stateful-expression-ir (cadr expr*) src witness-ids)))]
-               [(memq name '(ecAdd ecMul constructJubjubPoint))
+               [(eq? name 'constructJubjubPoint)
                 (unless (= (length expr*) 2)
                   (source-errorf src "Rust backend curve native expects two arguments"))
-                (if (eq? name 'constructJubjubPoint)
-                    (object (cons "kind" "construct_jubjub_point")
-                            (cons "x" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "y" (stateful-expression-ir (cadr expr*) src witness-ids)))
-                (if (eq? name 'ecAdd)
-                    (object (cons "kind" "ec_add")
-                            (cons "left" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "right" (stateful-expression-ir (cadr expr*) src witness-ids)))
-                    (object (cons "kind" "ec_mul")
-                            (cons "point" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "scalar" (stateful-expression-ir (cadr expr*) src witness-ids)))))]
+                (object (cons "kind" "construct_jubjub_point")
+                        (cons "x" (stateful-expression-ir (car expr*) src witness-ids))
+                        (cons "y" (stateful-expression-ir (cadr expr*) src witness-ids)))]
                [else
                 (object (cons "kind" "call")
                         (cons "name" (rust-function-name function-name))
@@ -3129,7 +3139,8 @@
            (object (cons "kind" "expression")
                    (cons "value"
                          (if (or (eq-hashtable-ref witness-ids function-name #f)
-                                 (eq-hashtable-ref secp256k1-unary-natives function-name #f))
+                                 (eq-hashtable-ref secp256k1-unary-natives function-name #f)
+                                 (eq-hashtable-ref curve-group-natives function-name #f))
                              (stateful-expression-ir expr src witness-ids)
                              (object (cons "kind" "call")
                                      (cons "name" (rust-function-name function-name))
@@ -3400,6 +3411,7 @@
        (hashtable-clear! function-rust-names)
        (hashtable-clear! native-witness-ids)
        (hashtable-clear! secp256k1-unary-natives)
+       (hashtable-clear! curve-group-natives)
        (set! struct-shape-names '())
        (set! used-struct-names '())
        (index-function-names pelt*)

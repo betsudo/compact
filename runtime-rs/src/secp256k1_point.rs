@@ -1,15 +1,29 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use midnight_base_crypto::fab::{
     Aligned, Alignment, AlignmentAtom, AlignmentSegment, InvalidBuiltinDecode, Value, ValueAtom,
     ValueSlice,
 };
-use midnight_curves::k256::K256Affine;
+use midnight_curves::k256::{K256, K256Affine};
 use midnight_transient_crypto::curve::FR_BYTES;
 
-use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256k1Base};
+use crate::{
+    BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256k1Base,
+    Secp256k1Scalar,
+};
 
 /// A checked secp256k1 point. The default value is the identity.
 #[derive(Clone, Copy, Debug)]
@@ -53,6 +67,33 @@ impl Secp256k1Point {
             .ok_or(CompactError::Secp256k1IdentityY)
     }
 
+    /// Multiply the standard generator by a canonical scalar.
+    pub fn mul_generator(scalar: Secp256k1Scalar) -> Self {
+        Self::from_projective(K256::generator() * scalar.into_inner())
+    }
+
+    fn to_projective(self) -> K256 {
+        match self.coordinates() {
+            Some((x, y)) => K256Affine::from_xy(x.into_inner(), y.into_inner())
+                .expect("typed finite secp256k1 points are on the curve")
+                .into(),
+            None => K256::identity(),
+        }
+    }
+
+    fn from_projective(point: K256) -> Self {
+        if point == K256::identity() {
+            Self::default()
+        } else {
+            let affine = K256Affine::from(point);
+            Self {
+                x: Secp256k1Base::from_inner(affine.x()),
+                y: Secp256k1Base::from_inner(affine.y()),
+                identity: false,
+            }
+        }
+    }
+
     fn encoding_coordinates(&self) -> (Secp256k1Base, Secp256k1Base) {
         self.coordinates().unwrap_or_default()
     }
@@ -75,6 +116,22 @@ impl PartialEq for Secp256k1Point {
 }
 
 impl Eq for Secp256k1Point {}
+
+impl std::ops::Add for Secp256k1Point {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::from_projective(self.to_projective() + rhs.to_projective())
+    }
+}
+
+impl std::ops::Mul<Secp256k1Scalar> for Secp256k1Point {
+    type Output = Self;
+
+    fn mul(self, scalar: Secp256k1Scalar) -> Self::Output {
+        Self::from_projective(self.to_projective() * scalar.into_inner())
+    }
+}
 
 impl Aligned for Secp256k1Point {
     fn alignment() -> Alignment {

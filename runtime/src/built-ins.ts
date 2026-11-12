@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
@@ -21,6 +22,7 @@ import { MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCA
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
 import type { Secp256k1Point } from './compact-types.js';
 import { CompactError } from './error.js';
+import { secp256k1FromProjective, secp256k1ToProjective } from './utils.js';
 
 const FIELD_MODULUS: bigint = MAX_FIELD + 1n;
 
@@ -99,6 +101,21 @@ export function secp256k1PointY(pt: Secp256k1Point): bigint {
     throw new CompactError('cannot extract the y-coordinate of the secp256k1 identity point');
   }
   return pt.y;
+}
+
+/** Add two secp256k1 points. */
+export function secp256k1Add(a: Secp256k1Point, b: Secp256k1Point): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1ToProjective(a).add(secp256k1ToProjective(b)));
+}
+
+/** Multiply a secp256k1 point by a canonical scalar, including zero. */
+export function secp256k1Mul(a: Secp256k1Point, b: bigint): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1ToProjective(a).multiplyUnsafe(b));
+}
+
+/** Multiply the standard secp256k1 generator by a canonical scalar. */
+export function secp256k1MulGenerator(b: bigint): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1.Point.BASE.multiplyUnsafe(b));
 }
 
 function inverseModuloPrime(value: bigint, modulus: bigint): bigint {

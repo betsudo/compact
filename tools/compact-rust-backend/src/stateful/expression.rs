@@ -31,6 +31,7 @@ use crate::pure_semantics::arithmetic::{
     Secp256k1Unary, check_field_arithmetic_operand, check_field_arithmetic_pair,
 };
 use crate::pure_semantics::conversion::Secp256k1BytesCast;
+use crate::pure_semantics::jubjub::Curve;
 use crate::source_diagnostics::{Owner, RefusalSite};
 use crate::value_lowering::{secp256k1_bytes_cast_syntax, secp256k1_unary_syntax};
 use crate::{
@@ -2021,17 +2022,9 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
-            if actual != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual,
-                });
-            }
-            Ok((
-                syn::parse_quote!(runtime::ec_mul_generator(#scalar)?),
-                Type::JubjubPoint,
-                effect,
-            ))
+            let (scalar, ty) =
+                crate::jubjub_value::Operation::Generator((scalar, actual)).lower()?;
+            Ok((scalar, ty, effect))
         }
         Expr::ConstructJubjubPoint { x: left, y: right }
         | Expr::EcAdd { left, right }
@@ -2047,10 +2040,11 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
+            let curve = Curve::for_point(&actual);
             let expected_left = if matches!(value, Expr::ConstructJubjubPoint { .. }) {
                 Type::Field
             } else {
-                Type::JubjubPoint
+                curve.point()
             };
             if actual != expected_left {
                 return Err(RenderError::TypeMismatch {
@@ -2072,27 +2066,32 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
-            let (expected, operation, fallible): (Type, syn::Path, bool) = match value {
-                Expr::ConstructJubjubPoint { .. } => (
-                    Type::Field,
-                    syn::parse_quote!(runtime::construct_jubjub_point),
-                    true,
-                ),
-                Expr::EcAdd { .. } => {
-                    (Type::JubjubPoint, syn::parse_quote!(runtime::ec_add), false)
+            let (rendered, ty) = match value {
+                Expr::ConstructJubjubPoint { .. } => {
+                    if actual != Type::Field {
+                        return Err(RenderError::TypeMismatch {
+                            expected: Type::Field,
+                            actual,
+                        });
+                    }
+                    (
+                        syn::parse_quote!(runtime::construct_jubjub_point(#left_name, #right)?),
+                        Type::JubjubPoint,
+                    )
                 }
-                Expr::EcMul { .. } => (Type::Field, syn::parse_quote!(runtime::ec_mul), true),
+                Expr::EcAdd { .. } => crate::jubjub_value::Operation::Add(
+                    (syn::parse_quote!(#left_name), curve.point()),
+                    (right, actual),
+                )
+                .lower()?,
+                Expr::EcMul { .. } => crate::jubjub_value::Operation::Multiply(
+                    (syn::parse_quote!(#left_name), curve.point()),
+                    (right, actual),
+                )
+                .lower()?,
                 _ => unreachable!(),
             };
-            if actual != expected {
-                return Err(RenderError::TypeMismatch { expected, actual });
-            }
-            let rendered = if fallible {
-                syn::parse_quote!(#operation(#left_name, #right)?)
-            } else {
-                syn::parse_quote!(#operation(#left_name, #right))
-            };
-            Ok((rendered, Type::JubjubPoint, left_effect || right_effect))
+            Ok((rendered, ty, left_effect || right_effect))
         }
         _ => environment
             .pure_expression(value, parameters)

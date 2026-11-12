@@ -12,14 +12,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//! Compatibility adapters and output-only syntax for checked Jubjub facts.
+//! Compatibility adapters and output-only syntax for checked curve operations.
 //! Callers retain lexical scope, source evaluation order and effects. The neutral
 //! owner keeps type rules; coordinate quote temporaries stay on a separate path.
 use crate::{
     RenderError,
     ir::Type,
     pure_semantics::{
-        jubjub::{Axis, CheckedJubjub, JubjubOperands, check_jubjub},
+        jubjub::{Axis, CheckedCurve, Curve, CurveOperands, check_curve},
         sink::Typed,
     },
 };
@@ -39,12 +39,12 @@ fn typed((output, ty): Operand) -> Typed<syn::Expr> {
 impl Operation {
     pub(crate) fn lower(self) -> Result<Operand, RenderError> {
         let operands = match self {
-            Self::Reduce(value) => JubjubOperands::Reduce(typed(value)),
-            Self::Generator(value) => JubjubOperands::Generator(typed(value)),
-            Self::Multiply(point, scalar) => JubjubOperands::Multiply(typed(point), typed(scalar)),
-            Self::Add(left, right) => JubjubOperands::Add(typed(left), typed(right)),
+            Self::Reduce(value) => CurveOperands::Reduce(typed(value)),
+            Self::Generator(value) => CurveOperands::Generator(typed(value)),
+            Self::Multiply(point, scalar) => CurveOperands::Multiply(typed(point), typed(scalar)),
+            Self::Add(left, right) => CurveOperands::Add(typed(left), typed(right)),
         };
-        let checked = check_jubjub(operands)?;
+        let checked = check_curve(operands)?;
         Ok((render(checked.output), checked.ty))
     }
 }
@@ -60,27 +60,38 @@ impl Coordinate {
             Self::X => Axis::X,
             Self::Y => Axis::Y,
         };
-        let checked = check_jubjub(JubjubOperands::Coordinate(axis, typed(point)))?;
+        let checked = check_curve(CurveOperands::Coordinate(axis, typed(point)))?;
         Ok((render(checked.output), checked.ty))
     }
 }
 
 /// Formats checked values without Type inspection, cloning or support checks.
-pub(crate) fn render(checked: CheckedJubjub<syn::Expr>) -> syn::Expr {
+pub(crate) fn render(checked: CheckedCurve<syn::Expr>) -> syn::Expr {
     match checked {
-        CheckedJubjub::Reduce(value) => {
+        CheckedCurve::Reduce(value) => {
             syn::parse_quote!(runtime::jubjub_scalar_from_native(#value))
         }
-        CheckedJubjub::Generator(scalar) => syn::parse_quote!(runtime::ec_mul_generator(#scalar)?),
-        CheckedJubjub::Multiply(point, scalar) => {
+        CheckedCurve::Generator(Curve::Jubjub, scalar) => {
+            syn::parse_quote!(runtime::ec_mul_generator(#scalar)?)
+        }
+        CheckedCurve::Generator(Curve::Secp256k1, scalar) => {
+            syn::parse_quote!(runtime::Secp256k1Point::mul_generator(#scalar))
+        }
+        CheckedCurve::Multiply(Curve::Jubjub, point, scalar) => {
             syn::parse_quote!(runtime::ec_mul(#point, #scalar)?)
         }
-        CheckedJubjub::Add(left, right) => syn::parse_quote!(runtime::ec_add(#left, #right)),
-        CheckedJubjub::Construct(x, y) => {
+        CheckedCurve::Multiply(Curve::Secp256k1, point, scalar) => {
+            syn::parse_quote!((#point) * (#scalar))
+        }
+        CheckedCurve::Add(Curve::Jubjub, left, right) => {
+            syn::parse_quote!(runtime::ec_add(#left, #right))
+        }
+        CheckedCurve::Add(Curve::Secp256k1, left, right) => syn::parse_quote!((#left) + (#right)),
+        CheckedCurve::Construct(x, y) => {
             syn::parse_quote!(runtime::construct_jubjub_point(#x, #y)?)
         }
-        CheckedJubjub::Negate(value) => syn::parse_quote!(runtime::ec_neg(#value)),
-        CheckedJubjub::Coordinate(axis, point) => render_coordinate(axis, point),
+        CheckedCurve::Negate(value) => syn::parse_quote!(runtime::ec_neg(#value)),
+        CheckedCurve::Coordinate(axis, point) => render_coordinate(axis, point),
     }
 }
 fn render_coordinate(axis: Axis, point: syn::Expr) -> syn::Expr {
