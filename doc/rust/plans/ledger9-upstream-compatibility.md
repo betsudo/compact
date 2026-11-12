@@ -136,9 +136,17 @@ Both ordinary targets still refuse the intact caller at the call site.
 The Rust recording runtime emits the same kernel claim as the TypeScript
 compiler, including the callee's address, entrypoint hash and communication
 commitment. Replay preserves the order of repeated claims. Single-call
-preparation rejects any trace with such a claim. Joint preparation still
-needs to match the recorded claim to the authenticated callee before
-partitioning the two traces.
+preparation rejects any trace with such a claim. The local runtime can
+prepare one caller and one leaf callee from the same ledger snapshot. It
+checks the installed verifiers and exact claim before invoking Ledger 9's
+joint partitioner. Preparation tests cover the honest pair and refusal
+controls with verifier carriers.
+
+Generated cross-contract invocation and funded proof qualification are on
+hold while the remaining Ledger 9 compatibility work continues. The
+intact EntryPoint transfer model requires k=9. Resume with generated
+invocation and an explicit slow lane for the transfer proof, then verify
+both proofs and exercise strict application, replay and rollback.
 
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler

@@ -51,6 +51,8 @@ pub use observation::{
     ObservationalOfferBackedState, OfferAdmission, TrustedCheckpointEvidence,
     TrustedObservationCheckpoint, TrustedObservationParts, WalletCheckpointMetadata,
 };
+mod pair;
+pub use pair::{CallProofBinding, CrossContractCallError, prepare_cross_contract_call};
 mod placement;
 #[path = "transaction/transients.rs"]
 mod transients;
@@ -796,6 +798,27 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
         communication_commitment_rand: Fr,
         offer_partition: Option<OfferTranscriptPartition>,
     ) -> Result<ContractCallPrototype<D>, ObservedCallError> {
+        let operation = self.checked_operation(&verifier)?;
+        let mut prepared = prepare_call_inner(
+            self.recorded,
+            CallSpec::new(
+                self.entry_point,
+                verifier,
+                self.input,
+                communication_commitment_rand,
+            ),
+            offer_partition,
+        )
+        .map_err(ObservedCallError::Prepare)?;
+        // Preserve the observed operation's IR and verifier roles.
+        prepared.op = operation;
+        Ok(prepared)
+    }
+
+    fn checked_operation(
+        &self,
+        verifier: &VerifierKey,
+    ) -> Result<ContractOperation, ObservedCallError> {
         let initial = self.recorded.public.initial();
         if initial.address != self.observed.address {
             return Err(ObservedCallError::AddressMismatch);
@@ -814,26 +837,12 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
             .operations
             .get(&EntryPointBuf(self.entry_point.as_bytes().to_vec()))
             .ok_or_else(|| ObservedCallError::MissingOperation(self.entry_point.to_owned()))?;
-        if operation.latest() != Some(&verifier) {
+        if operation.latest() != Some(verifier) {
             return Err(ObservedCallError::VerifierMismatch(
                 self.entry_point.to_owned(),
             ));
         }
-        let mut prepared = prepare_call_inner(
-            self.recorded,
-            CallSpec::new(
-                self.entry_point,
-                verifier,
-                self.input,
-                communication_commitment_rand,
-            ),
-            offer_partition,
-        )
-        .map_err(ObservedCallError::Prepare)?;
-        // Keep the IR and verifier roles from the operation selected by the
-        // observed state. The verifier-only fixture path has no such state.
-        prepared.op = (*operation).clone();
-        Ok(prepared)
+        Ok((*operation).clone())
     }
 }
 
