@@ -58,11 +58,9 @@ The following flags, if present, affect the compiler's behavior as follows:
     With no --target, TypeScript remains the default. Rust emits a standalone
     contract/Cargo.toml, source, capability report, and matching runtime crates.
     ZKIR and keys are independent.
+  --rust-functional-ledger9 also emits checked functional programs for the source runtime.
   --rust-require-recording rejects proof-required exported circuits without both
     replayable recording and typed observed-call APIs.
   --rust-runtime-root <path> uses one shared runtime source root for generated
     Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.
-  --rust-runtime-registry pins the compiler's matching runtime package version
-    without copying runtime sources. That version must be published to build.
-  --rust-functional-ledger8 adds experimental immutable checked programs.
-    Requires --target rust and a source runtime; unsupported effects are refused.
+  The Ledger 9 Rust target uses ZKIR v3 and a source runtime.
