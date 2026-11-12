@@ -69,6 +69,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
         | Expr::SetIsEmpty { .. }

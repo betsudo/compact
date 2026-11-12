@@ -664,7 +664,21 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            StateAction::MapInsertDefault { field, index, key } => {
+            StateAction::NestedMapInsert {
+                field,
+                index: _,
+                outer,
+                inner,
+                value,
+            } => {
+                scan.push(Node::Text(field), visit_depth + 1, owner)?;
+                // The scanner consumes this pending stack in reverse order.
+                scan.push(Node::Expr(outer), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(inner), visit_depth + 1, owner)?;
+            }
+            StateAction::MapInitChild { field, index, key }
+            | StateAction::MapInsertDefault { field, index, key } => {
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
                 let _ = index;
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
@@ -962,6 +976,16 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
                 let _ = index;
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
+            }
+            Expr::NestedMapLookup {
+                field,
+                index: _,
+                outer,
+                inner,
+            } => {
+                scan.push(Node::Text(field), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(outer), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(inner), visit_depth + 1, owner)?;
             }
             Expr::ListLength { field, index } => {
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;

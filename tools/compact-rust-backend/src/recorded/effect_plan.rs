@@ -49,6 +49,7 @@ mod resource_tests;
 mod tests;
 mod type_environment;
 mod validate;
+pub(crate) use validate::map_cell_type;
 #[cfg(test)]
 mod vector_fold_ingress_tests;
 #[cfg(test)]

@@ -100,6 +100,10 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::CounterLessThan {
             threshold: value, ..
         } => collect_expression_types(value, structs, enums, origins)?,
+        Expr::NestedMapLookup { inner, outer, .. } => {
+            collect_expression_types(inner, structs, enums, origins)?;
+            collect_expression_types(outer, structs, enums, origins)?;
+        }
         Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {
             collect_expression_types(key, structs, enums, origins)?
         }

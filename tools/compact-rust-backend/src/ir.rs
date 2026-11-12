@@ -458,6 +458,18 @@ pub enum StateAction {
         field: String,
         index: u8,
     },
+    NestedMapInsert {
+        field: String,
+        index: u8,
+        outer: Expr,
+        inner: Expr,
+        value: Expr,
+    },
+    MapInitChild {
+        field: String,
+        index: u8,
+        key: Expr,
+    },
     HistoricMerkleInsertIndexDefault {
         field: String,
         index: u8,
@@ -759,6 +771,12 @@ pub enum Expr {
         field: String,
         index: u8,
         key: Box<Expr>,
+    },
+    NestedMapLookup {
+        field: String,
+        index: u8,
+        outer: Box<Expr>,
+        inner: Box<Expr>,
     },
     ListLength {
         field: String,

@@ -161,6 +161,9 @@ pub(super) fn render(
         }
         Operation::MapMember { .. }
         | Operation::MapLookup { .. }
+        | Operation::NestedMapLookup { .. }
+        | Operation::NestedMapInsert { .. }
+        | Operation::MapInitChild { .. }
         | Operation::MapInsert { .. }
         | Operation::MapRemove { .. }
         | Operation::MapInsertDefault { .. }

@@ -47,6 +47,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | A::ListPopFront { .. }
                 | A::ListReset { .. }
                 | A::MapInsert { .. }
+                | A::NestedMapInsert { .. }
+                | A::MapInitChild { .. }
                 | A::MapInsertDefault { .. }
                 | A::MapRemove { .. }
                 | A::MapReset { .. }
@@ -85,6 +87,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | A::ListPopFront { .. }
                 | A::ListReset { .. }
                 | A::MapInsert { .. }
+                | A::NestedMapInsert { .. }
+                | A::MapInitChild { .. }
                 | A::MapInsertDefault { .. }
                 | A::MapRemove { .. }
                 | A::MapReset { .. }
@@ -166,6 +170,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }
@@ -195,6 +200,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetIsEmpty { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::MerkleCheckRoot { .. }
@@ -307,6 +313,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }
@@ -404,6 +411,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }

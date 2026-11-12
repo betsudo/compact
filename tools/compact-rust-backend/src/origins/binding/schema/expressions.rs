@@ -137,6 +137,16 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             slot!("map_lookup", field, index);
             s.node("key", Owner::Expr(key));
         }
+        Expr::NestedMapLookup {
+            field,
+            index,
+            outer,
+            inner,
+        } => {
+            slot!("nested_map_lookup", field, index);
+            s.node("outer", Owner::Expr(outer));
+            s.node("inner", Owner::Expr(inner));
+        }
         Expr::ListLength { field, index } => slot!("list_length", field, index),
         Expr::ListIsEmpty { field, index } => slot!("list_is_empty", field, index),
         Expr::ListHead { field, index, ty } => {

@@ -93,7 +93,11 @@ fn checked_path_operand<D: DB>(length: usize, extra: u8) -> Result<u8, Transcrip
 // Idx uses four bits for (length - 1). Empty paths are the upstream
 // no-op root selection, while nonempty paths encode at most sixteen keys.
 fn checked_index_path<D: DB>(path: &[u8]) -> Result<(), TranscriptRejected<D>> {
-    if path.len() > 16 {
+    checked_index_path_length(path.len())
+}
+
+fn checked_index_path_length<D: DB>(length: usize) -> Result<(), TranscriptRejected<D>> {
+    if length > 16 {
         Err(midnight_onchain_vm::error::OnchainProgramError::BoundsExceeded.into())
     } else {
         Ok(())
@@ -409,8 +413,9 @@ pub use collections::{
     set_view_at_path, size_map, size_set,
 };
 pub(crate) use collections::{
-    list_head_program, list_is_empty_program, list_length_program, list_pop_front_program,
-    list_push_front_program, list_reset_program, map_insert_program, map_lookup_program,
+    gather_map_lookup, list_head_program, list_is_empty_program, list_length_program,
+    list_pop_front_program, list_push_front_program, list_reset_program, map_init_child_program,
+    map_insert_child_program, map_insert_program, map_lookup_child_program, map_lookup_program,
     qualified_coin_set_insert_program, set_insert_program, set_is_empty_program,
     set_member_program, set_remove_program, set_reset_program, set_size_program,
 };

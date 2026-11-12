@@ -389,6 +389,78 @@ pub(super) fn lower_observed(
                 total_cost += step.gas_cost;
             });
         }
+        StateAction::MapInitChild { field, index, key }
+        | StateAction::NestedMapInsert {
+            field,
+            index,
+            outer: key,
+            ..
+        } => {
+            let declaration = ledger_fields
+                .get(field.as_str())
+                .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
+            if declaration.index != *index {
+                return Err(RenderError::InvalidLedgerIndex(*index));
+            }
+            let LedgerFieldKind::Map {
+                key: outer_ty,
+                value,
+            } = &declaration.declaration
+            else {
+                return Err(RenderError::UnknownLedgerField(field.clone()));
+            };
+            let Type::LedgerMap {
+                key: inner_ty,
+                value: leaf,
+            } = value
+            else {
+                return Err(RenderError::UnknownLedgerField(field.clone()));
+            };
+            for ty in [outer_ty, inner_ty] {
+                if !crate::recorded::map_cell_type(ty) {
+                    refused(RefusalSite::node(Owner::Action(action)), environment.observer);
+                    return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
+                }
+            }
+            let operand = |expr, expected: &Type| {
+                let (rendered, actual) = environment.pure_expression(expr, parameters)?;
+                if actual != *expected {
+                    refused(RefusalSite::node(Owner::Expr(expr)), environment.observer);
+                    return Err(RenderError::TypeMismatch {
+                        expected: expected.clone(),
+                        actual,
+                    });
+                }
+                Ok(rendered)
+            };
+            let slot = ledger_ident(declaration, environment.observer)?;
+            match action {
+                StateAction::NestedMapInsert { inner, value, .. } => {
+                    if !crate::recorded::map_cell_type(leaf) {
+                        refused(RefusalSite::node(Owner::Action(action)), environment.observer);
+                        return Err(RenderError::UnsupportedLedgerValueType(leaf.as_ref().clone()));
+                    }
+                    let inner = operand(inner, inner_ty)?;
+                    let value = operand(value, leaf)?;
+                    let outer = operand(key, outer_ty)?;
+                    statements.push(syn::parse_quote!(let __compact_inner = #inner;));
+                    statements.push(syn::parse_quote!(let __compact_value = #value;));
+                    statements.push(syn::parse_quote!(
+                        let step = crate::ledger_slots::#slot.insert_child(
+                            context, #outer, __compact_inner, __compact_value,
+                        )?;
+                    ));
+                }
+                _ => {
+                    let outer = operand(key, outer_ty)?;
+                    statements.push(syn::parse_quote!(
+                        let step = crate::ledger_slots::#slot.init_child(context, #outer)?;
+                    ));
+                }
+            }
+            statements.push(syn::parse_quote!(let context = step.context;));
+            statements.push(syn::parse_quote!(total_cost += step.gas_cost;));
+        }
         StateAction::MapReset { field, index } => {
             let declaration = ledger_fields.get(field.as_str()).ok_or_else(|| {
                 refused(

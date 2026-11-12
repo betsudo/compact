@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Map identity and active operand types come from immutable declarations.
 use super::*;
 
@@ -56,6 +68,27 @@ pub(in super::super) fn types<'a>(
 }
 
 /// Each plan is checked independently of lowering and its inferred annotations.
+pub(in super::super) fn child_types(
+    declarations: &Declarations,
+    slot: MapSlot,
+    path: &str,
+) -> Result<(Type, Type, Type), RecordingGap> {
+    let (outer, value) = types(declarations, slot, false, path)?;
+    let Type::LedgerMap { key: inner, value } = value else {
+        return Err(invalid(path, "expected nested Map declaration"));
+    };
+    declarations.types().validate_at(inner, path)?;
+    declarations.types().validate_at(value, path)?;
+    if !map_key_type(inner) || !scalar_value_type(value) {
+        return Err(invalid(path, "unsupported nested Map key or value type"));
+    }
+    Ok((
+        outer.clone(),
+        inner.as_ref().clone(),
+        value.as_ref().clone(),
+    ))
+}
+
 pub(super) fn validate(
     operation: &Operation,
     result: &Type,
@@ -64,6 +97,32 @@ pub(super) fn validate(
     path: &str,
 ) -> Result<bool, RecordingGap> {
     Ok(match operation {
+        Operation::NestedMapLookup { slot, outer, inner } => {
+            used(inner, scope, declarations, path)?;
+            used(outer, scope, declarations, path)?;
+            let (outer_ty, inner_ty, value) = child_types(declarations, *slot, path)?;
+            outer.ty == outer_ty && inner.ty == inner_ty && *result == value
+        }
+        Operation::NestedMapInsert {
+            slot,
+            outer,
+            inner,
+            value,
+        } => {
+            used(inner, scope, declarations, path)?;
+            used(value, scope, declarations, path)?;
+            used(outer, scope, declarations, path)?;
+            let (outer_ty, inner_ty, value_ty) = child_types(declarations, *slot, path)?;
+            outer.ty == outer_ty
+                && inner.ty == inner_ty
+                && value.ty == value_ty
+                && *result == Type::Unit
+        }
+        Operation::MapInitChild { slot, key } => {
+            used(key, scope, declarations, path)?;
+            let (outer, value) = types(declarations, *slot, false, path)?;
+            matches!(value, Type::LedgerMap { .. }) && key.ty == *outer && *result == Type::Unit
+        }
         Operation::MapMember { slot, key }
         | Operation::MapLookup { slot, key }
         | Operation::MapRemove { slot, key }

@@ -101,6 +101,7 @@ impl Lowerer<'_> {
             Expr::PersistentCommit { .. } => Self::persistent_operation,
             Expr::MapMember { .. }
             | Expr::MapLookup { .. }
+            | Expr::NestedMapLookup { .. }
             | Expr::MapIsEmpty { .. }
             | Expr::MapSize { .. } => Self::map_expression,
             Expr::SetMember { .. } => Self::query_operation,

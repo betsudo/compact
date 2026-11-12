@@ -35,6 +35,36 @@
     (definitions
       (define (object . fields) (origin-object fields))
 
+      ;; Propagate-ledger-paths emits array indices followed by typed Map
+      ;; keys. A one-key suffix denotes a lookup in the selected child.
+      (define (nested-map-path? path-elt*)
+        (let loop ([tail path-elt*] [saw-index? #f])
+          (and (pair? tail)
+               (let ([element (car tail)])
+                 (if (and (integer? element) (<= 0 element 14))
+                     (loop (cdr tail) #t)
+                     (and saw-index? (null? (cdr tail)) (not (integer? element))))))))
+
+      (define (empty-map-default? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(default ,src ,type)
+           (let loop ([type type])
+             (nanopass-case (Lnodisclose Type) type
+               [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+               [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
+                (eq? adt-name 'Map)]
+               [else #f]))]
+          [else #f]))
+
+      (define (nested-map-lookup-ir src ledger-field-name path-elt* inner inner-type lower)
+        (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
+          [(,src^ ,type ,expr)
+           (object (cons "kind" "nested_map_lookup")
+                   (cons "field" (symbol->string (id-sym ledger-field-name)))
+                   (cons "index" (car path-elt*))
+                   (cons "outer" (lower expr type src^))
+                   (cons "inner" (lower inner inner-type src)))]))
+
       (define (secp256k1-carrier type)
         (nanopass-case (Lnodisclose Type) type
           [(talias ,src ,nominal? ,type-name ,type^) (secp256k1-carrier type^)]
@@ -1664,7 +1694,9 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger path"))
               (cond
                 [(eq? adt-name 'Kernel)
@@ -1762,6 +1794,22 @@
                  (object (cons "kind" "list_reset")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*)))]
+                [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                      (= (length expr*) 2) (nested-map-path? path-elt*))
+                 (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
+                   [(,src^ ,type ,expr)
+                    (object (cons "kind" "nested_map_insert")
+                            (cons "field" (symbol->string (id-sym ledger-field-name)))
+                            (cons "index" (car path-elt*))
+                            (cons "outer" (typed-expression-ir expr type src^))
+                            (cons "inner" (typed-expression-ir (car expr*) (car adt-arg*) src))
+                            (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))])]
+                [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                      (= (length expr*) 2) (empty-map-default? (cadr expr*)))
+                 (object (cons "kind" "map_init_child")
+                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 2))
@@ -2636,7 +2684,9 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'lookup)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger query path"))
               (when (and (eq? adt-name 'Kernel) (not (null? path-elt*)))
                 (source-errorf src "Rust Kernel operation ~a requires its special empty path" ledger-op))
@@ -2668,10 +2718,13 @@
                          (cons "index" (car path-elt*))
                          (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'lookup) (= (length expr*) 1))
-                 (object (cons "kind" "map_lookup")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
+                 (if (nested-map-path? path-elt*)
+                     (nested-map-lookup-ir src ledger-field-name path-elt* (car expr*) (car adt-arg*)
+                       (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids)))
+                     (object (cons "kind" "map_lookup")
+                             (cons "field" (symbol->string (id-sym ledger-field-name)))
+                             (cons "index" (car path-elt*))
+                             (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids))))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'length) (null? expr*))
                  (object (cons "kind" "list_length")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
@@ -2964,7 +3017,9 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'lookup)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger path"))
               (cond
                 [(eq? adt-name 'Kernel)
@@ -3014,10 +3069,13 @@
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'lookup)
                       (= (length expr*) 1))
-                 (object (cons "kind" "map_lookup")
+                 (if (nested-map-path? path-elt*)
+                     (object (cons "kind" "expression")
+                             (cons "value" (stateful-expression-ir return-expr src witness-ids)))
+                     (object (cons "kind" "map_lookup")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*))
-                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'size)
                       (null? expr*))

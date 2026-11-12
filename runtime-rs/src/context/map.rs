@@ -18,8 +18,45 @@
 use super::{CircuitContext, CircuitResult};
 use crate::ledger::{CellValue, DB};
 use crate::{CompactError, ledger};
+use midnight_onchain_vm::{ops::Op, result_mode::ResultModeGather, result_mode::ResultModeVerify};
 
 impl<Private, D: DB> CircuitContext<Private, D> {
+    pub(crate) fn apply_map_write(
+        mut self,
+        program: Vec<Op<ResultModeVerify, D>>,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        let result = self
+            .query
+            .query(&program, self.gas_limit, &self.cost_model)
+            .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
+        self.query = result.context;
+        Ok(CircuitResult {
+            context: self,
+            result: (),
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: Vec::new(),
+        })
+    }
+
+    pub(crate) fn lookup_map_child<K: CellValue, I: CellValue, V: CellValue>(
+        mut self,
+        path: &[u8],
+        outer: K,
+        inner: I,
+    ) -> Result<CircuitResult<Private, V, D>, CompactError> {
+        let program =
+            ledger::map_lookup_child_program::<_, _, ResultModeGather, D>(path, outer, inner, ())?;
+        let (result, value) =
+            ledger::gather_map_lookup(&self.query, &program, self.gas_limit, &self.cost_model)?;
+        self.query = result.context;
+        Ok(CircuitResult {
+            context: self,
+            result: value,
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: Vec::new(),
+        })
+    }
+
     pub fn insert_map<K: CellValue, V: CellValue>(
         mut self,
         path: impl Into<ledger::LedgerPath>,

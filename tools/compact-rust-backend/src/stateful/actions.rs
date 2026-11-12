@@ -161,6 +161,8 @@ pub(super) fn lower_observed(
         | StateAction::SetRemove { .. }
         | StateAction::SetReset { .. }
         | StateAction::MapInsert { .. }
+        | StateAction::NestedMapInsert { .. }
+        | StateAction::MapInitChild { .. }
         | StateAction::MapInsertDefault { .. }
         | StateAction::MapRemove { .. }
         | StateAction::MapReset { .. } => {

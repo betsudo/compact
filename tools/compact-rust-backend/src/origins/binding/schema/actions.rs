@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 pub(super) fn action(value: &StateAction) -> Schema<'_> {
     let mut s = Schema::new();
@@ -128,6 +143,22 @@ pub(super) fn action(value: &StateAction) -> Schema<'_> {
         } => {
             slot_expr!("map_insert", field, index, "key", key);
             s.node("value", Owner::Expr(value));
+        }
+        StateAction::NestedMapInsert {
+            field,
+            index,
+            outer,
+            inner,
+            value,
+        } => {
+            slot!("nested_map_insert", field, index);
+            s.node("outer", Owner::Expr(outer));
+            s.node("inner", Owner::Expr(inner));
+            s.node("value", Owner::Expr(value));
+        }
+        StateAction::MapInitChild { field, index, key } => {
+            slot!("map_init_child", field, index);
+            s.node("key", Owner::Expr(key));
         }
         StateAction::MapInsertDefault { field, index, key } => {
             slot_expr!("map_insert_default", field, index, "key", key)

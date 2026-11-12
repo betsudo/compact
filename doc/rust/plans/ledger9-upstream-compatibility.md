@@ -291,6 +291,19 @@ scalar to Uint checks the target bound. The local qualification runs
 the ledger fixture through typed cell access, recorded replay and
 separate default-strict transactions.
 
+The two pinned mixed Jubjub/K1 and Jubjub/P-256 collection cases run their
+original TypeScript assertions with an adapter for this branch's call context.
+The Rust port gives a declared child Map typed initialization, insertion and
+lookup operations. A scalar read emits the same physical array path and typed
+outer key in one VM instruction, followed by the typed inner key. Both
+intact mixed cases generate ordinary and recorded Rust and retain the same
+ZKIR. Local Rust checks cover generated values, state, gas and VM replay.
+The focused child Map write and lookup measure k=8 and k=7. Their local
+qualification includes fresh proofs, independent verification, rejected key
+and result substitutions, and separate funded default-strict transactions
+with unchanged-state replay refusal. The original k=17 and k=18 mixed
+circuits remain open for proof and funded transaction qualification.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

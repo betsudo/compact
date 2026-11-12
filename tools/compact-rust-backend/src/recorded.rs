@@ -81,6 +81,7 @@ use pure_calls::closed_pure_field_call;
 #[cfg(test)]
 mod admission_probe;
 mod effect_plan;
+pub(crate) use effect_plan::map_cell_type;
 pub(crate) use effect_plan::functional_items::{
     FunctionalSources, render_contract as render_functional_contract,
 };

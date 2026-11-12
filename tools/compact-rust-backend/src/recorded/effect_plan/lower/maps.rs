@@ -58,6 +58,22 @@ impl Lowerer<'_> {
         bindings: &mut Vec<Binding>,
         path: &str,
     ) -> Result<(Operation, Type), RecordingGap> {
+        if let Expr::NestedMapLookup {
+            field,
+            index,
+            outer,
+            inner,
+        } = expression
+        {
+            let (slot, _, _) = self.map_slot(field, *index, false, path)?;
+            let (outer_ty, inner_ty, value_ty) =
+                super::super::validate::maps::child_types(self.declarations, slot, path)?;
+            let inner =
+                self.map_operand(inner, &inner_ty, scope, bindings, &format!("{path}.inner"))?;
+            let outer =
+                self.map_operand(outer, &outer_ty, scope, bindings, &format!("{path}.outer"))?;
+            return Ok((Operation::NestedMapLookup { slot, outer, inner }, value_ty));
+        }
         let query = match expression {
             Expr::MapMember { field, index, key } => MapQuery::Member(field, *index, key),
             Expr::MapLookup { field, index, key } => MapQuery::Lookup(field, *index, key),
@@ -122,13 +138,51 @@ impl Lowerer<'_> {
             StateAction::MapInsert { field, index, .. }
             | StateAction::MapRemove { field, index, .. }
             | StateAction::MapInsertDefault { field, index, .. }
+            | StateAction::NestedMapInsert { field, index, .. }
+            | StateAction::MapInitChild { field, index, .. }
             | StateAction::MapReset { field, index } => (field, *index),
             _ => return Err(invalid(path, "Map action dispatch requires a Map mutation")),
         };
         // Only removal is key-only. Reset deliberately retains the runtime V:CellValue bound.
-        let scalar = !matches!(action, StateAction::MapRemove { .. });
+        let scalar = !matches!(
+            action,
+            StateAction::MapRemove { .. }
+                | StateAction::NestedMapInsert { .. }
+                | StateAction::MapInitChild { .. }
+        );
         let (slot, key_type, value_type) = self.map_slot(name, index, scalar, path)?;
         let operation = match action {
+            StateAction::NestedMapInsert {
+                outer,
+                inner,
+                value,
+                ..
+            } => {
+                let (outer_ty, inner_ty, value_ty) =
+                    super::super::validate::maps::child_types(self.declarations, slot, path)?;
+                let inner =
+                    self.map_operand(inner, &inner_ty, scope, bindings, &format!("{path}.inner"))?;
+                let value =
+                    self.map_operand(value, &value_ty, scope, bindings, &format!("{path}.value"))?;
+                let outer =
+                    self.map_operand(outer, &outer_ty, scope, bindings, &format!("{path}.outer"))?;
+                Operation::NestedMapInsert {
+                    slot,
+                    outer,
+                    inner,
+                    value,
+                }
+            }
+            StateAction::MapInitChild { key, .. } => {
+                let (_, declaration) =
+                    super::super::validate::maps::types(self.declarations, slot, false, path)?;
+                if !matches!(declaration, Type::LedgerMap { .. }) {
+                    return Err(invalid(path, "expected nested Map declaration"));
+                }
+                let key =
+                    self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
+                Operation::MapInitChild { slot, key }
+            }
             StateAction::MapReset { .. } => Operation::MapReset { slot },
             StateAction::MapInsert { key, value, .. } => {
                 let key =

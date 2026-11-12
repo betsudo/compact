@@ -809,6 +809,10 @@ fn collect_expression_types<'ir>(
         | Expr::CounterLessThan {
             threshold: value, ..
         } => collect_expression_types(value, structs, enums, origins, observer)?,
+        Expr::NestedMapLookup { inner, outer, .. } => {
+            collect_expression_types(inner, structs, enums, origins, observer)?;
+            collect_expression_types(outer, structs, enums, origins, observer)?;
+        }
         Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {
             collect_expression_types(key, structs, enums, origins, observer)?
         }
@@ -1001,7 +1005,19 @@ fn collect_action_types<'ir>(
             collect_expression_types(key, structs, enums, origins, observer)?;
             collect_expression_types(value, structs, enums, origins, observer)?;
         }
-        StateAction::MapInsertDefault { key, .. } | StateAction::MapRemove { key, .. } => {
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            for operand in [inner, value, outer] {
+                collect_expression_types(operand, structs, enums, origins, observer)?;
+            }
+        }
+        StateAction::MapInitChild { key, .. }
+        | StateAction::MapInsertDefault { key, .. }
+        | StateAction::MapRemove { key, .. } => {
             collect_expression_types(key, structs, enums, origins, observer)?;
         }
         StateAction::MerkleInsertIndexDefault { position, .. }

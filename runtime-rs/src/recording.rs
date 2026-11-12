@@ -26,7 +26,7 @@ mod zswap;
 use midnight_base_crypto::cost_model::RunningCost;
 use midnight_base_crypto::fab::AlignedValue;
 use midnight_onchain_vm::ops::Op;
-use midnight_onchain_vm::result_mode::{GatherEvent, ResultModeVerify};
+use midnight_onchain_vm::result_mode::{GatherEvent, ResultModeGather, ResultModeVerify};
 
 use crate::CompactError;
 use crate::context::{CircuitContext, CircuitResult, WitnessReadMeter};
@@ -291,7 +291,7 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_checked_verify_program(program)
     }
 
-    fn apply_verify_program(
+    pub(crate) fn apply_verify_program(
         mut self,
         program: Vec<Op<ResultModeVerify, D>>,
     ) -> Result<Self, CompactError> {
@@ -481,6 +481,36 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
             ));
         };
         let program = ledger::map_lookup_program(path.as_slice(), key, observed.clone())?;
+        self.state.context.query = result.context;
+        self.state.observed_gas += result.gas_cost;
+        self.state.verify_ops.extend(program);
+        Ok((self, value))
+    }
+
+    pub(crate) fn lookup_map_child<K: CellValue + Clone, I: CellValue + Clone, V: CellValue>(
+        mut self,
+        path: &[u8],
+        outer: K,
+        inner: I,
+    ) -> Result<(Self, V), CompactError> {
+        let program = ledger::map_lookup_child_program::<_, _, ResultModeGather, D>(
+            path,
+            outer.clone(),
+            inner.clone(),
+            (),
+        )?;
+        let (result, value) = ledger::gather_map_lookup(
+            &self.state.context.query,
+            &program,
+            self.state.context.gas_limit,
+            &self.state.context.cost_model,
+        )?;
+        let Some(GatherEvent::Read(observed)) = result.events.last() else {
+            return Err(CompactError::InvalidLedgerCell(
+                "missing Map lookup event".into(),
+            ));
+        };
+        let program = ledger::map_lookup_child_program(path, outer, inner, observed.clone())?;
         self.state.context.query = result.context;
         self.state.observed_gas += result.gas_cost;
         self.state.verify_ops.extend(program);

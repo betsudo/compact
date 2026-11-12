@@ -245,8 +245,22 @@ fn jubjub_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+const NESTED_MAP: &[u8] = include_bytes!("nested-map-expression.json");
+
+fn nested_map_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "16626bbcfeecb3ec6fc44039d7b3c71fe425fe4a6b4383f78c590d9cb79f1c07" {
+        return Err("unreviewed nested Map compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &nested_map_manifest(NESTED_MAP)?)
+}
+
 fn before_jubjub_cast(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &jubjub_cast_manifest(JUBJUB_CAST)?)
+    let current = before_nested_map(path, current)?;
+    legacy_source(path, &current, &jubjub_cast_manifest(JUBJUB_CAST)?)
 }
 
 fn before_vector_to_bytes(path: &str, current: &str) -> Result<String, String> {
@@ -339,7 +353,8 @@ fn shared_source(manifest: &Value, path: &str, bytes: &[u8]) -> Result<(), Strin
         .ok_or("unreviewed shared oracle source")?;
     let current = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
     let checkpoint = generic_retirement_manifest(GENERIC_RETIREMENT)?;
-    let previous = legacy_source(path, current, &checkpoint)?;
+    let current = before_nested_map(path, current)?;
+    let previous = legacy_source(path, &current, &checkpoint)?;
     if digest(previous.as_bytes()) != expected {
         return Err(format!("shared oracle source drift: {path}"));
     }
@@ -500,6 +515,7 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
 
     for (path, row) in start_funding["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_nested_map(path, &current).unwrap();
         let previous = legacy_source(path, &current, &start_funding).unwrap();
         assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
         assert!(legacy_source(path, &(current.clone() + "\n// drift\n"), &start_funding).is_err());
@@ -556,6 +572,7 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
     for (path, row) in commit_inputs["owners"].as_object().unwrap() {
         let live = std::fs::read_to_string(root.join(path)).unwrap();
         let generic = generic_retirement_manifest(GENERIC_RETIREMENT).unwrap();
+        let live = before_nested_map(path, &live).unwrap();
         let current = legacy_source(path, &live, &generic).unwrap();
         assert!(legacy_source(path, &(live + "\n// drift\n"), &generic).is_err());
         assert_eq!(
@@ -827,12 +844,14 @@ fn vector_to_bytes_projection_preserves_exact_fixed_bytes_predecessors() {
     }
 }
 
-
 #[test]
 fn jubjub_cast_projection_preserves_exact_vector_to_bytes_predecessors() {
     let projection = jubjub_cast_manifest(JUBJUB_CAST).unwrap();
     let vector = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
-    assert_eq!(projection["predecessor_manifest"]["sha256"], digest(VECTOR_TO_BYTES));
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(VECTOR_TO_BYTES)
+    );
     assert!(jubjub_cast_manifest(br#"{"owners":{}}"#).is_err());
     let owners = projection["owners"].as_object().unwrap();
     assert_eq!(owners.len(), 4);
@@ -840,8 +859,30 @@ fn jubjub_cast_projection_preserves_exact_vector_to_bytes_predecessors() {
     for path in owners.keys() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
         let previous = before_jubjub_cast(path, &current).unwrap();
-        assert_eq!(digest(previous.as_bytes()), vector["owners"][path]["current_sha256"]);
+        assert_eq!(
+            digest(previous.as_bytes()),
+            vector["owners"][path]["current_sha256"]
+        );
+        let current = before_nested_map(path, &current).unwrap();
         assert!(before_jubjub_cast(path, &previous).is_err());
         assert!(before_jubjub_cast(path, &(current + "\n// unrelated drift\n")).is_err());
+    }
+}
+
+#[test]
+fn nested_map_projection_reconstructs_exact_historical_owners() {
+    let projection = nested_map_manifest(NESTED_MAP).unwrap();
+    assert!(nested_map_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(JUBJUB_CAST)
+    );
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_nested_map(path, &current).unwrap();
+        assert_eq!(digest(previous.as_bytes()), owner["previous_sha256"]);
+        assert!(before_nested_map(path, &previous).is_err());
+        assert!(before_nested_map(path, &(current + "\n// unrelated drift\n")).is_err());
     }
 }

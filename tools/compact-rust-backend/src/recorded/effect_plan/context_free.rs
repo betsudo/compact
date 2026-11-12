@@ -86,6 +86,9 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::CellWriteCoin { .. }
                 | Operation::MapMember { .. }
                 | Operation::MapLookup { .. }
+                | Operation::NestedMapLookup { .. }
+                | Operation::NestedMapInsert { .. }
+                | Operation::MapInitChild { .. }
                 | Operation::MapInsert { .. }
                 | Operation::MapRemove { .. }
                 | Operation::MapInsertDefault { .. }

@@ -116,6 +116,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::ListLength { .. }
         | Expr::ListIsEmpty { .. }
         | Expr::ListHead { .. }

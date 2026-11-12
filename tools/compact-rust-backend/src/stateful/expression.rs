@@ -508,6 +508,7 @@ fn render_operation_expression(
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
         | Expr::ListLength { .. }
@@ -818,6 +819,83 @@ fn render_observation_operation(
             statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
             *query_effect = true;
             Ok((syn::parse_quote!(#step.result), result_ty, witness_effect))
+        }
+        Expr::NestedMapLookup {
+            field,
+            index,
+            outer,
+            inner,
+        } => {
+            let declaration = ledger_fields
+                .get(field.as_str())
+                .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
+            if declaration.index != *index {
+                return Err(RenderError::InvalidLedgerIndex(*index));
+            }
+            let LedgerFieldKind::Map {
+                key: outer_ty,
+                value: child,
+            } = &declaration.declaration
+            else {
+                return Err(RenderError::UnknownLedgerField(field.clone()));
+            };
+            let Type::LedgerMap {
+                key: inner_ty,
+                value: leaf,
+            } = child
+            else {
+                return Err(RenderError::UnknownLedgerField(field.clone()));
+            };
+            for ty in [outer_ty, inner_ty, leaf] {
+                if !crate::recorded::map_cell_type(ty) {
+                    environment.refused(value);
+                    return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
+                }
+            }
+            // Lnodisclose binds complex terminal arguments before path
+            // arguments. Keep that order if an IR caller supplies effects.
+            let mut render_key = |source, expected: &Type| {
+                let (key, actual, witness) = render_state_expression_observed(
+                    source,
+                    parameters,
+                    statements,
+                    next_temp,
+                    query_effect,
+                    environment,
+                )?;
+                if actual != *expected {
+                    environment.refused(source);
+                    return Err(RenderError::TypeMismatch {
+                        expected: expected.clone(),
+                        actual,
+                    });
+                }
+                let name =
+                    syn::Ident::new(&format!("__compact_key_{}", *next_temp), Span::call_site());
+                *next_temp += 1;
+                let key = retained_value(key, expected);
+                statements.push(syn::parse_quote!(let #name = #key;));
+                Ok((name, witness))
+            };
+            let (inner, inner_witness) = render_key(inner, inner_ty)?;
+            let (outer, outer_witness) = render_key(outer, outer_ty)?;
+            let step = syn::Ident::new(
+                &format!("__compact_query_{}", *next_temp),
+                Span::call_site(),
+            );
+            *next_temp += 1;
+            let slot = ident(&declaration.id)?;
+            statements.push(syn::parse_quote!(
+                let #step = crate::ledger_slots::#slot.lookup_child(context, #outer, #inner)?;
+            ));
+            statements.push(syn::parse_quote!(context = #step.context;));
+            statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
+            *query_effect = true;
+            Ok((
+                syn::parse_quote!(#step.result),
+                leaf.as_ref().clone(),
+                inner_witness || outer_witness,
+            ))
         }
         Expr::MerkleCheckRoot { field, index, root }
         | Expr::HistoricMerkleCheckRoot { field, index, root } => {

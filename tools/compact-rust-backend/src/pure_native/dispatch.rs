@@ -138,6 +138,7 @@ macro_rules! dispatch {
             | $crate::ir::Expr::SetMember { .. }
             | $crate::ir::Expr::MapMember { .. }
             | $crate::ir::Expr::MapLookup { .. }
+            | $crate::ir::Expr::NestedMapLookup { .. }
             | $crate::ir::Expr::MerkleCheckRoot { .. }
             | $crate::ir::Expr::HistoricMerkleCheckRoot { .. }
             | $crate::ir::Expr::SetIsEmpty { .. }

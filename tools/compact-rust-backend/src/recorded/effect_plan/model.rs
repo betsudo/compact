@@ -277,6 +277,21 @@ pub(super) enum Operation {
         slot: MapSlot,
         key: Value,
     },
+    NestedMapLookup {
+        slot: MapSlot,
+        outer: Value,
+        inner: Value,
+    },
+    NestedMapInsert {
+        slot: MapSlot,
+        outer: Value,
+        inner: Value,
+        value: Value,
+    },
+    MapInitChild {
+        slot: MapSlot,
+        key: Value,
+    },
     MapInsertDefault {
         slot: MapSlot,
         key: Value,

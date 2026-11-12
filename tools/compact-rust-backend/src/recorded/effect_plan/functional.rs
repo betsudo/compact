@@ -541,7 +541,11 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::Keccak256(..) | Operation::Sha512(_) => {
+                Operation::Keccak256(..)
+                | Operation::Sha512(_)
+                | Operation::NestedMapLookup { .. }
+                | Operation::NestedMapInsert { .. }
+                | Operation::MapInitChild { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });

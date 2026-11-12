@@ -457,6 +457,7 @@ impl Plan<'_> {
             | Expr::SetMember { .. }
             | Expr::MapMember { .. }
             | Expr::MapLookup { .. }
+            | Expr::NestedMapLookup { .. }
             | Expr::SetSize { .. }
             | Expr::SetIsEmpty { .. }
             | Expr::HistoricMerkleCheckRoot { .. }

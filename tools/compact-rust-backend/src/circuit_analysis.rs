@@ -74,8 +74,17 @@ fn action_call_site<'source>(
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_call_site(value, name),
         StateAction::Assert { condition, .. } => expression_call_site(condition, name),
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => expression_call_site(inner, name)
+            .or_else(|| expression_call_site(value, name))
+            .or_else(|| expression_call_site(outer, name)),
         StateAction::MapInsert { key, value, .. } => {
             expression_call_site(key, name).or_else(|| expression_call_site(value, name))
         }
@@ -260,11 +269,22 @@ fn action_emits_native_private_output(action: &StateAction) -> bool {
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_contains_native_witness(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(expression_contains_native_witness)
         }
         StateAction::Assert { condition, .. } => expression_contains_native_witness(condition),
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            expression_contains_native_witness(inner)
+                || expression_contains_native_witness(value)
+                || expression_contains_native_witness(outer)
+        }
         StateAction::MapInsert { key, value, .. } => {
             expression_contains_native_witness(key) || expression_contains_native_witness(value)
         }
@@ -453,6 +473,7 @@ fn expression_contains_with_actions<'source>(
             bindings.iter().any(|binding| visit(&binding.value)) || visit(body)
         }
         Expr::Sequence { steps, value } => steps.iter().any(visit) || visit(value),
+        Expr::NestedMapLookup { inner, outer, .. } => visit(inner) || visit(outer),
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
@@ -626,6 +647,7 @@ fn action_contains_witness(action: &StateAction) -> bool {
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_contains_witness(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(expression_contains_witness)
@@ -636,6 +658,16 @@ fn action_contains_witness(action: &StateAction) -> bool {
                 .iter()
                 .any(|binding| expression_contains_witness(&binding.value))
                 || action_contains_witness(action)
+        }
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            expression_contains_witness(inner)
+                || expression_contains_witness(value)
+                || expression_contains_witness(outer)
         }
         StateAction::MapInsert { key, value, .. } => {
             expression_contains_witness(key) || expression_contains_witness(value)
@@ -739,6 +771,7 @@ fn action_contains_expressions<'source>(
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => visit(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(visit)
@@ -747,6 +780,12 @@ fn action_contains_expressions<'source>(
         StateAction::Let { bindings, action } => {
             bindings.iter().any(|binding| visit(&binding.value)) || action_visit(action)
         }
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => visit(inner) || visit(value) || visit(outer),
         StateAction::MapInsert { key, value, .. } => visit(key) || visit(value),
         StateAction::SetInsertCoin {
             coin, recipient, ..

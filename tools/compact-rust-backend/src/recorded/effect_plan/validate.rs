@@ -30,6 +30,7 @@ pub(super) use merkle::root_type;
 mod pure;
 pub(super) mod sets;
 mod storage;
+pub(crate) use storage::map_cell_type;
 mod vector_fold;
 mod vector_map;
 pub(super) use storage::{list_element_type, map_key_type, merkle_leaf_type, set_element_type};
