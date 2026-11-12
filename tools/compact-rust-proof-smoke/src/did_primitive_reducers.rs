@@ -27,12 +27,8 @@ use std::{error::Error, fs, path::Path};
 
 #[path = "did_primitive_reducers/cases.rs"]
 mod cases;
-mod legacy;
 
 pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
-    if kind == "acc-jubjub-cell" {
-        return legacy::run(root, kind);
-    }
     if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
         return Err("DID reducer qualification requires local proving".into());
     }
