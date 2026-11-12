@@ -161,7 +161,8 @@ class PassportControlTests(unittest.TestCase):
                 (root / "package.json").write_bytes((gate.ROOT / "runtime/package.json").read_bytes())
                 output = root / "result"
                 process = SimpleNamespace(returncode=0, stdout=reported, stderr="")
-                with patch.object(gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": ""}), patch.object(
+                        gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
                         gate, "bounded_command", return_value=process) as execute, patch.object(
                         gate.shutil, "which", return_value=str(compiler)):
                     with self.assertRaisesRegex(ValueError, "compiler version differs"):
