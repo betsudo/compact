@@ -39,9 +39,8 @@ pub(in super::super) fn expression(
             let input = crate::hash_input::syntax(value(input), &input.ty);
             syn::parse_quote!(runtime::hash_to_curve(#input))
         }
-        Operation::Keccak256(input) => {
-            let input = value(input);
-            syn::parse_quote!(runtime::keccak256(#input))
+        Operation::Keccak256(input, encoding) => {
+            crate::pure_native::crypto::render_keccak(value(input), *encoding)
         }
         Operation::JubjubPointX(input) | Operation::JubjubPointY(input) => {
             let coordinate = if matches!(binding.operation, Operation::JubjubPointX(_)) {

@@ -33,7 +33,7 @@ fn dynamic_types() -> Vec<Type> {
 #[test]
 fn aligned_dynamic_inputs_preserve_operation_specific_source_policy() {
     for ty in dynamic_types() {
-        assert!(validate::keccak_input_type(&ty));
+        assert!(validate::keccak_input_type(&ty, Default::default()));
         assert!(validate::aligned_fab_type(&ty));
         assert!(!validate::fixed_aligned_fab_type(&ty));
         checked(Hash::Curve, ty.clone());

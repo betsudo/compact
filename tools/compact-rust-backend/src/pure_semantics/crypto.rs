@@ -10,7 +10,10 @@ use super::{
     jubjub::CheckedJubjub,
     sink::{CryptoSink, Typed},
 };
-use crate::{RenderError, ir::Expr};
+use crate::{
+    RenderError,
+    ir::{Expr, KeccakEncoding},
+};
 mod check;
 
 pub(crate) enum CryptoSource<'a> {
@@ -18,7 +21,7 @@ pub(crate) enum CryptoSource<'a> {
     TransientCommit(&'a Expr, &'a Expr),
     PersistentHash(&'a Expr),
     PersistentCommit(&'a Expr, &'a Expr),
-    Keccak256(&'a Expr),
+    Keccak256(&'a Expr, KeccakEncoding),
     DegradeToTransient(&'a Expr),
     UpgradeFromTransient(&'a Expr),
     HashToCurve(&'a Expr),
@@ -47,7 +50,7 @@ pub(crate) enum CheckedCrypto<V> {
         value: V,
         opening: V,
     },
-    Keccak256(V),
+    Keccak256(V, KeccakEncoding),
     DegradeToTransient(V),
     UpgradeFromTransient(V),
     HashToCurve {
@@ -60,7 +63,7 @@ pub(crate) enum CheckedCrypto<V> {
 pub(super) enum Unary {
     TransientHash,
     PersistentHash,
-    Keccak256,
+    Keccak256(KeccakEncoding),
     Degrade,
     Upgrade,
     HashToCurve,
@@ -92,7 +95,7 @@ impl<'a> CryptoSource<'a> {
             Self::PersistentCommit(value, opening) => {
                 Inputs::Binary(Binary::PersistentCommit, value, opening)
             }
-            Self::Keccak256(value) => Inputs::Unary(Unary::Keccak256, value),
+            Self::Keccak256(value, encoding) => Inputs::Unary(Unary::Keccak256(encoding), value),
             Self::DegradeToTransient(value) => Inputs::Unary(Unary::Degrade, value),
             Self::UpgradeFromTransient(value) => Inputs::Unary(Unary::Upgrade, value),
             Self::HashToCurve(value) => Inputs::Unary(Unary::HashToCurve, value),

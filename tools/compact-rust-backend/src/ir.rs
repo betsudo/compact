@@ -635,6 +635,22 @@ pub enum KernelClaimKind {
     CoinReceive,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeccakEncoding {
+    /// Historical schema 20 contracts concatenate the normalized FAB atoms.
+    #[default]
+    NormalizedAtoms,
+    /// Ledger 9 ZKIR uses the declared width of each FAB atom.
+    Aligned,
+}
+
+impl KeccakEncoding {
+    pub(crate) fn is_normalized_atoms(&self) -> bool {
+        *self == Self::NormalizedAtoms
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Expr {
@@ -836,6 +852,8 @@ pub enum Expr {
     },
     Keccak256 {
         value: Box<Expr>,
+        #[serde(default, skip_serializing_if = "KeccakEncoding::is_normalized_atoms")]
+        encoding: KeccakEncoding,
     },
     PersistentCommit {
         value: Box<Expr>,

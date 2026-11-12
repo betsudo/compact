@@ -52,10 +52,10 @@ pub(super) fn unary<V>(
                 Type::Bytes { length: 32 },
             )
         }
-        Unary::Keccak256 => {
-            check_tuple_traits(Operation::Keccak256, &value.ty)?;
+        Unary::Keccak256(encoding) => {
+            check_tuple_traits(Operation::Keccak256(encoding), &value.ty)?;
             (
-                CheckedCrypto::Keccak256(value.output),
+                CheckedCrypto::Keccak256(value.output, encoding),
                 Type::Bytes { length: 32 },
             )
         }

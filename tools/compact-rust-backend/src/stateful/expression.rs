@@ -1786,7 +1786,7 @@ fn render_crypto_operation(
     match value {
         Expr::TransientHash { value: input }
         | Expr::PersistentHash { value: input }
-        | Expr::Keccak256 { value: input }
+        | Expr::Keccak256 { value: input, .. }
         | Expr::DegradeToTransient { value: input }
         | Expr::UpgradeFromTransient { value: input }
         | Expr::HashToCurve { value: input }
@@ -1820,15 +1820,16 @@ fn render_crypto_operation(
                         Type::Bytes { length: 32 },
                     )
                 }
-                Expr::Keccak256 { .. } => {
+                Expr::Keccak256 { encoding, .. } => {
                     native_representation::check_tuple_traits(
-                        native_representation::Operation::Keccak256,
+                        native_representation::Operation::Keccak256(*encoding),
                         &actual,
                     )?;
-                    (
-                        syn::parse_quote!(runtime::keccak256),
+                    return Ok((
+                        crate::pure_native::crypto::render_keccak(rendered, *encoding),
                         Type::Bytes { length: 32 },
-                    )
+                        effect,
+                    ));
                 }
                 Expr::DegradeToTransient { .. } => {
                     if actual != (Type::Bytes { length: 32 }) {

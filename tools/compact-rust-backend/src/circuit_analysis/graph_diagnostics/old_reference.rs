@@ -384,7 +384,7 @@ pub(crate) fn expression_contains<'source>(
         }
         | Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }

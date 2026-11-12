@@ -32,7 +32,7 @@ impl CryptoSink for NativeLeafSink {
             CheckedCrypto::PersistentCommit { value, opening } => {
                 syn::parse_quote!(runtime::persistent_commit(#value, #opening))
             }
-            CheckedCrypto::Keccak256(value) => syn::parse_quote!(runtime::keccak256(#value)),
+            CheckedCrypto::Keccak256(value, encoding) => render_keccak(value, encoding),
             CheckedCrypto::DegradeToTransient(value) => {
                 syn::parse_quote!(runtime::degrade_to_transient(#value))
             }
@@ -44,6 +44,15 @@ impl CryptoSink for NativeLeafSink {
                 syn::parse_quote!(runtime::hash_to_curve(#value))
             }
             CheckedCrypto::Jubjub(checked) => jubjub_value::render(checked),
+        }
+    }
+}
+
+pub(crate) fn render_keccak(value: syn::Expr, encoding: crate::ir::KeccakEncoding) -> syn::Expr {
+    match encoding {
+        crate::ir::KeccakEncoding::NormalizedAtoms => syn::parse_quote!(runtime::keccak256(#value)),
+        crate::ir::KeccakEncoding::Aligned => {
+            syn::parse_quote!(runtime::keccak256_aligned(#value)?)
         }
     }
 }

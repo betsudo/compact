@@ -14,23 +14,25 @@ impl Lowerer<'_> {
         path: &str,
     ) -> Result<(Operation, Type), RecordingGap> {
         let value = match expression {
-            Expr::PersistentHash { value } | Expr::Keccak256 { value } => {
+            Expr::PersistentHash { value } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
-                let operation = if matches!(expression, Expr::Keccak256 { .. }) {
-                    if !validate::keccak_input_type(&value.ty) {
-                        return Err(invalid(path, "Keccak requires a supported FAB value"));
-                    }
-                    Operation::Keccak256(value)
-                } else {
-                    if !validate::fixed_aligned_fab_type(&value.ty) {
-                        return Err(invalid(
-                            path,
-                            "persistent hash requires a supported aligned FAB value",
-                        ));
-                    }
-                    Operation::PersistentHash(value)
-                };
-                (operation, Type::Bytes { length: 32 })
+                if !validate::fixed_aligned_fab_type(&value.ty) {
+                    return Err(invalid(
+                        path,
+                        "persistent hash requires a supported aligned FAB value",
+                    ));
+                }
+                (Operation::PersistentHash(value), Type::Bytes { length: 32 })
+            }
+            Expr::Keccak256 { value, encoding } => {
+                let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
+                if !validate::keccak_input_type(&value.ty, *encoding) {
+                    return Err(invalid(path, "Keccak requires a supported FAB value"));
+                }
+                (
+                    Operation::Keccak256(value, *encoding),
+                    Type::Bytes { length: 32 },
+                )
             }
             Expr::PersistentCommit { value, opening } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;

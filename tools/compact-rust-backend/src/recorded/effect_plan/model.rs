@@ -15,7 +15,7 @@
 
 //! Typed SSA values and ordered blocks. No Rust syntax or profile counters.
 use super::declarations::Declarations;
-use crate::ir::Type;
+use crate::ir::{KeccakEncoding, Type};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Value {
@@ -181,7 +181,7 @@ pub(super) enum Operation {
     FieldToBytes32(Value),
     /// Persistent FAB hashing of independently checked fixed aligned values.
     PersistentHash(Value),
-    Keccak256(Value),
+    Keccak256(Value, KeccakEncoding),
     HashToCurve(Value),
     /// Official ledger8 digest/field conversions and transient FAB operations.
     DegradeToTransient(Value),

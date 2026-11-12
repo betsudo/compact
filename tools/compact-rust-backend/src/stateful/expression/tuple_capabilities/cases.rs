@@ -89,6 +89,7 @@ pub(super) fn cases() -> Vec<Case> {
             required_trait: "Into<Value>",
             result: Type::Bytes { length: 32 },
             build: |value| Expr::Keccak256 {
+                encoding: Default::default(),
                 value: Box::new(value),
             },
         },

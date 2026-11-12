@@ -105,13 +105,13 @@ impl Lowerer<'_> {
                 }
                 (Operation::FieldToBytes32(value), Type::Bytes { length: 32 })
             }
-            Expr::PersistentHash { value } | Expr::Keccak256 { value } => {
+            Expr::PersistentHash { value } | Expr::Keccak256 { value, .. } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
-                let operation = if matches!(expression, Expr::Keccak256 { .. }) {
-                    if !validate::keccak_input_type(&value.ty) {
+                let operation = if let Expr::Keccak256 { encoding, .. } = expression {
+                    if !validate::keccak_input_type(&value.ty, *encoding) {
                         return Err(invalid(path, "Keccak requires a supported FAB value"));
                     }
-                    Operation::Keccak256(value)
+                    Operation::Keccak256(value, *encoding)
                 } else {
                     if !validate::fixed_aligned_fab_type(&value.ty) {
                         return Err(invalid(

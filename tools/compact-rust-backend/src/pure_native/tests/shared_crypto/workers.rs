@@ -89,6 +89,7 @@ fn contract(shape: Shape, depth: usize) -> Contract {
                 }),
             },
             Shape::Keccak => Expr::Keccak256 {
+                encoding: Default::default(),
                 value: Box::new(body),
             },
         };

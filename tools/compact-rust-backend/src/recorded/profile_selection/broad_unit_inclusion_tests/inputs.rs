@@ -191,15 +191,29 @@ fn map_size_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
 
 // #661 adds only explicit new-tag denials to retired exhaustive matchers.
 // Reconstruct exact predecessor bytes before the unchanged older projections.
+const FOLD_ENUM_SHA256: &str = "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15";
 const FOLD_ENUM: &[u8] = include_bytes!("fold-expression-enum-661.json");
 fn fold_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
-    if digest(bytes) != "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15" {
+    if digest(bytes) != FOLD_ENUM_SHA256 {
         return Err("unreviewed Fold enum compatibility checkpoint".into());
     }
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
+
+// Keccak adds an encoding field to three historical traversal patterns.
+const KECCAK_ENCODING: &[u8] = include_bytes!("keccak-encoding-schema20.json");
+fn keccak_encoding_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "c00e3084f3be4d4a6cb1216d6f21fb4314726945ec96bd9e399de0a3d1440ca4" {
+        return Err("unreviewed Keccak encoding compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_keccak_encoding(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &keccak_encoding_manifest(KECCAK_ENCODING)?)
+}
 fn before_fold_enum(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &fold_enum_manifest(FOLD_ENUM)?)
+    let before_keccak = before_keccak_encoding(path, current)?;
+    legacy_source(path, &before_keccak, &fold_enum_manifest(FOLD_ENUM)?)
 }
 
 // #617 extracts the two live shared definitions from the frozen Plan oracle.
@@ -316,6 +330,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
     authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
     authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     authority["start_funding_projection"] = start_funding_manifest(START_FUNDING).unwrap();
@@ -554,6 +569,7 @@ fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forge
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, row) in projection["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_keccak_encoding(path, &current).unwrap();
         let previous = legacy_source(path, &current, &projection).unwrap();
         assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
         let edits = row["predecessor_reconstruction"].as_array().unwrap();
@@ -573,4 +589,36 @@ fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forge
     forged["owners"][path]["predecessor_reconstruction"][0]["previous"] =
         Value::String("unreviewed acceptance".into());
     assert!(fold_enum_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
+}
+
+#[test]
+fn keccak_encoding_projection_preserves_exact_fold_oracles() {
+    let projection = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
+    let fold = fold_enum_manifest(FOLD_ENUM).unwrap();
+    assert!(keccak_encoding_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        FOLD_ENUM_SHA256
+    );
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 3);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let predecessor = before_keccak_encoding(path, &current).unwrap();
+        assert_eq!(
+            digest(predecessor.as_bytes()),
+            fold["owners"][path]["current_sha256"]
+        );
+        assert_eq!(
+            current.replacen(
+                "Expr::Keccak256 { value, .. }",
+                "Expr::Keccak256 { value }",
+                1
+            ),
+            predecessor
+        );
+        assert!(before_keccak_encoding(path, &predecessor).is_err());
+        assert!(before_keccak_encoding(path, &(current + "\n// drift\n")).is_err());
+    }
 }

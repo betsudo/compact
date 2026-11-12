@@ -157,6 +157,9 @@ pub enum RenderError {
         limit: usize,
         required_trait: &'static str,
     },
+    UnsupportedOpaqueHashInput {
+        operation: &'static str,
+    },
     InvalidFieldLiteral(String),
     InvalidUnsignedLiteral {
         value: String,
@@ -217,6 +220,9 @@ pub enum RenderError {
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::UnsupportedOpaqueHashInput { operation } => {
+                write!(f, "{operation} cannot hash a value containing opaque data")
+            }
             Self::ResourceLimit {
                 resource,
                 limit,
@@ -786,7 +792,7 @@ fn collect_expression_types<'ir>(
         }
         Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
@@ -1567,7 +1573,7 @@ fn pure_crypto_expression(
         Expr::TransientCommit { value, opening } => CryptoSource::TransientCommit(value, opening),
         Expr::PersistentHash { value } => CryptoSource::PersistentHash(value),
         Expr::PersistentCommit { value, opening } => CryptoSource::PersistentCommit(value, opening),
-        Expr::Keccak256 { value } => CryptoSource::Keccak256(value),
+        Expr::Keccak256 { value, encoding } => CryptoSource::Keccak256(value, *encoding),
         Expr::DegradeToTransient { value } => CryptoSource::DegradeToTransient(value),
         Expr::UpgradeFromTransient { value } => CryptoSource::UpgradeFromTransient(value),
         Expr::HashToCurve { value } => CryptoSource::HashToCurve(value),

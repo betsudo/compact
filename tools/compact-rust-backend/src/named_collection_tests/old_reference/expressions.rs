@@ -113,7 +113,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         }
         Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }

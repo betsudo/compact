@@ -175,6 +175,7 @@ fn cases() -> Vec<(&'static str, Expr, Type, Option<Capability>)> {
         (
             "keccak",
             Expr::Keccak256 {
+                encoding: Default::default(),
                 value: Box::new(input("bytes")),
             },
             bytes,

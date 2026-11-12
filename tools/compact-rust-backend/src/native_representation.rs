@@ -5,7 +5,11 @@
 //! Operation-specific tuple traits, separate from ordinary value ownership.
 //! This bounded borrowed policy constructs no Rust syntax or replacement types.
 //! It corrects proven unbuildable native operations, not general source typing.
-use crate::{RenderError, ir::Type, resource_limits::recording_type_nodes};
+use crate::{
+    RenderError,
+    ir::{KeccakEncoding, Type},
+    resource_limits::recording_type_nodes,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Operation {
@@ -15,7 +19,7 @@ pub(crate) enum Operation {
     TransientCommit,
     PersistentHash,
     PersistentCommit,
-    Keccak256,
+    Keccak256(KeccakEncoding),
     HashToCurve,
 }
 
@@ -28,7 +32,7 @@ impl Operation {
             Self::TransientCommit => "transientCommit",
             Self::PersistentHash => "persistentHash",
             Self::PersistentCommit => "persistentCommit",
-            Self::Keccak256 => "keccak256",
+            Self::Keccak256(_) => "keccak256",
             Self::HashToCurve => "hashToCurve",
         }
     }
@@ -43,7 +47,7 @@ impl Operation {
     fn required_trait(self, contains_opaque: bool) -> &'static str {
         match self {
             Self::Equal | Self::NotEqual => "PartialEq",
-            Self::Keccak256 => "Into<Value>",
+            Self::Keccak256(KeccakEncoding::NormalizedAtoms) => "Into<Value>",
             Self::TransientHash | Self::TransientCommit | Self::HashToCurve if contains_opaque => {
                 // ExactHashInput adapts HashInputValue, whose supertrait is Aligned.
                 "HashInputValue"
@@ -64,6 +68,11 @@ pub(crate) fn check_tuple_traits(operation: Operation, ty: &Type) -> Result<(), 
     let contains_opaque = nodes
         .iter()
         .any(|ty| matches!(ty, Type::OpaqueString | Type::OpaqueBytes));
+    if contains_opaque && matches!(operation, Operation::Keccak256(KeccakEncoding::Aligned)) {
+        return Err(RenderError::UnsupportedOpaqueHashInput {
+            operation: operation.name(),
+        });
+    }
     for node in nodes {
         if let Type::Tuple { elements } = node
             && elements.len() > limit

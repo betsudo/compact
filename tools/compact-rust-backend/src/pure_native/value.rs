@@ -40,7 +40,7 @@ pub(crate) fn crypto(checked: C<V>) -> C<syn::Expr> {
             value: value.into_expression(),
             opening: opening.into_expression(),
         },
-        C::Keccak256(value) => C::Keccak256(value.into_expression()),
+        C::Keccak256(value, encoding) => C::Keccak256(value.into_expression(), encoding),
         C::DegradeToTransient(value) => C::DegradeToTransient(value.into_expression()),
         C::UpgradeFromTransient(value) => C::UpgradeFromTransient(value.into_expression()),
         C::HashToCurve { value, encoding } => C::HashToCurve {

@@ -14,7 +14,7 @@ const OPERATIONS: [Operation; 8] = [
     Operation::TransientCommit,
     Operation::PersistentHash,
     Operation::PersistentCommit,
-    Operation::Keccak256,
+    Operation::Keccak256(crate::ir::KeccakEncoding::NormalizedAtoms),
     Operation::HashToCurve,
 ];
 
@@ -51,7 +51,7 @@ fn expression(operation: Operation, value: Expr) -> Expr {
             value,
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         },
-        Operation::Keccak256 => Expr::Keccak256 { value },
+        Operation::Keccak256(encoding) => Expr::Keccak256 { value, encoding },
         Operation::HashToCurve => Expr::HashToCurve { value },
     }
 }
@@ -131,7 +131,7 @@ fn exact_hash_input_diagnostic_follows_the_whole_opaque_encoding_carrier() {
     for operation in [
         Operation::PersistentHash,
         Operation::PersistentCommit,
-        Operation::Keccak256,
+        Operation::Keccak256(crate::ir::KeccakEncoding::NormalizedAtoms),
     ] {
         assert_refusal(
             check_tuple_traits(operation, &carrier).unwrap_err(),

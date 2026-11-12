@@ -149,7 +149,9 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::PersistentCommit { value, opening } => {
             Source::Crypto(CryptoSource::PersistentCommit(value, opening))
         }
-        Expr::Keccak256 { value } => Source::Crypto(CryptoSource::Keccak256(value)),
+        Expr::Keccak256 { value, encoding } => {
+            Source::Crypto(CryptoSource::Keccak256(value, *encoding))
+        }
         Expr::DegradeToTransient { value } => {
             Source::Crypto(CryptoSource::DegradeToTransient(value))
         }

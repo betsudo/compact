@@ -19,6 +19,64 @@ fn opaque_commit() -> Value {
 }
 
 #[test]
+fn keccak_encoding_binds_to_the_raw_ir_and_selects_the_generated_helper() {
+    let legacy_expr = json!({
+        "kind": "keccak256",
+        "value": {"kind": "bytes_literal", "bytes": [1, 0]}
+    });
+    let result = json!({"kind": "bytes", "length": 32});
+    let mut legacy_metadata = Vec::new();
+    for (encoding, helper) in [
+        (None, "runtime::keccak256("),
+        (Some("normalized_atoms"), "runtime::keccak256("),
+        (Some("aligned"), "runtime::keccak256_aligned("),
+    ] {
+        let mut expr = legacy_expr.clone();
+        if let Some(encoding) = encoding {
+            expr["encoding"] = json!(encoding);
+        }
+        let ir = fixture::pure(expr, result.clone());
+        let seed = Sandbox::new(&ir, None, None, 0);
+        let metadata = fixture::metadata(&ir, &seed.source, false);
+        let sandbox = Sandbox::new(&ir, Some(&metadata), None, 0);
+        let rendered = sandbox.invoke().render(RenderOptions::default()).unwrap();
+        assert!(rendered.rendered().source.contains(helper));
+        assert!(matches!(rendered.metadata(), MetadataStatus::Available(_)));
+        rendered.finish_metadata().unwrap();
+        if encoding.is_none() {
+            legacy_metadata = metadata;
+        }
+        if encoding == Some("aligned") {
+            let stale = Sandbox::new(&ir, Some(&legacy_metadata), None, 0);
+            let rendered = stale.invoke().render(RenderOptions::default()).unwrap();
+            assert!(matches!(rendered.metadata(), MetadataStatus::Invalid(_)));
+            assert!(rendered.finish_metadata().is_err());
+        }
+    }
+
+    let mut invalid = legacy_expr;
+    invalid["encoding"] = json!("unqualified");
+    assert!(serde_json::from_value::<crate::ir::Expr>(invalid).is_err());
+}
+
+#[test]
+fn aligned_keccak_rejects_opaque_ir_during_native_semantics() {
+    let ir = fixture::pure(
+        json!({"kind": "keccak256", "encoding": "aligned", "value": {
+            "kind": "default", "ty": {"kind": "opaque_string"}
+        }}),
+        json!({"kind": "bytes", "length": 32}),
+    );
+    let contract = serde_json::from_value::<Contract>(ir).unwrap();
+    assert!(matches!(
+        crate::render_with_capabilities(&contract),
+        Err(crate::RenderError::UnsupportedOpaqueHashInput {
+            operation: "keccak256"
+        })
+    ));
+}
+
+#[test]
 fn native_valid_recording_refusal_captures_actual_expression_and_preserves_report() {
     // Retained typed_plan/composition opaque-input commitment control is
     // frontend-excluded. Native rendering supports it, checked recording refuses.

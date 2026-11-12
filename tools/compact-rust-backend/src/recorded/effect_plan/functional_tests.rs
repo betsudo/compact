@@ -303,7 +303,7 @@ fn both_branches_are_projected_and_unsupported_nodes_refuse_without_shape_fallba
     // Keccak has valid checked native syntax, but the pinned target remains
     // ZKIRv2. Keep the unsupported operation in the otherwise branch.
     let checked = checked(Some((
-        Operation::Keccak256(value(2, Type::Field)),
+        Operation::Keccak256(value(2, Type::Field), Default::default()),
         Type::Bytes { length: 32 },
     )));
     let authority = AuthorityDouble::node_spans();

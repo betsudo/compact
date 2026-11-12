@@ -39,7 +39,7 @@ fn all_sixteen_operations_return_checked_types_and_visit_children_once() {
             true,
         ),
         (
-            CryptoSource::Keccak256(&left),
+            CryptoSource::Keccak256(&left, Default::default()),
             Type::Field,
             Type::Unit,
             Type::Bytes { length: 32 },

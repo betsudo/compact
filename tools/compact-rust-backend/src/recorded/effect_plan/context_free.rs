@@ -45,7 +45,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::PersistentCommit { .. }
                 | Operation::FieldToBytes32(_)
                 | Operation::PersistentHash(_)
-                | Operation::Keccak256(_)
+                | Operation::Keccak256(..)
                 | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_)
                 | Operation::UpgradeFromTransient(_)

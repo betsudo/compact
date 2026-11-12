@@ -102,7 +102,13 @@ mod tests {
                 true,
             ),
             (Expr::PersistentHash { value: input() }, false),
-            (Expr::Keccak256 { value: input() }, false),
+            (
+                Expr::Keccak256 {
+                    value: input(),
+                    encoding: Default::default(),
+                },
+                false,
+            ),
         ] {
             let (value, _) =
                 crate::pure_crypto_expression(&expression, &params, &HashMap::new()).unwrap();

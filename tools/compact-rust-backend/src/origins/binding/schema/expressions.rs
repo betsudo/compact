@@ -252,7 +252,17 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             binary!("transient_commit", "value", value, "opening", opening)
         }
         Expr::PersistentHash { value } => unary!("persistent_hash", "value", value),
-        Expr::Keccak256 { value } => unary!("keccak256", "value", value),
+        Expr::Keccak256 { value, encoding } => {
+            unary!("keccak256", "value", value);
+            s.default(
+                "encoding",
+                Value::Scalar(Scalar::Text(match encoding {
+                    crate::ir::KeccakEncoding::NormalizedAtoms => "normalized_atoms",
+                    crate::ir::KeccakEncoding::Aligned => "aligned",
+                })),
+                encoding.is_normalized_atoms(),
+            );
+        }
         Expr::PersistentCommit { value, opening } => {
             binary!("persistent_commit", "value", value, "opening", opening)
         }

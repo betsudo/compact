@@ -4,6 +4,7 @@
 
 //! FAB representation capabilities remain separate from ordinary local ownership.
 use super::{Type, value_type};
+use crate::ir::KeccakEncoding;
 
 #[derive(Clone, Copy)]
 enum Capability {
@@ -32,9 +33,17 @@ fn supports(ty: &Type, capability: Capability) -> bool {
     value_type(ty) && product(ty, capability)
 }
 
-/// Keccak consumes Into<Value> atoms without requiring aligned conversion.
-pub(in crate::recorded::effect_plan) fn keccak_input_type(ty: &Type) -> bool {
-    supports(ty, Capability::Atoms)
+pub(in crate::recorded::effect_plan) fn keccak_input_type(
+    ty: &Type,
+    encoding: KeccakEncoding,
+) -> bool {
+    supports(
+        ty,
+        match encoding {
+            KeccakEncoding::NormalizedAtoms => Capability::Atoms,
+            KeccakEncoding::Aligned => Capability::FixedAligned,
+        },
+    )
 }
 
 /// Qualified Aligned + Into<Value> domain for curve/transient hashes. Opaque

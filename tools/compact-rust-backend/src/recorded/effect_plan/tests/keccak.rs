@@ -5,12 +5,14 @@
 //! Keccak's FAB conversion domain is independent of persistent byte hashing.
 use super::super::validate::uint;
 use super::*;
+use crate::ir::KeccakEncoding;
 
 fn digest_type() -> Type {
     Type::Bytes { length: 32 }
 }
 fn hash(value: Expr) -> Expr {
     Expr::Keccak256 {
+        encoding: Default::default(),
         value: Box::new(value),
     }
 }
@@ -75,11 +77,14 @@ fn keccak_accepts_canonical_fab_leaves_and_owned_products() {
                 }],
             },
         ] {
-            assert!(validate::keccak_input_type(&input), "{input:?}");
+            assert!(
+                validate::keccak_input_type(&input, Default::default()),
+                "{input:?}"
+            );
             let plan = checked(&root(input)).unwrap();
             assert!(matches!(
                 plan.plan().body.bindings.last().unwrap().operation,
-                Operation::Keccak256(_)
+                Operation::Keccak256(..)
             ));
             let steps = render(&plan).unwrap().steps;
             assert_eq!(
@@ -94,6 +99,39 @@ fn keccak_accepts_canonical_fab_leaves_and_owned_products() {
 }
 
 #[test]
+fn aligned_keccak_keeps_its_encoding_and_refuses_nested_opaque_input() {
+    let aligned = |ty| {
+        let mut circuit = root(ty);
+        let StateReturn::Expression {
+            value: Expr::Keccak256 { encoding, .. },
+        } = &mut circuit.return_value
+        else {
+            panic!("expected a Keccak return");
+        };
+        *encoding = KeccakEncoding::Aligned;
+        circuit
+    };
+    let plan = checked(&aligned(Type::Bytes { length: 12 })).unwrap();
+    assert!(matches!(
+        plan.plan().body.bindings.last().unwrap().operation,
+        Operation::Keccak256(_, KeccakEncoding::Aligned)
+    ));
+    let steps = render(&plan).unwrap().steps;
+    assert!(
+        quote::quote!(#(#steps)*)
+            .to_string()
+            .contains("runtime :: keccak256_aligned")
+    );
+
+    let opaque_vector = Type::Vector {
+        length: 2,
+        element: Box::new(Type::OpaqueString),
+    };
+    assert!(checked(&root(opaque_vector.clone())).is_ok());
+    assert!(checked(&aligned(opaque_vector)).is_err());
+}
+
+#[test]
 fn keccak_tuple_and_named_representation_limits_are_distinct() {
     for n in [0, 1, 8, 11] {
         checked(&root(Type::Tuple {
@@ -105,7 +143,7 @@ fn keccak_tuple_and_named_representation_limits_are_distinct() {
         elements: vec![Type::Field; 12],
     };
     assert!(validate::value_type(&large));
-    assert!(!validate::keccak_input_type(&large));
+    assert!(!validate::keccak_input_type(&large, Default::default()));
     assert!(checked(&root(large)).is_err());
     for n in [8, 9] {
         let named = Type::Struct {
@@ -117,18 +155,24 @@ fn keccak_tuple_and_named_representation_limits_are_distinct() {
                 },
             }],
         };
-        assert_eq!(validate::keccak_input_type(&named), n == 8);
+        assert_eq!(
+            validate::keccak_input_type(&named, Default::default()),
+            n == 8
+        );
         assert_eq!(checked(&root(named)).is_ok(), n == 8);
     }
     let ledger = Type::LedgerMap {
         key: Box::new(Type::Field),
         value: Box::new(Type::Field),
     };
-    assert!(!validate::keccak_input_type(&ledger));
-    assert!(!validate::keccak_input_type(&uint("01")));
+    assert!(!validate::keccak_input_type(&ledger, Default::default()));
+    assert!(!validate::keccak_input_type(
+        &uint("01"),
+        KeccakEncoding::NormalizedAtoms
+    ));
     // Aligned hashes retain their independently reviewed fixed-input boundary.
     for ty in [Type::OpaqueBytes, Type::OpaqueString] {
-        assert!(validate::keccak_input_type(&ty));
+        assert!(validate::keccak_input_type(&ty, Default::default()));
         assert!(!validate::fixed_aligned_fab_type(&ty));
     }
 }
@@ -148,7 +192,7 @@ fn validation_plan() -> Plan {
         body: Block {
             bindings: vec![Binding {
                 value: output.clone(),
-                operation: Operation::Keccak256(input),
+                operation: Operation::Keccak256(input, Default::default()),
                 path: "hash".into(),
             }],
             result: output,
@@ -163,17 +207,17 @@ fn keccak_validator_checks_exact_operand_authority_and_result() {
         let mut plan = validation_plan();
         match mode {
             0 => {
-                if let Operation::Keccak256(input) = &mut plan.body.bindings[0].operation {
+                if let Operation::Keccak256(input, _) = &mut plan.body.bindings[0].operation {
                     input.id = 99;
                 }
             }
             1 => {
-                if let Operation::Keccak256(input) = &mut plan.body.bindings[0].operation {
+                if let Operation::Keccak256(input, _) = &mut plan.body.bindings[0].operation {
                     input.id = 1;
                 }
             }
             2 => {
-                if let Operation::Keccak256(input) = &mut plan.body.bindings[0].operation {
+                if let Operation::Keccak256(input, _) = &mut plan.body.bindings[0].operation {
                     input.ty = Type::Boolean;
                 }
             }
@@ -187,7 +231,7 @@ fn keccak_validator_checks_exact_operand_authority_and_result() {
                     elements: vec![Type::Field; 12],
                 };
                 plan.parameters[0].ty = unsupported.clone();
-                if let Operation::Keccak256(input) = &mut plan.body.bindings[0].operation {
+                if let Operation::Keccak256(input, _) = &mut plan.body.bindings[0].operation {
                     input.ty = unsupported;
                 }
             }
@@ -281,7 +325,7 @@ fn keccak_cannot_replace_named_source_definitions_with_consistent_annotations() 
             _ => unreachable!(),
         }
         let forged = plan.parameters[0].ty.clone();
-        let Operation::Keccak256(input) = &mut plan.body.bindings[0].operation else {
+        let Operation::Keccak256(input, _) = &mut plan.body.bindings[0].operation else {
             unreachable!()
         };
         input.ty = forged;
@@ -328,7 +372,7 @@ fn keccak_cannot_use_a_value_owned_by_only_one_branch() {
                 branch,
                 Binding {
                     value: output.clone(),
-                    operation: Operation::Keccak256(field(3)),
+                    operation: Operation::Keccak256(field(3), Default::default()),
                     path: "hash".into(),
                 },
             ],
@@ -336,7 +380,7 @@ fn keccak_cannot_use_a_value_owned_by_only_one_branch() {
         },
     };
     validate::check(plan.clone(), declarations::Declarations::default()).unwrap();
-    plan.body.bindings[1].operation = Operation::Keccak256(field(1));
+    plan.body.bindings[1].operation = Operation::Keccak256(field(1), Default::default());
     assert!(validate::check(plan, declarations::Declarations::default()).is_err());
 }
 

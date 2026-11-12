@@ -50,14 +50,21 @@ fn pure_crypto_expression(
                 Type::Bytes { length: 32 },
             ))
         }
-        Expr::Keccak256 { value } => {
+        Expr::Keccak256 { value, encoding } => {
             let (value, value_type) = expression_with_calls(value, parameters, circuits)?;
             native_representation::check_tuple_traits(
-                native_representation::Operation::Keccak256,
+                native_representation::Operation::Keccak256(*encoding),
                 &value_type,
             )?;
             Ok((
-                syn::parse_quote!(runtime::keccak256(#value)),
+                match encoding {
+                    crate::ir::KeccakEncoding::NormalizedAtoms => {
+                        syn::parse_quote!(runtime::keccak256(#value))
+                    }
+                    crate::ir::KeccakEncoding::Aligned => {
+                        syn::parse_quote!(runtime::keccak256_aligned(#value)?)
+                    }
+                },
                 Type::Bytes { length: 32 },
             ))
         }

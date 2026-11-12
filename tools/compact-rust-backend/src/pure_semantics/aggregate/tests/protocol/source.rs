@@ -133,7 +133,7 @@ pub(super) fn crypto(expr: &Expr) -> Option<CryptoSource<'_>> {
         Expr::TransientCommit { value, opening } => CryptoSource::TransientCommit(value, opening),
         Expr::PersistentHash { value } => CryptoSource::PersistentHash(value),
         Expr::PersistentCommit { value, opening } => CryptoSource::PersistentCommit(value, opening),
-        Expr::Keccak256 { value } => CryptoSource::Keccak256(value),
+        Expr::Keccak256 { value, encoding } => CryptoSource::Keccak256(value, *encoding),
         Expr::DegradeToTransient { value } => CryptoSource::DegradeToTransient(value),
         Expr::UpgradeFromTransient { value } => CryptoSource::UpgradeFromTransient(value),
         Expr::HashToCurve { value } => CryptoSource::HashToCurve(value),

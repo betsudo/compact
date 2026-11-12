@@ -107,7 +107,7 @@ pub(super) fn render(
         | Operation::FieldToBytes32(_)
         | Operation::PersistentHash(_)
         | Operation::HashToCurve(_)
-        | Operation::Keccak256(_)
+        | Operation::Keccak256(..)
         | Operation::JubjubPointX(_)
         | Operation::JubjubPointY(_)
         | Operation::JubjubScalarFromNative(_)
