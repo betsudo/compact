@@ -466,7 +466,9 @@ pub fn empty_query_context() -> QueryContext<DefaultDB> {
 
 mod kernel;
 pub use kernel::{KernelClaim, query_kernel_claim, query_kernel_mint_shielded};
-pub(crate) use kernel::{kernel_claim_program, kernel_mint_shielded_program};
+pub(crate) use kernel::{
+    kernel_claim_contract_call_program, kernel_claim_program, kernel_mint_shielded_program,
+};
 
 #[cfg(test)]
 mod program_path_tests;

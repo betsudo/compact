@@ -114,6 +114,22 @@ fn single_call_keeps_exact_ledger_partition_and_proof_inputs() {
 }
 
 #[test]
+fn single_call_preparation_refuses_a_recorded_contract_claim() {
+    let recorded = RecordingFrame::new(context())
+        .kernel_claim_contract_call(
+            ContractAddress(HashOutput([3; 32])),
+            HashOutput([4; 32]),
+            Field::from(5),
+        )
+        .unwrap()
+        .finish(());
+    assert!(matches!(
+        prepare_call(recorded, spec()),
+        Err(PrepareCallError::CrossContractClaimsRequireJointPreparation)
+    ));
+}
+
+#[test]
 fn preparation_rejects_effects_added_outside_the_recorded_program() {
     let mut recorded = recorded();
     alter_effects(&mut recorded);

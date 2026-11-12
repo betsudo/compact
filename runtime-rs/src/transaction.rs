@@ -883,6 +883,7 @@ pub enum PrepareCallError {
     },
     CoinPublicKeyMismatch,
     UnboundZswapIntents,
+    CrossContractClaimsRequireJointPreparation,
     ZswapPlanMismatch,
     PartitionEffectsMismatch,
 }
@@ -905,6 +906,9 @@ impl fmt::Display for PrepareCallError {
             }
             Self::UnboundZswapIntents => formatter
                 .write_str("Zswap intent-bearing calls require exact offer-backed preparation"),
+            Self::CrossContractClaimsRequireJointPreparation => {
+                formatter.write_str("cross-contract claims require joint call preparation")
+            }
             Self::EmptyTranscript => formatter.write_str("recorded call has no ledger transcript"),
             Self::NonCanonicalPrivateOutput {
                 output_index,
@@ -948,6 +952,9 @@ fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
         &recorded.execution,
         offer_partition.is_some(),
     )?;
+    if !replayed_effects.claimed_contract_calls.is_empty() {
+        return Err(PrepareCallError::CrossContractClaimsRequireJointPreparation);
+    }
     let address = pre_transcript.context.address;
     let mut parameters = INITIAL_PARAMETERS;
     if offer_partition == Some(OfferTranscriptPartition::WhollyFallible) {

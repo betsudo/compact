@@ -127,8 +127,18 @@ fixture exercises constructor arguments, typed ledger reads and equality of
 contract references. ZKIR v3 uses one 32-byte atom backed by two scalar limbs.
 Generated TypeScript and Rust share byte-identical ZKIR for the comparison.
 Generated Rust exposes a distinct address carrier for the declared interface.
-Both targets still refuse the intact caller at the call site. The next
-compiler step is the caller statement with an immutable entrypoint hash.
+The internal compiler probe now emits the intact caller's statement with the
+immutable entrypoint hash. A standalone arm64 proof with an adapter-produced
+preimage verified independently. The verifier refused a same-output sibling
+entrypoint, a different verifier, a changed binding and a corrupt proof.
+Both ordinary targets still refuse the intact caller at the call site.
+
+The Rust recording runtime emits the same kernel claim as the TypeScript
+compiler, including the callee's address, entrypoint hash and communication
+commitment. Replay preserves the order of repeated claims. Single-call
+preparation rejects any trace with such a claim. Joint preparation still
+needs to match the recorded claim to the authenticated callee before
+partitioning the two traces.
 
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler

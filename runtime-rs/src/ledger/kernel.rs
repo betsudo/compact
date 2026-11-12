@@ -15,8 +15,10 @@
 
 //! Kernel effects use their own ledger VM frame, never a contract ledger slot.
 use super::{
-    CoinCommitment, CoinNullifier, CompactError, HashOutput, QueryContext, QueryResults, StateValue,
+    CoinCommitment, CoinNullifier, CompactError, ContractAddress, HashOutput, QueryContext,
+    QueryResults, StateValue,
 };
+use crate::Field;
 use midnight_base_crypto::{cost_model::RunningCost, fab::AlignedValue};
 use midnight_onchain_state::state::AlignedValueChecked;
 use midnight_onchain_vm::{
@@ -84,6 +86,48 @@ pub(crate) fn kernel_claim_program<M: ResultMode<D>, D: DB>(claim: KernelClaim) 
         Op::Swap { n: 0 },
     ]
 }
+
+pub(crate) fn kernel_claim_contract_call_program<M: ResultMode<D>, D: DB>(
+    address: ContractAddress,
+    entry_point_hash: HashOutput,
+    communication_commitment: Field,
+) -> Vec<Op<M, D>> {
+    let claim = AlignedValue::concat(
+        [
+            AlignedValue::from(address),
+            AlignedValue::from(entry_point_hash),
+            AlignedValue::from(communication_commitment),
+        ]
+        .iter(),
+    );
+    // Match Kernel.claimContractCall. The current list size is the claim's
+    // position, so repeated claims retain their ordering in the effects.
+    vec![
+        Op::Swap { n: 0 },
+        Op::Idx {
+            cached: true,
+            push_path: true,
+            path: vec![Key::Value(AlignedValueChecked::from(3_u8))].into(),
+        },
+        Op::Dup { n: 0 },
+        Op::Size,
+        Op::Push {
+            storage: false,
+            value: super::vm::literal(claim),
+        },
+        Op::Concat {
+            cached: true,
+            n: 160,
+        },
+        Op::Push {
+            storage: false,
+            value: StateValue::Null,
+        },
+        Op::Ins { cached: true, n: 2 },
+        Op::Swap { n: 0 },
+    ]
+}
+
 pub(crate) fn kernel_mint_shielded_program<M: ResultMode<D>, D: DB>(
     domain: HashOutput,
     amount: u64,
