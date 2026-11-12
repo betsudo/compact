@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 import re
 import shutil
-import shlex
 import subprocess
 import sys
 import tomllib
@@ -162,7 +161,7 @@ def run(args):
         # Cargo preserves lexical ../ components for relative include_bytes!, and
         # escapes spaces in Make paths. Resolve parsed paths to physical files;
         # retain the raw depfile bytes/hash and exact include membership checks.
-        tracked = {str((ROOT / path).resolve()) for path in shlex.split(dependencies.replace("\\\n", ""))}
+        tracked = common.depfile_prerequisites(dependencies, ROOT)
         for path in [main_gate.FIXTURES / "sources.json", generated / "contract/lib.rs",
                      *sorted((generated / "contract/checked-programs").glob("*.json")),
                      main_gate.FIXTURES / "goldens/proofs/source-ir.json",

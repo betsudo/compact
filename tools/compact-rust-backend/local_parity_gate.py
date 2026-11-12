@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -61,6 +62,19 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def depfile_prerequisites(raw, base):
+    """Read only prerequisites from the first Cargo Make dependency rule."""
+    logical = raw.replace("\\\n", "")
+    first_rule = next((line for line in logical.splitlines() if line.strip()), "")
+    _, separator, prerequisites = first_rule.partition(": ")
+    if not separator or not prerequisites:
+        raise GateError("invalid actual runner dependency rule")
+    paths = {str((Path(base) / name).resolve(strict=True)) for name in shlex.split(prerequisites)}
+    if not paths or not all(Path(name).is_file() for name in paths):
+        raise GateError("non-file runner prerequisite")
+    return paths
 
 
 def pin_runner_worktree_inputs(paths, root, target_dir, source_hashes, generated_hashes):

@@ -24,6 +24,17 @@ import local_parity_gate as gate
 
 
 class RunnerDepfilePins(unittest.TestCase):
+    def test_depfile_target_is_not_a_prerequisite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source = root / "src/lib.rs"
+            source.parent.mkdir()
+            source.write_text("source")
+            raw = "target/proof-checks/compact-rust-proof-smoke: src/lib.rs\n"
+            self.assertEqual(gate.depfile_prerequisites(raw, root), {str(source)})
+            with self.assertRaises(FileNotFoundError):
+                gate.depfile_prerequisites(raw.replace("src/lib.rs", "src/missing.rs"), root)
+
     def test_source_and_generated_target_have_distinct_prebuild_pins(self):
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
             root = Path(directory).resolve()
