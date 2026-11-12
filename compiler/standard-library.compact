@@ -390,3 +390,52 @@ export circuit jubjubSchnorrVerify<#N>(
 
   return lhs == rhs;
 }
+
+// Reverse the byte order of a Secp256k1Base.  Casting to Bytes<32> gives a little-endian
+// representation, Ethereum addresses has a big-endian representation.
+circuit secp256k1BaseBigEndian(b: Secp256k1Base): Vector<32, Uint<8>> {
+  const vec = b as Bytes<32> as Vector<32, Uint<8>>;
+  return [vec[31],
+          vec[30],
+          vec[29],
+          vec[28],
+          vec[27],
+          vec[26],
+          vec[25],
+          vec[24],
+          vec[23],
+          vec[22],
+          vec[21],
+          vec[20],
+          vec[19],
+          vec[18],
+          vec[17],
+          vec[16],
+          vec[15],
+          vec[14],
+          vec[13],
+          vec[12],
+          vec[11],
+          vec[10],
+          vec[9],
+          vec[8],
+          vec[7],
+          vec[6],
+          vec[5],
+          vec[4],
+          vec[3],
+          vec[2],
+          vec[1],
+          vec[0],];
+}
+
+// Derive an Ethereum-style address from a secp256k1 public key.
+// The point at infinity is rejected as it has no Ethereum address.
+export circuit secp256k1EthereumAddress(pk: Secp256k1Point): Bytes<20> {
+  assert(pk != default<Secp256k1Point>, "Secp256k1Point identity is not a permitted input to secp256k1EthereumAddress");
+  const hash = keccak256<[Vector<32, Uint<8>>, Vector<32, Uint<8>>]>(
+                 [secp256k1BaseBigEndian(secp256k1PointX(pk)),
+                  secp256k1BaseBigEndian(secp256k1PointY(pk))]
+                 );
+  return slice<20>(hash, 12);
+}

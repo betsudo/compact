@@ -15,7 +15,7 @@
 
 //! Original conversions bodies, without new checks or traversal.
 use super::*;
-use crate::pure_semantics::conversion::Secp256k1BytesCast;
+use crate::pure_semantics::conversion::{FixedBytesConversion, Secp256k1BytesCast};
 
 impl Lowerer<'_> {
     pub(super) fn conversion_operation(
@@ -32,6 +32,21 @@ impl Lowerer<'_> {
                     return Err(invalid(path, "FieldToBytes32 requires a Field operand"));
                 }
                 (Operation::FieldToBytes32(value), Type::Bytes { length: 32 })
+            }
+            Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
+                let (value, operation) = FixedBytesConversion::from_expression(expression)
+                    .expect("dispatcher selected a fixed bytes conversion");
+                let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
+                let ty = operation
+                    .result_type(&value.ty)
+                    .map_err(|error| invalid(path, error.to_string()))?;
+                (
+                    Operation::Convert {
+                        value,
+                        kind: Conversion::FixedBytes(operation),
+                    },
+                    ty,
+                )
             }
             Expr::Secp256k1BytesCast { value, ty } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;

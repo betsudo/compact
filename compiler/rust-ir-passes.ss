@@ -615,6 +615,15 @@
                               ((,index-name ,index-type) ,index))
                     (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
 
+      (define (bytes-slice-ir src value index length lower)
+        (let ([start (maybe-nonnegative-integer-literal index src)])
+          (unless start
+            (source-errorf src "Rust backend requires a constant Bytes slice index"))
+          (object (cons "kind" "bytes_slice")
+                  (cons "value" (lower value))
+                  (cons "start" start)
+                  (cons "length" length))))
+
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (expression-ir expr owner-src)]
@@ -725,6 +734,12 @@
              (typed-expression-ir expr2 type src))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (expression-ir expr src))]
+          [(bytes->vector ,src ,len ,expr)
+           (object (cons "kind" "bytes_to_vector")
+                   (cons "value" (expression-ir expr src))
+                   (cons "length" len))]
+          [(bytes-slice ,src ,type ,expr ,index ,len)
+           (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
           [(field->bytes ,src ,len ,expr)
@@ -2669,6 +2684,13 @@
              (stateful-typed-expression-ir expr2 type src witness-ids))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
+          [(bytes->vector ,src ,len ,expr)
+           (object (cons "kind" "bytes_to_vector")
+                   (cons "value" (stateful-expression-ir expr src witness-ids))
+                   (cons "length" len))]
+          [(bytes-slice ,src ,type ,expr ,index ,len)
+           (bytes-slice-ir src expr index len
+             (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
           [(field->bytes ,src ,len ,expr)

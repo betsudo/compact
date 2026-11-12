@@ -109,6 +109,7 @@ pub(super) enum Conversion {
     Coerce,
     UnsignedCast,
     Secp256k1BytesCast,
+    FixedBytes(crate::pure_semantics::conversion::FixedBytesConversion),
 }
 #[derive(Clone, Debug)]
 pub(super) enum Operation {

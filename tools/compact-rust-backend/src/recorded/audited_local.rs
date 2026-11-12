@@ -31,6 +31,8 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::EnumVariant { .. } => true,
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::BytesToVector { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
         | Expr::Coerce { value, .. }
         | Expr::StructField { value, .. }

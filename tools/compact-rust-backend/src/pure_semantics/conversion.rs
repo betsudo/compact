@@ -27,19 +27,99 @@ use crate::{
 };
 
 pub(crate) enum ConversionSource<'a> {
-    FieldCast { value: &'a Expr },
-    FieldToBytes32 { value: &'a Expr },
-    Secp256k1BytesCast { value: &'a Expr, ty: &'a Type },
-    Coerce { value: &'a Expr, ty: &'a Type },
-    UnsignedCast { max: &'a str, value: &'a Expr },
+    FieldCast {
+        value: &'a Expr,
+    },
+    FieldToBytes32 {
+        value: &'a Expr,
+    },
+    Secp256k1BytesCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    FixedBytes {
+        value: &'a Expr,
+        operation: FixedBytesConversion,
+    },
+    Coerce {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    UnsignedCast {
+        max: &'a str,
+        value: &'a Expr,
+    },
 }
 
 pub(crate) enum ConversionFacts {
     UintToField { wide: bool },
     FieldToBytes32,
     Secp256k1BytesCast(Secp256k1BytesCast),
+    FixedBytes(FixedBytesConversion),
     Coercion(CoercionPlan),
     ExplicitUnsignedCast(UnsignedCastStrategy),
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum FixedBytesConversion {
+    ToVector { length: usize },
+    Slice { start: usize, length: usize },
+}
+
+impl FixedBytesConversion {
+    pub(crate) fn from_expression(expr: &Expr) -> Option<(&Expr, Self)> {
+        match expr {
+            Expr::BytesToVector { value, length } => {
+                Some((value, Self::ToVector { length: *length }))
+            }
+            Expr::BytesSlice {
+                value,
+                start,
+                length,
+            } => Some((
+                value,
+                Self::Slice {
+                    start: *start,
+                    length: *length,
+                },
+            )),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn result_type(self, source: &Type) -> Result<Type, RenderError> {
+        match self {
+            Self::ToVector { length } => {
+                let expected = Type::Bytes { length };
+                if *source != expected {
+                    return Err(RenderError::TypeMismatch {
+                        expected,
+                        actual: source.clone(),
+                    });
+                }
+                Ok(Type::Vector {
+                    length,
+                    element: Box::new(Type::Unsigned { max: "255".into() }),
+                })
+            }
+            Self::Slice { start, length } => {
+                let Type::Bytes {
+                    length: input_length,
+                } = *source
+                else {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                };
+                if length > input_length || start > input_length - length {
+                    return Err(RenderError::InvalidBytesSlice {
+                        start,
+                        length,
+                        input_length,
+                    });
+                }
+                Ok(Type::Bytes { length })
+            }
+        }
+    }
 }
 
 pub(crate) enum Secp256k1BytesCast {
@@ -106,6 +186,11 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
                 child.output,
                 ty.clone(),
             )
+        }
+        ConversionSource::FixedBytes { value, operation } => {
+            let child = children.visit(value, sink)?;
+            let ty = operation.result_type(&child.ty)?;
+            (ConversionFacts::FixedBytes(operation), child.output, ty)
         }
         ConversionSource::Coerce { value, ty } => {
             let child = children.visit(value, sink)?;

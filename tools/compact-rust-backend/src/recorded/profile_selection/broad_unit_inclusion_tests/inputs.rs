@@ -220,8 +220,17 @@ fn secp256k1_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
     }
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
+// Fixed byte conversions add two closed variants to retained exhaustive matchers.
+const FIXED_BYTES_ENUM: &[u8] = include_bytes!("fixed-bytes-expression.json");
+fn fixed_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "a2da256f5d860e8359ced0c98c69bd0fd12a830466ec795c93db4b9e80f3f1d2" {
+        return Err("unreviewed fixed bytes compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
 fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
-    let before_accessors = legacy_source(path, current, &secp256k1_accessors_manifest()?)?;
+    let before_bytes = legacy_source(path, current, &fixed_bytes_manifest(FIXED_BYTES_ENUM)?)?;
+    let before_accessors = legacy_source(path, &before_bytes, &secp256k1_accessors_manifest()?)?;
     let before_unary = legacy_source(
         path,
         &before_accessors,
@@ -383,6 +392,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["fixed_bytes_projection"] = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
     authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
     authority["secp256k1_accessors_projection"] = secp256k1_accessors_manifest().unwrap();
     authority["secp256k1_unary_projection"] = secp256k1_unary_manifest(SECP256K1_UNARY).unwrap();
@@ -733,5 +743,29 @@ fn secp256k1_cast_projection_authenticates_exact_sha512_predecessors() {
         );
         assert!(before_secp256k1_cast(path, &predecessor).is_err());
         assert!(before_secp256k1_cast(path, &(current + "\n// drift\n")).is_err());
+    }
+}
+
+#[test]
+fn fixed_bytes_projection_preserves_all_exact_predecessors() {
+    let projection = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
+    let accessors = secp256k1_accessors_manifest().unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(SECP256K1_ACCESSORS)
+    );
+    assert!(fixed_bytes_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = legacy_source(path, &current, &projection).unwrap();
+        assert_eq!(
+            digest(previous.as_bytes()),
+            accessors["owners"][path]["current_sha256"]
+        );
+        assert!(legacy_source(path, &previous, &projection).is_err());
+        assert!(legacy_source(path, &(current + "\n// unrelated drift\n"), &projection).is_err());
     }
 }

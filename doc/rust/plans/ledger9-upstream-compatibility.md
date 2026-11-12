@@ -180,8 +180,16 @@ preserve the original computed-identity refusals and cover canonical
 identity storage and the existing Jubjub overload. All seven stateful
 exports had fresh proofs verified in separate processes on macOS arm64.
 The generated Rust `storeXOfMul` call also passed funded default-strict
-application and refused replay with identical ledger state. Ethereum
-address derivation and ECDSA verification remain separate slices.
+application and refused replay with identical ledger state.
+
+The upstream `secp256k1EthereumAddress` circuit and its byte-order helper
+now compile through both targets without changing the Compact source.
+The [original fixtures](../../../test-contracts/stdlib/secp256k1/address)
+include the exact address vector and the complete issue #608 contract.
+Rust validates fixed Bytes-to-vector conversions and constant byte-slice
+bounds in checked lowering. The paired Keccak circuit uses the original
+nested point encoding and the second ledger slot. ECDSA verification and
+recovery remain separate slices.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

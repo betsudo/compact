@@ -65,6 +65,19 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         }
         Expr::FieldCast { value } => unary!("field_cast", "value", value),
         Expr::FieldToBytes32 { value } => unary!("field_to_bytes32", "value", value),
+        Expr::BytesToVector { value, length } => {
+            unary!("bytes_to_vector", "value", value);
+            s.size("length", *length);
+        }
+        Expr::BytesSlice {
+            value,
+            start,
+            length,
+        } => {
+            unary!("bytes_slice", "value", value);
+            s.size("start", *start);
+            s.size("length", *length);
+        }
         Expr::Secp256k1BytesCast { value, ty } => {
             unary!("secp256k1_bytes_cast", "value", value);
             s.node("ty", Owner::Type(ty));

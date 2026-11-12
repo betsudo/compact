@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! No-syntax child visitor and complete conversion-family contracts.
 use super::*;
@@ -291,4 +302,53 @@ fn coercion_reuses_actual_per_request_limit_after_checking_child() {
         })
     ));
     assert_eq!((children.visits, sink.conversions), (1, 0));
+}
+
+#[test]
+fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
+    use super::FixedBytesConversion::{Slice, ToVector};
+
+    let input = Type::Bytes { length: 32 };
+    let slice = Slice {
+        start: 12,
+        length: 20,
+    };
+    assert_eq!(
+        slice.result_type(&input).unwrap(),
+        Type::Bytes { length: 20 }
+    );
+    assert_eq!(
+        Slice {
+            start: 32,
+            length: 0
+        }
+        .result_type(&input)
+        .unwrap(),
+        Type::Bytes { length: 0 }
+    );
+    assert_eq!(
+        ToVector { length: 32 }.result_type(&input).unwrap(),
+        Type::Vector {
+            length: 32,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        }
+    );
+
+    assert!(matches!(
+        ToVector { length: 31 }.result_type(&input),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+    assert!(matches!(
+        slice.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+    for (start, length) in [(13, 20), (0, 33), (usize::MAX, 1), (33, 0)] {
+        assert!(matches!(
+            (Slice { start, length }).result_type(&input),
+            Err(RenderError::InvalidBytesSlice {
+                input_length: 32,
+                ..
+            })
+        ));
+    }
 }

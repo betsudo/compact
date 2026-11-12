@@ -24,7 +24,7 @@ use crate::ir::{Expr, Type};
 use proc_macro2::Span;
 
 use crate::pure_semantics::arithmetic::Secp256k1Unary;
-use crate::pure_semantics::conversion::Secp256k1BytesCast;
+use crate::pure_semantics::conversion::{FixedBytesConversion, Secp256k1BytesCast};
 use crate::pure_semantics::numeric::{
     ArithmeticKind, UnsignedArithmeticStrategy, checked_unsigned_arithmetic, checked_unsigned_cast,
 };
@@ -55,6 +55,23 @@ pub(crate) fn field_to_bytes_32_syntax(value: syn::Expr) -> syn::Expr {
     syn::parse_quote!(runtime::FixedBytes::<32>::new(
         (#value).as_le_bytes().try_into().expect("canonical Field is 32 bytes")
     ))
+}
+
+pub(crate) fn fixed_bytes_conversion_syntax(
+    value: syn::Expr,
+    operation: FixedBytesConversion,
+) -> syn::Expr {
+    match operation {
+        FixedBytesConversion::ToVector { .. } => syn::parse_quote!(runtime::FixedVector::new(
+            (#value).into_array().map(|byte| runtime::BoundedUint::<255>::new(u128::from(byte)).expect("byte fits Uint<8>"))
+        )),
+        FixedBytesConversion::Slice { start, length } => {
+            let end = start + length;
+            syn::parse_quote!(runtime::FixedBytes::<#length>::new(
+                (#value).into_array()[#start..#end].try_into().expect("checked Bytes slice length")
+            ))
+        }
+    }
 }
 
 pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1BytesCast) -> syn::Expr {

@@ -161,6 +161,9 @@ pub(in super::super) fn expression(
                 unsigned_max(&input.ty),
                 unsigned_max(&binding.value.ty),
             ),
+            Conversion::FixedBytes(operation) => Ok(
+                crate::value_lowering::fixed_bytes_conversion_syntax(value(input), *operation),
+            ),
             Conversion::Secp256k1BytesCast => {
                 crate::pure_semantics::conversion::Secp256k1BytesCast::check(
                     &input.ty,

@@ -684,6 +684,15 @@ pub enum Expr {
     FieldToBytes32 {
         value: Box<Expr>,
     },
+    BytesToVector {
+        value: Box<Expr>,
+        length: usize,
+    },
+    BytesSlice {
+        value: Box<Expr>,
+        start: usize,
+        length: usize,
+    },
     Secp256k1BytesCast {
         value: Box<Expr>,
         ty: Type,

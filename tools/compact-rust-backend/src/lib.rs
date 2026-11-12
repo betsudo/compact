@@ -211,6 +211,12 @@ pub enum RenderError {
         expected: Type,
         actual: Type,
     },
+    InvalidBytesSlice {
+        start: usize,
+        length: usize,
+        input_length: usize,
+    },
+    ExpectedBytes(Type),
     InvalidSecp256k1BytesCast {
         source: Type,
         target: Type,
@@ -358,6 +364,15 @@ impl fmt::Display for RenderError {
             Self::TypeMismatch { expected, actual } => {
                 write!(f, "expression has type {actual:?}, expected {expected:?}")
             }
+            Self::InvalidBytesSlice {
+                start,
+                length,
+                input_length,
+            } => write!(
+                f,
+                "slice index {start} plus length {length} is out-of-bounds for Bytes<{input_length}>"
+            ),
+            Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
             Self::InvalidSecp256k1BytesCast { source, target } => write!(
                 f,
                 "cannot cast {source:?} to {target:?}; expected Bytes<32> and a secp256k1 field"
@@ -839,6 +854,8 @@ fn collect_expression_types<'ir>(
         }
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::BytesToVector { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
@@ -1498,6 +1515,12 @@ fn pure_conversion_expression(
         Expr::FieldToBytes32 { value } => ConversionSource::FieldToBytes32 { value },
         Expr::Secp256k1BytesCast { value, ty } => {
             ConversionSource::Secp256k1BytesCast { value, ty }
+        }
+        Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
+            let (value, operation) =
+                pure_semantics::conversion::FixedBytesConversion::from_expression(expr)
+                    .expect("dispatcher selected a fixed bytes conversion");
+            ConversionSource::FixedBytes { value, operation }
         }
         Expr::Coerce { value, ty } => ConversionSource::Coerce { value, ty },
         Expr::UnsignedCast { max, value } => ConversionSource::UnsignedCast { max, value },

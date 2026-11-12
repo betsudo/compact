@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 //! One exhaustive source variant map, instantiated for two native output views.
 //! The family owner checks children; projection runs only after it returns.
 //! No recording profile or syntax-free checker is selected here.
@@ -160,7 +159,9 @@ macro_rules! dispatch {
             $crate::ir::Expr::FieldToBytes32 { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::Secp256k1BytesCast { .. } => {
+            $crate::ir::Expr::BytesToVector { .. }
+            | $crate::ir::Expr::BytesSlice { .. }
+            | $crate::ir::Expr::Secp256k1BytesCast { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::Coerce { .. } => {

@@ -117,6 +117,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorFold { .. }
                 | E::Call { .. } => 32,
                 E::FieldCast { .. }
+                | E::BytesToVector { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
@@ -226,6 +228,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedLiteral { .. }
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
+                | E::BytesToVector { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
@@ -280,6 +284,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedLiteral { .. }
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
+                | E::BytesToVector { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
@@ -354,6 +360,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::Call { .. } => 21,
                 E::StructField { .. } | E::StructLiteral { .. } | E::Tuple { .. } => 7,
                 E::FieldCast { .. }
+                | E::BytesToVector { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
