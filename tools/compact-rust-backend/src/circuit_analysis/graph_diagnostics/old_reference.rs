@@ -371,6 +371,7 @@ pub(crate) fn expression_contains<'source>(
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
         | Expr::FieldToBytes32 { value }
+        | Expr::Secp256k1BytesCast { value, .. }
         | Expr::Coerce { value, .. }
         | Expr::StructField { value, .. }
         | Expr::TupleIndex { value, .. }

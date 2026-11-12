@@ -211,6 +211,10 @@ pub enum RenderError {
         expected: Type,
         actual: Type,
     },
+    InvalidSecp256k1BytesCast {
+        source: Type,
+        target: Type,
+    },
     ExpectedUnsigned(Type),
     EffectfulExpression,
     MalformedReturnPlan,
@@ -353,6 +357,10 @@ impl fmt::Display for RenderError {
             Self::TypeMismatch { expected, actual } => {
                 write!(f, "expression has type {actual:?}, expected {expected:?}")
             }
+            Self::InvalidSecp256k1BytesCast { source, target } => write!(
+                f,
+                "cannot cast {source:?} to {target:?}; expected Bytes<32> and a secp256k1 field"
+            ),
             Self::ExpectedUnsigned(actual) => {
                 write!(f, "expression has type {actual:?}, expected Compact Uint")
             }
@@ -823,7 +831,7 @@ fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
-        Expr::Coerce { value, ty } => {
+        Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins, observer)?;
             collect_named_types_observed(ty, structs, enums, observer, Some(origins))?;
         }
@@ -1477,6 +1485,9 @@ fn pure_conversion_expression(
     let source = match expr {
         Expr::FieldCast { value } => ConversionSource::FieldCast { value },
         Expr::FieldToBytes32 { value } => ConversionSource::FieldToBytes32 { value },
+        Expr::Secp256k1BytesCast { value, ty } => {
+            ConversionSource::Secp256k1BytesCast { value, ty }
+        }
         Expr::Coerce { value, ty } => ConversionSource::Coerce { value, ty },
         Expr::UnsignedCast { max, value } => ConversionSource::UnsignedCast { max, value },
         _ => unreachable!("private pure-expression dispatcher selects this family"),
@@ -1665,6 +1676,7 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
         | Expr::JubjubPointY { value }
         | Expr::StructField { value, .. }
         | Expr::Coerce { value, .. }
+        | Expr::Secp256k1BytesCast { value, .. }
         | Expr::FieldCast { value } => infallible_constructor_expr(value),
         _ => false,
     }

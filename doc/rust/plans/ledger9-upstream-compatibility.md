@@ -131,6 +131,18 @@ refuses changed ledger writes. The base and scalar roundtrips are k=11 and
 the reset is k=12. Fresh proofs and funded application for these statements
 remain in the slow lane.
 
+Explicit secp256k1 casts accept exactly `Bytes<32>`. Casts into either
+field reduce the little-endian integer modulo its field order. Casts out
+return the canonical little-endian bytes. Host decoders still reject
+noncanonical values, and ledger values still use shifted encoding. The
+[cast fixtures](../../../test-contracts/stdlib/secp256k1/positive-casts)
+cover the pinned guarded constants and zero, dynamic modulus boundaries
+and width refusals in all target modes. On local arm64 the generated Rust
+VM replay matched native execution for 31 cases. The ZKIR interpreter
+accepted the same cases and refused changed transcripts or commitments.
+All seven exports are k=10–12. Fresh proofs and funded application remain
+open in the slow lane.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

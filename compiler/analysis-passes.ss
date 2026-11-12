@@ -3039,8 +3039,17 @@
                      `(if ,src ,expr
                           (safe-cast ,src ,type (tunsigned ,src 1) (quote ,src 1))
                           (safe-cast ,src ,type (tunsigned ,src 0) (quote ,src 0)))])]
+                [(topaque ,src1 ,opaque-type)
+                 (guard (secp256k1-field-max opaque-type))
+                 (T type^
+                    [(tbytes ,src2 ,len2)
+                     (guard (= len2 32))
+                     `(secp256k1-bytes-cast ,src ,type ,expr)])]
                 [(tbytes ,src1 ,len1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type)
+                     (guard (= len1 32) (secp256k1-field-max opaque-type))
+                     `(secp256k1-bytes-cast ,src ,type ,expr)]
                     [(tfield ,src2)
                      (guard (not (= len1 0)))
                      `(field->bytes ,src ,len1 ,expr)]
@@ -4047,6 +4056,17 @@
          [else (source-errorf src "expected Bytes<~d>, got ~a for cast-from-bytes"
                               len 
                               (format-type type^))])
+       type]
+      [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Lnodca Type) (de-alias type)
+           [(tbytes ,src ,len) (and (= len 32) 'bytes)]
+           [(topaque ,src ,opaque-type) (and (secp256k1-field-max opaque-type) 'field)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'bytes) (eq? to 'field))
+                     (and (eq? from 'field) (eq? to 'bytes)))
+           (source-errorf src "invalid secp256k1 byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (when (= len 0) (source-errorf src "invalid cast from field to Bytes<0>"))
@@ -5516,6 +5536,7 @@
       [(cast-from-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-to-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-from-bytes ,src ,type ,len ,[* abs]) abs]
+      [(secp256k1-bytes-cast ,src ,type ,[* abs]) abs]
       [(field->bytes ,src ,len ,[* abs]) abs]
       [(bytes->vector ,src ,len ,[* abs]) (Abs-single (Abs-atomic (abs->witnesses abs)))]
       [(vector->bytes ,src ,len ,[* abs]) (Abs-atomic (abs->witnesses abs))]

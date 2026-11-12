@@ -1,8 +1,19 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! All four pure conversion rules, independent of output and child traversal.
+//! Pure conversion rules, independent of output and child traversal.
 //! This family is complete; the exhaustive syntax-free body fold is pending.
 use super::{
     children::Children,
@@ -18,6 +29,7 @@ use crate::{
 pub(crate) enum ConversionSource<'a> {
     FieldCast { value: &'a Expr },
     FieldToBytes32 { value: &'a Expr },
+    Secp256k1BytesCast { value: &'a Expr, ty: &'a Type },
     Coerce { value: &'a Expr, ty: &'a Type },
     UnsignedCast { max: &'a str, value: &'a Expr },
 }
@@ -25,8 +37,31 @@ pub(crate) enum ConversionSource<'a> {
 pub(crate) enum ConversionFacts {
     UintToField { wide: bool },
     FieldToBytes32,
+    Secp256k1BytesCast(Secp256k1BytesCast),
     Coercion(CoercionPlan),
     ExplicitUnsignedCast(UnsignedCastStrategy),
+}
+
+pub(crate) enum Secp256k1BytesCast {
+    ToBase,
+    ToScalar,
+    ToBytes,
+}
+
+impl Secp256k1BytesCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Bytes { length: 32 }, Type::Secp256k1Base) => Ok(Self::ToBase),
+            (Type::Bytes { length: 32 }, Type::Secp256k1Scalar) => Ok(Self::ToScalar),
+            (Type::Secp256k1Base | Type::Secp256k1Scalar, Type::Bytes { length: 32 }) => {
+                Ok(Self::ToBytes)
+            }
+            _ => Err(RenderError::InvalidSecp256k1BytesCast {
+                source: source.clone(),
+                target: target.clone(),
+            }),
+        }
+    }
 }
 
 pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
@@ -61,6 +96,15 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
                 ConversionFacts::FieldToBytes32,
                 child.output,
                 Type::Bytes { length: 32 },
+            )
+        }
+        ConversionSource::Secp256k1BytesCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = Secp256k1BytesCast::check(&child.ty, ty)?;
+            (
+                ConversionFacts::Secp256k1BytesCast(cast),
+                child.output,
+                ty.clone(),
             )
         }
         ConversionSource::Coerce { value, ty } => {

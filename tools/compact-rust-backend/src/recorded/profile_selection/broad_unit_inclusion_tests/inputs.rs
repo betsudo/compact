@@ -209,7 +209,19 @@ fn sha512_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 fn before_sha512_enum(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &sha512_enum_manifest(SHA512_ENUM)?)
+    let before_secp256k1 = before_secp256k1_cast(path, current)?;
+    legacy_source(path, &before_secp256k1, &sha512_enum_manifest(SHA512_ENUM)?)
+}
+
+const SECP256K1_CAST: &[u8] = include_bytes!("secp256k1-bytes-cast-expression.json");
+fn secp256k1_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "2c0c3f6b849fe7db1f8a141ff2db1c41e2eac36a52a7e70f957b0c1745f227a8" {
+        return Err("unreviewed secp256k1 cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &secp256k1_cast_manifest(SECP256K1_CAST)?)
 }
 
 // Keccak adds an encoding field to three historical traversal patterns.
@@ -343,6 +355,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
     authority["sha512_enum_projection"] = sha512_enum_manifest(SHA512_ENUM).unwrap();
     authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
     authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
@@ -654,7 +667,8 @@ fn sha512_enum_projection_preserves_exact_predecessors() {
     assert_eq!(owners.len(), 4);
     for (path, owner) in owners {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
-        let predecessor = before_sha512_enum(path, &current).unwrap();
+        let current = before_secp256k1_cast(path, &current).unwrap();
+        let predecessor = legacy_source(path, &current, &projection).unwrap();
         let pinned = keccak["owners"].get(path).unwrap_or(&fold["owners"][path]);
         assert_eq!(digest(predecessor.as_bytes()), pinned["current_sha256"]);
         let edits = owner["predecessor_reconstruction"].as_array().unwrap();
@@ -663,7 +677,31 @@ fn sha512_enum_projection_preserves_exact_predecessors() {
         assert!(edit.contains("Expr::Sha512"));
         assert_eq!(edits[0]["previous"], "");
         assert_eq!(current.replacen(edit, "", 1), predecessor);
-        assert!(before_sha512_enum(path, &predecessor).is_err());
-        assert!(before_sha512_enum(path, &(current + "\n// drift\n")).is_err());
+        assert!(legacy_source(path, &predecessor, &projection).is_err());
+        assert!(legacy_source(path, &(current + "\n// drift\n"), &projection).is_err());
+    }
+}
+
+#[test]
+fn secp256k1_cast_projection_authenticates_exact_sha512_predecessors() {
+    let projection = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
+    let sha512 = sha512_enum_manifest(SHA512_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(SHA512_ENUM)
+    );
+    assert!(secp256k1_cast_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let predecessor = before_secp256k1_cast(path, &current).unwrap();
+        assert_eq!(
+            digest(predecessor.as_bytes()),
+            sha512["owners"][path]["current_sha256"]
+        );
+        assert!(before_secp256k1_cast(path, &predecessor).is_err());
+        assert!(before_secp256k1_cast(path, &(current + "\n// drift\n")).is_err());
     }
 }

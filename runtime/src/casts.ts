@@ -65,3 +65,15 @@ export function convertBytesToUint(maxval: bigint, n: number, a: Uint8Array, src
   }
   return x;
 }
+
+/** Reduce a Compact `Bytes<32>` cast modulo the destination secp256k1 field. @internal */
+export function convertBytesToSecp256k1Field(max: bigint, bytes: Uint8Array): bigint {
+  if (bytes.length !== 32) {
+    throw new CompactError('expected Bytes<32> for secp256k1 field cast');
+  }
+  let value = 0n;
+  for (let i = bytes.length - 1; i >= 0; --i) {
+    value = (value << 8n) | BigInt(bytes[i]);
+  }
+  return value % (max + 1n);
+}

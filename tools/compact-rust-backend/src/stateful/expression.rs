@@ -27,7 +27,9 @@ use crate::ir::{
     StatefulCircuit, StructField, Type, WitnessDeclaration,
 };
 use crate::native_representation;
+use crate::pure_semantics::conversion::Secp256k1BytesCast;
 use crate::source_diagnostics::{Owner, RefusalSite};
+use crate::value_lowering::secp256k1_bytes_cast_syntax;
 use crate::{
     RenderError, UnsignedMaximum, coerce_expression, condition_needs_statement, discard_expression,
     expression_with_calls, field_to_bytes_32_syntax, ident, ledger_path_expr,
@@ -542,6 +544,7 @@ fn render_operation_expression(
         Expr::Coerce { .. }
         | Expr::FieldCast { .. }
         | Expr::FieldToBytes32 { .. }
+        | Expr::Secp256k1BytesCast { .. }
         | Expr::UnsignedCast { .. } => render_conversion_operation(
             value,
             parameters,
@@ -1467,6 +1470,22 @@ fn render_conversion_operation(
             Ok((
                 field_to_bytes_32_syntax(rendered),
                 Type::Bytes { length: 32 },
+                effect,
+            ))
+        }
+        Expr::Secp256k1BytesCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let cast = Secp256k1BytesCast::check(&actual, ty)?;
+            Ok((
+                secp256k1_bytes_cast_syntax(rendered, cast),
+                ty.clone(),
                 effect,
             ))
         }

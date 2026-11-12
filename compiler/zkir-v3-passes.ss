@@ -790,6 +790,18 @@
            [else
             (assert (string=? opaque-type "JubjubPoint"))
             (cons `(from_coordinates ,var-name 0 1) instr*)]))]
+      [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,triv))
+       (guard (string=? opaque-type "Bytes<32>"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons* `(bytes_into_natives (,var-name2 ,var-name1) ,bytes) `(to_bytes ,bytes ,triv) instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes ,(assert (secp256k1-zkir-type opaque-type)) ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 32 ,triv2 ,triv1)
+             instr*)))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures
@@ -1011,6 +1023,8 @@
       [(bytes32_into_low_high ,outp0 ,outp1 ,[* inp])
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "bytes32_into_low_high") (bytes . ,inp) (outputs . ,(vector outp0 outp1))))]
+      [(bytes_from_natives ,[* outp] ,imm ,[* inp*] ...)
+       `((op . "bytes_from_natives") (output . ,outp) (len . ,imm) (inputs . ,(list->vector inp*)))]
       [(bytes_into_natives (,outp* ...) ,[* inp])
        (let ([outp* (maplr Output outp*)])
          `((op . "bytes_into_natives") (outputs . ,(list->vector outp*)) (bytes . ,inp)))]

@@ -909,6 +909,17 @@
                               len
                               (format-type type))])
        (with-output-language (Linlined Type) `(tfield ,src))]
+      [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Linlined Type) type
+           [(tbytes ,src ,len) (and (= len 32) 'bytes)]
+           [(topaque ,src ,opaque-type) (and (secp256k1-field-max opaque-type) 'field)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'bytes) (eq? to 'field))
+                     (and (eq? from 'field) (eq? to 'bytes)))
+           (source-errorf src "invalid secp256k1 byte cast")))
+       type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (check-tfield src "argument to field->bytes" type)
        (when (= len 0) (source-errorf src "invalid cast from field to Bytes<0>"))
@@ -1506,6 +1517,9 @@
        (values
          `(assert ,src ,expr ,mesg)
          (CTV-tuple no-var-name '()))]
+      [(secp256k1-bytes-cast ,src ,[type] ,[expr ctv])
+       ;; Keep the field kind attached to the conversion even for constant bytes.
+       (values `(secp256k1-bytes-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
       [(field->bytes ,src ,len ,[expr ctv])
        (assert (not (= len 0)))
        (cond
@@ -1732,6 +1746,8 @@
              `(tuple ,src)
              `(assert ,src ,expr ,mesg))
          idset)]
+      [(secp256k1-bytes-cast ,src ,type ,[Value : expr idset])
+       (values `(secp256k1-bytes-cast ,src ,type ,expr) idset)]
       [(field->bytes ,src ,len ,[Value : expr idset])
        (values
          `(field->bytes ,src ,len ,expr)
@@ -1826,6 +1842,7 @@
        (values
          (make-seq #t src expr* expr)
          (idset-union-all (cons idset idset*)))]
+      [(secp256k1-bytes-cast ,src ,type ,expr) (Effect expr)]
       [(field->bytes ,src ,len ,expr)
        (if (> len (field-bytes))
            (Effect expr)
@@ -2119,6 +2136,11 @@
          (lambda (triv)
            (k (with-output-language (Lcircuit Rhs)
                 `(bytes->field ,src ,len ,triv)))))]
+      [(secp256k1-bytes-cast ,src ,[type] ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (k (with-output-language (Lcircuit Rhs)
+                `(secp256k1-bytes-cast ,src ,type ,triv)))))]
       [(field->bytes ,src ,len ,expr)
        (Triv expr test
          (lambda (triv)
@@ -2521,6 +2543,23 @@
                     (with-output-language (Lflattened Statement)
                       (list `(= ,test ,var-name (bytes->field ,src ,len ,triv1 ,triv2)))))
                   (list-head triv* n)))])))]
+      [(secp256k1-bytes-cast ,src ,type ,[* wump])
+       (unless (feature-zkir-v3)
+         (source-errorf src "secp256k1 byte casts require ZKIR v3; recompile with --feature-zkir-v3"))
+       (nanopass-case (Lcircuit Type) type
+         [(tbytes ,src^ ,len)
+          (assert (= len 32))
+          (let ([high (make-new-id var-name)] [low (make-new-id var-name)])
+            (hashtable-set! var-ht var-name (Wump-bytes (list high low)))
+            (with-output-language (Lflattened Statement)
+              (list `(= ,test (,high ,low) (secp256k1-bytes-cast ,src "Bytes<32>" ,(car (wump->elts wump)))))))]
+         [(topaque ,src^ ,opaque-type)
+          (assert (secp256k1-field-max opaque-type))
+          (hashtable-set! var-ht var-name (Wump-single var-name))
+          (let ([triv* (wump->elts wump)])
+            (with-output-language (Lflattened Statement)
+              (list `(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)))))]
+         [else (assert cannot-happen)])]
       [(field->bytes ,src ,len ,[Single-Triv : triv])
        (assert (not (= len 0)))
        (let ([var-name1 (make-new-id var-name)]
@@ -2910,6 +2949,9 @@
       [(default ,opaque-type)
        (with-output-language (Lflattened Statement)
          (cons `(= ,test (,var-name* ...) (default ,opaque-type)) rstmt*))]
+      [(secp256k1-bytes-cast ,src ,opaque-type ,[FWD-Triv : triv*] ...)
+       (with-output-language (Lflattened Statement)
+         (cons `(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)) rstmt*))]
       [(field->bytes ,src ,len ,[FWD-Triv : triv])
        (assert (fx= (length var-name*) 2))
        (assert (not (= len 0)))
@@ -3195,6 +3237,11 @@
        stmt*]
       [(= ,[BWD-Triv : test] (,var-name* ...) (default ,opaque-type))
        (cons `(= ,test (,var-name* ...) (default ,opaque-type)) stmt*)]
+      [(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...))
+       (guard (not (ormap (lambda (var-name) (hashtable-contains? ref-ht var-name)) var-name*)))
+       stmt*]
+      [(= ,[BWD-Triv : test] (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,[BWD-Triv : triv*] ...))
+       (cons `(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)) stmt*)]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,triv))
        (guard
          (>= len (field-bytes))
@@ -3681,6 +3728,26 @@
                (assert (= (length var-name*) 2))
                (set-idtype! (car var-name*) (Idtype-Base `(tfield)))
                (set-idtype! (cadr var-name*) (Idtype-Base `(tfield))))))]
+      [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,[* type]))
+       (guard (string=? opaque-type "Bytes<32>"))
+       (verify-test src test)
+       (unless (nanopass-case (Lflattened Primitive-Type) type
+                 [(topaque ,opaque-type^) (secp256k1-field-max opaque-type^)]
+                 [else #f])
+         (source-errorf src "expected a secp256k1 field for a Bytes<32> cast"))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name1 (Idtype-Base `(tfield 255)))
+         (set-idtype! var-name2 (Idtype-Base `(tfield ,(- (expt 256 (field-bytes)) 1)))))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,[* type1] ,[* type2]))
+       (guard (secp256k1-field-max opaque-type))
+       (verify-test src test)
+       (unless (and (nanopass-case (Lflattened Primitive-Type) type1
+                      [(tfield ,nat) (<= nat 255)] [else #f])
+                    (nanopass-case (Lflattened Primitive-Type) type2
+                      [(tfield ,nat) (<= nat (- (expt 256 (field-bytes)) 1))] [else #f]))
+         (source-errorf src "expected Bytes<32> limbs for a secp256k1 field cast"))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,[* type]))
        (verify-test src test)
        (check-tfield (format "argument to field->bytes at ~a" (format-source-object src)) type)

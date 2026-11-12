@@ -144,7 +144,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins)?
         }
-        Expr::Coerce { value, ty } => {
+        Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins)?;
             collect_named_types_with_origins(ty, structs, enums, Some(origins))?;
         }

@@ -317,6 +317,7 @@
            "CompactError"
            "typeError"
            "assert"
+           "convertBytesToSecp256k1Field"
            "convertFieldToBytes"
            "convertBytesToField"
            "convertBytesToUint"
@@ -3132,6 +3133,20 @@
              expr
              (format-javascript-string mesg))
            ")"))]
+      [(secp256k1-bytes-cast ,src ,type ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (parenthesize level (precedence call)
+         (nanopass-case (Ltypescript Type) (de-alias type)
+           [(tbytes ,src^ ,len)
+            (make-Qconcat (compact-stdlib "convertFieldToBytes") "(32, " expr ", "
+              (format-javascript-string (format-source-object src)) ")")]
+           [(topaque ,src^ ,opaque-type)
+            (make-Qconcat (compact-stdlib "convertBytesToSecp256k1Field") "("
+              (case opaque-type
+                [("Secp256k1Base") "__compactRuntime.MAX_SECP256K1_BASE"]
+                [("Secp256k1Scalar") "__compactRuntime.MAX_SECP256K1_SCALAR"]
+                [else (assert cannot-happen)])
+              ", " expr ")")]
+           [else (assert cannot-happen)]))]
       [(field->bytes ,src ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
        (parenthesize level (precedence call)
          (make-Qconcat

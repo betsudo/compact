@@ -118,6 +118,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Call { .. } => 32,
                 E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
+                | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. } => 12,
                 E::Add { .. }
@@ -218,6 +219,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
+                | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -271,6 +273,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
+                | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -340,6 +343,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::StructField { .. } | E::StructLiteral { .. } | E::Tuple { .. } => 7,
                 E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
+                | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. }
                 | E::UnsignedMultiply { .. }

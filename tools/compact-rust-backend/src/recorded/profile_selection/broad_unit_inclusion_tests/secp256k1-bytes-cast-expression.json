@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "3b6674997f7b5ab10f2b598ae5e6bf9d8e0b347a",
+  "scope": "Reverse only secp256k1 cast arms in exhaustive historical reference matchers.",
+  "predecessor_manifest": {
+    "path": "sha512-expression-enum.json",
+    "sha256": "665d8a3ed631131bc5569292e644d3d3ce8dde1c6703229df45070990de31558"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "bedcd742024161cab6882ee0ea0c3d05d1dc8c23de22c1511cff099679093ff9",
+      "previous_sha256": "6c17e92ea1594b44cf47486d02b349c844eb1524a659fc80f1c094577bf7d396",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Secp256k1BytesCast { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "4688b7098d7f411625d8c510ba4def39dc96c96142b93117217e5096b239def6",
+      "previous_sha256": "d23245223d6c5e3bee6e5d738f1163dfb7e5a4054cdcf5350c47f1c3affad01e",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {\n",
+          "previous": "        Expr::Coerce { value, ty } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "97830641d1630c94d5b0ecc42fc7969899bf5fb3375feab7313fe560a7204c5d",
+      "previous_sha256": "c931ed7a5789d94b9b0d4a2707832a4338529d17821945f87770cbc319ef93ae",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Secp256k1BytesCast { .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "0619c10e5578a0fd3493b8567aebdcda40707b1f533753a730ddfe2c8a7281c7",
+      "previous_sha256": "5feba5ee449609249fb766629b0392ca8883dbaef5e84238a62440f281227b0d",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

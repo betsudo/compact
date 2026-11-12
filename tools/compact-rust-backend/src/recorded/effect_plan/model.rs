@@ -107,6 +107,7 @@ pub(super) enum Literal {
 pub(super) enum Conversion {
     Coerce,
     UnsignedCast,
+    Secp256k1BytesCast,
 }
 #[derive(Clone, Debug)]
 pub(super) enum Operation {

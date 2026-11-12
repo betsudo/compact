@@ -23,6 +23,7 @@ use crate::RenderError;
 use crate::ir::{Expr, Type};
 use proc_macro2::Span;
 
+use crate::pure_semantics::conversion::Secp256k1BytesCast;
 use crate::pure_semantics::numeric::{
     ArithmeticKind, UnsignedArithmeticStrategy, checked_unsigned_arithmetic, checked_unsigned_cast,
 };
@@ -53,6 +54,20 @@ pub(crate) fn field_to_bytes_32_syntax(value: syn::Expr) -> syn::Expr {
     syn::parse_quote!(runtime::FixedBytes::<32>::new(
         (#value).as_le_bytes().try_into().expect("canonical Field is 32 bytes")
     ))
+}
+
+pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1BytesCast) -> syn::Expr {
+    match cast {
+        Secp256k1BytesCast::ToBase => {
+            syn::parse_quote!(runtime::Secp256k1Base::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToScalar => {
+            syn::parse_quote!(runtime::Secp256k1Scalar::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToBytes => {
+            syn::parse_quote!(runtime::FixedBytes::<32>::new((#value).to_le_bytes()))
+        }
+    }
 }
 
 pub(crate) fn unsigned_cast_syntax(

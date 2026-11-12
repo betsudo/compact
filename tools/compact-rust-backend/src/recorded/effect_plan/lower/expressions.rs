@@ -90,6 +90,7 @@ impl Lowerer<'_> {
                 Self::query_operation
             }
             Expr::FieldToBytes32 { .. } => Self::conversion_operation,
+            Expr::Secp256k1BytesCast { .. } => Self::conversion_operation,
             Expr::PersistentHash { .. } | Expr::Keccak256 { .. } | Expr::Sha512 { .. } => {
                 Self::persistent_operation
             }

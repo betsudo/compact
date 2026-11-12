@@ -905,7 +905,7 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Expr::FieldToBytes32 { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            Expr::Coerce { value, ty } => {
+            Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
                 scan.push(Node::Type(ty), visit_depth + 1, owner)?;
             }

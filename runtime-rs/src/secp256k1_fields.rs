@@ -37,6 +37,20 @@ fn compare_le(left: &[u8; 32], right: &[u8; 32]) -> Ordering {
     left.iter().rev().cmp(right.iter().rev())
 }
 
+fn reduce(bytes: [u8; 32], max: [u8; 32]) -> [u8; 32] {
+    // Both moduli exceed 2^255, so a 256-bit input needs at most one subtraction.
+    // The initial borrow subtracts the extra one in the modulus (max + 1).
+    let mut remainder = bytes;
+    let mut borrow = true;
+    for (byte, limit) in remainder.iter_mut().zip(max) {
+        let (difference, first_borrow) = byte.overflowing_sub(limit);
+        let (difference, second_borrow) = difference.overflowing_sub(u8::from(borrow));
+        *byte = difference;
+        borrow = first_borrow || second_borrow;
+    }
+    if borrow { bytes } else { remainder }
+}
+
 // Compact's FAB representation stores (value - 1) modulo the field order.
 fn shifted(mut value: [u8; 32], max: [u8; 32]) -> [u8; 32] {
     if value == [0; 32] {
@@ -88,6 +102,11 @@ macro_rules! impl_secp256k1_field {
             /// Decode a canonical little-endian field element.
             pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
                 compare_le(&bytes, &$max).is_le().then_some(Self(bytes))
+            }
+
+            /// Reduce an unsigned little-endian integer modulo this field's order.
+            pub fn from_le_bytes_reduced(bytes: [u8; 32]) -> Self {
+                Self(reduce(bytes, $max))
             }
 
             /// Return the field element's canonical little-endian bytes.

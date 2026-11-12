@@ -189,6 +189,10 @@ pub(super) fn validate(
                 Conversion::UnsignedCast => {
                     unsigned_bound(&value.ty).is_some() && unsigned_bound(ty).is_some()
                 }
+                Conversion::Secp256k1BytesCast => {
+                    crate::pure_semantics::conversion::Secp256k1BytesCast::check(&value.ty, ty)
+                        .is_ok()
+                }
             }
         }
         Operation::Merkle { slot, operation } => {

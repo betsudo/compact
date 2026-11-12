@@ -158,6 +158,13 @@ pub(in super::super) fn expression(
                 unsigned_max(&input.ty),
                 unsigned_max(&binding.value.ty),
             ),
+            Conversion::Secp256k1BytesCast => {
+                crate::pure_semantics::conversion::Secp256k1BytesCast::check(
+                    &input.ty,
+                    &binding.value.ty,
+                )
+                .map(|cast| crate::value_lowering::secp256k1_bytes_cast_syntax(value(input), cast))
+            }
         }
         .map_err(|e| invalid(path, e.to_string()))?,
         _ => return Ok(None),

@@ -21,16 +21,17 @@ import { expect, test } from 'vitest';
 
 import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
+import { registerPositiveCastTests } from './positive-casts/checks.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const compiler = process.env.COMPACT_SECP256K1_TEST_COMPILER;
 const output = process.env.COMPACT_SECP256K1_TEST_OUTPUT;
 
-function compile(fixture, definition, targets) {
+function compile(fixture, definition, targets, file) {
   const sourceDirectory = join(root, fixture);
-  const sources = readdirSync(sourceDirectory).filter((name) => name.endsWith('.compact'));
+  const sources = readdirSync(sourceDirectory).filter((name) => file ? name === file : name.endsWith('.compact'));
   expect(sources).toHaveLength(1);
-  const caseDirectory = join(output, fixture, targets.join('-'));
+  const caseDirectory = join(output, fixture, file ? file.replace(/\.compact$/, '') : '', targets.join('-'));
   const build = join(caseDirectory, '.build');
   mkdirSync(caseDirectory, { recursive: true });
   const targetArgs = targets.flatMap((target) => ['--target', target]);
@@ -87,3 +88,5 @@ test('runs the original base field roundtrip assertion on generated TypeScript',
   const { Contract, pureCircuits } = await import(/* @vite-ignore */ entry);
   await roundtripRuntime.run(Contract, pureCircuits);
 });
+
+registerPositiveCastTests(compile);

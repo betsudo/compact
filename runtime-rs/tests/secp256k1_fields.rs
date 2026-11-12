@@ -115,6 +115,85 @@ fn scalar_field_checks_its_own_bound_and_carries_across_the_two_limbs() {
 }
 
 #[test]
+fn byte_casts_preserve_canonical_values_across_the_limb_boundary() {
+    let zero = [0; 32];
+    let mut one = zero;
+    one[0] = 1;
+    let mut below_boundary = zero;
+    below_boundary[..24].fill(255);
+    let mut boundary = zero;
+    boundary[24] = 1;
+    let mut above_boundary = boundary;
+    above_boundary[0] = 1;
+    for input in [zero, one, below_boundary, boundary, above_boundary] {
+        let base = Secp256k1Base::from_le_bytes_reduced(input);
+        let scalar = Secp256k1Scalar::from_le_bytes_reduced(input);
+        assert_eq!(base.to_le_bytes(), input);
+        assert_eq!(scalar.to_le_bytes(), input);
+        assert_eq!(Some(base), Secp256k1Base::from_le_bytes(input));
+        assert_eq!(Some(scalar), Secp256k1Scalar::from_le_bytes(input));
+    }
+}
+
+#[test]
+fn byte_casts_reduce_each_modulus_and_keep_strict_decode_separate() {
+    let zero = [0; 32];
+    let mut one = zero;
+    one[0] = 1;
+    let base_max = le_bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e");
+    let scalar_max = le_bytes("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140");
+    assert_eq!(
+        Some(Secp256k1Base::from_le_bytes_reduced(base_max)),
+        Secp256k1Base::from_le_bytes(base_max)
+    );
+    assert_eq!(
+        Some(Secp256k1Scalar::from_le_bytes_reduced(scalar_max)),
+        Secp256k1Scalar::from_le_bytes(scalar_max)
+    );
+
+    for (input, expected) in [
+        (
+            le_bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"),
+            zero,
+        ),
+        (
+            le_bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc30"),
+            one,
+        ),
+        (
+            [255; 32],
+            le_bytes("00000000000000000000000000000000000000000000000000000001000003d0"),
+        ),
+    ] {
+        assert!(Secp256k1Base::from_le_bytes(input).is_none());
+        assert_eq!(
+            Secp256k1Base::from_le_bytes_reduced(input).to_le_bytes(),
+            expected
+        );
+    }
+    for (input, expected) in [
+        (
+            le_bytes("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"),
+            zero,
+        ),
+        (
+            le_bytes("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364142"),
+            one,
+        ),
+        (
+            [255; 32],
+            le_bytes("000000000000000000000000000000014551231950b75fc4402da1732fc9bebe"),
+        ),
+    ] {
+        assert!(Secp256k1Scalar::from_le_bytes(input).is_none());
+        assert_eq!(
+            Secp256k1Scalar::from_le_bytes_reduced(input).to_le_bytes(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn foreign_field_decoders_refuse_malformed_and_noncanonical_inputs() {
     for atoms in [
         vec![vec![]],

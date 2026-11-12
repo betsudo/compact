@@ -35,6 +35,11 @@
     (definitions
       (define (object . fields) (origin-object fields))
 
+      (define (secp256k1-cast-ir src type value)
+        (object (cons "kind" "secp256k1_bytes_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
       (define (keccak-ir value)
         (let ([fields (list (cons "kind" "keccak256") (cons "value" value))])
           (apply object
@@ -76,6 +81,7 @@
           [(seq ,src ,expr* ... ,expr) src]
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
           [(assert ,src ,expr ,mesg) src]
+          [(secp256k1-bytes-cast ,src ,type ,expr) src]
           [(field->bytes ,src ,len ,expr) src]
           [(cast-from-bytes ,src ,type ,len ,expr) src]
           [(vector->bytes ,src ,len ,expr) src]
@@ -663,6 +669,8 @@
              [(ttuple ,src^ ,type* ...)
               (typed-expression-ir expr type src type^)]
              [else (source-errorf src "Rust backend does not yet support this cast")])]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
+           (secp256k1-cast-ir src type (expression-ir expr src))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
           [(field->bytes ,src ,len ,expr)
@@ -2584,6 +2592,8 @@
                           (cons "max" (number->string nat))
                           (cons "value" (stateful-expression-ir expr src witness-ids))))]
              [else (expression-ir value-expr owner-src)])]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
+           (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (literal-bytes-field-ir type len expr src)]
           [(field->bytes ,src ,len ,expr)
@@ -2755,6 +2765,9 @@
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(safe-cast ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)

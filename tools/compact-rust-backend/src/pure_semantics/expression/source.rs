@@ -81,6 +81,9 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::FieldToBytes32 { value } => {
             Source::Conversion(ConversionSource::FieldToBytes32 { value })
         }
+        Expr::Secp256k1BytesCast { value, ty } => {
+            Source::Conversion(ConversionSource::Secp256k1BytesCast { value, ty })
+        }
         Expr::Coerce { value, ty } => Source::Conversion(ConversionSource::Coerce { value, ty }),
         Expr::UnsignedCast { max, value } => {
             Source::Conversion(ConversionSource::UnsignedCast { max, value })

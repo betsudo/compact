@@ -711,6 +711,7 @@
       (seq src expr* ... expr)                => (seq #f expr* ... #f expr)
       (let* src ([local* expr*] ...) expr)    => (let* ([bracket local* 0 expr*] 0 ...) #f expr)
       (assert src expr mesg)                  => (assert expr mesg)
+      (secp256k1-bytes-cast src type expr)    => (secp256k1-bytes-cast type expr)
       (field->bytes src len expr)             => (field->bytes len expr)
       (cast-from-bytes src type len expr)     => (cast-from-bytes type len #f expr)
       (vector->bytes src len expr)            => (vector->bytes len expr)
@@ -1030,6 +1031,7 @@
         (public-ledger ledger-field-name (path-elt* ...) adt-op #f triv* ...)
       (contract-call src elt-name (triv type) triv* ...) =>
         (contract-call elt-name 4 (triv 0 type) #f triv* ...)
+      (secp256k1-bytes-cast src type triv)   => (secp256k1-bytes-cast type triv)
       (field->bytes src len triv)            => (field->bytes len triv)
       (bytes->field src len triv)            => (bytes->field len triv)
       (downcast-unsigned src (maybe nat?) nat triv) =>
@@ -1113,6 +1115,7 @@
          (call src function-name triv* ...)
          (public-ledger src ledger-field-name (maybe sugar) (path-elt* ...) src^ adt-op triv* ...)
          (contract-call src elt-name (triv type) triv* ...)
+         (secp256k1-bytes-cast src type triv)
          (field->bytes src len triv)
          (bytes->field src len triv)
          (downcast-unsigned src (maybe nat?) nat triv)))
@@ -1132,6 +1135,7 @@
     (Multiple (multiple)
       (+ (call src function-name triv* ...)      => (call function-name #f triv* ...)
          (default opaque-type)
+         (secp256k1-bytes-cast src opaque-type triv* ...)
          (field->bytes src len triv)             => (field->bytes len #f triv)
          (bytes->vector triv)                    => (bytes->vector #f triv) ; triv holds one field's worth of bytes
          (div-mod-power-of-two triv bits)
@@ -1194,6 +1198,7 @@
       (add outp inp0 inp1)
       (assert inp)
       (bytes32_into_low_high outp0 outp1 inp)
+      (bytes_from_natives outp imm inp* ...)
       (bytes_into_natives (outp* ...) inp)
       (cond_select outp inp0 inp1 inp2)
       (constrain_bits inp imm)

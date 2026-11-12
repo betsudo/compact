@@ -683,6 +683,10 @@ pub enum Expr {
     FieldToBytes32 {
         value: Box<Expr>,
     },
+    Secp256k1BytesCast {
+        value: Box<Expr>,
+        ty: Type,
+    },
     Coerce {
         value: Box<Expr>,
         ty: Type,

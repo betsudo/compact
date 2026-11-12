@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Frozen native output and real no-syntax family outcomes for conversion controls.
 //! The no-syntax visitor is an explicit test protocol, not full body certification.
@@ -94,6 +105,65 @@ fn vector(element: Type, length: usize) -> Type {
 }
 fn tuple(elements: Vec<Type>) -> Type {
     Type::Tuple { elements }
+}
+
+#[test]
+fn secp256k1_byte_cast_ir_is_explicit_and_only_accepts_its_exact_type_pairs() {
+    let bytes = Type::Bytes { length: 32 };
+    let value = serde_json::json!({"kind": "parameter", "name": "value"});
+    for (source, target, expected) in [
+        (
+            &bytes,
+            &Type::Secp256k1Base,
+            "runtime :: Secp256k1Base :: from_le_bytes_reduced ((argument) . into_array ())",
+        ),
+        (
+            &bytes,
+            &Type::Secp256k1Scalar,
+            "runtime :: Secp256k1Scalar :: from_le_bytes_reduced ((argument) . into_array ())",
+        ),
+        (
+            &Type::Secp256k1Base,
+            &bytes,
+            "runtime :: FixedBytes :: < 32 > :: new ((argument) . to_le_bytes ())",
+        ),
+        (
+            &Type::Secp256k1Scalar,
+            &bytes,
+            "runtime :: FixedBytes :: < 32 > :: new ((argument) . to_le_bytes ())",
+        ),
+    ] {
+        let ir = serde_json::json!({"kind": "secp256k1_bytes_cast", "value": value, "ty": target});
+        let expression: Expr = serde_json::from_value(ir.clone()).unwrap();
+        assert_eq!(serde_json::to_value(&expression).unwrap(), ir);
+        let parameters = HashMap::from([("value", (source, syn::parse_quote!(argument)))]);
+        let (output, statements, actual) =
+            observe(&expression, &parameters, &HashMap::new()).unwrap();
+        assert_eq!(output, expected);
+        assert!(statements.is_empty());
+        assert_eq!(&actual, target);
+        assert!(
+            crate::pure_semantics::coercion::plan_coercion(source, target).is_err(),
+            "explicit cast leaked into coercion"
+        );
+    }
+    for (source, target) in [
+        (Type::Bytes { length: 31 }, Type::Secp256k1Base),
+        (Type::Secp256k1Scalar, Type::Bytes { length: 33 }),
+        (Type::Secp256k1Base, Type::Secp256k1Scalar),
+        (Type::Field, Type::Secp256k1Base),
+        (bytes, Type::Boolean),
+    ] {
+        let expression = Expr::Secp256k1BytesCast {
+            value: Box::new(reference("value")),
+            ty: target.clone(),
+        };
+        let parameters = HashMap::from([("value", (&source, syn::parse_quote!(argument)))]);
+        assert_eq!(
+            observe(&expression, &parameters, &HashMap::new()),
+            Err(RenderError::InvalidSecp256k1BytesCast { source, target })
+        );
+    }
 }
 
 #[test]
