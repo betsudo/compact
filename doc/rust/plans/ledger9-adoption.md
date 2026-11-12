@@ -1139,17 +1139,40 @@ replay with byte-identical ledger state. The changed/missing artifact,
 corruption, binding, verifier, same-width result and genuine k9 controls
 passed.
 
-### Stateful Vector product elements proof coverage to extend
+### Stateful Vector product elements qualification
 
 The original `proof_candidate.run` and `checked_helper.run` model at k8 under
-the released ZKIR 3.2.0 compiler. Both were k9 in the historical model
-expectations. The current proof roster must cover both branches of
-`proof_candidate.run` and the valid `checked_helper.run` call in addition to
-the two originally selected exports. Retain the checked helper's three
-existing guard and narrowing refusal cases and the separate genuine
-over-cap diagnostic. The full roster characterization also observed the
-empty component moving from k5 to k6. Current characterization establishes
-model eligibility. The additional proof and application results are pending.
+ZKIR 3.2.0. Both were k9 in the retained historical model expectations. The
+current roster also observes the empty component moving from k5 to k6.
+
+Signed source `1631ae2ad` passed 27 TypeScript/Rust cases, all 19 strict SDK
+checks, and nine historical compiler scope controls on macOS arm64. The
+checked helper's guard and narrowing refusals preserve their established
+order. The original helper and checked helper both use complete unedited
+generated SDKs at separate crate roots.
+
+Four fresh k8 key pairs qualified five calls. The original helper and
+Field cases passed, along with both original conditional Uint branches
+and the valid checked-helper call. Each standalone proof verified
+separately. A distinct funded default-strict transaction proof applied
+each call with positive-fee Dust, and replay returned
+`IntentAlreadyExists` with byte-identical ledger state. The gate refused
+changed IR, Programs, raw ZKIR, a substituted same-k circuit, and a genuine
+k9 model before key generation. Corrupted proof, wrong verifier, changed
+binding, and same-width changed result controls passed.
+
+### Integrated local qualification remains open
+
+The parent run at frozen source `78d8eaae4` completed the compiler,
+workspace and registered consumer phases. It also completed the DID
+lifecycle, digest-reducer and primitive-reducer gates. The DID relation
+gate ran out of disk space while writing its receipt. The complete
+parent remains pending with the exact integrated compiler and TypeScript
+package. The passed standalone Vector slices through alias source were
+fast-forwarded locally to `a4d022091`. The aggregate projection and
+struct member candidates passed focused source checks, generated runner
+Clippy and TypeScript capture. Their full native and proof gates remain
+open.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
