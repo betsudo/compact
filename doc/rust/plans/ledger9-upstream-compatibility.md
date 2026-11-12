@@ -115,13 +115,16 @@ verifier, and combine both calls using the Ledger 9 transaction API's joint
 partitioning. Prove and independently verify both calls, then apply the
 funded transaction and test replay and invalid-binding refusals.
 
-The intact EntryPoint callee currently compiles for both targets. Its caller
-reaches a ZKIR v3 contract-type assertion in TypeScript. The Rust CLI hits an
-earlier path error because the frontend looks for the callee's
-`compiler/contract-info.json` beside the staging directory. Preserve atomic
-publication and resolve dependency metadata beside the requested output
-before adding contract types and call lowering. Cover missing, malformed,
-stale and mismatched metadata using the original compiler composition tests.
+The intact EntryPoint callee compiles for both targets. Its caller reaches a
+ZKIR v3 contract-type assertion in TypeScript. The initial Rust CLI looked for
+the callee's `compiler/contract-info.json` beside the staging directory. The
+local fix resolves it beside the requested output and keeps publication
+atomic in both Rust entry points. The interface-only gate covers missing,
+malformed, stale and mismatched metadata and preserves the previous complete
+output on refusal. The intact caller now reaches Rust's unsupported
+contract-type diagnostic. Keep the original compiler composition suite in
+the port. Direct TypeScript compilation with a trailing output separator
+remains a CLI portability case.
 
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler
@@ -158,6 +161,18 @@ the upstream change, and the local run passed 3,898 compiler checks, six
 source-map tests and the capability gate. General Rust vector spreads remain
 open.
 
+The [deep Merkle port][merkle] aligns the v3 immediate with Ledger 9's
+depth and entry count fields. The two intact upstream families exercise
+plain and historic depth-32 trees and defaults in nested maps. The v3
+interpreter checked eight TypeScript preimages and refused mutated depth
+values. Generated top-level Rust insert and reset tests also passed.
+The exact nested map Rust case is still unsupported. Both upstream insert
+models measured k=13 and six reset/default models measured k=6–7. Both
+original reset exports produced fresh k=7 proofs and passed detached
+verification. The verifier refused a different key, changed binding and
+corrupted proof for each export. Funded application, replay and the other
+exports remain open.
+
 The [Boolean cast family](../../../test-contracts/primitives/boolean/README.md)
 preserves two upstream sources, two compile-pass declarations and two
 runtime-pass declarations byte-for-byte. The local adapter ran four
@@ -188,3 +203,4 @@ open.
 [assert]: https://github.com/LFDT-Minokawa/compact/commit/7517ecef491cd9655cf288cd7ae96d1927e12070
 [spread]: https://github.com/LFDT-Minokawa/compact/commit/3a560ed6827510b13cc177d44fe80eb6d674b6a8
 [bom]: https://github.com/LFDT-Minokawa/compact/commit/9370308cf
+[merkle]: https://github.com/LFDT-Minokawa/compact/commit/ded731230264e6db7f8383a434d9ac51ba9efff8
