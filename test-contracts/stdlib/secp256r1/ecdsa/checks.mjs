@@ -14,9 +14,9 @@
 // limitations under the License.
 
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import * as runtime from '@midnight-ntwrk/compact-runtime';
 import { createTestContract } from '@test/compact-test';
 import { assertCoverage, loadCorpus, runEcdsaKat, SECP256R1 } from '@test/crypto';
@@ -25,6 +25,7 @@ import compileTest from '../ecdsa_verify/compile.pass.test.ts';
 import runtimeTest from '../ecdsa_verify/runtime.pass.test.ts';
 import { identity } from '../point/cases.mjs';
 import { bytesHex, coordinateHex, encodePoint, identityError, signatureCases, zeroError } from './cases.mjs';
+import { compileReleaseFixture } from '../release-fixture.mjs';
 import { registerOrdinary } from './upstream-callback.mjs';
 
 async function load(build) {
@@ -67,23 +68,8 @@ export function registerEcdsaChecks(compile) {
   test('runs the original P-256 Wycheproof runtime suite', async () => {
     expect(compileTest.result).toBe('pass');
     expect(runtimeTest.result).toBe('pass');
-    const targets = ['ts', 'rust'];
-    const intact = compile('ecdsa_verify', compileTest.options, targets);
-    const name = 'secp256r1_ecdsa_verify.compact';
-    const originalPath = new URL('../ecdsa_verify/' + name, import.meta.url);
-    let source = fileURLToPath(originalPath);
-    if (intact.result.status !== 0) {
-      expect(process.env.COMPACT_SECP256R1_KAT_MODE).toBe('--allow-pragma-probe');
-      expect(intact.result.stderr).toContain('language version 0.23.105 mismatch');
-      expect(existsSync(intact.build)).toBe(false);
-      const original = readFileSync(originalPath, 'utf8');
-      const pragma = 'pragma language_version >= 0.25.0;\n';
-      expect(original.split(pragma)).toHaveLength(2);
-      source = join(dirname(intact.build), name);
-      writeFileSync(source, original.replace(pragma, ''), { flag: 'wx' });
-    }
-    const built = compile('ecdsa/wycheproof', compileTest.options, targets, '--feature-zkir-v3', source);
-    expect(built.result.status, built.result.stderr).toBe(0);
+    const built = compileReleaseFixture(compile, 'ecdsa_verify',
+      'secp256r1_ecdsa_verify.compact', 'ecdsa/wycheproof', compileTest.options);
     const info = JSON.parse(readFileSync(join(built.build, 'compiler/contract-info.json'), 'utf8'));
     expect(info.circuits).toHaveLength(1);
     expect(info.circuits[0].proof).toBe(false);

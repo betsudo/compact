@@ -69,3 +69,7 @@ point witnesses and the issue #608 tuple hash.
 
 The [ECDSA verification fixtures](ecdsa/README.md) preserve the
 upstream verification and Wycheproof coverage.
+
+The [SHA-256 and sequential signature fixtures](slow/README.md) run the
+upstream corpus through the in-circuit hash and check sequential witnesses
+against the SDK and separately funded transactions.

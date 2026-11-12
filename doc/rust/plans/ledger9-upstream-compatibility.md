@@ -267,9 +267,12 @@ state, ordered hashing, and refusal of altered preimages. The
 preserve the upstream signature type and verification body. They
 check the original in-circuit message binding and both s values,
 and account for the complete Wycheproof corpus. The original
-standalone pragma remains a release gate. Nested point collections,
-SHA-256 known-answer tests, sequential verification and recovery
-follow separately.
+standalone pragma remains a release gate. The
+[P-256 signature suites](../../../test-contracts/stdlib/secp256r1/slow)
+retain all eleven SHA-256 exports and both sequential witness circuits.
+They account for the original corpus, check witness ordering and
+substitutions, and use the explicit slow proof lane. Nested point
+collections and host recovery follow separately.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

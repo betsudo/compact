@@ -109,6 +109,8 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("verify-sequential", "two") => "three",
+        ("verify-sequential", _) => "two",
         ("upstream-witness", _) => "upstream-hash608-test-0",
         ("upstream-hash608", _) => "upstream-witness-test0",
         ("upstream-computed", "upstream-computed-storePoint-0") => {
@@ -138,6 +140,7 @@ where
     let family = root.join("family-first");
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
+        "verify-sequential" => family.join("signature-suites/sequential"),
         "upstream-ordinary" => family.join("ecdsa/upstream-ordinary"),
         name if transport_fixture(name) => family.join("transport").join(name),
         "upstream-computed" => family.join("accessors/upstream-computed"),
@@ -208,7 +211,12 @@ where
             .execution
             .private_transcript_outputs
             .len(),
-        usize::from(case.fixture == "upstream-witness")
+        match (case.fixture, case.circuit) {
+            ("verify-sequential", "two") => 4,
+            ("verify-sequential", "three") => 6,
+            ("upstream-witness", _) => 1,
+            _ => 0,
+        }
     );
     assert_eq!(recorded.recorded().execution.public_state(), expected_state);
     let prepared = recorded.prepare(verifier, randomness)?;
@@ -216,7 +224,9 @@ where
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
     let typescript: ProofPreimage = tagged_deserialize(fs::File::open(
-        root.join(if case.fixture == "upstream-ordinary" {
+        root.join(if case.fixture == "verify-sequential" {
+            "preimages-sequential"
+        } else if case.fixture == "upstream-ordinary" {
             "preimages-ecdsa"
         } else if transport_fixture(case.fixture) {
             "preimages-transport"
@@ -506,9 +516,192 @@ fn run_point_witness(
     Ok(())
 }
 
+struct SequentialWitnesses {
+    signatures: Vec<p256_sequential::types::Secp256r1EcdsaSignature>,
+    points: Vec<Secp256r1Point>,
+}
+
+impl p256_sequential::ledger_contract::Witnesses<usize> for SequentialWitnesses {
+    fn sigOf(
+        &self,
+        ctx: r::context::WitnessContext<
+            '_,
+            usize,
+            p256_sequential::ledger_contract::LedgerView<'_>,
+        >,
+        index: r::BoundedUint<255>,
+    ) -> (usize, p256_sequential::types::Secp256r1EcdsaSignature) {
+        let slot = usize::try_from(index.value()).unwrap();
+        assert_eq!(*ctx.private_state, 2 * slot);
+        (*ctx.private_state + 1, self.signatures[slot].clone())
+    }
+
+    fn keyOf(
+        &self,
+        ctx: r::context::WitnessContext<
+            '_,
+            usize,
+            p256_sequential::ledger_contract::LedgerView<'_>,
+        >,
+        index: r::BoundedUint<255>,
+    ) -> (usize, Secp256r1Point) {
+        let slot = usize::try_from(index.value()).unwrap();
+        assert_eq!(*ctx.private_state, 2 * slot + 1);
+        (*ctx.private_state + 1, self.points[slot])
+    }
+}
+
+impl SequentialWitnesses {
+    fn from_case(row: &Value) -> Self {
+        use p256_sequential::types::Secp256r1EcdsaSignature;
+        Self {
+            signatures: row["signatures"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| Secp256r1EcdsaSignature {
+                    r: decode_scalar(&row["r"]),
+                    s: decode_scalar(&row["s"]),
+                })
+                .collect(),
+            points: row["points"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(decode_point)
+                .collect(),
+        }
+    }
+}
+
+fn run_sequential(
+    root: &Path,
+    id: &str,
+    row: &Value,
+    funded_output: Option<&Path>,
+) -> TestResult<()> {
+    use p256_sequential::ledger_contract as contract;
+    let circuit = row["circuit"].as_str().unwrap();
+    let witness = SequentialWitnesses::from_case(row);
+    let count = if circuit == "two" { 2 } else { 3 };
+    assert_eq!(witness.signatures.len(), count);
+    assert_eq!(witness.points.len(), count);
+    let expected = row["expected"].as_u64().unwrap();
+    let private: Vec<_> = witness
+        .signatures
+        .iter()
+        .zip(&witness.points)
+        .flat_map(|(signature, point)| {
+            [
+                AlignedValue::from(signature.clone()),
+                AlignedValue::from(*point),
+            ]
+        })
+        .collect();
+    let digest = FixedBytes::new(from_hex(&row["digest"]));
+    let contract = contract::Contract::from(witness);
+    let context = || {
+        Ok::<_, CompactError>(
+            contract::initial_state(ConstructorContext::new(0usize))?
+                .into_circuit_context(ContractAddress::default()),
+        )
+    };
+    macro_rules! exercise {
+        ($method:ident, $call:ident) => {{
+            let native = contract.$method(context()?, digest)?;
+            assert_eq!(
+                contract::PublicStateView::from(&native).n()?.value(),
+                u128::from(expected)
+            );
+            assert_eq!(native.context.private_state, 2 * count);
+            assert_eq!(native.private_transcript_outputs, private);
+            check_recording(
+                &native,
+                contract.recording().$method(context()?, digest)?,
+                2 * count,
+            )?;
+            if let Some(out) = funded_output {
+                let models: Value =
+                    serde_json::from_slice(&fs::read(root.join("slow-proof/receipt.json"))?)?;
+                let model = &models[id];
+                let fixture = "verify-sequential";
+                assert_eq!(model["fixture"], fixture);
+                assert_eq!(model["circuit"], circuit);
+                let case = Case {
+                    id,
+                    fixture,
+                    circuit,
+                    k: model["k"].as_u64().unwrap().try_into()?,
+                };
+                funded(
+                    root,
+                    out,
+                    case,
+                    context()?.query.state.get_ref().clone(),
+                    &native,
+                    |observed| contract.recording().$call(observed, 0usize, digest),
+                )?;
+            }
+        }};
+    }
+    match circuit {
+        "two" => exercise!(two, two_call),
+        "three" => exercise!(three, three_call),
+        _ => return Err("unknown P-256 sequential export".into()),
+    }
+    Ok(())
+}
+
+fn check_sequential_refusals(cases: &serde_json::Map<String, Value>) -> TestResult<()> {
+    use p256_sequential::ledger_contract as contract;
+    let context = || {
+        Ok::<_, CompactError>(
+            contract::initial_state(ConstructorContext::new(0usize))?
+                .into_circuit_context(ContractAddress::default()),
+        )
+    };
+    macro_rules! refuse {
+        ($method:ident, $row:expr) => {{
+            let row = $row;
+            let digest = FixedBytes::new(from_hex(&row["digest"]));
+            let mut witness = SequentialWitnesses::from_case(row);
+            witness.points[0] = Secp256r1Point::default();
+            let identity = CompactError::AssertionFailed(
+                "Secp256r1Point identity is not a permitted secp256r1EcdsaVerify verification key"
+                    .into(),
+            );
+            assert_eq!(
+                contract::$method(context()?, &witness, digest).err(),
+                Some(identity.clone())
+            );
+            assert_eq!(
+                contract::recorded::$method(context()?, &witness, digest).err(),
+                Some(identity)
+            );
+            let mut witness = SequentialWitnesses::from_case(row);
+            witness.signatures[0].s = Secp256r1Scalar::default();
+            let zero = CompactError::Secp256r1ScalarZeroInverse;
+            assert_eq!(
+                contract::$method(context()?, &witness, digest).err(),
+                Some(zero.clone())
+            );
+            assert_eq!(
+                contract::recorded::$method(context()?, &witness, digest).err(),
+                Some(zero)
+            );
+        }};
+    }
+    refuse!(two, &cases["two"]);
+    refuse!(three, &cases["three"]);
+    Ok(())
+}
+
 fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) -> TestResult<()> {
     let fixture = row["fixture"].as_str().unwrap();
     let circuit = row["circuit"].as_str().unwrap();
+    if fixture == "verify-sequential" {
+        return run_sequential(root, id, row, funded_output);
+    }
     let inputs = if fixture == "upstream-ordinary" {
         &[][..]
     } else {
@@ -1194,6 +1387,7 @@ fn check_ecdsa_refusals(row: &Value) -> TestResult<()> {
 }
 
 fn check_ecdsa_corpus(root: &Path) -> TestResult<()> {
+    use p256_sha256::{pure_circuits as sha, types::Secp256r1EcdsaSignature as ShaSignature};
     use p256_wycheproof::{pure_circuits::verifyEcdsa, types::Secp256r1EcdsaSignature};
     let path = root.join("family-first/ecdsa/wycheproof/ts-rust/vectors.json");
     let corpus: Value = serde_json::from_slice(&fs::read(path)?)?;
@@ -1202,10 +1396,14 @@ fn check_ecdsa_corpus(root: &Path) -> TestResult<()> {
         .ok_or("expected driven P-256 vectors")?;
     assert_eq!(driven.len(), 265);
     let mut counts = [0; 4];
+    let mut lengths = std::collections::BTreeSet::new();
+    let mut checked_empty = false;
+    let mut checked_wrong_message = false;
     for row in driven {
         let id = &row["tcId"];
         let msg = hex::decode(row["message"].as_str().unwrap())?;
-        let digest: [u8; 32] = Sha256::digest(msg).into();
+        let digest: [u8; 32] = Sha256::digest(&msg).into();
+        lengths.insert(msg.len());
         assert_eq!(digest, from_hex(&row["digest"]), "{id}");
         let scalar = |value: &Value| {
             let hex = value.as_str().unwrap();
@@ -1226,11 +1424,48 @@ fn check_ecdsa_corpus(root: &Path) -> TestResult<()> {
             counts[3] += 1;
             continue;
         };
+        let point = decode_point(&row["point"]);
         let verdict = verifyEcdsa(
             FixedBytes::new(digest),
             Secp256r1EcdsaSignature { r, s },
-            decode_point(&row["point"]),
+            point,
         );
+        macro_rules! hash_and_verify {
+            ($circuit:ident, $len:expr) => {
+                sha::$circuit(
+                    FixedBytes::<$len>::new(msg.as_slice().try_into()?),
+                    ShaSignature { r, s },
+                    point,
+                )
+            };
+        }
+        let in_circuit = match msg.len() {
+            0 => hash_and_verify!(proveEcdsa0, 0),
+            3 => hash_and_verify!(proveEcdsa3, 3),
+            5 => hash_and_verify!(proveEcdsa5, 5),
+            6 => hash_and_verify!(proveEcdsa6, 6),
+            7 => hash_and_verify!(proveEcdsa7, 7),
+            8 => hash_and_verify!(proveEcdsa8, 8),
+            9 => hash_and_verify!(proveEcdsa9, 9),
+            10 => hash_and_verify!(proveEcdsa10, 10),
+            11 => hash_and_verify!(proveEcdsa11, 11),
+            12 => hash_and_verify!(proveEcdsa12, 12),
+            20 => hash_and_verify!(proveEcdsa20, 20),
+            _ => return Err("unexpected P-256 SHA-256 KAT message length".into()),
+        };
+        assert_eq!(in_circuit, verdict, "{id}");
+        if verdict == Ok(true) {
+            checked_empty |= msg.is_empty();
+            if msg.len() == 3 && !checked_wrong_message {
+                let mut changed: [u8; 3] = msg.as_slice().try_into()?;
+                changed[0] ^= 1;
+                assert_eq!(
+                    sha::proveEcdsa3(FixedBytes::new(changed), ShaSignature { r, s }, point),
+                    Ok(false)
+                );
+                checked_wrong_message = true;
+            }
+        }
         match row["expectation"].as_str() {
             Some("valid") => {
                 assert_eq!(verdict, Ok(true), "{id}");
@@ -1253,6 +1488,12 @@ fn check_ecdsa_corpus(root: &Path) -> TestResult<()> {
         }
     }
     assert_eq!(counts.iter().sum::<usize>(), 265);
+    assert_eq!(
+        lengths.into_iter().collect::<Vec<_>>(),
+        [0, 3, 5, 6, 7, 8, 9, 10, 11, 12, 20]
+    );
+    assert!(checked_empty && checked_wrong_message);
+    println!("11 generated P-256 SHA-256 exports agreed with independently hashed digests");
     println!(
         "265 P-256 Wycheproof cases agreed in generated Rust: {counts:?} (valid, false, abort, scalar refusal)"
     );
@@ -1281,7 +1522,10 @@ fn main() -> TestResult<()> {
         mode_name,
         "ecdsa-parity" | "original" | "twin" | "wrong-key"
     );
-    let preimages = if ecdsa_lane {
+    let sequential_lane = matches!(mode_name, "sequential-parity" | "two" | "three");
+    let preimages = if sequential_lane {
+        "preimages-sequential"
+    } else if ecdsa_lane {
         "preimages-ecdsa"
     } else if transport_lane {
         "preimages-transport"
@@ -1302,6 +1546,7 @@ fn main() -> TestResult<()> {
         Some("group-parity") => Some(19),
         Some("transport-parity") => Some(5),
         Some("ecdsa-parity") => Some(4),
+        Some("sequential-parity") => Some(12),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -1331,6 +1576,10 @@ fn main() -> TestResult<()> {
                 row["fixture"] == "upstream-ordinary",
                 mode == "ecdsa-parity"
             );
+            assert_eq!(
+                row["fixture"] == "verify-sequential",
+                mode == "sequential-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
@@ -1346,6 +1595,12 @@ fn main() -> TestResult<()> {
             check_group_refusals(cases)?;
             println!(
                 "pure group operations and three native and recorded computed-identity refusals passed"
+            );
+        }
+        if mode == "sequential-parity" {
+            check_sequential_refusals(cases)?;
+            println!(
+                "P-256 witness ordering, private state, identity-key and zero-s refusals passed"
             );
         }
         if mode == "ecdsa-parity" {

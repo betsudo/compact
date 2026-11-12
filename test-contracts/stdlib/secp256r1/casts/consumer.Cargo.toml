@@ -20,6 +20,8 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+p256_sha256 = { package = "compact-contract-secp256r1-sha256-kat", path = "../../family-first/signature-suites/sha256/ts-rust/.build/contract" }
+p256_sequential = { package = "compact-contract-secp256r1-verify-sequential", path = "../../family-first/signature-suites/sequential/ts-rust/.build/contract", features = ["ledger-transaction"] }
 p256_ecdsa = { package = "compact-contract-upstream-ordinary", path = "../../family-first/ecdsa/upstream-ordinary/ts-rust/.build/contract", features = ["ledger-transaction"] }
 p256_wycheproof = { package = "compact-contract-secp256r1-ecdsa-verify", path = "../../family-first/ecdsa/wycheproof/ts-rust/.build/contract" }
 sha2 = "=0.10.9"
