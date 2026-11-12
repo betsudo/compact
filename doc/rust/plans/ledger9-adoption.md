@@ -1,5 +1,9 @@
 # Ledger 9 adoption on the Rust AST line
 
+The [integrated local qualification](#integrated-local-qualification-passed)
+records the passing macOS arm64 run and the remaining integration gates.
+The earlier entries record each migration step at its tested revision.
+
 The local `rust-ast-backend-ledger9` branch starts at `09c75e289`, the published Rust AST line after PR #723. The Ledger 8 line and its qualification receipts remain available for historical compatibility and the pending tuple-spread application review.
 
 This first slice pins the published [Ledger 9.1.0.1 package set](https://github.com/midnightntwrk/midnight-ledger/releases/tag/ledger-9.1.0.1) in the runtime and aligns the core consumers' direct Ledger package pins. The runtime uses the Ledger 9 transaction signature enum, accepts Ledger 9 observation metadata, and uses the ledger's global TTL in the existing Zswap test setup. Observed call preparation preserves the complete installed operation after checking the verifier. The direct fixture path still constructs a verifier-only operation. The proof consumer must check its resolver artifacts against the observed operation.
@@ -1179,7 +1183,7 @@ refused changed and missing artifacts, genuinely over-cap k9 models,
 corrupted proofs, wrong verifiers, changed bindings and changed results
 with the same atom widths.
 
-### Integrated local qualification remains open
+### Integrated local qualification passed
 
 The parent run at frozen source `78d8eaae4` completed the compiler,
 workspace and registered consumer phases. It also completed the DID
@@ -1187,15 +1191,54 @@ lifecycle, digest-reducer and primitive-reducer gates. The DID relation
 gate ran out of disk space while writing its receipt. All standalone
 Vector migrations described above passed individually.
 
-On integrated source `9409b7da1`, the exact local compiler and TypeScript
-0.17.0 package resolved from the source's Nix recipe. The DID relation,
-AccJubjub, Vector projection, constant-valued Vector index, Map size
-expression and direct Fold gates all passed on macOS arm64. Their
-receipts cover 49 fresh v3 proof and funded default-strict application
-cases with separate verification and exact replay refusal. The DID
-relation cases include 19 original operations and six reducer calls.
-The complete parent invocation on that exact source and toolchain is
-prepared and still awaits working space.
+The maintained `local_parity_gate.py --full` passed on macOS arm64 with
+Rust 1.99.0 at `9409b7da1cc652940469903a8380000b0b707239`. The run
+used the Nix compiler and TypeScript 0.17.0 runtime from that revision.
+It passed fixture generation and source refusals, workspace and
+generated integration tests, backend Clippy, and the full generated
+consumer proof gate. It checked 286 fixtures, bound 87 generated
+consumers to their executed artifacts, and observed checked recording
+for all 688 selected exports, including all 626 proof-eligible exports.
+
+All nine child proof gates passed in the same run. Their 87 selected
+calls cover DID lifecycle and reducer paths, AccJubjub, Vector
+projection and constant-valued indexing, Map size expressions and
+direct Fold. The readback verified that standalone and transaction
+proofs differed, funded applications used default strictness, and
+`IntentAlreadyExists` replay left serialized ledger state unchanged.
+The standalone migration lanes described above retain their own 25
+qualified cases at the recorded source revisions. Those counts describe
+the selected calls, with overlaps across gates.
+
+The full run used the earlier pinned native build of ZKIR 3.2.0. The
+current Nix recipe adds Cargo's `--locked` flag and uses the same crate
+archive and build inputs. The binaries have different hashes. A fresh
+both-target Counter generation from the tested compiler matched the
+retained Rust library and raw ZKIR. The new TypeScript capture matched
+the independent Ledger 9 oracle and the native Rust test input,
+including all four gas fields. The current packaged ZKIR reproduced the
+independent Rust producer's binary IR and keys. A fresh standalone
+proof verified in a separate process and refused wrong-key, binding,
+commitment and corruption controls. A separately proved Dust-funded
+transaction applied under default strictness and refused exact replay
+without changing ledger bytes.
+
+The local package audit verified 17 locked crate archives and 21
+installed files from three pinned npm archives. Forty compiler-closure
+and workflow controls passed. The compiler, Rust CLI, TypeScript runtime
+and native ZKIR derivations evaluated for macOS arm64 and Linux x86_64.
+Required Linux workflow gates remain in place. Native Linux execution,
+review of the composed revision and distribution changes belong to
+integration after this local qualification.
+
+Local evidence is retained under
+`rust-ast-ledger9-migration-20261111` in
+`workspace-ledger9-parent-parity-v5/full/receipt.json` and
+`qualification-audit-v1/full-parent-readback.json`. The full receipt
+SHA-256 is
+`12ee47fd5280d03c3c708553034d0bd35976e0f682a0810f9cf4866d8b497746`.
+The Ledger 8 branch, historical fixture and proof evidence, and the
+deferred Forge branch were preserved.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
