@@ -1018,9 +1018,20 @@ and byte-identical replay refusal. Both raw cases retain their
 behavior scope, and the live TypeScript capture matches the active
 Ledger 9 bytes and preserves the independent historical oracle.
 
-These are macOS arm64 results. The complete maintained parent parity
-rerun, fresh review of the composed update, and exact-head required
-Linux CI remain part of integration.
+These are macOS arm64 results. The first full parent run completed
+compilation and formatting for all 286 registered sources and matched
+the generated Cargo consumers. It stopped when the original Zerocash
+source-scope check compared a complete emitted library to an include
+wrapper. The corrected source-scope check compares complete, formatted
+libraries using Cargo's registered build-script artifact for eight
+cohorts. The flat fixture checks still compare checked-in bytes. The
+focused scopes passed and the Zerocash check rejected an unrelated
+consumer and independently changed emission. The package archive with
+the current setup guide passed its offline six-contract consumer again.
+
+The complete maintained parent parity rerun, fresh review of the
+composed update, and exact-head required Linux CI remain part of
+integration.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
