@@ -59,7 +59,11 @@ def check_wide_add(
     generated = (output / "contract/lib.rs").read_text()
     assert "runtime::add_wide_unsigned" in generated
     assert "runtime::narrow_wide_uint" in generated
-    assert "RUST_RUNTIME_ABI == 53" in generated
+    compatibility = json.loads((root / "runtime-rs/compatibility.json").read_text())
+    abi = compatibility["runtime_abi"]
+    assert f"assert!(runtime::RUST_RUNTIME_ABI == {abi});" in generated, (
+        "wide add runtime ABI differs from the current compatibility record"
+    )
     report = json.loads((output / "contract/rust-capabilities.json").read_text())
     assert len(report["circuits"]) == 1
     row = report["circuits"][0]

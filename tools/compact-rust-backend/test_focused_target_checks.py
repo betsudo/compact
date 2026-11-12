@@ -222,12 +222,17 @@ class FocusedTargetChecks(unittest.TestCase):
         for returncode in (0, 7):
             with self.subTest(returncode=returncode), tempfile.TemporaryDirectory() as tmp:
                 base = Path(tmp)
+                root = base / "repo"
+                compatibility = root / "runtime-rs/compatibility.json"
+                compatibility.parent.mkdir(parents=True)
+                compatibility.write_text(json.dumps({"runtime_abi": 61}))
                 captured = []
                 def run(*args):
                     output = Path(args[-1]) / "contract"
                     output.mkdir(parents=True)
                     (output / "lib.rs").write_text(
-                        "runtime::add_wide_unsigned runtime::narrow_wide_uint RUST_RUNTIME_ABI == 53")
+                        "runtime::add_wide_unsigned runtime::narrow_wide_uint "
+                        "assert!(runtime::RUST_RUNTIME_ABI == 61);")
                     (output / "rust-capabilities.json").write_text(json.dumps({"circuits": [{
                         "recorded": True, "observed_call": True, "proof_required": False,
                         "recording_status": "not_applicable"}]}))
@@ -242,14 +247,14 @@ class FocusedTargetChecks(unittest.TestCase):
                     if returncode:
                         with self.assertRaisesRegex(AssertionError, "compiler diagnostic"):
                             scalar_checks.check_wide_add("compiler-under-test", base,
-                                root=Path("repo"), run=run, capture=capture)
+                                root=root, run=run, capture=capture)
                     else:
                         scalar_checks.check_wide_add("compiler-under-test", base,
-                            root=Path("repo"), run=run, capture=capture)
+                            root=root, run=run, capture=capture)
                 self.assertEqual(captured, [(
                     ["compiler-under-test", "--target", "rust", "--skip-zk",
-                     "repo/test-center/test-contracts/micro-dao.compact", str(base / "original-dao")],
-                    {"cwd": Path("repo"), "capture_output": True, "text": True})])
+                     str(root / "test-center/test-contracts/micro-dao.compact"), str(base / "original-dao")],
+                    {"cwd": root, "capture_output": True, "text": True})])
 
     def test_scalar_counter_ir_must_contain_both_read_and_comparison(self):
         for comparison, matching in ((False, True), (True, False), (True, True)):
