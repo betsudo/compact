@@ -114,6 +114,8 @@ The following flags, if present, affect the compiler's behavior as follows:
                     [skip-zk ?--skip-zk]
                     [emit-rust-ir ?--emit-rust-ir]
                     [skip-ts ?--skip-ts]
+                    [contract-dependency-directory
+                     (and ?--emit-rust-ir (getenv "COMPACT_INTERNAL_CONTRACT_DEPENDENCY_DIRECTORY"))]
                     [no-communications-commitment ?--no-communications-commitment]
                     [feature-zkir-v3 ?--feature-zkir-v3]
                     [compact-path (if ?--compact-path (split-search-path search-list) (compact-path))]

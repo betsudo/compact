@@ -1249,9 +1249,7 @@
                 (format "~a.compact" contract-name)
                 (format "~a/~a.compact" sd contract-name))))
         (define (contract-info-filename)
-          (format "~a/~a/compiler/contract-info.json"
-            (path-parent (target-directory))
-            contract-name))
+          (contract-info-pathname contract-name))
         (define (malformed msg . args)
           (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                            (contract-info-filename)
@@ -1570,9 +1568,7 @@
           (let ([info (hashtable-cell (contract-ht) contract-name #f)])
             (lambda (src elt-name pure-dcl type* type)
               (define (contract-info-filename)
-                (format "~a/~a/compiler/contract-info.json"
-                  (path-parent (target-directory))
-                  contract-name))
+                (contract-info-pathname contract-name))
               (define (malformed msg . args)
                 (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                                  (contract-info-filename)

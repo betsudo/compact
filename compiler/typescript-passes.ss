@@ -799,9 +799,7 @@
               contract-name))
       (define (get-contract-dependencies)
         (define (contract-info-filename contract-name)
-          (format "~a/~a/compiler/contract-info.json"
-            (path-parent (target-directory))
-            contract-name))
+          (contract-info-pathname contract-name))
         (define (malformed msg contract-name . args)
           (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                            (contract-info-filename contract-name)

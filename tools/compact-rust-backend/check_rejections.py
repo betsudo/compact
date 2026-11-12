@@ -256,6 +256,75 @@ def check_vector_spread_disclosure(compactc: str, directory: Path) -> list[str]:
     return failures
 
 
+def check_contract_dependency_publication(compactc: str, directory: Path) -> list[str]:
+    """Check sibling interface metadata through the public compiler's Rust stage."""
+    directory = directory / "contract dependencies"
+    directory.mkdir()
+    dependency = directory / "Callee.compact"
+    dependency.write_text(
+        "export circuit transfer(value: Uint<64>): Uint<64> { return value; }\n"
+    )
+    caller = directory / "InterfaceOnly.compact"
+    caller.write_text(
+        "contract Callee { circuit transfer(value: Uint<64>): Uint<64>; }\n"
+        "export pure circuit unchanged(value: Uint<64>): Uint<64> { return value; }\n"
+    )
+
+    def compile_source(source: Path, output: str, *targets: str):
+        target_args = [arg for target in targets for arg in ("--target", target)]
+        return subprocess.run(
+            [compactc, *target_args, "--feature-zkir-v3", "--skip-zk", source.name, output],
+            cwd=directory, capture_output=True, text=True, check=False,
+        )
+
+    dependency_result = compile_source(dependency, "Callee", "ts")
+    metadata = directory / "Callee/compiler/contract-info.json"
+    if dependency_result.returncode or not metadata.is_file():
+        return [f"contract dependency baseline failed:\n{dependency_result.stderr}"]
+
+    failures = []
+    for output, targets, files in (
+        ("ts", ("ts",), ("index.js",)),
+        ("rust", ("rust",), ("lib.rs",)),
+        ("both", ("ts", "rust"), ("index.js", "lib.rs")),
+    ):
+        result = compile_source(caller, output, *targets)
+        if result.returncode or not all((directory / output / "contract" / name).is_file()
+                                        for name in files):
+            failures.append(f"contract dependency {output}: valid interface failed:\n{result.stderr}")
+    if failures:
+        return failures
+
+    before = snapshot(directory / "both")
+    metadata_bytes = metadata.read_bytes()
+    metadata_stat = metadata.stat()
+    relative_path = str(metadata.relative_to(directory))
+    for mode, expected in (
+        ("missing", "error opening"),
+        ("malformed", 'missing association for "contracts"'),
+        ("stale", "has been modified more recently than"),
+    ):
+        if mode == "missing":
+            metadata.unlink()
+        elif mode == "malformed":
+            metadata.write_text("{}")
+        else:
+            os.utime(metadata, (1, 1))
+        result = compile_source(caller, "both", "ts", "rust")
+        diagnostic = " ".join(result.stderr.split())
+        if result.returncode == 0 or expected not in diagnostic or relative_path not in diagnostic:
+            failures.append(f"contract dependency {mode}: wrong refusal:\n{result.stderr}")
+        metadata.write_bytes(metadata_bytes)
+        os.utime(metadata, ns=(metadata_stat.st_atime_ns, metadata_stat.st_mtime_ns))
+    caller.write_text(caller.read_text().replace("transfer(value: Uint<64>)", "transfer(value: Boolean)"))
+    mismatch = compile_source(caller, "both", "ts", "rust")
+    if mismatch.returncode == 0 or "but in the actual contract definition it is" not in " ".join(mismatch.stderr.split()):
+        failures.append(f"contract dependency mismatch: wrong refusal:\n{mismatch.stderr}")
+    if snapshot(directory / "both") != before or any(directory.glob(".both.compactc-stage-*")):
+        failures.append("contract dependency refusal changed or left debris beside complete output")
+    return failures
+
+
 def check_output_publication(compactc: str, directory: Path) -> list[str]:
     failures = []
     source = ROOT / "examples/rust_backend/counter.compact"
@@ -610,10 +679,12 @@ def check_proof_capabilities(compactc: str, directory: Path) -> list[str]:
 
 
 def main() -> int:
-    compactc = os.environ.get("COMPACTC")
-    if not compactc or shutil.which(compactc) is None:
-        print("Set COMPACTC to a ledger-8 compiler before running this gate", file=sys.stderr)
+    compiler = os.environ.get("COMPACTC")
+    compactc = shutil.which(compiler) if compiler else None
+    if not compactc:
+        print("Set COMPACTC to a Compact compiler before running this gate", file=sys.stderr)
         return 1
+    compactc = os.path.abspath(compactc)
     failures = []
     with tempfile.TemporaryDirectory(prefix="compact-rust-rejections-") as temp:
         directory = Path(temp)
@@ -675,11 +746,12 @@ def main() -> int:
         failures.extend(check_context_locations(compactc, directory))
         failures.extend(check_boolean_typing(compactc, directory))
         failures.extend(check_vector_spread_disclosure(compactc, directory))
+        failures.extend(check_contract_dependency_publication(compactc, directory))
 
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     print(f"Checked {len(CASES)} source rejections, {len(CONTEXT_CASES)} source contexts, "
-          f"output publication, proof capabilities, shared Boolean typing and vector spread disclosure; "
+          f"output publication, proof capabilities, shared typing, witness disclosure and contract dependencies; "
           f"{len(failures)} failed")
     return 1 if failures else 0
 
