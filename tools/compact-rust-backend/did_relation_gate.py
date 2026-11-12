@@ -24,6 +24,7 @@ import shutil
 import sys
 
 import did_proof_gate as did
+import did_reducer_proof as reducer
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
 
@@ -49,6 +50,11 @@ REDUCERS = {
     "relation-two": ("did_relation_two_reducer", "did-relation-two-reducer", "update"),
     "relation-four": ("did_relation_four_reducer", "did-relation-four-reducer", "update"),
     "relation-nested": ("did_relation_nested_reducer", "did-relation-nested-reducer", "check"),
+}
+REDUCER_GEOMETRY = {
+    "relation-two": {"update": (8, 168)},
+    "relation-four": {"update": (9, 272)},
+    "relation-nested": {"check": (8, 136), "seed": (7, 70)},
 }
 
 
@@ -96,7 +102,7 @@ def validate_original(summary, scenario):
 
 
 def validate_reducer(summary, kind):
-    require(summary.get("format") == "compact-did-primitive-reducer-proof/v1"
+    require(summary.get("format") == "compact-did-primitive-reducer-proof/v2"
             and summary.get("kind") == kind and summary.get("status") == "passed"
             and summary.get("strictness") == "default"
             and summary.get("constructor_data_deployed") is True
@@ -112,11 +118,9 @@ def validate_reducer(summary, kind):
     require(isinstance(calls, list) and [(c.get("case"), c.get("operation")) for c in calls]
             == [(case, operation) for case in cases], "relation reducer call inventory changed")
     for call in calls:
-        require(type(call.get("proof_bytes")) is int and call["proof_bytes"] > 0
-                and type(call.get("state_bytes")) is int and call["state_bytes"] > 0
-                and all(call.get(flag) is True for flag in ("applied", "changed_binding_rejected",
-                    "recorded_state_matches", "replay_unchanged"))
-                and call.get("replay_refusal") == "IntentAlreadyExists",
+        reducer.validate_call(call)
+        require(type(call.get("state_bytes")) is int and call["state_bytes"] > 0
+                and call.get("recorded_state_matches") is True,
                 f"relation reducer proof/apply/replay failed: {call.get('case')}")
 
 
@@ -124,7 +128,8 @@ def source_inventory():
     # The original source is an imported closure, not just did.compact.
     original_closure = did.source_inventory()
     paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
-             Path(common.__file__), Path(did.__file__), Path(ledger_static.__file__),
+             Path(common.__file__), Path(did.__file__), Path(reducer.__file__),
+             Path(ledger_static.__file__),
              ROOT / did.SOURCE, ROOT / did.FIXTURE,
              ROOT / "examples/rust_backend/did_adoption/source-manifest.json",
              ROOT / "tools/compact-rust-backend/did_relation_capture.mjs",
@@ -275,10 +280,15 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                 [path, state, *did.proof_artifacts(original, scenario, summary["calls"])])}
         require(sum(len(value["summary"]["calls"]) for value in receipt["scenarios"].values()) == 19,
                 "original relation call count changed")
+        reducer_k = {REDUCER_GEOMETRY[kind][operation][0]
+                     for kind, (_, _, operation) in REDUCERS.items()}
+        receipt["reducer_parameter_hashes"] = reducer.prepare_parameters(
+            execute, receipt, runner, directory / "reducer-proof-material.json",
+            parameter_directory, reducer_k)
         for kind, (stem, fixture, operation) in REDUCERS.items():
             source = ROOT / f"examples/rust_backend/{stem}.compact"
             output = directory / kind
-            execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
+            execute([components["compactc"]["snapshot"], "--target", "rust", "--feature-zkir-v3", "--skip-zk",
                      "--rust-runtime-root", ROOT, source, output], f"compile-{kind}")
             execute(["rustfmt", "--edition", "2024", output / "contract/lib.rs"], f"format-{kind}")
             require((output / "contract/lib.rs").read_bytes() ==
@@ -290,6 +300,8 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
             require(len([row for row in tab if row["name"] == operation and row["proof"]
                          and row["recorded"] and row["observed_call"]]) == 1,
                     f"{kind}: selected circuit not proof/recording applicable")
+            generated = reducer.generated_hashes(output)
+            model = reducer.model(execute, receipt, zkir, output, REDUCER_GEOMETRY[kind])
             materials = []
             for subdir, extension in (("zkir", "zkir"), ("zkir", "bzkir"),
                                       ("keys", "prover"), ("keys", "verifier")):
@@ -304,17 +316,20 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
                     copy_or_generate(source_material, destination, lambda: None)
                 materials.append(destination)
             if reuse_reducers is None:
-                (output / "keys").mkdir(exist_ok=True)
-                execute([components["zkir"]["snapshot"], "compile", output / f"zkir/{operation}.zkir",
-                         output / f"keys/{operation}.prover", output / f"keys/{operation}.verifier"], f"keygen-{kind}")
+                reducer.keygen(execute, receipt, zkir, output, operation, model[operation],
+                               f"keygen-{kind}")
             before = hashes(checked_file(path) for path in materials)
             execute([runner, "--did-primitive-reducer", kind, output], f"prove-{kind}")
             summary_path = output / "proof-result.json"
             summary = read_json(summary_path)
             validate_reducer(summary, kind)
-            states = [checked_file(output / f"{call['case']}-state.bin") for call in summary["calls"]]
+            results = [summary_path, checked_file(output / "reducer-deployment.bin"),
+                       checked_file(output / "reducer-ledger-after-deploy.bin")]
+            for call in summary["calls"]:
+                results.extend(reducer.proof_artifacts(output, call["case"], call, call["state_bytes"]))
             receipt["reducers"][kind] = {"summary": summary, "material_hashes": before,
-                                         "result_hashes": hashes([summary_path, *states])}
+                                         "result_hashes": hashes(results), "generated_hashes": generated,
+                                         "geometry": model}
             require(hashes(materials) == before, f"{kind}: proof material changed")
         require(sum(len(value["summary"]["calls"]) for value in receipt["reducers"].values()) == 6,
                 "reducer proof call count changed")
@@ -327,6 +342,8 @@ def run_gate(directory, compiler, scheme, target, *, reuse_material=None, reuse_
         for value in receipt["reducers"].values():
             did.unchanged(value["material_hashes"])
             did.unchanged(value["result_hashes"])
+            did.unchanged(value["generated_hashes"])
+        did.unchanged(receipt["reducer_parameter_hashes"])
         did.unchanged({value["snapshot"]: value["sha256"] for value in components.values()})
         receipt["status"] = "passed"
     except (common.GateError, OSError, ValueError, KeyError, TypeError, IndexError) as error:

@@ -19,10 +19,11 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import sys
 
+import did_proof_gate as did
+import did_reducer_proof as reducer
 import local_parity_gate as common
 import resolve_ledger_test_static as ledger_static
 
@@ -31,6 +32,7 @@ SOURCE = Path("examples/rust_backend/did_digest_read_reducer/contract.compact")
 FIXTURE = Path("tests-rust-backend/did-digest-read-reducer/lib.rs")
 FIXTURE_ROOT = Path("tests-rust-backend/did-digest-read-reducer")
 NAME = "verify"
+GEOMETRY = {NAME: (7, 112)}
 
 
 def require(condition, message):
@@ -51,7 +53,8 @@ def hashes(paths):
 def source_inventory():
     paths = [ROOT / SOURCE, ROOT / "Cargo.toml", ROOT / "Cargo.lock",
              ROOT / "tools/compact-rust-proof-smoke/Cargo.toml", Path(__file__),
-             Path(common.__file__), Path(ledger_static.__file__)]
+             Path(common.__file__), Path(ledger_static.__file__), Path(did.__file__),
+             Path(reducer.__file__)]
     for folder in ("runtime-rs", "tools/compact-rust-backend/src",
                    "tools/compact-rust-proof-smoke/src", FIXTURE_ROOT):
         paths.extend(path for path in (ROOT / folder).rglob("*")
@@ -60,17 +63,15 @@ def source_inventory():
 
 
 def validate_summary(value):
-    require(value.get("status") == "passed" and value.get("strictness") == "default",
+    require(value.get("format") == "compact-did-digest-reducer-proof/v2"
+            and value.get("status") == "passed" and value.get("strictness") == "default",
             "reducer did not pass default strictness")
     for field in ("deployed_constructor_data", "applied", "read_only_contract_data",
                   "changed_binding_rejected"):
         require(value.get(field) is True, f"reducer summary missing {field}")
     require(value.get("constructor_execution_proved") is False,
             "reducer constructor proof boundary changed")
-    require(value.get("replay_refusal") == "IntentAlreadyExists",
-            "reducer replay refusal changed")
-    require(type(value.get("proof_bytes")) is int and value["proof_bytes"] > 0,
-            "reducer proof is empty")
+    reducer.validate_call(value)
     require(type(value.get("final_state_bytes")) is int and value["final_state_bytes"] > 0,
             "reducer final state is empty")
 
@@ -87,8 +88,9 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
             path = Path(env.get(key, ""))
             require(bool(env.get(key)) and path.is_absolute() and path.is_dir(),
                     f"{key} must be an absolute existing directory")
-        zkir = shutil.which('zkir', path=env.get('PATH'))
-        require(zkir is not None, "reducer proof gate requires zkir")
+        require("MIDNIGHT_PROOF_SERVER" not in env, "DID reducer gate requires local proving")
+        zkir = shutil.which("zkir-v3", path=env.get("PATH"))
+        require(zkir is not None, "reducer proof gate requires zkir-v3")
         static_dir = Path(env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"])
         dust_paths = []
         for name, digest in ledger_static.FIXTURE_HASHES.items():
@@ -110,12 +112,14 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                     "COMPACT_RUST_RUNTIME_DIR": str(ROOT), "CARGO_TARGET_DIR": str(target.resolve()),
                     "CARGO_INCREMENTAL": "0", "RUSTUP_TOOLCHAIN": "1.99.0",
                     "PYTHONDONTWRITEBYTECODE": "1"})
-        receipt["key_generation"] = {"mode": "direct-native", "actual_zkir": components["zkir"]["snapshot"], "scope": "Fresh native key generation; proofs and assertions always execute."}
+        zkir = components["zkir"]["snapshot"]
+        receipt["key_generation"] = {"mode": "direct-native-v3", "actual_zkir": zkir,
+                                     "scope": "Fresh native keys and proofs."}
         def execute(argv, label, stdout_path=None):
             command([str(arg) for arg in argv], label, directory, receipt, env=env,
                     stdout_path=stdout_path)
         output = directory / "reducer"
-        execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
+        execute([components["compactc"]["snapshot"], "--target", "rust", "--feature-zkir-v3", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / SOURCE, output], "compile-reducer")
         execute(["rustfmt", "--edition", "2024", output / "contract/lib.rs"], "format-reducer")
         require((output / "contract/lib.rs").read_bytes() == (ROOT / FIXTURE).read_bytes(),
@@ -128,47 +132,39 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                 and rows[0]["recorded"] and rows[0]["observed_call"],
                 "renamed reducer proof/recording capability changed")
         receipt["capabilities"] = report
+        receipt["generated_hashes"] = reducer.generated_hashes(output)
+        reducer.require_zkir_version(execute, zkir, directory / "zkir-version.txt")
+        model = reducer.model(execute, receipt, zkir, output, GEOMETRY)
         execute(["cargo", "+1.99.0", "test", "--locked", "--offline", "-p",
                  "compact-rust-did-digest-read-reducer-fixture"], "test-reducer-behavior")
-        execute(["cargo", "+1.99.0", "build", "--locked", "--offline", "-p",
+        execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
                  "compact-rust-proof-smoke"], "build-proof-runner")
-        components["proof-runner"] = snapshot(target.resolve() / "debug/compact-rust-proof-smoke",
+        components["proof-runner"] = snapshot(target.resolve() / "proof-checks/compact-rust-proof-smoke",
                                                directory / "bin/compact-rust-proof-smoke")
         runner = components["proof-runner"]["snapshot"]
-        material = directory / "proof-material.json"
-        execute([runner, "--prepare-proof-material"], "prepare-proof-material", material)
-        prepared = read_json(material)
-        require(prepared.get("format") == "compact-proof-material/v1"
-                and prepared.get("mode") == "prepare"
-                and Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(),
-                "proof material preparation changed cache or format")
-        receipt["proof_material"] = prepared
-        (output / "keys").mkdir(exist_ok=True)
-        execute([components["zkir"]["snapshot"], "compile", output / "zkir/verify.zkir",
-                 output / "keys/verify.prover", output / "keys/verify.verifier"], "keygen-reducer")
-        match = re.search(r"\(k=(\d+), rows=(\d+)\)",
-                          Path(receipt["commands"][-1]["log"]).read_text())
-        require(match is not None and (int(match[1]), int(match[2])) == (7, 64),
-                "reducer key size/rows changed without review")
-        receipt["keygen"] = {"operation": NAME, "k": int(match[1]), "rows": int(match[2])}
+        k, rows = model[NAME]
+        receipt["parameter_hashes"] = reducer.prepare_parameters(
+            execute, receipt, runner, directory / "proof-material.json", Path(env["MIDNIGHT_PP"]), {k})
+        reducer.keygen(execute, receipt, zkir, output, NAME, (k, rows), "keygen-reducer")
+        receipt["keygen"] = {"operation": NAME, "k": k, "rows": rows}
         artifacts = [output / f"keys/verify.{ext}" for ext in ("prover", "verifier")]
         artifacts += [output / f"zkir/verify.{ext}" for ext in ("zkir", "bzkir")]
-        require(all(path.is_file() and path.stat().st_size > 0 for path in artifacts),
-                "missing reducer proof artifacts")
-        receipt["artifact_hashes"] = hashes(artifacts)
+        receipt["artifact_hashes"] = hashes(reducer.checked_file(path) for path in artifacts)
         execute([runner, "--did-digest-reducer", output], "prove-reducer")
         summary = read_json(output / "reducer-proof-result.json")
         validate_summary(summary)
-        final_state = output / "reducer-final-state.bin"
-        require(final_state.is_file() and final_state.stat().st_size == summary["final_state_bytes"],
-                "reducer final state mismatch")
         receipt["summary"] = summary
-        receipt["result_hashes"] = hashes([output / "reducer-proof-result.json", final_state])
+        receipt["result_hashes"] = hashes([
+            output / "reducer-proof-result.json",
+            reducer.checked_file(output / "reducer-deployment.bin"),
+            reducer.checked_file(output / "reducer-ledger-after-deploy.bin"),
+            *reducer.proof_artifacts(output, "reducer-final", summary, summary["final_state_bytes"]),
+        ])
         require(source_inventory() == receipt["source_hashes"] and common.git_head() == receipt["git_head"],
                 "source inventory or HEAD changed during reducer gate")
-        require(hashes(artifacts) == receipt["artifact_hashes"]
-                and hashes([output / "reducer-proof-result.json", final_state]) == receipt["result_hashes"],
-                "reducer proof artifacts changed during gate")
+        for field in ("artifact_hashes", "result_hashes", "generated_hashes",
+                      "parameter_hashes", "dust_fixture_hashes"):
+            did.unchanged(receipt[field])
         require(all(Path(row["snapshot"]).is_file() and
                     common.sha256(Path(row["snapshot"])) == row["sha256"]
                     for row in components.values()), "frozen tool changed during reducer gate")

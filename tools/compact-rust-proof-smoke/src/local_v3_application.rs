@@ -272,24 +272,18 @@ fn apply_call(
     let (deploy, apply_deployment) = deployment;
     let mut rng = StdRng::from_rng(rand::rngs::OsRng)?;
     let address = deploy.address();
-    let entry = EntryPointBuf(name.as_bytes().to_vec());
-    let installed = deploy
-        .initial_state
-        .operations
-        .get(&entry)
-        .ok_or("missing v3 call operation")?;
-    if prepared.address != address || prepared.entry_point != entry || prepared.op != *installed {
-        return Err("v3 prepared call differs from the installed operation".into());
+    if prepared.address != address {
+        return Err("v3 prepared call differs from the deployment address".into());
     }
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
     let mut funded = qualified_coin_funding::fee_funded_state_with_utxos(
         &mut rng,
         if apply_deployment { 2 } else { 1 },
     )?;
     if apply_deployment {
+        let resolver = qualified_coin_funding::fee_resolver(root, name)?;
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
         apply_funded_deployment(
             root,
             stem,
@@ -302,8 +296,66 @@ fn apply_call(
     } else {
         funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
     }
+    apply_call_on_ledger(
+        root,
+        (name, stem),
+        prepared,
+        (&mut funded, false),
+        &mut rng,
+        standalone,
+        check_state,
+    )
+}
+
+pub(super) fn apply_funded_call(
+    root: &Path,
+    (name, stem): (&'static str, &str),
+    prepared: ContractCallPrototype<DefaultDB>,
+    funded: &mut midnight_ledger::test_utilities::TestState<DefaultDB>,
+    rng: &mut StdRng,
+    standalone: &Proof,
+    check_state: impl FnOnce(&ContractState<DefaultDB>) -> Result<(), Box<dyn Error>>,
+) -> Result<(usize, ContractState<DefaultDB>), Box<dyn Error>> {
+    apply_call_on_ledger(
+        root,
+        (name, stem),
+        prepared,
+        (funded, true),
+        rng,
+        standalone,
+        check_state,
+    )
+}
+
+fn apply_call_on_ledger(
+    root: &Path,
+    (name, stem): (&'static str, &str),
+    prepared: ContractCallPrototype<DefaultDB>,
+    (funded, advance_funded_state): (
+        &mut midnight_ledger::test_utilities::TestState<DefaultDB>,
+        bool,
+    ),
+    rng: &mut StdRng,
+    standalone: &Proof,
+    check_state: impl FnOnce(&ContractState<DefaultDB>) -> Result<(), Box<dyn Error>>,
+) -> Result<(usize, ContractState<DefaultDB>), Box<dyn Error>> {
+    let address = prepared.address;
+    let entry = EntryPointBuf(name.as_bytes().to_vec());
+    let installed = funded
+        .ledger
+        .contract
+        .get(&address)
+        .and_then(|contract| contract.operations.get(&entry))
+        .ok_or("missing v3 call operation")?;
+    if prepared.entry_point != entry || prepared.op != *installed {
+        return Err("v3 prepared call differs from the installed operation".into());
+    }
+    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, funded.time + funded.ledger.parameters.global_ttl)
+        Intent::empty(rng, funded.time + funded.ledger.parameters.global_ttl)
             .add_call::<ProofPreimage>(prepared);
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
     let proven = executor
@@ -314,7 +366,11 @@ fn apply_call(
         ))
         .map_err(|error| format!("v3 call transaction proving failed: {error:?}"))?;
     let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
-    let sealed = executor.block_on(funded.balance_tx(rng, sealed, &resolver))?;
+    let sealed = executor.block_on(funded.balance_tx(
+        StdRng::from_rng(rand::rngs::OsRng)?,
+        sealed,
+        &resolver,
+    ))?;
     let mut calls = sealed.calls();
     let (_, call) = calls.next().ok_or("missing funded v3 call call")?;
     let ProofVersioned::V3(proof) = &call.proof else {
@@ -335,20 +391,27 @@ fn apply_call(
         root.join(format!("{stem}-transaction.bin")),
         &transaction_bytes,
     )?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
+    let time = funded.time;
+    let strictness = WellFormedStrictness::default();
+    let verified = sealed.well_formed(&funded.ledger, strictness, time)?;
     let context = |state: LedgerState<DefaultDB>| TransactionContext {
         ref_state: state,
         block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
+            tblock: time,
+            last_block_time: time,
             ..BlockContext::default()
         },
         whitelist: None,
     };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
+    let (updated, result) = if advance_funded_state {
+        // Repeated calls must advance both the ledger and its local Dust wallet.
+        let result = funded.apply(&sealed, strictness)?;
+        (funded.ledger.clone(), result)
+    } else {
+        funded
+            .ledger
+            .apply(&verified, &context(funded.ledger.clone()))
+    };
     if !matches!(result, TransactionResult::Success(_)) {
         return Err(format!("v3 call strict apply failed: {result:?}").into());
     }

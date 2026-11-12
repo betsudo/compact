@@ -13,157 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use midnight_base_crypto::{
-    data_provider::{FetchMode, MidnightDataProvider, OutputMode},
-    time::Timestamp,
+use super::{
+    local_v3_application as v3, positional_transaction::verify_separately, qualified_coin_funding,
 };
 use midnight_compact_runtime as r;
-use midnight_ledger::structure::Signature;
-use midnight_ledger::{
-    construct::{ContractCallExt, ContractCallPrototype},
-    dust::{DUST_EXPECTED_FILES, DustResolver},
-    prove::Resolver as LedgerResolver,
-    semantics::{TransactionContext, TransactionResult},
-    structure::{
-        ContractDeploy, INITIAL_PARAMETERS, Intent, ProofPreimageMarker, ProofPreimageVersioned,
-        Transaction,
-    },
-    test_utilities::TestState,
-    verify::WellFormedStrictness,
-};
-use midnight_onchain_runtime::context::BlockContext;
-use midnight_onchain_state::state::{
-    ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf,
-};
-use midnight_serialize::{tagged_deserialize, tagged_serialize};
+use midnight_ledger::structure::ContractDeploy;
+use midnight_onchain_state::state::{ContractMaintenanceAuthority, ContractState, EntryPointBuf};
 use midnight_storage::storage::HashMap;
-use midnight_transient_crypto::{
-    commitment::PedersenRandomness,
-    curve::Fr,
-    fab::AlignedValueExt,
-    hash::transient_commit,
-    proofs::{
-        KeyLocation, PARAMS_VERIFIER, ProofPreimage, ProverKey, ProvingKeyMaterial, Resolver,
-        VerifierKey, Zkir,
-    },
-};
-use midnight_zkir::{IrSource, LocalProvingProvider};
-use midnight_zswap::prove::ZswapResolver;
+use midnight_transient_crypto::curve::Fr;
 use r::transaction::{CallSpec, Observation, ObservedContractState, prepare_call};
 use rand::{SeedableRng, rngs::StdRng};
-use rand_chacha::ChaCha20Rng;
-use std::{
-    error::Error,
-    fs::{self, File},
-    io::{self, BufReader},
-    path::{Path, PathBuf},
-};
+use std::{error::Error, fs, path::Path};
 
 #[path = "did_primitive_reducers/cases.rs"]
 mod cases;
-struct ArtifactResolver {
-    root: PathBuf,
-    operations: &'static [&'static str],
-}
-impl Resolver for ArtifactResolver {
-    async fn resolve_key(&self, location: KeyLocation) -> io::Result<Option<ProvingKeyMaterial>> {
-        if !self.operations.contains(&location.0.as_ref()) {
-            return Ok(None);
-        }
-        Ok(Some(ProvingKeyMaterial {
-            prover_key: fs::read(self.root.join(format!("keys/{}.prover", location.0)))?,
-            verifier_key: fs::read(self.root.join(format!("keys/{}.verifier", location.0)))?,
-            ir_source: fs::read(self.root.join(format!("zkir/{}.bzkir", location.0)))?,
-        }))
-    }
-}
-fn fee_resolver(
-    root: &Path,
-    operations: &'static [&'static str],
-) -> Result<LedgerResolver, Box<dyn Error>> {
-    let zswap = ZswapResolver(MidnightDataProvider::new(
-        FetchMode::Synchronous,
-        OutputMode::Log,
-        midnight_zswap::ZSWAP_EXPECTED_FILES.to_owned(),
-    )?);
-    let dust = DustResolver(MidnightDataProvider::new(
-        FetchMode::Synchronous,
-        OutputMode::Log,
-        DUST_EXPECTED_FILES.to_owned(),
-    )?);
-    let root = root.to_owned();
-    Ok(LedgerResolver::new(
-        zswap,
-        dust,
-        Box::new(move |location| {
-            let resolver = ArtifactResolver {
-                root: root.clone(),
-                operations,
-            };
-            Box::pin(async move { resolver.resolve_key(location).await })
-        }),
-    ))
-}
-fn direct_proof(
-    root: &Path,
-    operation: &str,
-    call: &ContractCallPrototype<r::ledger::DefaultDB>,
-    verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
-    let mut fields = Vec::new();
-    call.input.value_only_field_repr(&mut fields);
-    call.output.value_only_field_repr(&mut fields);
-    let commitment = transient_commit(&fields, call.communication_commitment_rand);
-    let preimage = match <ProofPreimage as ContractCallExt<r::ledger::DefaultDB>>::construct_proof(
-        call, commitment,
-    ) {
-        ProofPreimageVersioned::V2(preimage) => preimage,
-        _ => return Err("unexpected preimage version".into()),
-    };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{operation}.bzkir")),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{operation}.prover")),
-    )?))?;
-    let skips = preimage.check(&ir)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let (proof, mut inputs, proved_skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x88; 32]),
-        &params,
-        pk,
-        &preimage,
-    ))?;
-    if skips != proved_skips {
-        return Err("proof skip mismatch".into());
-    }
-    verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
-    inputs[0] = if inputs[0] == Fr::from(0u64) {
-        Fr::from(1u64)
-    } else {
-        Fr::from(0u64)
-    };
-    if verifier
-        .verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())
-        .is_ok()
-    {
-        return Err("changed binding accepted".into());
-    }
-    Ok(proof.0.len())
-}
+mod legacy;
+
 pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
+    if kind == "acc-jubjub-cell" {
+        return legacy::run(root, kind);
+    }
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("DID reducer qualification requires local proving".into());
+    }
     let fixture = cases::fixture(kind)?;
     let mut rng = StdRng::seed_from_u64(0x294);
     let constructor_data = (fixture.initial)()?.ledger_state.get_ref().clone();
     let mut operations = HashMap::new();
     for name in fixture.operations {
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
-        operations = operations.insert(
-            EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(Some(verifier), None),
-        );
+        let (_, _, operation) = v3::load_operation(root, name)?;
+        operations = operations.insert(EntryPointBuf(name.as_bytes().to_vec()), operation);
     }
     let deploy = ContractDeploy::new(
         &mut rng,
@@ -174,35 +53,22 @@ pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
         ),
     );
     let address = deploy.address();
-    let mut state = TestState::<r::ledger::DefaultDB>::new(&mut rng);
-    let async_runtime = tokio::runtime::Builder::new_current_thread()
+    let mut funded =
+        qualified_coin_funding::fee_funded_state_with_utxos(&mut rng, 1 + fixture.cases.len())?;
+    let resolver = qualified_coin_funding::fee_resolver(root, fixture.operations[0])?;
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    async_runtime.block_on(state.give_fee_token(&mut rng, 4));
-    let resolver = fee_resolver(root, fixture.operations)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, r::ledger::DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
-            .add_deploy(deploy);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1u16, intent));
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x295),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let balanced = async_runtime.block_on(state.balance_tx(
-        rng.clone(),
-        proven.seal(StdRng::seed_from_u64(0x296)),
+    v3::apply_funded_deployment(
+        root,
+        "reducer",
+        &deploy,
+        &mut funded,
+        &mut rng,
+        &executor,
         &resolver,
-    ))?;
-    let applied = state.apply(&balanced, WellFormedStrictness::default())?;
-    if !matches!(applied, TransactionResult::Success(_)) {
-        return Err(format!("deployment failed: {applied:?}").into());
-    }
-    if state
+    )?;
+    if funded
         .ledger
         .contract
         .get(&address)
@@ -214,13 +80,11 @@ pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
         return Err("constructor data mismatch".into());
     }
     let mut results = vec![];
-    for (index, selected) in fixture.cases.iter().enumerate() {
+    for selected in fixture.cases {
         let case = selected.id;
         let operation = selected.operation;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{operation}.verifier")),
-        )?))?;
-        let prior = state
+        let (_, verifier, operation_artifact) = v3::load_operation(root, operation)?;
+        let prior = funded
             .ledger
             .contract
             .get(&address)
@@ -236,80 +100,46 @@ pub(crate) fn run(root: &Path, kind: &str) -> Result<(), Box<dyn Error>> {
         );
         let (recorded, input) = (fixture.call)(selected, &observed)?;
         let expected = recorded.execution.context.query.state.clone();
-        let prepared = prepare_call(
+        let mut prepared = prepare_call(
             recorded,
             CallSpec::new(operation, verifier.clone(), input, Fr::from(0u64)),
         )?;
-        let proof_bytes = direct_proof(root, operation, &prepared, &verifier)?;
-        let intent: Intent<
-            Signature,
-            ProofPreimageMarker,
-            PedersenRandomness,
-            r::ledger::DefaultDB,
-        > = Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-        let tx = Transaction::from_intents("local-test", HashMap::new().insert(1u16, intent));
-        let provider = LocalProvingProvider {
-            rng: StdRng::seed_from_u64(0x297 + index as u64),
-            resolver: &resolver,
-            params: &params,
-        };
-        let proven = futures_executor::block_on(
-            tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-        )?;
-        let balanced = async_runtime.block_on(state.balance_tx(
-            rng.clone(),
-            proven.seal(StdRng::seed_from_u64(0x298 + index as u64)),
-            &resolver,
-        ))?;
-        let time = state.time;
-        let result = state.apply(&balanced, WellFormedStrictness::default())?;
-        if !matches!(result, TransactionResult::Success(_)) {
-            return Err(format!("strict call failed: {result:?}").into());
-        }
-        let after = state
-            .ledger
-            .contract
-            .get(&address)
-            .ok_or("contract disappeared")?;
-        if after.data != expected {
-            return Err("applied state does not match recorded state".into());
-        }
-        let saved = state.ledger.clone();
-        let verified =
-            balanced.well_formed(&state.ledger, WellFormedStrictness::default(), time)?;
-        let context = TransactionContext {
-            ref_state: state.ledger.clone(),
-            block_context: BlockContext {
-                tblock: time,
-                last_block_time: time,
-                ..BlockContext::default()
+        prepared.op = operation_artifact;
+        let proof = v3::prove_standalone(root, operation, case, &prepared, &verifier, None)?;
+        verify_separately(root, operation, case)?;
+        let (transaction_proof_bytes, _) = v3::apply_funded_call(
+            root,
+            (operation, case),
+            prepared,
+            &mut funded,
+            &mut rng,
+            &proof,
+            |state| {
+                if state.data != expected {
+                    return Err("applied state does not match recorded state".into());
+                }
+                Ok(())
             },
-            whitelist: None,
-        };
-        let (replayed, replay) = state.ledger.apply(&verified, &context);
-        if !matches!(
-            replay,
-            TransactionResult::Failure(
-                midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                    midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-                )
-            )
-        ) {
-            return Err(format!("replay outcome: {replay:?}").into());
-        }
-        if replayed != saved {
-            return Err("replay mutated state".into());
-        }
-        let mut bytes = vec![];
-        tagged_serialize(&after, &mut bytes)?;
-        fs::write(root.join(format!("{case}-state.bin")), &bytes)?;
-        results.push(serde_json::json!({"case":case,"operation":operation,"proof_bytes":proof_bytes,"changed_binding_rejected":true,"applied":true,"recorded_state_matches":true,"replay_refusal":"IntentAlreadyExists","replay_unchanged":true,"state_bytes":bytes.len()}));
+        )?;
+        let state_bytes = fs::metadata(root.join(format!("{case}-state.bin")))?.len();
+        results.push(serde_json::json!({
+            "case": case, "operation": operation,
+            "proof_bytes": proof.0.len(), "transaction_proof_bytes": transaction_proof_bytes,
+            "transaction_proof_version": 3, "funded_dust_spends": 1,
+            "separate_verification": true, "corrupt_proof_rejected": true,
+            "changed_binding_rejected": true, "applied": true, "recorded_state_matches": true,
+            "replay_refusal": "IntentAlreadyExists", "replay_unchanged": true,
+            "state_bytes": state_bytes
+        }));
     }
-    let result = serde_json::json!({"format":"compact-did-primitive-reducer-proof/v1","kind":kind,"strictness":"default","constructor_data_deployed":true,"constructor_execution_proved":false,"status":"passed","calls":results});
-    fs::write(
+    let result = serde_json::json!({
+        "format": "compact-did-primitive-reducer-proof/v2", "kind": kind,
+        "strictness": "default", "constructor_data_deployed": true,
+        "constructor_execution_proved": false, "status": "passed", "calls": results
+    });
+    v3::write_new(
         root.join("proof-result.json"),
-        serde_json::to_vec_pretty(&result)?,
+        &serde_json::to_vec_pretty(&result)?,
     )?;
     println!("{result}");
     Ok(())
