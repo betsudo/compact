@@ -230,7 +230,7 @@ def run(args):
         require(len(selected_models) == 2 and all(type(r["k"]) is int and r["k"] == 8 for r in selected_models),
                 "selected circuit differs from its bound k8 model")
         report["models"] = models
-        # A separate complete retained Fold source supplies a real k9 diagnostic.
+        # A separate complete retained Fold source supplies a real v3 k9 diagnostic.
         # It never replaces the admitted stateful Vector value IR/Programs or proof inputs.
         diagnostic = output / "over-cap-producer"
         diagnostic.mkdir()
@@ -240,14 +240,14 @@ def run(args):
         require(text.count("input:Vector<2,Uint<8>>") == 4 and text.count("run_checked") == 1,
                 "retained diagnostic source premise changed")
         source = diagnostic / "helper.compact"
-        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<8,Uint<8>>").replace("run_checked", "run_field"))
+        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<16,Uint<8>>").replace("run_checked", "run_field"))
         unchanged(report["compiler_tools"])
         compiler = json.loads(args.compiler_receipt.read_text())["compactc"]["path"]
         execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger9", "--rust-require-recording",
                 "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
         report["over_cap_diagnostic_source"] = {"sha256": digest(source),
                 "zkir_sha256": digest(diagnostic / "generated/zkir/run_field.zkir"),
-                "scope": "complete retained Fold length8 diagnostic only, not source/proof admission"}
+                "scope": "complete retained Fold length16 diagnostic only, not source/proof admission"}
         excessive = output / "selected-model-over-cap"
         shutil.copytree(generated, excessive)
         shutil.copyfile(diagnostic / "generated/zkir/run_field.zkir", excessive / "zkir/run_field.zkir")
