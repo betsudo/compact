@@ -208,8 +208,8 @@ def main():
         for spec in definitions:
             name = spec["source"]
             target = generated / name
-            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                    *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []),
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
+                    *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []),
                     (SOURCES / (name + ".compact")).relative_to(ROOT), target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk",
                     (SOURCES / (name + ".compact")).relative_to(ROOT), output / "independent" / name])
@@ -233,7 +233,8 @@ def main():
                 else:
                     raise ValueError("local conversion relabeled as supplied")
             programs = inventory(target / "contract/checked-programs")
-            require(programs == inventory(FIXTURES / "goldens" / name / "checked-programs"), "complete Program roster differs: " + name)
+            require(programs == inventory(FIXTURES / "ledger9-goldens" / name / "checked-programs"),
+                    "complete Ledger 9 Program roster differs: " + name)
             require(len(programs) == (len(spec["entries"]) if spec["stateful"] else 0), "complete checked Program count differs: " + name)
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
@@ -331,7 +332,7 @@ def main():
             mutant.mkdir()
             source = mutant / (name + ".compact")
             source.write_text(text.replace(old, new))
-            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording", source, mutant / "generated"])
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording", source, mutant / "generated"])
             changed_manifest = manifest.read_text().replace(str(generated / name / "contract"), str(mutant / "generated/contract"))
             mutant_consumer = mutant / "consumer"
             mutant_consumer.mkdir()
