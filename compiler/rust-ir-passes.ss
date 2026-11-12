@@ -46,6 +46,11 @@
         (let ([carrier (secp256k1-carrier type1)])
           (and carrier (equal? carrier (secp256k1-carrier type2)))))
 
+      (define (jubjub-cast-ir src type value)
+        (object (cons "kind" "jubjub_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
       (define (secp256k1-cast-ir src type value)
         (object (cons "kind" "secp256k1_bytes_cast")
                 (cons "ty" (type-ir type src))
@@ -93,6 +98,7 @@
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
           [(assert ,src ,expr ,mesg) src]
           [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) src]
+          [(jubjub-cast ,src ,type ,expr) src]
           [(secp256k1-bytes-cast ,src ,type ,expr) src]
           [(field->bytes ,src ,len ,expr) src]
           [(cast-from-bytes ,src ,type ,len ,expr) src]
@@ -210,17 +216,31 @@
            (object (cons "kind" "ec_add")
                    (cons "left" (lower (car args)))
                    (cons "right" (lower (cadr args))))]
-          [(ecMul secp256k1Mul secp256r1Mul)
+          [(ecMul ecMulJubjubScalar secp256k1Mul secp256r1Mul)
            (unless (= (length args) 2)
              (source-errorf src "ecMul expects two arguments"))
            (object (cons "kind" "ec_mul")
                    (cons "point" (lower (car args)))
-                   (cons "scalar" ((if (eq? name 'ecMul) lower-field lower) (cadr args))))]
-          [(ecMulGenerator secp256k1MulGenerator secp256r1MulGenerator)
+                   (cons "scalar"
+                         (case name
+                           [(ecMul) (lower-field (cadr args))]
+                           [(ecMulJubjubScalar)
+                            (jubjub-cast-ir src
+                              (with-output-language (Lnodisclose Type) `(tfield ,src))
+                              (lower (cadr args)))]
+                           [else (lower (cadr args))])))]
+          [(ecMulGenerator ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator)
            (unless (= (length args) 1)
              (source-errorf src "ecMulGenerator expects one argument"))
            (object (cons "kind" "ec_mul_generator")
-                   (cons "scalar" ((if (eq? name 'ecMulGenerator) lower-field lower) (car args))))]
+                   (cons "scalar"
+                         (case name
+                           [(ecMulGenerator) (lower-field (car args))]
+                           [(ecMulGeneratorJubjubScalar)
+                            (jubjub-cast-ir src
+                              (with-output-language (Lnodisclose Type) `(tfield ,src))
+                              (lower (car args)))]
+                           [else (lower (car args))])))]
           [else (assert cannot-happen)]))
 
       (define (secp256k1-unary-ir kind src args lower)
@@ -296,6 +316,7 @@
           [(tfield ,src) (kind "field")]
           [(topaque ,src ,opaque-type)
            (cond
+             [(string=? opaque-type "JubjubScalar") (kind "jubjub_scalar")]
              [(string=? opaque-type "JubjubPoint") (kind "jubjub_point")]
              [(string=? opaque-type "Secp256k1Base") (kind "secp256k1_base")]
              [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
@@ -749,6 +770,8 @@
            (secp256k1-arithmetic-ir arithmetic-op
              (typed-expression-ir expr1 type src)
              (typed-expression-ir expr2 type src))]
+          [(jubjub-cast ,src ,type ,expr)
+           (jubjub-cast-ir src type (field-argument-ir expr src))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (expression-ir expr src))]
           [(vector->bytes ,src ,len ,expr)
@@ -767,6 +790,11 @@
              (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
            (object (cons "kind" "field_to_bytes32")
                    (cons "value" (expression-ir expr src)))]
+          [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
+           (guard (not nat?))
+           (jubjub-cast-ir src
+             (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))
+             (expression-ir expr^ src))]
           [(downcast-unsigned ,src ,nat? ,nat ,expr)
            (unless nat?
              (source-errorf src "Rust backend does not yet support Field-to-Uint downcasts"))
@@ -1380,6 +1408,8 @@
                           [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add" "__compactRuntime.secp256r1Add") 'ecAdd]
                           [("__compactRuntime.ecMul") 'ecMul]
                           [("__compactRuntime.ecMulGenerator") 'ecMulGenerator]
+                          [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
+                          [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
                           [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
                           [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
                           [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
@@ -2706,6 +2736,8 @@
            (secp256k1-arithmetic-ir arithmetic-op
              (stateful-typed-expression-ir expr1 type src witness-ids)
              (stateful-typed-expression-ir expr2 type src witness-ids))]
+          [(jubjub-cast ,src ,type ,expr)
+           (jubjub-cast-ir src type (stateful-expression-ir expr src witness-ids))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
           [(vector->bytes ,src ,len ,expr)
@@ -2725,6 +2757,11 @@
              (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
            (object (cons "kind" "field_to_bytes32")
                    (cons "value" (stateful-expression-ir expr src witness-ids)))]
+          [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
+           (guard (not nat?))
+           (jubjub-cast-ir src
+             (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))
+             (stateful-expression-ir expr^ src witness-ids))]
           [(downcast-unsigned ,src ,nat? ,nat ,expr)
            (unless nat?
              (source-errorf src "Rust backend does not yet support Field-to-Uint downcasts"))
@@ -2896,6 +2933,9 @@
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(jubjub-cast ,src ,type ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(secp256k1-bytes-cast ,src ,type ,expr)

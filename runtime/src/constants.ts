@@ -27,6 +27,9 @@ export const MAX_FIELD: bigint = ocrt.maxField();
  */
 export const JUBJUB_SCALAR_MODULUS: bigint = 0xe7db4ea6533afa906673b0101343b00a6682093ccc81082d0970e5ed6f72cb7n;
 
+/** The maximum canonical value of a Jubjub scalar. */
+export const MAX_JUBJUB_SCALAR: bigint = JUBJUB_SCALAR_MODULUS - 1n;
+
 /**
  * The order of the secp256k1 base field.
  */

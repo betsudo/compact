@@ -201,6 +201,9 @@ pub(super) fn validate(
                 Conversion::FixedBytes(operation) => operation
                     .result_type(&value.ty)
                     .is_ok_and(|expected| expected == *ty),
+                Conversion::JubjubCast => {
+                    crate::pure_semantics::conversion::JubjubCast::check(&value.ty, ty).is_ok()
+                }
                 Conversion::Secp256k1BytesCast => {
                     crate::pure_semantics::conversion::Secp256k1BytesCast::check(&value.ty, ty)
                         .is_ok()

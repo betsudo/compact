@@ -24,7 +24,7 @@ use crate::ir::{Expr, Type};
 use proc_macro2::Span;
 
 use crate::pure_semantics::arithmetic::Secp256k1Unary;
-use crate::pure_semantics::conversion::{FixedBytesConversion, Secp256k1BytesCast};
+use crate::pure_semantics::conversion::{FixedBytesConversion, JubjubCast, Secp256k1BytesCast};
 use crate::pure_semantics::numeric::{
     ArithmeticKind, UnsignedArithmeticStrategy, checked_unsigned_arithmetic, checked_unsigned_cast,
 };
@@ -73,6 +73,20 @@ pub(crate) fn fixed_bytes_conversion_syntax(
             syn::parse_quote!(runtime::FixedBytes::<#length>::new(
                 (#value).into_array()[#start..#end].try_into().expect("checked Bytes slice length")
             ))
+        }
+    }
+}
+
+pub(crate) fn jubjub_cast_syntax(value: syn::Expr, cast: JubjubCast) -> syn::Expr {
+    use crate::pure_semantics::numeric::UnsignedMaximum;
+    match cast {
+        JubjubCast::ToScalar => syn::parse_quote!(runtime::JubjubScalar::from_field_reduced(#value)),
+        JubjubCast::ToField => syn::parse_quote!((#value).as_field()),
+        JubjubCast::ToUnsigned(UnsignedMaximum::Small(max)) => {
+            syn::parse_quote!((#value).try_to_uint::<#max>()?)
+        }
+        JubjubCast::ToUnsigned(UnsignedMaximum::Wide { high, low }) => {
+            syn::parse_quote!((#value).try_to_wide_uint::<#high, #low>()?)
         }
     }
 }

@@ -860,7 +860,7 @@ fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
-        Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
+        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins, observer)?;
             collect_named_types_observed(ty, structs, enums, observer, Some(origins))?;
         }
@@ -1514,6 +1514,7 @@ fn pure_conversion_expression(
     let source = match expr {
         Expr::FieldCast { value } => ConversionSource::FieldCast { value },
         Expr::FieldToBytes32 { value } => ConversionSource::FieldToBytes32 { value },
+        Expr::JubjubCast { value, ty } => ConversionSource::JubjubCast { value, ty },
         Expr::Secp256k1BytesCast { value, ty } => {
             ConversionSource::Secp256k1BytesCast { value, ty }
         }
@@ -1721,6 +1722,7 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
         | Expr::JubjubPointY { value }
         | Expr::StructField { value, .. }
         | Expr::Coerce { value, .. }
+        | Expr::JubjubCast { value, .. }
         | Expr::Secp256k1BytesCast { value, .. }
         | Expr::Secp256k1Neg { value }
         | Expr::FieldCast { value } => infallible_constructor_expr(value),
@@ -3534,6 +3536,7 @@ fn render_with_refusals(
                     | Type::Secp256k1Base
                     | Type::Secp256r1Base
                     | Type::Secp256k1Scalar
+                    | Type::JubjubScalar
                     | Type::Secp256r1Scalar
                     | Type::Secp256k1Point
                     | Type::Secp256r1Point

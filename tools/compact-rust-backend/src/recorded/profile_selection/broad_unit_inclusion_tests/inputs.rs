@@ -236,8 +236,22 @@ fn vector_to_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+const JUBJUB_CAST: &[u8] = include_bytes!("jubjub-scalar-cast-expression.json");
+
+fn jubjub_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "efd83beeb5ea8735b50220ac676f889c29b85e37b4c06dd1d8c4c1c81a94bd7d" {
+        return Err("unreviewed Jubjub scalar cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+fn before_jubjub_cast(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &jubjub_cast_manifest(JUBJUB_CAST)?)
+}
+
 fn before_vector_to_bytes(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &vector_to_bytes_manifest(VECTOR_TO_BYTES)?)
+    let current = before_jubjub_cast(path, current)?;
+    legacy_source(path, &current, &vector_to_bytes_manifest(VECTOR_TO_BYTES)?)
 }
 
 fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
@@ -810,5 +824,24 @@ fn vector_to_bytes_projection_preserves_exact_fixed_bytes_predecessors() {
         );
         assert!(before_vector_to_bytes(path, &previous).is_err());
         assert!(before_vector_to_bytes(path, &(current + "\n// unrelated drift\n")).is_err());
+    }
+}
+
+
+#[test]
+fn jubjub_cast_projection_preserves_exact_vector_to_bytes_predecessors() {
+    let projection = jubjub_cast_manifest(JUBJUB_CAST).unwrap();
+    let vector = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
+    assert_eq!(projection["predecessor_manifest"]["sha256"], digest(VECTOR_TO_BYTES));
+    assert!(jubjub_cast_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_jubjub_cast(path, &current).unwrap();
+        assert_eq!(digest(previous.as_bytes()), vector["owners"][path]["current_sha256"]);
+        assert!(before_jubjub_cast(path, &previous).is_err());
+        assert!(before_jubjub_cast(path, &(current + "\n// unrelated drift\n")).is_err());
     }
 }

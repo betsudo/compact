@@ -14,7 +14,13 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
-import { MAX_SECP256K1_BASE, MAX_SECP256K1_SCALAR, MAX_SECP256R1_BASE, MAX_SECP256R1_SCALAR } from './constants.js';
+import {
+  MAX_JUBJUB_SCALAR,
+  MAX_SECP256K1_BASE,
+  MAX_SECP256K1_SCALAR,
+  MAX_SECP256R1_BASE,
+  MAX_SECP256R1_SCALAR,
+} from './constants.js';
 import { CompactError } from './error.js';
 
 /**
@@ -256,6 +262,28 @@ export const CompactTypeField: CompactType<bigint> = {
     return ocrt.bigIntToValue(value);
   },
 };
+
+/** A Jubjub scalar has the same FAB alignment as a Compact Field. */
+export const CompactTypeJubjubScalar: CompactType<bigint> = {
+  alignment: CompactTypeField.alignment,
+  fromValue(value: ocrt.Value): bigint {
+    const atom = value[0];
+    if (atom === undefined || atom.length > 32 || (atom.length > 0 && atom[atom.length - 1] === 0)) {
+      throw new CompactError('expected a canonical JubjubScalar');
+    }
+    return checkedJubjubScalar(CompactTypeField.fromValue(value));
+  },
+  toValue(value: bigint): ocrt.Value {
+    return CompactTypeField.toValue(checkedJubjubScalar(value));
+  },
+};
+
+function checkedJubjubScalar(value: bigint): bigint {
+  if (typeof value !== 'bigint' || value < 0n || value > MAX_JUBJUB_SCALAR) {
+    throw new CompactError('expected a canonical JubjubScalar');
+  }
+  return value;
+}
 
 // Foreign field values are shifted by one in the field, then split into a
 // 192-bit low limb and a 64-bit high limb. Both FAB atoms are little-endian.

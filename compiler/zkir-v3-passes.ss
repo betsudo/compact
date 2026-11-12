@@ -197,9 +197,9 @@
                (let ([scalar (make-temp-id src 'scalar)])
                  (cons `(ec_mul_generator ,(car var-name*) ,scalar)
                    (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
-              [(secp256k1Mul secp256r1Mul)
+              [(ecMulJubjubScalar secp256k1Mul secp256r1Mul)
                (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
-              [(secp256k1MulGenerator secp256r1MulGenerator)
+              [(ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator)
                (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
@@ -297,6 +297,8 @@
                    (case (native-entry-function native-entry)
                      [("__compactRuntime.secp256k1Add") 'secp256k1Add]
                      [("__compactRuntime.secp256r1Add") 'secp256r1Add]
+                     [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
+                     [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
                      [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
                      [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
                      [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
@@ -344,6 +346,15 @@
                  (values (reverse encoded-alignment*) (reverse encoded-input*) instr*)
                  (let ([atom (car alignment*)])
                    (nanopass-case (Lflattened Alignment) atom
+                     [(anative ,opaque-type)
+                      (guard (string=? opaque-type "JubjubScalar"))
+                      (let ([field (make-temp-id src 'scalar-field)])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons `(afield) encoded-alignment*))
+                          (cons field encoded-input*)))]
                      [(anative ,opaque-type)
                       (guard (foreign-point-base opaque-type))
                       (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
@@ -418,6 +429,11 @@
                                  (with-output-language (Lflattened Alignment)
                                    (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
                                  (cons* 1 high low high low input*))))]
+                          [(string=? opaque-type "JubjubScalar")
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons `(afield) alignment*))
+                             (cons 0 input*))]
                           [(foreign-field-max opaque-type) =>
                            (lambda (maximum)
                              ;; Zero is represented by modulus minus one on the ledger.
@@ -802,6 +818,7 @@
 
       (define (foreign-zkir-type name)
         (case name
+          [("JubjubScalar") "Scalar<Jubjub>"]
           [("Secp256k1Base") "Base<Secp256k1>"]
           [("Secp256k1Scalar") "Scalar<Secp256k1>"]
           [("Secp256r1Base") "Base<Secp256r1>"]
@@ -893,6 +910,8 @@
                      `(from_bytes ,scalar-type ,scalar ,bytes)
                      `(to_bytes ,bytes 0)
                      instr*))]
+           [(string=? opaque-type "JubjubScalar")
+            (cons `(jubjub_scalar_from_native ,var-name 0) instr*)]
            [(foreign-zkir-type opaque-type) =>
             (lambda (zkir-type)
               (let ([bytes (make-temp-id default-src 'bytes)])
@@ -900,6 +919,12 @@
            [else
             (assert (string=? opaque-type "JubjubPoint"))
             (cons `(from_coordinates ,var-name 0 1) instr*)]))]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv))
+       (with-output-language (Lzkir Instruction)
+         (cons (case opaque-type
+                 [("Field") `(encode (,var-name) ,triv)]
+                 [("JubjubScalar") `(jubjub_scalar_from_native ,var-name ,triv)])
+           instr*))]
       [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,triv))
        (guard (string=? opaque-type "Bytes<32>"))
        (with-output-language (Lzkir Instruction)

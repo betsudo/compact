@@ -50,6 +50,7 @@ pub(super) fn equivalent(
                 (Type::Unit, Type::Unit)
                 | (Type::Boolean, Type::Boolean)
                 | (Type::Field, Type::Field)
+                | (Type::JubjubScalar, Type::JubjubScalar)
                 | (Type::JubjubPoint, Type::JubjubPoint)
                 | (Type::Secp256k1Base, Type::Secp256k1Base)
                 | (Type::Secp256k1Scalar, Type::Secp256k1Scalar)
@@ -149,6 +150,7 @@ pub(super) fn equivalent(
                     | Type::Secp256k1Base
                     | Type::Secp256k1Scalar
                     | Type::Secp256r1Base
+                    | Type::JubjubScalar
                     | Type::Secp256r1Scalar
                     | Type::Secp256k1Point
                     | Type::Secp256r1Point

@@ -20,6 +20,7 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
         Type::Unit => s.unit("unit"),
         Type::Boolean => s.unit("boolean"),
         Type::Field => s.unit("field"),
+        Type::JubjubScalar => s.unit("jubjub_scalar"),
         Type::JubjubPoint => s.unit("jubjub_point"),
         Type::Secp256k1Base => s.unit("secp256k1_base"),
         Type::Secp256k1Scalar => s.unit("secp256k1_scalar"),

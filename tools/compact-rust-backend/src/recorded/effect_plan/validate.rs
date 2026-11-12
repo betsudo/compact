@@ -109,7 +109,7 @@ pub(super) fn surface_type(ty: &Type) -> bool {
         || matches!(
             ty,
             Type::JubjubPoint | Type::Secp256k1Base | Type::Secp256k1Scalar | Type::Secp256k1Point
-                | Type::Secp256r1Base | Type::Secp256r1Scalar | Type::Secp256r1Point
+                | Type::JubjubScalar | Type::Secp256r1Base | Type::Secp256r1Scalar | Type::Secp256r1Point
         )
         || match ty {
             Type::Bytes { length } => {

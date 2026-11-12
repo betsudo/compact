@@ -288,6 +288,7 @@ fn recordable_cell_type(ty: &Type) -> bool {
         | Type::Secp256k1Base
         | Type::Secp256r1Base
         | Type::Secp256k1Scalar
+        | Type::JubjubScalar
         | Type::Secp256r1Scalar
         | Type::Secp256k1Point
         | Type::Secp256r1Point

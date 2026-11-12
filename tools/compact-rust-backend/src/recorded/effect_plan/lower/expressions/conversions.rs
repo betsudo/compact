@@ -15,7 +15,7 @@
 
 //! Original conversions bodies, without new checks or traversal.
 use super::*;
-use crate::pure_semantics::conversion::{FixedBytesConversion, Secp256k1BytesCast};
+use crate::pure_semantics::conversion::{FixedBytesConversion, JubjubCast, Secp256k1BytesCast};
 
 impl Lowerer<'_> {
     pub(super) fn conversion_operation(
@@ -46,6 +46,18 @@ impl Lowerer<'_> {
                         kind: Conversion::FixedBytes(operation),
                     },
                     ty,
+                )
+            }
+            Expr::JubjubCast { value, ty } => {
+                let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
+                JubjubCast::check(&value.ty, ty)
+                    .map_err(|error| invalid(path, error.to_string()))?;
+                (
+                    Operation::Convert {
+                        value,
+                        kind: Conversion::JubjubCast,
+                    },
+                    ty.clone(),
                 )
             }
             Expr::Secp256k1BytesCast { value, ty } => {

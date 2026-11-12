@@ -72,7 +72,7 @@
       [else #f]))
 
   (define (foreign-native-type? name)
-    (and (or (foreign-point-base name) (foreign-field-max name)) #t))
+    (and (or (string=? name "JubjubScalar") (foreign-point-base name) (foreign-field-max name)) #t))
 
   (define pending-conditions (make-parameter '()))
 

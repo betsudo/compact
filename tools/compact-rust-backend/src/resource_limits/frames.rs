@@ -121,6 +121,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToVector { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. } => 12,
@@ -233,6 +234,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToVector { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
@@ -290,6 +292,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToVector { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
@@ -367,6 +370,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToVector { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }

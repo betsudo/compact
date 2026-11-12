@@ -30,7 +30,7 @@ use crate::native_representation;
 use crate::pure_semantics::arithmetic::{
     Secp256k1Unary, check_field_arithmetic_operand, check_field_arithmetic_pair,
 };
-use crate::pure_semantics::conversion::{FixedBytesConversion, Secp256k1BytesCast};
+use crate::pure_semantics::conversion::{FixedBytesConversion, JubjubCast, Secp256k1BytesCast};
 use crate::pure_semantics::jubjub::Curve;
 use crate::source_diagnostics::{Owner, RefusalSite};
 use crate::value_lowering::{secp256k1_bytes_cast_syntax, secp256k1_unary_syntax};
@@ -551,6 +551,7 @@ fn render_operation_expression(
         | Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::BytesSlice { .. }
+        | Expr::JubjubCast { .. }
         | Expr::Secp256k1BytesCast { .. }
         | Expr::UnsignedCast { .. } => render_conversion_operation(
             value,
@@ -1499,6 +1500,22 @@ fn render_conversion_operation(
             Ok((
                 crate::value_lowering::fixed_bytes_conversion_syntax(rendered, operation),
                 ty,
+                effect,
+            ))
+        }
+        Expr::JubjubCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let cast = JubjubCast::check(&actual, ty)?;
+            Ok((
+                crate::value_lowering::jubjub_cast_syntax(rendered, cast),
+                ty.clone(),
                 effect,
             ))
         }

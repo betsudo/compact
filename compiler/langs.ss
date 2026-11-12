@@ -715,6 +715,7 @@
       (let* src ([local* expr*] ...) expr)    => (let* ([bracket local* 0 expr*] 0 ...) #f expr)
       (assert src expr mesg)                  => (assert expr mesg)
       (secp256k1-arithmetic src arithmetic-op type expr1 expr2) => (secp256k1-arithmetic arithmetic-op type expr1 expr2)
+      (jubjub-cast src type expr)             => (jubjub-cast type expr)
       (secp256k1-bytes-cast src type expr)    => (secp256k1-bytes-cast type expr)
       (field->bytes src len expr)             => (field->bytes len expr)
       (cast-from-bytes src type len expr)     => (cast-from-bytes type len #f expr)
@@ -1037,6 +1038,7 @@
       (contract-call src elt-name (triv type) triv* ...) =>
         (contract-call elt-name 4 (triv 0 type) #f triv* ...)
       (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
+      (jubjub-cast src type triv)            => (jubjub-cast type triv)
       (secp256k1-bytes-cast src type triv)   => (secp256k1-bytes-cast type triv)
       (field->bytes src len triv)            => (field->bytes len triv)
       (bytes->field src len triv)            => (bytes->field len triv)
@@ -1122,6 +1124,7 @@
          (public-ledger src ledger-field-name (maybe sugar) (path-elt* ...) src^ adt-op triv* ...)
          (contract-call src elt-name (triv type) triv* ...)
          (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
+         (jubjub-cast src type triv)
          (secp256k1-bytes-cast src type triv)
          (field->bytes src len triv)
          (bytes->field src len triv)
@@ -1143,6 +1146,7 @@
     (Multiple (multiple)
       (+ (call src function-name triv* ...)      => (call function-name #f triv* ...)
          (default opaque-type)
+         (jubjub-cast src opaque-type triv)
          (secp256k1-bytes-cast src opaque-type triv* ...)
          (field->bytes src len triv)             => (field->bytes len #f triv)
          (bytes->vector triv)                    => (bytes->vector #f triv) ; triv holds one field's worth of bytes

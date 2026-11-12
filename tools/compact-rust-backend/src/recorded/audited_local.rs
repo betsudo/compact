@@ -129,6 +129,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::SetIsEmpty { .. }
         | Expr::MapSize { .. }
         | Expr::MapIsEmpty { .. }
+        | Expr::JubjubCast { .. }
         | Expr::Secp256k1BytesCast { .. }
         | Expr::PersistentCommit { .. } => false,
     }

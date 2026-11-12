@@ -92,6 +92,9 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
                     .expect("dispatcher selected a fixed bytes conversion");
             Source::Conversion(ConversionSource::FixedBytes { value, operation })
         }
+        Expr::JubjubCast { value, ty } => {
+            Source::Conversion(ConversionSource::JubjubCast { value, ty })
+        }
         Expr::Secp256k1BytesCast { value, ty } => {
             Source::Conversion(ConversionSource::Secp256k1BytesCast { value, ty })
         }

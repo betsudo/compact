@@ -282,6 +282,15 @@ alternate recovered key, high-s signatures, wrapped nonce coordinates
 and refusal of a recovered identity. Applications that require a
 specific signer must compare the recovered key to their trusted key.
 
+The [Jubjub scalar fixtures](../../../test-contracts/stdlib/jubjub/scalar)
+preserve the upstream Uint cast and the Boolean and enum refusals. Generated
+Rust takes a checked `JubjubScalar`. Generated TypeScript uses bigint and
+checks the scalar range. Both targets preserve the one-field ledger encoding.
+Explicit Field and Uint casts reduce modulo the scalar order, and casting a
+scalar to Uint checks the target bound. The local qualification runs
+the ledger fixture through typed cell access, recorded replay and
+separate default-strict transactions.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

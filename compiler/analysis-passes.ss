@@ -1191,7 +1191,7 @@
       [(topaque ,src ,opaque-type)
        (when (and (foreign-native-type? opaque-type) (not (stdlib-src? src)))
          (source-errorf src "~a is a built-in foreign ~a type; import CompactStandardLibrary"
-                        opaque-type (if (foreign-field-max opaque-type) "field" "point")))
+                        opaque-type (if (or (string=? opaque-type "JubjubScalar") (foreign-field-max opaque-type)) "field" "point")))
        `(topaque ,src ,opaque-type)]
       [(tunsigned ,src ,[Type-Size->nat : tsize p 1 -> * nat])
        (unless (<= 1 nat (unsigned-bits))
@@ -1605,11 +1605,11 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point")
+                      [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point")
                        `(topaque ,src ,type-name)]
                       [("Opaque")
                        (let ([name (get-assoc "tsType" alist)])
-                         (when (foreign-field-max name)
+                         (when (or (string=? name "JubjubScalar") (foreign-field-max name))
                            (malformed "a built-in foreign field requires its own type-name"))
                          (when (foreign-point-base name)
                            (malformed "a built-in foreign point requires its own type-name"))
@@ -3050,6 +3050,9 @@
              (T type
                 [(tfield ,src1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type^)
+                     (guard (string=? opaque-type^ "JubjubScalar"))
+                     `(jubjub-cast ,src ,type ,expr)]
                     [(tbytes ,src2 ,len2)
                      (guard (not (= len2 0)))
                      `(cast-from-bytes ,src ,type ,len2 ,expr)]
@@ -3059,6 +3062,13 @@
                      `(if ,src ,expr
                           (safe-cast ,src ,type (tunsigned ,src 1) (quote ,src 1))
                           (safe-cast ,src ,type (tunsigned ,src 0) (quote ,src 0)))])]
+                [(topaque ,src1 ,opaque-type)
+                 (guard (string=? opaque-type "JubjubScalar"))
+                 (T type^
+                    [(tfield ,src2) `(jubjub-cast ,src ,type ,expr)]
+                    [(tunsigned ,src2 ,nat)
+                     `(jubjub-cast ,src ,type
+                        (safe-cast ,src (tfield ,src2) ,type^ ,expr))])]
                 [(topaque ,src1 ,opaque-type)
                  (guard (foreign-field-max opaque-type))
                  (T type^
@@ -3102,6 +3112,9 @@
                        `(bytes->vector ,src ,len1 ,expr))])]
                 [(tunsigned ,src1 ,nat1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type^)
+                     (guard (string=? opaque-type^ "JubjubScalar"))
+                     `(downcast-unsigned ,src #f ,nat1 (jubjub-cast ,src (tfield ,src2) ,expr))]
                     [(tfield ,src2)
                      `(downcast-unsigned ,src #f ,nat1 ,expr)]
                     [(tunsigned ,src2 ,nat2)
@@ -4083,6 +4096,17 @@
          [else (source-errorf src "expected Bytes<~d>, got ~a for cast-from-bytes"
                               len 
                               (format-type type^))])
+       type]
+      [(jubjub-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Lnodca Type) (de-alias type)
+           [(tfield ,src) 'field]
+           [(topaque ,src ,opaque-type) (and (string=? opaque-type "JubjubScalar") 'scalar)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'field) (eq? to 'scalar))
+                     (and (eq? from 'scalar) (eq? to 'field)))
+           (source-errorf src "invalid JubjubScalar cast")))
        type]
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
@@ -5570,6 +5594,7 @@
       [(cast-from-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-to-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-from-bytes ,src ,type ,len ,[* abs]) abs]
+      [(jubjub-cast ,src ,type ,[* abs]) abs]
       [(secp256k1-bytes-cast ,src ,type ,[* abs]) abs]
       [(field->bytes ,src ,len ,[* abs]) abs]
       [(bytes->vector ,src ,len ,[* abs]) (Abs-single (Abs-atomic (abs->witnesses abs)))]

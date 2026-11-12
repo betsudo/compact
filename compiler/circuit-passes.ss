@@ -916,6 +916,17 @@
                     (sametype? type2 type))
          (source-errorf src "invalid operands for foreign field arithmetic"))
        type]
+      [(jubjub-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Linlined Type) type
+           [(tfield ,src) 'field]
+           [(topaque ,src ,opaque-type) (and (string=? opaque-type "JubjubScalar") 'scalar)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'field) (eq? to 'scalar))
+                     (and (eq? from 'scalar) (eq? to 'field)))
+           (source-errorf src "invalid JubjubScalar cast")))
+       type]
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
          (nanopass-case (Linlined Type) type
@@ -1527,6 +1538,8 @@
       [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[expr1 ctv1] ,[expr2 ctv2])
        ;; A native numeric literal cannot represent a foreign field zero.
        (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (CTV-unknown no-var-name))]
+      [(jubjub-cast ,src ,[type] ,[expr ctv])
+       (values `(jubjub-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
       [(secp256k1-bytes-cast ,src ,[type] ,[expr ctv])
        ;; Keep the field kind attached to the conversion even for constant bytes.
        (values `(secp256k1-bytes-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
@@ -1758,6 +1771,8 @@
          idset)]
       [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Value : expr1 idset1] ,[Value : expr2 idset2])
        (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (idset-union idset1 idset2))]
+      [(jubjub-cast ,src ,type ,[Value : expr idset])
+       (values `(jubjub-cast ,src ,type ,expr) idset)]
       [(secp256k1-bytes-cast ,src ,type ,[Value : expr idset])
        (values `(secp256k1-bytes-cast ,src ,type ,expr) idset)]
       [(field->bytes ,src ,len ,[Value : expr idset])
@@ -1856,6 +1871,7 @@
          (idset-union-all (cons idset idset*)))]
       [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Effect : expr1 idset1] ,[Effect : expr2 idset2])
        (values (make-seq #t src (list expr1) expr2) (idset-union idset1 idset2))]
+      [(jubjub-cast ,src ,type ,expr) (Effect expr)]
       [(secp256k1-bytes-cast ,src ,type ,expr) (Effect expr)]
       [(field->bytes ,src ,len ,expr)
        (if (> len (field-bytes))
@@ -2157,6 +2173,11 @@
              (lambda (triv2)
                (k (with-output-language (Lcircuit Rhs)
                     `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,triv1 ,triv2)))))))]
+      [(jubjub-cast ,src ,[type] ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (k (with-output-language (Lcircuit Rhs)
+                `(jubjub-cast ,src ,type ,triv)))))]
       [(secp256k1-bytes-cast ,src ,[type] ,expr)
        (Triv expr test
          (lambda (triv)
@@ -2574,6 +2595,15 @@
           (with-output-language (Lflattened Statement)
             (list `(= ,test ,var-name (secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2))))]
          [else (assert cannot-happen)])]
+      [(jubjub-cast ,src ,type ,[Single-Triv : triv])
+       (unless (feature-zkir-v3)
+         (source-errorf src "JubjubScalar requires ZKIR v3; recompile with --feature-zkir-v3"))
+       (hashtable-set! var-ht var-name (Wump-single var-name))
+       (let ([target (nanopass-case (Lcircuit Type) type
+                       [(tfield ,src) "Field"]
+                       [(topaque ,src ,opaque-type) opaque-type])])
+         (with-output-language (Lflattened Statement)
+           (list `(= ,test (,var-name) (jubjub-cast ,src ,target ,triv)))))]
       [(secp256k1-bytes-cast ,src ,type ,[* wump])
        (unless (feature-zkir-v3)
          (source-errorf src "secp256k1 byte casts require ZKIR v3; recompile with --feature-zkir-v3"))
@@ -2987,6 +3017,9 @@
       [(default ,opaque-type)
        (with-output-language (Lflattened Statement)
          (cons `(= ,test (,var-name* ...) (default ,opaque-type)) rstmt*))]
+      [(jubjub-cast ,src ,opaque-type ,[FWD-Triv : triv])
+       (with-output-language (Lflattened Statement)
+         (cons `(= ,test (,var-name* ...) (jubjub-cast ,src ,opaque-type ,triv)) rstmt*))]
       [(secp256k1-bytes-cast ,src ,opaque-type ,[FWD-Triv : triv*] ...)
        (with-output-language (Lflattened Statement)
          (cons `(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)) rstmt*))]
@@ -3278,6 +3311,11 @@
        stmt*]
       [(= ,[BWD-Triv : test] (,var-name* ...) (default ,opaque-type))
        (cons `(= ,test (,var-name* ...) (default ,opaque-type)) stmt*)]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv))
+       (guard (not (hashtable-contains? ref-ht var-name)))
+       stmt*]
+      [(= ,[BWD-Triv : test] (,var-name) (jubjub-cast ,src ,opaque-type ,[BWD-Triv : triv]))
+       (cons `(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv)) stmt*)]
       [(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...))
        (guard (not (ormap (lambda (var-name) (hashtable-contains? ref-ht var-name)) var-name*)))
        stmt*]
@@ -3771,6 +3809,21 @@
                (assert (= (length var-name*) 2))
                (set-idtype! (car var-name*) (Idtype-Base `(tfield)))
                (set-idtype! (cadr var-name*) (Idtype-Base `(tfield))))))]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,[* type]))
+       (verify-test src test)
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name
+           (Idtype-Base
+             (case opaque-type
+               [("Field")
+                (unless (nanopass-case (Lflattened Primitive-Type) type
+                          [(topaque ,opaque-type^) (string=? opaque-type^ "JubjubScalar")]
+                          [else #f])
+                  (source-errorf src "expected JubjubScalar for cast to Field"))
+                `(tfield)]
+               [("JubjubScalar")
+                (check-tfield "argument to JubjubScalar cast" type)
+                `(topaque ,opaque-type)]))))]
       [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,[* type]))
        (guard (string=? opaque-type "Bytes<32>"))
        (verify-test src test)

@@ -319,6 +319,7 @@
            "assert"
            "convertBytesToSecp256k1Field"
            "convertBytesToSecp256r1Field"
+           "convertNumericToJubjubScalar"
            "convertFieldToBytes"
            "convertBytesToField"
            "convertBytesToUint"
@@ -1277,6 +1278,7 @@
                      [("string") (format "__compactRuntime.CompactTypeOpaqueString")]
                      [("Uint8Array") (format "__compactRuntime.CompactTypeOpaqueUint8Array")]
                      [("JubjubPoint") (format "__compactRuntime.CompactTypeJubjubPoint")]
+                     [("JubjubScalar") "__compactRuntime.CompactTypeJubjubScalar"]
                      [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
                      [("Secp256r1Point") "__compactRuntime.CompactTypeSecp256r1Point"]
                      [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
@@ -1371,6 +1373,7 @@
                      (format "__compactRuntime.isValidSecp256r1Point(~a)" var)]
                     [(topaque ,src ,opaque-type)
                      (let ([max (case opaque-type
+                                  [("JubjubScalar") "MAX_JUBJUB_SCALAR"]
                                   [("Secp256k1Base") "MAX_SECP256K1_BASE"]
                                   [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
                                   [("Secp256r1Base") "MAX_SECP256R1_BASE"]
@@ -2101,10 +2104,12 @@
                     2 (format "const ~a = " result)
                     (make-Qconcat
                       (let ([runtime-name (native-entry-function native-entry)])
-                        (if (and (feature-zkir-v3)
-                                 (string=? runtime-name "__compactRuntime.keccak256"))
-                            "__compactRuntime.keccak256Aligned"
-                            runtime-name))
+                        (case runtime-name
+                          [("__compactRuntime.ecMulJubjubScalar") "__compactRuntime.ecMul"]
+                          [("__compactRuntime.ecMulGeneratorJubjubScalar") "__compactRuntime.ecMulGenerator"]
+                          [("__compactRuntime.keccak256")
+                           (if (feature-zkir-v3) "__compactRuntime.keccak256Aligned" runtime-name)]
+                          [else runtime-name]))
                       "("
                       (apply (make-Qsep ",")
                              (fold-right
@@ -2852,7 +2857,7 @@
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
                   [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
-                  [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "0n"]
+                  [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                [(tvector ,src ,len ,type)
@@ -3171,6 +3176,13 @@
              expr
              (format-javascript-string mesg))
            ")"))]
+      [(jubjub-cast ,src ,type ,expr)
+       (nanopass-case (Ltypescript Type) type
+         [(tfield ,src) (Expr expr level outer-pure?)]
+         [(topaque ,src ,opaque-type)
+          (parenthesize level (precedence call)
+            (make-Qconcat (compact-stdlib "convertNumericToJubjubScalar") "("
+              (Expr expr (precedence add1 comma) outer-pure?) ")"))])]
       [(secp256k1-bytes-cast ,src ,type ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
        (parenthesize level (precedence call)
          (nanopass-case (Ltypescript Type) (de-alias type)
@@ -3393,7 +3405,7 @@
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
          [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
          [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
-         [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "bigint"]
+         [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
       [(tvector ,src ,len ,[Type : type -> * type])

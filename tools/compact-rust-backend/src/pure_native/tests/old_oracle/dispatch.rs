@@ -85,6 +85,7 @@ fn expression_with_calls(
         Expr::FieldToBytes32 { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::VectorToBytes { .. } => Err(RenderError::EffectfulExpression),
         Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),
+        Expr::JubjubCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1Neg { .. }
         | Expr::Secp256k1Inv { .. }

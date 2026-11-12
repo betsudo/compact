@@ -93,6 +93,7 @@ impl Lowerer<'_> {
             Expr::VectorToBytes { .. }
             | Expr::BytesToVector { .. }
             | Expr::BytesSlice { .. }
+            | Expr::JubjubCast { .. }
             | Expr::Secp256k1BytesCast { .. } => Self::conversion_operation,
             Expr::PersistentHash { .. } | Expr::Keccak256 { .. } | Expr::Sha512 { .. } => {
                 Self::persistent_operation

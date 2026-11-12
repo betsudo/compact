@@ -18108,13 +18108,18 @@ groups than for single tests.
                                     (topaque "JubjubPoint"))]
                            [%b.18 (tfield)])
              (talias #t JubjubPoint (topaque "JubjubPoint")))
-        (circuit %foo.19 ([%c.20 (talias #t JubjubPoint
+        (native %ecMul.19 ([%a.20 (talias #t JubjubPoint
+                                    (topaque "JubjubPoint"))]
+                           [%b.21 (talias #f JubjubScalar
+                                    (topaque "JubjubScalar"))])
+             (talias #t JubjubPoint (topaque "JubjubPoint")))
+        (circuit %foo.22 ([%c.23 (talias #t JubjubPoint
                                    (topaque "JubjubPoint"))])
              (talias #t JubjubPoint (topaque "JubjubPoint"))
           (call %ecAdd.13
-            %c.20
+            %c.23
             (call %ecMul.16
-              %c.20
+              %c.23
               (safe-cast (tfield) (tunsigned 3) 3))))))
     )
 
@@ -59923,6 +59928,22 @@ groups than for single tests.
 
 (parameterize ([feature-zkir-v3 #t])
 (run-tests print-zkir-v3
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger stored: JubjubScalar;"
+      "export circuit store(value: JubjubScalar): Field {"
+      "  stored = disclose(value);"
+      "  return stored as Field;"
+      "}"
+      "export circuit reset(): JubjubScalar {"
+      "  stored = default<JubjubScalar>;"
+      "  return stored;"
+      "}"
+      )
+    (succeeds)
+    )
+
   (test
     "examples/tiny.compact"
     (output-file "compiler/testdir/zkir/public_key.zkir" #f)

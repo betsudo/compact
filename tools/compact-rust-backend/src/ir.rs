@@ -589,6 +589,7 @@ pub enum Type {
     Boolean,
     Field,
     JubjubPoint,
+    JubjubScalar,
     Secp256k1Base,
     Secp256r1Base,
     Secp256k1Scalar,
@@ -699,6 +700,10 @@ pub enum Expr {
         value: Box<Expr>,
         start: usize,
         length: usize,
+    },
+    JubjubCast {
+        value: Box<Expr>,
+        ty: Type,
     },
     Secp256k1BytesCast {
         value: Box<Expr>,

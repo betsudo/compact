@@ -26,6 +26,7 @@ mod foreign_fields;
 #[cfg(feature = "experimental-functional")]
 pub mod functional;
 mod hash_input;
+mod jubjub_scalar;
 pub mod ledger;
 mod natives;
 mod opaque;
@@ -44,6 +45,7 @@ pub mod transaction;
 
 pub use foreign_fields::{Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar};
 pub use hash_input::{ExactHashInput, HashInputValue, exact_hash_input, exact_private_output};
+pub use jubjub_scalar::JubjubScalar;
 pub use midnight_compact_runtime_macros::{
     CompactCellValue, CompactEnum, CompactHashInput, CompactMerklePath, CompactMerklePathEntry,
     CompactMerkleTreeDigest, CompactStructRepr, compact_witness_bridge,

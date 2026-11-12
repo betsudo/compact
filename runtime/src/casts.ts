@@ -13,8 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { MAX_FIELD } from './constants.js';
+import { JUBJUB_SCALAR_MODULUS, MAX_FIELD } from './constants.js';
 import { CompactError } from './error.js';
+
+/** Convert a nonnegative Compact Field or Uint into the Jubjub scalar field. */
+export function convertNumericToJubjubScalar(value: bigint): bigint {
+  return value % JUBJUB_SCALAR_MODULUS;
+}
 
 /**
  * Compiler internal for typecasts

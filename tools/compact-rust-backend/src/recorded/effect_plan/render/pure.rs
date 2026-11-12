@@ -164,6 +164,10 @@ pub(in super::super) fn expression(
             Conversion::FixedBytes(operation) => Ok(
                 crate::value_lowering::fixed_bytes_conversion_syntax(value(input), *operation),
             ),
+            Conversion::JubjubCast => {
+                crate::pure_semantics::conversion::JubjubCast::check(&input.ty, &binding.value.ty)
+                    .map(|cast| crate::value_lowering::jubjub_cast_syntax(value(input), cast))
+            }
             Conversion::Secp256k1BytesCast => {
                 crate::pure_semantics::conversion::Secp256k1BytesCast::check(
                     &input.ty,

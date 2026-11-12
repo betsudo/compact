@@ -20,7 +20,7 @@ use crate::{
     pure_semantics::{conversion::ConversionFacts, sink::ConversionSink},
     value_lowering::{
         coercion, field_to_bytes_32_syntax, fixed_bytes_conversion_syntax,
-        secp256k1_bytes_cast_syntax,
+        jubjub_cast_syntax, secp256k1_bytes_cast_syntax,
     },
 };
 
@@ -32,6 +32,7 @@ impl ConversionSink for NativeLeafSink {
             }
             ConversionFacts::UintToField { wide: true } => syn::parse_quote!((#child).as_field()),
             ConversionFacts::FieldToBytes32 => field_to_bytes_32_syntax(child),
+            ConversionFacts::JubjubCast(cast) => jubjub_cast_syntax(child, cast),
             ConversionFacts::Secp256k1BytesCast(cast) => secp256k1_bytes_cast_syntax(child, cast),
             ConversionFacts::FixedBytes(operation) => {
                 fixed_bytes_conversion_syntax(child, operation)

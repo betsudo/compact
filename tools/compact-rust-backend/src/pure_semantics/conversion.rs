@@ -33,6 +33,10 @@ pub(crate) enum ConversionSource<'a> {
     FieldToBytes32 {
         value: &'a Expr,
     },
+    JubjubCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
     Secp256k1BytesCast {
         value: &'a Expr,
         ty: &'a Type,
@@ -54,6 +58,7 @@ pub(crate) enum ConversionSource<'a> {
 pub(crate) enum ConversionFacts {
     UintToField { wide: bool },
     FieldToBytes32,
+    JubjubCast(JubjubCast),
     Secp256k1BytesCast(Secp256k1BytesCast),
     FixedBytes(FixedBytesConversion),
     Coercion(CoercionPlan),
@@ -140,6 +145,32 @@ impl FixedBytesConversion {
     }
 }
 
+pub(crate) enum JubjubCast {
+    ToScalar,
+    ToField,
+    ToUnsigned(UnsignedMaximum),
+}
+
+impl JubjubCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Field, Type::JubjubScalar) => Ok(Self::ToScalar),
+            (Type::JubjubScalar, Type::Field) => Ok(Self::ToField),
+            (Type::JubjubScalar, Type::Unsigned { max }) => {
+                Ok(Self::ToUnsigned(unsigned_maximum(max)?))
+            }
+            _ => Err(RenderError::TypeMismatch {
+                expected: if *target == Type::JubjubScalar {
+                    Type::Field
+                } else {
+                    Type::JubjubScalar
+                },
+                actual: source.clone(),
+            }),
+        }
+    }
+}
+
 pub(crate) enum Secp256k1BytesCast {
     ToBase,
     ToScalar,
@@ -203,6 +234,11 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
                 child.output,
                 Type::Bytes { length: 32 },
             )
+        }
+        ConversionSource::JubjubCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = JubjubCast::check(&child.ty, ty)?;
+            (ConversionFacts::JubjubCast(cast), child.output, ty.clone())
         }
         ConversionSource::Secp256k1BytesCast { value, ty } => {
             let child = children.visit(value, sink)?;

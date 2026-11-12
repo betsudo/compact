@@ -20,7 +20,7 @@ use crate::primitives::checked_jubjub_coordinates;
 use crate::{BinaryHashRepr, Field, FieldRepr, FixedBytes, JubjubPoint};
 use midnight_base_crypto::fab::{Aligned, AlignedValue, AlignmentAtom, AlignmentSegment, Value};
 use midnight_base_crypto::hash::{self as persistent, HashOutput, PersistentHashWriter};
-use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
+use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine};
 use midnight_transient_crypto::fab::ValueReprAlignedValue;
 use midnight_transient_crypto::hash;
 use sha2::Sha512;
@@ -156,8 +156,5 @@ pub fn ec_mul_generator(scalar: Field) -> Result<JubjubPoint, CompactError> {
 
 /// Reduce a native field value into the embedded scalar field.
 pub fn jubjub_scalar_from_native(value: Field) -> Field {
-    let mut wide = [0u8; 64];
-    wide[..32].copy_from_slice(&value.as_le_bytes());
-    let scalar = EmbeddedFr(embedded::Scalar::from_bytes_wide(&wide));
-    Field::from_le_bytes(&scalar.as_le_bytes()).expect("embedded scalar fits the native field")
+    crate::JubjubScalar::from_field_reduced(value).as_field()
 }
