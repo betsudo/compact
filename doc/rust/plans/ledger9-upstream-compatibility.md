@@ -92,12 +92,17 @@ declared slow lane.
 ### Cryptography and cross-contract sequencing
 
 The pinned ZKIR tool provides Keccak, SHA-512 and the foreign-curve
-instructions. Current Keccak runtime encoding collapses trailing zero bytes
-before hashing. The upstream fixed-width encoding distinguishes those inputs.
-Qualify the new encoder against the nine upstream Keccak fixtures and the
-ZKIR interpreter. Keep the historical encoding identifiable in archived
-fixtures and checked programs. Admit the new encoding to generated code
-alongside independently regenerated current fixtures and proofs.
+instructions. ZKIR v3 generation now selects upstream fixed-width Keccak
+encoding in both Rust and TypeScript. The v2 profile and archived
+fixtures retain normalized FAB atoms.
+
+Seven trailing-zero inputs passed through freshly generated Rust and
+TypeScript. Native and recorded Rust agreed on the stateful digest.
+The ZKIR interpreter accepted the generated TypeScript preimage and
+refused a public write using the historical digest. The original upstream
+sources remain pinned. Local probes remove their language 0.25.0 pragma
+while the compiler is at 0.23.105. The remaining upstream families,
+intact language admission and the k=14 stateful proof lane are open.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
