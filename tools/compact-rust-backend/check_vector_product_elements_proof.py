@@ -26,10 +26,15 @@ import resolve_ledger_test_static as ledger_static
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
 ROOT = main_gate.ROOT
-SELECTED = [("helper", "run"), ("proof_candidate", "run_field")]
-ALL_MODELS = [*SELECTED, ("proof_candidate", "run")]
-CASES = [("helper", "run", 0, [[[3,5],31],[[4,6],41]], [[[3,5],31],[[4,6],41]], 1),
-         ("proof_candidate", "run_field", 0, [[[3,5],31],[[4,6],41]], [[[3,5],31],[[4,6],41]], 2)]
+SELECTED = [("helper", "run"), ("proof_candidate", "run_field"),
+            ("proof_candidate", "run"), ("checked_helper", "run")]
+SOURCES = ("helper", "proof_candidate", "checked_helper")
+INPUT = [[[3, 5], 31], [[4, 6], 41]]
+CASES = [("helper", "run", 0, INPUT, INPUT, 1),
+         ("proof_candidate", "run_field", 0, INPUT, INPUT, 2),
+         ("proof_candidate", "run", 0, INPUT, INPUT, 1),
+         ("proof_candidate", "run", 1, INPUT, INPUT[::-1], 3),
+         ("checked_helper", "run", 0, INPUT, INPUT[::-1], 1)]
 require, digest = main_gate.require, main_gate.digest
 
 
@@ -44,35 +49,47 @@ def depfile_prerequisites(raw, base=ROOT):
 
 
 def validate_summary(summary, generated):
-    require(summary["format"] == "compact-vector-product-elements-proof/v2" and summary["status"] == "passed"
+    require(summary["format"] == "compact-vector-product-elements-proof/v3" and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False,
             "invalid Vector product elements proof summary")
     require([(r["source"], r["circuit"], r["initial_seen"], r["input"], r["expected"], r["seen"]) for r in summary["calls"]] == CASES,
             "selected proof scenario roster differs")
-    require(summary["selected_source_exports_proved"] == list(map(list, SELECTED)) and summary["unproved_selected_source_exports"] == [["proof_candidate", "run"]],
+    require(summary["selected_source_exports_proved"] == list(map(list, SELECTED)) and summary["unproved_selected_source_exports"] == [],
             "selected/unproved selected source export coverage differs")
     require(summary["all_source_exports_deployed"] is False,
             "selected-call deployments must not claim full export deployment")
     for index, row in enumerate(summary["calls"]):
         source_root = generated / row["source"]
-        require(row["result_type"] == ["Vector<2,[Vector<2,Uint<16>>,Uint<32>]>", "Vector<2,[Vector<2,Field>,Field]>"][index],
-                "genuine result carrier differs")
+        expected_type = "Vector<2,[Vector<2,Field>,Field]>" if row["circuit"] == "run_field" else "Vector<2,[Vector<2,Uint<16>>,Uint<32>]>"
+        require(row["result_type"] == expected_type, "genuine result carrier differs")
+        require(row["guard"] is (True if row["source"] == "checked_helper" else None), "checked-helper guard differs")
         require(isinstance(row["expected"], list) and len(row["expected"]) == 2 and all(isinstance(pair, list) and len(pair) == 2 and isinstance(pair[0], list) and len(pair[0]) == 2 and all(type(x) is int for x in pair[0]) and type(pair[1]) is int for pair in row["expected"]) and type(row["witness_count"]) is int
                 and row["witness_count"] == 0, "witness count or result differs")
         for field, path in [("proof_bytes", f"vector-product-elements-{index}.proof"),
                             ("transaction_bytes", f"vector-product-elements-{index}-transaction.bin")]:
             require(type(row[field]) is int and row[field] > 0
                     and (source_root / path).stat().st_size == row[field], "missing or truncated proof/application artifact")
+        stem = f"vector-product-elements-{index}"
         require(row["standalone_proof"] == f"{row['source']}/vector-product-elements-{index}.proof"
                 and row["applied_transaction"] == f"{row['source']}/vector-product-elements-{index}-transaction.bin"
                 and row["transaction_proof_relationship"] == "independently proved"
+                and row["transaction_proof_version"] == 3 and row["positive_fee_dust_spends"] == 1
                 and row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists",
                 "proof/application identity or strictness differs")
         require(all(row[name] is True for name in ["corrupt_proof_rejected", "changed_binding_rejected",
-                    "changed_result_rejected", "changed_result_same_geometry", "wrong_verifier_rejected", "replay_unchanged"]),
+                    "changed_result_rejected", "changed_result_same_geometry", "wrong_verifier_rejected",
+                    "standalone_verified_separately", "replay_unchanged"]),
                 "proof/application control missing")
-        require((source_root / f"vector-product-elements-{index}.preimage").stat().st_size > 0
-                and (source_root / f"vector-product-elements-{index}-state.bin").stat().st_size > 0, "proof/state evidence missing")
+        require(all((source_root / f"{stem}{suffix}").stat().st_size > 0
+                    for suffix in (".preimage", ".inputs", "-state.bin", "-ledger-after.bin")),
+                "proof/state evidence missing")
+        transaction_proof = (source_root / f"{stem}-transaction.proof").read_bytes()
+        require(type(row["transaction_proof_bytes"]) is int
+                and len(transaction_proof) == row["transaction_proof_bytes"] > 0
+                and transaction_proof != (source_root / f"{stem}.proof").read_bytes(),
+                "transaction-bound proof is missing or equals the standalone proof")
+        require((source_root / f"{stem}-ledger-after.bin").read_bytes()
+                == (source_root / f"{stem}-ledger-replay.bin").read_bytes(), "replayed ledger bytes differ")
 
 
 def run(args):
@@ -86,7 +103,7 @@ def run(args):
     configuration_environment = dict(env)
     configuration = main_gate.reject_compiler_overrides(configuration_environment)
     output.mkdir(parents=True)
-    report = {"format": "compact-vector-product-elements-proof-gate/v2", "status": "incomplete", "commands": [],
+    report = {"format": "compact-vector-product-elements-proof-gate/v3", "status": "incomplete", "commands": [],
               "cargo_configuration_sha256": configuration, "scope": __doc__, "proof_execution": False, "full_integration_acceptance": "OPEN"}
     try:
         # This maintained gate admits the exact clean HEAD/compiler/Rust tools,
@@ -109,6 +126,7 @@ def run(args):
         generated = output / "protocol/generated"
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED"] = str(generated / "proof_candidate")
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED"] = str(generated / "helper")
+        env["COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED"] = str(generated / "checked_helper")
         report["generated_sdk"] = str(generated)
         report["generated_before"] = before = main_gate.inventory(generated)
         tracked_sources = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
@@ -117,7 +135,7 @@ def run(args):
         report["source_hashes"] = hashes(source_paths)
         report["generated_input_hashes"] = hashes([p for p in (output / "protocol/generated").rglob("*") if p.is_file()])
         report["bound_api_inputs"] = admitted["build_inputs_before_use"]
-        report["environment"] = {k: env.get(k) for k in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_BUILD_JOBS", "CARGO_TARGET_DIR", "COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED", "COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED", "MIDNIGHT_PP"]}
+        report["environment"] = {k: env.get(k) for k in ["RUSTUP_TOOLCHAIN", "RUSTC", "CARGO_INCREMENTAL", "CARGO_BUILD_JOBS", "CARGO_TARGET_DIR", "COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED", "COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED", "COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED", "MIDNIGHT_PP"]}
         # Carry every already-admitted compiler/source/API input through the
         # proof epoch, including original Compact examples, not just includes.
         for relative, sha in admitted["inputs"].items():
@@ -175,12 +193,14 @@ def run(args):
         report["dependency_source_hashes"] = hashes(dependencies)
         report["metadata_before_build"] = {"path": str(output / "build-metadata.json"), "sha256": digest(output / "build-metadata.json")}
         # No SDK path is needed by the default build. The opt-in build follows it.
-        selected_sdk = env.pop("COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED")
-        selected_helper = env.pop("COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED")
+        selected_sdks = {key: env.pop(key) for key in (
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED",
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED",
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED",
+        )}
         execute("default-runner-check", ["cargo", "check", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--no-default-features"])
         execute("all-features-runner-clippy-without-sdk", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"])
-        env["COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED"] = selected_sdk
-        env["COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED"] = selected_helper
+        env.update(selected_sdks)
         # Cargo fixture build scripts produce real include! inputs outside the
         # tracked tree. Prepare and pin those physical files before qualifying
         # the runner, rather than accepting newly discovered bytes afterward.
@@ -264,40 +284,51 @@ def run(args):
             raise ValueError("missing-prerequisite control accepted")
         report["missing_dependency_control"] = {"path": str(poisoned_path), "sha256": digest(poisoned_path),
                 "missing_path": str(missing), "before_keys_or_models": True}
-        helper_artifacts = [row for row in artifacts if row.get("reason") == "compiler-artifact"
-                            and row["target"]["name"] == "compact_rust_vector_product_elements_proof_helper"]
-        require(len(helper_artifacts) == 1, "ambiguous helper crate artifact")
-        helper_row = helper_artifacts[0]
-        helper_package = package_metadata[helper_row["package_id"]]
-        helper_manifest = Path(helper_package["manifest_path"]).resolve(strict=True)
-        helper_libs = [Path(p) for p in helper_row["filenames"] if p.endswith(".rlib")]
-        require(len(helper_libs) == 1 and helper_manifest == ROOT / "tools/compact-rust-proof-smoke/vector-product-elements-helper-sdk/Cargo.toml",
-                "helper SDK must compile at its own declared crate root")
-        helper_lib = helper_libs[0]
-        helper_snapshot = output / "bin/helper-sdk.rlib"
-        require(helper_lib.is_file() and not helper_snapshot.exists(), "helper library snapshot must be a new regular data artifact")
-        library_sha = digest(helper_lib)
-        shutil.copyfile(helper_lib, helper_snapshot)
-        require(digest(helper_snapshot) == library_sha == digest(helper_lib), "helper library changed during data snapshot")
-        helper_snapshot.chmod(0o444)
-        components["helper_sdk_rlib"] = {"source": str(helper_lib), "snapshot": str(helper_snapshot),
-                "sha256": library_sha, "size": helper_snapshot.stat().st_size, "kind": "rust-rlib-data"}
-        helper_depfile = helper_lib.parent / (helper_lib.stem.removeprefix("lib") + ".d")
-        helper_retained = output / "helper-sdk.d"
-        shutil.copyfile(helper_depfile, helper_retained)
-        helper_tracked = depfile_prerequisites(helper_retained.read_text(), ROOT)
-        helper_required = [helper_manifest.parent / "lib.rs", generated / "helper/contract/lib.rs",
-                           *sorted((generated / "helper/contract/checked-programs").glob("*.json"))]
-        require(all(str(p.resolve(strict=True)) in helper_tracked for p in helper_required), "helper crate omitted actual complete SDK inputs")
-        report["helper_sdk_artifact"] = {"package_id": helper_row["package_id"], "manifest": str(helper_manifest),
-            "crate_root": helper_row["target"]["src_path"], "artifact": components["helper_sdk_rlib"],
-            "depfile": str(helper_retained), "depfile_sha256": digest(helper_retained), "prerequisites": sorted(helper_tracked)}
-        tracked.update(helper_tracked)
+        report["companion_sdk_artifacts"] = {}
+        for source, companion in (("helper", "helper"), ("checked_helper", "checked")):
+            crate = f"compact_rust_vector_product_elements_proof_{companion}"
+            matches = [row for row in artifacts if row.get("reason") == "compiler-artifact"
+                       and row["target"]["name"] == crate]
+            require(len(matches) == 1, f"ambiguous {source} crate artifact")
+            row = matches[0]
+            package = package_metadata[row["package_id"]]
+            manifest = Path(package["manifest_path"]).resolve(strict=True)
+            libraries = [Path(path) for path in row["filenames"] if path.endswith(".rlib")]
+            expected_manifest = ROOT / f"tools/compact-rust-proof-smoke/vector-product-elements-{companion}-sdk/Cargo.toml"
+            require(len(libraries) == 1 and manifest == expected_manifest,
+                    f"{source} SDK must compile at its own declared crate root")
+            library = libraries[0]
+            snapshot_path = output / f"bin/{source}-sdk.rlib"
+            require(library.is_file() and not snapshot_path.exists(), "SDK library snapshot must be a new regular data artifact")
+            library_sha = digest(library)
+            shutil.copyfile(library, snapshot_path)
+            require(digest(snapshot_path) == library_sha == digest(library), "SDK library changed during data snapshot")
+            snapshot_path.chmod(0o444)
+            component = {"source": str(library), "snapshot": str(snapshot_path), "sha256": library_sha,
+                         "size": snapshot_path.stat().st_size, "kind": "rust-rlib-data"}
+            components[f"{source}_sdk_rlib"] = component
+            depfile = library.parent / (library.stem.removeprefix("lib") + ".d")
+            retained = output / f"{source}-sdk.d"
+            shutil.copyfile(depfile, retained)
+            prerequisites = depfile_prerequisites(retained.read_text(), ROOT)
+            required = [manifest.parent / "lib.rs", generated / source / "contract/lib.rs",
+                        *sorted((generated / source / "contract/checked-programs").glob("*.json"))]
+            require(all(str(path.resolve(strict=True)) in prerequisites for path in required),
+                    f"{source} crate omitted actual complete SDK inputs")
+            report["companion_sdk_artifacts"][source] = {
+                "package_id": row["package_id"], "manifest": str(manifest), "crate_root": row["target"]["src_path"],
+                "artifact": component, "depfile": str(retained), "depfile_sha256": digest(retained),
+                "prerequisites": sorted(prerequisites),
+            }
+            tracked.update(prerequisites)
         required = [main_gate.FIXTURES / "sources.json"]
-        for source in ["helper", "proof_candidate"]:
-            required.extend([generated / source / "contract/lib.rs", *sorted((generated / source / "contract/checked-programs").glob("*.json")),
-                main_gate.FIXTURES / f"goldens/{source}/source-ir.json", *sorted((main_gate.FIXTURES / f"goldens/{source}/checked-programs").glob("*.json"))])
-        require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual paired SDK/Program dependency")
+        for source in SOURCES:
+            goldens = main_gate.FIXTURES / "ledger9-goldens" / source
+            ir = goldens / "source-ir.json" if source == "checked_helper" else main_gate.FIXTURES / f"goldens/{source}/source-ir.json"
+            required.extend([generated / source / "contract/lib.rs",
+                             *sorted((generated / source / "contract/checked-programs").glob("*.json")),
+                             ir, goldens / "artifacts.json", *sorted((goldens / "checked-programs").glob("*.json"))])
+        require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual SDK/Program dependency")
         worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
                            if Path(path).is_relative_to(ROOT)}
         require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
@@ -311,23 +342,28 @@ def run(args):
                 worktree_inputs_pinned_before_build=worktree_inputs)
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-product-elements", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
-        for source in ["helper", "proof_candidate"]:
+        for source in SOURCES:
             for kind, message in [("changed-ir", f"vector-product-elements {source} complete IR bytes differ"),
                                   ("changed-program", f"vector-product-elements {source} complete Program bytes differ"),
-                                  ("missing-program", f"vector-product-elements {source} complete Program membership differs")]:
+                                  ("missing-program", f"vector-product-elements {source} complete Program membership differs"),
+                                  ("changed-zkir", "Ledger 9 artifact differs from the pinned fixture: zkir/run.zkir")]:
                 label = source + "-" + kind
                 negative = output / label
-                for member in ["helper", "proof_candidate"]:
+                for member in SOURCES:
                     shutil.copytree(generated / member / "contract/checked-programs", negative / member / "contract/checked-programs")
                     shutil.copyfile(generated / member / "contract/compact-rust-ir.json", negative / member / "contract/compact-rust-ir.json")
+                    if kind == "changed-zkir":
+                        shutil.copyfile(generated / member / "contract/lib.rs", negative / member / "contract/lib.rs")
+                        shutil.copytree(generated / member / "zkir", negative / member / "zkir")
                 folder = negative / source / "contract"
                 if kind == "changed-ir":
                     path = folder / "compact-rust-ir.json"
                     original = path.read_bytes()
-                    token = b'"name": "keep"'
+                    name = b"checked" if source == "checked_helper" else b"keep"
+                    token = b'"name": "' + name + b'"'
                     position = original.index(token, original.index(b'"circuits"'))
                     offset = position + len(token) - 2
-                    require(original[offset:offset+1] == b'p', "pure helper declaration-name mutation premise differs")
+                    require(original[offset:offset+1] == name[-1:], "pure helper declaration-name mutation premise differs")
                     changed = original[:offset] + b'q' + original[offset+1:]
                     require(len(changed) == len(original) and sum(a != b for a, b in zip(changed, original)) == 1,
                             "IR control must change exactly one declared byte")
@@ -336,19 +372,22 @@ def run(args):
                 elif kind == "changed-program":
                     path = folder / "checked-programs/program-0.json"
                     path.write_bytes(path.read_bytes() + b" ")
-                else:
+                elif kind == "missing-program":
                     (folder / "checked-programs/program-0.json").unlink()
+                else:
+                    path = negative / source / "zkir/run.zkir"
+                    path.write_bytes(path.read_bytes() + b" ")
                 control_inputs = hashes([p for p in negative.rglob("*") if p.is_file()])
                 result = subprocess.run([runner, "--vector-product-elements", str(negative)], cwd=ROOT, env=env,
                                         capture_output=True, text=True, timeout=30)
                 (negative / "stdout").write_text(result.stdout)
                 (negative / "stderr").write_text(result.stderr)
                 require(result.returncode != 0 and result.stdout == "" and message in result.stderr, label + " failed outside binding guard")
-                require(not any((negative / member / "keys").exists() for member in ["helper", "proof_candidate"])
+                require(not any((negative / member / "keys").exists() for member in SOURCES)
                         and not list(negative.rglob("*.proof")) and not list(negative.glob("vector-product-elements-*")), "pre-key refusal produced evidence")
                 unchanged(control_inputs)
                 report[label] = {"exit": result.returncode, "before_keys_or_state": True, "input_hashes_before": control_inputs,
-                                 "scope": "raw complete IR/Program byte/membership identity refusal; IR one-byte helper declaration change, no reserialization"}
+                                 "scope": "complete IR, Program or ZKIR identity refusal before key generation"}
         full_generated = output / "protocol/generated"
         full_before = main_gate.inventory(full_generated)
         execute("all-source-models", [runner, "--vector-product-elements-inventory", full_generated], output / "all-source-models.json")
@@ -362,8 +401,8 @@ def run(args):
                     and (type(r["k"]) is int and r["k"] >= 0 if r["proof_required"] else r["k"] is None)
                     and r["selected_for_proof"] == ((r["source"], r["circuit"]) in SELECTED)
                     for r in full_models["circuits"]), "model observation/applicability differs")
-        expected_models = json.loads((main_gate.FIXTURES / "model-expectations.json").read_text())
-        require(expected_models["format"] == "compact-vector-product-elements-model-expectations/v1"
+        expected_models = json.loads((main_gate.FIXTURES / "ledger9-goldens/model-expectations.json").read_text())
+        require(expected_models["format"] == "compact-vector-product-elements-model-expectations/v2"
                 and [{k: r[k] for k in ["source", "circuit", "k", "proof_required"]} for r in full_models["circuits"]] == expected_models["circuits"],
                 "current full model inventory drifted; inspect source/profile and extend eligible proof coverage")
         require(main_gate.inventory(full_generated) == full_before, "model observation changed producers")
@@ -371,14 +410,13 @@ def run(args):
         report["unproved_exports"] = [r for r in full_models["circuits"] if r["proof_required"] and not r["selected_for_proof"]]
         execute("models", [runner, "--vector-product-elements-models", generated], output / "models.json")
         models = json.loads((output / "models.json").read_text())
-        require(models["format"] == "compact-vector-product-elements-models/v2" and [(r["source"], r["circuit"]) for r in models["circuits"]] == ALL_MODELS,
+        require(models["format"] == "compact-vector-product-elements-models/v3" and [(r["source"], r["circuit"]) for r in models["circuits"]] == SELECTED,
                 "selected model roster differs")
-        require(models["selected_for_proof"] == list(map(list, SELECTED)) and models["unselected"] == [["proof_candidate", "run"]] and models["proof_execution"] is False, "selected proof scope differs")
+        require(models["selected_for_proof"] == list(map(list, SELECTED)) and models["unselected"] == [] and models["proof_execution"] is False, "selected proof scope differs")
         require(all(next(x["k"] for x in full_models["circuits"] if (x["source"], x["circuit"]) == (r["source"], r["circuit"])) == r["k"] for r in models["circuits"]), "selected model differs from complete inventory")
-        require(models["circuits"][2]["k"] > 8, "original conditional Uint now fits; extend proof plan to both branches")
-        selected_models = [r for r in models["circuits"] if (r["source"], r["circuit"]) in SELECTED]
-        require(len(selected_models) == 2 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models),
-                "selected circuit exceeds automatic tiny bound")
+        selected_models = models["circuits"]
+        require(len(selected_models) == len(SELECTED) and all(type(r["k"]) is int and r["k"] == 8 for r in selected_models),
+                "selected circuit differs from its bound k8 model")
         report["models"] = models
         # A separate complete retained Fold source supplies a real over-cap diagnostic.
         # It never replaces the admitted complete component-Vector IR/Programs or proof inputs.
@@ -390,14 +428,14 @@ def run(args):
         require(text.count("input:Vector<2,Uint<8>>") == 4 and text.count("run_checked") == 1,
                 "retained diagnostic source premise changed")
         source = diagnostic / "helper.compact"
-        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<8,Uint<8>>").replace("run_checked", "run_field"))
+        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<16,Uint<8>>").replace("run_checked", "run_field"))
         unchanged(report["compiler_tools"])
         compiler = json.loads(args.compiler_receipt.read_text())["compactc"]["path"]
-        execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger8", "--rust-require-recording",
-                "--skip-zk", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
+        execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger9", "--rust-require-recording",
+                "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
         report["over_cap_diagnostic_source"] = {"sha256": digest(source),
                 "zkir_sha256": digest(diagnostic / "generated/zkir/run_field.zkir"),
-                "scope": "complete retained Fold length8 diagnostic only, not source/proof admission"}
+                "scope": "complete retained Fold length16 diagnostic only, not source/proof admission"}
         excessive = output / "selected-model-over-cap"
         shutil.copytree(generated, excessive)
         shutil.copyfile(diagnostic / "generated/zkir/run_field.zkir", excessive / "proof_candidate/zkir/run_field.zkir")
@@ -409,29 +447,30 @@ def run(args):
                 "selected over-cap model did not refuse")
         refused_models = json.loads(refused.stdout)
         require(next(r["k"] for r in refused_models["circuits"] if (r["source"], r["circuit"]) == ("proof_candidate", "run_field")) > 8
-                and not any((excessive / source / "keys").exists() for source in ["helper", "proof_candidate"]), "over-cap refusal was not before keys")
+                and not any((excessive / source / "keys").exists() for source in SOURCES), "over-cap refusal was not before keys")
         report["selected_model_over_cap_refusal"] = {"exit": refused.returncode,
                 "before_keys_or_proofs": True, "models": refused_models,
                 "scope": "genuine larger compiler-produced ZKIR under selected diagnostic slot; not proof admission"}
-        newly_tiny = output / "original-conditional-now-tiny"
-        shutil.copytree(generated, newly_tiny)
-        replacement = newly_tiny / "proof_candidate/zkir/run.zkir"
+        substituted = output / "conditional-substituted-same-k"
+        shutil.copytree(generated, substituted)
+        replacement = substituted / "proof_candidate/zkir/run.zkir"
+        original = replacement.read_bytes()
         shutil.copyfile(generated / "helper/zkir/run.zkir", replacement)
-        future_inputs = hashes([p for p in newly_tiny.rglob("*") if p.is_file()])
-        refused = subprocess.run([runner, "--vector-product-elements-models", str(newly_tiny)],
+        require(replacement.read_bytes() != original, "same-k substitution premise did not change raw ZKIR")
+        substitute_inputs = hashes([path for path in substituted.rglob("*") if path.is_file()])
+        refused = subprocess.run([runner, "--vector-product-elements", str(substituted)],
                                  cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
-        (newly_tiny / "stdout").write_text(refused.stdout)
-        (newly_tiny / "stderr").write_text(refused.stderr)
-        future_models = json.loads(refused.stdout)
-        require(refused.returncode != 0 and "now tiny-eligible" in refused.stderr
-                and future_models["circuits"][2]["k"] <= 8
-                and future_models["circuits"][:2] == models["circuits"][:2], "future branch-expansion refusal failed")
-        require(not any((newly_tiny / source / "keys").exists() for source in ["helper", "proof_candidate"])
-                and not list(newly_tiny.rglob("*.proof")), "future tiny refusal produced keys/proofs")
-        unchanged(future_inputs)
-        report["future_conditional_tiny_refusal"] = {"exit": refused.returncode, "models": future_models,
-            "input_hashes_before": future_inputs, "before_keys_or_proofs": True,
-            "scope": "real complete helper ZKIR in a private diagnostic slot only; original conditional source/model unchanged"}
+        (substituted / "stdout").write_text(refused.stdout)
+        (substituted / "stderr").write_text(refused.stderr)
+        require(refused.returncode != 0 and refused.stdout == ""
+                and "Ledger 9 artifact differs from the pinned fixture: zkir/run.zkir" in refused.stderr,
+                "substitution with another eligible model did not refuse at raw binding")
+        require(not any((substituted / source / "keys").exists() for source in SOURCES)
+                and not list(substituted.rglob("*.proof")), "same-k refusal produced keys or proofs")
+        unchanged(substitute_inputs)
+        report["conditional_same_k_substitution_refusal"] = {
+            "exit": refused.returncode, "before_keys_or_proofs": True, "input_hashes_before": substitute_inputs,
+        }
         material = output / "proof-material.json"
         execute("verify-proof-material-before-keygen", [runner, "--prepare-proof-material", "--verify-only",
                 *[arg for k in sorted({r["k"] for r in selected_models}) for arg in ["--parameter-k", str(k)]]], material)
@@ -446,10 +485,12 @@ def run(args):
         report["ledger_static"] = ledger
         report["dust_fixture_hashes"] = dust_fixture_inventory(Path(ledger["static_directory"]))
         if not args.prepare_only:
-            for source in ["helper", "proof_candidate"]:
+            for source in SOURCES:
                 (generated / source / "keys").mkdir()
             report["keygen"] = []
-            execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
+            version = output / "zkir-version.txt"
+            execute("zkir-version", [report["zkir"]["snapshot"], "--version"], version)
+            require(version.read_text().strip() == "midnight-zkir 3.2.0", "expected the released ZKIR v3.2.0 compiler")
             for row in selected_models:
                 circuit = row["circuit"]
                 source_root = generated / row["source"]
@@ -458,8 +499,6 @@ def run(args):
                 model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(report["commands"][-1]["log"]).read_text())
                 require(model is not None and int(model[1]) == row["k"], "actual key model differs from verified pre-key model")
                 report["keygen"].append({"source": row["source"], "circuit": circuit, "mode": "fresh direct native", "k": row["k"], "rows": int(model[2])})
-            require(not (generated / "proof_candidate/keys/run.prover").exists()
-                    and not (generated / "proof_candidate/keys/run.verifier").exists(), "over-cap conditional key unexpectedly generated")
             report["key_hashes"] = hashes([generated / source / f"keys/{c}.{ext}" for source, c in SELECTED for ext in ["prover", "verifier"]])
             report["binary_ir_hashes"] = hashes([generated / source / f"zkir/{c}.bzkir" for source, c in SELECTED])
             execute("prove-verify-apply", [runner, "--vector-product-elements", generated])

@@ -236,13 +236,19 @@ def main():
             name = spec["source"]
             target = generated / name
             source = (SOURCES / (name + ".compact")).relative_to(ROOT)
-            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []), source, target])
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
+                *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []), source, target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, output / "independent" / name])
             require((target / "contract/compact-rust-ir.json").read_bytes() ==
                     (output / "independent" / name / "contract/compact-rust-ir.json").read_bytes(), "independent IR differs: " + name)
             irs[name] = json.loads((target / "contract/compact-rust-ir.json").read_text())
             programs = inventory(target / "contract/checked-programs")
+            require(programs == inventory(FIXTURES / "ledger9-goldens" / name / "checked-programs"),
+                    "complete Ledger 9 Program bytes differ: " + name)
+            historical = FIXTURES / "goldens" / name / "source-ir.json"
+            if historical.is_file():
+                require((target / "contract/compact-rust-ir.json").read_bytes() == historical.read_bytes(),
+                        "complete historical IR differs: " + name)
             require(len(programs) == (len(spec["entries"]) if spec["stateful"] else 0), "Program count differs")
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
@@ -258,7 +264,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "ts-results.json"
         run("ts", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                   "--version", "0.16.102", "--output", ts])
+                   "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == len(cases), "TS case count differs")
         consumer = output / "consumer"
@@ -354,8 +360,8 @@ def main():
             changed_source = folder / (name + ".compact")
             changed_source.write_text(text.replace(old, new))
             changed = folder / "generated"
-            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
-                "--rust-functional-ledger8", "--rust-require-recording", changed_source, changed])
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger9", "--rust-require-recording", changed_source, changed])
             changed_manifest = source_manifest_snapshot(changed, True)
             changed_snapshot = inventory(changed)
             changed_consumer = folder / "consumer"
@@ -417,7 +423,7 @@ def main():
                 command = ([scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk"] if lane == "ir"
                            else [compiler, "--target", lane, "--skip-zk"])
                 if lane == "rust":
-                    command += ["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"]
+                    command += ["--feature-zkir-v3", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording"]
                 rejected = run("scope-" + name + "-" + lane,
                                command + [source.relative_to(ROOT), output / ("scope-" + name + "-" + lane)],
                                success=outcome["exit"] == 0)

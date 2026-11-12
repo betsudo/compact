@@ -36,7 +36,7 @@ direct-stateful-vector-literal-returns = ["ledger-transaction", "midnight-compac
 stateful-vector-value-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-local-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-product-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
-vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-product-elements-proof-helper", "compact-rust-vector-product-elements-proof-helper/generated-sdk"]
+vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-product-elements-proof-helper", "compact-rust-vector-product-elements-proof-helper/generated-sdk", "dep:compact-rust-vector-product-elements-proof-checked", "compact-rust-vector-product-elements-proof-checked/generated-sdk"]
 vector-component-products = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-component-products-witness-before-sdk", "dep:compact-rust-vector-component-products-witness-after-sdk", "dep:compact-rust-vector-component-products-inner-product-single-sdk", "compact-rust-vector-component-products-witness-before-sdk/generated-sdk", "compact-rust-vector-component-products-witness-after-sdk/generated-sdk", "compact-rust-vector-component-products-inner-product-single-sdk/generated-sdk"]
 nested-component-products = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-nested-component-products-sdk", "compact-rust-nested-component-products-sdk/generated-sdk"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
@@ -52,6 +52,7 @@ compact-rust-vector-component-products-witness-before-sdk = { path = "vector-com
 compact-rust-vector-component-products-witness-after-sdk = { path = "vector-component-products-witness-after-sdk", optional = true }
 compact-rust-vector-component-products-inner-product-single-sdk = { path = "vector-component-products-inner-product-single-sdk", optional = true }
 compact-rust-vector-product-elements-proof-helper = { path = "vector-product-elements-helper-sdk", optional = true }
+compact-rust-vector-product-elements-proof-checked = { path = "vector-product-elements-checked-sdk", optional = true }
 did_contract = { package = "compact-rust-did-functional-lifecycle-source-fixture", path = "../../tests-rust-backend/did-functional-lifecycle-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-captured-source-fixture = { path = "../../tests-rust-backend/direct-fold-captured-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-counter-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-capture-source", features = ["ledger-transaction"] }
