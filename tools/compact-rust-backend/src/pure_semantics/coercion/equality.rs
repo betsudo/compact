@@ -53,6 +53,7 @@ pub(super) fn equivalent(
                 | (Type::JubjubPoint, Type::JubjubPoint)
                 | (Type::Secp256k1Base, Type::Secp256k1Base)
                 | (Type::Secp256k1Scalar, Type::Secp256k1Scalar)
+                | (Type::Secp256k1Point, Type::Secp256k1Point)
                 | (Type::OpaqueString, Type::OpaqueString)
                 | (Type::OpaqueBytes, Type::OpaqueBytes) => {}
                 (Type::Bytes { length: left }, Type::Bytes { length: right }) => {
@@ -144,6 +145,7 @@ pub(super) fn equivalent(
                     | Type::JubjubPoint
                     | Type::Secp256k1Base
                     | Type::Secp256k1Scalar
+                    | Type::Secp256k1Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes
                     | Type::Bytes { .. }

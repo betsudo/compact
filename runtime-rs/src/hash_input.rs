@@ -5,7 +5,7 @@
 //! Exact source-value encoding for hashing, separate from ledger normal form.
 use crate::{
     BoundedUint, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueBytes, OpaqueString,
-    Secp256k1Base, Secp256k1Scalar, WideUint,
+    Secp256k1Base, Secp256k1Point, Secp256k1Scalar, WideUint,
 };
 use midnight_base_crypto::fab::{Aligned, Alignment, Value, ValueAtom};
 
@@ -76,6 +76,7 @@ fixed_leaf!(
     Field,
     JubjubPoint,
     Secp256k1Base,
+    Secp256k1Point,
     Secp256k1Scalar,
 );
 impl<const N: usize> HashInputValue for FixedBytes<N> {

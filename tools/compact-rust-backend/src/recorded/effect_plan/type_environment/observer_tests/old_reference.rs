@@ -135,7 +135,10 @@ impl TypeEnvironment {
                     }
                 }
                 Type::Tuple { .. } => {}
-                Type::LedgerMap { .. } | Type::Secp256k1Base | Type::Secp256k1Scalar => {
+                Type::LedgerMap { .. }
+                | Type::Secp256k1Base
+                | Type::Secp256k1Scalar
+                | Type::Secp256k1Point => {
                     return Err(invalid(
                         path,
                         "type is outside checked recording value domain",

@@ -47,6 +47,7 @@ export circuit right<A, B>(value: B): Either<A, B> {
 export new type JubjubPoint = Opaque<'JubjubPoint'>;
 export type Secp256k1Base = Opaque<'Secp256k1Base'>;
 export type Secp256k1Scalar = Opaque<'Secp256k1Scalar'>;
+export type Secp256k1Point = Opaque<'Secp256k1Point'>;
 
 // Merkle trees
 export struct MerkleTreeDigest { field: Field; }

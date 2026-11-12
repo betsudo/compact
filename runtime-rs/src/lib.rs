@@ -32,6 +32,7 @@ mod primitives;
 pub mod public_state;
 pub mod recording;
 mod secp256k1_fields;
+mod secp256k1_point;
 pub mod slots;
 mod zswap;
 pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
@@ -55,6 +56,7 @@ pub use primitives::{
     add_wide_unsigned, cast_unsigned, multiply_unsigned, narrow_wide_uint, subtract_unsigned,
 };
 pub use secp256k1_fields::{Secp256k1Base, Secp256k1Scalar};
+pub use secp256k1_point::Secp256k1Point;
 
 /// Ledger FAB types used by the generated user-type derive.
 pub mod fab {

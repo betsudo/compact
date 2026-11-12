@@ -829,7 +829,7 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Type::Boolean => {}
             Type::Field => {}
             Type::JubjubPoint => {}
-            Type::Secp256k1Base | Type::Secp256k1Scalar => {}
+            Type::Secp256k1Base | Type::Secp256k1Scalar | Type::Secp256k1Point => {}
             Type::OpaqueString => {}
             Type::OpaqueBytes => {}
             Type::Bytes { length } => {

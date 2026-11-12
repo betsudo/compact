@@ -86,9 +86,11 @@ fn every_leaf_and_unsigned_carrier_boundary_matches_frozen_policy() {
 fn secp256k1_schema_types_emit_distinct_rust_carriers_without_implicit_conversions() {
     let base: Type = serde_json::from_str(r#"{"kind":"secp256k1_base"}"#).unwrap();
     let scalar: Type = serde_json::from_str(r#"{"kind":"secp256k1_scalar"}"#).unwrap();
+    let point: Type = serde_json::from_str(r#"{"kind":"secp256k1_point"}"#).unwrap();
     for (ty, variant, name) in [
         (&base, Type::Secp256k1Base, "runtime :: Secp256k1Base"),
         (&scalar, Type::Secp256k1Scalar, "runtime :: Secp256k1Scalar"),
+        (&point, Type::Secp256k1Point, "runtime :: Secp256k1Point"),
     ] {
         assert_eq!(*ty, variant);
         assert_eq!(
@@ -102,6 +104,10 @@ fn secp256k1_schema_types_emit_distinct_rust_carriers_without_implicit_conversio
     }
     assert!(crate::pure_semantics::coercion::plan_coercion(&base, &scalar).is_err());
     assert!(crate::pure_semantics::coercion::plan_coercion(&scalar, &base).is_err());
+    for other in [base, scalar, Type::JubjubPoint] {
+        assert!(crate::pure_semantics::coercion::plan_coercion(&point, &other).is_err());
+        assert!(crate::pure_semantics::coercion::plan_coercion(&other, &point).is_err());
+    }
 }
 
 #[test]

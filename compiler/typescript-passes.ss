@@ -1274,6 +1274,7 @@
                      [("string") (format "__compactRuntime.CompactTypeOpaqueString")]
                      [("Uint8Array") (format "__compactRuntime.CompactTypeOpaqueUint8Array")]
                      [("JubjubPoint") (format "__compactRuntime.CompactTypeJubjubPoint")]
+                     [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
                      [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
                      [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
                      ; FIXME: what should happen with other opaque types?
@@ -1357,6 +1358,9 @@
                     [(tunsigned ,src ,nat) (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= ~dn" var nat)]
                     [(tbytes ,src ,len) (format "~a.buffer instanceof ArrayBuffer && ~:*~a.BYTES_PER_ELEMENT === 1 && ~:*~a.length === ~s" var len)]
                     [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256k1Point"))
+                     (format "__compactRuntime.isValidSecp256k1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
                      (let ([max (case opaque-type
                                   [("Secp256k1Base") "MAX_SECP256K1_BASE"]
                                   [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
@@ -1391,7 +1395,7 @@
                 [(tfield ,src) "Field"]
                 [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
                 [(topaque ,src ,opaque-type)
-                 (if (secp256k1-field-max opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
+                 (if (secp256k1-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
                 [(tunknown) "Unknown"]
                 [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
                 [(tbytes ,src ,len) (format "Bytes<~s>" len)]
@@ -2776,6 +2780,11 @@
                        elt-name*
                        type*)]
                     [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256k1Point"))
+                     (print-indent indent)
+                     (printf "if (x~s.identity !== y~s.identity || (!x~s.identity && (x~s.x !== y~s.x || x~s.y !== y~s.y))) { return false; }\n"
+                             i i i i i i i)]
+                    [(topaque ,src ,opaque-type)
                      (guard (string=? opaque-type "JubjubPoint"))
                      (for-each
                        (lambda (elt-name)
@@ -2831,6 +2840,7 @@
                   [("string") "''"]
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
+                  [("Secp256k1Point") "({x: 0n, y: 0n, identity: true})"]
                   [("Secp256k1Base" "Secp256k1Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
@@ -2989,7 +2999,7 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type) (not (member opaque-type '("JubjubPoint" "Secp256k1Point")))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3012,7 +3022,7 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type) (not (member opaque-type '("JubjubPoint" "Secp256k1Point")))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3366,6 +3376,7 @@
        (case opaque-type
          [("string" "Uint8Array") opaque-type]
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
+         [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
          [("Secp256k1Base" "Secp256k1Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]

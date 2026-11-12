@@ -123,7 +123,10 @@ pub(crate) fn rust_type(ty: &Type) -> Result<syn::Type, RenderError> {
             let length = syn::LitInt::new(&length.to_string(), Span::call_site());
             syn::parse_quote!(runtime::FixedVector<#element, #length>)
         }
-        Type::LedgerMap { .. } | Type::Secp256k1Base | Type::Secp256k1Scalar => {
+        Type::LedgerMap { .. }
+        | Type::Secp256k1Base
+        | Type::Secp256k1Scalar
+        | Type::Secp256k1Point => {
             return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
         }
     })

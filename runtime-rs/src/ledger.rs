@@ -247,6 +247,7 @@ primitive_cell_value!(
     Field,
     JubjubPoint,
     crate::Secp256k1Base,
+    crate::Secp256k1Point,
     crate::Secp256k1Scalar,
 );
 

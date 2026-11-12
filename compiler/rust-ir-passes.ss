@@ -39,7 +39,7 @@
         (nanopass-case (Lnodisclose Type) type
           [(talias ,src ,nominal? ,type-name ,type^) (secp256k1-carrier type^)]
           [(topaque ,src ,opaque-type)
-           (and (secp256k1-field-max opaque-type) opaque-type)]
+           (and (secp256k1-native-type? opaque-type) opaque-type)]
           [else #f]))
 
       (define (same-secp256k1-carrier? type1 type2)
@@ -277,6 +277,7 @@
              [(string=? opaque-type "JubjubPoint") (kind "jubjub_point")]
              [(string=? opaque-type "Secp256k1Base") (kind "secp256k1_base")]
              [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
+             [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]
              [else (source-errorf src "Rust backend does not yet support this opaque type")])]
@@ -1606,6 +1607,16 @@
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
+                [(and (eq? adt-name '__compact_Cell)
+                      (eq? ledger-op 'resetToDefault)
+                      (null? expr*)
+                      (equal? (secp256k1-carrier (car adt-arg*)) "Secp256k1Point"))
+                 (let ([default-value (with-output-language (Lnodisclose Expression)
+                                        `(default ,src ,(car adt-arg*)))])
+                   (object (cons "kind" "cell_write")
+                           (cons "field" (symbol->string (id-sym ledger-field-name)))
+                           (cons "index" (car path-elt*))
+                           (cons "value" (stateful-expression-ir default-value src witness-ids))))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 1))

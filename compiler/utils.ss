@@ -30,7 +30,7 @@
           source-error-condition?
           make-halt-condition halt-condition?
           pending-conditions
-          stdlib-sfd stdlib-src? secp256k1-field-max
+          stdlib-sfd stdlib-src? secp256k1-field-max secp256k1-native-type?
           renaming-table record-alias!
           pretty-print/formats
           split-search-path)
@@ -57,6 +57,9 @@
       [("Secp256k1Base") #xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e]
       [("Secp256k1Scalar") #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140]
       [else #f]))
+
+  (define (secp256k1-native-type? name)
+    (or (string=? name "Secp256k1Point") (and (secp256k1-field-max name) #t)))
 
   (define pending-conditions (make-parameter '()))
 

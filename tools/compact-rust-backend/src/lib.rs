@@ -3503,6 +3503,7 @@ fn render_with_refusals(
                     | Type::JubjubPoint
                     | Type::Secp256k1Base
                     | Type::Secp256k1Scalar
+                    | Type::Secp256k1Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes
                     | Type::Unsigned { .. }

@@ -18,6 +18,7 @@ logs, generated artifacts, and test-runner cache live inside the supplied
 output directory. Key generation is skipped in this test.
 
 The same command runs the [positive Bytes<32> cast fixtures](positive-casts/README.md),
-[field arithmetic fixtures](arithmetic/README.md), and [unary field fixtures](unary/README.md).
+[field arithmetic fixtures](arithmetic/README.md), [unary field fixtures](unary/README.md),
+and [point representation fixtures](point/README.md).
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/tree/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/stdlib/secp256k1

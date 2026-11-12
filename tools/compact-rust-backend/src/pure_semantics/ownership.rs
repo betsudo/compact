@@ -38,6 +38,7 @@ pub(crate) fn copy_type(ty: &Type) -> bool {
         | Type::JubjubPoint
         | Type::Secp256k1Base
         | Type::Secp256k1Scalar
+        | Type::Secp256k1Point
         | Type::Bytes { .. }
         | Type::Enum { .. }
         | Type::Unsigned { .. } => true,

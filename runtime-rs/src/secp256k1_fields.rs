@@ -124,7 +124,7 @@ macro_rules! impl_secp256k1_field {
                     .ok_or(CompactError::$zero_inverse)
             }
 
-            fn into_inner(self) -> $inner {
+            pub(super) fn into_inner(self) -> $inner {
                 let mut bytes = self.0;
                 bytes.reverse();
                 <$inner>::from_repr(bytes.into()).expect("field element is canonical")

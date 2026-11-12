@@ -53,6 +53,46 @@ fn secp256k1_field_arithmetic_preserves_exact_native_types() {
 }
 
 #[test]
+fn secp256k1_point_default_and_equality_keep_jubjub_operations_distinct() {
+    let point = Type::Secp256k1Point;
+    let default = Expr::Default { ty: point.clone() };
+    let parameters = HashMap::from([("point", (&point, syn::parse_quote!(p)))]);
+    for (negated, comparison) in [(false, "=="), (true, "!=")] {
+        let source = equality(negated, reference("point"), default.clone());
+        let (rendered, _, ty) = observe(&source, &parameters, &HashMap::new()).unwrap();
+        assert_eq!(ty, Type::Boolean);
+        assert_eq!(
+            rendered,
+            format!("p {comparison} < runtime :: Secp256k1Point as Default > :: default ()")
+        );
+    }
+    let wrong_type = equality(
+        false,
+        reference("point"),
+        Expr::Default {
+            ty: Type::JubjubPoint,
+        },
+    );
+    assert_eq!(
+        observe(&wrong_type, &parameters, &HashMap::new()),
+        Err(RenderError::TypeMismatch {
+            expected: point.clone(),
+            actual: Type::JubjubPoint
+        })
+    );
+    let negated = Expr::EcNeg {
+        value: Box::new(reference("point")),
+    };
+    assert_eq!(
+        observe(&negated, &parameters, &HashMap::new()),
+        Err(RenderError::TypeMismatch {
+            expected: Type::JubjubPoint,
+            actual: point
+        })
+    );
+}
+
+#[test]
 fn all_unsigned_operations_preserve_width_and_bound_outcomes() {
     // Distinct maxima exercise left/right/result parsing rather than relying on
     // literal typing to catch malformed or unsupported annotations earlier.

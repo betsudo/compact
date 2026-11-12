@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Keccak's FAB conversion domain is independent of persistent byte hashing.
 use super::super::validate::uint;
@@ -46,6 +57,7 @@ fn leaves() -> Vec<Type> {
         Type::Boolean,
         Type::Field,
         Type::JubjubPoint,
+        Type::Secp256k1Point,
         Type::OpaqueString,
         Type::OpaqueBytes,
         Type::Bytes { length: 0 },
@@ -111,17 +123,19 @@ fn aligned_keccak_keeps_its_encoding_and_refuses_nested_opaque_input() {
         *encoding = KeccakEncoding::Aligned;
         circuit
     };
-    let plan = checked(&aligned(Type::Bytes { length: 12 })).unwrap();
-    assert!(matches!(
-        plan.plan().body.bindings.last().unwrap().operation,
-        Operation::Keccak256(_, KeccakEncoding::Aligned)
-    ));
-    let steps = render(&plan).unwrap().steps;
-    assert!(
-        quote::quote!(#(#steps)*)
-            .to_string()
-            .contains("runtime :: keccak256_aligned")
-    );
+    for ty in [Type::Bytes { length: 12 }, Type::Secp256k1Point] {
+        let plan = checked(&aligned(ty)).unwrap();
+        assert!(matches!(
+            plan.plan().body.bindings.last().unwrap().operation,
+            Operation::Keccak256(_, KeccakEncoding::Aligned)
+        ));
+        let steps = render(&plan).unwrap().steps;
+        assert!(
+            quote::quote!(#(#steps)*)
+                .to_string()
+                .contains("runtime :: keccak256_aligned")
+        );
+    }
 
     let opaque_vector = Type::Vector {
         length: 2,

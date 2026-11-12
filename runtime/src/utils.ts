@@ -14,6 +14,8 @@
 // limitations under the License.
 
 import { ContractAddress } from '@midnightntwrk/onchain-runtime-v4';
+import type { Secp256k1Point } from './compact-types.js';
+import { SECP256K1_BASE_MODULUS } from './constants.js';
 import { EncodedContractAddress } from './zswap.js';
 
 /**
@@ -44,6 +46,27 @@ export function isEncodedContractAddress(x: unknown): x is EncodedContractAddres
     x.bytes instanceof Uint8Array &&
     x.bytes.length == CONTRACT_ADDRESS_BYTE_LENGTH
   );
+}
+
+/** Checks a secp256k1 point supplied to a generated circuit. */
+export function isValidSecp256k1Point(value: unknown): value is Secp256k1Point {
+  if (typeof value !== 'object' || value === null || !('x' in value) || !('y' in value) || !('identity' in value)) {
+    return false;
+  }
+  const { x, y, identity } = value;
+  const modulus = SECP256K1_BASE_MODULUS;
+  if (
+    typeof x !== 'bigint' ||
+    x < 0n ||
+    x >= modulus ||
+    typeof y !== 'bigint' ||
+    y < 0n ||
+    y >= modulus ||
+    typeof identity !== 'boolean'
+  ) {
+    return false;
+  }
+  return identity || (y * y) % modulus === (((x * x) % modulus) * x + 7n) % modulus;
 }
 
 export const fromHex = (s: string): Uint8Array => Buffer.from(s, 'hex');

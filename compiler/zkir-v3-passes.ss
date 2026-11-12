@@ -80,12 +80,13 @@
       ;; Compact's field representation puts the high byte before the low
       ;; 31 bytes. The ZKIR split instruction returns the low limb first.
       (define (emit-persistent-hash src high low alignment* input* instr*)
-        (let ([bytes (make-temp-id src 'hash-bytes)])
-          (with-output-language (Lzkir Instruction)
-            (cons*
-              `(bytes32_into_low_high ,low ,high ,bytes)
-              `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
-              instr*))))
+        (let-values ([(alignment* input* instr*) (ledger-alignment src alignment* input* instr*)])
+          (let ([bytes (make-temp-id src 'hash-bytes)])
+            (with-output-language (Lzkir Instruction)
+              (cons*
+                `(bytes32_into_low_high ,low ,high ,bytes)
+                `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
+                instr*)))))
 
       (define jubjub-scalar-order
         #x0e7db4ea6533afa906673b0101343b00a6682093ccc81082d0970e5ed6f72cb7)
@@ -186,12 +187,13 @@
                (cons `(encode (,(make-temp-id src 'ignore) ,(car var-name*)) ,(car triv*)) instr*)]
               [(keccak256)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)]
-                     [bytes (make-temp-id src 'hash-bytes)])
-                 (cons*
-                   `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
-                   `(keccak256 ,bytes (,alignment* ...) ,triv* ...)
-                   instr*))]
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
+                     `(keccak256 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
               [(sha512)
                (assert (= (length var-name*) 3))
                (let-values ([(alignment* input* instr*)
@@ -289,6 +291,15 @@
                  (let ([atom (car alignment*)])
                    (nanopass-case (Lflattened Alignment) atom
                      [(anative ,opaque-type)
+                      (guard (string=? opaque-type "Secp256k1Point"))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
+                     [(anative ,opaque-type)
                       (let* ([prefix (if (string=? opaque-type "JubjubPoint") 'pt 'limb)]
                              [low (make-temp-id src prefix)]
                              [high (make-temp-id src prefix)])
@@ -345,6 +356,13 @@
                      (nanopass-case (Lflattened Alignment) atom
                        [(anative ,opaque-type)
                         (cond
+                          [(string=? opaque-type "Secp256k1Point")
+                           ;; The identity has two zero coordinates and a native field flag.
+                           (let-values ([(high low) (div-and-mod (secp256k1-field-max "Secp256k1Base") (expt 2 192))])
+                             (loop (cdr atom*)
+                               (with-output-language (Lflattened Alignment)
+                                 (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                               (cons* 1 high low high low input*)))]
                           [(secp256k1-field-max opaque-type) =>
                            (lambda (maximum)
                              ;; Zero is represented by modulus minus one on the ledger.
@@ -731,6 +749,7 @@
         (case name
           [("Secp256k1Base") "Base<Secp256k1>"]
           [("Secp256k1Scalar") "Scalar<Secp256k1>"]
+          [("Secp256k1Point") "Point<Secp256k1>"]
           [else #f]))
 
       (define (type->string primitive-type)
@@ -805,6 +824,12 @@
       [(= ,test (,var-name) (default ,opaque-type))
        (with-output-language (Lzkir Instruction)
          (cond
+           [(string=? opaque-type "Secp256k1Point")
+            (let ([bytes (make-temp-id default-src 'bytes)] [scalar (make-temp-id default-src 'scalar)])
+              (cons* `(ec_mul_generator ,var-name ,scalar)
+                     `(from_bytes "Scalar<Secp256k1>" ,scalar ,bytes)
+                     `(to_bytes ,bytes 0)
+                     instr*))]
            [(secp256k1-zkir-type opaque-type) =>
             (lambda (zkir-type)
               (let ([bytes (make-temp-id default-src 'bytes)])

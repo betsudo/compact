@@ -2277,7 +2277,7 @@
                     (if (feature-zkir-v3)
                         (cons `(anative ,opaque-type) a*)
                         (cons* `(afield) `(afield) a*))]
-                   [("Secp256k1Base" "Secp256k1Scalar") (cons `(anative ,opaque-type) a*)]
+                   [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point") (cons `(anative ,opaque-type) a*)]
                    [else (cons `(acompress) a*)])]
                 [(tvector ,src ,len ,type)
                  (let ([a^* (f type '())])
@@ -2394,7 +2394,7 @@
       [(tfield ,src) `(tfield)]
       [(tunsigned ,src ,nat) `(tfield ,nat)]
       [(topaque ,src ,opaque-type)
-       (when (and (secp256k1-field-max opaque-type) (not (feature-zkir-v3)))
+       (when (and (secp256k1-native-type? opaque-type) (not (feature-zkir-v3)))
          (source-errorf src "~a requires ZKIR v3; recompile with --feature-zkir-v3" opaque-type))
        `(topaque ,opaque-type)]
       [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,[Type : type**] ...) ,[Type : type*]) ...)
@@ -2434,7 +2434,7 @@
                                  (values
                                    (Wump-vector (list (Wump-single t1) (Wump-single t2)))
                                    (list `(= ,test (,t1 ,t2) (default ,opaque-type))))))))]
-                      [(topaque ,src ,opaque-type) (guard (secp256k1-field-max opaque-type))
+                      [(topaque ,src ,opaque-type) (guard (secp256k1-native-type? opaque-type))
                        (with-output-language (Lflattened Statement)
                          (let ([temp (make-new-id var-name)])
                            (values (Wump-single temp) (list `(= ,test (,temp) (default ,opaque-type))))))]
@@ -3754,7 +3754,7 @@
            [else (source-errorf src "expected primitive type tcontract for contract call, received ~a"
                                 (format-primitive-type primitive-type))]))]
       [(= ,test (,var-name) (default ,opaque-type))
-       (guard (secp256k1-field-max opaque-type))
+       (guard (secp256k1-native-type? opaque-type))
        (verify-test program-src test)
        (with-output-language (Lflattened Primitive-Type)
          (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]

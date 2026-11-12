@@ -1,0 +1,18 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger hash: Bytes<64>;"
+      "export circuit test(pt0: Secp256k1Point, pt1: Secp256k1Point): [] {"
+      "  hash = disclose(sha512<[Secp256k1Point, Secp256k1Point]>([pt0, pt1]));"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('sha512 hashing', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  const p0 = runtime.secp256k1MulGenerator(5n);"
+        "  const p1 = runtime.secp256k1MulGenerator(7n);"
+        "  await contract.circuits.test(context, p0, p1);"
+        "});"
+        ))
+    )

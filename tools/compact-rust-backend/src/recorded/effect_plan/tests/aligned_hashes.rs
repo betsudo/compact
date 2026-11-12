@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Aligned input authority is independent from exact hash output signatures.
 use super::super::validate::uint;
@@ -89,6 +100,7 @@ fn aligned_hashes_accept_fixed_fab_leaves_products_and_exact_result_types() {
         Type::Boolean,
         Type::Field,
         Type::JubjubPoint,
+        Type::Secp256k1Point,
         Type::Bytes { length: 0 },
         Type::Bytes { length: 32 },
         uint("255"),
