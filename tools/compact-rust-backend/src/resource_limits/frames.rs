@@ -146,6 +146,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EcNeg { .. }
                 | E::EcMul { .. }
                 | E::EcMulGenerator { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
                 | E::JubjubScalarFromNative { .. } => 39,
                 E::Unit
                 | E::Default { .. }
@@ -209,6 +211,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedMultiply { .. }
                 | E::Equal { .. }
                 | E::NotEqual { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
                 | E::Compare { .. } => 22,
                 E::Unit
                 | E::Default { .. }
@@ -274,6 +278,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -344,6 +350,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::FieldCast { .. }
                 | E::FieldToBytes32 { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. }
                 | E::UnsignedMultiply { .. }

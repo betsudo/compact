@@ -1,10 +1,22 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! Complete sixteen-operation crypto family with arity-safe checked output.
+//! Crypto operations with arity-safe checked output.
 //! Generic child traversal stays outside support policy and Rust formatting.
 use super::{
+    arithmetic::Secp256k1Unary,
     children::Children,
     hash_encoding::DynamicInputEncoding,
     jubjub::CheckedJubjub,
@@ -31,6 +43,7 @@ pub(crate) enum CryptoSource<'a> {
     ConstructJubjubPoint(&'a Expr, &'a Expr),
     EcAdd(&'a Expr, &'a Expr),
     EcNeg(&'a Expr),
+    Secp256k1Unary(Secp256k1Unary, &'a Expr),
     EcMul(&'a Expr, &'a Expr),
     EcMulGenerator(&'a Expr),
     JubjubScalarFromNative(&'a Expr),
@@ -60,6 +73,7 @@ pub(crate) enum CheckedCrypto<V> {
         encoding: DynamicInputEncoding,
     },
     Jubjub(CheckedJubjub<V>),
+    Secp256k1Unary(Secp256k1Unary, V),
 }
 
 pub(super) enum Unary {
@@ -73,6 +87,7 @@ pub(super) enum Unary {
     PointX,
     PointY,
     Negate,
+    Secp256k1(Secp256k1Unary),
     Generator,
     Reduce,
 }
@@ -108,6 +123,7 @@ impl<'a> CryptoSource<'a> {
             Self::ConstructJubjubPoint(x, y) => Inputs::Binary(Binary::Construct, x, y),
             Self::EcAdd(left, right) => Inputs::Binary(Binary::Add, left, right),
             Self::EcNeg(value) => Inputs::Unary(Unary::Negate, value),
+            Self::Secp256k1Unary(kind, value) => Inputs::Unary(Unary::Secp256k1(kind), value),
             Self::EcMul(point, scalar) => Inputs::Binary(Binary::Multiply, point, scalar),
             Self::EcMulGenerator(value) => Inputs::Unary(Unary::Generator, value),
             Self::JubjubScalarFromNative(value) => Inputs::Unary(Unary::Reduce, value),

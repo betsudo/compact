@@ -49,6 +49,7 @@ pub(crate) fn crypto(checked: C<V>) -> C<syn::Expr> {
             encoding,
         },
         C::Jubjub(checked) => C::Jubjub(jubjub(checked)),
+        C::Secp256k1Unary(kind, value) => C::Secp256k1Unary(kind, value.into_expression()),
     }
 }
 fn jubjub(checked: J<V>) -> J<syn::Expr> {

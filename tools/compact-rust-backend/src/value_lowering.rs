@@ -23,6 +23,7 @@ use crate::RenderError;
 use crate::ir::{Expr, Type};
 use proc_macro2::Span;
 
+use crate::pure_semantics::arithmetic::Secp256k1Unary;
 use crate::pure_semantics::conversion::Secp256k1BytesCast;
 use crate::pure_semantics::numeric::{
     ArithmeticKind, UnsignedArithmeticStrategy, checked_unsigned_arithmetic, checked_unsigned_cast,
@@ -67,6 +68,13 @@ pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1Bytes
         Secp256k1BytesCast::ToBytes => {
             syn::parse_quote!(runtime::FixedBytes::<32>::new((#value).to_le_bytes()))
         }
+    }
+}
+
+pub(crate) fn secp256k1_unary_syntax(kind: Secp256k1Unary, value: syn::Expr) -> syn::Expr {
+    match kind {
+        Secp256k1Unary::Negate => syn::parse_quote!(-(#value)),
+        Secp256k1Unary::Invert => syn::parse_quote!((#value).inverse()?),
     }
 }
 

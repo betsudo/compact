@@ -69,6 +69,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::ConstructJubjubPoint { .. }
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
+                | Operation::Secp256k1Unary { .. }
                 | Operation::Convert { .. } => {}
                 Operation::Call { .. }
                 | Operation::Witness { .. }

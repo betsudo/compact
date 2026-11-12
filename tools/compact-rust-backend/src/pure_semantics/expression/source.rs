@@ -15,8 +15,13 @@
 
 //! Exhaustive source classification. Every family retains its single checked owner.
 use super::super::{
-    aggregate::AggregateSource, arithmetic::ArithmeticSource, control::ControlSource,
-    conversion::ConversionSource, crypto::CryptoSource, leaf::LeafSource, numeric::ArithmeticKind,
+    aggregate::AggregateSource,
+    arithmetic::{ArithmeticSource, Secp256k1Unary},
+    control::ControlSource,
+    conversion::ConversionSource,
+    crypto::CryptoSource,
+    leaf::LeafSource,
+    numeric::ArithmeticKind,
 };
 use crate::ir::Expr;
 pub(super) enum Source<'a> {
@@ -170,6 +175,12 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         }
         Expr::EcAdd { left, right } => Source::Crypto(CryptoSource::EcAdd(left, right)),
         Expr::EcNeg { value } => Source::Crypto(CryptoSource::EcNeg(value)),
+        Expr::Secp256k1Neg { value } => {
+            Source::Crypto(CryptoSource::Secp256k1Unary(Secp256k1Unary::Negate, value))
+        }
+        Expr::Secp256k1Inv { value } => {
+            Source::Crypto(CryptoSource::Secp256k1Unary(Secp256k1Unary::Invert, value))
+        }
         Expr::EcMul { point, scalar } => Source::Crypto(CryptoSource::EcMul(point, scalar)),
         Expr::EcMulGenerator { scalar } => Source::Crypto(CryptoSource::EcMulGenerator(scalar)),
         Expr::JubjubScalarFromNative { value } => {

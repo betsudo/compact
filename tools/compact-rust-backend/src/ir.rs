@@ -687,6 +687,12 @@ pub enum Expr {
         value: Box<Expr>,
         ty: Type,
     },
+    Secp256k1Neg {
+        value: Box<Expr>,
+    },
+    Secp256k1Inv {
+        value: Box<Expr>,
+    },
     Coerce {
         value: Box<Expr>,
         ty: Type,

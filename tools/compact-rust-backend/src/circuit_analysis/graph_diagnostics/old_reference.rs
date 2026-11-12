@@ -392,6 +392,8 @@ pub(crate) fn expression_contains<'source>(
         | Expr::HashToCurve { value }
         | Expr::JubjubPointX { value }
         | Expr::JubjubPointY { value }
+        | Expr::Secp256k1Neg { value }
+        | Expr::Secp256k1Inv { value }
         | Expr::EcNeg { value }
         | Expr::EcMulGenerator { scalar: value }
         | Expr::JubjubScalarFromNative { value } => visit(value),

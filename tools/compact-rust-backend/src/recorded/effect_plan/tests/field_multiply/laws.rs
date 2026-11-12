@@ -128,6 +128,60 @@ fn recorded_secp256k1_arithmetic_rejects_mixed_inputs_and_forged_results() {
     }
 }
 #[test]
+fn recorded_secp256k1_unary_checks_order_and_exact_result() {
+    use crate::pure_semantics::arithmetic::Secp256k1Unary;
+
+    for (ty, other) in [
+        (Type::Secp256k1Base, Type::Secp256k1Scalar),
+        (Type::Secp256k1Scalar, Type::Secp256k1Base),
+    ] {
+        let mut source = root(ty.clone(), ty.clone());
+        source.result = ty.clone();
+        source.return_value = StateReturn::Expression {
+            value: Expr::Sequence {
+                steps: vec![Expr::Secp256k1Inv {
+                    value: Box::new(reference("left")),
+                }],
+                value: Box::new(Expr::Secp256k1Neg {
+                    value: Box::new(reference("right")),
+                }),
+            },
+        };
+        let checked = checked(&source);
+        let [inverse, negated] = checked.plan().body.bindings.as_slice() else {
+            panic!("expected the discarded inverse before the returned negation");
+        };
+        assert!(matches!(
+            inverse.operation,
+            Operation::Secp256k1Unary {
+                kind: Secp256k1Unary::Invert,
+                ..
+            }
+        ));
+        assert!(matches!(
+            negated.operation,
+            Operation::Secp256k1Unary {
+                kind: Secp256k1Unary::Negate,
+                ..
+            }
+        ));
+        assert_eq!(inverse.value.ty, ty);
+        assert_eq!(negated.value.ty, ty);
+        render(&checked).unwrap();
+
+        let mut forged = checked.plan().clone();
+        forged.body.bindings[0].value.ty = other;
+        let error = validate::validate(&forged, checked.declarations()).unwrap_err();
+        assert!(error.detail.contains("operation input/output types"));
+
+        source.parameters[0].ty = Type::Field;
+        assert!(matches!(
+            check(&source, &HashMap::new(), &HashMap::new()),
+            Err(PlanError::Unsupported(_))
+        ));
+    }
+}
+#[test]
 fn multiplication_admits_exact_fields_and_rejects_other_domains_on_either_side() {
     let source = root(Type::Field, Type::Field);
     let checked = checked(&source);

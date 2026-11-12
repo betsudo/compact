@@ -58,6 +58,27 @@
   ([value A (discloses "a hash of")])
   (Bytes 64))
 
+;; ==== Secp256k1 unary field operations
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256k1BaseNeg"
+  ([s (TypeRef Secp256k1Base) (discloses "the negation of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256k1BaseInv"
+  ([s (TypeRef Secp256k1Base) (discloses "the inverse of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256k1ScalarNeg"
+  ([s (TypeRef Secp256k1Scalar) (discloses "the negation of")])
+  (TypeRef Secp256k1Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256k1ScalarInv"
+  ([s (TypeRef Secp256k1Scalar) (discloses "the inverse of")])
+  (TypeRef Secp256k1Scalar))
+
 ;; ====
 (declare-native-entry circuit jubjubPointX
   "__compactRuntime.jubjubPointX"

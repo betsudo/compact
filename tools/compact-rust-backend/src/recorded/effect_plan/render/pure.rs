@@ -92,6 +92,9 @@ pub(in super::super) fn expression(
                 syn::parse_quote!(#a + #b)
             }
         }
+        Operation::Secp256k1Unary { kind, value: input } => {
+            crate::value_lowering::secp256k1_unary_syntax(*kind, value(input))
+        }
         Operation::Compare {
             operator,
             left,

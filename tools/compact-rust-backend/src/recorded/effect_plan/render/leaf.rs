@@ -61,6 +61,7 @@ pub(super) fn render(
         | Operation::UnsignedAdd(..)
         | Operation::UnsignedSubtract(..)
         | Operation::UnsignedMultiply(..)
+        | Operation::Secp256k1Unary { .. }
         | Operation::Convert { .. } => pure::expression(binding, &ty, value, |input| {
             let source = name(input);
             syn::parse_quote!(#source)

@@ -199,6 +199,12 @@
       (define call-argument-types (make-eq-hashtable))
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
+      (define secp256k1-unary-natives (make-eq-hashtable))
+
+      (define (secp256k1-unary-ir kind src args lower)
+        (unless (= (length args) 1)
+          (source-errorf src "secp256k1 unary operation expects one argument"))
+        (object (cons "kind" kind) (cons "value" (lower (car args)))))
       (define current-variable-types (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
       ;; Keep ordinary expressions and constructor value initializers on their
@@ -917,6 +923,9 @@
                   (source-errorf src "ecMulGenerator expects one argument"))
                 (object (cons "kind" "ec_mul_generator")
                         (cons "scalar" (field-argument-ir (car expr*) src)))]
+               [(eq-hashtable-ref secp256k1-unary-natives function-name #f) =>
+                (lambda (kind)
+                  (secp256k1-unary-ir kind src expr* (lambda (value) (expression-ir value src))))]
                [(eq? name 'jubjubScalarFromNative)
                 (unless (= (length expr*) 1)
                   (source-errorf src "jubjubScalarFromNative expects one argument"))
@@ -1309,8 +1318,14 @@
               [else (void)]))
           pelt*))
 
-      (define (index-call-argument-types pelt)
+      (define (index-callables pelt)
         (nanopass-case (Lnodisclose Program-Element) pelt
+          [(native ,src ,function-name ,native-entry (,arg* ...) ,type)
+           (let ([kind (case (native-entry-function native-entry)
+                         [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg") "secp256k1_neg"]
+                         [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv") "secp256k1_inv"]
+                         [else #f])])
+             (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
            (eq-hashtable-set! call-argument-types function-name
              (map (lambda (arg)
@@ -1517,7 +1532,8 @@
                                        (list (state-action-ir expr src environment witness-ids)))))))]
           [(call ,src ,function-name ,expr* ...)
            (cond
-             [(eq-hashtable-ref witness-ids function-name #f)
+             [(or (eq-hashtable-ref witness-ids function-name #f)
+                  (eq-hashtable-ref secp256k1-unary-natives function-name #f))
               (object (cons "kind" "expression")
                       (cons "value" (stateful-expression-ir expr src witness-ids)))]
              [(eq-hashtable-ref native-witness-ids function-name #f)
@@ -2472,6 +2488,10 @@
                 (unless (= (length expr*) 1)
                   (source-errorf src "keccak256 expects one argument"))
                 (keccak-ir (stateful-expression-ir (car expr*) src witness-ids))]
+               [(eq-hashtable-ref secp256k1-unary-natives function-name #f) =>
+                (lambda (kind)
+                  (secp256k1-unary-ir kind src expr*
+                    (lambda (value) (stateful-expression-ir value src witness-ids))))]
                [(memq name '(transientHash persistentHash sha512 degradeToTransient upgradeFromTransient
                               hashToCurve jubjubPointX jubjubPointY ecNeg jubjubScalarFromNative))
                 (unless (= (length expr*) 1)
@@ -2739,6 +2759,10 @@
 
       (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
+          [(quote ,src ,datum)
+           (guard (boolean? datum))
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
@@ -3361,11 +3385,12 @@
        (hashtable-clear! call-argument-types)
        (hashtable-clear! function-rust-names)
        (hashtable-clear! native-witness-ids)
+       (hashtable-clear! secp256k1-unary-natives)
        (set! struct-shape-names '())
        (set! used-struct-names '())
        (index-function-names pelt*)
        (index-native-witnesses pelt*)
-       (for-each index-call-argument-types pelt*)
+       (for-each index-callables pelt*)
        (let* ([witness-ids (witness-id-table pelt*)]
               [constructor* (filter (lambda (value) value)
                                     (map (lambda (pelt)

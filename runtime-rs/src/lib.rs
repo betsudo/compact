@@ -92,6 +92,8 @@ pub enum CompactError {
     InvalidUnsignedValue,
     InvalidJubjubScalar,
     InvalidJubjubPoint,
+    Secp256k1BaseZeroInverse,
+    Secp256k1ScalarZeroInverse,
     InvalidHashInput,
     MissingCoinPublicKey,
     ZswapAllocationLocked,
@@ -119,6 +121,12 @@ impl std::fmt::Display for CompactError {
             Self::InvalidUnsignedValue => write!(f, "invalid Compact unsigned value"),
             Self::InvalidJubjubScalar => write!(f, "invalid Jubjub scalar"),
             Self::InvalidJubjubPoint => write!(f, "invalid Jubjub point"),
+            Self::Secp256k1BaseZeroInverse => {
+                write!(f, "secp256k1 base field has no inverse for 0")
+            }
+            Self::Secp256k1ScalarZeroInverse => {
+                write!(f, "secp256k1 scalar field has no inverse for 0")
+            }
             Self::InvalidHashInput => write!(f, "invalid Compact hash input"),
             Self::ZswapOfferOutputMismatch => write!(
                 f,

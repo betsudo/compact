@@ -38,6 +38,85 @@ fn binding(name: &str, ty: Type, value: Expr) -> LocalBinding {
 }
 
 #[test]
+fn discarded_secp256k1_operations_and_equal_arm_guards_keep_inverse_checks() {
+    for ty in [Type::Secp256k1Base, Type::Secp256k1Scalar] {
+        let parameters = HashMap::from([("x", (&ty, syn::parse_quote!(x)))]);
+        let inverse = Expr::Secp256k1Inv {
+            value: Box::new(reference("x")),
+        };
+        let negated = Expr::Secp256k1Neg {
+            value: Box::new(inverse.clone()),
+        };
+        let (expression, _, result) = observe(&negated, &parameters, &HashMap::new()).unwrap();
+        assert_eq!(result, ty);
+        assert!(expression.starts_with('-'));
+        assert_eq!(expression.matches("inverse").count(), 1);
+        assert_eq!(expression.matches('?').count(), 1);
+
+        let guard = Expr::Equal {
+            left: Box::new(inverse.clone()),
+            right: Box::new(reference("x")),
+        };
+        let (expression, statements, result) = observe(
+            &sequence(
+                vec![branch(boolean(false), inverse.clone(), reference("x"))],
+                branch(guard, Expr::Unit, Expr::Unit),
+            ),
+            &parameters,
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert_eq!(result, Type::Unit);
+        for syntax in [expression, statements] {
+            assert_eq!(syntax.matches("let _ =").count(), 2);
+            assert_eq!(syntax.matches("inverse").count(), 2);
+            assert_eq!(syntax.matches('?').count(), 2);
+        }
+
+        let (expression, _, _) = observe(
+            &branch(boolean(false), inverse, reference("x")),
+            &parameters,
+            &HashMap::new(),
+        )
+        .unwrap();
+        let conditional: syn::ExprIf = syn::parse_str(&expression).unwrap();
+        assert_eq!(
+            conditional
+                .then_branch
+                .to_token_stream()
+                .to_string()
+                .matches("inverse")
+                .count(),
+            1
+        );
+        assert!(
+            !conditional
+                .else_branch
+                .unwrap()
+                .1
+                .to_token_stream()
+                .to_string()
+                .contains("inverse")
+        );
+    }
+    let field = Type::Field;
+    let parameters = HashMap::from([("x", (&field, syn::parse_quote!(x)))]);
+    for value in [
+        Expr::Secp256k1Inv {
+            value: Box::new(reference("x")),
+        },
+        Expr::Secp256k1Neg {
+            value: Box::new(reference("x")),
+        },
+    ] {
+        assert_eq!(
+            observe(&value, &parameters, &HashMap::new()),
+            Err(RenderError::ExpectedSecp256k1Field(Type::Field))
+        );
+    }
+}
+
+#[test]
 fn assertion_and_conditional_errors_keep_child_boolean_and_arm_order() {
     let cases = [
         (

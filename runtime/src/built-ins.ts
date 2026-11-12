@@ -43,6 +43,19 @@ export function secp256k1BaseMul(x: bigint, y: bigint): bigint {
   return (x * y) % SECP256K1_BASE_MODULUS;
 }
 
+/** Negate a canonical secp256k1 base field element. */
+export function secp256k1BaseNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256K1_BASE_MODULUS);
+}
+
+/** Invert a nonzero canonical secp256k1 base field element. */
+export function secp256k1BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256k1 base field has no inverse for 0');
+  }
+  return inverseModuloPrime(x, SECP256K1_BASE_MODULUS);
+}
+
 /** Add two canonical secp256k1 scalar field elements. */
 export function secp256k1ScalarAdd(x: bigint, y: bigint): bigint {
   return (x + y) % SECP256K1_SCALAR_MODULUS;
@@ -56,6 +69,32 @@ export function secp256k1ScalarSub(x: bigint, y: bigint): bigint {
 /** Multiply two canonical secp256k1 scalar field elements. */
 export function secp256k1ScalarMul(x: bigint, y: bigint): bigint {
   return (x * y) % SECP256K1_SCALAR_MODULUS;
+}
+
+/** Negate a canonical secp256k1 scalar field element. */
+export function secp256k1ScalarNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Invert a nonzero canonical secp256k1 scalar field element. */
+export function secp256k1ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256k1 scalar field has no inverse for 0');
+  }
+  return inverseModuloPrime(x, SECP256K1_SCALAR_MODULUS);
+}
+
+function inverseModuloPrime(value: bigint, modulus: bigint): bigint {
+  // Fermat's little theorem for nonzero elements. The exponent is public and fixed per field.
+  let result = 1n;
+  let power = value;
+  for (let exponent = modulus - 2n; exponent > 0n; exponent >>= 1n) {
+    if ((exponent & 1n) !== 0n) {
+      result = (result * power) % modulus;
+    }
+    power = (power * power) % modulus;
+  }
+  return result;
 }
 
 /**

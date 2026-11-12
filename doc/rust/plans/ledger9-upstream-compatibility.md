@@ -158,6 +158,21 @@ transaction applied under default strict verification and replay returned
 `IntentAlreadyExists` with byte-identical ledger state. The remaining
 arithmetic proof and application matrix is open.
 
+The secp256k1 Base and Scalar `neg` and `inv` overloads now lower to
+typed Rust, TypeScript and ZKIR. The
+[unary fixtures](../../../test-contracts/stdlib/secp256k1/unary)
+retain both original upstream ZKIR 3.1 expectations alongside checks
+against the current 3.0 profile. Active inversion of zero fails even
+when the result is discarded. Guarded ZKIR inversion supplies a typed
+one to the eager VM operation when the branch is inactive. The pinned
+interpreter accepted all 30 stateful preimages and refused six
+active-zero inputs and 30 changed writes. Five fresh standalone proofs
+covered both original fixtures, guarded branches and a discarded
+inverse. A separately proved, funded inactive-zero call applied under
+default strict verification. Replay returned `IntentAlreadyExists`
+with byte-identical ledger state. Fallible constructor inversion and
+the rest of the proof and Linux matrix remain open.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

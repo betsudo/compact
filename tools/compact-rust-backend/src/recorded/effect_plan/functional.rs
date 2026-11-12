@@ -373,6 +373,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::UnsignedSubtract(..)
                 | Operation::UnsignedMultiply(..)
                 | Operation::Compare { .. }
+                | Operation::Secp256k1Unary { .. }
                 | Operation::Convert { .. } => Capability::Pure,
                 Operation::OwnPublicKey => Capability::ExecutionIdentity,
                 Operation::KernelSelf => Capability::KernelAddress,

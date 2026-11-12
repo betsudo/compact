@@ -83,6 +83,20 @@ pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
     matches!(ty, Type::Unit).then_some(!negated)
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Secp256k1Unary {
+    Negate,
+    Invert,
+}
+
+pub(crate) fn check_secp256k1_field(ty: &Type) -> Result<(), RenderError> {
+    if matches!(ty, Type::Secp256k1Base | Type::Secp256k1Scalar) {
+        Ok(())
+    } else {
+        Err(RenderError::ExpectedSecp256k1Field(ty.clone()))
+    }
+}
+
 pub(crate) fn check_field_arithmetic_operand(ty: &Type) -> Result<(), RenderError> {
     if matches!(
         ty,

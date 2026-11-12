@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Checked control composition over the complete generic expression visitor.
 //! Source order, lexical validation and Unit semantics are owned here.
@@ -102,7 +113,9 @@ where
             let mut values = Vec::new();
             for step in steps {
                 let step = children.visit(step, sink)?;
-                expect(step.ty, Type::Unit)?;
+                if !allows_sequence_step(&step.ty) {
+                    expect(step.ty, Type::Unit)?;
+                }
                 values.push(step.output);
             }
             let value = children.visit(value, sink)?;
@@ -154,6 +167,10 @@ where
         ),
         ty: checked.ty,
     })
+}
+
+pub(crate) fn allows_sequence_step(ty: &Type) -> bool {
+    matches!(ty, Type::Unit | Type::Secp256k1Base | Type::Secp256k1Scalar)
 }
 
 fn expect(actual: Type, expected: Type) -> Result<(), RenderError> {

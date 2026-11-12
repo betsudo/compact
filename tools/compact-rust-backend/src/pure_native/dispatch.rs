@@ -114,7 +114,9 @@ macro_rules! dispatch {
             $crate::ir::Expr::ConstructJubjubPoint { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::EcNeg { .. } => {
+            $crate::ir::Expr::EcNeg { .. }
+            | $crate::ir::Expr::Secp256k1Neg { .. }
+            | $crate::ir::Expr::Secp256k1Inv { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::EcMul { .. } => {

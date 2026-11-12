@@ -23,6 +23,7 @@ import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
 import { registerArithmeticTests } from './arithmetic/checks.mjs';
 import { registerPositiveCastTests } from './positive-casts/checks.mjs';
+import { registerUnaryTests } from './unary/checks.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const compiler = process.env.COMPACT_SECP256K1_TEST_COMPILER;
@@ -92,3 +93,4 @@ test('runs the original base field roundtrip assertion on generated TypeScript',
 
 registerPositiveCastTests(compile);
 registerArithmeticTests(compile);
+registerUnaryTests(compile);

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Rules over already checked children; no traversal or syntax dependency.
 use super::{Binary, CheckedCrypto, Unary};
@@ -9,6 +20,7 @@ use crate::{
     ir::Type,
     native_representation::{Operation, check_tuple_traits},
     pure_semantics::{
+        arithmetic::check_secp256k1_field,
         hash_encoding::DynamicInputEncoding,
         jubjub::{Axis, JubjubOperands, check_jubjub},
         sink::Typed,
@@ -61,7 +73,10 @@ pub(super) fn unary<V>(
         }
         Unary::Sha512 => {
             check_tuple_traits(Operation::Sha512, &value.ty)?;
-            (CheckedCrypto::Sha512(value.output), Type::Bytes { length: 64 })
+            (
+                CheckedCrypto::Sha512(value.output),
+                Type::Bytes { length: 64 },
+            )
         }
         Unary::Degrade => {
             expect(value.ty, Type::Bytes { length: 32 })?;
@@ -88,6 +103,10 @@ pub(super) fn unary<V>(
         Unary::PointX => return jubjub(JubjubOperands::Coordinate(Axis::X, value)),
         Unary::PointY => return jubjub(JubjubOperands::Coordinate(Axis::Y, value)),
         Unary::Negate => return jubjub(JubjubOperands::Negate(value)),
+        Unary::Secp256k1(kind) => {
+            check_secp256k1_field(&value.ty)?;
+            (CheckedCrypto::Secp256k1Unary(kind, value.output), value.ty)
+        }
         Unary::Generator => return jubjub(JubjubOperands::Generator(value)),
         Unary::Reduce => return jubjub(JubjubOperands::Reduce(value)),
     };

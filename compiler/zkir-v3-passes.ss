@@ -114,6 +114,24 @@
           (nanopass-case (Lflattened Argument) (list-ref arg* index)
             [(argument (,var-name ...) (ty (,alignment* ...) (,primitive-type* ...)))
              alignment*]))
+        (define (emit-inverse src test outp inp instr*)
+          (with-output-language (Lzkir Instruction)
+            (if (eqv? test 1)
+                (cons `(inv ,outp ,inp) instr*)
+                (let ([field-type
+                       (nanopass-case (Lflattened Argument) (car arg*)
+                         [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type)))
+                          (type->string primitive-type)])]
+                      [one-bytes (make-temp-id src 'one-bytes)]
+                      [one (make-temp-id src 'one)]
+                      [active (make-temp-id src 'active-inverse-input)])
+                  ;; The VM evaluates inv eagerly. Only an active zero is an error.
+                  (cons*
+                    `(inv ,outp ,active)
+                    `(cond_select ,active ,test ,inp ,one)
+                    `(from_bytes ,field-type ,one ,one-bytes)
+                    `(to_bytes ,one-bytes 1)
+                    instr*)))))
         (lambda (var-name* src test triv* instr*)
           (with-output-language (Lzkir Instruction)
             ;; Generally assume that the arity is correct here.
@@ -156,6 +174,10 @@
               [(hashToCurve)
                (assert (= (length var-name*) 1))
                (cons `(hash_to_curve ,(car var-name*) ,triv* ...) instr*)]
+              [(neg)
+               (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
+              [(inv)
+               (emit-inverse src test (car var-name*) (car triv*) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
                (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]
@@ -1062,6 +1084,8 @@
        `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
        `((op . "hash_to_curve") (output . ,outp) (inputs . ,(list->vector inp*)))]
+      [(inv ,[* outp] ,[* inp])
+       `((op . "inv") (output . ,outp) (a . ,inp))]
       [(jubjub_scalar_from_native ,[* outp] ,[* inp])
        `((op . "jubjub_scalar_from_native") (output . ,outp) (native . ,inp))]
       [(keccak256 ,[* outp] (,alignment* ...) ,[* inp*] ...)

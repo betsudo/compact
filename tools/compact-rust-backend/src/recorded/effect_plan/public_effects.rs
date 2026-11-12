@@ -61,7 +61,8 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                 | Operation::Compare { .. } | Operation::Equal(_, _) | Operation::NotEqual(_, _)
                 | Operation::JubjubPointX(_) | Operation::JubjubPointY(_) | Operation::JubjubScalarFromNative(_)
                 | Operation::EcMulGenerator(_) | Operation::EcNeg(_) | Operation::ConstructJubjubPoint { .. }
-                | Operation::EcMul { .. } | Operation::EcAdd { .. } | Operation::Convert { .. } => {}
+                | Operation::EcMul { .. } | Operation::EcAdd { .. }
+                | Operation::Secp256k1Unary { .. } | Operation::Convert { .. } => {}
             }
         }
     }

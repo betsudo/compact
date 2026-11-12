@@ -9,7 +9,8 @@ use midnight_base_crypto::fab::{
 };
 use midnight_compact_runtime::ledger::{CellValue, DefaultDB, read_cell, try_constructor_cell};
 use midnight_compact_runtime::{
-    BinaryHashRepr, Field, FieldRepr, FromFieldRepr, HashInputValue, Secp256k1Base, Secp256k1Scalar,
+    BinaryHashRepr, CompactError, Field, FieldRepr, FromFieldRepr, HashInputValue, Secp256k1Base,
+    Secp256k1Scalar,
 };
 
 fn le_bytes(hex: &str) -> [u8; 32] {
@@ -250,6 +251,90 @@ fn scalar_arithmetic_reduces_with_the_scalar_order() {
     assert_eq!(
         x * y,
         scalar("75fa26ca654d5c64672d3951b8efbb31bc29c6a54de3af6d7e84724904a3ef0e")
+    );
+}
+
+#[test]
+fn base_negation_and_inverse_use_the_coordinate_field() {
+    let base = |hex| Secp256k1Base::from_le_bytes(le_bytes(hex)).unwrap();
+    let zero = Secp256k1Base::default();
+    let one = base("0000000000000000000000000000000000000000000000000000000000000001");
+    let max = base("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e");
+    let zero_error = zero.inverse().unwrap_err();
+    assert_eq!(zero_error, CompactError::Secp256k1BaseZeroInverse);
+    assert_eq!(
+        zero_error.to_string(),
+        "secp256k1 base field has no inverse for 0"
+    );
+    assert_eq!(-zero, zero);
+    assert_eq!(-one, max);
+    assert_eq!(-max, one);
+    assert_eq!(one.inverse().unwrap(), one);
+    assert_eq!(max.inverse().unwrap(), max);
+
+    let x = base("9c4467d18df9282eb7124b451afecac5f4827503316aacda34a863e367e0c85c");
+    let negative = -x;
+    let inverse = x.inverse().unwrap();
+    assert_eq!(
+        negative,
+        base("63bb982e7206d7d148edb4bae501353a0b7d8afcce955325cb579c1b981f33d3")
+    );
+    assert_eq!(
+        inverse,
+        base("b02a2d157efd8e8e93b66c409e38291bdc7a73b12ca5ad9729f77a668025c909")
+    );
+    assert_eq!(x + negative, zero);
+    assert_eq!(x * inverse, one);
+    assert_eq!(inverse.inverse().unwrap(), x);
+    check_representation(
+        negative,
+        le_bytes("63bb982e7206d7d148edb4bae501353a0b7d8afcce955325cb579c1b981f33d2"),
+    );
+    check_representation(
+        inverse,
+        le_bytes("b02a2d157efd8e8e93b66c409e38291bdc7a73b12ca5ad9729f77a668025c908"),
+    );
+}
+
+#[test]
+fn scalar_negation_and_inverse_use_the_scalar_order() {
+    let scalar = |hex| Secp256k1Scalar::from_le_bytes(le_bytes(hex)).unwrap();
+    let zero = Secp256k1Scalar::default();
+    let one = scalar("0000000000000000000000000000000000000000000000000000000000000001");
+    let max = scalar("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140");
+    let zero_error = zero.inverse().unwrap_err();
+    assert_eq!(zero_error, CompactError::Secp256k1ScalarZeroInverse);
+    assert_eq!(
+        zero_error.to_string(),
+        "secp256k1 scalar field has no inverse for 0"
+    );
+    assert_eq!(-zero, zero);
+    assert_eq!(-one, max);
+    assert_eq!(-max, one);
+    assert_eq!(one.inverse().unwrap(), one);
+    assert_eq!(max.inverse().unwrap(), max);
+
+    let x = scalar("9c4467d18df9282eb7124b451afecac5f4827503316aacda34a863e367e0c85c");
+    let negative = -x;
+    let inverse = x.inverse().unwrap();
+    assert_eq!(
+        negative,
+        scalar("63bb982e7206d7d148edb4bae5013538c62c67e37dddf3618b29faa9685578e5")
+    );
+    assert_eq!(
+        inverse,
+        scalar("4401f18738c5f123ac5d37b243b4aaeccd97af85b56be498d008550fafd94b0b")
+    );
+    assert_eq!(x + negative, zero);
+    assert_eq!(x * inverse, one);
+    assert_eq!(inverse.inverse().unwrap(), x);
+    check_representation(
+        negative,
+        le_bytes("63bb982e7206d7d148edb4bae5013538c62c67e37dddf3618b29faa9685578e4"),
+    );
+    check_representation(
+        inverse,
+        le_bytes("4401f18738c5f123ac5d37b243b4aaeccd97af85b56be498d008550fafd94b0a"),
     );
 }
 

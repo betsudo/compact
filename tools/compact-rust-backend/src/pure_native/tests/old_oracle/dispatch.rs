@@ -84,6 +84,9 @@ fn expression_with_calls(
         Expr::FieldCast { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::FieldToBytes32 { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),
+        Expr::Secp256k1Neg { .. } | Expr::Secp256k1Inv { .. } => {
+            Err(RenderError::EffectfulExpression)
+        }
         Expr::Coerce { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::UnsignedCast { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::UnsignedAdd { .. }

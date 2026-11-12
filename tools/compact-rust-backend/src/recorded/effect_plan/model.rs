@@ -16,6 +16,7 @@
 //! Typed SSA values and ordered blocks. No Rust syntax or profile counters.
 use super::declarations::Declarations;
 use crate::ir::{KeccakEncoding, Type};
+use crate::pure_semantics::arithmetic::Secp256k1Unary;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Value {
@@ -198,6 +199,10 @@ pub(super) enum Operation {
     Subtract(Value, Value),
     /// Modular multiplication in the official Field domain.
     Multiply(Value, Value),
+    Secp256k1Unary {
+        kind: Secp256k1Unary,
+        value: Value,
+    },
     /// Checked small unsigned arithmetic; operand and result bounds are independent.
     UnsignedAdd(Value, Value),
     UnsignedSubtract(Value, Value),

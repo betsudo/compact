@@ -28,11 +28,12 @@ use crate::ir::{
 };
 use crate::native_representation;
 use crate::pure_semantics::arithmetic::{
-    check_field_arithmetic_operand, check_field_arithmetic_pair,
+    Secp256k1Unary, check_field_arithmetic_operand, check_field_arithmetic_pair,
+    check_secp256k1_field,
 };
 use crate::pure_semantics::conversion::Secp256k1BytesCast;
 use crate::source_diagnostics::{Owner, RefusalSite};
-use crate::value_lowering::secp256k1_bytes_cast_syntax;
+use crate::value_lowering::{secp256k1_bytes_cast_syntax, secp256k1_unary_syntax};
 use crate::{
     RenderError, UnsignedMaximum, coerce_expression, condition_needs_statement, discard_expression,
     expression_with_calls, field_to_bytes_32_syntax, ident, ledger_path_expr,
@@ -564,7 +565,9 @@ fn render_operation_expression(
         | Expr::Multiply { .. }
         | Expr::Equal { .. }
         | Expr::NotEqual { .. }
-        | Expr::Compare { .. } => render_arithmetic_operation(
+        | Expr::Compare { .. }
+        | Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. } => render_arithmetic_operation(
             value,
             parameters,
             statements,
@@ -1530,6 +1533,23 @@ fn render_arithmetic_operation(
     environment: &StateExpressionContext<'_, '_>,
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
+        Expr::Secp256k1Neg { value: input } | Expr::Secp256k1Inv { value: input } => {
+            let kind = if matches!(value, Expr::Secp256k1Inv { .. }) {
+                Secp256k1Unary::Invert
+            } else {
+                Secp256k1Unary::Negate
+            };
+            let (rendered, ty, effect) = render_state_expression_observed(
+                input,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            check_secp256k1_field(&ty)?;
+            Ok((secp256k1_unary_syntax(kind, rendered), ty, effect))
+        }
         Expr::UnsignedAdd { max, left, right }
         | Expr::UnsignedSubtract { max, left, right }
         | Expr::UnsignedMultiply { max, left, right } => {

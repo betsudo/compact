@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::cmp::Ordering;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 
-use ff::PrimeField;
+use ff::{Field, PrimeField};
 use midnight_base_crypto::fab::{
     Aligned, Alignment, AlignmentAtom, AlignmentSegment, InvalidBuiltinDecode, Value, ValueAtom,
     ValueSlice,
@@ -13,7 +13,7 @@ use midnight_base_crypto::fab::{
 use midnight_curves::k256::{Fp, Fq};
 use midnight_transient_crypto::fab::AlignmentExt;
 
-use crate::{BinaryHashRepr, FieldRepr, Fr, FromFieldRepr, MemWrite};
+use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite};
 
 // The pinned Compact runtime's maximum values, in little-endian order.
 const BASE_MAX: [u8; 32] = [
@@ -100,7 +100,7 @@ fn decode(value: &ValueSlice, max: [u8; 32]) -> Option<[u8; 32]> {
 }
 
 macro_rules! impl_secp256k1_field {
-    ($field:ident, $max:ident, $inner:ty) => {
+    ($field:ident, $max:ident, $inner:ty, $zero_inverse:ident) => {
         impl $field {
             /// Decode a canonical little-endian field element.
             pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
@@ -115,6 +115,13 @@ macro_rules! impl_secp256k1_field {
             /// Return the field element's canonical little-endian bytes.
             pub fn to_le_bytes(self) -> [u8; 32] {
                 self.0
+            }
+
+            /// Return the multiplicative inverse, or a field-specific error for zero.
+            pub fn inverse(self) -> Result<Self, CompactError> {
+                Option::from(Field::invert(&self.into_inner()))
+                    .map(Self::from_inner)
+                    .ok_or(CompactError::$zero_inverse)
             }
 
             fn into_inner(self) -> $inner {
@@ -151,6 +158,14 @@ macro_rules! impl_secp256k1_field {
 
             fn mul(self, rhs: Self) -> Self {
                 Self::from_inner(self.into_inner() * rhs.into_inner())
+            }
+        }
+
+        impl Neg for $field {
+            type Output = Self;
+
+            fn neg(self) -> Self {
+                Self::from_inner(-self.into_inner())
             }
         }
 
@@ -235,5 +250,5 @@ macro_rules! impl_secp256k1_field {
     };
 }
 
-impl_secp256k1_field!(Secp256k1Base, BASE_MAX, Fp);
-impl_secp256k1_field!(Secp256k1Scalar, SCALAR_MAX, Fq);
+impl_secp256k1_field!(Secp256k1Base, BASE_MAX, Fp, Secp256k1BaseZeroInverse);
+impl_secp256k1_field!(Secp256k1Scalar, SCALAR_MAX, Fq, Secp256k1ScalarZeroInverse);

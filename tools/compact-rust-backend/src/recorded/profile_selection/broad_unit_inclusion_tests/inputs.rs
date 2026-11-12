@@ -221,7 +221,20 @@ fn secp256k1_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &secp256k1_cast_manifest(SECP256K1_CAST)?)
+    let before_unary = legacy_source(path, current, &secp256k1_unary_manifest(SECP256K1_UNARY)?)?;
+    legacy_source(
+        path,
+        &before_unary,
+        &secp256k1_cast_manifest(SECP256K1_CAST)?,
+    )
+}
+
+const SECP256K1_UNARY: &[u8] = include_bytes!("secp256k1-unary-expression.json");
+fn secp256k1_unary_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "fb7beda87e26b8eddf818f4b8a047e28307f24c52dcf910e55a534f05f9a96ad" {
+        return Err("unreviewed secp256k1 unary compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
 // Keccak adds an encoding field to three historical traversal patterns.
@@ -356,6 +369,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
     authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
+    authority["secp256k1_unary_projection"] = secp256k1_unary_manifest(SECP256K1_UNARY).unwrap();
     authority["sha512_enum_projection"] = sha512_enum_manifest(SHA512_ENUM).unwrap();
     authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
     authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
