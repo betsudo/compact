@@ -1,0 +1,173 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger base: Secp256r1Base;"
+      "export ledger scalar: Secp256r1Scalar;"
+      "export circuit addb(b0: Secp256r1Base, b1: Secp256r1Base): Secp256r1Base {"
+      "  base = disclose(b0 + b1);"
+      "  return base;"
+      "}"
+      "export circuit subb(b0: Secp256r1Base, b1: Secp256r1Base): Secp256r1Base {"
+      "  base = disclose(b0 - b1);"
+      "  return base;"
+      "}"
+      "export circuit mulb(b0: Secp256r1Base, b1: Secp256r1Base): Secp256r1Base {"
+      "  base = disclose(b0 * b1);"
+      "  return base;"
+      "}"
+      "export circuit adds(s0: Secp256r1Scalar, s1: Secp256r1Scalar): Secp256r1Scalar {"
+      "  scalar = disclose(s0 + s1);"
+      "  return scalar;"
+      "}"
+      "export circuit subs(s0: Secp256r1Scalar, s1: Secp256r1Scalar): Secp256r1Scalar {"
+      "  scalar = disclose(s0 - s1);"
+      "  return scalar;"
+      "}"
+      "export circuit muls(s0: Secp256r1Scalar, s1: Secp256r1Scalar): Secp256r1Scalar {"
+      "  scalar = disclose(s0 * s1);"
+      "  return scalar;"
+      "}"
+      )
+    (pass-returns reduce-to-zkir
+      (program
+        (circuit (addb) ((%b0.9 "Base<Secp256r1>")
+                         (%b1.8 "Base<Secp256r1>"))
+          ("Base<Secp256r1>")
+          (add %tmp.12 %b0.9 %b1.8)
+          (encode (%fld.13 %fld.14) %tmp.12)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.13 %fld.14)
+          (impact 1 145)
+          (public_input "Base<Secp256r1>" %t.15)
+          (encode (%fld.16 %fld.17) %t.15)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.16 %fld.17)
+          (output %t.15))
+        (circuit (subb) ((%b0.11 "Base<Secp256r1>")
+                         (%b1.10 "Base<Secp256r1>"))
+          ("Base<Secp256r1>")
+          (neg %neg.18 %b1.10)
+          (add %tmp.19 %b0.11 %neg.18)
+          (encode (%fld.20 %fld.21) %tmp.19)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.20 %fld.21)
+          (impact 1 145)
+          (public_input "Base<Secp256r1>" %t.22)
+          (encode (%fld.23 %fld.24) %t.22)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.23 %fld.24)
+          (output %t.22))
+        (circuit (mulb) ((%b0.5 "Base<Secp256r1>")
+                         (%b1.4 "Base<Secp256r1>"))
+          ("Base<Secp256r1>")
+          (mul %tmp.25 %b0.5 %b1.4)
+          (encode (%fld.26 %fld.27) %tmp.25)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.26 %fld.27)
+          (impact 1 145)
+          (public_input "Base<Secp256r1>" %t.28)
+          (encode (%fld.29 %fld.30) %t.28)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 2 24 8 %fld.29 %fld.30)
+          (output %t.28))
+        (circuit (adds) ((%s0.7 "Scalar<Secp256r1>")
+                         (%s1.6 "Scalar<Secp256r1>"))
+          ("Scalar<Secp256r1>")
+          (add %tmp.31 %s0.7 %s1.6)
+          (encode (%fld.32 %fld.33) %tmp.31)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.32 %fld.33)
+          (impact 1 145)
+          (public_input "Scalar<Secp256r1>" %t.34)
+          (encode (%fld.35 %fld.36) %t.34)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.35 %fld.36)
+          (output %t.34))
+        (circuit (subs) ((%s0.1 "Scalar<Secp256r1>")
+                         (%s1.0 "Scalar<Secp256r1>"))
+          ("Scalar<Secp256r1>")
+          (neg %neg.37 %s1.0)
+          (add %tmp.38 %s0.1 %neg.37)
+          (encode (%fld.39 %fld.40) %tmp.38)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.39 %fld.40)
+          (impact 1 145)
+          (public_input "Scalar<Secp256r1>" %t.41)
+          (encode (%fld.42 %fld.43) %t.41)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.42 %fld.43)
+          (output %t.41))
+        (circuit (muls) ((%s0.3 "Scalar<Secp256r1>")
+                         (%s1.2 "Scalar<Secp256r1>"))
+          ("Scalar<Secp256r1>")
+          (mul %tmp.44 %s0.3 %s1.2)
+          (encode (%fld.45 %fld.46) %tmp.44)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.45 %fld.46)
+          (impact 1 145)
+          (public_input "Scalar<Secp256r1>" %t.47)
+          (encode (%fld.48 %fld.49) %t.47)
+          (impact 1 48)
+          (impact 1 80 1 1 1)
+          (impact 1 12 2 24 8 %fld.48 %fld.49)
+          (output %t.47))))
+    (stage-javascript
+      ;; Test against some random base and scalar values.
+      (let ([base0 52584276415898193626173731049016156782780531967106776553089736481455217153711]
+            [base1 101724073669754816760231198588846155972783226750243314995576536951426993649219]
+            [scalar0 58103357790562692890356380673073847817029214593712501886367742447833320047597]
+            [scalar1 89767741681767092464929206432342796822339894083881471054469222796017018470626]
+            [expect
+              (lambda (circuit left right result)
+                (format
+                  "  expect((await contract.circuits.~a(context, ~dn, ~dn)).result).toEqual(~dn);"
+                  circuit left right result))])
+        `(
+          "test('secp256r1 field arithmetic', async () => {"
+          "  const [contract, context] = await startContract(contractCode, {}, 0);"
+          ,(expect 'addb base0 0 base0)
+          ,(expect 'addb base1 0 base1)
+          ,(expect 'addb base0 (max-secp256r1-base) (1- base0))
+          ,(expect 'addb base1 (max-secp256r1-base) (1- base1))
+          ,(expect 'addb base0 base1 (modulo (+ base0 base1) (1+ (max-secp256r1-base))))
+          ,(expect 'subb base0 0 base0)
+          ,(expect 'subb base1 0 base1)
+          ,(expect 'subb base0 (max-secp256r1-base) (1+ base0))
+          ,(expect 'subb base1 (max-secp256r1-base) (1+ base1))
+          ,(expect 'subb base0 base1 (modulo (- base0 base1) (1+ (max-secp256r1-base))))
+          ,(expect 'mulb base0 0 0)
+          ,(expect 'mulb base1 0 0)
+          ,(expect 'mulb base0 1 base0)
+          ,(expect 'mulb base1 1 base1)
+          ,(expect 'mulb base0 (max-secp256r1-base)
+             (modulo (* base0 (max-secp256r1-base)) (1+ (max-secp256r1-base))))
+          ,(expect 'mulb base1 (max-secp256r1-base)
+             (modulo (* base1 (max-secp256r1-base)) (1+ (max-secp256r1-base))))
+          ,(expect 'mulb base0 base1 (modulo (* base0 base1) (1+ (max-secp256r1-base))))
+          ,(expect 'adds scalar0 0 scalar0)
+          ,(expect 'adds scalar1 0 scalar1)
+          ,(expect 'adds scalar0 (max-secp256r1-scalar) (1- scalar0))
+          ,(expect 'adds scalar1 (max-secp256r1-scalar) (1- scalar1))
+          ,(expect 'adds scalar0 scalar1 (modulo (+ scalar0 scalar1) (1+ (max-secp256r1-scalar))))
+          ,(expect 'subs scalar0 0 scalar0)
+          ,(expect 'subs scalar1 0 scalar1)
+          ,(expect 'subs scalar0 (max-secp256r1-scalar) (1+ scalar0))
+          ,(expect 'subs scalar1 (max-secp256r1-scalar) (1+ scalar1))
+          ,(expect 'subs scalar0 scalar1 (modulo (- scalar0 scalar1) (1+ (max-secp256r1-scalar))))
+          ,(expect 'muls scalar0 0 0)
+          ,(expect 'muls scalar1 0 0)
+          ,(expect 'muls scalar0 1 scalar0)
+          ,(expect 'muls scalar1 1 scalar1)
+          ,(expect 'muls scalar0 (max-secp256r1-scalar)
+             (modulo (* scalar0 (max-secp256r1-scalar)) (1+ (max-secp256r1-scalar))))
+          ,(expect 'muls scalar1 (max-secp256r1-scalar)
+             (modulo (* scalar1 (max-secp256r1-scalar)) (1+ (max-secp256r1-scalar))))
+          ,(expect 'muls scalar0 scalar1 (modulo (* scalar0 scalar1) (1+ (max-secp256r1-scalar))))
+        "});"
+        )))
+    )

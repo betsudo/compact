@@ -233,7 +233,13 @@ guarded ledger writes. Both targets reject the original invalid widths and
 direct casts between different fields. The two original mixed-curve
 Scheme tests are retained in full. Their P-256 cases execute in separate
 fixtures while the Curve25519 cases await their runtime and compiler port.
-Arithmetic, points, and P-256 signature suites remain separate.
+The [P-256 arithmetic fixtures](../../../test-contracts/stdlib/secp256r1/arithmetic)
+retain the original six stateful exports and 34 assertions. The generated
+Rust and TypeScript preserve separate base and scalar operands and
+returns. The proof lane checks changed ledger writes and returns,
+then independently verifies a selected statement per export and
+applies a separate funded transaction. P-256 unary operations, points
+and signature suites remain separate.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

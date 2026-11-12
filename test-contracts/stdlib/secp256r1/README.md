@@ -46,3 +46,7 @@ slow lane.
 
 The [byte cast fixtures](casts/README.md) extend the same test command with
 the upstream width refusals, conversions and guarded ledger cases.
+
+The [arithmetic fixtures](arithmetic/README.md) cover the six original
+P-256 addition, subtraction and multiplication circuits and the 34
+original assertions.

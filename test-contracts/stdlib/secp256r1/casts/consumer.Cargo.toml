@@ -20,6 +20,7 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+arithmetic = { package = "compact-contract-arithmetic", path = "../../family-first/arithmetic/ts-rust/.build/contract", features = ["ledger-transaction"] }
 decode = { package = "compact-contract-decode", path = "../../family-first/casts/decode/ts-rust/.build/contract", features = ["ledger-transaction"] }
 encode = { package = "compact-contract-encode", path = "../../family-first/casts/encode/ts-rust/.build/contract", features = ["ledger-transaction"] }
 guarded_save = { package = "compact-contract-guarded-save", path = "../../family-first/casts/guarded-save/ts-rust/.build/contract", features = ["ledger-transaction"] }

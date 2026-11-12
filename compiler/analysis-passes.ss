@@ -1991,7 +1991,7 @@
               [(tfield ,src1) (values '() #f)]
               [(tunsigned ,src ,nat) (values '() nat)]
               [(topaque ,src ,opaque-type)
-               (guard (secp256k1-field-max opaque-type))
+               (guard (foreign-field-max opaque-type))
                (values '() opaque-type)]
               [else (source-errorf src "~a requires its ~a operand to be a Field or Uint; the actual type is ~a"
                                    op
@@ -3918,10 +3918,10 @@
        (arithmetic-binop src "*" mbits expr1 expr2)]
       [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
        (unless (and (memq arithmetic-op '(+ - *))
-                    (T type [(topaque ,src ,opaque-type) (secp256k1-field-max opaque-type)])
+                    (T type [(topaque ,src ,opaque-type) (foreign-field-max opaque-type)])
                     (sametype? (de-alias type1) type)
                     (sametype? (de-alias type2) type))
-         (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+         (source-errorf src "invalid operands for foreign field arithmetic"))
        type]
       [(< ,src ,bits ,expr1 ,expr2)
        (relational-operator src bits expr1 expr2)]

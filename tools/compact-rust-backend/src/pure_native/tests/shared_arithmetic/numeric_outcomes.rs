@@ -17,23 +17,25 @@
 use super::*;
 
 #[test]
-fn secp256k1_field_arithmetic_preserves_exact_native_types() {
+fn field_arithmetic_preserves_exact_native_types() {
     for (kind, expected) in [
         (ArithmeticKind::Add, "l + r"),
         (ArithmeticKind::Subtract, "l - r"),
         (ArithmeticKind::Multiply, "l * r"),
     ] {
         let source = field(kind, reference("left"), reference("right"));
-        for left in [Type::Field, Type::Secp256k1Base, Type::Secp256k1Scalar] {
-            for right in [
-                Type::Field,
-                Type::Secp256k1Base,
-                Type::Secp256k1Scalar,
-                Type::Bytes { length: 32 },
-            ] {
+        let fields = [
+            Type::Field,
+            Type::Secp256k1Base,
+            Type::Secp256k1Scalar,
+            Type::Secp256r1Base,
+            Type::Secp256r1Scalar,
+        ];
+        for left in &fields {
+            for right in fields.iter().chain(&[Type::Bytes { length: 32 }]) {
                 let parameters = HashMap::from([
-                    ("left", (&left, syn::parse_quote!(l))),
-                    ("right", (&right, syn::parse_quote!(r))),
+                    ("left", (left, syn::parse_quote!(l))),
+                    ("right", (right, syn::parse_quote!(r))),
                 ]);
                 let result = observe(&source, &parameters, &HashMap::new());
                 if left == right {
@@ -43,7 +45,7 @@ fn secp256k1_field_arithmetic_preserves_exact_native_types() {
                         result,
                         Err(RenderError::TypeMismatch {
                             expected: left.clone(),
-                            actual: right,
+                            actual: right.clone(),
                         })
                     );
                 }

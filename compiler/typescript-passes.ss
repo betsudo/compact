@@ -327,6 +327,8 @@
            "mulField"
            "secp256k1BaseAdd" "secp256k1BaseSub" "secp256k1BaseMul"
            "secp256k1ScalarAdd" "secp256k1ScalarSub" "secp256k1ScalarMul"
+           "secp256r1BaseAdd" "secp256r1BaseSub" "secp256r1BaseMul"
+           "secp256r1ScalarAdd" "secp256r1ScalarSub" "secp256r1ScalarMul"
            ))
       (define (compact-stdlib name)
         (unless (member name compact-stdlib-entries)
@@ -2947,6 +2949,8 @@
                       (case opaque-type
                         [("Secp256k1Base") "secp256k1Base"]
                         [("Secp256k1Scalar") "secp256k1Scalar"]
+                        [("Secp256r1Base") "secp256r1Base"]
+                        [("Secp256r1Scalar") "secp256r1Scalar"]
                         [else (assert cannot-happen)])]
                      [else (assert cannot-happen)])]
              [suffix (case arithmetic-op [(+) "Add"] [(-) "Sub"] [(*) "Mul"] [else (assert cannot-happen)])])

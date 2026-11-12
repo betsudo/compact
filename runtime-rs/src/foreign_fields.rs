@@ -21,7 +21,7 @@ use midnight_base_crypto::fab::{
     Aligned, Alignment, AlignmentAtom, AlignmentSegment, InvalidBuiltinDecode, Value, ValueAtom,
     ValueSlice,
 };
-use midnight_curves::k256::{Fp, Fq};
+use midnight_curves::{k256, p256};
 use midnight_transient_crypto::fab::AlignmentExt;
 
 use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite};
@@ -127,16 +127,9 @@ fn decode(value: &ValueSlice, max: [u8; 32]) -> Option<[u8; 32]> {
     }
 }
 
-macro_rules! impl_secp256k1_arithmetic {
-    ($field:ident, $max:ident, $inner:ty, $zero_inverse:ident) => {
+macro_rules! impl_foreign_field_arithmetic {
+    ($field:ident, $inner:ty) => {
         impl $field {
-            /// Return the multiplicative inverse, or a field-specific error for zero.
-            pub fn inverse(self) -> Result<Self, CompactError> {
-                Option::from(Field::invert(&self.into_inner()))
-                    .map(Self::from_inner)
-                    .ok_or(CompactError::$zero_inverse)
-            }
-
             pub(super) fn into_inner(self) -> $inner {
                 let mut bytes = self.0;
                 bytes.reverse();
@@ -171,6 +164,19 @@ macro_rules! impl_secp256k1_arithmetic {
 
             fn mul(self, rhs: Self) -> Self {
                 Self::from_inner(self.into_inner() * rhs.into_inner())
+            }
+        }
+    };
+}
+
+macro_rules! impl_secp256k1_unary {
+    ($field:ident, $zero_inverse:ident) => {
+        impl $field {
+            /// Return the multiplicative inverse, or a field-specific error for zero.
+            pub fn inverse(self) -> Result<Self, CompactError> {
+                Option::from(Field::invert(&self.into_inner()))
+                    .map(Self::from_inner)
+                    .ok_or(CompactError::$zero_inverse)
             }
         }
 
@@ -289,10 +295,10 @@ impl_foreign_field!(Secp256k1Scalar, K1_SCALAR_MAX);
 impl_foreign_field!(Secp256r1Base, R1_BASE_MAX);
 impl_foreign_field!(Secp256r1Scalar, R1_SCALAR_MAX);
 
-impl_secp256k1_arithmetic!(Secp256k1Base, K1_BASE_MAX, Fp, Secp256k1BaseZeroInverse);
-impl_secp256k1_arithmetic!(
-    Secp256k1Scalar,
-    K1_SCALAR_MAX,
-    Fq,
-    Secp256k1ScalarZeroInverse
-);
+impl_foreign_field_arithmetic!(Secp256k1Base, k256::Fp);
+impl_foreign_field_arithmetic!(Secp256k1Scalar, k256::Fq);
+impl_foreign_field_arithmetic!(Secp256r1Base, p256::Fp);
+impl_foreign_field_arithmetic!(Secp256r1Scalar, p256::Fq);
+
+impl_secp256k1_unary!(Secp256k1Base, Secp256k1BaseZeroInverse);
+impl_secp256k1_unary!(Secp256k1Scalar, Secp256k1ScalarZeroInverse);

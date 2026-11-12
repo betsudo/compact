@@ -128,7 +128,11 @@ impl Secp256k1Unary {
 pub(crate) fn check_field_arithmetic_operand(ty: &Type) -> Result<(), RenderError> {
     if matches!(
         ty,
-        Type::Field | Type::Secp256k1Base | Type::Secp256k1Scalar
+        Type::Field
+            | Type::Secp256k1Base
+            | Type::Secp256k1Scalar
+            | Type::Secp256r1Base
+            | Type::Secp256r1Scalar
     ) {
         return Ok(());
     }

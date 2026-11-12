@@ -911,10 +911,10 @@
        (with-output-language (Linlined Type) `(tfield ,src))]
       [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
        (unless (and (memq arithmetic-op '(+ - *))
-                    (T type [(topaque ,src ,opaque-type) (secp256k1-field-max opaque-type)])
+                    (T type [(topaque ,src ,opaque-type) (foreign-field-max opaque-type)])
                     (sametype? type1 type)
                     (sametype? type2 type))
-         (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+         (source-errorf src "invalid operands for foreign field arithmetic"))
        type]
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
@@ -2565,10 +2565,11 @@
                       (list `(= ,test ,var-name (bytes->field ,src ,len ,triv1 ,triv2)))))
                   (list-head triv* n)))])))]
       [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Single-Triv : triv1] ,[Single-Triv : triv2])
-       (unless (feature-zkir-v3)
-         (source-errorf src "secp256k1 field arithmetic requires ZKIR v3"))
        (nanopass-case (Lcircuit Type) type
          [(topaque ,src^ ,opaque-type)
+          (unless (feature-zkir-v3)
+            (source-errorf src "~a field arithmetic requires ZKIR v3"
+              (if (secp256k1-field-max opaque-type) "secp256k1" "secp256r1")))
           (hashtable-set! var-ht var-name (Wump-single var-name))
           (with-output-language (Lflattened Statement)
             (list `(= ,test ,var-name (secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2))))]
@@ -3856,9 +3857,9 @@
              [(topaque ,opaque-type^) (string=? opaque-type opaque-type^)]
              [else #f]))
          (unless (and (memq arithmetic-op '(+ - *))
-                      (secp256k1-field-max opaque-type)
+                      (foreign-field-max opaque-type)
                       (same-field? type1) (same-field? type2))
-           (source-errorf src "invalid operands for secp256k1 field arithmetic"))
+           (source-errorf src "invalid operands for foreign field arithmetic"))
          type1)]
       [(< ,bits ,triv1 ,triv2)
        (let* ([type1 (Triv triv1)] [type2 (Triv triv2)])

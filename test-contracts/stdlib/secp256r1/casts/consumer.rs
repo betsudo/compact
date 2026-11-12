@@ -97,10 +97,11 @@ where
     let prover_bytes = fs::read(key_dir.join("statement.prover"))?;
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
-    let wrong_id = if case.id == "decode-14" {
-        "encode-14"
-    } else {
-        "decode-14"
+    let wrong_id = match (case.fixture, case.id) {
+        ("arithmetic", "mulb-6") => "muls-6",
+        ("arithmetic", _) => "mulb-6",
+        (_, "decode-14") => "encode-14",
+        _ => "decode-14",
     };
     let wrong: VerifierKey = tagged_deserialize(fs::File::open(
         root.join("slow-proof")
@@ -109,9 +110,13 @@ where
     )?)?;
     assert_ne!(verifier, wrong);
     let standalone: Proof = tagged_deserialize(fs::File::open(key_dir.join("statement.proof"))?)?;
-    let raw = root
-        .join("family-first/casts")
-        .join(case.fixture)
+    let family = root.join("family-first");
+    let fixture = if case.fixture == "arithmetic" {
+        family.join(case.fixture)
+    } else {
+        family.join("casts").join(case.fixture)
+    };
+    let raw = fixture
         .join("ts-rust/.build/zkir")
         .join(format!("{name}.zkir"));
     let ir = IrSource::load(fs::File::open(&raw)?)?;
@@ -232,7 +237,7 @@ where
             &tx,
             &resolver,
         ))
-        .map_err(|error| format!("secp256k1 funded transaction proving failed: {error:?}"))?;
+        .map_err(|error| format!("P-256 funded transaction proving failed: {error:?}"))?;
     let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
     let sealed = executor.block_on(state.balance_tx(rng, sealed, &resolver))?;
     let mut calls = sealed.calls();
@@ -336,12 +341,13 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let scalar = |i: usize| decode_scalar(&inputs[i]["field"]);
     let guard = || inputs[0].as_bool().unwrap();
     macro_rules! exercise {
-        ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident| $verify:block) => {{
+        ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident $(, $result:ident)?| $verify:block) => {{
             use $package::ledger_contract as contract;
             let init = || contract::initial_state(ConstructorContext::new(()));
             let context = || Ok::<_, CompactError>(init()?.into_circuit_context(ContractAddress::default()));
             let native = contract::$method(context()?, $($arg),*)?;
             let $view = contract::PublicStateView::from(&native);
+            $(let $result = native.result;)?
             $verify
             check_recording(&native, contract::recorded::$method(context()?, $($arg),*)?, 0)?;
             if let Some(out) = funded_output {
@@ -356,7 +362,43 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             }
         }};
     }
+    macro_rules! base_arithmetic {
+        ($method:ident, $call:ident) => {
+            exercise!(
+                arithmetic,
+                $method,
+                $call,
+                (base(0), base(1)),
+                |view, result| {
+                    assert_eq!(result, decode_base(&expected["base"]));
+                    assert_eq!(view.base()?, result);
+                    assert_eq!(view.scalar()?, Secp256r1Scalar::default());
+                }
+            )
+        };
+    }
+    macro_rules! scalar_arithmetic {
+        ($method:ident, $call:ident) => {
+            exercise!(
+                arithmetic,
+                $method,
+                $call,
+                (scalar(0), scalar(1)),
+                |view, result| {
+                    assert_eq!(result, decode_scalar(&expected["scalar"]));
+                    assert_eq!(view.base()?, Secp256r1Base::default());
+                    assert_eq!(view.scalar()?, result);
+                }
+            )
+        };
+    }
     match (fixture, circuit) {
+        ("arithmetic", "addb") => base_arithmetic!(addb, addb_call),
+        ("arithmetic", "subb") => base_arithmetic!(subb, subb_call),
+        ("arithmetic", "mulb") => base_arithmetic!(mulb, mulb_call),
+        ("arithmetic", "adds") => scalar_arithmetic!(adds, adds_call),
+        ("arithmetic", "subs") => scalar_arithmetic!(subs, subs_call),
+        ("arithmetic", "muls") => scalar_arithmetic!(muls, muls_call),
         ("decode", "test") => exercise!(decode, test, test_call, (bytes(0), bytes(1)), |view| {
             assert_eq!(view.base()?, decode_base(&expected["base"]));
             assert_eq!(view.scalar()?, decode_scalar(&expected["scalar"]));
@@ -425,7 +467,7 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
                 }
             )
         }
-        _ => return Err("unrecognized cast fixture or export".into()),
+        _ => return Err("unrecognized P-256 fixture or export".into()),
     }
     Ok(())
 }
@@ -441,13 +483,16 @@ fn main() -> TestResult<()> {
     let vectors: Value =
         serde_json::from_slice(&fs::read(root.join("preimages-first/vectors.json"))?)?;
     let cases = vectors.as_object().ok_or("expected case map")?;
-    if mode == "parity" {
-        assert_eq!(cases.len(), 41);
+    if mode == "parity" || mode == "arithmetic-parity" {
+        let arithmetic = mode == "arithmetic-parity";
+        let expected = if arithmetic { 34 } else { 41 };
+        assert_eq!(cases.len(), expected);
         for (id, row) in cases {
+            assert_eq!(row["fixture"] == "arithmetic", arithmetic);
             run_case(root, id, row, None)?;
         }
         println!(
-            "41 generated Rust cases matched the TypeScript ledger values and public VM replay"
+            "{expected} generated Rust cases matched the TypeScript ledger values and public VM replay"
         );
         return Ok(());
     }

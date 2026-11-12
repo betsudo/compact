@@ -18,7 +18,10 @@ import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
-import { MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS } from './constants.js';
+import {
+  MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS,
+  SECP256R1_BASE_MODULUS, SECP256R1_SCALAR_MODULUS,
+} from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
 import type { Secp256k1Point } from './compact-types.js';
 import { CompactError } from './error.js';
@@ -85,6 +88,38 @@ export function secp256k1ScalarInv(x: bigint): bigint {
     throw new CompactError('secp256k1 scalar field has no inverse for 0');
   }
   return inverseModuloPrime(x, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Add two canonical P-256 base field elements. */
+export function secp256r1BaseAdd(x: bigint, y: bigint): bigint {
+  const sum = x + y;
+  return sum < SECP256R1_BASE_MODULUS ? sum : sum - SECP256R1_BASE_MODULUS;
+}
+
+/** Subtract two canonical P-256 base field elements. */
+export function secp256r1BaseSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256R1_BASE_MODULUS);
+}
+
+/** Multiply two canonical P-256 base field elements. */
+export function secp256r1BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256R1_BASE_MODULUS;
+}
+
+/** Add two canonical P-256 scalar field elements. */
+export function secp256r1ScalarAdd(x: bigint, y: bigint): bigint {
+  const sum = x + y;
+  return sum < SECP256R1_SCALAR_MODULUS ? sum : sum - SECP256R1_SCALAR_MODULUS;
+}
+
+/** Subtract two canonical P-256 scalar field elements. */
+export function secp256r1ScalarSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256R1_SCALAR_MODULUS);
+}
+
+/** Multiply two canonical P-256 scalar field elements. */
+export function secp256r1ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256R1_SCALAR_MODULUS;
 }
 
 /** Extract the affine x-coordinate of a finite secp256k1 point. */
