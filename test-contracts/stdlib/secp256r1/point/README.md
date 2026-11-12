@@ -16,8 +16,8 @@ identity hash with an independent encoding and SHA-256 computation.
 
 The leaf tests check the three original type names in the current
 contract info and Rust IR. The upstream JavaScript `circuitSignatures`
-export is an open metadata gap. The archived roundtrip also calls
-coordinate accessors and will run intact when those are available.
+export is an open metadata gap. The [coordinate accessor runner](../accessors/README.md)
+executes the intact roundtrip.
 
 ```sh
 for fixture in upstream-equality upstream-identity; do

@@ -20,6 +20,11 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+accessor_roundtrip = { package = "compact-contract-upstream-roundtrip", path = "../../family-first/point/upstream-roundtrip/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_direct = { package = "compact-contract-upstream-direct", path = "../../family-first/accessors/upstream-direct/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_ledger = { package = "compact-contract-upstream-ledger", path = "../../family-first/accessors/upstream-ledger/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_asserted = { package = "compact-contract-upstream-asserted", path = "../../family-first/accessors/upstream-asserted/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_guarded = { package = "compact-contract-guarded-writes", path = "../../family-first/accessors/guarded-writes/ts-rust/.build/contract", features = ["ledger-transaction"] }
 point_equality = { package = "compact-contract-upstream-equality", path = "../../family-first/point/upstream-equality/ts-rust/.build/contract", features = ["ledger-transaction"] }
 point_identity = { package = "compact-contract-upstream-identity", path = "../../family-first/point/upstream-identity/ts-rust/.build/contract", features = ["ledger-transaction"] }
 unary_base = { package = "compact-contract-upstream-base", path = "../../family-first/unary/upstream-base/ts-rust/.build/contract", features = ["ledger-transaction"] }

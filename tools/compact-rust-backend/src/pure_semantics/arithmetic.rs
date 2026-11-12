@@ -118,16 +118,14 @@ impl Secp256k1Unary {
                     Err(RenderError::ExpectedSecp256k1Field(operand.clone()))
                 }
             }
-            Self::PointX | Self::PointY => {
-                if *operand == Type::Secp256k1Point {
-                    Ok(Type::Secp256k1Base)
-                } else {
-                    Err(RenderError::TypeMismatch {
-                        expected: Type::Secp256k1Point,
-                        actual: operand.clone(),
-                    })
-                }
-            }
+            Self::PointX | Self::PointY => match operand {
+                Type::Secp256k1Point => Ok(Type::Secp256k1Base),
+                Type::Secp256r1Point => Ok(Type::Secp256r1Base),
+                actual => Err(RenderError::TypeMismatch {
+                    expected: Type::Secp256k1Point,
+                    actual: actual.clone(),
+                }),
+            },
         }
     }
 }

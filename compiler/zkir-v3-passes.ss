@@ -109,16 +109,21 @@
                 `(less_than ,canonical ,native ,jubjub-scalar-order ,(integer-length jubjub-scalar-order))
                 instr*)))))
 
-      (define (emit-secp256k1-coordinate src test point x y instr*)
+      (define (emit-point-coordinate src test base-type point x y instr*)
         (with-output-language (Lzkir Instruction)
           (if (eqv? test 1)
               (cons `(into_coordinates ,x ,y ,point) instr*)
-              (let-values ([(x-high x-low)
-                            (div-and-mod #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
-                                         (expt 2 248))]
-                           [(y-high y-low)
-                            (div-and-mod #x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
-                                         (expt 2 248))])
+              (let*-values ([(generator-x generator-y)
+                             (case base-type
+                               [("Base<Secp256k1>")
+                                (values #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+                                        #x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8)]
+                               [("Base<Secp256r1>")
+                                (values #x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296
+                                        #x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5)]
+                               [else (assert cannot-happen)])]
+                            [(x-high x-low) (div-and-mod generator-x (expt 2 248))]
+                            [(y-high y-low) (div-and-mod generator-y (expt 2 248))])
                 (let ([x-bytes (make-temp-id src 'generator-x-bytes)]
                       [y-bytes (make-temp-id src 'generator-y-bytes)]
                       [gx (make-temp-id src 'generator-x)]
@@ -126,14 +131,14 @@
                       [generator (make-temp-id src 'generator)]
                       [active (make-temp-id src 'active-coordinate-input)])
                   ;; Coordinate extraction is eager. On an inactive branch use the
-                  ;; fixed, finite secp256k1 generator in place of the actual point.
+                  ;; fixed, finite generator of the same curve in place of the actual point.
                   (cons*
                     `(into_coordinates ,x ,y ,active)
                     `(cond_select ,active ,test ,point ,generator)
                     `(from_coordinates ,generator ,gx ,gy)
-                    `(from_bytes "Base<Secp256k1>" ,gy ,y-bytes)
+                    `(from_bytes ,base-type ,gy ,y-bytes)
                     `(bytes_from_natives ,y-bytes 32 ,y-low ,y-high)
-                    `(from_bytes "Base<Secp256k1>" ,gx ,x-bytes)
+                    `(from_bytes ,base-type ,gx ,x-bytes)
                     `(bytes_from_natives ,x-bytes 32 ,x-low ,x-high)
                     instr*))))))
 
@@ -211,12 +216,14 @@
                (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
               [(inv)
                (emit-inverse src test (car var-name*) (car triv*) instr*)]
-              [(secp256k1PointX)
-               (emit-secp256k1-coordinate src test (car triv*) (car var-name*)
-                 (make-temp-id src 'ignore) instr*)]
-              [(secp256k1PointY)
-               (emit-secp256k1-coordinate src test (car triv*) (make-temp-id src 'ignore)
-                 (car var-name*) instr*)]
+              [(secp256k1PointX secp256r1PointX)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointX) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (car var-name*) (make-temp-id src 'ignore) instr*)]
+              [(secp256k1PointY secp256r1PointY)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointY) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (make-temp-id src 'ignore) (car var-name*) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
                (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]

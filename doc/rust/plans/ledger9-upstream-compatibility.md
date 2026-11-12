@@ -248,9 +248,13 @@ The [P-256 point fixtures](../../../test-contracts/stdlib/secp256r1/point)
 retain the original equality and identity-hash assertions. Rust and
 TypeScript encode the same five atoms and reject off-curve finite inputs
 at their typed boundaries. The three point-family tags are checked in
-contract info and Rust IR. The upstream JavaScript circuit signature
-export and the intact roundtrip with point accessors remain open.
-P-256 group operations and signature suites follow separately.
+contract info and Rust IR. The upstream JavaScript circuit signature export remains open.
+The [P-256 accessor fixtures](../../../test-contracts/stdlib/secp256r1/accessors)
+run the intact point roundtrip and original direct, ledger and checked
+assertion cases. The proof checks cover guarded active and inactive
+paths with the correct curve and both coordinate-specific identity errors.
+The computed-identity fixture, group operations and signature suites
+follow separately.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

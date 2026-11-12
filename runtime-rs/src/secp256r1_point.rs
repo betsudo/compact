@@ -20,7 +20,7 @@ use midnight_base_crypto::fab::{
 use midnight_curves::p256::affine_from_xy;
 use midnight_transient_crypto::curve::FR_BYTES;
 
-use crate::{BinaryHashRepr, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256r1Base};
+use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256r1Base};
 
 /// A checked NIST P-256 point. The default value is the canonical identity.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -40,6 +40,20 @@ impl Secp256r1Point {
     /// Return the coordinates of a finite point.
     pub fn coordinates(&self) -> Option<(Secp256r1Base, Secp256r1Base)> {
         self.0
+    }
+
+    /// Return the affine x-coordinate, or an error for the identity.
+    pub fn x(self) -> Result<Secp256r1Base, CompactError> {
+        self.coordinates()
+            .map(|(x, _)| x)
+            .ok_or(CompactError::Secp256r1IdentityX)
+    }
+
+    /// Return the affine y-coordinate, or an error for the identity.
+    pub fn y(self) -> Result<Secp256r1Base, CompactError> {
+        self.coordinates()
+            .map(|(_, y)| y)
+            .ok_or(CompactError::Secp256r1IdentityY)
     }
 }
 

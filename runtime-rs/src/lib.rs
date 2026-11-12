@@ -104,6 +104,8 @@ pub enum CompactError {
     Secp256r1ScalarZeroInverse,
     Secp256k1IdentityX,
     Secp256k1IdentityY,
+    Secp256r1IdentityX,
+    Secp256r1IdentityY,
     InvalidSecp256k1Signature,
     Secp256k1RecoveryFailed,
     InvalidHashInput,
@@ -155,6 +157,18 @@ impl std::fmt::Display for CompactError {
                 write!(
                     f,
                     "cannot extract the y-coordinate of the secp256k1 identity point"
+                )
+            }
+            Self::Secp256r1IdentityX => {
+                write!(
+                    f,
+                    "cannot extract the x-coordinate of the secp256r1 identity point"
+                )
+            }
+            Self::Secp256r1IdentityY => {
+                write!(
+                    f,
+                    "cannot extract the y-coordinate of the secp256r1 identity point"
                 )
             }
             Self::InvalidSecp256k1Signature => {

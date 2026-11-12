@@ -101,6 +101,8 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("upstream-roundtrip", "upstream-roundtrip-test0-0") => "upstream-ledger-storePoint-0",
+        (name, _) if accessor_fixture(name) => "upstream-roundtrip-test0-0",
         ("upstream-equality", "pointsEqual-0") => "pointsNotEqual-0",
         ("upstream-equality" | "upstream-identity", _) => "pointsEqual-0",
         ("upstream-base", _) => "upstream-scalar-test-3",
@@ -121,7 +123,10 @@ where
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
         name if unary_fixture(name) => family.join("unary").join(name),
-        name if point_fixture(name) => family.join("point").join(name),
+        name if point_fixture(name) || name == "upstream-roundtrip" => {
+            family.join("point").join(name)
+        }
+        name if accessor_fixture(name) => family.join("accessors").join(name),
         name => family.join("casts").join(name),
     };
     let raw = fixture
@@ -349,6 +354,13 @@ fn decode_point(value: &Value) -> Secp256r1Point {
     Secp256r1Point::try_from(&*fab).unwrap()
 }
 
+fn accessor_fixture(name: &str) -> bool {
+    matches!(
+        name,
+        "upstream-roundtrip" | "upstream-ledger" | "upstream-asserted" | "guarded-writes"
+    )
+}
+
 fn point_fixture(name: &str) -> bool {
     matches!(name, "upstream-equality" | "upstream-identity")
 }
@@ -379,10 +391,14 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let guard = || inputs[0].as_bool().unwrap();
     let point = |i: usize| decode_point(&inputs[i]);
     macro_rules! exercise {
-        ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident $(, $result:ident)?| $verify:block) => {{
+        ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident $(, $result:ident)?| $verify:block $(, seed = $seed:expr)?) => {{
             use $package::ledger_contract as contract;
             let init = || contract::initial_state(ConstructorContext::new(()));
-            let context = || Ok::<_, CompactError>(init()?.into_circuit_context(ContractAddress::default()));
+            let context = || {
+                let ctx = init()?.into_circuit_context(ContractAddress::default());
+                $(let ctx = ($seed)(ctx)?.context;)?
+                Ok::<_, CompactError>(ctx)
+            };
             let native = contract::$method(context()?, $($arg),*)?;
             if unary_fixture(fixture) {
                 check_bool_cell(native.public_state(), true);
@@ -400,7 +416,7 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
                 assert_eq!(model["circuit"], circuit);
                 let case = Case { id, fixture, circuit, k: model["k"].as_u64().unwrap().try_into()? };
                 let contract = contract::Contract::default();
-                funded(root, out, case, init()?.ledger_state.get_ref().clone(), &native,
+                funded(root, out, case, context()?.query.state.get_ref().clone(), &native,
                     |observed| contract.recording().$call(observed, (), $($arg),*))?;
             }
         }};
@@ -455,7 +471,107 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             )
         };
     }
+    let seed = || decode_point(&row["seed"]);
     match (fixture, circuit) {
+        ("upstream-roundtrip", "test0") => exercise!(
+            accessor_roundtrip,
+            test0,
+            test0_call,
+            (point(0)),
+            |view, result| {
+                assert_eq!(result, decode_point(expected));
+                assert_eq!(view.point()?, result);
+            }
+        ),
+        ("upstream-roundtrip", "test1") => exercise!(
+            accessor_roundtrip,
+            test1,
+            test1_call,
+            (),
+            |view, result| {
+                assert_eq!(
+                    result,
+                    (decode_base(&expected[0]), decode_base(&expected[1]))
+                );
+                assert_eq!(view.point()?, seed());
+            },
+            seed = |ctx| contract::test0(ctx, seed())
+        ),
+        ("upstream-ledger", "storePoint") => exercise!(
+            accessor_ledger,
+            storePoint,
+            storePoint_call,
+            (point(0)),
+            |view| {
+                assert_eq!(view.pt()?, point(0));
+            }
+        ),
+        ("upstream-ledger", "storeX") => exercise!(
+            accessor_ledger,
+            storeX,
+            storeX_call,
+            (),
+            |view| {
+                assert_eq!(view.pt()?, seed());
+                assert_eq!(view.x()?, decode_base(&row["written"]));
+                assert_eq!(view.y()?, Secp256r1Base::default());
+            },
+            seed = |ctx| contract::storePoint(ctx, seed())
+        ),
+        ("upstream-ledger", "storeY") => exercise!(
+            accessor_ledger,
+            storeY,
+            storeY_call,
+            (),
+            |view| {
+                assert_eq!(view.pt()?, seed());
+                assert_eq!(view.x()?, Secp256r1Base::default());
+                assert_eq!(view.y()?, decode_base(&row["written"]));
+            },
+            seed = |ctx| contract::storePoint(ctx, seed())
+        ),
+        ("upstream-asserted", "storePoint") => exercise!(
+            accessor_asserted,
+            storePoint,
+            storePoint_call,
+            (point(0)),
+            |view| {
+                assert_eq!(view.pt()?, point(0));
+            }
+        ),
+        ("upstream-asserted", "storeXChecked") => exercise!(
+            accessor_asserted,
+            storeXChecked,
+            storeXChecked_call,
+            (),
+            |view| {
+                assert_eq!(view.pt()?, seed());
+                assert_eq!(view.x()?, decode_base(&row["written"]));
+            },
+            seed = |ctx| contract::storePoint(ctx, seed())
+        ),
+        ("guarded-writes", "guardedX") => exercise!(
+            accessor_guarded,
+            guardedX,
+            guardedX_call,
+            (guard(), point(1)),
+            |view, result| {
+                assert_eq!(result, decode_base(expected));
+                assert_eq!(view.x()?, result);
+                assert_eq!(view.y()?, Secp256r1Base::default());
+            }
+        ),
+        ("guarded-writes", "guardedY") => exercise!(
+            accessor_guarded,
+            guardedY,
+            guardedY_call,
+            (guard(), point(1)),
+            |view, result| {
+                assert_eq!(result, decode_base(expected));
+                assert_eq!(view.x()?, Secp256r1Base::default());
+                assert_eq!(view.y()?, result);
+            }
+        ),
         ("upstream-equality", "pointsEqual") => point_equality!(pointsEqual, pointsEqual_call),
         ("upstream-equality", "pointsNotEqual") => {
             point_equality!(pointsNotEqual, pointsNotEqual_call)
@@ -699,6 +815,78 @@ fn check_point_defaults(cases: &serde_json::Map<String, Value>) -> TestResult<()
     Ok(())
 }
 
+fn check_accessor_refusals(cases: &serde_json::Map<String, Value>) -> TestResult<()> {
+    use accessor_direct::pure_circuits::{test0, test1, test2};
+    let identity = Secp256r1Point::default();
+    let zero = Secp256r1Base::default();
+    let x_zero = decode_point(&cases["upstream-roundtrip-test0-0"]["inputs"][0]);
+    let generator = decode_point(&cases["upstream-roundtrip-test0-1"]["inputs"][0]);
+    let ignored = decode_point(&cases["guarded-writes-guardedX-1"]["inputs"][1]);
+    for point in [identity, ignored] {
+        assert_eq!(test0(point), Err(CompactError::Secp256r1IdentityX));
+        assert_eq!(test1(point), Err(CompactError::Secp256r1IdentityY));
+        assert_eq!(test2(point)?, (zero, zero));
+    }
+    for point in [generator, x_zero] {
+        let (x, y) = point.coordinates().unwrap();
+        assert_eq!(test0(point)?, x);
+        assert_eq!(test1(point)?, y);
+        assert_eq!(test2(point)?, (x, y));
+    }
+    macro_rules! refuse {
+        ($package:ident, $method:ident, ($($arg:expr),*), $error:expr) => {{
+            use $package::ledger_contract as contract;
+            let init = || contract::initial_state(ConstructorContext::new(()));
+            let expected = init()?.ledger_state;
+            let native = init()?.into_circuit_context(ContractAddress::default());
+            let recorded = init()?.into_circuit_context(ContractAddress::default());
+            let before = native.query.state.clone();
+            let recorded_before = recorded.query.state.clone();
+            assert_eq!(contract::$method(native $(, $arg)*).err(), Some($error));
+            assert_eq!(contract::recorded::$method(recorded $(, $arg)*).err(), Some($error));
+            assert_eq!(before.get_ref(), expected.get_ref());
+            assert_eq!(recorded_before.get_ref(), expected.get_ref());
+        }};
+    }
+    refuse!(
+        accessor_roundtrip,
+        test1,
+        (),
+        CompactError::Secp256r1IdentityX
+    );
+    refuse!(
+        accessor_ledger,
+        storeX,
+        (),
+        CompactError::Secp256r1IdentityX
+    );
+    refuse!(
+        accessor_ledger,
+        storeY,
+        (),
+        CompactError::Secp256r1IdentityY
+    );
+    refuse!(
+        accessor_guarded,
+        guardedX,
+        (true, ignored),
+        CompactError::Secp256r1IdentityX
+    );
+    refuse!(
+        accessor_guarded,
+        guardedY,
+        (true, ignored),
+        CompactError::Secp256r1IdentityY
+    );
+    refuse!(
+        accessor_asserted,
+        storeXChecked,
+        (),
+        CompactError::AssertionFailed("the identity has no coordinates".to_owned())
+    );
+    Ok(())
+}
+
 fn main() -> TestResult<()> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let [mode, root, out] = args.as_slice() else {
@@ -715,6 +903,7 @@ fn main() -> TestResult<()> {
         Some("arithmetic-parity") => Some(34),
         Some("unary-parity") => Some(30),
         Some("point-parity") => Some(17),
+        Some("accessor-parity") => Some(18),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -728,6 +917,10 @@ fn main() -> TestResult<()> {
                 point_fixture(row["fixture"].as_str().unwrap()),
                 mode == "point-parity"
             );
+            assert_eq!(
+                accessor_fixture(row["fixture"].as_str().unwrap()),
+                mode == "accessor-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
@@ -736,6 +929,9 @@ fn main() -> TestResult<()> {
         } else if mode == "point-parity" {
             check_point_defaults(cases)?;
             println!("original default and both identity equality and hash assertions passed");
+        } else if mode == "accessor-parity" {
+            check_accessor_refusals(cases)?;
+            println!("pure accessors and six native and recorded identity refusals passed");
         }
         println!(
             "{expected} generated Rust cases matched the TypeScript ledger values and public VM replay"

@@ -1372,8 +1372,8 @@
                            "__compactRuntime.secp256r1BaseNeg" "__compactRuntime.secp256r1ScalarNeg") "secp256k1_neg"]
                          [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv"
                            "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv") "secp256k1_inv"]
-                         [("__compactRuntime.secp256k1PointX") "secp256k1_point_x"]
-                         [("__compactRuntime.secp256k1PointY") "secp256k1_point_y"]
+                         [("__compactRuntime.secp256k1PointX" "__compactRuntime.secp256r1PointX") "secp256k1_point_x"]
+                         [("__compactRuntime.secp256k1PointY" "__compactRuntime.secp256r1PointY") "secp256k1_point_y"]
                          [else #f])])
              (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))
            (let ([group (case (native-entry-function native-entry)

@@ -24,7 +24,7 @@ import {
   SECP256R1_BASE_MODULUS, SECP256R1_SCALAR_MODULUS,
 } from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
-import type { Secp256k1Point } from './compact-types.js';
+import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
 import { secp256k1FromProjective, secp256k1ToProjective } from './utils.js';
 
@@ -161,6 +161,30 @@ export function secp256k1PointX(pt: Secp256k1Point): bigint {
 export function secp256k1PointY(pt: Secp256k1Point): bigint {
   if (pt.identity) {
     throw new CompactError('cannot extract the y-coordinate of the secp256k1 identity point');
+  }
+  return pt.y;
+}
+
+/**
+ * The Compact builtin `secp256r1PointX` function
+ *
+ * This function extracts the affine x-coordinate of a Compact `Secp256r1Point`.
+ */
+export function secp256r1PointX(pt: Secp256r1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the x-coordinate of the secp256r1 identity point');
+  }
+  return pt.x;
+}
+
+/**
+ * The Compact builtin `secp256r1PointY` function
+ *
+ * This function extracts the affine y-coordinate of a Compact `Secp256r1Point`.
+ */
+export function secp256r1PointY(pt: Secp256r1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the y-coordinate of the secp256r1 identity point');
   }
   return pt.y;
 }
