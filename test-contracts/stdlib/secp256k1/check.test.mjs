@@ -27,6 +27,7 @@ import { registerGroupTests } from './group/checks.mjs';
 import { registerAddressTests } from './address/checks.mjs';
 import { registerEcdsaTests } from './ecdsa/checks.mjs';
 import { registerRecoveryTests } from './recovery/checks.mjs';
+import { registerKnownAnswerTests } from './known-answer/checks.mjs';
 import { registerPointTests } from './point/checks.mjs';
 import { registerPositiveCastTests } from './positive-casts/checks.mjs';
 import { registerUnaryTests } from './unary/checks.mjs';
@@ -35,11 +36,11 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const compiler = process.env.COMPACT_SECP256K1_TEST_COMPILER;
 const output = process.env.COMPACT_SECP256K1_TEST_OUTPUT;
 
-function compile(fixture, definition, targets, file) {
+function compile(fixture, definition, targets, file, { source, lane } = {}) {
   const sourceDirectory = join(root, fixture);
   const sources = readdirSync(sourceDirectory).filter((name) => file ? name === file : name.endsWith('.compact'));
   expect(sources).toHaveLength(1);
-  const caseDirectory = join(output, fixture, file ? file.replace(/\.compact$/, '') : '', targets.join('-'));
+  const caseDirectory = join(output, fixture, file ? file.replace(/\.compact$/, '') : '', lane ?? targets.join('-'));
   const build = join(caseDirectory, '.build');
   mkdirSync(caseDirectory, { recursive: true });
   const targetArgs = targets.flatMap((target) => ['--target', target]);
@@ -50,7 +51,7 @@ function compile(fixture, definition, targets, file) {
       '--feature-zkir-v3',
       '--skip-zk',
       ...(definition.options.compilerArgs ?? []),
-      join(sourceDirectory, sources[0]),
+      source ?? join(sourceDirectory, sources[0]),
       build,
     ],
     { encoding: 'utf8' },
@@ -106,3 +107,6 @@ registerGroupTests(compile);
 registerAddressTests(compile);
 registerEcdsaTests(compile);
 registerRecoveryTests(compile);
+if (process.env.COMPACT_SECP256K1_KAT_MODE) {
+  registerKnownAnswerTests(compile);
+}

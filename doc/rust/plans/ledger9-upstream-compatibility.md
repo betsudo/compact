@@ -204,8 +204,15 @@ and a recovery ID in 0–3. It uses the Ledger SDK's pinned `k256` version
 and accepts the high-s signature with its matching recovery parity. The
 recovery ID selects the host witness. The circuit verifies that point's
 signature and checks its derived address against the recorded owner.
-The dedicated upstream Bitcoin, Ethereum and Wycheproof vector suites and
-the standalone slow address and sequential-verification cases remain open.
+The [upstream known-answer suites](../../../test-contracts/stdlib/secp256k1/known-answer)
+retain the original Bitcoin Wycheproof and Ethereum address contracts,
+test callbacks and support data. At language 0.23.105 the three intact
+fixtures refuse the 0.25.0 pragma. The opt-in probe removes only that
+pragma in separate copies. On those copies both targets cover 244 driven
+cases per Bitcoin suite, including 57 scalar-boundary refusals and ten
+circuit aborts, 162 recovery round trips and two Ethereum addresses.
+Intact-source admission and the standalone slow address and
+sequential-verification cases remain open.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

@@ -26,4 +26,8 @@ The same command runs the [positive Bytes<32> cast fixtures](positive-casts/READ
 [ECDSA verification](ecdsa/README.md), and
 [public-key recovery and owner binding](recovery/README.md).
 
+Use the [known-answer runner](known-answer/README.md) for the pinned
+Bitcoin Wycheproof and Ethereum address suites and their generated Rust
+consumer.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/tree/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/stdlib/secp256k1

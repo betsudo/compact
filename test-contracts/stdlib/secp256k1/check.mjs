@@ -19,11 +19,11 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const args = process.argv.slice(2);
-if (args.length !== 3) {
-  throw new Error('Usage: node check.mjs <compiler> <built-ts-runtime-dir> <new-output-dir>');
+const [compilerArg, runtimeArg, outputArg, mode, ...extra] = process.argv.slice(2);
+if (!outputArg || extra.length || (mode && !['--upstream-kat', '--allow-pragma-probe'].includes(mode))) {
+  throw new Error('Usage: node check.mjs <compiler> <built-ts-runtime-dir> <new-output-dir> [--upstream-kat | --allow-pragma-probe]');
 }
-const [compiler, runtime, output] = args.map((argument) => resolve(argument));
+const [compiler, runtime, output] = [compilerArg, runtimeArg, outputArg].map((argument) => resolve(argument));
 const root = fileURLToPath(new URL('.', import.meta.url));
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
@@ -52,6 +52,9 @@ writeFileSync(
     resolve: {
       alias: {
         '@test/compact-test': join(root, 'test-bridge.mjs'),
+        '@test/crypto': join(root, '../../support/crypto/index.ts'),
+        '@noble/curves': dirname(requireFromRuntime.resolve('@noble/curves/secp256k1.js')),
+        '@noble/hashes': dirname(requireFromRuntime.resolve('@noble/hashes/utils.js')),
         [runtimeName]: join(runtime, runtimePackage.main),
         vitest: join(vitestRoot, vitestPackage.exports['.'].import.default),
       },
@@ -60,11 +63,13 @@ writeFileSync(
   })};\n`,
 );
 
-const result = spawnSync(process.execPath, [join(vitestRoot, vitestPackage.bin.vitest), 'run', '--config', config], {
+const filter = mode ? ['--testNamePattern', 'runs the original .* known-answer suite'] : [];
+const result = spawnSync(process.execPath, [join(vitestRoot, vitestPackage.bin.vitest), 'run', '--config', config, ...filter], {
   env: {
     ...process.env,
     COMPACT_SECP256K1_TEST_COMPILER: compiler,
     COMPACT_SECP256K1_TEST_OUTPUT: output,
+    COMPACT_SECP256K1_KAT_MODE: mode ?? '',
   },
   stdio: 'inherit',
 });
