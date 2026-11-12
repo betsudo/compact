@@ -251,6 +251,8 @@
           [(topaque ,src ,opaque-type)
            (cond
              [(string=? opaque-type "JubjubPoint") (kind "jubjub_point")]
+             [(string=? opaque-type "Secp256k1Base") (kind "secp256k1_base")]
+             [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]
              [else (source-errorf src "Rust backend does not yet support this opaque type")])]

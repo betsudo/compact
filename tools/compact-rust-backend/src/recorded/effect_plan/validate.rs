@@ -106,7 +106,10 @@ pub(super) fn scalar(ty: &Type) -> bool {
 /// Recorded ABI values; Cell storage and scalar arithmetic use separate predicates.
 pub(super) fn surface_type(ty: &Type) -> bool {
     scalar(ty)
-        || *ty == Type::JubjubPoint
+        || matches!(
+            ty,
+            Type::JubjubPoint | Type::Secp256k1Base | Type::Secp256k1Scalar
+        )
         || match ty {
             Type::Bytes { length } => {
                 *length <= crate::resource_limits::recording_byte_payload_limit()

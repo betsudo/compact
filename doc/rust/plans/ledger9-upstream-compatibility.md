@@ -119,6 +119,18 @@ both public writes at k=14, so they require a slow proof lane. The original
 upstream SHA-512 cases that hash two secp256k1 points remain tracked with
 foreign-point representation.
 
+The secp256k1 base and scalar carriers now use distinct checked Rust types
+and the pinned TypeScript descriptors. Their ledger encoding stores the
+value minus one modulo the field modulus in a low 24-byte and high 8-byte
+atom. The unchanged upstream fixtures exercise the base Cell roundtrip and
+six invalid casts across Rust, TypeScript and paired compilation. The
+[scalar and default fixture](../../../runtime/test/fixtures/ledger9-upstream/secp256k1_field_defaults.compact)
+adds typed write, read and reset cases. Both targets agree on the encoded
+values. The Rust VM replays all twelve checked runs, and the pinned ZKIR interpreter
+refuses changed ledger writes. The base and scalar roundtrips are k=11 and
+the reset is k=12. Fresh proofs and funded application for these statements
+remain in the slow lane.
+
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
 verification and test their distinct scalar, identity, subgroup and encoding

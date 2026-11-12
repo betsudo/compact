@@ -3468,7 +3468,23 @@ fn render_with_refusals(
             Ok(syn::parse_quote!(runtime::ledger::constructor_historic_merkle_tree(#depth)))
         }
         LedgerFieldKind::Cell { ty } => {
-            if !matches!(ty, Type::Boolean | Type::Field | Type::JubjubPoint | Type::OpaqueString | Type::OpaqueBytes | Type::Unsigned { .. } | Type::Bytes { .. } | Type::Struct { .. } | Type::Enum { .. } | Type::Vector { .. } | Type::Tuple { .. } | Type::Unit) {
+            if !matches!(
+                ty,
+                Type::Boolean
+                    | Type::Field
+                    | Type::JubjubPoint
+                    | Type::Secp256k1Base
+                    | Type::Secp256k1Scalar
+                    | Type::OpaqueString
+                    | Type::OpaqueBytes
+                    | Type::Unsigned { .. }
+                    | Type::Bytes { .. }
+                    | Type::Struct { .. }
+                    | Type::Enum { .. }
+                    | Type::Vector { .. }
+                    | Type::Tuple { .. }
+                    | Type::Unit
+            ) {
                 if let Some(observer) = observer { observer.refused(RefusalSite::node(Owner::Type(ty))); }
                 return Err(RenderError::UnsupportedLedgerCellType(ty.clone()));
             }

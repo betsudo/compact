@@ -282,7 +282,12 @@ fn recordable_cell_type(ty: &Type) -> bool {
             !elements.is_empty() && elements.len() <= 8 && elements.iter().all(recordable_cell_type)
         }
         Type::Vector { element, .. } => recordable_cell_type(element),
-        Type::Unit | Type::OpaqueString | Type::OpaqueBytes | Type::LedgerMap { .. } => false,
+        Type::Unit
+        | Type::OpaqueString
+        | Type::OpaqueBytes
+        | Type::Secp256k1Base
+        | Type::Secp256k1Scalar
+        | Type::LedgerMap { .. } => false,
     }
 }
 

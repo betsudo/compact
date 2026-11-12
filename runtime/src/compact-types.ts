@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import { MAX_SECP256K1_BASE, MAX_SECP256K1_SCALAR } from './constants.js';
 import { CompactError } from './error.js';
 
 /**
@@ -241,6 +242,57 @@ export const CompactTypeField: CompactType<bigint> = {
     return ocrt.bigIntToValue(value);
   },
 };
+
+// Foreign field values are shifted by one in the field, then split into a
+// 192-bit low limb and a 64-bit high limb. Both FAB atoms are little-endian.
+class ForeignField8_24 implements CompactType<bigint> {
+  constructor(
+    readonly max: bigint,
+    readonly name: string,
+  ) {}
+
+  alignment(): ocrt.Alignment {
+    return [
+      { tag: 'atom', value: { tag: 'bytes', length: 24 } },
+      { tag: 'atom', value: { tag: 'bytes', length: 8 } },
+    ];
+  }
+
+  fromValue(value: ocrt.Value): bigint {
+    if (value[0] == undefined || value[1] == undefined) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const [low, high] = value.splice(0, 2);
+    const low192 = ocrt.valueToBigInt([low]);
+    const high64 = ocrt.valueToBigInt([high]);
+    if (low192 >= 1n << 192n || high64 >= 1n << 64n) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const shifted = (high64 << 192n) | low192;
+    if (shifted > this.max) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    return shifted === this.max ? 0n : shifted + 1n;
+  }
+
+  toValue(value: bigint): ocrt.Value {
+    if (value < 0n || value > this.max) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const shifted = value === 0n ? this.max : value - 1n;
+    return ocrt.bigIntToValue(shifted & ((1n << 192n) - 1n)).concat(ocrt.bigIntToValue(shifted >> 192n));
+  }
+}
+
+/**
+ * Runtime type of the standard library's `Secp256k1Base` type.
+ */
+export const CompactTypeSecp256k1Base: CompactType<bigint> = new ForeignField8_24(MAX_SECP256K1_BASE, 'Secp256k1Base');
+
+/**
+ * Runtime type of the standard library's `Secp256k1Scalar` type.
+ */
+export const CompactTypeSecp256k1Scalar: CompactType<bigint> = new ForeignField8_24(MAX_SECP256K1_SCALAR, 'Secp256k1Scalar');
 
 /**
  * Runtime type of an enum with a given number of entries

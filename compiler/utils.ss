@@ -30,7 +30,7 @@
           source-error-condition?
           make-halt-condition halt-condition?
           pending-conditions
-          stdlib-sfd stdlib-src?
+          stdlib-sfd stdlib-src? secp256k1-field-max
           renaming-table record-alias!
           pretty-print/formats
           split-search-path)
@@ -50,6 +50,13 @@
 
   (define stdlib-sfd (make-parameter #f))
   (define (stdlib-src? src) (eq? (source-object-sfd src) (stdlib-sfd)))
+
+  ;; The largest canonical value of each Ledger 9 secp256k1 field.
+  (define (secp256k1-field-max name)
+    (case name
+      [("Secp256k1Base") #xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e]
+      [("Secp256k1Scalar") #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140]
+      [else #f]))
 
   (define pending-conditions (make-parameter '()))
 

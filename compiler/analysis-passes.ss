@@ -1188,6 +1188,10 @@
     (New-Field : New-Field (ir p) -> New-Field ())
     (Type : Type (ir p) -> Type ()
       [,tref (Type-Ref->Type ir p)]
+      [(topaque ,src ,opaque-type)
+       (when (and (secp256k1-field-max opaque-type) (not (stdlib-src? src)))
+         (source-errorf src "~a is a built-in foreign field type; import CompactStandardLibrary" opaque-type))
+       `(topaque ,src ,opaque-type)]
       [(tunsigned ,src ,[Type-Size->nat : tsize p 1 -> * nat])
        (unless (<= 1 nat (unsigned-bits))
           (source-errorf src "Uint width ~d is not between 1 and the maximum Uint width ~d (inclusive)"
@@ -1347,7 +1351,8 @@
                       (and (= (expt 2 bits) (+ nat 1))
                            (format "Uint<~d>" bits))))
                (format "Uint<0..~d>" (+ nat 1)))]
-          [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+          [(topaque ,src ,opaque-type)
+           (if (secp256k1-field-max opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tundeclared) "Undeclared"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
@@ -1599,7 +1604,12 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("Opaque") `(topaque ,src ,(get-assoc "tsType" alist))]
+                      [("Secp256k1Base" "Secp256k1Scalar") `(topaque ,src ,type-name)]
+                      [("Opaque")
+                       (let ([name (get-assoc "tsType" alist)])
+                         (when (secp256k1-field-max name)
+                           (malformed "a built-in foreign field requires its own type-name"))
+                         `(topaque ,src ,name))]
                       [("Vector") `(tvector ,src ,(tonat (get-assoc "length" alist)) ,(totype (get-assoc "type" alist)))]
                       [("Tuple") `(ttuple ,src ,(map totype (tolist (get-assoc "types" alist))) ...)]
                       ;; this will never be exercised since exported circuits cannot take contracts as their
@@ -3424,7 +3434,8 @@
           [(tboolean ,src) "Boolean"]
           [(tfield ,src) "Field"]
           [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
-          [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+          [(topaque ,src ,opaque-type)
+           (if (secp256k1-field-max opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
           [(tbytes ,src ,len) (format "Bytes<~s>" len)]

@@ -248,8 +248,8 @@
           [(anative ,opaque-type) #t]
           [else #f]))
 
-      ;; The ledger stores a Jubjub point as two fields. Walk the alignment
-      ;; and circuit operands together so nested points use that same encoding.
+      ;; A typed ZKIR operand may occupy multiple ledger alignment atoms.
+      ;; Walk them together so nested values retain their ledger encoding.
       (define (ledger-alignment src alignment* input* instr*)
         (define (input-count atom)
           (nanopass-case (Lflattened Alignment) atom
@@ -267,15 +267,19 @@
                  (let ([atom (car alignment*)])
                    (nanopass-case (Lflattened Alignment) atom
                      [(anative ,opaque-type)
-                      (assert (string=? opaque-type "JubjubPoint"))
-                      (let* ([x (make-temp-id src 'pt)]
-                             [y (make-temp-id src 'pt)])
+                      (let* ([prefix (if (string=? opaque-type "JubjubPoint") 'pt 'limb)]
+                             [low (make-temp-id src prefix)]
+                             [high (make-temp-id src prefix)])
                         (loop (cdr alignment*) (cdr input*)
                           (with-output-language (Lzkir Instruction)
-                            (cons `(encode (,x ,y) ,(car input*)) instr*))
+                            (cons `(encode (,low ,high) ,(car input*)) instr*))
                           (with-output-language (Lflattened Alignment)
-                            (cons* `(afield) `(afield) encoded-alignment*))
-                          (cons* y x encoded-input*)))]
+                            (case opaque-type
+                              [("JubjubPoint") (cons* `(afield) `(afield) encoded-alignment*)]
+                              [("Secp256k1Base" "Secp256k1Scalar")
+                               (cons* `(abytes 8) `(abytes 24) encoded-alignment*)]
+                              [else (assert cannot-happen)]))
+                          (cons* high low encoded-input*)))]
                      [else
                       (let ([count (input-count atom)])
                         (loop (cdr alignment*) (list-tail input* count) instr*
@@ -318,11 +322,21 @@
                    (let ([atom (car atom*)])
                      (nanopass-case (Lflattened Alignment) atom
                        [(anative ,opaque-type)
-                        (assert (string=? opaque-type "JubjubPoint"))
-                        (loop (cdr atom*)
-                          (with-output-language (Lflattened Alignment)
-                            (cons* `(afield) `(afield) alignment*))
-                          (cons* 1 0 input*))]
+                        (cond
+                          [(secp256k1-field-max opaque-type) =>
+                           (lambda (maximum)
+                             ;; Zero is represented by modulus minus one on the ledger.
+                             (let-values ([(high low) (div-and-mod maximum (expt 2 192))])
+                               (loop (cdr atom*)
+                                 (with-output-language (Lflattened Alignment)
+                                   (cons* `(abytes 8) `(abytes 24) alignment*))
+                                 (cons* high low input*))))]
+                          [else
+                           (assert (string=? opaque-type "JubjubPoint"))
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons* `(afield) `(afield) alignment*))
+                             (cons* 1 0 input*))])]
                        [(abytes ,nat)
                         (loop (cdr atom*) (cons atom alignment*)
                           (append (make-list (ceiling (/ nat (field-bytes))) 0) input*))]
@@ -691,13 +705,19 @@
                 [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type* ...)))
                  (values (append var-name* name*) (append primitive-type* type*))]))))
 
+      (define (secp256k1-zkir-type name)
+        (case name
+          [("Secp256k1Base") "Base<Secp256k1>"]
+          [("Secp256k1Scalar") "Scalar<Secp256k1>"]
+          [else #f]))
+
       (define (type->string primitive-type)
         (nanopass-case (Lflattened Primitive-Type) primitive-type
           [(tfield) "Scalar<BLS12-381>"]
           [(tfield ,nat) "Scalar<BLS12-381>"]
           [(topaque ,opaque-type) (guard (string=? opaque-type "JubjubPoint"))
            "Point<Jubjub>"]
-          [(topaque ,opaque-type) "Scalar<BLS12-381>"]
+          [(topaque ,opaque-type) (or (secp256k1-zkir-type opaque-type) "Scalar<BLS12-381>")]
           [else (assert cannot-happen)]))
       )
 
@@ -761,9 +781,15 @@
       [(= ,test (,var-name* ...) (contract-call ,src ,elt-name (,triv ,primitive-type) ,triv* ...))
        (source-errorf src "cross-contract calls are not yet supported")]
       [(= ,test (,var-name) (default ,opaque-type))
-       (assert (string=? opaque-type "JubjubPoint"))
        (with-output-language (Lzkir Instruction)
-         (cons `(from_coordinates ,var-name 0 1) instr*))]
+         (cond
+           [(secp256k1-zkir-type opaque-type) =>
+            (lambda (zkir-type)
+              (let ([bytes (make-temp-id default-src 'bytes)])
+                (cons* `(from_bytes ,zkir-type ,var-name ,bytes) `(to_bytes ,bytes 0) instr*)))]
+           [else
+            (assert (string=? opaque-type "JubjubPoint"))
+            (cons `(from_coordinates ,var-name 0 1) instr*)]))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures
@@ -1008,6 +1034,8 @@
        `((op . "ec_mul_generator") (output . ,outp) (scalar . ,inp))]
       [(encode (,outp* ...) ,[* inp])
        `((op . "encode") (outputs . ,(list->vector (map Output outp*))) (input . ,inp))]
+      [(from_bytes ,zkir-type ,[* outp] ,[* inp])
+       `((op . "from_bytes") (type . ,zkir-type) (output . ,outp) (bytes . ,inp))]
       [(from_coordinates ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
@@ -1050,6 +1078,8 @@
          (bits . ,imm))]
       [(test_eq ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "test_eq") (output . ,outp) (a . ,inp0) (b . ,inp1))]
+      [(to_bytes ,[* outp] ,[* inp])
+       `((op . "to_bytes") (output . ,outp) (input . ,inp))]
       [(transient_hash ,[* outp] ,[* inp*] ...)
        `((op . "transient_hash") (output . ,outp) (inputs . ,(list->vector inp*)))])
     (Input : Input (ir) -> * (json)

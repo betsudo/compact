@@ -589,6 +589,8 @@ pub enum Type {
     Boolean,
     Field,
     JubjubPoint,
+    Secp256k1Base,
+    Secp256k1Scalar,
     OpaqueString,
     OpaqueBytes,
     Bytes {

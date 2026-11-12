@@ -215,9 +215,9 @@
          (cons "type-name" "Bytes")
          (cons "length" len))]
       [(topaque ,src ,opaque-type)
-       (list
-         (cons "type-name" "Opaque")
-         (cons "tsType" opaque-type))]
+       (if (secp256k1-field-max opaque-type)
+           (list (cons "type-name" opaque-type))
+           (list (cons "type-name" "Opaque") (cons "tsType" opaque-type)))]
       [(tvector ,src ,len ,type)
        (list
          (cons "type-name" "Vector")

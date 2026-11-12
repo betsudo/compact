@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use super::*;
 use crate::{ir::StructField, value_lowering::carrier::NativeCarrierSink};
@@ -69,6 +80,28 @@ fn every_leaf_and_unsigned_carrier_boundary_matches_frozen_policy() {
     ] {
         agree(&unsigned(max));
     }
+}
+
+#[test]
+fn secp256k1_schema_types_emit_distinct_rust_carriers_without_implicit_conversions() {
+    let base: Type = serde_json::from_str(r#"{"kind":"secp256k1_base"}"#).unwrap();
+    let scalar: Type = serde_json::from_str(r#"{"kind":"secp256k1_scalar"}"#).unwrap();
+    for (ty, variant, name) in [
+        (&base, Type::Secp256k1Base, "runtime :: Secp256k1Base"),
+        (&scalar, Type::Secp256k1Scalar, "runtime :: Secp256k1Scalar"),
+    ] {
+        assert_eq!(*ty, variant);
+        assert_eq!(
+            serde_json::from_value::<Type>(serde_json::to_value(ty).unwrap()).unwrap(),
+            *ty
+        );
+        assert_eq!(emitted(ty).unwrap(), name);
+        assert!(crate::pure_semantics::coercion::plan_coercion(ty, ty).is_ok());
+        assert!(crate::pure_semantics::coercion::plan_coercion(ty, &Type::Field).is_err());
+        assert!(crate::pure_semantics::coercion::plan_coercion(&Type::Field, ty).is_err());
+    }
+    assert!(crate::pure_semantics::coercion::plan_coercion(&base, &scalar).is_err());
+    assert!(crate::pure_semantics::coercion::plan_coercion(&scalar, &base).is_err());
 }
 
 #[test]

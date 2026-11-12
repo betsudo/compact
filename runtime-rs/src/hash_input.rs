@@ -4,7 +4,8 @@
 
 //! Exact source-value encoding for hashing, separate from ledger normal form.
 use crate::{
-    BoundedUint, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueBytes, OpaqueString, WideUint,
+    BoundedUint, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueBytes, OpaqueString,
+    Secp256k1Base, Secp256k1Scalar, WideUint,
 };
 use midnight_base_crypto::fab::{Aligned, Alignment, Value, ValueAtom};
 
@@ -64,7 +65,19 @@ macro_rules! fixed_leaf {
         }
     )+};
 }
-fixed_leaf!((), bool, u8, u16, u32, u64, u128, Field, JubjubPoint);
+fixed_leaf!(
+    (),
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    Field,
+    JubjubPoint,
+    Secp256k1Base,
+    Secp256k1Scalar,
+);
 impl<const N: usize> HashInputValue for FixedBytes<N> {
     fn into_hash_value(self) -> Value {
         self.into()

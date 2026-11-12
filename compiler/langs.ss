@@ -1204,6 +1204,7 @@
       (ec_mul outp inp0 inp1)
       (ec_mul_generator outp0 inp)
       (encode (outp* ...) inp)
+      (from_bytes zkir-type outp inp)
       (from_coordinates outp inp0 inp1)
       (hash_to_curve outp inp* ...)
       (impact inp inp* ...)
@@ -1221,6 +1222,7 @@
       (public_input zkir-type outp inp)
       (reconstitute_field outp inp0 inp1 imm)
       (test_eq outp inp0 inp1)
+      (to_bytes outp inp)
       (transient_hash outp inp* ...))
     (Input (inp)
       fr

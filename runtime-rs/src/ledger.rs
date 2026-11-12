@@ -237,7 +237,18 @@ macro_rules! primitive_cell_value {
     )* };
 }
 
-primitive_cell_value!(bool, u8, u16, u32, u64, u128, Field, JubjubPoint);
+primitive_cell_value!(
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    Field,
+    JubjubPoint,
+    crate::Secp256k1Base,
+    crate::Secp256k1Scalar,
+);
 
 impl<const MAX: u128> CellValue for BoundedUint<MAX> {
     fn decode_cell_value(value: &ValueSlice) -> Result<Self, CompactError> {
