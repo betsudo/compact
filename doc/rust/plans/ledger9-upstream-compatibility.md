@@ -211,8 +211,14 @@ fixtures refuse the 0.25.0 pragma. The opt-in probe removes only that
 pragma in separate copies. On those copies both targets cover 244 driven
 cases per Bitcoin suite, including 57 scalar-boundary refusals and ten
 circuit aborts, 162 recovery round trips and two Ethereum addresses.
-Intact-source admission and the standalone slow address and
-sequential-verification cases remain open.
+The [slow fixture runner](../../../test-contracts/stdlib/secp256k1/slow)
+preserves the original address-write and sequential-signature contracts
+and compile declarations. The current compiler refuses both intact
+0.25.0 pragmas. On pragma-only derivatives the SDK measured k=16 for
+the address write and k=17 for both signature folds. The paired harness
+checks ordered witnesses, independently substituted signatures and
+keys, and the exact address return and ledger effects. Intact-source
+admission remains open.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

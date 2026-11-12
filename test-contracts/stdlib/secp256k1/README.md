@@ -30,4 +30,7 @@ Use the [known-answer runner](known-answer/README.md) for the pinned
 Bitcoin Wycheproof and Ethereum address suites and their generated Rust
 consumer.
 
+The [slow fixture runner](slow/README.md) covers the original provable
+address-write and sequential-signature contracts.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/tree/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/stdlib/secp256k1
