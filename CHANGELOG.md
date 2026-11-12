@@ -26,6 +26,8 @@ Unreleased Ledger 9 migration.
 - Check witness disclosures through vector spreads, including conditions on
   nested Boolean values.
 - Preserve leading U+FEFF characters when decoding stored opaque strings.
+- ZKIR v3 encodes Merkle tree defaults with the Ledger 9 depth field.
+  Circuit generation supports reset and default insertion through depth 32.
 
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 

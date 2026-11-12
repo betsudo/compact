@@ -457,8 +457,8 @@
               [(VMstate-value-merkle-tree nat key* val*)
                (fold-left assemble-operand-acc
                  (fold-left assemble-operand-acc
-                   ;; Tag with length(key*) << 8 | combine(nat, 4)
-                   (cons (fxlogor (fxsll (length key*) 8) (combine nat 4)) code*)
+                   ;; Ledger StateValue tag, eight-bit tree depth, then entry count.
+                   (cons (fxlogor 4 (fxsll nat 4) (fxsll (length key*) 12)) code*)
                    key*)
                  val*)]
               [(VMstate-value-array val*)

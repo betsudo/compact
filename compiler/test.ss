@@ -68756,6 +68756,30 @@ groups than for single tests.
 
   )
 
+;; Both upstream standalone fixtures have the same runtime expectations.
+(define check-deep-default
+  '(
+    "test('deep default Merkle tree operations', () => {"
+    "  const [contract, ctx] = startContract(contractCode, {}, undefined);"
+    "  const c = contract.circuits;"
+    "  const read = (context: typeof ctx) => contractCode.ledger(context.currentQueryContext.state);"
+    "  const initial = read(ctx);"
+    "  const inserted = c.insert(ctx, 5n).context;"
+    "  expect(read(inserted).tree16.root()).not.toEqual(initial.tree16.root());"
+    "  expect(read(inserted).tree20.root()).not.toEqual(initial.tree20.root());"
+    "  expect(read(inserted).tree32.root()).not.toEqual(initial.tree32.root());"
+    "  const reset = c.reset(inserted).context;"
+    "  expect(read(reset).tree16.root()).toEqual(initial.tree16.root());"
+    "  expect(read(reset).tree20.root()).toEqual(initial.tree20.root());"
+    "  expect(read(reset).tree32.root()).toEqual(initial.tree32.root());"
+    "  const withDefault = c.insert_default(reset, true).context;"
+    "  const withValue = c.insert_default_value(withDefault, false).context;"
+    "  const trees = read(withValue).trees;"
+    "  expect(trees.lookup(true).root()).toEqual(initial.tree32.root());"
+    "  expect(trees.lookup(false).root()).toEqual(initial.tree32.root());"
+    "});"
+    ))
+
 (with-parameter-values ([feature-zkir-v3 #f #t])
 (run-tests save-manifest
   (test
@@ -71560,6 +71584,75 @@ groups than for single tests.
         "});"
         ))
     )
+
+  ; default Merkle trees deeper than 15 (issue #879)
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      ""
+      "export ledger field1: MerkleTree<16, Field>;"
+      "export ledger field2: MerkleTree<20, Field>;"
+      "export ledger field3: MerkleTree<32, Field>;"
+      "export ledger field4: HistoricMerkleTree<16, Field>;"
+      "export ledger field5: HistoricMerkleTree<20, Field>;"
+      "export ledger field6: HistoricMerkleTree<32, Field>;"
+      "export ledger field7: Map<Boolean, MerkleTree<32, Field>>;"
+      "export ledger field8: Map<Boolean, HistoricMerkleTree<32, Field>>;"
+      ""
+      "export circuit reset(x: Field): [] {"
+      "  field1.insert(disclose(x));"
+      "  field2.insert(disclose(x));"
+      "  field3.insert(disclose(x));"
+      "  field4.insert(disclose(x));"
+      "  field5.insert(disclose(x));"
+      "  field6.insert(disclose(x));"
+      "  field1.resetToDefault();"
+      "  field2.resetToDefault();"
+      "  field3.resetToDefault();"
+      "  field4.resetToDefault();"
+      "  field5.resetToDefault();"
+      "  field6.resetToDefault();"
+      "}"
+      ""
+      "export circuit initDefault(b: Boolean): [] {"
+      "  field7.insertDefault(disclose(b));"
+      "  field8.insertDefault(disclose(b));"
+      "}"
+      ""
+      "export circuit initWithDefault(b: Boolean): [] {"
+      "  field7.insert(disclose(b), default<MerkleTree<32, Field>>);"
+      "  field8.insert(disclose(b), default<HistoricMerkleTree<32, Field>>);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('check 1', () => {"
+        "  const [C, Ctxt0] = startContract(contractCode, {}, 0);"
+        "  const L0 = contractCode.ledger(Ctxt0.currentQueryContext.state);"
+        "  const Ctxt1 = (C.circuits.reset(Ctxt0, 5n)).context;"
+        "  const L1 = contractCode.ledger(Ctxt1.currentQueryContext.state);"
+        "  expect(L1.field1.root()).toEqual(L0.field1.root());"
+        "  expect(L1.field2.root()).toEqual(L0.field2.root());"
+        "  expect(L1.field3.root()).toEqual(L0.field3.root());"
+        "  expect(L1.field4.root()).toEqual(L0.field4.root());"
+        "  expect(L1.field5.root()).toEqual(L0.field5.root());"
+        "  expect(L1.field6.root()).toEqual(L0.field6.root());"
+        "  const Ctxt2 = (C.circuits.initDefault(Ctxt1, true)).context;"
+        "  const Ctxt3 = (C.circuits.initWithDefault(Ctxt2, false)).context;"
+        "  const L3 = contractCode.ledger(Ctxt3.currentQueryContext.state);"
+        "  expect(L3.field7.lookup(true).root()).toEqual(L0.field3.root());"
+        "  expect(L3.field7.lookup(false).root()).toEqual(L0.field3.root());"
+        "  expect(L3.field8.lookup(true).root()).toEqual(L0.field6.root());"
+        "  expect(L3.field8.lookup(false).root()).toEqual(L0.field6.root());"
+        "});"
+        ))
+    )
+
+  (test "test-contracts/stdlib/merkle_tree/deep_default/merkle_tree_deep_default.compact"
+    (stage-javascript check-deep-default))
+
+  (test "test-contracts/stdlib/historic_merkle_tree/deep_default/historic_merkle_tree_deep_default.compact"
+    (stage-javascript check-deep-default))
 
   #|
   (test ;;FIXME uncomment composable contract

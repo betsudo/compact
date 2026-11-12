@@ -246,6 +246,8 @@
               ./runtime/package.json
               ./srcMaps
               ./test-center
+              ./test-contracts/stdlib/historic_merkle_tree/deep_default
+              ./test-contracts/stdlib/merkle_tree/deep_default
               ./third_party/compiler
             ];
 
