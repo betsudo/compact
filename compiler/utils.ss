@@ -313,20 +313,23 @@
     (lambda (x)
       (fold-right (lambda (f x) (f x)) x f*)))
 
-  (define (shell command)
-    (let-values ([(to-stdin from-stdout from-stderr pid)
-                  (open-process-ports
-                    command
-                    (buffer-mode block)
-                    (native-transcoder))])
-      (close-port to-stdin)
-      (let* ([stdout-stuff (get-string-all from-stdout)]
-             [stderr-stuff (get-string-all from-stderr)])
-        (close-port from-stdout)
-        (close-port from-stderr)
-        (values
-          (if (eof-object? stdout-stuff) "" stdout-stuff)
-          (if (eof-object? stderr-stuff) "" stderr-stuff)))))
+  (define shell
+    (case-lambda
+      [(command) (shell command #vu8())]
+      [(command input)
+       (let-values ([(to-stdin from-stdout from-stderr pid)
+                     (open-process-ports command (buffer-mode block) #f)])
+         (put-bytevector to-stdin input)
+         (close-port to-stdin)
+         (let* ([from-stdout (transcoded-port from-stdout (native-transcoder))]
+                [from-stderr (transcoded-port from-stderr (native-transcoder))]
+                [stdout-stuff (get-string-all from-stdout)]
+                [stderr-stuff (get-string-all from-stderr)])
+           (close-port from-stdout)
+           (close-port from-stderr)
+           (values
+             (if (eof-object? stdout-stuff) "" stdout-stuff)
+             (if (eof-object? stderr-stuff) "" stderr-stuff))))]))
 
   (define (string-prefix? prefix str)
     (let ([n (string-length prefix)])
