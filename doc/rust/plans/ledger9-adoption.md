@@ -1185,9 +1185,17 @@ The parent run at frozen source `78d8eaae4` completed the compiler,
 workspace and registered consumer phases. It also completed the DID
 lifecycle, digest-reducer and primitive-reducer gates. The DID relation
 gate ran out of disk space while writing its receipt. All standalone
-Vector migrations described above passed individually. The complete
-parent remains pending with the exact integrated compiler and TypeScript
-package.
+Vector migrations described above passed individually.
+
+On integrated source `9409b7da1`, the exact local compiler and TypeScript
+0.17.0 package resolved from the source's Nix recipe. The DID relation,
+AccJubjub, Vector projection, constant-valued Vector index, Map size
+expression and direct Fold gates all passed on macOS arm64. Their
+receipts cover 49 fresh v3 proof and funded default-strict application
+cases with separate verification and exact replay refusal. The DID
+relation cases include 19 original operations and six reducer calls.
+The complete parent invocation on that exact source and toolchain is
+prepared and still awaits working space.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
