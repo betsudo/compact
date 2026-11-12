@@ -156,7 +156,7 @@ struct Case {
 #[test]
 fn new_compositions_match_explicit_results_native_execution_ts_and_public_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effect-plan-prototype.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json"
     ))
     .unwrap();
     let cases = [
@@ -425,7 +425,7 @@ fn new_compositions_match_explicit_results_native_execution_ts_and_public_replay
 #[test]
 fn failed_assertions_preserve_first_failure_and_witness_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effect-plan-prototype.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json"
     ))
     .unwrap();
     for (id, method, selector, next, mark, message, observation) in [

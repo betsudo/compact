@@ -115,6 +115,12 @@ node runtime-rs/tests/fixtures/capture-effect-plan-prototype.mjs \
   > runtime-rs/tests/fixtures/effect-plan-prototype.json
 ```
 
+The command above records the historical Ledger 8 capture. For the
+current Ledger 9 Rust acceptance tests, compile with Compact 0.31.211,
+resolve the generated module against Compact Runtime 0.17.0, and use
+the same capture command with output
+`runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json`.
+
 ## Proof and ledger-application gate
 
 Put the matching ledger8 `zkir` 2.1.0 on `PATH`, then compile the same source
