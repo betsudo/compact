@@ -35,7 +35,7 @@ require, digest = main_gate.require, main_gate.digest
 
 
 def validate_summary(summary, generated):
-    require(summary["format"] == "compact-stateful-vector-value-proof/v1" and summary["status"] == "passed"
+    require(summary["format"] == "compact-stateful-vector-value-proof/v2" and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False,
             "invalid Stateful Vector value proof summary")
     require([(r["circuit"], r["initial_seen"], r["input"], r["expected"], r["seen"]) for r in summary["calls"]] == CASES,
@@ -51,16 +51,27 @@ def validate_summary(summary, generated):
                             ("transaction_bytes", f"stateful-vector-value-{index}-transaction.bin")]:
             require(type(row[field]) is int and row[field] > 0
                     and (generated / path).stat().st_size == row[field], "missing or truncated proof/application artifact")
-        require(row["standalone_proof"] == f"stateful-vector-value-{index}.proof"
+        stem = f"stateful-vector-value-{index}"
+        require(row["standalone_proof"] == f"{stem}.proof"
                 and row["applied_transaction"] == f"stateful-vector-value-{index}-transaction.bin"
                 and row["transaction_proof_relationship"] == "independently proved"
+                and row["transaction_proof_version"] == 3 and row["positive_fee_dust_spends"] == 1
                 and row["strict_application"] == "default" and row["replay_refusal"] == "IntentAlreadyExists",
                 "proof/application identity or strictness differs")
         require(all(row[name] is True for name in ["corrupt_proof_rejected", "changed_binding_rejected",
-                    "changed_result_rejected", "changed_result_same_geometry", "wrong_verifier_rejected", "replay_unchanged"]),
+                    "changed_result_rejected", "changed_result_same_geometry", "wrong_verifier_rejected",
+                    "standalone_verified_separately", "replay_unchanged"]),
                 "proof/application control missing")
-        require((generated / f"stateful-vector-value-{index}.preimage").stat().st_size > 0
-                and (generated / f"stateful-vector-value-{index}-state.bin").stat().st_size > 0, "proof/state evidence missing")
+        require(all((generated / f"{stem}{suffix}").stat().st_size > 0
+                    for suffix in (".preimage", ".inputs", "-state.bin", "-ledger-after.bin")),
+                "proof/state evidence missing")
+        transaction_proof = (generated / f"{stem}-transaction.proof").read_bytes()
+        require(type(row["transaction_proof_bytes"]) is int
+                and len(transaction_proof) == row["transaction_proof_bytes"] > 0
+                and transaction_proof != (generated / f"{stem}.proof").read_bytes(),
+                "transaction-bound proof is missing or equals the standalone proof")
+        require((generated / f"{stem}-ledger-after.bin").read_bytes()
+                == (generated / f"{stem}-ledger-replay.bin").read_bytes(), "replayed ledger bytes differ")
 
 
 def run(args):
@@ -70,7 +81,7 @@ def run(args):
     configuration_environment = dict(env)
     configuration = main_gate.reject_compiler_overrides(configuration_environment)
     output.mkdir(parents=True)
-    report = {"format": "compact-stateful-vector-value-widening-proof-gate/v1", "status": "incomplete", "commands": [],
+    report = {"format": "compact-stateful-vector-value-widening-proof-gate/v2", "status": "incomplete", "commands": [],
               "cargo_configuration_sha256": configuration, "scope": __doc__, "proof_execution": False, "full_integration_acceptance": "OPEN"}
     try:
         # This maintained gate admits the exact clean HEAD/compiler/Rust tools,
@@ -137,7 +148,8 @@ def run(args):
         for path in [main_gate.FIXTURES / "sources.json", generated / "contract/lib.rs",
                      *sorted((generated / "contract/checked-programs").glob("*.json")),
                      main_gate.FIXTURES / "goldens/proofs/source-ir.json",
-                     *sorted((main_gate.FIXTURES / "goldens/proofs/checked-programs").glob("*.json"))]:
+                     main_gate.FIXTURES / "ledger9-goldens/proofs/artifacts.json",
+                     *sorted((main_gate.FIXTURES / "ledger9-goldens/proofs/checked-programs").glob("*.json"))]:
             require(str(path.resolve(strict=True)) in tracked,
                     "runner omitted an actual generated SDK/Program dependency")
         report["runner_depfile"] = {"path": str(depfile), "sha256": digest(depfile), "all_generated_includes": True}
@@ -145,7 +157,8 @@ def run(args):
                                   "compact-rust-proof-smoke", "--features", "stateful-vector-value-widening", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for label, message in [("changed-ir", "stateful-vector-value complete IR bytes differ"),
                                ("changed-program", "stateful-vector-value complete Program bytes differ"),
-                               ("missing-program", "stateful-vector-value complete Program membership differs")]:
+                               ("missing-program", "stateful-vector-value complete Program membership differs"),
+                               ("changed-zkir", "Ledger 9 artifact differs from the pinned fixture: zkir/run.zkir")]:
             negative = output / label
             shutil.copytree(generated / "contract/checked-programs", negative / "contract/checked-programs")
             shutil.copyfile(generated / "contract/compact-rust-ir.json", negative / "contract/compact-rust-ir.json")
@@ -161,8 +174,13 @@ def run(args):
             elif label == "changed-program":
                 path = negative / "contract/checked-programs/program-0.json"
                 path.write_bytes(path.read_bytes() + b" ")
-            else:
+            elif label == "missing-program":
                 (negative / "contract/checked-programs/program-1.json").unlink()
+            else:
+                shutil.copyfile(generated / "contract/lib.rs", negative / "contract/lib.rs")
+                shutil.copytree(generated / "zkir", negative / "zkir")
+                path = negative / "zkir/run.zkir"
+                path.write_bytes(path.read_bytes() + b" ")
             result = subprocess.run([runner, "--stateful-vector-value-widening", str(negative)], cwd=ROOT, env=env,
                                     capture_output=True, text=True, timeout=30)
             (negative / "stdout").write_text(result.stdout)
@@ -192,10 +210,10 @@ def run(args):
                 "selected model roster differs")
         require(models["selected_for_proof"] == CIRCUITS and models["unproved"] == [], "selected proof scope differs")
         selected_models = [r for r in models["circuits"] if r["circuit"] in CIRCUITS]
-        require(len(selected_models) == 2 and all(type(r["k"]) is int and 0 <= r["k"] <= 8 for r in selected_models),
-                "selected circuit exceeds automatic tiny bound")
+        require(len(selected_models) == 2 and all(type(r["k"]) is int and r["k"] == 7 for r in selected_models),
+                "selected circuit differs from its bound k7 model")
         report["models"] = models
-        # A separate complete retained Fold source supplies a real k9 diagnostic.
+        # A separate complete retained Fold source supplies a real v3 k9 diagnostic.
         # It never replaces the admitted stateful Vector value IR/Programs or proof inputs.
         diagnostic = output / "over-cap-producer"
         diagnostic.mkdir()
@@ -205,14 +223,14 @@ def run(args):
         require(text.count("input:Vector<2,Uint<8>>") == 4 and text.count("run_checked") == 1,
                 "retained diagnostic source premise changed")
         source = diagnostic / "helper.compact"
-        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<8,Uint<8>>").replace("run_checked", "run_field"))
+        source.write_text(text.replace("input:Vector<2,Uint<8>>", "input:Vector<16,Uint<8>>").replace("run_checked", "run_field"))
         unchanged(report["compiler_tools"])
         compiler = json.loads(args.compiler_receipt.read_text())["compactc"]["path"]
-        execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger8", "--rust-require-recording",
-                "--skip-zk", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
+        execute("over-cap-producer", [compiler, "--target", "rust", "--rust-functional-ledger9", "--rust-require-recording",
+                "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, source, diagnostic / "generated"])
         report["over_cap_diagnostic_source"] = {"sha256": digest(source),
                 "zkir_sha256": digest(diagnostic / "generated/zkir/run_field.zkir"),
-                "scope": "complete retained Fold length8 diagnostic only, not source/proof admission"}
+                "scope": "complete retained Fold length16 diagnostic only, not source/proof admission"}
         excessive = output / "selected-model-over-cap"
         shutil.copytree(generated, excessive)
         shutil.copyfile(diagnostic / "generated/zkir/run_field.zkir", excessive / "zkir/run_field.zkir")
@@ -244,7 +262,9 @@ def run(args):
         if not args.prepare_only:
             (generated / "keys").mkdir()
             report["keygen"] = []
-            execute("zkir-version", [report["zkir"]["snapshot"], "--version"])
+            version = output / "zkir-version.txt"
+            execute("zkir-version", [report["zkir"]["snapshot"], "--version"], version)
+            require(version.read_text().strip() == "midnight-zkir 3.2.0", "expected the released ZKIR v3.2.0 compiler")
             for row in selected_models:
                 circuit = row["circuit"]
                 execute("keygen-" + circuit, [report["zkir"]["snapshot"], "compile", generated / f"zkir/{circuit}.zkir",
