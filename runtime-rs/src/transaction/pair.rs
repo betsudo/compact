@@ -40,7 +40,7 @@ pub enum CrossContractCallError {
     InitialContextMismatch(ContractAddress),
     UnsupportedEffects(ContractAddress),
     InvalidProofValues(ContractAddress),
-    DuplicateKeyLocation,
+    ConflictingKeyLocation,
     DuplicateCommunicationCommitment,
     ClaimMismatch,
     Partition(String),
@@ -74,7 +74,9 @@ impl fmt::Display for CrossContractCallError {
             Self::InvalidProofValues(address) => {
                 write!(f, "proof values for {address:?} have invalid FAB encodings")
             }
-            Self::DuplicateKeyLocation => f.write_str("the two prover lookup keys must differ"),
+            Self::ConflictingKeyLocation => {
+                f.write_str("different verifiers cannot share a prover lookup key")
+            }
             Self::DuplicateCommunicationCommitment => {
                 f.write_str("the two communication commitments must differ")
             }
@@ -128,8 +130,10 @@ pub fn prepare_cross_contract_call<
     {
         return Err(CrossContractCallError::DifferentSnapshots);
     }
-    if caller_proof.key_location == callee_proof.key_location {
-        return Err(CrossContractCallError::DuplicateKeyLocation);
+    if caller_proof.key_location == callee_proof.key_location
+        && caller_proof.verifier != callee_proof.verifier
+    {
+        return Err(CrossContractCallError::ConflictingKeyLocation);
     }
 
     let caller_operation = caller
@@ -234,8 +238,12 @@ fn prepare_unpartitioned<Private, Output: Into<AlignedValue>, D: DB>(
         return Err(CrossContractCallError::UnsupportedEffects(address));
     }
     let output = call.recorded.execution.result.into();
+    let private_outputs = call.recorded.execution.private_transcript_outputs;
     if AlignedValueChecked::try_from(call.input.clone()).is_err()
         || AlignedValueChecked::try_from(output.clone()).is_err()
+        || private_outputs
+            .iter()
+            .any(|value| AlignedValueChecked::try_from(value.clone()).is_err())
     {
         return Err(CrossContractCallError::InvalidProofValues(address));
     }
@@ -245,7 +253,7 @@ fn prepare_unpartitioned<Private, Output: Into<AlignedValue>, D: DB>(
             entry_point: EntryPointBuf(call.entry_point.as_bytes().to_vec()),
             op: operation,
             pre_transcript,
-            private_transcript_outputs: call.recorded.execution.private_transcript_outputs,
+            private_transcript_outputs: private_outputs,
             input: call.input,
             output,
             communication_commitment_rand: proof.communication_commitment_rand,

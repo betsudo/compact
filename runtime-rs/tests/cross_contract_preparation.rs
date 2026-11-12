@@ -18,6 +18,7 @@
 use midnight_base_crypto::time::Timestamp;
 use midnight_coin_structure::coin::PublicAddress;
 use midnight_compact_runtime::Field;
+use midnight_compact_runtime::fab::AlignedValue;
 use midnight_compact_runtime::ledger::{ContractAddress, ContractState, HashOutput, StateValue};
 use midnight_compact_runtime::recording::RecordingFrame;
 use midnight_compact_runtime::transaction::{
@@ -299,5 +300,54 @@ fn rejects_colliding_commitments_before_ledger_partitions_the_graph() {
             &mut StdRng::seed_from_u64(1),
         ),
         Err(CrossContractCallError::DuplicateCommunicationCommitment)
+    ));
+}
+
+#[test]
+fn rejects_one_prover_lookup_key_for_different_verifiers() {
+    let fixture = Fixture::new();
+    let (caller_proof, mut callee_proof) = fixture.bindings();
+    callee_proof.key_location = caller_proof.key_location.clone();
+    assert!(matches!(
+        prepare_cross_contract_call(
+            &fixture.ledger,
+            fixture.caller(&[fixture.claim()]),
+            caller_proof,
+            fixture.callee("transfer"),
+            callee_proof,
+            Timestamp::from_secs(100),
+            &mut StdRng::seed_from_u64(1),
+        ),
+        Err(CrossContractCallError::ConflictingKeyLocation)
+    ));
+}
+
+#[test]
+fn rejects_a_canonical_private_atom_with_a_mismatched_alignment() {
+    let fixture = Fixture::new();
+    let (caller_proof, callee_proof) = fixture.bindings();
+    let mut context = fixture.callee.circuit_context(());
+    context.query.call_context.caller = Some(PublicAddress::Contract(fixture.caller.address()));
+    let (frame, _) = RecordingFrame::new(context).kernel_self().unwrap();
+    let mut recorded = frame.finish(990_u64);
+    let mut malformed = AlignedValue::from(Field::from(1));
+    malformed.alignment = AlignedValue::from(()).alignment;
+    recorded
+        .execution
+        .private_transcript_outputs
+        .push(malformed);
+    let callee = RecordedCall::new(&fixture.callee, recorded, "transfer", 10_u64);
+    assert!(matches!(
+        prepare_cross_contract_call(
+            &fixture.ledger,
+            fixture.caller(&[fixture.claim()]),
+            caller_proof,
+            callee,
+            callee_proof,
+            Timestamp::from_secs(100),
+            &mut StdRng::seed_from_u64(1),
+        ),
+        Err(CrossContractCallError::InvalidProofValues(address))
+            if address == fixture.callee.address()
     ));
 }
