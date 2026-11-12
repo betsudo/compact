@@ -210,7 +210,7 @@ def main():
         for spec in definitions:
             name = spec["source"]
             target = generated / name
-            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
                     *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []),
                     (SOURCES / (name + ".compact")).relative_to(ROOT), target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk",
@@ -339,7 +339,7 @@ def main():
             mutant.mkdir()
             source = mutant / (name + ".compact")
             source.write_text(text.replace(old, new))
-            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording", source, mutant / "generated"])
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording", source, mutant / "generated"])
             changed_manifest = manifest.read_text().replace(str(generated / name / "contract"), str(mutant / "generated/contract"))
             mutant_consumer = mutant / "consumer"
             mutant_consumer.mkdir()
