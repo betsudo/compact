@@ -196,7 +196,16 @@ preserve the original false and identity cases and the #609
 two-signature optimizer regression. The executable coverage binds the
 message digest and distinguishes each private signature witness.
 The fixed vector-to-Bytes conversion preserves width and byte order.
-Public-key recovery and the owner/address-binding fixture are the next slice.
+
+The [owner-binding fixture](../../../test-contracts/stdlib/secp256k1/recovery)
+uses the original Compact contract with generated TypeScript and Rust.
+The Rust host recovery API accepts a fixed 32-byte digest, checked scalars,
+and a recovery ID in 0–3. It uses the Ledger SDK's pinned `k256` version
+and accepts the high-s signature with its matching recovery parity. The
+recovery ID selects the host witness. The circuit verifies that point's
+signature and checks its derived address against the recorded owner.
+The dedicated upstream Bitcoin, Ethereum and Wycheproof vector suites and
+the standalone slow address and sequential-verification cases remain open.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

@@ -33,6 +33,7 @@ pub mod public_state;
 pub mod recording;
 mod secp256k1_fields;
 mod secp256k1_point;
+mod secp256k1_recovery;
 pub mod slots;
 mod zswap;
 pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
@@ -47,8 +48,8 @@ pub use midnight_compact_runtime_macros::{
 pub use natives::{
     construct_jubjub_point, degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg,
     hash_to_curve, jubjub_point_x, jubjub_point_y, jubjub_scalar_from_native, keccak256,
-    keccak256_aligned, persistent_commit, persistent_hash, sha512, transient_commit, transient_hash,
-    upgrade_from_transient,
+    keccak256_aligned, persistent_commit, persistent_hash, sha512, transient_commit,
+    transient_hash, upgrade_from_transient,
 };
 pub use opaque::{OpaqueBytes, OpaqueString};
 pub use primitives::{
@@ -57,6 +58,7 @@ pub use primitives::{
 };
 pub use secp256k1_fields::{Secp256k1Base, Secp256k1Scalar};
 pub use secp256k1_point::Secp256k1Point;
+pub use secp256k1_recovery::secp256k1_ecdsa_recover;
 
 /// Ledger FAB types used by the generated user-type derive.
 pub mod fab {
@@ -98,6 +100,8 @@ pub enum CompactError {
     Secp256k1ScalarZeroInverse,
     Secp256k1IdentityX,
     Secp256k1IdentityY,
+    InvalidSecp256k1Signature,
+    Secp256k1RecoveryFailed,
     InvalidHashInput,
     MissingCoinPublicKey,
     ZswapAllocationLocked,
@@ -143,6 +147,13 @@ impl std::fmt::Display for CompactError {
                     "cannot extract the y-coordinate of the secp256k1 identity point"
                 )
             }
+            Self::InvalidSecp256k1Signature => {
+                write!(f, "expected nonzero secp256k1 signature scalars")
+            }
+            Self::Secp256k1RecoveryFailed => write!(
+                f,
+                "no finite secp256k1 key for this signature and recovery id"
+            ),
             Self::InvalidHashInput => write!(f, "invalid Compact hash input"),
             Self::ZswapOfferOutputMismatch => write!(
                 f,

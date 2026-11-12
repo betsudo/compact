@@ -5745,6 +5745,7 @@ version = "0.2.0"
 dependencies = [
  "ff 0.13.1",
  "hex",
+ "k256 0.14.0",
  "midnight-base-crypto",
  "midnight-circuits 7.3.0",
  "midnight-coin-structure",

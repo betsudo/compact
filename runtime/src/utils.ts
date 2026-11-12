@@ -16,6 +16,7 @@
 import { ContractAddress } from '@midnightntwrk/onchain-runtime-v4';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import type { Secp256k1Point } from './compact-types.js';
+import { CompactError } from './error.js';
 import { SECP256K1_BASE_MODULUS } from './constants.js';
 import { EncodedContractAddress } from './zswap.js';
 
@@ -79,6 +80,34 @@ export function secp256k1ToProjective(p: Secp256k1Point): ReturnType<typeof secp
 export function secp256k1FromProjective(p: ReturnType<typeof secp256k1.Point.fromAffine>): Secp256k1Point {
   const { x, y } = p.toAffine();
   return { x, y, identity: x === 0n && y === 0n };
+}
+
+/**
+ * Recover the secp256k1 public key from an ECDSA signature and a message hash.
+ *
+ * ## Recovery ID
+ * - bit 0 (`recoveryId & 1`) is the parity of `R.y`: 0 for even, 1 for odd.
+ * - bit 1 (`recoveryId >= 2`) says whether the reduction wrapped, i.e. whether
+ *   `R.x` is `r` (0, 1) or `r + n` (2, 3).
+ *
+ * - 0: `R = (r, y)` with `y` even — the common case.
+ * - 1: `R = (r, y)` with `y` odd — the other common case.
+ * - 2: `R = (r + n, y)` with `y` even.
+ * - 3: `R = (r + n, y)` with `y` odd.
+ */
+export function secp256k1EcdsaRecover(
+  msgHash: Uint8Array,
+  sig: { readonly r: bigint; readonly s: bigint },
+  recoveryId: number,
+): Secp256k1Point {
+  if (msgHash.length !== 32) {
+    throw new CompactError('expected a 32-byte message hash');
+  }
+  if (!Number.isInteger(recoveryId) || recoveryId < 0 || recoveryId > 3) {
+    throw new CompactError('expected a recovery id in the range [0, 3]');
+  }
+  const nobleSig = new secp256k1.Signature(sig.r, sig.s, recoveryId);
+  return secp256k1FromProjective(nobleSig.recoverPublicKey(msgHash));
 }
 
 export const fromHex = (s: string): Uint8Array => Buffer.from(s, 'hex');
