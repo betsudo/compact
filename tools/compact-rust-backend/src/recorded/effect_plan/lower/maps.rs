@@ -174,11 +174,7 @@ impl Lowerer<'_> {
                 }
             }
             StateAction::MapInitChild { key, .. } => {
-                let (_, declaration) =
-                    super::super::validate::maps::types(self.declarations, slot, false, path)?;
-                if !matches!(declaration, Type::LedgerMap { .. }) {
-                    return Err(invalid(path, "expected nested Map declaration"));
-                }
+                super::super::validate::maps::child_slot_types(self.declarations, slot, path)?;
                 let key =
                     self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
                 Operation::MapInitChild { slot, key }

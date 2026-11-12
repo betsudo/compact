@@ -189,6 +189,36 @@ fn nested_map_plan_checks_both_key_types_and_the_declared_slot() {
     }
 }
 #[test]
+fn child_map_initialization_rejects_an_unsupported_inner_key() {
+    let child = |key| Type::LedgerMap {
+        key: Box::new(key),
+        value: Box::new(Type::Field),
+    };
+    let mut c = contract(Type::Boolean, child(Type::Field));
+    let root = &mut c.stateful_circuits[0];
+    root.parameters.truncate(1);
+    root.actions = vec![StateAction::MapInitChild {
+        field: "table".into(),
+        index: 0,
+        key: parameter("key"),
+    }];
+    root.return_value = StateReturn::Expression {
+        value: parameter("key"),
+    };
+    let plan = checked(&c).unwrap();
+    assert!(rendered(&plan).contains("record_init_child"));
+
+    c.ledger_fields[0].declaration = LedgerFieldKind::Map {
+        key: Type::Boolean,
+        value: child(Type::Tuple {
+            elements: vec![Type::Field; 9],
+        }),
+    };
+    assert!(checked(&c).is_err());
+    assert!(validate::validate(plan.plan(), &declarations(&c)).is_err());
+}
+
+#[test]
 fn four_map_operations_compose_in_order_with_exact_declared_types() {
     for value in [
         Type::Field,

@@ -67,26 +67,34 @@ pub(in super::super) fn types<'a>(
     Ok((key, value))
 }
 
+pub(in super::super) fn child_slot_types<'a>(
+    declarations: &'a Declarations,
+    slot: MapSlot,
+    path: &str,
+) -> Result<(&'a Type, &'a Type, &'a Type), RecordingGap> {
+    let (outer, value) = types(declarations, slot, false, path)?;
+    let Type::LedgerMap { key: inner, value } = value else {
+        return Err(invalid(path, "expected nested Map declaration"));
+    };
+    declarations.types().validate_at(inner, path)?;
+    if !map_key_type(inner) {
+        return Err(invalid(path, "unsupported nested Map key type"));
+    }
+    Ok((outer, inner, value))
+}
+
 /// Each plan is checked independently of lowering and its inferred annotations.
 pub(in super::super) fn child_types(
     declarations: &Declarations,
     slot: MapSlot,
     path: &str,
 ) -> Result<(Type, Type, Type), RecordingGap> {
-    let (outer, value) = types(declarations, slot, false, path)?;
-    let Type::LedgerMap { key: inner, value } = value else {
-        return Err(invalid(path, "expected nested Map declaration"));
-    };
-    declarations.types().validate_at(inner, path)?;
+    let (outer, inner, value) = child_slot_types(declarations, slot, path)?;
     declarations.types().validate_at(value, path)?;
-    if !map_key_type(inner) || !scalar_value_type(value) {
-        return Err(invalid(path, "unsupported nested Map key or value type"));
+    if !scalar_value_type(value) {
+        return Err(invalid(path, "unsupported nested Map value type"));
     }
-    Ok((
-        outer.clone(),
-        inner.as_ref().clone(),
-        value.as_ref().clone(),
-    ))
+    Ok((outer.clone(), inner.clone(), value.clone()))
 }
 
 pub(super) fn validate(
@@ -120,8 +128,8 @@ pub(super) fn validate(
         }
         Operation::MapInitChild { slot, key } => {
             used(key, scope, declarations, path)?;
-            let (outer, value) = types(declarations, *slot, false, path)?;
-            matches!(value, Type::LedgerMap { .. }) && key.ty == *outer && *result == Type::Unit
+            let (outer, _, _) = child_slot_types(declarations, *slot, path)?;
+            key.ty == *outer && *result == Type::Unit
         }
         Operation::MapMember { slot, key }
         | Operation::MapLookup { slot, key }
