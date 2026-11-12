@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -228,6 +229,31 @@ def snapshot(path: Path) -> dict[str, str]:
         item.relative_to(path).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
         for item in path.rglob("*") if item.is_file()
     }
+
+
+def check_vector_spread_disclosure(compactc: str, directory: Path) -> list[str]:
+    """Exercise the pinned upstream witness disclosure refusal on both targets."""
+    source = ROOT / ("test-contracts/keywords/disclose/vector_element_condition/"
+                     "disclose_vector_element_condition.compact")
+    expected = re.compile(
+        r"line 22 char 3:\s+potential witness-value disclosure must be declared but is not:"
+        r".*the return value of witness secret"
+        r".*the value returned from exported circuit disclose_vector_element_condition might"
+        r"\s+disclose the witness value",
+        re.DOTALL,
+    )
+    failures = []
+    for target in ("ts", "rust"):
+        output = directory / f"vector-spread-disclosure-{target}"
+        result = subprocess.run(
+            [compactc, "--target", target, "--skip-zk", str(source), str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        if result.returncode == 0 or not expected.search(result.stderr):
+            failures.append(f"vector-spread disclosure {target}: wrong refusal:\n{result.stderr}")
+        if output.exists() or any(directory.glob(f".{output.name}.compactc-stage-*")):
+            failures.append(f"vector-spread disclosure {target}: published output or staging debris")
+    return failures
 
 
 def check_output_publication(compactc: str, directory: Path) -> list[str]:
@@ -648,11 +674,13 @@ def main() -> int:
         failures.extend(check_proof_capabilities(compactc, directory))
         failures.extend(check_context_locations(compactc, directory))
         failures.extend(check_boolean_typing(compactc, directory))
+        failures.extend(check_vector_spread_disclosure(compactc, directory))
 
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     print(f"Checked {len(CASES)} source rejections, {len(CONTEXT_CASES)} source contexts, "
-          f"output publication, proof capabilities and shared Boolean typing; {len(failures)} failed")
+          f"output publication, proof capabilities, shared Boolean typing and vector spread disclosure; "
+          f"{len(failures)} failed")
     return 1 if failures else 0
 
 
