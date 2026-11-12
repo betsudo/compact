@@ -221,12 +221,27 @@ fn secp256k1_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
-    let before_unary = legacy_source(path, current, &secp256k1_unary_manifest(SECP256K1_UNARY)?)?;
+    let before_accessors = legacy_source(path, current, &secp256k1_accessors_manifest()?)?;
+    let before_unary = legacy_source(
+        path,
+        &before_accessors,
+        &secp256k1_unary_manifest(SECP256K1_UNARY)?,
+    )?;
     legacy_source(
         path,
         &before_unary,
         &secp256k1_cast_manifest(SECP256K1_CAST)?,
     )
+}
+
+const SECP256K1_ACCESSORS: &[u8] = include_bytes!("secp256k1-point-accessor-expression.json");
+fn secp256k1_accessors_manifest() -> Result<Value, String> {
+    if digest(SECP256K1_ACCESSORS)
+        != "61f0176a053d08fd3ca08f12127998b3e4fc99113ed7d62fd59bff4a8028ece8"
+    {
+        return Err("unreviewed secp256k1 accessor compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SECP256K1_ACCESSORS).map_err(|error| error.to_string())
 }
 
 const SECP256K1_UNARY: &[u8] = include_bytes!("secp256k1-unary-expression.json");
@@ -369,6 +384,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
     authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
+    authority["secp256k1_accessors_projection"] = secp256k1_accessors_manifest().unwrap();
     authority["secp256k1_unary_projection"] = secp256k1_unary_manifest(SECP256K1_UNARY).unwrap();
     authority["sha512_enum_projection"] = sha512_enum_manifest(SHA512_ENUM).unwrap();
     authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();

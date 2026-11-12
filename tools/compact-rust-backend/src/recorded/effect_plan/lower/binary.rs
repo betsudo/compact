@@ -16,9 +16,7 @@
 //! Binary operation temporaries stay off recursive dispatch for unrelated families.
 use super::super::validate;
 use super::*;
-use crate::pure_semantics::arithmetic::{
-    Secp256k1Unary, check_field_arithmetic_pair, check_secp256k1_field,
-};
+use crate::pure_semantics::arithmetic::{Secp256k1Unary, check_field_arithmetic_pair};
 
 impl Lowerer<'_> {
     pub(super) fn secp256k1_unary(
@@ -28,14 +26,12 @@ impl Lowerer<'_> {
         bindings: &mut Vec<Binding>,
         path: &str,
     ) -> Result<(Operation, Type), RecordingGap> {
-        let (kind, value) = match expression {
-            Expr::Secp256k1Neg { value } => (Secp256k1Unary::Negate, value),
-            Expr::Secp256k1Inv { value } => (Secp256k1Unary::Invert, value),
-            _ => return Err(self.unsupported_expression(expression, path)),
-        };
+        let (kind, value) = Secp256k1Unary::from_expression(expression)
+            .ok_or_else(|| self.unsupported_expression(expression, path))?;
         let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
-        check_secp256k1_field(&value.ty).map_err(|error| invalid(path, error.to_string()))?;
-        let ty = value.ty.clone();
+        let ty = kind
+            .result_type(&value.ty)
+            .map_err(|error| invalid(path, error.to_string()))?;
         Ok((Operation::Secp256k1Unary { kind, value }, ty))
     }
 

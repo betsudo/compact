@@ -96,6 +96,8 @@ pub enum CompactError {
     InvalidJubjubPoint,
     Secp256k1BaseZeroInverse,
     Secp256k1ScalarZeroInverse,
+    Secp256k1IdentityX,
+    Secp256k1IdentityY,
     InvalidHashInput,
     MissingCoinPublicKey,
     ZswapAllocationLocked,
@@ -128,6 +130,18 @@ impl std::fmt::Display for CompactError {
             }
             Self::Secp256k1ScalarZeroInverse => {
                 write!(f, "secp256k1 scalar field has no inverse for 0")
+            }
+            Self::Secp256k1IdentityX => {
+                write!(
+                    f,
+                    "cannot extract the x-coordinate of the secp256k1 identity point"
+                )
+            }
+            Self::Secp256k1IdentityY => {
+                write!(
+                    f,
+                    "cannot extract the y-coordinate of the secp256k1 identity point"
+                )
             }
             Self::InvalidHashInput => write!(f, "invalid Compact hash input"),
             Self::ZswapOfferOutputMismatch => write!(

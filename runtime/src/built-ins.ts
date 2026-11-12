@@ -19,6 +19,7 @@ import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
 import { MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS } from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
+import type { Secp256k1Point } from './compact-types.js';
 import { CompactError } from './error.js';
 
 const FIELD_MODULUS: bigint = MAX_FIELD + 1n;
@@ -82,6 +83,22 @@ export function secp256k1ScalarInv(x: bigint): bigint {
     throw new CompactError('secp256k1 scalar field has no inverse for 0');
   }
   return inverseModuloPrime(x, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Extract the affine x-coordinate of a finite secp256k1 point. */
+export function secp256k1PointX(pt: Secp256k1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the x-coordinate of the secp256k1 identity point');
+  }
+  return pt.x;
+}
+
+/** Extract the affine y-coordinate of a finite secp256k1 point. */
+export function secp256k1PointY(pt: Secp256k1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the y-coordinate of the secp256k1 identity point');
+  }
+  return pt.y;
 }
 
 function inverseModuloPrime(value: bigint, modulus: bigint): bigint {

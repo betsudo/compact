@@ -9,7 +9,7 @@ use midnight_base_crypto::fab::{
 use midnight_curves::k256::K256Affine;
 use midnight_transient_crypto::curve::FR_BYTES;
 
-use crate::{BinaryHashRepr, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256k1Base};
+use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256k1Base};
 
 /// A checked secp256k1 point. The default value is the identity.
 #[derive(Clone, Copy, Debug)]
@@ -37,6 +37,20 @@ impl Secp256k1Point {
     /// Return the coordinates of a finite point.
     pub fn coordinates(&self) -> Option<(Secp256k1Base, Secp256k1Base)> {
         (!self.identity).then_some((self.x, self.y))
+    }
+
+    /// Return the affine x-coordinate, or an error for the identity.
+    pub fn x(self) -> Result<Secp256k1Base, CompactError> {
+        self.coordinates()
+            .map(|(x, _)| x)
+            .ok_or(CompactError::Secp256k1IdentityX)
+    }
+
+    /// Return the affine y-coordinate, or an error for the identity.
+    pub fn y(self) -> Result<Secp256k1Base, CompactError> {
+        self.coordinates()
+            .map(|(_, y)| y)
+            .ok_or(CompactError::Secp256k1IdentityY)
     }
 
     fn encoding_coordinates(&self) -> (Secp256k1Base, Secp256k1Base) {

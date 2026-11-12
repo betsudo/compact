@@ -281,6 +281,8 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         Expr::EcNeg { value } => unary!("ec_neg", "value", value),
         Expr::Secp256k1Neg { value } => unary!("secp256k1_neg", "value", value),
         Expr::Secp256k1Inv { value } => unary!("secp256k1_inv", "value", value),
+        Expr::Secp256k1PointX { value } => unary!("secp256k1_point_x", "value", value),
+        Expr::Secp256k1PointY { value } => unary!("secp256k1_point_y", "value", value),
         Expr::EcMul { point, scalar } => binary!("ec_mul", "point", point, "scalar", scalar),
         Expr::EcMulGenerator { scalar } => unary!("ec_mul_generator", "scalar", scalar),
         Expr::JubjubScalarFromNative { value } => {

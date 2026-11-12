@@ -87,13 +87,41 @@ pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
 pub(crate) enum Secp256k1Unary {
     Negate,
     Invert,
+    PointX,
+    PointY,
 }
 
-pub(crate) fn check_secp256k1_field(ty: &Type) -> Result<(), RenderError> {
-    if matches!(ty, Type::Secp256k1Base | Type::Secp256k1Scalar) {
-        Ok(())
-    } else {
-        Err(RenderError::ExpectedSecp256k1Field(ty.clone()))
+impl Secp256k1Unary {
+    pub(crate) fn from_expression(expression: &Expr) -> Option<(Self, &Expr)> {
+        Some(match expression {
+            Expr::Secp256k1Neg { value } => (Self::Negate, value.as_ref()),
+            Expr::Secp256k1Inv { value } => (Self::Invert, value.as_ref()),
+            Expr::Secp256k1PointX { value } => (Self::PointX, value.as_ref()),
+            Expr::Secp256k1PointY { value } => (Self::PointY, value.as_ref()),
+            _ => return None,
+        })
+    }
+
+    pub(crate) fn result_type(self, operand: &Type) -> Result<Type, RenderError> {
+        match self {
+            Self::Negate | Self::Invert => {
+                if matches!(operand, Type::Secp256k1Base | Type::Secp256k1Scalar) {
+                    Ok(operand.clone())
+                } else {
+                    Err(RenderError::ExpectedSecp256k1Field(operand.clone()))
+                }
+            }
+            Self::PointX | Self::PointY => {
+                if *operand == Type::Secp256k1Point {
+                    Ok(Type::Secp256k1Base)
+                } else {
+                    Err(RenderError::TypeMismatch {
+                        expected: Type::Secp256k1Point,
+                        actual: operand.clone(),
+                    })
+                }
+            }
+        }
     }
 }
 

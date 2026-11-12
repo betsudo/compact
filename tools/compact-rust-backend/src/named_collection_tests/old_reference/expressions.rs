@@ -122,6 +122,8 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::JubjubPointY { value }
         | Expr::Secp256k1Neg { value }
         | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => {
             collect_expression_types(value, structs, enums, origins)?

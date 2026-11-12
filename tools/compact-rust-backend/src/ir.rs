@@ -694,6 +694,12 @@ pub enum Expr {
     Secp256k1Inv {
         value: Box<Expr>,
     },
+    Secp256k1PointX {
+        value: Box<Expr>,
+    },
+    Secp256k1PointY {
+        value: Box<Expr>,
+    },
     Coerce {
         value: Box<Expr>,
         ty: Type,

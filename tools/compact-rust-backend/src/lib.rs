@@ -816,6 +816,8 @@ fn collect_expression_types<'ir>(
         | Expr::JubjubPointY { value }
         | Expr::Secp256k1Neg { value }
         | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
@@ -1604,11 +1606,15 @@ fn pure_crypto_expression(
         Expr::ConstructJubjubPoint { x, y } => CryptoSource::ConstructJubjubPoint(x, y),
         Expr::EcAdd { left, right } => CryptoSource::EcAdd(left, right),
         Expr::EcNeg { value } => CryptoSource::EcNeg(value),
-        Expr::Secp256k1Neg { value } => {
-            CryptoSource::Secp256k1Unary(pure_semantics::arithmetic::Secp256k1Unary::Negate, value)
-        }
-        Expr::Secp256k1Inv { value } => {
-            CryptoSource::Secp256k1Unary(pure_semantics::arithmetic::Secp256k1Unary::Invert, value)
+        Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => {
+            let (kind, value) =
+                pure_semantics::arithmetic::Secp256k1Unary::from_expression(expr).unwrap();
+            CryptoSource::Secp256k1Unary(kind, value)
         }
         Expr::EcMul { point, scalar } => CryptoSource::EcMul(point, scalar),
         Expr::EcMulGenerator { scalar } => CryptoSource::EcMulGenerator(scalar),

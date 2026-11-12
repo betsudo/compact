@@ -79,6 +79,16 @@
   ([s (TypeRef Secp256k1Scalar) (discloses "the inverse of")])
   (TypeRef Secp256k1Scalar))
 
+(declare-native-entry circuit secp256k1PointX
+  "__compactRuntime.secp256k1PointX"
+  ([pt (TypeRef Secp256k1Point) (discloses "the x-coordinate of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit secp256k1PointY
+  "__compactRuntime.secp256k1PointY"
+  ([pt (TypeRef Secp256k1Point) (discloses "the y-coordinate of")])
+  (TypeRef Secp256k1Base))
+
 ;; ====
 (declare-native-entry circuit jubjubPointX
   "__compactRuntime.jubjubPointX"

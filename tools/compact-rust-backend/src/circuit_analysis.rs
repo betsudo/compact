@@ -479,6 +479,8 @@ fn expression_contains_with_actions<'source>(
         | Expr::JubjubPointY { value }
         | Expr::Secp256k1Neg { value }
         | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::EcMulGenerator { scalar: value }
         | Expr::JubjubScalarFromNative { value } => visit(value),

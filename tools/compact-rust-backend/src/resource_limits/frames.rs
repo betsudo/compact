@@ -148,6 +148,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EcMulGenerator { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::JubjubScalarFromNative { .. } => 39,
                 E::Unit
                 | E::Default { .. }
@@ -213,6 +215,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::NotEqual { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Compare { .. } => 22,
                 E::Unit
                 | E::Default { .. }
@@ -280,6 +284,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -352,6 +358,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::Secp256k1BytesCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. }
                 | E::UnsignedMultiply { .. }

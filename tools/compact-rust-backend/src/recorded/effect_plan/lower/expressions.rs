@@ -116,7 +116,10 @@ impl Lowerer<'_> {
             | Expr::ConstructJubjubPoint { .. }
             | Expr::EcMul { .. }
             | Expr::EcAdd { .. } => Self::jubjub_selected,
-            Expr::Secp256k1Neg { .. } | Expr::Secp256k1Inv { .. } => Self::secp256k1_unary,
+            Expr::Secp256k1Neg { .. }
+            | Expr::Secp256k1Inv { .. }
+            | Expr::Secp256k1PointX { .. }
+            | Expr::Secp256k1PointY { .. } => Self::secp256k1_unary,
             Expr::Add { .. }
             | Expr::Subtract { .. }
             | Expr::Multiply { .. }

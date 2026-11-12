@@ -20,7 +20,6 @@ use crate::{
     ir::Type,
     native_representation::{Operation, check_tuple_traits},
     pure_semantics::{
-        arithmetic::check_secp256k1_field,
         hash_encoding::DynamicInputEncoding,
         jubjub::{Axis, JubjubOperands, check_jubjub},
         sink::Typed,
@@ -104,8 +103,8 @@ pub(super) fn unary<V>(
         Unary::PointY => return jubjub(JubjubOperands::Coordinate(Axis::Y, value)),
         Unary::Negate => return jubjub(JubjubOperands::Negate(value)),
         Unary::Secp256k1(kind) => {
-            check_secp256k1_field(&value.ty)?;
-            (CheckedCrypto::Secp256k1Unary(kind, value.output), value.ty)
+            let ty = kind.result_type(&value.ty)?;
+            (CheckedCrypto::Secp256k1Unary(kind, value.output), ty)
         }
         Unary::Generator => return jubjub(JubjubOperands::Generator(value)),
         Unary::Reduce => return jubjub(JubjubOperands::Reduce(value)),

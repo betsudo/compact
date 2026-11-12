@@ -1325,6 +1325,8 @@
            (let ([kind (case (native-entry-function native-entry)
                          [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg") "secp256k1_neg"]
                          [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv") "secp256k1_inv"]
+                         [("__compactRuntime.secp256k1PointX") "secp256k1_point_x"]
+                         [("__compactRuntime.secp256k1PointY") "secp256k1_point_y"]
                          [else #f])])
              (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
@@ -3126,7 +3128,8 @@
           [(call ,src ,function-name ,expr* ...)
            (object (cons "kind" "expression")
                    (cons "value"
-                         (if (eq-hashtable-ref witness-ids function-name #f)
+                         (if (or (eq-hashtable-ref witness-ids function-name #f)
+                                 (eq-hashtable-ref secp256k1-unary-natives function-name #f))
                              (stateful-expression-ir expr src witness-ids)
                              (object (cons "kind" "call")
                                      (cons "name" (rust-function-name function-name))

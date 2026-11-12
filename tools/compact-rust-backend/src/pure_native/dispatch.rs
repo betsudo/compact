@@ -116,7 +116,9 @@ macro_rules! dispatch {
             }
             $crate::ir::Expr::EcNeg { .. }
             | $crate::ir::Expr::Secp256k1Neg { .. }
-            | $crate::ir::Expr::Secp256k1Inv { .. } => {
+            | $crate::ir::Expr::Secp256k1Inv { .. }
+            | $crate::ir::Expr::Secp256k1PointX { .. }
+            | $crate::ir::Expr::Secp256k1PointY { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::EcMul { .. } => {

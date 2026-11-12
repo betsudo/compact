@@ -1221,6 +1221,7 @@
       (from_coordinates outp inp0 inp1)
       (hash_to_curve outp inp* ...)
       (impact inp inp* ...)
+      (into_coordinates outp0 outp1 inp)
       (inv outp inp)
       (jubjub_scalar_from_native outp inp)
       (keccak256 outp (alignment* ...) inp* ...)

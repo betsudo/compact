@@ -46,6 +46,8 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::JubjubPointY { value }
         | Expr::Secp256k1Neg { value }
         | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => local_expr(value, witnesses),
         Expr::Tuple { elements } | Expr::Vector { elements, .. } => {

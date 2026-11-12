@@ -109,6 +109,34 @@
                 `(less_than ,canonical ,native ,jubjub-scalar-order ,(integer-length jubjub-scalar-order))
                 instr*)))))
 
+      (define (emit-secp256k1-coordinate src test point x y instr*)
+        (with-output-language (Lzkir Instruction)
+          (if (eqv? test 1)
+              (cons `(into_coordinates ,x ,y ,point) instr*)
+              (let-values ([(x-high x-low)
+                            (div-and-mod #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+                                         (expt 2 248))]
+                           [(y-high y-low)
+                            (div-and-mod #x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
+                                         (expt 2 248))])
+                (let ([x-bytes (make-temp-id src 'generator-x-bytes)]
+                      [y-bytes (make-temp-id src 'generator-y-bytes)]
+                      [gx (make-temp-id src 'generator-x)]
+                      [gy (make-temp-id src 'generator-y)]
+                      [generator (make-temp-id src 'generator)]
+                      [active (make-temp-id src 'active-coordinate-input)])
+                  ;; Coordinate extraction is eager. On an inactive branch use the
+                  ;; fixed, finite secp256k1 generator in place of the actual point.
+                  (cons*
+                    `(into_coordinates ,x ,y ,active)
+                    `(cond_select ,active ,test ,point ,generator)
+                    `(from_coordinates ,generator ,gx ,gy)
+                    `(from_bytes "Base<Secp256k1>" ,gy ,y-bytes)
+                    `(bytes_from_natives ,y-bytes 32 ,y-low ,y-high)
+                    `(from_bytes "Base<Secp256k1>" ,gx ,x-bytes)
+                    `(bytes_from_natives ,x-bytes 32 ,x-low ,x-high)
+                    instr*))))))
+
       (define (make-native name arg*)
         ;; Get the list of alignment atoms for a 0-based arg index.
         (define (arg->alignment arg* index)
@@ -179,6 +207,12 @@
                (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
               [(inv)
                (emit-inverse src test (car var-name*) (car triv*) instr*)]
+              [(secp256k1PointX)
+               (emit-secp256k1-coordinate src test (car triv*) (car var-name*)
+                 (make-temp-id src 'ignore) instr*)]
+              [(secp256k1PointY)
+               (emit-secp256k1-coordinate src test (car triv*) (make-temp-id src 'ignore)
+                 (car var-name*) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
                (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]
@@ -1109,6 +1143,9 @@
        `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
        `((op . "hash_to_curve") (output . ,outp) (inputs . ,(list->vector inp*)))]
+      [(into_coordinates ,outp0 ,outp1 ,[* inp])
+       (let* ([x (Output outp0)] [y (Output outp1)])
+         `((op . "into_coordinates") (point . ,inp) (outputs . ,(vector x y))))]
       [(inv ,[* outp] ,[* inp])
        `((op . "inv") (output . ,outp) (a . ,inp))]
       [(jubjub_scalar_from_native ,[* outp] ,[* inp])

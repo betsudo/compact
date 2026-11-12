@@ -21,6 +21,7 @@ import { expect, test } from 'vitest';
 
 import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
+import { registerAccessorTests } from './accessors/checks.mjs';
 import { registerArithmeticTests } from './arithmetic/checks.mjs';
 import { registerPointTests } from './point/checks.mjs';
 import { registerPositiveCastTests } from './positive-casts/checks.mjs';
@@ -96,3 +97,4 @@ registerPositiveCastTests(compile);
 registerArithmeticTests(compile);
 registerUnaryTests(compile);
 registerPointTests(compile);
+registerAccessorTests(compile);

@@ -184,9 +184,10 @@ pub(super) fn validate(
                 && right.ty == Type::JubjubPoint
                 && *ty == Type::JubjubPoint
         }
-        Operation::Secp256k1Unary { value, .. } => {
+        Operation::Secp256k1Unary { kind, value } => {
             use_value(value)?;
-            &value.ty == ty && crate::pure_semantics::arithmetic::check_secp256k1_field(ty).is_ok()
+            kind.result_type(&value.ty)
+                .is_ok_and(|expected| expected == *ty)
         }
         Operation::Convert { value, kind } => {
             use_value(value)?;

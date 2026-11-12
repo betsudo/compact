@@ -75,6 +75,8 @@ pub(crate) fn secp256k1_unary_syntax(kind: Secp256k1Unary, value: syn::Expr) -> 
     match kind {
         Secp256k1Unary::Negate => syn::parse_quote!(-(#value)),
         Secp256k1Unary::Invert => syn::parse_quote!((#value).inverse()?),
+        Secp256k1Unary::PointX => syn::parse_quote!((#value).x()?),
+        Secp256k1Unary::PointY => syn::parse_quote!((#value).y()?),
     }
 }
 
