@@ -71,7 +71,7 @@
       "expected_recording_gaps": {},
       "pure_declarations": 0,
       "exported_pure_declarations": 0,
-      "rust_fixture": "tests-rust-backend/test-center-coracle/lib.rs"
+      "rust_consumer": "tests-rust-backend/test-center-coracle/lib.rs"
     }
   ],
   "expected_rejections": []

@@ -8,7 +8,7 @@
       "source": "examples/rust_backend/field_observation_oracle.compact",
       "typescript_capture": "runtime-rs/tests/fixtures/capture-field-observation-oracle.mjs",
       "typescript_fixture": "runtime-rs/tests/fixtures/field-observation-oracle.json",
-      "rust_fixture": "tests-rust-backend/field-observation-oracle/lib.rs",
+      "rust_consumer": "tests-rust-backend/field-observation-oracle/lib.rs",
       "rust_test": "tests-rust-backend/field-observation-oracle/tests/field_observation.rs",
       "expected_ts": "success",
       "expected_rust": "success",

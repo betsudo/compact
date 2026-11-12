@@ -232,6 +232,18 @@ metadata.mkdir()
         self.assertEqual(sum(not circuit["proof"] for entry in entries
                              for circuit in entry["proof_circuits"]), 1)
 
+    def test_zerocash_generated_consumer_rejects_an_unrelated_wrapper(self):
+        manifest_path = SCRIPT.with_name("parity_positive_original_election_zerocash_sources.json")
+        source = json.loads(manifest_path.read_text())["positive_sources"][1]
+        self.assertEqual(source["source"], "examples/zerocash.compact")
+        self.assertEqual(source["rust_fixture_source"], "examples/rust_backend/zerocash_oracle.compact")
+        self.assertEqual(source["rust_consumer"], "tests-rust-backend/zerocash-oracle/lib.rs")
+        self.assertNotIn("rust_fixture", source)
+        source["rust_consumer"] = "tests-rust-backend/test-center-bboard/lib.rs"
+        with tempfile.TemporaryDirectory() as output:
+            with self.assertRaisesRegex(ValueError, "invalid generated consumer binding"):
+                source_scope.generated_consumer_artifact(source, Path(output))
+
     def test_test_center_counter_cohort_preserves_original_source_identity(self):
         manifest = json.loads(inventory.TEST_CENTER_COUNTER_SOURCE_MANIFEST.read_text())
         self.assertEqual(source_scope.cohort_membership_failures(manifest), [])
