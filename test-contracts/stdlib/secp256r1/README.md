@@ -53,3 +53,6 @@ original assertions.
 
 The [unary fixtures](unary/README.md) preserve the original base and
 scalar negation and inversion pairs and check active and inactive zero.
+
+The [point fixtures](point/README.md) preserve the original equality
+and identity-hash assertions and check the five-atom point layout.

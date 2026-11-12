@@ -302,6 +302,7 @@
              [(string=? opaque-type "Secp256r1Base") (kind "secp256r1_base")]
              [(string=? opaque-type "Secp256r1Scalar") (kind "secp256r1_scalar")]
              [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
+             [(string=? opaque-type "Secp256r1Point") (kind "secp256r1_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]
              [else (source-errorf src "Rust backend does not yet support this opaque type")])]
@@ -1667,7 +1668,7 @@
                 [(and (eq? adt-name '__compact_Cell)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*)
-                      (equal? (secp256k1-carrier (car adt-arg*)) "Secp256k1Point"))
+                      (foreign-point-base (secp256k1-carrier (car adt-arg*))))
                  (let ([default-value (with-output-language (Lnodisclose Expression)
                                         `(default ,src ,(car adt-arg*)))])
                    (object (cons "kind" "cell_write")

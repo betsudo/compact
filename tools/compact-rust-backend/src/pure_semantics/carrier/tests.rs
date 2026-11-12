@@ -83,14 +83,16 @@ fn every_leaf_and_unsigned_carrier_boundary_matches_frozen_policy() {
 }
 
 #[test]
-fn secp256k1_schema_types_emit_distinct_rust_carriers_without_implicit_conversions() {
+fn foreign_curve_schema_types_emit_distinct_rust_carriers_without_implicit_conversions() {
     let base: Type = serde_json::from_str(r#"{"kind":"secp256k1_base"}"#).unwrap();
     let scalar: Type = serde_json::from_str(r#"{"kind":"secp256k1_scalar"}"#).unwrap();
     let point: Type = serde_json::from_str(r#"{"kind":"secp256k1_point"}"#).unwrap();
+    let p256: Type = serde_json::from_str(r#"{"kind":"secp256r1_point"}"#).unwrap();
     for (ty, variant, name) in [
         (&base, Type::Secp256k1Base, "runtime :: Secp256k1Base"),
         (&scalar, Type::Secp256k1Scalar, "runtime :: Secp256k1Scalar"),
         (&point, Type::Secp256k1Point, "runtime :: Secp256k1Point"),
+        (&p256, Type::Secp256r1Point, "runtime :: Secp256r1Point"),
     ] {
         assert_eq!(*ty, variant);
         assert_eq!(

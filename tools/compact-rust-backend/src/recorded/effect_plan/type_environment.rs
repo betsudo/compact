@@ -131,6 +131,7 @@ impl TypeEnvironment {
                 | Type::Secp256k1Scalar
                 | Type::Secp256r1Scalar
                 | Type::Secp256k1Point
+                | Type::Secp256r1Point
                 | Type::Bytes { .. }
                 | Type::OpaqueString
                 | Type::OpaqueBytes

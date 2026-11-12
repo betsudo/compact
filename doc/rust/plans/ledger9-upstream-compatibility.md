@@ -242,7 +242,15 @@ applies a separate funded transaction. The [P-256 unary fixtures](../../../test-
 retain both original negation and inversion pairs. They verify field-specific
 zero refusal, inactive branches, discarded inverses and overload resolution.
 The explicit proof lane covers both original fixtures and both inactive-zero
-branches. P-256 points and signature suites remain separate.
+branches.
+
+The [P-256 point fixtures](../../../test-contracts/stdlib/secp256r1/point)
+retain the original equality and identity-hash assertions. Rust and
+TypeScript encode the same five atoms and reject off-curve finite inputs
+at their typed boundaries. The three point-family tags are checked in
+contract info and Rust IR. The upstream JavaScript circuit signature
+export and the intact roundtrip with point accessors remain open.
+P-256 group operations and signature suites follow separately.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

@@ -33,6 +33,7 @@ mod primitives;
 pub mod public_state;
 pub mod recording;
 mod secp256k1_point;
+mod secp256r1_point;
 mod secp256k1_recovery;
 pub mod slots;
 mod zswap;
@@ -58,6 +59,7 @@ pub use primitives::{
     add_wide_unsigned, cast_unsigned, multiply_unsigned, narrow_wide_uint, subtract_unsigned,
 };
 pub use secp256k1_point::Secp256k1Point;
+pub use secp256r1_point::Secp256r1Point;
 pub use secp256k1_recovery::secp256k1_ecdsa_recover;
 
 /// Ledger FAB types used by the generated user-type derive.

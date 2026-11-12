@@ -56,6 +56,7 @@ pub(super) fn equivalent(
                 | (Type::Secp256r1Base, Type::Secp256r1Base)
                 | (Type::Secp256r1Scalar, Type::Secp256r1Scalar)
                 | (Type::Secp256k1Point, Type::Secp256k1Point)
+                | (Type::Secp256r1Point, Type::Secp256r1Point)
                 | (Type::OpaqueString, Type::OpaqueString)
                 | (Type::OpaqueBytes, Type::OpaqueBytes) => {}
                 (Type::Bytes { length: left }, Type::Bytes { length: right }) => {
@@ -150,6 +151,7 @@ pub(super) fn equivalent(
                     | Type::Secp256r1Base
                     | Type::Secp256r1Scalar
                     | Type::Secp256k1Point
+                    | Type::Secp256r1Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes
                     | Type::Bytes { .. }

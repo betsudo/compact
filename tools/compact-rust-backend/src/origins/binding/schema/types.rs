@@ -26,6 +26,7 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
         Type::Secp256r1Base => s.unit("secp256r1_base"),
         Type::Secp256r1Scalar => s.unit("secp256r1_scalar"),
         Type::Secp256k1Point => s.unit("secp256k1_point"),
+        Type::Secp256r1Point => s.unit("secp256r1_point"),
         Type::OpaqueString => s.unit("opaque_string"),
         Type::OpaqueBytes => s.unit("opaque_bytes"),
         Type::Bytes { length } => {

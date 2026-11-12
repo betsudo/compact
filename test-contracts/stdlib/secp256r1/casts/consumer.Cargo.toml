@@ -20,6 +20,8 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+point_equality = { package = "compact-contract-upstream-equality", path = "../../family-first/point/upstream-equality/ts-rust/.build/contract", features = ["ledger-transaction"] }
+point_identity = { package = "compact-contract-upstream-identity", path = "../../family-first/point/upstream-identity/ts-rust/.build/contract", features = ["ledger-transaction"] }
 unary_base = { package = "compact-contract-upstream-base", path = "../../family-first/unary/upstream-base/ts-rust/.build/contract", features = ["ledger-transaction"] }
 unary_scalar = { package = "compact-contract-upstream-scalar", path = "../../family-first/unary/upstream-scalar/ts-rust/.build/contract", features = ["ledger-transaction"] }
 unary_controls = { package = "compact-contract-unary-controls", path = "../../family-first/unary/unary-controls/ts-rust/.build/contract", features = ["ledger-transaction"] }

@@ -14,7 +14,10 @@
 // limitations under the License.
 
 use decode::runtime as r;
-use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
+use midnight_base_crypto::{
+    data_provider::{FetchMode, MidnightDataProvider, OutputMode},
+    fab::{Value as FabValue, ValueAtom},
+};
 use midnight_ledger::{
     construct::ContractCallExt,
     dust::{DUST_EXPECTED_FILES, DustResolver},
@@ -40,7 +43,7 @@ use midnight_transient_crypto::{
 use midnight_zkir::IrSource;
 use midnight_zswap::prove::ZswapResolver;
 use r::{
-    CompactError, Field, FixedBytes, Secp256r1Base, Secp256r1Scalar,
+    CompactError, Field, FixedBytes, Secp256r1Base, Secp256r1Point, Secp256r1Scalar,
     context::{CircuitResult, ConstructorContext},
     fab::AlignedValue,
     ledger::{ContractAddress, DefaultDB, StateValue},
@@ -98,6 +101,8 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("upstream-equality", "pointsEqual-0") => "pointsNotEqual-0",
+        ("upstream-equality" | "upstream-identity", _) => "pointsEqual-0",
         ("upstream-base", _) => "upstream-scalar-test-3",
         ("upstream-scalar" | "unary-controls", _) => "upstream-base-test-3",
         ("arithmetic", "mulb-6") => "muls-6",
@@ -116,6 +121,7 @@ where
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
         name if unary_fixture(name) => family.join("unary").join(name),
+        name if point_fixture(name) => family.join("point").join(name),
         name => family.join("casts").join(name),
     };
     let raw = fixture
@@ -333,13 +339,27 @@ fn decode_scalar(value: &Value) -> Secp256r1Scalar {
     Secp256r1Scalar::from_le_bytes(field_bytes(value)).unwrap()
 }
 
+fn decode_point(value: &Value) -> Secp256r1Point {
+    let x = decode_base(&value["x"]);
+    let y = decode_base(&value["y"]);
+    let mut fab = FabValue::from(x);
+    fab.0.extend(FabValue::from(y).0);
+    fab.0
+        .push(ValueAtom::from(value["identity"].as_bool().unwrap()));
+    Secp256r1Point::try_from(&*fab).unwrap()
+}
+
+fn point_fixture(name: &str) -> bool {
+    matches!(name, "upstream-equality" | "upstream-identity")
+}
+
 fn unary_fixture(name: &str) -> bool {
     matches!(name, "upstream-base" | "upstream-scalar" | "unary-controls")
 }
 
-fn check_proof_flag(state: &StateValue<DefaultDB>, expected: bool) {
+fn check_bool_cell(state: &StateValue<DefaultDB>, expected: bool) {
     let StateValue::Array(fields) = state else {
-        panic!("expected unary fixture state")
+        panic!("expected a single Boolean Cell")
     };
     assert_eq!(fields.len(), 1);
     assert_eq!(
@@ -357,6 +377,7 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let base = |i: usize| decode_base(&inputs[i]["field"]);
     let scalar = |i: usize| decode_scalar(&inputs[i]["field"]);
     let guard = || inputs[0].as_bool().unwrap();
+    let point = |i: usize| decode_point(&inputs[i]);
     macro_rules! exercise {
         ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident $(, $result:ident)?| $verify:block) => {{
             use $package::ledger_contract as contract;
@@ -364,7 +385,9 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             let context = || Ok::<_, CompactError>(init()?.into_circuit_context(ContractAddress::default()));
             let native = contract::$method(context()?, $($arg),*)?;
             if unary_fixture(fixture) {
-                check_proof_flag(native.public_state(), true);
+                check_bool_cell(native.public_state(), true);
+            } else if fixture == "upstream-equality" {
+                check_bool_cell(native.public_state(), expected.as_bool().unwrap());
             }
             let $view = contract::PublicStateView::from(&native);
             $(let $result = native.result;)?
@@ -419,7 +442,44 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             })
         };
     }
+    macro_rules! point_equality {
+        ($method:ident, $call:ident) => {
+            exercise!(
+                point_equality,
+                $method,
+                $call,
+                (point(0), point(1)),
+                |_view, result| {
+                    assert_eq!(result, expected.as_bool().unwrap());
+                }
+            )
+        };
+    }
     match (fixture, circuit) {
+        ("upstream-equality", "pointsEqual") => point_equality!(pointsEqual, pointsEqual_call),
+        ("upstream-equality", "pointsNotEqual") => {
+            point_equality!(pointsNotEqual, pointsNotEqual_call)
+        }
+        ("upstream-identity", "storePoint") => exercise!(
+            point_identity,
+            storePoint,
+            storePoint_call,
+            (point(0)),
+            |view, result| {
+                assert_eq!(result, decode_point(expected));
+                assert_eq!(view.point()?, result);
+            }
+        ),
+        ("upstream-identity", "hashPoint") => exercise!(
+            point_identity,
+            hashPoint,
+            hashPoint_call,
+            (point(0)),
+            |view, result| {
+                assert_eq!(result, FixedBytes::<32>::new(from_hex(expected)));
+                assert_eq!(view.hash()?, result);
+            }
+        ),
         ("upstream-base", "test") => exercise!(
             unary_base,
             test,
@@ -576,13 +636,13 @@ fn check_zero_inverse() -> TestResult<()> {
             use $package::ledger_contract as contract;
             let initial = contract::initial_state(ConstructorContext::new(()))?;
             let state = initial.ledger_state.clone();
-            check_proof_flag(state.get_ref(), false);
+            check_bool_cell(state.get_ref(), false);
             let context = initial.into_circuit_context(ContractAddress::default());
             assert!(matches!(contract::$method(context, $($arg),*), Err(CompactError::$error)));
             let recorded = contract::initial_state(ConstructorContext::new(()))?
                 .into_circuit_context(ContractAddress::default());
             assert!(matches!(contract::recorded::$method(recorded, $($arg),*), Err(CompactError::$error)));
-            check_proof_flag(state.get_ref(), false);
+            check_bool_cell(state.get_ref(), false);
         }};
     }
     refuse!(unary_base, test, (base), Secp256r1BaseZeroInverse);
@@ -625,6 +685,20 @@ fn check_zero_inverse() -> TestResult<()> {
     Ok(())
 }
 
+fn check_point_defaults(cases: &serde_json::Map<String, Value>) -> TestResult<()> {
+    use point_equality::pure_circuits::getDefault;
+    use point_identity::pure_circuits::identityEqual;
+    let default = getDefault()?;
+    assert_eq!(default, Secp256r1Point::default());
+    assert!(default.is_identity());
+    let values = ["storePoint-0", "storePoint-1", "storePoint-2"]
+        .map(|case| decode_point(&cases[case]["inputs"][0]));
+    assert_eq!(values, [default; 3]);
+    identityEqual(values[0], values[1])?;
+    identityEqual(values[1], values[2])?;
+    Ok(())
+}
+
 fn main() -> TestResult<()> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let [mode, root, out] = args.as_slice() else {
@@ -640,6 +714,7 @@ fn main() -> TestResult<()> {
         Some("parity") => Some(41),
         Some("arithmetic-parity") => Some(34),
         Some("unary-parity") => Some(30),
+        Some("point-parity") => Some(17),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -649,11 +724,18 @@ fn main() -> TestResult<()> {
                 unary_fixture(row["fixture"].as_str().unwrap()),
                 mode == "unary-parity"
             );
+            assert_eq!(
+                point_fixture(row["fixture"].as_str().unwrap()),
+                mode == "point-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
             check_zero_inverse()?;
             println!("six native and recorded active-zero refusals, plus pure discarded inverse");
+        } else if mode == "point-parity" {
+            check_point_defaults(cases)?;
+            println!("original default and both identity equality and hash assertions passed");
         }
         println!(
             "{expected} generated Rust cases matched the TypeScript ledger values and public VM replay"

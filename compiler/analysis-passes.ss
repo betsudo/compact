@@ -1605,13 +1605,13 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar")
+                      [("Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point")
                        `(topaque ,src ,type-name)]
                       [("Opaque")
                        (let ([name (get-assoc "tsType" alist)])
                          (when (foreign-field-max name)
                            (malformed "a built-in foreign field requires its own type-name"))
-                         (when (string=? name "Secp256k1Point")
+                         (when (foreign-point-base name)
                            (malformed "a built-in foreign point requires its own type-name"))
                          `(topaque ,src ,name))]
                       [("Vector") `(tvector ,src ,(tonat (get-assoc "length" alist)) ,(totype (get-assoc "type" alist)))]

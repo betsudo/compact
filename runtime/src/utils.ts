@@ -15,9 +15,10 @@
 
 import { ContractAddress } from '@midnightntwrk/onchain-runtime-v4';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
-import type { Secp256k1Point } from './compact-types.js';
+import { p256 } from '@noble/curves/nist.js';
+import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
-import { SECP256K1_BASE_MODULUS } from './constants.js';
+import { SECP256K1_BASE_MODULUS, SECP256R1_BASE_MODULUS } from './constants.js';
 import { EncodedContractAddress } from './zswap.js';
 
 /**
@@ -69,6 +70,34 @@ export function isValidSecp256k1Point(value: unknown): value is Secp256k1Point {
     return false;
   }
   return identity || (y * y) % modulus === (((x * x) % modulus) * x + 7n) % modulus;
+}
+
+/** Checks a P-256 point supplied to a generated circuit. */
+export function isValidSecp256r1Point(value: unknown): value is Secp256r1Point {
+  if (typeof value !== 'object' || value === null || !('x' in value) || !('y' in value) || !('identity' in value)) {
+    return false;
+  }
+  const { x, y, identity } = value;
+  const modulus = SECP256R1_BASE_MODULUS;
+  if (
+    typeof x !== 'bigint' ||
+    x < 0n ||
+    x >= modulus ||
+    typeof y !== 'bigint' ||
+    y < 0n ||
+    y >= modulus ||
+    typeof identity !== 'boolean'
+  ) {
+    return false;
+  }
+  if (!identity) {
+    try {
+      p256.Point.fromAffine({ x, y }).assertValidity();
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Convert an affine Compact point to the secp256k1 group representation. */

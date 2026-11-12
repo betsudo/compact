@@ -1278,6 +1278,7 @@
                      [("Uint8Array") (format "__compactRuntime.CompactTypeOpaqueUint8Array")]
                      [("JubjubPoint") (format "__compactRuntime.CompactTypeJubjubPoint")]
                      [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
+                     [("Secp256r1Point") "__compactRuntime.CompactTypeSecp256r1Point"]
                      [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
                      [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
                      [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
@@ -1365,6 +1366,9 @@
                     [(topaque ,src ,opaque-type)
                      (guard (string=? opaque-type "Secp256k1Point"))
                      (format "__compactRuntime.isValidSecp256k1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256r1Point"))
+                     (format "__compactRuntime.isValidSecp256r1Point(~a)" var)]
                     [(topaque ,src ,opaque-type)
                      (let ([max (case opaque-type
                                   [("Secp256k1Base") "MAX_SECP256K1_BASE"]
@@ -2787,7 +2791,7 @@
                        elt-name*
                        type*)]
                     [(topaque ,src ,opaque-type)
-                     (guard (string=? opaque-type "Secp256k1Point"))
+                     (guard (foreign-point-base opaque-type))
                      (print-indent indent)
                      (printf "if (x~s.identity !== y~s.identity || (!x~s.identity && (x~s.x !== y~s.x || x~s.y !== y~s.y))) { return false; }\n"
                              i i i i i i i)]
@@ -2847,7 +2851,7 @@
                   [("string") "''"]
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
-                  [("Secp256k1Point") "({x: 0n, y: 0n, identity: true})"]
+                  [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
                   [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
@@ -3008,7 +3012,7 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (member opaque-type '("JubjubPoint" "Secp256k1Point")))]
+             [(topaque ,src ,opaque-type) (not (or (string=? opaque-type "JubjubPoint") (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3031,7 +3035,7 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (member opaque-type '("JubjubPoint" "Secp256k1Point")))]
+             [(topaque ,src ,opaque-type) (not (or (string=? opaque-type "JubjubPoint") (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3388,6 +3392,7 @@
          [("string" "Uint8Array") opaque-type]
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
          [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
+         [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
          [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]

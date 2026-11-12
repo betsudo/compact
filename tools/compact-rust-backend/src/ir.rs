@@ -594,6 +594,7 @@ pub enum Type {
     Secp256k1Scalar,
     Secp256r1Scalar,
     Secp256k1Point,
+    Secp256r1Point,
     OpaqueString,
     OpaqueBytes,
     Bytes {

@@ -335,7 +335,7 @@
                  (let ([atom (car alignment*)])
                    (nanopass-case (Lflattened Alignment) atom
                      [(anative ,opaque-type)
-                      (guard (string=? opaque-type "Secp256k1Point"))
+                      (guard (foreign-point-base opaque-type))
                       (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
                         (loop (cdr alignment*) (cdr input*)
                           (with-output-language (Lzkir Instruction)
@@ -400,13 +400,14 @@
                      (nanopass-case (Lflattened Alignment) atom
                        [(anative ,opaque-type)
                         (cond
-                          [(string=? opaque-type "Secp256k1Point")
-                           ;; The identity has two zero coordinates and a native field flag.
-                           (let-values ([(high low) (div-and-mod (secp256k1-field-max "Secp256k1Base") (expt 2 192))])
-                             (loop (cdr atom*)
-                               (with-output-language (Lflattened Alignment)
-                                 (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
-                               (cons* 1 high low high low input*)))]
+                          [(foreign-point-base opaque-type) =>
+                           (lambda (base)
+                             ;; The identity has two zero coordinates and a native field flag.
+                             (let-values ([(high low) (div-and-mod (foreign-field-max base) (expt 2 192))])
+                               (loop (cdr atom*)
+                                 (with-output-language (Lflattened Alignment)
+                                   (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                                 (cons* 1 high low high low input*))))]
                           [(foreign-field-max opaque-type) =>
                            (lambda (maximum)
                              ;; Zero is represented by modulus minus one on the ledger.
@@ -796,6 +797,7 @@
           [("Secp256r1Base") "Base<Secp256r1>"]
           [("Secp256r1Scalar") "Scalar<Secp256r1>"]
           [("Secp256k1Point") "Point<Secp256k1>"]
+          [("Secp256r1Point") "Point<Secp256r1>"]
           [else #f]))
 
       (define (type->string primitive-type)
@@ -870,10 +872,15 @@
       [(= ,test (,var-name) (default ,opaque-type))
        (with-output-language (Lzkir Instruction)
          (cond
-           [(string=? opaque-type "Secp256k1Point")
-            (let ([bytes (make-temp-id default-src 'bytes)] [scalar (make-temp-id default-src 'scalar)])
+           [(foreign-point-base opaque-type)
+            (let ([bytes (make-temp-id default-src 'bytes)]
+                  [scalar (make-temp-id default-src 'scalar)]
+                  [scalar-type (case opaque-type
+                                 [("Secp256k1Point") "Scalar<Secp256k1>"]
+                                 [("Secp256r1Point") "Scalar<Secp256r1>"]
+                                 [else (assert cannot-happen)])])
               (cons* `(ec_mul_generator ,var-name ,scalar)
-                     `(from_bytes "Scalar<Secp256k1>" ,scalar ,bytes)
+                     `(from_bytes ,scalar-type ,scalar ,bytes)
                      `(to_bytes ,bytes 0)
                      instr*))]
            [(foreign-zkir-type opaque-type) =>

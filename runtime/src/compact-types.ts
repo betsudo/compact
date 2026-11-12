@@ -56,6 +56,13 @@ export interface Secp256k1Point {
   readonly identity: boolean;
 }
 
+/** The TypeScript representation of the Compact secp256r1 point type. */
+export interface Secp256r1Point {
+  readonly x: bigint;
+  readonly y: bigint;
+  readonly identity: boolean;
+}
+
 /**
  * The hash value of a Merkle tree. TypeScript representation of the Compact
  * type of the same name
@@ -338,6 +345,38 @@ export const CompactTypeSecp256k1Point: CompactType<Secp256k1Point> = {
   toValue(value: Secp256k1Point): ocrt.Value {
     return CompactTypeSecp256k1Base.toValue(value.identity ? 0n : value.x).concat(
       CompactTypeSecp256k1Base.toValue(value.identity ? 0n : value.y),
+      CompactTypeField.toValue(value.identity ? 1n : 0n),
+    );
+  },
+};
+
+/** Runtime type of the standard library's `Secp256r1Point` type. */
+export const CompactTypeSecp256r1Point: CompactType<Secp256r1Point> = {
+  alignment(): ocrt.Alignment {
+    return [
+      ...CompactTypeSecp256r1Base.alignment(),
+      ...CompactTypeSecp256r1Base.alignment(),
+      {
+        tag: 'atom',
+        value: { tag: 'field' },
+      },
+    ];
+  },
+  fromValue(value: ocrt.Value): Secp256r1Point {
+    if (value.length < 5) {
+      throw new CompactError('expected Secp256r1Point');
+    }
+    const x = CompactTypeSecp256r1Base.fromValue(value);
+    const y = CompactTypeSecp256r1Base.fromValue(value);
+    const flag = CompactTypeField.fromValue(value);
+    if (flag !== 0n && flag !== 1n) {
+      throw new CompactError('expected Secp256r1Point');
+    }
+    return { x, y, identity: flag === 1n };
+  },
+  toValue(value: Secp256r1Point): ocrt.Value {
+    return CompactTypeSecp256r1Base.toValue(value.identity ? 0n : value.x).concat(
+      CompactTypeSecp256r1Base.toValue(value.identity ? 0n : value.y),
       CompactTypeField.toValue(value.identity ? 1n : 0n),
     );
   },
