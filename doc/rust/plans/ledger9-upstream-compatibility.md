@@ -99,10 +99,14 @@ fixtures retain normalized FAB atoms.
 Seven trailing-zero inputs passed through freshly generated Rust and
 TypeScript. Native and recorded Rust agreed on the stateful digest.
 The ZKIR interpreter accepted the generated TypeScript preimage and
-refused a public write using the historical digest. The original upstream
-sources remain pinned. Local probes remove their language 0.25.0 pragma
-while the compiler is at 0.23.105. The remaining upstream families,
-intact language admission and the k=14 stateful proof lane are open.
+refused a public write using the historical digest. The
+[upstream Keccak corpus](../../../test-contracts/stdlib/keccak256/README.md)
+retains all nine original fixture families and their assertions. The local
+arm64 corpus gate checks nine compile outcomes and seven runtime families
+per target, including the original ADT refusal. At language 0.23.105 it
+first verifies each intact fixture refuses its 0.25.0 pragma, then runs
+pragma-only derivatives. Intact language admission and the k=14 stateful
+proof lane remain open.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
