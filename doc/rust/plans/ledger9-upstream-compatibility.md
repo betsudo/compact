@@ -115,6 +115,14 @@ verifier, and combine both calls using the Ledger 9 transaction API's joint
 partitioning. Prove and independently verify both calls, then apply the
 funded transaction and test replay and invalid-binding refusals.
 
+The intact EntryPoint callee currently compiles for both targets. Its caller
+reaches a ZKIR v3 contract-type assertion in TypeScript. The Rust CLI hits an
+earlier path error because the frontend looks for the callee's
+`compiler/contract-info.json` beside the staging directory. Preserve atomic
+publication and resolve dependency metadata beside the requested output
+before adding contract types and call lowering. Cover missing, malformed,
+stale and mismatched metadata using the original compiler composition tests.
+
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler
 E2E paths have 48 active upstream cases. Also track the expected-verifier
