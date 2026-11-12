@@ -1161,18 +1161,33 @@ changed IR, Programs, raw ZKIR, a substituted same-k circuit, and a genuine
 k9 model before key generation. Corrupted proof, wrong verifier, changed
 binding, and same-width changed result controls passed.
 
+### Standalone aggregate projection and struct member qualification
+
+Both gates passed on macOS arm64 at signed `d66a9a4c9`. Aggregate projection
+passed 21 original sources and strict SDK roots, 31 TypeScript/Rust cases,
+four source refusals, five malformed IR refusals and two changed producers.
+Struct member literals passed 18 original sources and strict SDK roots, 28
+TypeScript/Rust cases, five source refusals, six malformed IR refusals and
+two changed producers. Each source retained its historical raw IR and each
+gate pins the released Ledger 9 Programs separately.
+
+Both exports in each gate used fresh ZKIR 3.2.0 k7 keys. Four standalone v3
+proofs verified separately, and four distinct funded default-strict
+transaction proofs applied their calls with positive-fee Dust. Every replay
+returned `IntentAlreadyExists` with byte-identical ledger state. Both gates
+refused changed and missing artifacts, genuinely over-cap k9 models,
+corrupted proofs, wrong verifiers, changed bindings and changed results
+with the same atom widths.
+
 ### Integrated local qualification remains open
 
 The parent run at frozen source `78d8eaae4` completed the compiler,
 workspace and registered consumer phases. It also completed the DID
 lifecycle, digest-reducer and primitive-reducer gates. The DID relation
-gate ran out of disk space while writing its receipt. The complete
+gate ran out of disk space while writing its receipt. All standalone
+Vector migrations described above passed individually. The complete
 parent remains pending with the exact integrated compiler and TypeScript
-package. The passed standalone Vector slices through alias source were
-fast-forwarded locally to `a4d022091`. The aggregate projection and
-struct member candidates passed focused source checks, generated runner
-Clippy and TypeScript capture. Their full native and proof gates remain
-open.
+package.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
