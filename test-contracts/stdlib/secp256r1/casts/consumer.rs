@@ -53,6 +53,7 @@ use r::{
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{env, error::Error, fmt::Debug, fs, io, path::Path, sync::Arc};
 
 type TestResult<T> = Result<T, Box<dyn Error>>;
@@ -125,16 +126,19 @@ where
         (_, "decode-14") => "encode-14",
         _ => "decode-14",
     };
-    let wrong: VerifierKey = tagged_deserialize(fs::File::open(
-        root.join("slow-proof")
-            .join(wrong_id)
-            .join("statement.verifier"),
-    )?)?;
+    let wrong_path = root.join("slow-proof");
+    let wrong_path = if case.fixture == "upstream-ordinary" {
+        wrong_path.join("alternate.verifier")
+    } else {
+        wrong_path.join(wrong_id).join("statement.verifier")
+    };
+    let wrong: VerifierKey = tagged_deserialize(fs::File::open(wrong_path)?)?;
     assert_ne!(verifier, wrong);
     let standalone: Proof = tagged_deserialize(fs::File::open(key_dir.join("statement.proof"))?)?;
     let family = root.join("family-first");
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
+        "upstream-ordinary" => family.join("ecdsa/upstream-ordinary"),
         name if transport_fixture(name) => family.join("transport").join(name),
         "upstream-computed" => family.join("accessors/upstream-computed"),
         "guarded-group" => family.join("group/guarded"),
@@ -212,7 +216,9 @@ where
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
     let typescript: ProofPreimage = tagged_deserialize(fs::File::open(
-        root.join(if transport_fixture(case.fixture) {
+        root.join(if case.fixture == "upstream-ordinary" {
+            "preimages-ecdsa"
+        } else if transport_fixture(case.fixture) {
             "preimages-transport"
         } else if group_fixture(case.fixture) {
             "preimages-group"
@@ -503,7 +509,11 @@ fn run_point_witness(
 fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) -> TestResult<()> {
     let fixture = row["fixture"].as_str().unwrap();
     let circuit = row["circuit"].as_str().unwrap();
-    let inputs = row["inputs"].as_array().unwrap();
+    let inputs = if fixture == "upstream-ordinary" {
+        &[][..]
+    } else {
+        row["inputs"].as_array().unwrap().as_slice()
+    };
     let expected = &row["expected"];
     let bytes = |i: usize| FixedBytes::<32>::new(from_hex(&inputs[i]["bytes"]));
     let base = |i: usize| decode_base(&inputs[i]["field"]);
@@ -523,7 +533,7 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             let native = contract::$method(context()?, $($arg),*)?;
             if unary_fixture(fixture) {
                 check_bool_cell(native.public_state(), true);
-            } else if fixture == "upstream-equality" {
+            } else if matches!(fixture, "upstream-equality" | "upstream-ordinary") {
                 check_bool_cell(native.public_state(), expected.as_bool().unwrap());
             }
             let $view = contract::PublicStateView::from(&native);
@@ -603,6 +613,22 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let seed = || decode_point(&row["seed"]);
     let written = || decode_base(&row["written"]);
     match (fixture, circuit) {
+        ("upstream-ordinary", "verify") => exercise!(
+            p256_ecdsa,
+            verify,
+            verify_call,
+            (
+                FixedBytes::<32>::new(from_hex(&row["message"])),
+                p256_ecdsa::types::Secp256r1EcdsaSignature {
+                    r: decode_scalar(&row["r"]),
+                    s: decode_scalar(&row["s"]),
+                },
+                decode_point(&row["point"])
+            ),
+            |_view, result| {
+                assert_eq!(result, expected.as_bool().unwrap());
+            }
+        ),
         ("upstream-witness", _) => run_point_witness(root, id, row, funded_output)?,
         ("upstream-hash608", "test") => exercise!(
             point_tuple_hash,
@@ -1123,6 +1149,116 @@ fn check_group_refusals(cases: &serde_json::Map<String, Value>) -> TestResult<()
     Ok(())
 }
 
+fn check_ecdsa_refusals(row: &Value) -> TestResult<()> {
+    use p256_ecdsa::{ledger_contract as contract, types::Secp256r1EcdsaSignature};
+    let msg = FixedBytes::new(from_hex(&row["message"]));
+    let sig = Secp256r1EcdsaSignature {
+        r: decode_scalar(&row["r"]),
+        s: decode_scalar(&row["s"]),
+    };
+    let point = decode_point(&row["point"]);
+    let context = || {
+        Ok::<_, CompactError>(
+            contract::initial_state(ConstructorContext::new(()))?
+                .into_circuit_context(ContractAddress::default()),
+        )
+    };
+    for (signature, key, expected) in [
+        (
+            sig.clone(),
+            Secp256r1Point::default(),
+            CompactError::AssertionFailed(
+                "Secp256r1Point identity is not a permitted secp256r1EcdsaVerify verification key"
+                    .into(),
+            ),
+        ),
+        (
+            Secp256r1EcdsaSignature {
+                r: sig.r,
+                s: Secp256r1Scalar::default(),
+            },
+            point,
+            CompactError::Secp256r1ScalarZeroInverse,
+        ),
+    ] {
+        assert_eq!(
+            contract::verify(context()?, msg, signature.clone(), key).err(),
+            Some(expected.clone())
+        );
+        assert_eq!(
+            contract::recorded::verify(context()?, msg, signature, key).err(),
+            Some(expected)
+        );
+    }
+    Ok(())
+}
+
+fn check_ecdsa_corpus(root: &Path) -> TestResult<()> {
+    use p256_wycheproof::{pure_circuits::verifyEcdsa, types::Secp256r1EcdsaSignature};
+    let path = root.join("family-first/ecdsa/wycheproof/ts-rust/vectors.json");
+    let corpus: Value = serde_json::from_slice(&fs::read(path)?)?;
+    let driven = corpus["driven"]
+        .as_array()
+        .ok_or("expected driven P-256 vectors")?;
+    assert_eq!(driven.len(), 265);
+    let mut counts = [0; 4];
+    for row in driven {
+        let id = &row["tcId"];
+        let msg = hex::decode(row["message"].as_str().unwrap())?;
+        let digest: [u8; 32] = Sha256::digest(msg).into();
+        assert_eq!(digest, from_hex(&row["digest"]), "{id}");
+        let scalar = |value: &Value| {
+            let hex = value.as_str().unwrap();
+            if hex.len() != 64 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                return None;
+            }
+            Secp256r1Scalar::from_le_bytes(field_bytes(value))
+        };
+        let r = scalar(&row["r"]);
+        let s = scalar(&row["s"]);
+        assert_eq!(
+            r.is_some() && s.is_some(),
+            row["scalarsInRange"].as_bool().unwrap(),
+            "{id}"
+        );
+        let (Some(r), Some(s)) = (r, s) else {
+            assert_eq!(row["expectation"], "invalid", "{id}");
+            counts[3] += 1;
+            continue;
+        };
+        let verdict = verifyEcdsa(
+            FixedBytes::new(digest),
+            Secp256r1EcdsaSignature { r, s },
+            decode_point(&row["point"]),
+        );
+        match row["expectation"].as_str() {
+            Some("valid") => {
+                assert_eq!(verdict, Ok(true), "{id}");
+                counts[0] += 1;
+            }
+            Some("invalid") => {
+                assert_eq!(verdict, Ok(false), "{id}");
+                counts[1] += 1;
+            }
+            Some("abort") => {
+                let expected = if s == Secp256r1Scalar::default() {
+                    CompactError::Secp256r1ScalarZeroInverse
+                } else {
+                    CompactError::Secp256r1IdentityX
+                };
+                assert_eq!(verdict, Err(expected), "{id}");
+                counts[2] += 1;
+            }
+            _ => return Err("unknown Wycheproof expectation".into()),
+        }
+    }
+    assert_eq!(counts.iter().sum::<usize>(), 265);
+    println!(
+        "265 P-256 Wycheproof cases agreed in generated Rust: {counts:?} (valid, false, abort, scalar refusal)"
+    );
+    Ok(())
+}
+
 fn main() -> TestResult<()> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let [mode, root, out] = args.as_slice() else {
@@ -1132,13 +1268,22 @@ fn main() -> TestResult<()> {
     };
     let root = Path::new(root);
     let mode_name = mode.to_str().ok_or("invalid mode")?;
+    if mode_name == "ecdsa-corpus" {
+        return check_ecdsa_corpus(root);
+    }
     let group_lane = mode_name == "group-parity"
         || mode_name.starts_with("upstream-computed-")
         || mode_name.starts_with("guarded-group-");
     let transport_lane = mode_name == "transport-parity"
         || mode_name.starts_with("upstream-witness-")
         || mode_name.starts_with("upstream-hash608-");
-    let preimages = if transport_lane {
+    let ecdsa_lane = matches!(
+        mode_name,
+        "ecdsa-parity" | "original" | "twin" | "wrong-key"
+    );
+    let preimages = if ecdsa_lane {
+        "preimages-ecdsa"
+    } else if transport_lane {
         "preimages-transport"
     } else if group_lane {
         "preimages-group"
@@ -1156,6 +1301,7 @@ fn main() -> TestResult<()> {
         Some("accessor-parity") => Some(18),
         Some("group-parity") => Some(19),
         Some("transport-parity") => Some(5),
+        Some("ecdsa-parity") => Some(4),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -1181,6 +1327,10 @@ fn main() -> TestResult<()> {
                 transport_fixture(row["fixture"].as_str().unwrap()),
                 mode == "transport-parity"
             );
+            assert_eq!(
+                row["fixture"] == "upstream-ordinary",
+                mode == "ecdsa-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
@@ -1197,6 +1347,10 @@ fn main() -> TestResult<()> {
             println!(
                 "pure group operations and three native and recorded computed-identity refusals passed"
             );
+        }
+        if mode == "ecdsa-parity" {
+            check_ecdsa_refusals(&cases["original"])?;
+            println!("P-256 identity-key and zero-s refusals passed in native and recorded Rust");
         }
         if mode == "transport-parity" {
             let zero = Secp256r1Base::default();

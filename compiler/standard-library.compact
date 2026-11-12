@@ -509,3 +509,43 @@ export circuit secp256k1EthereumAddress(pk: Secp256k1Point): Bytes<20> {
                  );
   return slice<20>(hash, 12);
 }
+
+// ECDSA signature over Secp256r1 (also known as NIST P-256).
+export struct Secp256r1EcdsaSignature {
+  r: Secp256r1Scalar,
+  s: Secp256r1Scalar,
+}
+
+// Verify an ECDSA signature over Secp256r1 (also known as NIST P-256).
+//
+// This circuit takes `msgHash` as given and does not constrain it to any message.
+// The verifier is expected to additionally constrain that value so it is bound to
+// the message actually being verified by hashing the message in-circuit.
+//
+// A digest wider than the 32-byte group order (SHA-512, SHA3-512, ...) is used by
+// passing its leading 32 bytes, `slice<32>(digest, 0)`: FIPS 186-5 section 6.4.2
+// takes the leftmost min(N, 256) bits of the digest, so that is what signers use.
+//
+// Implements the standard ECDSA verification:
+//   w  = s^(-1) mod n
+//   u1 = (msgHash * w) mod n
+//   u2 = (r * w) mod n
+//   P  = u1*G + u2*pk
+//   valid iff P.x == r as 32-byte big-endian integers
+//
+// As for secp256k1, both low-s and high-s signatures are accepted; a caller that
+// uses a signature as a unique identifier MUST constrain `s <= n / 2` itself.
+export circuit secp256r1EcdsaVerify(
+                 msgHash: Bytes<32>,
+                 sig: Secp256r1EcdsaSignature,
+                 pk: Secp256r1Point
+                 ): Boolean {
+  assert(pk != default<Secp256r1Point>, "Secp256r1Point identity is not a permitted secp256r1EcdsaVerify verification key");
+  const z: Secp256r1Scalar = reverseBytes32(msgHash) as Secp256r1Scalar;
+  const {r, s} = sig;
+  const w: Secp256r1Scalar = inv(s);
+  const u1: Secp256r1Scalar = z * w;
+  const u2: Secp256r1Scalar = r * w;
+  const point: Secp256r1Point = ecAdd(ecMulGenerator(u1), ecMul(pk, u2));
+  return (secp256r1PointX(point) as Bytes<32>) as Secp256r1Scalar == r;
+}

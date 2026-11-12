@@ -20,10 +20,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2);
-if (args.length !== 3) {
-  throw new Error('Usage: node check.mjs <compiler> <built-ts-runtime-dir> <new-output-dir>');
+const katMode = args[3];
+if (args.length !== (katMode ? 4 : 3) || (katMode && !['--upstream-kat', '--allow-pragma-probe'].includes(katMode))) {
+  throw new Error('Usage: node check.mjs <compiler> <built-ts-runtime-dir> <new-output-dir> [--upstream-kat | --allow-pragma-probe]');
 }
-const [compiler, runtime, output] = args.map((argument) => resolve(argument));
+const [compiler, runtime, output] = args.slice(0, 3).map((argument) => resolve(argument));
 const root = fileURLToPath(new URL('.', import.meta.url));
 const runtimeManifest = join(runtime, 'package.json');
 const runtimePackage = JSON.parse(readFileSync(runtimeManifest, 'utf8'));
@@ -47,6 +48,9 @@ writeFileSync(config, `export default ${JSON.stringify({
   resolve: {
     alias: {
       '@test/compact-test': join(root, '../secp256k1/test-bridge.mjs'),
+      '@test/crypto': join(root, '../../support/crypto/index.ts'),
+      '@noble/curves': dirname(requireFromRuntime.resolve('@noble/curves/nist.js')),
+      '@noble/hashes': dirname(requireFromRuntime.resolve('@noble/hashes/utils.js')),
       [runtimeName]: join(runtime, runtimePackage.main),
       vitest: join(vitestRoot, vitestPackage.exports['.'].import.default),
     },
@@ -55,7 +59,8 @@ writeFileSync(config, `export default ${JSON.stringify({
 })};\n`);
 
 const result = spawnSync(process.execPath, [join(vitestRoot, vitestPackage.bin.vitest), 'run', '--config', config], {
-  env: { ...process.env, COMPACT_SECP256R1_TEST_COMPILER: compiler, COMPACT_SECP256R1_TEST_OUTPUT: output },
+  env: { ...process.env, COMPACT_SECP256R1_TEST_COMPILER: compiler, COMPACT_SECP256R1_TEST_OUTPUT: output,
+    COMPACT_SECP256R1_KAT_MODE: katMode ?? '--allow-pragma-probe' },
   stdio: 'inherit',
 });
 if (result.error) throw result.error;

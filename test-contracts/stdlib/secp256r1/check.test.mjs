@@ -25,6 +25,7 @@ import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
 import { registerArithmeticChecks } from './arithmetic/checks.mjs';
 import { registerAccessorChecks } from './accessors/checks.mjs';
+import { registerEcdsaChecks } from './ecdsa/checks.mjs';
 import { registerTransportChecks } from './transport/checks.mjs';
 import { registerGroupChecks } from './group/checks.mjs';
 import { registerPointChecks } from './point/checks.mjs';
@@ -36,10 +37,13 @@ const runtimeRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const compiler = process.env.COMPACT_SECP256R1_TEST_COMPILER;
 const output = process.env.COMPACT_SECP256R1_TEST_OUTPUT;
 
-function compile(fixture, options, targets, feature = '--feature-zkir-v3') {
-  const sourceDirectory = join(root, fixture);
-  const sources = readdirSync(sourceDirectory).filter((name) => name.endsWith('.compact'));
-  expect(sources).toHaveLength(1);
+function compile(fixture, options, targets, feature = '--feature-zkir-v3', source) {
+  if (source === undefined) {
+    const directory = join(root, fixture);
+    const sources = readdirSync(directory).filter((name) => name.endsWith('.compact'));
+    expect(sources).toHaveLength(1);
+    source = join(directory, sources[0]);
+  }
   const caseDirectory = join(output, fixture, feature ? targets.join('-') : 'legacy');
   const build = join(caseDirectory, '.build');
   mkdirSync(caseDirectory, { recursive: true });
@@ -47,7 +51,7 @@ function compile(fixture, options, targets, feature = '--feature-zkir-v3') {
     ...targets.flatMap((target) => ['--target', target]),
     ...(targets.includes('rust') ? ['--rust-runtime-root', runtimeRoot] : []),
     ...(feature ? [feature] : []), '--skip-zk', ...(options.compilerArgs ?? []),
-    join(sourceDirectory, sources[0]), build,
+    source, build,
   ], { encoding: 'utf8' });
   if (result.error) throw result.error;
   expect(result.signal).toBeNull();
@@ -123,3 +127,4 @@ registerPointChecks(compile);
 registerAccessorChecks(compile);
 registerGroupChecks(compile);
 registerTransportChecks(compile);
+registerEcdsaChecks(compile);

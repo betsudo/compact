@@ -20,6 +20,9 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+p256_ecdsa = { package = "compact-contract-upstream-ordinary", path = "../../family-first/ecdsa/upstream-ordinary/ts-rust/.build/contract", features = ["ledger-transaction"] }
+p256_wycheproof = { package = "compact-contract-secp256r1-ecdsa-verify", path = "../../family-first/ecdsa/wycheproof/ts-rust/.build/contract" }
+sha2 = "=0.10.9"
 point_witness = { package = "compact-contract-upstream-witness", path = "../../family-first/transport/upstream-witness/ts-rust/.build/contract", features = ["ledger-transaction"] }
 point_tuple_hash = { package = "compact-contract-upstream-hash608", path = "../../family-first/transport/upstream-hash608/ts-rust/.build/contract", features = ["ledger-transaction"] }
 group_computed = { package = "compact-contract-upstream-computed", path = "../../family-first/accessors/upstream-computed/ts-rust/.build/contract", features = ["ledger-transaction"] }

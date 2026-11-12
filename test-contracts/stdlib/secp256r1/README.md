@@ -66,3 +66,6 @@ case, typed group arithmetic and guarded point results.
 
 The [transport fixtures](transport/README.md) cover the original
 point witnesses and the issue #608 tuple hash.
+
+The [ECDSA verification fixtures](ecdsa/README.md) preserve the
+upstream verification and Wycheproof coverage.
