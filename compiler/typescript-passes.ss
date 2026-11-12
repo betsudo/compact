@@ -20,6 +20,7 @@
   (import (except (chezscheme) errorf)
           (utils)
           (datatype)
+          (only (config-params) feature-zkir-v3)
           (nanopass)
           (langs)
           (pass-helpers)
@@ -2071,7 +2072,11 @@
                       0 "{")
                     2 (format "const ~a = " result)
                     (make-Qconcat
-                      (native-entry-function native-entry)
+                      (let ([runtime-name (native-entry-function native-entry)])
+                        (if (and (feature-zkir-v3)
+                                 (string=? runtime-name "__compactRuntime.keccak256"))
+                            "__compactRuntime.keccak256Aligned"
+                            runtime-name))
                       "("
                       (apply (make-Qsep ",")
                              (fold-right

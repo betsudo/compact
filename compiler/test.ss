@@ -68784,6 +68784,25 @@ groups than for single tests.
 (run-tests save-manifest
   (test
     '(
+      "import CompactStandardLibrary;"
+      "export circuit hashBytes(value: Bytes<12>): Bytes<32> {"
+      "  return disclose(keccak256<Bytes<12>>(value));"
+      "}"
+      )
+    (stage-javascript
+      `(
+        "test('Keccak uses the selected encoding for trailing zero bytes', () => {"
+        "  const digest = contractCode.pureCircuits.hashBytes(new Uint8Array(12));"
+        ,(format "  expect(Buffer.from(digest).toString('hex')).toBe('~a');"
+           (if (feature-zkir-v3)
+               "30e2bfdaad2f3c218a1a8cc54fa1c4e6182b6b7f3bca273390cf587b50b47311"
+               "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"))
+        "});"
+        ))
+    )
+
+  (test
+    '(
       "export ledger value: Field;"
       "export circuit write(x: Field): [] { value = disclose(x); }"
       )

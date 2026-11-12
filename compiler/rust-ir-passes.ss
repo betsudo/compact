@@ -22,6 +22,7 @@
 (library (rust-ir-passes)
   (export rust-ir-passes)
   (import (except (chezscheme) errorf)
+          (only (config-params) feature-zkir-v3)
           (utils)
           (nanopass)
           (json)
@@ -33,6 +34,13 @@
   (define-pass emit-rust-ir : Lnodisclose (ir) -> Lnodisclose ()
     (definitions
       (define (object . fields) (origin-object fields))
+
+      (define (keccak-ir value)
+        (let ([fields (list (cons "kind" "keccak256") (cons "value" value))])
+          (apply object
+            (if (feature-zkir-v3)
+                (cons '("encoding" . "aligned") fields)
+                fields))))
 
       ;; Source-only accessors cover Lnodisclose's supplied locations.  They do
       ;; not unparse or walk children, and do not change admission/typechecking.
@@ -812,8 +820,7 @@
                [(eq? name 'keccak256)
                 (unless (= (length expr*) 1)
                   (source-errorf src "keccak256 expects one argument"))
-                (object (cons "kind" "keccak256")
-                        (cons "value" (expression-ir (car expr*) src)))]
+                (keccak-ir (expression-ir (car expr*) src))]
                [(eq? name 'persistentCommit)
                 (unless (= (length expr*) 2)
                   (source-errorf src "persistentCommit expects two arguments"))
@@ -2421,14 +2428,17 @@
                            (object (cons "kind" "create_zswap_output") (cons "coin" (car arguments))
                                    (cons "recipient" (cadr arguments))))))]
                   [else (source-errorf src "Rust backend does not yet support native witness ~a" name)])]
-               [(memq name '(transientHash persistentHash keccak256 degradeToTransient upgradeFromTransient
+               [(eq? name 'keccak256)
+                (unless (= (length expr*) 1)
+                  (source-errorf src "keccak256 expects one argument"))
+                (keccak-ir (stateful-expression-ir (car expr*) src witness-ids))]
+               [(memq name '(transientHash persistentHash degradeToTransient upgradeFromTransient
                               hashToCurve jubjubPointX jubjubPointY ecNeg jubjubScalarFromNative))
                 (unless (= (length expr*) 1)
                   (source-errorf src "Rust backend native expects one argument"))
                 (object (cons "kind" (case name
                                         [(transientHash) "transient_hash"]
                                         [(persistentHash) "persistent_hash"]
-                                        [(keccak256) "keccak256"]
                                         [(degradeToTransient) "degrade_to_transient"]
                                         [(upgradeFromTransient) "upgrade_from_transient"]
                                         [(hashToCurve) "hash_to_curve"]
