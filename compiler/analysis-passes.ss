@@ -3060,7 +3060,7 @@
                           (safe-cast ,src ,type (tunsigned ,src 1) (quote ,src 1))
                           (safe-cast ,src ,type (tunsigned ,src 0) (quote ,src 0)))])]
                 [(topaque ,src1 ,opaque-type)
-                 (guard (secp256k1-field-max opaque-type))
+                 (guard (foreign-field-max opaque-type))
                  (T type^
                     [(tbytes ,src2 ,len2)
                      (guard (= len2 32))
@@ -3068,7 +3068,7 @@
                 [(tbytes ,src1 ,len1)
                  (T type^
                     [(topaque ,src2 ,opaque-type)
-                     (guard (= len1 32) (secp256k1-field-max opaque-type))
+                     (guard (= len1 32) (foreign-field-max opaque-type))
                      `(secp256k1-bytes-cast ,src ,type ,expr)]
                     [(tfield ,src2)
                      (guard (not (= len1 0)))
@@ -4088,12 +4088,12 @@
        (define (kind type)
          (nanopass-case (Lnodca Type) (de-alias type)
            [(tbytes ,src ,len) (and (= len 32) 'bytes)]
-           [(topaque ,src ,opaque-type) (and (secp256k1-field-max opaque-type) 'field)]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) 'field)]
            [else #f]))
        (let ([from (kind source-type)] [to (kind type)])
          (unless (or (and (eq? from 'bytes) (eq? to 'field))
                      (and (eq? from 'field) (eq? to 'bytes)))
-           (source-errorf src "invalid secp256k1 byte cast")))
+           (source-errorf src "invalid foreign field byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (when (= len 0) (source-errorf src "invalid cast from field to Bytes<0>"))

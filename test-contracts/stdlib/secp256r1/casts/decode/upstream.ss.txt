@@ -1,0 +1,81 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger base: Secp256r1Base;"
+      "export ledger scalar: Secp256r1Scalar;"
+      "export circuit test(b: Bytes<32>, s: Bytes<32>): [] {"
+      "  base = disclose(b as Secp256r1Base);"
+      "  scalar = disclose(s as Secp256r1Scalar);"
+      "}"
+      )
+    (pass-returns reduce-to-zkir
+      (program
+        (circuit (test) ((%b.0 "Scalar<BLS12-381>")
+                         (%b.1 "Scalar<BLS12-381>")
+                         (%s.2 "Scalar<BLS12-381>")
+                         (%s.3 "Scalar<BLS12-381>"))
+          ()
+          (constrain_bits %b.0 8)
+          (constrain_bits %b.1 248)
+          (constrain_bits %s.2 8)
+          (constrain_bits %s.3 248)
+          (bytes_from_natives %tmp.4 32 %b.1 %b.0)
+          (from_bytes "Base<Secp256r1>" %tmp.5 %tmp.4)
+          (encode (%fld.6 %fld.7) %tmp.5)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 2 24 8 %fld.6 %fld.7)
+          (impact 1 145)
+          (bytes_from_natives %tmp.8 32 %s.3 %s.2)
+          (from_bytes "Scalar<Secp256r1>" %tmp.9 %tmp.8)
+          (encode (%fld.10 %fld.11) %tmp.9)
+          (impact 1 16 1 1 1 1)
+          (impact 1 17 1 2 24 8 %fld.10 %fld.11)
+          (impact 1 145))))
+    (stage-javascript
+      '("test('Bytes to secp256r1 fields casts', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  // Random values in range."
+        "  var base = 0x6c8a8c3f071f4d6dbe937aaf1a1d457dc5ab2e9e188e6a5c3190ea1072df9a97n;"
+        "  var scalar = 0x78db8cdf5ff2bc906d349cd5b11384283b39a67a9ed2739a2428dfd814c6e43dn;"
+        "  var baseBytes = new Uint8Array(["
+        "    0x97, 0x9a, 0xdf, 0x72, 0x10, 0xea, 0x90, 0x31,"
+        "    0x5c, 0x6a, 0x8e, 0x18, 0x9e, 0x2e, 0xab, 0xc5,"
+        "    0x7d, 0x45, 0x1d, 0x1a, 0xaf, 0x7a, 0x93, 0xbe,"
+        "    0x6d, 0x4d, 0x1f, 0x07, 0x3f, 0x8c, 0x8a, 0x6c,"
+        "  ]);"
+        "  var scalarBytes = new Uint8Array(["
+        "    0x3d, 0xe4, 0xc6, 0x14, 0xd8, 0xdf, 0x28, 0x24,"
+        "    0x9a, 0x73, 0xd2, 0x9e, 0x7a, 0xa6, 0x39, 0x3b,"
+        "    0x28, 0x84, 0x13, 0xb1, 0xd5, 0x9c, 0x34, 0x6d,"
+        "    0x90, 0xbc, 0xf2, 0x5f, 0xdf, 0x8c, 0xdb, 0x78,"
+        "  ]);"
+        "  var r = await contract.circuits.test(context, baseBytes, scalarBytes);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).base).toEqual(base);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).scalar).toEqual(scalar);"
+        "  base = 0n;"
+        "  scalar = runtime.MAX_SECP256R1_SCALAR;"
+        "  baseBytes = new Uint8Array(32);  // Initialized to zeros."
+        "  scalarBytes = new Uint8Array(["
+        "    0x50, 0x25, 0x63, 0xfc, 0xc2, 0xca, 0xb9, 0xf3,"
+        "    0x84, 0x9e, 0x17, 0xa7, 0xad, 0xfa, 0xe6, 0xbc,"
+        "    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+        "    0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,"
+        "  ]);"
+        "  r = await contract.circuits.test(context, baseBytes, scalarBytes);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).base).toEqual(base);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).scalar).toEqual(scalar);"
+        "  base = runtime.MAX_SECP256R1_BASE;"
+        "  scalar = 0n;"
+        "  baseBytes = new Uint8Array(["
+        "    0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+        "    0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,"
+        "    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,"
+        "    0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,"
+        "  ]);"
+        "  scalarBytes = new Uint8Array(32);"
+        "  r = await contract.circuits.test(context, baseBytes, scalarBytes);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).base).toEqual(base);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).scalar).toEqual(scalar);"
+        "});"
+        ))
+    )

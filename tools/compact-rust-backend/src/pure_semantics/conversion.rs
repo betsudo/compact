@@ -143,6 +143,8 @@ impl FixedBytesConversion {
 pub(crate) enum Secp256k1BytesCast {
     ToBase,
     ToScalar,
+    ToSecp256r1Base,
+    ToSecp256r1Scalar,
     ToBytes,
 }
 
@@ -151,9 +153,15 @@ impl Secp256k1BytesCast {
         match (source, target) {
             (Type::Bytes { length: 32 }, Type::Secp256k1Base) => Ok(Self::ToBase),
             (Type::Bytes { length: 32 }, Type::Secp256k1Scalar) => Ok(Self::ToScalar),
-            (Type::Secp256k1Base | Type::Secp256k1Scalar, Type::Bytes { length: 32 }) => {
-                Ok(Self::ToBytes)
-            }
+            (Type::Bytes { length: 32 }, Type::Secp256r1Base) => Ok(Self::ToSecp256r1Base),
+            (Type::Bytes { length: 32 }, Type::Secp256r1Scalar) => Ok(Self::ToSecp256r1Scalar),
+            (
+                Type::Secp256k1Base
+                | Type::Secp256k1Scalar
+                | Type::Secp256r1Base
+                | Type::Secp256r1Scalar,
+                Type::Bytes { length: 32 },
+            ) => Ok(Self::ToBytes),
             _ => Err(RenderError::InvalidSecp256k1BytesCast {
                 source: source.clone(),
                 target: target.clone(),

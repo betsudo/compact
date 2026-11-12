@@ -130,11 +130,6 @@ fn decode(value: &ValueSlice, max: [u8; 32]) -> Option<[u8; 32]> {
 macro_rules! impl_secp256k1_arithmetic {
     ($field:ident, $max:ident, $inner:ty, $zero_inverse:ident) => {
         impl $field {
-            /// Reduce an unsigned little-endian integer modulo this field's order.
-            pub fn from_le_bytes_reduced(bytes: [u8; 32]) -> Self {
-                Self(reduce(bytes, $max))
-            }
-
             /// Return the multiplicative inverse, or a field-specific error for zero.
             pub fn inverse(self) -> Result<Self, CompactError> {
                 Option::from(Field::invert(&self.into_inner()))
@@ -195,6 +190,11 @@ macro_rules! impl_foreign_field {
             /// Decode a canonical little-endian field element.
             pub fn from_le_bytes(bytes: [u8; 32]) -> Option<Self> {
                 compare_le(&bytes, &$max).is_le().then_some(Self(bytes))
+            }
+
+            /// Reduce an unsigned little-endian integer modulo this field's order.
+            pub fn from_le_bytes_reduced(bytes: [u8; 32]) -> Self {
+                Self(reduce(bytes, $max))
             }
 
             /// Return the field element's canonical little-endian bytes.

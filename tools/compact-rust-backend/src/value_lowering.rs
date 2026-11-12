@@ -85,6 +85,12 @@ pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1Bytes
         Secp256k1BytesCast::ToScalar => {
             syn::parse_quote!(runtime::Secp256k1Scalar::from_le_bytes_reduced((#value).into_array()))
         }
+        Secp256k1BytesCast::ToSecp256r1Base => {
+            syn::parse_quote!(runtime::Secp256r1Base::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToSecp256r1Scalar => {
+            syn::parse_quote!(runtime::Secp256r1Scalar::from_le_bytes_reduced((#value).into_array()))
+        }
         Secp256k1BytesCast::ToBytes => {
             syn::parse_quote!(runtime::FixedBytes::<32>::new((#value).to_le_bytes()))
         }

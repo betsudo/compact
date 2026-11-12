@@ -43,3 +43,6 @@ The consumer compares the TypeScript and Rust statement fields,
 applies a separate funded transaction with default strictness, and
 verifies unchanged state on replay. All three exports use the explicit
 slow lane.
+
+The [byte cast fixtures](casts/README.md) extend the same test command with
+the upstream width refusals, conversions and guarded ledger cases.

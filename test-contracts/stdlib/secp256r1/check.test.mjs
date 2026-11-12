@@ -23,6 +23,7 @@ import { expect, test } from 'vitest';
 
 import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
+import { registerByteCastChecks } from './casts/checks.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const runtimeRoot = fileURLToPath(new URL('../../..', import.meta.url));
@@ -108,3 +109,5 @@ test('refuses the original P-256 roundtrip in the legacy proof profile', () => {
   expect(result.stderr).toContain('Secp256r1Base requires ZKIR v3');
   expect(existsSync(build)).toBe(false);
 });
+
+registerByteCastChecks(compile);

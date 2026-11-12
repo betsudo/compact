@@ -225,8 +225,15 @@ exercise the original base-field roundtrip and all six cast refusals.
 Generated Rust has separate base and scalar types with checked
 construction. Both runtimes preserve the shifted 24-byte and 8-byte
 ledger atoms. The explicit slow lane covers the original base roundtrip,
-the scalar roundtrip, and the two-field reset. Positive casts, arithmetic,
-points, and P-256 signature suites remain separate.
+the scalar roundtrip, and the two-field reset.
+
+The [P-256 byte cast fixtures](../../../test-contracts/stdlib/secp256r1/casts)
+cover modular little-endian conversion at the `Bytes<32>` boundary and
+guarded ledger writes. Both targets reject the original invalid widths and
+direct casts between different fields. The two original mixed-curve
+Scheme tests are retained in full. Their P-256 cases execute in separate
+fixtures while the Curve25519 cases await their runtime and compiler port.
+Arithmetic, points, and P-256 signature suites remain separate.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

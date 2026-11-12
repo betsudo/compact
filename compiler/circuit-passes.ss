@@ -920,12 +920,12 @@
        (define (kind type)
          (nanopass-case (Linlined Type) type
            [(tbytes ,src ,len) (and (= len 32) 'bytes)]
-           [(topaque ,src ,opaque-type) (and (secp256k1-field-max opaque-type) 'field)]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) 'field)]
            [else #f]))
        (let ([from (kind source-type)] [to (kind type)])
          (unless (or (and (eq? from 'bytes) (eq? to 'field))
                      (and (eq? from 'field) (eq? to 'bytes)))
-           (source-errorf src "invalid secp256k1 byte cast")))
+           (source-errorf src "invalid foreign field byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (check-tfield src "argument to field->bytes" type)
@@ -2584,7 +2584,7 @@
             (with-output-language (Lflattened Statement)
               (list `(= ,test (,high ,low) (secp256k1-bytes-cast ,src "Bytes<32>" ,(car (wump->elts wump)))))))]
          [(topaque ,src^ ,opaque-type)
-          (assert (secp256k1-field-max opaque-type))
+          (assert (foreign-field-max opaque-type))
           (hashtable-set! var-ht var-name (Wump-single var-name))
           (let ([triv* (wump->elts wump)])
             (with-output-language (Lflattened Statement)
@@ -3774,20 +3774,20 @@
        (guard (string=? opaque-type "Bytes<32>"))
        (verify-test src test)
        (unless (nanopass-case (Lflattened Primitive-Type) type
-                 [(topaque ,opaque-type^) (secp256k1-field-max opaque-type^)]
+                 [(topaque ,opaque-type^) (foreign-field-max opaque-type^)]
                  [else #f])
-         (source-errorf src "expected a secp256k1 field for a Bytes<32> cast"))
+         (source-errorf src "expected a foreign field for a Bytes<32> cast"))
        (with-output-language (Lflattened Primitive-Type)
          (set-idtype! var-name1 (Idtype-Base `(tfield 255)))
          (set-idtype! var-name2 (Idtype-Base `(tfield ,(- (expt 256 (field-bytes)) 1)))))]
       [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,[* type1] ,[* type2]))
-       (guard (secp256k1-field-max opaque-type))
+       (guard (foreign-field-max opaque-type))
        (verify-test src test)
        (unless (and (nanopass-case (Lflattened Primitive-Type) type1
                       [(tfield ,nat) (<= nat 255)] [else #f])
                     (nanopass-case (Lflattened Primitive-Type) type2
                       [(tfield ,nat) (<= nat (- (expt 256 (field-bytes)) 1))] [else #f]))
-         (source-errorf src "expected Bytes<32> limbs for a secp256k1 field cast"))
+         (source-errorf src "expected Bytes<32> limbs for a foreign field cast"))
        (with-output-language (Lflattened Primitive-Type)
          (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,[* type]))

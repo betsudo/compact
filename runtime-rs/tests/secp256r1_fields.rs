@@ -129,3 +129,47 @@ fn scalar_carrier_preserves_borrow_and_refuses_malformed_atoms() {
         assert!(Secp256r1Scalar::try_from(&*malformed).is_err());
     }
 }
+
+#[test]
+fn p256_byte_casts_reduce_only_at_the_cast_boundary() {
+    let mut one = [0; 32];
+    one[0] = 1;
+    for (modulus, reduce, checked, all_ones) in [
+        (
+            le_bytes("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff"),
+            (|bytes| Secp256r1Base::from_le_bytes_reduced(bytes).to_le_bytes())
+                as fn([u8; 32]) -> [u8; 32],
+            (|bytes| Secp256r1Base::from_le_bytes(bytes).is_some()) as fn([u8; 32]) -> bool,
+            le_bytes("00000000fffffffeffffffffffffffffffffffff000000000000000000000000"),
+        ),
+        (
+            le_bytes("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551"),
+            (|bytes| Secp256r1Scalar::from_le_bytes_reduced(bytes).to_le_bytes())
+                as fn([u8; 32]) -> [u8; 32],
+            (|bytes| Secp256r1Scalar::from_le_bytes(bytes).is_some()) as fn([u8; 32]) -> bool,
+            le_bytes("00000000ffffffff00000000000000004319055258e8617b0c46353d039cdaae"),
+        ),
+    ] {
+        let mut below = modulus;
+        below[0] -= 1;
+        let mut above = modulus;
+        if above[0] == u8::MAX {
+            for byte in &mut above {
+                let (next, carry) = byte.overflowing_add(1);
+                *byte = next;
+                if !carry {
+                    break;
+                }
+            }
+        } else {
+            above[0] += 1;
+        }
+        assert!(checked(below));
+        assert!(!checked(modulus));
+        assert!(!checked(above));
+        assert_eq!(reduce(below), below);
+        assert_eq!(reduce(modulus), [0; 32]);
+        assert_eq!(reduce(above), one);
+        assert_eq!(reduce([u8::MAX; 32]), all_ones);
+    }
+}

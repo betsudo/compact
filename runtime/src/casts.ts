@@ -68,8 +68,17 @@ export function convertBytesToUint(maxval: bigint, n: number, a: Uint8Array, src
 
 /** Reduce a Compact `Bytes<32>` cast modulo the destination secp256k1 field. @internal */
 export function convertBytesToSecp256k1Field(max: bigint, bytes: Uint8Array): bigint {
+  return convertBytesToForeignField(max, bytes, 'secp256k1');
+}
+
+/** Reduce a Compact `Bytes<32>` cast modulo the destination secp256r1 field. @internal */
+export function convertBytesToSecp256r1Field(max: bigint, bytes: Uint8Array): bigint {
+  return convertBytesToForeignField(max, bytes, 'secp256r1');
+}
+
+function convertBytesToForeignField(max: bigint, bytes: Uint8Array, curve: string): bigint {
   if (bytes.length !== 32) {
-    throw new CompactError('expected Bytes<32> for secp256k1 field cast');
+    throw new CompactError(`expected Bytes<32> for ${curve} field cast`);
   }
   let value = 0n;
   for (let i = bytes.length - 1; i >= 0; --i) {

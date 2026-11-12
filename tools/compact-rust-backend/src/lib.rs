@@ -375,7 +375,7 @@ impl fmt::Display for RenderError {
             Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
             Self::InvalidSecp256k1BytesCast { source, target } => write!(
                 f,
-                "cannot cast {source:?} to {target:?}; expected Bytes<32> and a secp256k1 field"
+                "cannot cast {source:?} to {target:?}; expected Bytes<32> and a supported foreign field"
             ),
             Self::ExpectedSecp256k1Field(actual) => {
                 write!(

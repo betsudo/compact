@@ -318,6 +318,7 @@
            "typeError"
            "assert"
            "convertBytesToSecp256k1Field"
+           "convertBytesToSecp256r1Field"
            "convertFieldToBytes"
            "convertBytesToField"
            "convertBytesToUint"
@@ -3169,12 +3170,14 @@
             (make-Qconcat (compact-stdlib "convertFieldToBytes") "(32, " expr ", "
               (format-javascript-string (format-source-object src)) ")")]
            [(topaque ,src^ ,opaque-type)
-            (make-Qconcat (compact-stdlib "convertBytesToSecp256k1Field") "("
-              (case opaque-type
-                [("Secp256k1Base") "__compactRuntime.MAX_SECP256K1_BASE"]
-                [("Secp256k1Scalar") "__compactRuntime.MAX_SECP256K1_SCALAR"]
-                [else (assert cannot-happen)])
-              ", " expr ")")]
+            (let-values ([(convert maximum)
+                          (case opaque-type
+                            [("Secp256k1Base") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_BASE")]
+                            [("Secp256k1Scalar") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_SCALAR")]
+                            [("Secp256r1Base") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_BASE")]
+                            [("Secp256r1Scalar") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_SCALAR")]
+                            [else (assert cannot-happen)])])
+              (make-Qconcat (compact-stdlib convert) "(__compactRuntime." maximum ", " expr ")"))]
            [else (assert cannot-happen)]))]
       [(field->bytes ,src ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
        (parenthesize level (precedence call)

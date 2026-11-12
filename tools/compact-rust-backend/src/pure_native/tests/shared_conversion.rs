@@ -132,6 +132,26 @@ fn secp256k1_byte_cast_ir_is_explicit_and_only_accepts_its_exact_type_pairs() {
             &bytes,
             "runtime :: FixedBytes :: < 32 > :: new ((argument) . to_le_bytes ())",
         ),
+        (
+            &bytes,
+            &Type::Secp256r1Base,
+            "runtime :: Secp256r1Base :: from_le_bytes_reduced ((argument) . into_array ())",
+        ),
+        (
+            &bytes,
+            &Type::Secp256r1Scalar,
+            "runtime :: Secp256r1Scalar :: from_le_bytes_reduced ((argument) . into_array ())",
+        ),
+        (
+            &Type::Secp256r1Base,
+            &bytes,
+            "runtime :: FixedBytes :: < 32 > :: new ((argument) . to_le_bytes ())",
+        ),
+        (
+            &Type::Secp256r1Scalar,
+            &bytes,
+            "runtime :: FixedBytes :: < 32 > :: new ((argument) . to_le_bytes ())",
+        ),
     ] {
         let ir = serde_json::json!({"kind": "secp256k1_bytes_cast", "value": value, "ty": target});
         let expression: Expr = serde_json::from_value(ir.clone()).unwrap();
@@ -152,6 +172,10 @@ fn secp256k1_byte_cast_ir_is_explicit_and_only_accepts_its_exact_type_pairs() {
         (Type::Secp256k1Scalar, Type::Bytes { length: 33 }),
         (Type::Secp256k1Base, Type::Secp256k1Scalar),
         (Type::Field, Type::Secp256k1Base),
+        (Type::Bytes { length: 33 }, Type::Secp256r1Base),
+        (Type::Secp256r1Scalar, Type::Bytes { length: 31 }),
+        (Type::Secp256r1Base, Type::Secp256r1Scalar),
+        (Type::Secp256k1Scalar, Type::Secp256r1Scalar),
         (bytes, Type::Boolean),
     ] {
         let expression = Expr::Secp256k1BytesCast {
