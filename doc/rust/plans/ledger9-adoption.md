@@ -990,14 +990,37 @@ history. Constructor execution lies outside these case selections.
 The first draft CI run for PR #725 found a stale Rust MSRV lane,
 a missing compiler version bump and license-header regressions. Both
 Rust 1.99 consumer checks and the full-diff header audit passed locally,
-and the bumped 0.31.211 compiler built with Nix. The archive consumer
-preflight generated six contracts through the shared-source compiler
-interface and resolved the exact packaged runtime and macro dependency
-graph offline. Full package/consumer execution remains open.
+and the bumped 0.31.211 compiler built with Nix. The exact compiler
+source passed all 3,887 checks, including both JavaScript ZKIR modes,
+and the 284 generated Rust fixtures are fresh. Both packages verified
+and reproduced their release manifest. The offline archive consumer
+generated six contracts through the shared-source compiler interface,
+resolved the exact packaged runtime and macro graph, and passed its
+Rust tests and compile-fail controls.
 
-The remaining MicroDAO offers and DID reducers are in local qualification.
-Rerun the complete integrated core and all three native shards after
-those ports. Exact-head required Linux CI remains part of integration.
+The seven remaining MicroDAO offer cases passed separate fresh v3
+proofs, funded default-strict application, selected fallible rollback,
+and exact replay refusal. The 28 DID reducer cases cover 13 fixtures
+and 19 fresh key sets. Nine live TypeScript reducer captures matched
+the reviewed Ledger 9 bytes. All reducer cases passed separate proof
+verification, funded application, and unchanged replay.
+
+At `88ad250dd`, the full local core and generated consumer gate
+passed 311 separate proof verifications, funded applications and
+unchanged replays. The Ledger 9 JavaScript consumer reproduced the
+funded Counter deployment and call bytes. Native shards 0 and 2
+passed. The shard 1 wide-add check was corrected to compare against the
+current runtime compatibility record. At `98c041dd`, shard 1 passed
+its complete rerun, including both witness-composition controls.
+The same head proved all seven AccJubjub apply cases with a fresh
+explicit k12 key, separate verification, strict funded application
+and byte-identical replay refusal. Both raw cases retain their
+behavior scope, and the live TypeScript capture matches the active
+Ledger 9 bytes and preserves the independent historical oracle.
+
+These are macOS arm64 results. The complete maintained parent parity
+rerun, fresh review of the composed update, and exact-head required
+Linux CI remain part of integration.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
