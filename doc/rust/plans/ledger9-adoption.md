@@ -1033,6 +1033,26 @@ The complete maintained parent parity rerun, fresh review of the
 composed update, and exact-head required Linux CI remain part of
 integration.
 
+### Standalone stateful product Vector qualification
+
+The standalone stateful product Vector gate now uses the Ledger 9 functional
+profile and emits v3 ZKIR. The 25 original sources reproduced byte-identical
+independent and historical raw IR. All 25 checked Programs match the current
+Ledger 9 goldens. The original Ledger 8 goldens are retained. The isolated
+gate passed 32 TypeScript/Rust cases, 25 strict SDK checks, seven source
+refusals, nine malformed IR refusals, and four changed-producer controls.
+
+Signed source `f43afeec0` proved three selected cases on macOS arm64. Both
+admitted exports used fresh k8 keys from ZKIR 3.2.0. Each standalone proof
+was verified in a separate process, and a distinct funded default-strict
+transaction proof applied the call with one positive-fee Dust spend. Replay
+returned `IntentAlreadyExists` with identical ledger bytes. The gate refused
+changed IR, checked Programs and raw ZKIR before key generation and refused
+a genuine k9 model under the existing automatic k8 limit. Corrupt proof,
+wrong verifier, changed binding and same-geometry changed result controls
+also passed. This proof roster covers both typed branch results and the Field
+export. The other standalone functional families remain separate work.
+
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
 gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
