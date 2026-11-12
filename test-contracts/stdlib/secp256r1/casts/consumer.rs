@@ -101,6 +101,10 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("upstream-computed", "upstream-computed-storePoint-0") => {
+            "upstream-computed-storeXOfSum-0"
+        }
+        (name, _) if group_fixture(name) => "upstream-computed-storePoint-0",
         ("upstream-roundtrip", "upstream-roundtrip-test0-0") => "upstream-ledger-storePoint-0",
         (name, _) if accessor_fixture(name) => "upstream-roundtrip-test0-0",
         ("upstream-equality", "pointsEqual-0") => "pointsNotEqual-0",
@@ -122,6 +126,8 @@ where
     let family = root.join("family-first");
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
+        "upstream-computed" => family.join("accessors/upstream-computed"),
+        "guarded-group" => family.join("group/guarded"),
         name if unary_fixture(name) => family.join("unary").join(name),
         name if point_fixture(name) || name == "upstream-roundtrip" => {
             family.join("point").join(name)
@@ -192,8 +198,12 @@ where
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
     let typescript: ProofPreimage = tagged_deserialize(fs::File::open(
-        root.join("preimages-first")
-            .join(format!("{}.preimage", case.id)),
+        root.join(if group_fixture(case.fixture) {
+            "preimages-group"
+        } else {
+            "preimages-first"
+        })
+        .join(format!("{}.preimage", case.id)),
     )?)?;
     let commitment = typescript
         .communications_commitment
@@ -361,6 +371,10 @@ fn accessor_fixture(name: &str) -> bool {
     )
 }
 
+fn group_fixture(name: &str) -> bool {
+    matches!(name, "upstream-computed" | "guarded-group")
+}
+
 fn point_fixture(name: &str) -> bool {
     matches!(name, "upstream-equality" | "upstream-identity")
 }
@@ -389,6 +403,7 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let base = |i: usize| decode_base(&inputs[i]["field"]);
     let scalar = |i: usize| decode_scalar(&inputs[i]["field"]);
     let guard = || inputs[0].as_bool().unwrap();
+    let group_scalar = |i: usize| decode_scalar(&inputs[i]);
     let point = |i: usize| decode_point(&inputs[i]);
     macro_rules! exercise {
         ($package:ident, $method:ident, $call:ident, ($($arg:expr),*), |$view:ident $(, $result:ident)?| $verify:block $(, seed = $seed:expr)?) => {{
@@ -471,8 +486,75 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             )
         };
     }
+    macro_rules! guarded_group {
+        ($method:ident, $call:ident, ($($arg:expr),*)) => {
+            exercise!(group_guarded, $method, $call, ($($arg),*), |view, result| {
+                assert_eq!(result, decode_point(expected));
+                assert_eq!(view.pt()?, result);
+            })
+        };
+    }
     let seed = || decode_point(&row["seed"]);
+    let written = || decode_base(&row["written"]);
     match (fixture, circuit) {
+        ("upstream-computed", "storePoint") => exercise!(
+            group_computed,
+            storePoint,
+            storePoint_call,
+            (point(0)),
+            |view| {
+                assert_eq!(view.pt()?, point(0));
+                assert_eq!(view.x()?, Secp256r1Base::default());
+            }
+        ),
+        ("upstream-computed", "storeXOfGenerator") => exercise!(
+            group_computed,
+            storeXOfGenerator,
+            storeXOfGenerator_call,
+            (group_scalar(0)),
+            |view| {
+                assert_eq!(view.pt()?, Secp256r1Point::default());
+                assert_eq!(view.x()?, written());
+            }
+        ),
+        ("upstream-computed", "storeXOfSum") => exercise!(
+            group_computed,
+            storeXOfSum,
+            storeXOfSum_call,
+            (point(0), point(1)),
+            |view| {
+                assert_eq!(view.pt()?, Secp256r1Point::default());
+                assert_eq!(view.x()?, written());
+            }
+        ),
+        ("upstream-computed", "storeXOfMul") => exercise!(
+            group_computed,
+            storeXOfMul,
+            storeXOfMul_call,
+            (group_scalar(0)),
+            |view| {
+                assert_eq!(view.pt()?, seed());
+                assert_eq!(view.x()?, written());
+            },
+            seed = |ctx| contract::storePoint(ctx, seed())
+        ),
+        ("guarded-group", "guardedAdd") => {
+            guarded_group!(guardedAdd, guardedAdd_call, (guard(), point(1), point(2)))
+        }
+        ("guarded-group", "guardedMul") => {
+            guarded_group!(
+                guardedMul,
+                guardedMul_call,
+                (guard(), point(1), group_scalar(2))
+            )
+        }
+        ("guarded-group", "guardedGenerator") => {
+            guarded_group!(
+                guardedGenerator,
+                guardedGenerator_call,
+                (guard(), group_scalar(1))
+            )
+        }
         ("upstream-roundtrip", "test0") => exercise!(
             accessor_roundtrip,
             test0,
@@ -887,6 +969,44 @@ fn check_accessor_refusals(cases: &serde_json::Map<String, Value>) -> TestResult
     Ok(())
 }
 
+fn check_group_refusals(cases: &serde_json::Map<String, Value>) -> TestResult<()> {
+    use group_computed::ledger_contract as contract;
+    use group_guarded::pure_circuits::pureGroup;
+
+    let generator = decode_point(&cases["upstream-computed-storePoint-0"]["inputs"][0]);
+    let negated = decode_point(&cases["guarded-group-guardedMul-3"]["expected"]);
+    let double = decode_point(&cases["guarded-group-guardedMul-1"]["expected"]);
+    let zero = Secp256r1Scalar::default();
+    let one = decode_scalar(&cases["upstream-computed-storeXOfGenerator-0"]["inputs"][0]);
+    assert_eq!(pureGroup(generator, zero)?, Secp256r1Point::default());
+    assert_eq!(pureGroup(generator, one)?, double);
+
+    macro_rules! refuse {
+        ($method:ident, ($($arg:expr),+), $context:expr) => {{
+            let native = ($context)()?;
+            let recorded = ($context)()?;
+            let initial = native.query.state.clone();
+            let recorded_initial = recorded.query.state.clone();
+            assert_eq!(contract::$method(native, $($arg),+).err(), Some(CompactError::Secp256r1IdentityX));
+            assert_eq!(contract::recorded::$method(recorded, $($arg),+).err(),
+                Some(CompactError::Secp256r1IdentityX));
+            assert_eq!(initial.get_ref(), recorded_initial.get_ref());
+        }};
+    }
+    let context = || {
+        Ok::<_, CompactError>(
+            contract::initial_state(ConstructorContext::new(()))?
+                .into_circuit_context(ContractAddress::default()),
+        )
+    };
+    refuse!(storeXOfGenerator, (zero), context);
+    refuse!(storeXOfSum, (generator, negated), context);
+    refuse!(storeXOfMul, (zero), || Ok::<_, CompactError>(
+        contract::storePoint(context()?, generator)?.context
+    ));
+    Ok(())
+}
+
 fn main() -> TestResult<()> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let [mode, root, out] = args.as_slice() else {
@@ -895,8 +1015,17 @@ fn main() -> TestResult<()> {
         );
     };
     let root = Path::new(root);
+    let mode_name = mode.to_str().ok_or("invalid mode")?;
+    let group_lane = mode_name == "group-parity"
+        || mode_name.starts_with("upstream-computed-")
+        || mode_name.starts_with("guarded-group-");
+    let preimages = if group_lane {
+        "preimages-group"
+    } else {
+        "preimages-first"
+    };
     let vectors: Value =
-        serde_json::from_slice(&fs::read(root.join("preimages-first/vectors.json"))?)?;
+        serde_json::from_slice(&fs::read(root.join(preimages).join("vectors.json"))?)?;
     let cases = vectors.as_object().ok_or("expected case map")?;
     if let Some(expected) = match mode.to_str() {
         Some("parity") => Some(41),
@@ -904,6 +1033,7 @@ fn main() -> TestResult<()> {
         Some("unary-parity") => Some(30),
         Some("point-parity") => Some(17),
         Some("accessor-parity") => Some(18),
+        Some("group-parity") => Some(19),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -921,6 +1051,10 @@ fn main() -> TestResult<()> {
                 accessor_fixture(row["fixture"].as_str().unwrap()),
                 mode == "accessor-parity"
             );
+            assert_eq!(
+                group_fixture(row["fixture"].as_str().unwrap()),
+                mode == "group-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
@@ -932,13 +1066,18 @@ fn main() -> TestResult<()> {
         } else if mode == "accessor-parity" {
             check_accessor_refusals(cases)?;
             println!("pure accessors and six native and recorded identity refusals passed");
+        } else if mode == "group-parity" {
+            check_group_refusals(cases)?;
+            println!(
+                "pure group operations and three native and recorded computed-identity refusals passed"
+            );
         }
         println!(
             "{expected} generated Rust cases matched the TypeScript ledger values and public VM replay"
         );
         return Ok(());
     }
-    let id = mode.to_str().ok_or("invalid case ID")?;
+    let id = mode_name;
     let row = cases.get(id).ok_or("unknown case ID")?;
     assert_eq!(row["selected"].as_bool(), Some(true));
     run_case(root, id, row, Some(Path::new(out)))

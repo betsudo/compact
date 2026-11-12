@@ -100,6 +100,28 @@ export function isValidSecp256r1Point(value: unknown): value is Secp256r1Point {
   return true;
 }
 
+/** Convert an affine Compact point to the P-256 group representation. */
+export function secp256r1ToProjective(p: Secp256r1Point): ReturnType<typeof p256.Point.fromAffine> {
+  if (p.identity) {
+    return p256.Point.ZERO;
+  }
+  return p256.Point.fromAffine({ x: p.x, y: p.y });
+}
+
+/**
+ * Project a noble-curves point back down to the simple affine
+ * `Secp256r1Point` representation.
+ */
+export function secp256r1FromProjective(p: ReturnType<typeof p256.Point.fromAffine>): Secp256r1Point {
+  const k = p.toAffine();
+  if (/* k == p256.Point.ZERO */ k.x == 0n && k.y == 0n) {
+    return { x: 0n, y: 0n, identity: true };
+  } else {
+    const { x, y } = k;
+    return { x: x, y: y, identity: false };
+  }
+}
+
 /** Convert an affine Compact point to the secp256k1 group representation. */
 export function secp256k1ToProjective(p: Secp256k1Point): ReturnType<typeof secp256k1.Point.fromAffine> {
   return p.identity ? secp256k1.Point.ZERO : secp256k1.Point.fromAffine({ x: p.x, y: p.y });

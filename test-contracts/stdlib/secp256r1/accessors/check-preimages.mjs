@@ -20,12 +20,17 @@ import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { identity } from '../point/cases.mjs';
-import { accessors } from './cases.mjs';
+import { accessors, xZero } from './cases.mjs';
+import { group } from '../group/cases.mjs';
 
-assert.equal(process.argv.length, 5, 'expected family output, SDK WASM package and new output directory');
-const [family, wasmPackage, output] = process.argv.slice(2).map((arg) => resolve(arg));
+assert(process.argv.length === 5 || process.argv.length === 6,
+  'expected family output, SDK WASM package, new output directory and optional group selection');
+const [familyArg, wasmArg, outputArg, lane] = process.argv.slice(2);
+assert(lane === undefined || lane === 'group', lane);
+const [family, wasmPackage, output] = [familyArg, wasmArg, outputArg].map((arg) => resolve(arg));
+const fixtures = lane === 'group' ? group : accessors;
 const build = (folder) => join(family, folder, 'ts-rust/.build');
-const runtimeEntry = createRequire(join(build(accessors[0].folder), 'contract/index.js'))
+const runtimeEntry = createRequire(join(build(fixtures[0].folder), 'contract/index.js'))
   .resolve('@midnight-ntwrk/compact-runtime');
 const runtime = await import(pathToFileURL(runtimeEntry));
 const onchainEntry = createRequire(runtimeEntry).resolve('@midnightntwrk/onchain-runtime-v4');
@@ -37,8 +42,12 @@ const { check, jsonIrToBinary } = await import(pathToFileURL(wasmEntry));
 
 const base = runtime.CompactTypeSecp256r1Base;
 const point = runtime.CompactTypeSecp256r1Point;
+const scalar = runtime.CompactTypeSecp256r1Scalar;
 const bool = runtime.CompactTypeBoolean;
 const descriptor = (value) => typeof value === 'boolean' ? bool : typeof value === 'bigint' ? base : point;
+const inputDescriptor = (value) => lane === 'group' && typeof value === 'bigint' ? scalar : descriptor(value);
+const alignment = (values, typeOf) => values.flatMap((value) => typeOf(value).alignment());
+const atoms = (values, typeOf = descriptor) => values.flatMap((value) => typeOf(value).toValue(value));
 const encode = (value) => {
   if (typeof value === 'bigint') return value.toString(16).padStart(64, '0');
   if (Array.isArray(value)) return value.map(encode);
@@ -58,7 +67,7 @@ async function save(name, data) {
   return sha(data);
 }
 
-for (const { fixture, folder, calls } of accessors) {
+for (const { fixture, folder, calls } of fixtures) {
   const dir = build(folder);
   const source = join(dir, 'contract/index.js');
   assert.equal(createRequire(source).resolve('@midnight-ntwrk/compact-runtime'), runtimeEntry);
@@ -71,13 +80,16 @@ for (const { fixture, folder, calls } of accessors) {
     initial.currentZswapLocalState.coinPublicKey, initial.currentContractState, initial.currentPrivateState);
   const programs = new Map();
   for (const { name, proof } of info.circuits) {
-    assert.equal(proof, true, name);
+    if (!proof) {
+      assert.equal(name, 'pureGroup');
+      continue;
+    }
     const raw = join(dir, 'zkir', name + '.zkir');
     const binary = raw.replace(/\.zkir$/, '.bzkir');
     const text = await readFile(raw, 'utf8');
     const zkir = JSON.parse(text);
     assert(zkir.do_communications_commitment, name);
-    if (name.startsWith('guarded')) {
+    if (fixture === 'guarded-writes') {
       assert.deepEqual(zkir.inputs.map(({ type }) => type), ['Scalar<BLS12-381>', 'Point<Secp256r1>']);
       assert.deepEqual(zkir.outputs, ['Base<Secp256r1>']);
       const ops = zkir.instructions;
@@ -106,7 +118,7 @@ for (const { fixture, folder, calls } of accessors) {
   }
 
   const indices = new Map();
-  for (const { circuit, args, expected, seed, slot, written, selected = false } of calls) {
+  for (const { circuit, args, expected, seed, slot, written, identityArgs, selected = false } of calls) {
     const index = indices.get(circuit) ?? 0;
     indices.set(circuit, index + 1);
     const id = fixture + '-' + circuit + '-' + index;
@@ -117,11 +129,9 @@ for (const { fixture, folder, calls } of accessors) {
     const proof = call.proofData;
     assert.deepEqual(proof.privateTranscriptOutputs, [], id);
     const outputs = Array.isArray(expected) ? expected : [expected];
-    const alignment = (values) => values.flatMap((value) => descriptor(value).alignment());
-    const atoms = (values) => values.flatMap((value) => descriptor(value).toValue(value));
-    assert.deepEqual(proof.input.alignment, alignment(args), id);
-    assert.deepEqual(proof.input.value, atoms(args), id);
-    assert.deepEqual(proof.output.alignment, alignment(outputs), id);
+    assert.deepEqual(proof.input.alignment, alignment(args, inputDescriptor), id);
+    assert.deepEqual(proof.input.value, atoms(args, inputDescriptor), id);
+    assert.deepEqual(proof.output.alignment, alignment(outputs, descriptor), id);
     assert.deepEqual(proof.output.value, atoms(outputs), id);
     const { artifacts, materials } = programs.get(circuit);
     const serialize = (transcript = proof.publicTranscript, output = proof.output, input = proof.input) =>
@@ -141,7 +151,7 @@ for (const { fixture, folder, calls } of accessors) {
       assert.deepEqual(cell.alignment, descriptor(value).alignment(), id);
       assert.deepEqual(cell.value, atoms([value]), id);
       const wrong = typeof value === 'bigint' ? value === 0n ? 1n : 0n
-        : value.identity ? accessors[0].calls[0].args[0] : identity;
+        : value.identity ? xZero : identity;
       cell.value = atoms([wrong]);
       const changed = serialize(transcript);
       await assert.rejects(() => check(changed, materials), /transcript input mismatch/i, id);
@@ -151,13 +161,19 @@ for (const { fixture, folder, calls } of accessors) {
     if (outputs.length > 0) {
       const changed = [...outputs];
       const value = changed[0];
-      changed[0] = typeof value === 'bigint' ? value === 0n ? 1n : 0n : identity;
+      changed[0] = typeof value === 'bigint' ? value === 0n ? 1n : 0n : value.identity ? xZero : identity;
       const invalid = serialize(proof.publicTranscript, { ...proof.output, value: atoms(changed) });
       await assert.rejects(() => check(invalid, materials), /communications commitment mismatch/i, id);
       record.changedReturn = await save(id + '.changed-return', invalid);
       counts.changedReturn++;
     }
-    if (seed || (circuit.startsWith('guarded') && args[0] === true)) {
+    if (identityArgs) {
+      const input = { ...proof.input, value: atoms(identityArgs, inputDescriptor) };
+      const invalid = serialize(proof.publicTranscript, proof.output, input);
+      await assert.rejects(() => check(invalid, materials), /cannot extract coordinates of the Secp256r1 identity/i, id);
+      record.activeIdentity = await save(id + '.active-identity', invalid);
+      counts.activeIdentity++;
+    } else if (lane === undefined && (seed || (circuit.startsWith('guarded') && args[0] === true))) {
       let invalid;
       if (seed) {
         const transcript = structuredClone(proof.publicTranscript);
@@ -185,7 +201,9 @@ for (const { fixture, folder, calls } of accessors) {
     if (written !== undefined) vectors[id].written = encode(written);
   }
 }
-assert.deepEqual(counts, { honest: 18, changedWrite: 16, changedReturn: 12, activeIdentity: 9, selected: 11 });
+assert.deepEqual(counts, lane === 'group'
+  ? { honest: 19, changedWrite: 19, changedReturn: 12, activeIdentity: 3, selected: 10 }
+  : { honest: 18, changedWrite: 16, changedReturn: 12, activeIdentity: 9, selected: 11 });
 await save('vectors.json', JSON.stringify(vectors, null, 2) + '\n');
 await save('summary.json', JSON.stringify({ tools, cases, counts }, null, 2) + '\n');
 console.log(JSON.stringify(counts));

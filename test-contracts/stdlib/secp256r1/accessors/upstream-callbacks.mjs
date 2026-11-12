@@ -101,3 +101,29 @@ export function registerAsserted(test, expect, startContract, contractCode, runt
     expect(L.x).toEqual(G.x);
   });
 }
+
+export function registerComputed(test, expect, startContract, contractCode, runtime) {
+  test('Secp256r1Point accessors on an identity computed in circuit', async () => {
+    const [contract, context] = await startContract(contractCode, {}, 0);
+    const G = runtime.secp256r1MulGenerator(1n);
+    const negG = runtime.secp256r1Mul(G, runtime.SECP256R1_SCALAR_MODULUS - 1n);
+    expect(runtime.secp256r1Add(G, negG)).toEqual({ x: 0n, y: 0n, identity: true });
+    await expect(contract.circuits.storeXOfGenerator(context, 0n))
+        .rejects.toThrow(runtime.CompactError);
+    await expect(contract.circuits.storeXOfSum(context, G, negG))
+        .rejects.toThrow(runtime.CompactError);
+    const stored = await contract.circuits.storePoint(context, G);
+    await expect(contract.circuits.storeXOfMul(stored.context, 0n))
+        .rejects.toThrow(runtime.CompactError);
+    const twoG = runtime.secp256r1MulGenerator(2n);
+    const gen = await contract.circuits.storeXOfGenerator(context, 1n);
+    let L = contractCode.ledger(gen.context.currentQueryContext.state);
+    expect(L.x).toEqual(G.x);
+    const sum = await contract.circuits.storeXOfSum(context, G, G);
+    L = contractCode.ledger(sum.context.currentQueryContext.state);
+    expect(L.x).toEqual(twoG.x);
+    const mul = await contract.circuits.storeXOfMul(stored.context, 2n);
+    L = contractCode.ledger(mul.context.currentQueryContext.state);
+    expect(L.x).toEqual(twoG.x);
+  });
+}

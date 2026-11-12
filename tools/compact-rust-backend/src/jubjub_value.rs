@@ -77,16 +77,21 @@ pub(crate) fn render(checked: CheckedCurve<syn::Expr>) -> syn::Expr {
         CheckedCurve::Generator(Curve::Secp256k1, scalar) => {
             syn::parse_quote!(runtime::Secp256k1Point::mul_generator(#scalar))
         }
+        CheckedCurve::Generator(Curve::Secp256r1, scalar) => {
+            syn::parse_quote!(runtime::Secp256r1Point::mul_generator(#scalar))
+        }
         CheckedCurve::Multiply(Curve::Jubjub, point, scalar) => {
             syn::parse_quote!(runtime::ec_mul(#point, #scalar)?)
         }
-        CheckedCurve::Multiply(Curve::Secp256k1, point, scalar) => {
+        CheckedCurve::Multiply(Curve::Secp256k1 | Curve::Secp256r1, point, scalar) => {
             syn::parse_quote!((#point) * (#scalar))
         }
         CheckedCurve::Add(Curve::Jubjub, left, right) => {
             syn::parse_quote!(runtime::ec_add(#left, #right))
         }
-        CheckedCurve::Add(Curve::Secp256k1, left, right) => syn::parse_quote!((#left) + (#right)),
+        CheckedCurve::Add(Curve::Secp256k1 | Curve::Secp256r1, left, right) => {
+            syn::parse_quote!((#left) + (#right))
+        }
         CheckedCurve::Construct(x, y) => {
             syn::parse_quote!(runtime::construct_jubjub_point(#x, #y)?)
         }

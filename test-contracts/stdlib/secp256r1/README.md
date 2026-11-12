@@ -59,3 +59,7 @@ and identity-hash assertions and check the five-atom point layout.
 
 The [accessor fixtures](accessors/README.md) run the intact point
 roundtrip and the direct and guarded identity cases.
+
+
+The [group fixtures](group/README.md) cover the original computed-identity
+case, typed group arithmetic and guarded point results.

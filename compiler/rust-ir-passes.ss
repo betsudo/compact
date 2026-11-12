@@ -210,13 +210,13 @@
            (object (cons "kind" "ec_add")
                    (cons "left" (lower (car args)))
                    (cons "right" (lower (cadr args))))]
-          [(ecMul secp256k1Mul)
+          [(ecMul secp256k1Mul secp256r1Mul)
            (unless (= (length args) 2)
              (source-errorf src "ecMul expects two arguments"))
            (object (cons "kind" "ec_mul")
                    (cons "point" (lower (car args)))
                    (cons "scalar" ((if (eq? name 'ecMul) lower-field lower) (cadr args))))]
-          [(ecMulGenerator secp256k1MulGenerator)
+          [(ecMulGenerator secp256k1MulGenerator secp256r1MulGenerator)
            (unless (= (length args) 1)
              (source-errorf src "ecMulGenerator expects one argument"))
            (object (cons "kind" "ec_mul_generator")
@@ -1377,11 +1377,13 @@
                          [else #f])])
              (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))
            (let ([group (case (native-entry-function native-entry)
-                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add") 'ecAdd]
+                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add" "__compactRuntime.secp256r1Add") 'ecAdd]
                           [("__compactRuntime.ecMul") 'ecMul]
                           [("__compactRuntime.ecMulGenerator") 'ecMulGenerator]
                           [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                          [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
                           [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                          [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
                           [else #f])])
              (when group (eq-hashtable-set! curve-group-natives function-name group)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)

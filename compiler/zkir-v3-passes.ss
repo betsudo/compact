@@ -174,7 +174,7 @@
                (cons `(from_coordinates ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(degradeToTransient)
                (cons `(copy ,(car var-name*) ,(cadr triv*)) instr*)]
-              [(ecAdd secp256k1Add)
+              [(ecAdd secp256k1Add secp256r1Add)
                (assert (= (length var-name*) 1))
                (cons `(add ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(ecNeg)
@@ -197,9 +197,9 @@
                (let ([scalar (make-temp-id src 'scalar)])
                  (cons `(ec_mul_generator ,(car var-name*) ,scalar)
                    (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
-              [(secp256k1Mul)
+              [(secp256k1Mul secp256r1Mul)
                (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
-              [(secp256k1MulGenerator)
+              [(secp256k1MulGenerator secp256r1MulGenerator)
                (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
@@ -296,8 +296,11 @@
                  (make-native
                    (case (native-entry-function native-entry)
                      [("__compactRuntime.secp256k1Add") 'secp256k1Add]
+                     [("__compactRuntime.secp256r1Add") 'secp256r1Add]
                      [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                     [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
                      [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                     [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
                      [else (id-sym function-name)])
                    arg*)))]
           [else (void)]))

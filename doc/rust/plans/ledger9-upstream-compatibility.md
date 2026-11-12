@@ -253,8 +253,13 @@ The [P-256 accessor fixtures](../../../test-contracts/stdlib/secp256r1/accessors
 run the intact point roundtrip and original direct, ledger and checked
 assertion cases. The proof checks cover guarded active and inactive
 paths with the correct curve and both coordinate-specific identity errors.
-The computed-identity fixture, group operations and signature suites
-follow separately.
+The [P-256 group fixtures](../../../test-contracts/stdlib/secp256r1/group)
+port typed point addition, multiplication and generator multiplication.
+They run the intact computed-identity test and check canonical identity,
+finite coordinates, guarded results and cross-curve rejection. The
+explicit slow proof lane covers all four original exports and both
+branches of each guarded group operation. Nested point collections,
+point witness transport and the signature suites follow separately.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

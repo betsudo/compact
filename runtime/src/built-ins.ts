@@ -26,7 +26,9 @@ import {
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
 import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
-import { secp256k1FromProjective, secp256k1ToProjective } from './utils.js';
+import {
+  secp256k1FromProjective, secp256k1ToProjective, secp256r1FromProjective, secp256r1ToProjective,
+} from './utils.js';
 
 const FIELD_MODULUS: bigint = MAX_FIELD + 1n;
 
@@ -187,6 +189,41 @@ export function secp256r1PointY(pt: Secp256r1Point): bigint {
     throw new CompactError('cannot extract the y-coordinate of the secp256r1 identity point');
   }
   return pt.y;
+}
+
+/**
+ * The Compact builtin `ecAdd` function for secp256r1 points.
+ *
+ * This function adds two elliptic curve points. The points are assumed to be
+ * valid, points passed from compiler-generated code are always valid ones.
+ * @internal
+ */
+export function secp256r1Add(a: Secp256r1Point, b: Secp256r1Point): Secp256r1Point {
+  return secp256r1FromProjective(secp256r1ToProjective(a).add(secp256r1ToProjective(b)));
+}
+
+/**
+ * The Compact builtin `ecMul` function for secp256r1 points.
+ *
+ * The point is assumed to be valid, points passed from compiler-generated code
+ * are always valid ones.
+ * @internal
+ */
+export function secp256r1Mul(a: Secp256r1Point, b: bigint): Secp256r1Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return secp256r1FromProjective(secp256r1ToProjective(a).multiplyUnsafe(b));
+}
+
+/**
+ * The Compact builtin `ecMulGenerator` function for secp256r1 points.
+ */
+export function secp256r1MulGenerator(b: bigint): Secp256r1Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return secp256r1FromProjective(p256.Point.BASE.multiplyUnsafe(b));
 }
 
 /** Add two secp256k1 points. */

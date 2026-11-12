@@ -109,3 +109,45 @@ fn point_ingress_rejects_bad_width_flag_and_curve_membership() {
         assert!(Secp256r1Point::try_from(&*bad).is_err());
     }
 }
+
+#[test]
+fn p256_group_preserves_canonical_identity_and_finite_coordinates() {
+    use midnight_compact_runtime::Secp256r1Scalar;
+
+    let [(x, y), (x_zero, y_zero)] = coordinates();
+    let generator = Secp256r1Point::from_affine(x, y).unwrap();
+    let finite_x_zero = Secp256r1Point::from_affine(x_zero, y_zero).unwrap();
+    let identity = Secp256r1Point::default();
+    let double = Secp256r1Point::from_affine(
+        base("7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978"),
+        base("07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1"),
+    )
+    .unwrap();
+    let scalar = |n| {
+        let mut bytes = [0; 32];
+        bytes[0] = n;
+        Secp256r1Scalar::from_le_bytes(bytes).unwrap()
+    };
+    let mut max =
+        hex::decode("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632550").unwrap();
+    max.reverse();
+    let max = Secp256r1Scalar::from_le_bytes(max.try_into().unwrap()).unwrap();
+    let negated = Secp256r1Point::from_affine(x, -y).unwrap();
+    assert_eq!(Secp256r1Point::mul_generator(scalar(1)), generator);
+    assert_eq!(Secp256r1Point::mul_generator(scalar(2)), double);
+    assert_eq!(Secp256r1Point::mul_generator(max), negated);
+    assert_eq!(generator * max, negated);
+    assert_eq!(generator + generator, double);
+    assert_eq!(generator * scalar(2), double);
+    assert_eq!(finite_x_zero * scalar(1), finite_x_zero);
+    assert_eq!(identity + finite_x_zero, finite_x_zero);
+    for result in [
+        Secp256r1Point::mul_generator(scalar(0)),
+        generator * scalar(0),
+        identity * scalar(2),
+        generator + negated,
+    ] {
+        assert_eq!(result, identity);
+        assert_eq!(Value::from(result), Value::from(identity));
+    }
+}

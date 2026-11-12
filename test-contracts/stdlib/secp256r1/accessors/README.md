@@ -11,8 +11,8 @@ Active extraction from the identity fails with a coordinate-specific
 error. The inactive branch uses the finite P-256 generator for the
 SDK's eager coordinate extraction and selects the original zero
 result. The `guarded-writes` fixture checks both branches under proof.
-The archived computed-identity fixture uses group operations and
-will run intact when those are available.
+The original computed-identity fixture runs intact in the
+[P-256 group lane](../group/README.md).
 
 ```sh
 for fixture in point/upstream-roundtrip accessors/upstream-ledger accessors/upstream-asserted accessors/guarded-writes; do

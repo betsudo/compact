@@ -29,12 +29,14 @@ pub(crate) enum Axis {
 pub(crate) enum Curve {
     Jubjub,
     Secp256k1,
+    Secp256r1,
 }
 
 impl Curve {
     pub(crate) fn for_point(ty: &Type) -> Self {
         match ty {
             Type::Secp256k1Point => Self::Secp256k1,
+            Type::Secp256r1Point => Self::Secp256r1,
             _ => Self::Jubjub,
         }
     }
@@ -42,6 +44,7 @@ impl Curve {
     pub(crate) fn for_scalar(ty: &Type) -> Self {
         match ty {
             Type::Secp256k1Scalar => Self::Secp256k1,
+            Type::Secp256r1Scalar => Self::Secp256r1,
             _ => Self::Jubjub,
         }
     }
@@ -50,6 +53,7 @@ impl Curve {
         match self {
             Self::Jubjub => Type::JubjubPoint,
             Self::Secp256k1 => Type::Secp256k1Point,
+            Self::Secp256r1 => Type::Secp256r1Point,
         }
     }
 
@@ -57,6 +61,7 @@ impl Curve {
         match self {
             Self::Jubjub => Type::Field,
             Self::Secp256k1 => Type::Secp256k1Scalar,
+            Self::Secp256r1 => Type::Secp256r1Scalar,
         }
     }
 }

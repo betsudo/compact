@@ -17,10 +17,13 @@ use midnight_base_crypto::fab::{
     Aligned, Alignment, AlignmentAtom, AlignmentSegment, InvalidBuiltinDecode, Value, ValueAtom,
     ValueSlice,
 };
-use midnight_curves::p256::affine_from_xy;
+use midnight_curves::p256::{P256, P256Affine, affine_from_xy, affine_x, affine_y};
 use midnight_transient_crypto::curve::FR_BYTES;
 
-use crate::{BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256r1Base};
+use crate::{
+    BinaryHashRepr, CompactError, FieldRepr, Fr, FromFieldRepr, MemWrite, Secp256r1Base,
+    Secp256r1Scalar,
+};
 
 /// A checked NIST P-256 point. The default value is the canonical identity.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -54,6 +57,48 @@ impl Secp256r1Point {
         self.coordinates()
             .map(|(_, y)| y)
             .ok_or(CompactError::Secp256r1IdentityY)
+    }
+
+    /// Multiply the standard P-256 generator by a canonical scalar.
+    pub fn mul_generator(scalar: Secp256r1Scalar) -> Self {
+        Self::from_projective(P256::GENERATOR * scalar.into_inner())
+    }
+
+    fn to_projective(self) -> P256 {
+        match self.coordinates() {
+            Some((x, y)) => affine_from_xy(x.into_inner(), y.into_inner())
+                .expect("typed finite P-256 points are on the curve")
+                .into(),
+            None => P256::IDENTITY,
+        }
+    }
+
+    fn from_projective(point: P256) -> Self {
+        if point == P256::IDENTITY {
+            Self::default()
+        } else {
+            let affine = P256Affine::from(point);
+            Self(Some((
+                Secp256r1Base::from_inner(affine_x(&affine)),
+                Secp256r1Base::from_inner(affine_y(&affine)),
+            )))
+        }
+    }
+}
+
+impl std::ops::Add for Secp256r1Point {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::from_projective(self.to_projective() + rhs.to_projective())
+    }
+}
+
+impl std::ops::Mul<Secp256r1Scalar> for Secp256r1Point {
+    type Output = Self;
+
+    fn mul(self, scalar: Secp256r1Scalar) -> Self::Output {
+        Self::from_projective(self.to_projective() * scalar.into_inner())
     }
 }
 

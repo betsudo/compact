@@ -20,6 +20,8 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+group_computed = { package = "compact-contract-upstream-computed", path = "../../family-first/accessors/upstream-computed/ts-rust/.build/contract", features = ["ledger-transaction"] }
+group_guarded = { package = "compact-contract-guarded", path = "../../family-first/group/guarded/ts-rust/.build/contract", features = ["ledger-transaction"] }
 accessor_roundtrip = { package = "compact-contract-upstream-roundtrip", path = "../../family-first/point/upstream-roundtrip/ts-rust/.build/contract", features = ["ledger-transaction"] }
 accessor_direct = { package = "compact-contract-upstream-direct", path = "../../family-first/accessors/upstream-direct/ts-rust/.build/contract", features = ["ledger-transaction"] }
 accessor_ledger = { package = "compact-contract-upstream-ledger", path = "../../family-first/accessors/upstream-ledger/ts-rust/.build/contract", features = ["ledger-transaction"] }

@@ -22,7 +22,7 @@ import { createTestContract } from '@test/compact-test';
 import { expect, test } from 'vitest';
 import { pointCases, identity } from '../point/cases.mjs';
 import { generator, variedIdentity, xZero } from './cases.mjs';
-import { registerRoundtrip, registerDirect, registerLedger, registerAsserted } from './upstream-callbacks.mjs';
+import { registerRoundtrip, registerDirect, registerLedger, registerAsserted, registerComputed } from './upstream-callbacks.mjs';
 
 async function load(compile, fixture) {
   const { build, result } = compile(fixture, {}, ['ts', 'rust']);
@@ -49,12 +49,13 @@ export function registerAccessorChecks(compile) {
     ['accessors/upstream-direct', registerDirect],
     ['accessors/upstream-ledger', registerLedger],
     ['accessors/upstream-asserted', registerAsserted],
+    ['accessors/upstream-computed', registerComputed],
   ]) {
     test(`${fixture} runs its original P-256 assertions`, async () => {
       const { module, cases } = await load(compile, fixture);
       const callbacks = [];
       register((_, callback) => callbacks.push(callback), expect, startContract, module,
-        { ...runtime, secp256r1MulGenerator: cases.generator });
+        register === registerComputed ? runtime : { ...runtime, secp256r1MulGenerator: cases.generator });
       expect(callbacks).toHaveLength(1);
       await callbacks[0]();
     });
