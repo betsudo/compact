@@ -164,6 +164,14 @@ runtime-pass declarations byte-for-byte. The local adapter ran four
 TypeScript executions and two Rust 1.99 tests against the integrated
 compiler. Compiler metadata identifies both exports as pure circuits.
 
+The [opaque-string port][bom] preserves leading U+FEFF on decode. The
+intact upstream ledger fixture exercises receipt, archive, equality and map
+membership. The macOS arm64 run passed all 88 TypeScript runtime tests,
+the compiler suite in both ZKIR modes, and fresh generated ordinary and
+recorded Rust consumers. The six raw v3 ZKIR files matched across targets.
+Proof, transaction and Linux qualification for this stateful fixture remain
+open.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9
@@ -179,3 +187,4 @@ compiler. Compiler metadata identifies both exports as pure circuits.
 [names]: https://github.com/betsudo/compact/issues/73
 [assert]: https://github.com/LFDT-Minokawa/compact/commit/7517ecef491cd9655cf288cd7ae96d1927e12070
 [spread]: https://github.com/LFDT-Minokawa/compact/commit/3a560ed6827510b13cc177d44fe80eb6d674b6a8
+[bom]: https://github.com/LFDT-Minokawa/compact/commit/9370308cf

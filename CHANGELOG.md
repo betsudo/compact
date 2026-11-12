@@ -25,6 +25,7 @@ Unreleased Ledger 9 migration.
   A conditional can combine an assertion and an empty tuple literal.
 - Check witness disclosures through vector spreads, including conditions on
   nested Boolean values.
+- Preserve leading U+FEFF characters when decoding stored opaque strings.
 
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 
