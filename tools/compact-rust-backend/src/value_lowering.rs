@@ -65,6 +65,9 @@ pub(crate) fn fixed_bytes_conversion_syntax(
         FixedBytesConversion::ToVector { .. } => syn::parse_quote!(runtime::FixedVector::new(
             (#value).into_array().map(|byte| runtime::BoundedUint::<255>::new(u128::from(byte)).expect("byte fits Uint<8>"))
         )),
+        FixedBytesConversion::FromVector { .. } => syn::parse_quote!(runtime::FixedBytes::new(
+            (#value).into_array().map(|byte| u8::try_from(byte.value()).expect("Uint<8> fits a byte"))
+        )),
         FixedBytesConversion::Slice { start, length } => {
             let end = start + length;
             syn::parse_quote!(runtime::FixedBytes::<#length>::new(

@@ -188,8 +188,15 @@ The [original fixtures](../../../test-contracts/stdlib/secp256k1/address)
 include the exact address vector and the complete issue #608 contract.
 Rust validates fixed Bytes-to-vector conversions and constant byte-slice
 bounds in checked lowering. The paired Keccak circuit uses the original
-nested point encoding and the second ledger slot. ECDSA verification and
-recovery remain separate slices.
+nested point encoding and the second ledger slot.
+
+The upstream `secp256k1EcdsaVerify` circuit and typed signature now
+compile through both targets. The [verification fixtures](../../../test-contracts/stdlib/secp256k1/ecdsa)
+preserve the original false and identity cases and the #609
+two-signature optimizer regression. The executable coverage binds the
+message digest and distinguishes each private signature witness.
+The fixed vector-to-Bytes conversion preserves width and byte order.
+Public-key recovery and the owner/address-binding fixture are the next slice.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

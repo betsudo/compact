@@ -86,7 +86,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::FieldToBytes32 { value } => {
             Source::Conversion(ConversionSource::FieldToBytes32 { value })
         }
-        Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
+        Expr::VectorToBytes { .. } | Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
             let (value, operation) =
                 super::super::conversion::FixedBytesConversion::from_expression(expr)
                     .expect("dispatcher selected a fixed bytes conversion");

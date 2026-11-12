@@ -83,6 +83,7 @@ fn expression_with_calls(
         | Expr::KernelSelf { .. } => pure_leaf_expression(expr, parameters, circuits),
         Expr::FieldCast { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::FieldToBytes32 { .. } => pure_conversion_expression(expr, parameters, circuits),
+        Expr::VectorToBytes { .. } => Err(RenderError::EffectfulExpression),
         Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1Neg { .. }

@@ -370,6 +370,7 @@ pub(crate) fn expression_contains<'source>(
         Expr::Sequence { steps, value } => steps.iter().any(visit) || visit(value),
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }

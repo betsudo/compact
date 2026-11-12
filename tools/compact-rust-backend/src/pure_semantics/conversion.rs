@@ -63,12 +63,16 @@ pub(crate) enum ConversionFacts {
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum FixedBytesConversion {
     ToVector { length: usize },
+    FromVector { length: usize },
     Slice { start: usize, length: usize },
 }
 
 impl FixedBytesConversion {
     pub(crate) fn from_expression(expr: &Expr) -> Option<(&Expr, Self)> {
         match expr {
+            Expr::VectorToBytes { value, length } => {
+                Some((value, Self::FromVector { length: *length }))
+            }
             Expr::BytesToVector { value, length } => {
                 Some((value, Self::ToVector { length: *length }))
             }
@@ -87,6 +91,13 @@ impl FixedBytesConversion {
         }
     }
 
+    fn byte_vector(length: usize) -> Type {
+        Type::Vector {
+            length,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        }
+    }
+
     pub(crate) fn result_type(self, source: &Type) -> Result<Type, RenderError> {
         match self {
             Self::ToVector { length } => {
@@ -97,10 +108,17 @@ impl FixedBytesConversion {
                         actual: source.clone(),
                     });
                 }
-                Ok(Type::Vector {
-                    length,
-                    element: Box::new(Type::Unsigned { max: "255".into() }),
-                })
+                Ok(Self::byte_vector(length))
+            }
+            Self::FromVector { length } => {
+                let expected = Self::byte_vector(length);
+                if *source != expected {
+                    return Err(RenderError::TypeMismatch {
+                        expected,
+                        actual: source.clone(),
+                    });
+                }
+                Ok(Type::Bytes { length })
             }
             Self::Slice { start, length } => {
                 let Type::Bytes {

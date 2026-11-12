@@ -615,6 +615,20 @@
                               ((,index-name ,index-type) ,index))
                     (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
 
+      (define (byte-vector-type src len)
+        (with-output-language (Lnodisclose Type)
+          `(tvector ,src ,len (tunsigned ,src 255))))
+
+      (define (vector-to-bytes-ir src len value lower)
+        (let ([value (nanopass-case (Lnodisclose Expression) value
+                       [(vector ,src^ ,tuple-arg* ...)
+                        (with-output-language (Lnodisclose Expression)
+                          `(tuple ,src^ ,tuple-arg* ...))]
+                       [else value])])
+          (object (cons "kind" "vector_to_bytes")
+                  (cons "value" (lower value (byte-vector-type src len)))
+                  (cons "length" len))))
+
       (define (bytes-slice-ir src value index length lower)
         (let ([start (maybe-nonnegative-integer-literal index src)])
           (unless start
@@ -734,6 +748,9 @@
              (typed-expression-ir expr2 type src))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (expression-ir expr src))]
+          [(vector->bytes ,src ,len ,expr)
+           (vector-to-bytes-ir src len expr
+             (lambda (value type) (typed-expression-ir value type src)))]
           [(bytes->vector ,src ,len ,expr)
            (object (cons "kind" "bytes_to_vector")
                    (cons "value" (expression-ir expr src))
@@ -2684,6 +2701,9 @@
              (stateful-typed-expression-ir expr2 type src witness-ids))]
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
+          [(vector->bytes ,src ,len ,expr)
+           (vector-to-bytes-ir src len expr
+             (lambda (value type) (stateful-typed-expression-ir value type src witness-ids)))]
           [(bytes->vector ,src ,len ,expr)
            (object (cons "kind" "bytes_to_vector")
                    (cons "value" (stateful-expression-ir expr src witness-ids))

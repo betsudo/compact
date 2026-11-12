@@ -854,6 +854,7 @@ fn collect_expression_types<'ir>(
         }
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
@@ -1516,7 +1517,7 @@ fn pure_conversion_expression(
         Expr::Secp256k1BytesCast { value, ty } => {
             ConversionSource::Secp256k1BytesCast { value, ty }
         }
-        Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
+        Expr::VectorToBytes { .. } | Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
             let (value, operation) =
                 pure_semantics::conversion::FixedBytesConversion::from_expression(expr)
                     .expect("dispatcher selected a fixed bytes conversion");

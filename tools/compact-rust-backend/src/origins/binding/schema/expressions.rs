@@ -65,6 +65,10 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         }
         Expr::FieldCast { value } => unary!("field_cast", "value", value),
         Expr::FieldToBytes32 { value } => unary!("field_to_bytes32", "value", value),
+        Expr::VectorToBytes { value, length } => {
+            unary!("vector_to_bytes", "value", value);
+            s.size("length", *length);
+        }
         Expr::BytesToVector { value, length } => {
             unary!("bytes_to_vector", "value", value);
             s.size("length", *length);

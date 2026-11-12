@@ -159,7 +159,8 @@ macro_rules! dispatch {
             $crate::ir::Expr::FieldToBytes32 { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::BytesToVector { .. }
+            $crate::ir::Expr::VectorToBytes { .. }
+            | $crate::ir::Expr::BytesToVector { .. }
             | $crate::ir::Expr::BytesSlice { .. }
             | $crate::ir::Expr::Secp256k1BytesCast { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)

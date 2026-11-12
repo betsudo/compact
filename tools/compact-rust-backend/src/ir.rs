@@ -684,6 +684,10 @@ pub enum Expr {
     FieldToBytes32 {
         value: Box<Expr>,
     },
+    VectorToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
     BytesToVector {
         value: Box<Expr>,
         length: usize,

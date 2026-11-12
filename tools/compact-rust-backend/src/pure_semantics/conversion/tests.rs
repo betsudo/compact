@@ -352,3 +352,30 @@ fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
         ));
     }
 }
+
+#[test]
+fn vector_to_bytes_requires_a_fixed_vector_of_bounded_bytes() {
+    let bytes = Type::Bytes { length: 32 };
+    let vector = FixedBytesConversion::ToVector { length: 32 }
+        .result_type(&bytes)
+        .unwrap();
+    let operation = FixedBytesConversion::FromVector { length: 32 };
+    assert_eq!(operation.result_type(&vector).unwrap(), bytes);
+
+    for invalid in [
+        Type::Bytes { length: 32 },
+        Type::Vector {
+            length: 31,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        },
+        Type::Vector {
+            length: 32,
+            element: Box::new(Type::Unsigned { max: "256".into() }),
+        },
+    ] {
+        assert!(matches!(
+            operation.result_type(&invalid),
+            Err(RenderError::TypeMismatch { .. })
+        ));
+    }
+}

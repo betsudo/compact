@@ -228,8 +228,25 @@ fn fixed_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
     }
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
+const VECTOR_TO_BYTES: &[u8] = include_bytes!("vector-to-bytes-expression.json");
+fn vector_to_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "7cf84de7b79af54d0fe946b1d18fb1d25ca9e7311433cb056c029b14eba10117" {
+        return Err("unreviewed Vector-to-Bytes compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+fn before_vector_to_bytes(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &vector_to_bytes_manifest(VECTOR_TO_BYTES)?)
+}
+
 fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
-    let before_bytes = legacy_source(path, current, &fixed_bytes_manifest(FIXED_BYTES_ENUM)?)?;
+    let before_vector = before_vector_to_bytes(path, current)?;
+    let before_bytes = legacy_source(
+        path,
+        &before_vector,
+        &fixed_bytes_manifest(FIXED_BYTES_ENUM)?,
+    )?;
     let before_accessors = legacy_source(path, &before_bytes, &secp256k1_accessors_manifest()?)?;
     let before_unary = legacy_source(
         path,
@@ -392,6 +409,7 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["vector_to_bytes_projection"] = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
     authority["fixed_bytes_projection"] = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
     authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
     authority["secp256k1_accessors_projection"] = secp256k1_accessors_manifest().unwrap();
@@ -760,6 +778,7 @@ fn fixed_bytes_projection_preserves_all_exact_predecessors() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for path in owners.keys() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_vector_to_bytes(path, &current).unwrap();
         let previous = legacy_source(path, &current, &projection).unwrap();
         assert_eq!(
             digest(previous.as_bytes()),
@@ -767,5 +786,29 @@ fn fixed_bytes_projection_preserves_all_exact_predecessors() {
         );
         assert!(legacy_source(path, &previous, &projection).is_err());
         assert!(legacy_source(path, &(current + "\n// unrelated drift\n"), &projection).is_err());
+    }
+}
+
+#[test]
+fn vector_to_bytes_projection_preserves_exact_fixed_bytes_predecessors() {
+    let projection = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
+    let fixed_bytes = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(FIXED_BYTES_ENUM)
+    );
+    assert!(vector_to_bytes_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_vector_to_bytes(path, &current).unwrap();
+        assert_eq!(
+            digest(previous.as_bytes()),
+            fixed_bytes["owners"][path]["current_sha256"]
+        );
+        assert!(before_vector_to_bytes(path, &previous).is_err());
+        assert!(before_vector_to_bytes(path, &(current + "\n// unrelated drift\n")).is_err());
     }
 }
