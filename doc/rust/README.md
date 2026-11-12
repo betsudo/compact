@@ -4,11 +4,17 @@
 
 [Historical proposed 0.4.0 Ledger 8 functional scope](0.4.0-ledger8-functional-scope.md) preserves the `ab132650` Aiken-inspired generated Rust direction and proposed capability seams for later Ledger9 work. Its illustrative APIs are not delivered interfaces, an accepted milestone scope or a Ledger9 support claim.
 
-The Rust target uses the ledger-8 Compact frontend, a typed private IR, a Rust AST emitter (`syn`, `quote`, `proc-macro2`, `prettyplease`) and a native runtime built on Midnight ledger/zk primitives.
+The Rust target uses the Compact frontend, a typed private IR, a Rust AST emitter (`syn`, `quote`, `proc-macro2`, `prettyplease`) and a native runtime built on Midnight ledger/zk primitives.
 
-## Current Ledger8 delivery and remaining work
+## Ledger 9 migration
 
-Start with the [native Ledger8 candidate profile](guides/native-ledger8-profile.md): exact versions, usable source SDK, stage-specific evidence, type/runtime boundaries, exclusions and remaining integration gates. It is a local handoff contract, not release or whole-goal completion.
+Use the [Ledger 9 adoption plan](plans/ledger9-adoption.md) for the local
+migration status and the [versions and targets guide](guides/versions-and-targets.md)
+for the matching compiler, Rust and TypeScript runtime, and ZKIR tools.
+
+## Retained Ledger 8 delivery
+
+The [native Ledger8 candidate profile](guides/native-ledger8-profile.md) records exact versions, usable source SDK, stage-specific evidence, type/runtime boundaries, exclusions and remaining integration gates. It is a local handoff contract, not release or whole-goal completion.
 
 - [Delivered features, architecture, examples, qualification and completion checklist](ledger8-delivery-and-completion.md): dated 18 October 2026; separates bounded local implementation from supported-profile release readiness and full language parity.
 - [Keccak capability and proof-profile audit record](audit/2026-10-18-keccak-profile-boundary.md): native/ordinary checked support, the ZKIRv2 exclusion, observed target selection and the qualification needed for an extension.

@@ -1,17 +1,17 @@
-# Compact Rust backend (ledger 8)
+# Compact Rust backend
 
 Start with the [task guides](../../doc/rust/guides/index.md) for installation, generated contracts, witnesses and ContractLab examples. This page describes backend capabilities and their development history.
 
 Architecture history: [Rust backend and runtime ADRs](https://github.com/MediaNoxLabs/compact/tree/codex/rust-backend-ast/doc/rust/adr), with decision status, code examples and delivery evidence.
 
-This backend compiles Compact through the ledger-8 Scheme frontend and renders
+This backend compiles Compact through the Compact Scheme frontend and renders
 its typed Rust IR as native Rust source. It is independent of the TypeScript
 backend. The generated code uses [`midnight-compact-runtime`](../../runtime-rs),
 which delegates state, encoding, hashing, curves, and VM operations to the
-ledger-8 Midnight crates.
+published Ledger 9 Midnight crates in the migration branch.
 Generated Merkle witness views expose local `root`, `first_free`, path, and
 historic history methods alongside fallible `is_full` and `check_root` methods.
-The latter two execute canonical ledger-8 VM queries and contribute their cost
+The latter two execute canonical ledger VM queries and contribute their cost
 to Rust circuit results. TypeScript currently reports zero wrapper gas for
 witness-only VM queries; the Rust result sums the observed query costs.
 
@@ -191,7 +191,7 @@ See [the active plan](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 The default recorder lowers supported typed operations and composition into a checked plan. Ordinary roots use the checked route; Effectful roots retain their earlier checked boundary. Unsupported operations return checked refusals; invalid plans are fatal. The former StartFunding and generic/profile fallback paths are test history. They do not accept rejected production plans. Profile names describe retained examples and tests, not formal algebraic theorems or production admission authority.
 
-Pure expressions use one shared semantic fold. `NativeSink` produces Rust syntax; `BodyCheckSink` checks the same body rules without constructing native syntax. Current runtime ABI is **53**, private IR **20**, finalized capability schema **3** and private origin transport **3**. Native ledger is **8.1.3**, pinned to official revision `b5d3e965a18e4cac17fac4f38446fc55c524439a`; generated consumers require Rust 1.89. See [current versions and retained receipts](../../doc/rust/guides/versions-and-targets.md).
+Pure expressions use one shared semantic fold. `NativeSink` produces Rust syntax; `BodyCheckSink` checks the same body rules without constructing native syntax. The Ledger 9 migration uses runtime ABI **54**, private IR **20**, finalized capability schema **3** and private origin transport **3**. The runtime resolves `midnight-ledger-v9@1.0.1` and the exact dependencies in [runtime compatibility](../../runtime-rs/compatibility.json). Generated consumers require Rust **1.99**. See [current versions and retained receipts](../../doc/rust/guides/versions-and-targets.md).
 
 Read the [current extension and diagnostics guide](../../doc/rust/guides/checked-recording.md) and [capability and retirement book](../../doc/rust/recording-effect-algebra/capability-and-retirement-book.md). The following development checkpoints preserve their original support and ABI claims; their earlier fallback/profile descriptions are historical. Detailed historical acceptance follows the [evidence availability policy](../../doc/rust/recording-effect-algebra/evidence-availability.md).
 
@@ -717,9 +717,9 @@ Compact spelling without warning in consumer builds.
 
 | Boundary | Current contract | Failure behavior |
 |---|---|---|
-| Compact compiler | Toolchain 0.31.133, language 0.23.105 | Versions are recorded in `compiler/contract-manifest.json`. |
+| Compact compiler | Toolchain 0.31.211, language 0.23.105 | Versions are recorded in `compiler/contract-manifest.json`. |
 | Rust IR | Schema 20, private to this backend | The renderer rejects any other schema before writing `lib.rs`. Schema 20 adds typed Kernel mint/claim effects. Schema 19 adds single-owner typed effectful return plans. Schema 18 adds typed native circuit Zswap intents. Schema 16 adds native qualified-coin Cell writes. Schema 15 adds typed Counter less-than queries. Schema 14 adds typed qualified-coin Set insertion. Schema 13 adds an explicit typed Field-to-Bytes32 expression and nested Counter read; the cast uses midnight-zk's canonical 32-byte little-endian Field representation. Ledger, circuit, witness, constructor, and exported alias declarations carry optional Compact source locations for diagnostics. |
-| Generated code and Rust runtime | ABI 50 | Generated modules assert the ABI at Rust compile time. ABI 49 adds recorded native own-key outputs and sealed execution identity. ABI 48 adds exact offer-bound native intent recording and sealed intent reconciliation. ABI 47 adds bounded recorded Kernel effects using canonical upstream programs. ABI 46 adds checked native wide unsigned addition. ABI 45 adds native Kernel shielded effects through upstream VM queries. ABI 44 adds recorded qualified-coin Cell writes through the shared native VM builder. ABI 43 adds typed circuit Zswap intents and locked observed allocation. ABI 42 adds native qualified-coin Cell writes; ABI 41 adds typed Counter less-than queries; ABI 40 adds recorded qualified-coin Set insertion, metered `kernel.self()`, and offer-backed observed calls. ABI 39 adds qualified-coin Set insertion using ledger coin and recipient types and the allocated commitment index. ABI 38 adds audited local-helper adoption for private witnesses, gas, and transcript while checking the public and Zswap context. ABI 37 adds a caller coin key for native `ownPublicKey()` and its private output; ABI 36 adds recorded plain Merkle root checks through typed slots; ABI 35 adds recorded Counter reset through typed slots; ABI 34 adds recorded direct plain/historic Merkle fullness reads; ABI 33 adds typed local plain/historic Merkle views with checked depth; ABI 32 adds List views; ABI 31 adds cell-valued Map views; ABI 30 adds Set views; ABI 29 adds Cell/Counter views; ABI 25–28 add physical List paths, chunked Map and Cell calls, and Cell-read scalar returns; ABI 21–24 add typed multi-argument observed calls and composite/chunked Set calls. The [runtime guide](../../runtime-rs/README.md) records earlier ABI changes. |
+| Generated code and Rust runtime | ABI 54 | Generated modules assert the ABI at Rust compile time. Earlier ABI 49 adds recorded native own-key outputs and sealed execution identity. ABI 48 adds exact offer-bound native intent recording and sealed intent reconciliation. ABI 47 adds bounded recorded Kernel effects using canonical upstream programs. ABI 46 adds checked native wide unsigned addition. ABI 45 adds native Kernel shielded effects through upstream VM queries. ABI 44 adds recorded qualified-coin Cell writes through the shared native VM builder. ABI 43 adds typed circuit Zswap intents and locked observed allocation. ABI 42 adds native qualified-coin Cell writes; ABI 41 adds typed Counter less-than queries; ABI 40 adds recorded qualified-coin Set insertion, metered `kernel.self()`, and offer-backed observed calls. ABI 39 adds qualified-coin Set insertion using ledger coin and recipient types and the allocated commitment index. ABI 38 adds audited local-helper adoption for private witnesses, gas, and transcript while checking the public and Zswap context. ABI 37 adds a caller coin key for native `ownPublicKey()` and its private output; ABI 36 adds recorded plain Merkle root checks through typed slots; ABI 35 adds recorded Counter reset through typed slots; ABI 34 adds recorded direct plain/historic Merkle fullness reads; ABI 33 adds typed local plain/historic Merkle views with checked depth; ABI 32 adds List views; ABI 31 adds cell-valued Map views; ABI 30 adds Set views; ABI 29 adds Cell/Counter views; ABI 25–28 add physical List paths, chunked Map and Cell calls, and Cell-read scalar returns; ABI 21–24 add typed multi-argument observed calls and composite/chunked Set calls. The [runtime guide](../../runtime-rs/README.md) records earlier ABI changes. |
 | Rust runtime source | Bundled runtime crates or an explicit shared source root | Cargo resolves the matching runtime and its pinned Midnight crates. |
 
 `--runtime-version` reports the TypeScript runtime version; the Rust runtime
@@ -812,6 +812,8 @@ patch was used during archive verification. The `midnight` vault's ADR-0013
 records the decision; [issue #114](https://github.com/MediaNoxLabs/compact/issues/114)
 tracks this historical package-rehearsal scope.
 
+### Offline archive consumer
+
 After packaging, rehearse the separately generated Counter, Boolean Cell,
 Set, Map, List, and Merkle contracts together against the two exact archives
 in that manifest:
@@ -902,10 +904,10 @@ helpers are parked on `experiment/zkir-forge`.
 cargo fmt --all -- --check
 nix develop .#compiler --command env COMPACTC=compactc \
   python3 tools/compact-rust-backend/check_compactc_target.py --consumer --proof
-COMPACTC=/path/to/ledger-8/compactc \
+COMPACTC=/path/to/ledger-9/compactc \
   python3 tools/compact-rust-backend/check_fixture_outputs.py
 python3 tools/compact-rust-backend/check_oracle_acceptance.py
-COMPACTC=/path/to/ledger-8/compactc \
+COMPACTC=/path/to/ledger-9/compactc \
   python3 tools/compact-rust-backend/check_rejections.py
 cargo test --workspace --exclude compact
 ```

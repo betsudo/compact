@@ -14,7 +14,7 @@ The core receipt also rejects incomplete checks or changed Cargo locks.
 | Lane | Checks |
 | --- | --- |
 | Rust core owners | Formatting; locked/offline all-feature tests and strict all-target Clippy for backend, runtime, macros and testkit |
-| Rust 1.89 | Backend and generated Jubjub consumer; separately packaged backend; unchanged locks |
+| Ledger 9 MSRV, Rust 1.99.0 | Backend and generated Jubjub consumer; separately packaged backend; unchanged locks |
 | Public Python controls | Ordinary backend Python discovery plus all eight explicit historical-sharder unit methods; exact manual-graph skip policy |
 
 The public Python job runs:

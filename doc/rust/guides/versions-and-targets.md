@@ -1,12 +1,19 @@
 # Select versions and an execution target
 
-The table below retains the milestone 0.3.0 version checkpoint and target receipts. On the current recording-effect branch, runtime ABI is **53**, private IR is **20**, finalized capability reports are **3** and private origin transport is **3**. Native ledger is **8.1.3** at official revision `b5d3e965a18e4cac17fac4f38446fc55c524439a`, with compatibility schema **2** and declared Rust **1.89** minimum. The current local execution used Rust 1.99; the older 1.88 receipts below do not qualify this new dependency graph. See [local qualification](ledger-8.1.3-local-qualification.md) for the exact source cohort and retained proof scope. No package publication or new platform qualification follows from these numbers. Installation snippets describe prerequisites; linked receipts identify actual execution.
+The local Ledger 9 migration pairs compiler **0.31.211**, Compact language
+**0.23.105**, TypeScript runtime **0.17.0** and
+`@midnightntwrk/onchain-runtime-v4@4.0.1`. The Rust backend, runtime and
+macros source packages are **0.2.0**. The generated crates require Rust
+**1.99**, with **1.99.0** pinned for the local checks. The native graph
+uses the published `midnight-ledger-v9@1.0.1` crate and the exact
+dependencies in the [runtime compatibility record](../../../runtime-rs/compatibility.json).
+The ordinary Rust target emits ZKIR v3. Local proof qualification used
+the ZKIR v3 **3.2.0** CLI.
 
-The current typed-pair candidate selects compiler **0.31.137** and TypeScript runtime
-**0.16.102**, including the exact onchain-runtime3.1.2 dependency. These source
-versions are separate from the retained checkpoint below and do not relabel its
-execution receipts. The independent toolchain-manager CLI keeps its inherited
-Rust1.88 minimum; Rust backend owners declare Rust1.89 in their own manifests.
+See the [Ledger 9 adoption plan](../plans/ledger9-adoption.md) for the
+macOS arm64 checks, archive consumer rehearsal and remaining integration
+gates. The Ledger 8 qualification and milestone 0.3.0 receipts below
+retain their original source and toolchain identities.
 
 ## Keep these version domains separate
 
@@ -24,16 +31,18 @@ Rust1.88 minimum; Rust backend owners declare Rust1.89 in their own manifests.
 | Native ledger | 8.0.3 | Pinned ledger graph |
 | Declared native MSRV | Rust1.88 | Qualified only with the documented lock/features/host |
 
-Current generated Rust asserts `runtime::RUST_RUNTIME_ABI == 53`. Matching this number helps detect an accidental mismatch; it does not authenticate arbitrary source or establish semantic correctness by itself.
+Ledger 9 generated Rust asserts `runtime::RUST_RUNTIME_ABI == 54`.
+The assertion detects a runtime mismatch at Rust compile time. The
+compatibility schema is 2, private Rust IR is 20, finalized capability
+schema is 3 and private origin transport is 3.
 
 ### Before publishing the Rust crate cohort
 
-The backend, runtime and macros remain source version0.2.0 here, with ABI53 and
-the ledger8.1.3 graph. This is a changed API cohort, not a claim that the earlier
-ABI50 package contents are interchangeable. Before registry publication,
-coordinate a Rust0.3.0 crate release with the retained-consumer locks, registry
-manifests and release qualification. That migration is a separate follow-up;
-no registry availability or new Rust package release is asserted here.
+The Ledger 9 source packages still carry version 0.2.0. Use the
+compatibility record and package provenance when selecting the source
+cohort. A future registry release needs its own version and consumer-lock
+coordination. The local archive rehearsal verifies the packaged runtime
+and macro sources and executes an offline six-contract Rust consumer.
 
 ## Obtain a matching source distribution
 
@@ -41,19 +50,22 @@ Use the Rust-capable compiler artifact built from this branch and its matching S
 
 An installed compiler bundle supplies its Scheme component through the bundle layout. A development wrapper needs `COMPACTC_SCHEME` set to its matching executable. The examples require `compactc` on PATH. `--skip-zk` skips key generation, not contract code generation.
 
-Three source-selection modes have different responsibilities:
+Ledger 9 Rust generation supports two source-selection modes:
 
 | Mode | Behavior |
 |---|---|
 | Default Rust generation | Validates and bundles matching runtime/macros sources in the generated output |
 | `--rust-runtime-root /absolute/source/root` | Uses a validated shared source pair; the root contains `runtime-rs` and `runtime-rs-macros` |
-| `--rust-runtime-registry` | Emits the exact runtime dependency; does not check that a registry package has been published |
 
-`COMPACT_RUST_RUNTIME_DIR` is also an explicit root selection. Missing or inconsistent compatibility records are rejected rather than silently falling back. Obtain the matching source pair; never copy newer metadata onto old sources to bypass validation.
+`COMPACT_RUST_RUNTIME_DIR` is also an explicit root selection. Missing or inconsistent compatibility records are rejected rather than silently falling back. Use the matching source pair. For archive consumers, follow the
+[offline archive rehearsal](../../../tools/compact-rust-backend/README.md#offline-archive-consumer).
+It generates against a verified shared source root before resolving the
+exact runtime and macro archives. The Ledger 9 compiler rejects the
+historical `--rust-runtime-registry` flag.
 
 For ContractLab, use one runtime identity in Cargo: generated contract and testkit must resolve the same source package. The validated tutorials stage runtime/macros/testkit together in `examples/sdk/` and generate with that absolute root. `prepare-sdk.py` was executed in ADR0324's isolated external validation; it preserves source manifests and copies the testkit's five declared fixture path dependencies. See `VALIDATION.md` for the source checkpoint, qualified locks and three passing tutorial tests. No registry publication is required.
 
-## Target support and evidence
+## Retained Ledger 8 target evidence
 
 | Target | Retained evidence | Limits |
 |---|---|---|
@@ -67,7 +79,7 @@ The tutorial commands target native Rust. They are not Node/browser build instru
 
 ## Migrate consumers
 
-1. Preserve old generated code with its original matching runtime, or regenerate source with the current matching ABI53 compiler/runtime/macros pair. Do not edit the ABI assertion.
+1. Preserve old generated code with its original matching runtime, or regenerate source with the current matching ABI54 compiler/runtime/macros pair. Do not edit the ABI assertion.
 2. Prefer the generated crate's `runtime` re-export for value types, avoiding duplicate crate identities.
 3. Backend0.2 exposes non-exhaustive `RenderError`. External matches need a fallback; resource diagnostics expose `{resource, limit, observed}`. Display text/resource labels are human diagnostics, not a stable machine protocol.
 4. Keep the qualified Cargo.lock. A successful build of one workspace lock does not qualify a different standalone or target-specific resolution.
@@ -77,7 +89,7 @@ The ADR0293/0304 migration receipts already contain old ABI49 refusal, working A
 
 ## Retained 0.3.0 compatibility checkpoint
 
-The historical policy was accepted at `5efa91c2`; the accompanying `feature-source-policy.json` now records the current ledger8.1.3 source pairing separately. The retained MSRV receipt covers actual Rust1.88 workspace backend/Jubjub all-feature and isolated standalone compilation at49898aed; the only later source changes before5efa91c2 are two test files. The accepted feature profiles are default native, exact-evidence `ledger-transaction`, source-only ContractLab, experimental bounded WASM and registry **manifest emission only**. Default native includes crypto/proof dependencies.
+The historical policy was accepted at `5efa91c2`; the accompanying `feature-source-policy.json` retains the Ledger 8.1.3 source pairing. The retained MSRV receipt covers actual Rust1.88 workspace backend/Jubjub all-feature and isolated standalone compilation at49898aed; the only later source changes before5efa91c2 are two test files. The accepted feature profiles are default native, exact-evidence `ledger-transaction`, source-only ContractLab, experimental bounded WASM and registry **manifest emission only**. Default native includes crypto/proof dependencies.
 
 DID's original compiler profile (ledger8.0.2/compiler0.31.1/runtime0.16.0), its npm ledger-v8@8.1.0 wire profile and the isolated coherent Rust8.1 receiver are separate from native8.0.3. No native promotion follows from those receipts. See [candidate qualification](candidate-qualification.md) for current source, validation and documentation dispositions. The resumed ADR0285 consumer-safety controls passed at4c8aebc3. Independent audits and final-candidate checks retain their separate dispositions.
 
@@ -95,6 +107,6 @@ The [bounded CI receipt](../evidence/0.3.0/candidate-ci-57fab775/review-note.md)
 
 At the recorded2c798d2d cohort, [coverage](../evidence/0.3.0/candidate-consumers-adr0362/coverage-delta/coverage-reconciliation.json) is367/375 changed runtime lines (97.87%) and411/421 testkit lines (97.62%); unchanged runtime files use exact-source joins, while decoder/testkit mappings are fresh. These are line metrics, not branch or formal guarantees. [Portable packaging](../evidence/0.3.0/candidate-consumers-adr0362/current-portable-fixed/receipt.json) is manual assembly with a debug Rust compiler, followed by actual relocated archive checks; no full Nix distribution or optimized release-build claim. See [candidate qualification](candidate-qualification.md) for the overall validation status.
 
-## Current candidate pointer
+## Qualification pointers
 
-The [candidate qualification page](candidate-qualification.md) supersedes earlier dated candidate pointers without changing their historical measurements. It records the current overall status separately from those historical results.
+The [Ledger 9 adoption plan](../plans/ledger9-adoption.md) records current local validation. The [Ledger 8 candidate qualification page](candidate-qualification.md) retains the earlier candidate results.

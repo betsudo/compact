@@ -1,14 +1,14 @@
 # Compact contracts in Rust
 
-For the current local candidate, use the [native Ledger8 profile and handoff](native-ledger8-profile.md). It separates current source/application/SDK evidence from the historical guide epochs below, with explicit type, host, proof and integration limits.
+For the Ledger 9 migration, use the [adoption plan](../plans/ledger9-adoption.md) and the [versions and targets guide](versions-and-targets.md). The [native Ledger 8 profile](native-ledger8-profile.md) retains its source, SDK and proof evidence.
 
 **Rust backend developer guide — milestone 0.3.0.** Based on the accepted source APIs and scoped receipts of milestone0.3.0. The witnessed-contract tutorial and both DID lifecycle tests now pass in isolated external consumers at source `5efa91c2`, with qualified locks and unedited generated contracts. See [the retained ADR0324 evidence](../evidence/0.3.0/index.md#tutorials-adr0324) for exact receipts. [The snippet matrix](snippet-matrix.md) distinguishes measured examples and their limits. See [candidate qualification](candidate-qualification.md) for the overall validation and documentation status.
 
-The Rust backend uses the ledger8 Compact frontend, a private typed IR and structured Rust AST emission with `syn`, `quote`, `proc-macro2` and `prettyplease`. Generated contracts reuse the pinned Midnight ledger/zk runtime primitives.
+The Rust backend uses the Compact frontend, a private typed IR and structured Rust AST emission with `syn`, `quote`, `proc-macro2` and `prettyplease`. Generated contracts reuse the pinned Midnight ledger/zk runtime primitives.
 
 ## Current recording-effect branch
 
-The tutorial receipts below belong to milestone 0.3.0. Current source uses ABI53 / ledger8.1.3 and requires Rust1.89; see [versions and targets](versions-and-targets.md) and [source pairing and evidence scopes](ledger-8.1.3-local-qualification.md). For the current compiler architecture, primitive extension workflow, typed refusals and source diagnostics, read [Checked recording and source diagnostics](checked-recording.md). Use the [capability and retirement book](../recording-effect-algebra/capability-and-retirement-book.md) for separate execution, proof and application evidence.
+The tutorial receipts below belong to milestone 0.3.0. The local Ledger 9 branch uses ABI 54 and Rust 1.99. The [Ledger 8.1.3 qualification](ledger-8.1.3-local-qualification.md) records its original source pairing and evidence. For the current compiler architecture, primitive extension workflow, typed refusals and source diagnostics, read [Checked recording and source diagnostics](checked-recording.md). Use the [capability and retirement book](../recording-effect-algebra/capability-and-retirement-book.md) for separate execution, proof and application evidence.
 
 ## Pick a task
 
