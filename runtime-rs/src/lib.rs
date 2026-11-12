@@ -33,8 +33,9 @@ mod primitives;
 pub mod public_state;
 pub mod recording;
 mod secp256k1_point;
-mod secp256r1_point;
 mod secp256k1_recovery;
+mod secp256r1_point;
+mod secp256r1_recovery;
 pub mod slots;
 mod zswap;
 pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
@@ -59,8 +60,9 @@ pub use primitives::{
     add_wide_unsigned, cast_unsigned, multiply_unsigned, narrow_wide_uint, subtract_unsigned,
 };
 pub use secp256k1_point::Secp256k1Point;
-pub use secp256r1_point::Secp256r1Point;
 pub use secp256k1_recovery::secp256k1_ecdsa_recover;
+pub use secp256r1_point::Secp256r1Point;
+pub use secp256r1_recovery::secp256r1_ecdsa_recover;
 
 /// Ledger FAB types used by the generated user-type derive.
 pub mod fab {
@@ -108,6 +110,8 @@ pub enum CompactError {
     Secp256r1IdentityY,
     InvalidSecp256k1Signature,
     Secp256k1RecoveryFailed,
+    InvalidSecp256r1Signature,
+    Secp256r1RecoveryFailed,
     InvalidHashInput,
     MissingCoinPublicKey,
     ZswapAllocationLocked,
@@ -177,6 +181,13 @@ impl std::fmt::Display for CompactError {
             Self::Secp256k1RecoveryFailed => write!(
                 f,
                 "no finite secp256k1 key for this signature and recovery id"
+            ),
+            Self::InvalidSecp256r1Signature => {
+                write!(f, "expected nonzero secp256r1 signature scalars")
+            }
+            Self::Secp256r1RecoveryFailed => write!(
+                f,
+                "no finite secp256r1 key for this signature and recovery id"
             ),
             Self::InvalidHashInput => write!(f, "invalid Compact hash input"),
             Self::ZswapOfferOutputMismatch => write!(

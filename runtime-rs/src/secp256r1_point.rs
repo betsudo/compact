@@ -73,7 +73,7 @@ impl Secp256r1Point {
         }
     }
 
-    fn from_projective(point: P256) -> Self {
+    pub(super) fn from_projective(point: P256) -> Self {
         if point == P256::IDENTITY {
             Self::default()
         } else {

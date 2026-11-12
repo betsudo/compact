@@ -272,7 +272,15 @@ standalone pragma remains a release gate. The
 retain all eleven SHA-256 exports and both sequential witness circuits.
 They account for the original corpus, check witness ordering and
 substitutions, and use the explicit slow proof lane. Nested point
-collections and host recovery follow separately.
+collections remain open.
+
+The P-256 host recovery helper follows the pinned upstream TypeScript
+API and preserves all nine original recovery tests. Rust exposes
+`secp256r1_ecdsa_recover` with a fixed 32-byte prehash, P-256 signature
+scalars and a recovery ID bounded to 0–3. Both runtimes cover the
+alternate recovered key, high-s signatures, wrapped nonce coordinates
+and refusal of a recovered identity. Applications that require a
+specific signer must compare the recovered key to their trusted key.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

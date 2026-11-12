@@ -161,6 +161,26 @@ export function secp256k1EcdsaRecover(
   return secp256k1FromProjective(nobleSig.recoverPublicKey(msgHash));
 }
 
+/**
+ * Recover the secp256r1 public key from an ECDSA signature and a message hash.
+ *
+ * The recovery id means the same thing as it does for {@link secp256k1EcdsaRecover}.
+ */
+export function secp256r1EcdsaRecover(
+  msgHash: Uint8Array,
+  sig: { readonly r: bigint; readonly s: bigint },
+  recoveryId: number,
+): Secp256r1Point {
+  if (msgHash.length !== 32) {
+    throw new CompactError('expected a 32-byte message hash');
+  }
+  if (!Number.isInteger(recoveryId) || recoveryId < 0 || recoveryId > 3) {
+    throw new CompactError('expected a recovery id in the range [0, 3]');
+  }
+  const nobleSig = new p256.Signature(sig.r, sig.s, recoveryId);
+  return secp256r1FromProjective(nobleSig.recoverPublicKey(msgHash));
+}
+
 export const fromHex = (s: string): Uint8Array => Buffer.from(s, 'hex');
 
 export const toHex = (s: Uint8Array): string => Buffer.from(s).toString('hex');
