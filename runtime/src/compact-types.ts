@@ -439,7 +439,8 @@ export const CompactTypeOpaqueString: CompactType<string> = {
     return [{ tag: 'atom', value: { tag: 'compress' } }];
   },
   fromValue(value: ocrt.Value): string {
-    return new TextDecoder('utf-8').decode(value.shift());
+    // A leading U+FEFF is part of the stored value.
+    return new TextDecoder('utf-8', { ignoreBOM: true }).decode(value.shift());
   },
   toValue(value: string): ocrt.Value {
     return [new TextEncoder().encode(value)];

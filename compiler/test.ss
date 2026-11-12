@@ -72841,6 +72841,47 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export ledger memo: Opaque<'string'>;"
+      "export ledger archived: Opaque<'string'>;"
+      "export ledger seen: Map<Opaque<'string'>, Boolean>;"
+      "export circuit store(m: Opaque<'string'>): [] {"
+      "  memo = disclose(m);"
+      "}"
+      "export circuit markSeen(m: Opaque<'string'>): [] {"
+      "  seen.insert(disclose(m), true);"
+      "}"
+      "export circuit receipt(): Opaque<'string'> {"
+      "  return memo;"
+      "}"
+      "export circuit archive(): [] {"
+      "  archived = memo;"
+      "}"
+      "export circuit matches(m: Opaque<'string'>): Boolean {"
+      "  return disclose(memo == m);"
+      "}"
+      "export circuit wasSeen(): Boolean {"
+      "  return seen.member(memo);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('an opaque string read from the ledger keeps a leading U+FEFF', () => {"
+        "  const [contract, context] = startContract(contractCode, {}, 0);"
+        "  const memo = '\\uFEFFmemo';"
+        "  const afterStore = contract.circuits.store(context, memo).context;"
+        "  expect(contract.circuits.receipt(afterStore).result).toEqual(memo);"
+        "  const afterArchive = contract.circuits.archive(afterStore).context;"
+        "  expect(contractCode.ledger(afterArchive.currentQueryContext.state).archived).toEqual(memo);"
+        "  expect(contract.circuits.matches(afterStore, memo).result).toEqual(true);"
+        "  const afterMark = contract.circuits.markSeen(afterStore, memo).context;"
+        "  expect(contract.circuits.wasSeen(afterMark).result).toEqual(true);"
+        "});"
+        ))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export { Maybe }"
       "export ledger rat: Field;"
       "constructor(witnesses: Field) { rat = disclose(witnesses); }"
