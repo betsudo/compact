@@ -18,7 +18,7 @@
 use crate::CompactError;
 use crate::primitives::checked_jubjub_coordinates;
 use crate::{BinaryHashRepr, Field, FieldRepr, FixedBytes, JubjubPoint};
-use midnight_base_crypto::fab::{Aligned, AlignedValue, Value};
+use midnight_base_crypto::fab::{Aligned, AlignedValue, AlignmentAtom, AlignmentSegment, Value};
 use midnight_base_crypto::hash::{self as persistent, HashOutput, PersistentHashWriter};
 use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
 use midnight_transient_crypto::fab::ValueReprAlignedValue;
@@ -50,13 +50,34 @@ pub fn persistent_hash<T: Aligned + Into<Value>>(value: T) -> FixedBytes<32> {
     FixedBytes(writer.finalize().0)
 }
 
-/// Hash the concatenated FAB atoms using Compact's Keccak-256 encoding.
+/// Hash the concatenated normalized FAB atoms used by historical generated contracts.
 pub fn keccak256<T: Into<Value>>(value: T) -> FixedBytes<32> {
     let mut hasher = Keccak256::new();
     for atom in value.into().0 {
         hasher.update(atom.0);
     }
     FixedBytes(hasher.finalize().into())
+}
+
+/// Hash the aligned binary representation used by Ledger 9 ZKIR.
+///
+/// Only fixed-width byte and field atoms have a canonical hash input.
+pub fn keccak256_aligned<T: Aligned + Into<Value>>(
+    value: T,
+) -> Result<FixedBytes<32>, CompactError> {
+    let alignment = T::alignment();
+    if alignment.0.iter().any(|segment| {
+        !matches!(
+            segment,
+            AlignmentSegment::Atom(AlignmentAtom::Bytes { .. } | AlignmentAtom::Field)
+        )
+    }) {
+        return Err(CompactError::InvalidHashInput);
+    }
+    let value = AlignedValue::new(value.into(), alignment).ok_or(CompactError::InvalidHashInput)?;
+    let mut input = Vec::new();
+    ValueReprAlignedValue(value).binary_repr(&mut input);
+    Ok(FixedBytes(Keccak256::digest(input).into()))
 }
 
 /// Commit to the FAB binary value using ledger-8's persistent commitment.

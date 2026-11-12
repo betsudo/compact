@@ -167,9 +167,7 @@ export function upgradeFromTransient(x: bigint): Uint8Array {
 /**
  * The Compact builtin `keccak256` function
  *
- * Hashes `value` using Keccak-256 and returns the 32-byte digest.
- *
- * @throws If `rtType` encodes a type containing Compact 'Opaque' types
+ * Hashes normalized FAB atoms for historical generated contracts.
  */
 export function keccak256<A>(rtType: CompactType<A>, value: A): Uint8Array {
   const chunks = rtType.toValue(value);
@@ -179,6 +177,35 @@ export function keccak256<A>(rtType: CompactType<A>, value: A): Uint8Array {
   for (const chunk of chunks) {
     bytes.set(chunk, offset);
     offset += chunk.length;
+  }
+  return keccak_256(bytes);
+}
+
+/**
+ * Hash the aligned binary representation used by Ledger 9 ZKIR.
+ * Each atom occupies its declared byte width. Field atoms occupy 32 bytes.
+ */
+export function keccak256Aligned<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  const atoms = rtType.toValue(value);
+  const alignment = rtType.alignment();
+  if (atoms.length !== alignment.length) {
+    throw new CompactError('invalid Compact hash input');
+  }
+  const widths = alignment.map((segment, index) => {
+    if (segment.tag !== 'atom' || segment.value.tag === 'compress') {
+      throw new CompactError('invalid Compact hash input');
+    }
+    const width = segment.value.tag === 'field' ? 32 : segment.value.length;
+    if (atoms[index].length > width) {
+      throw new CompactError('invalid Compact hash input');
+    }
+    return width;
+  });
+  const bytes = new Uint8Array(widths.reduce((length, width) => length + width, 0));
+  let offset = 0;
+  for (const [index, atom] of atoms.entries()) {
+    bytes.set(atom, offset);
+    offset += widths[index];
   }
   return keccak_256(bytes);
 }

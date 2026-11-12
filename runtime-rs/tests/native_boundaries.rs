@@ -18,10 +18,11 @@
 
 use midnight_base_crypto::hash as upstream_persistent;
 use midnight_compact_runtime::{
-    CompactError, Field, FixedBytes, FixedVector, JubjubPoint, construct_jubjub_point,
-    degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg, hash_to_curve, jubjub_point_x,
-    jubjub_point_y, jubjub_scalar_from_native, keccak256, persistent_commit, persistent_hash,
-    transient_commit, transient_hash, upgrade_from_transient,
+    CompactError, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueString,
+    construct_jubjub_point, degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg,
+    hash_to_curve, jubjub_point_x, jubjub_point_y, jubjub_scalar_from_native, keccak256,
+    keccak256_aligned, persistent_commit, persistent_hash, transient_commit, transient_hash,
+    upgrade_from_transient,
 };
 use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
 use midnight_transient_crypto::hash as upstream_transient;
@@ -359,5 +360,58 @@ fn keccak_uses_concatenated_normalized_atoms_with_no_added_type_tags() {
     assert_eq!(
         keccak256(FixedBytes::new([1, 0])),
         keccak256(FixedBytes::new([1]))
+    );
+}
+
+#[test]
+fn aligned_keccak_matches_upstream_declared_byte_width() {
+    // The upstream trailing_zero fixture pins three digests and computes the
+    // other four with @noble/hashes from the complete twelve-byte inputs.
+    let cases = [
+        (
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            "e232c64e7136218f5a7d8d41b16bf3f22e74085032aaca77baa5c6c50cc4ca0e",
+        ),
+        (
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0],
+            "ed6e483c71bb1e667911203acc659782cc5ad0fb03f78a57febbe599b6a21e8d",
+        ),
+        (
+            [1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0],
+            "8af1372e37804fc38b11ada431830a9bf13289402eec2557394df67225348907",
+        ),
+        (
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "c3561681690c887efcedd1f891e436e0957869ba500a4b4f53fdf3b9a23a8ae3",
+        ),
+        (
+            [0; 12],
+            "30e2bfdaad2f3c218a1a8cc54fa1c4e6182b6b7f3bca273390cf587b50b47311",
+        ),
+        (
+            [1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12],
+            "d76b853488951fd67def92b02f00ac922f8a1ad6683ba0ff7c05495f84ae22a5",
+        ),
+        (
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255],
+            "19a03f55282ec9842bdd8a42b163890d0dc73a5bf7c409f84fe2af0ef7d939d1",
+        ),
+    ];
+    for (input, expected) in cases {
+        let value = FixedBytes::new(input);
+        if input[input.len() - 1] == 0 {
+            assert_ne!(hex::encode(keccak256(value).0), expected);
+        }
+        assert_eq!(hex::encode(keccak256_aligned(value).unwrap().0), expected);
+    }
+    let mut field = [0; 32];
+    field[1] = 1;
+    assert_eq!(
+        keccak256_aligned(Field::from(256u64)),
+        keccak256_aligned(FixedBytes::new(field))
+    );
+    assert_eq!(
+        keccak256_aligned(OpaqueString::from("opaque")),
+        Err(CompactError::InvalidHashInput)
     );
 }
