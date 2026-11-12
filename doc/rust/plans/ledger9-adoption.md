@@ -1108,6 +1108,24 @@ binding, and a changed same-width result. The changed/missing artifact
 and genuine k9 controls refused before key generation. The other exports
 retain model and native coverage.
 
+### Standalone Fold Vector result qualification
+
+Signed source `88863446d` passed the standalone macOS arm64 Ledger 9 gate.
+All 18 sources matched independent and historical raw IR. The helper's
+two current checked Programs have separate Ledger 9 goldens. The native
+gate passed 33 cases and 18 strict SDK checks. Two of the 33 cases enforce
+the pre-existing first-error ordering difference in the legacy named
+Fold. TypeScript rejects the seed first and native rejects the items
+first. Those two cases qualify the documented compatibility baseline.
+
+Fresh ZKIR 3.2.0 k7 keys qualified `run` and `run_checked`. Each standalone
+v3 proof verified separately. Each distinct funded default-strict
+transaction proof applied with positive-fee Dust and returned
+`IntentAlreadyExists` on replay with byte-identical ledger state.
+The changed/missing artifact and genuine k9 controls refused before
+key generation. The corrupt proof, wrong verifier, changed binding,
+and same-width changed result controls also passed.
+
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
 gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
