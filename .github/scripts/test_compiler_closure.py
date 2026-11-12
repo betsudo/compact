@@ -855,6 +855,35 @@ if stage == 'zkir': print('/mock/zkir-v3-package')
                                            env=env, capture_output=True, timeout=10)
                 self.assertEqual(run.returncode == 0, all(x == 'success' for x in outcomes))
 
+    def test_required_product_jobs_run_every_migrated_ledger9_gate(self):
+        import re
+        workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
+        jobs = {
+            'product-proofs': ('compact-nested-component-products-recipe', (
+                'stateful_product_vector_widening', 'stateful_local_vector_widening', 'stateful_vector_value_widening')),
+            'component-vector-proof': ('compact-component-product-vector-recipe', (
+                'direct_stateful_vector_literal_returns', 'fold_vector_result_widening', 'vector_alias_source_widening')),
+            'outer-vector-proof': ('compact-outer-vector-product-recipe', (
+                'vector_product_elements', 'aggregate_literal_projection_widening', 'struct_member_literal_widening')),
+        }
+        complete = workflow.split('  complete:\n', 1)[1]
+        for job, (recipe, gates) in jobs.items():
+            with self.subTest(job=job):
+                self.assertIn(f'needs.{job}.result', complete)
+                steps = re.split(r'^  [a-z][a-z-]+:\n', workflow.split(f'  {job}:\n', 1)[1],
+                                 maxsplit=1, flags=re.M)[0]
+                self.assertIn('runs-on: ubuntu-latest', steps)
+                shell = textwrap.dedent(steps.split(
+                    '      - name: Qualify migrated Ledger 9 Vector proofs\n        run: |\n', 1
+                )[1].split('      - name:', 1)[0])
+                owner.subprocess.run(['bash', '-n'], input=shell, text=True, check=True)
+                self.assertIn(f'for gate in {" ".join(gates)}; do', shell)
+                self.assertIn(f'--compiler-receipt "$RUNNER_TEMP/{recipe}/receipt.json"', shell)
+                self.assertIn('check_${gate}_proof.py', shell)
+                self.assertIn('--ts-runtime "$TS_RUNTIME" --zkir "$ZKIR"', shell)
+                self.assertNotIn('--prepare-only', shell)
+                self.assertIn('${{ runner.temp }}/compact-ledger9-vector-proofs/', steps)
+
     def test_constructor_is_an_independent_required_same_producer_consumer(self):
         workflow = (owner.ROOT / '.github/workflows/build-compiler.yml').read_text()
         constructor = workflow.split('  constructor-vector:\n', 1)[1].split('  source-preflight:\n', 1)[0]

@@ -15,6 +15,9 @@ Unreleased Ledger 9 migration.
   Runtime 4.0.1 package. Generated TypeScript selects the new runtime minor.
 - Emit one ZKIR v3 impact per transcript operation, as required by the Ledger 9
   transaction prover.
+- Generated Rust requires Rust 1.99 and Compact runtime ABI 54. Use
+  `--rust-functional-ledger9` for functional generation with the paired Ledger 9
+  compiler and runtime.
 
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 

@@ -249,6 +249,10 @@ def main():
             if historical.is_file():
                 require((target / "contract/compact-rust-ir.json").read_bytes() == historical.read_bytes(),
                         "complete historical IR differs: " + name)
+            if name == "checked_helper":
+                pinned_ir = FIXTURES / "ledger9-goldens" / name / "source-ir.json"
+                require((target / "contract/compact-rust-ir.json").read_bytes() == pinned_ir.read_bytes(),
+                        "complete checked-helper IR differs from the Ledger 9 pin")
             require(len(programs) == (len(spec["entries"]) if spec["stateful"] else 0), "Program count differs")
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
@@ -264,7 +268,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "ts-results.json"
         run("ts", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                   "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
+                   "--version", "0.17.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == len(cases), "TS case count differs")
         consumer = output / "consumer"

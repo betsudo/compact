@@ -1559,6 +1559,16 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in stateful_product_vector_widening stateful_local_vector_widening stateful_vector_value_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-nested-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
+
       - name: Retain nested product proof diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -1576,6 +1586,8 @@ jobs:
             !${{ runner.temp }}/compact-nested-request-field/**/cargo-target/**
             !${{ runner.temp }}/compact-vector-component-products-proof/**/cargo-target/**
             !${{ runner.temp }}/compact-nested-component-products-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1716,6 +1728,16 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-proof/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in direct_stateful_vector_literal_returns fold_vector_result_widening vector_alias_source_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
+
       - name: Retain component-product Vector proof diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -1727,6 +1749,8 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-recipe/
             ${{ runner.temp }}/compact-component-product-vector-proof/
             !${{ runner.temp }}/compact-component-product-vector-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1857,6 +1881,16 @@ jobs:
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_proof.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-outer-vector-product-proof"
 
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in vector_product_elements aggregate_literal_projection_widening struct_member_literal_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
+
       - name: Retain outer-Vector product proof diagnostics
         if: always() && (steps.outer_vector_product_proof.outcome == 'success' || steps.outer_vector_product_proof.outcome == 'failure')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -1866,6 +1900,8 @@ jobs:
             ${{ runner.temp }}/compact-outer-vector-product-recipe/
             ${{ runner.temp }}/compact-outer-vector-product-proof/
             !${{ runner.temp }}/compact-outer-vector-product-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 

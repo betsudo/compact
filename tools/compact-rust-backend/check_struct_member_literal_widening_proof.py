@@ -101,6 +101,8 @@ def run(args):
         env["CARGO_INCREMENTAL"] = "0"
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "absolute MIDNIGHT_PP required")
         generated = output / "protocol/generated/helper"
+        common.validate_pinned_zkir_artifacts(
+            generated, main_gate.FIXTURES / "ledger9-goldens/helper/artifacts.json")
         env["COMPACT_STRUCT_MEMBER_LITERAL_GENERATED"] = str(generated)
         report["generated_sdk"] = str(generated)
         report["generated_before"] = before = main_gate.inventory(generated)

@@ -124,6 +124,9 @@ def run(args):
         env["CARGO_INCREMENTAL"] = "0"
         require(bool(env.get("MIDNIGHT_PP")) and Path(env["MIDNIGHT_PP"]).is_absolute(), "absolute MIDNIGHT_PP required")
         generated = output / "protocol/generated"
+        for source in SOURCES:
+            common.validate_pinned_zkir_artifacts(
+                generated / source, main_gate.FIXTURES / "ledger9-goldens" / source / "artifacts.json")
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED"] = str(generated / "proof_candidate")
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED"] = str(generated / "helper")
         env["COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED"] = str(generated / "checked_helper")

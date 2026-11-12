@@ -218,7 +218,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "typescript.json"
         run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
+                "--version", "0.17.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == 33, "incomplete TypeScript oracle")
         report["typescript"] = {"path": str(ts), "sha256": digest(ts), "cases": 33}

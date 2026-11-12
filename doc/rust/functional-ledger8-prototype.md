@@ -12,6 +12,9 @@ APIs remain available and the default compiler output is unchanged.
 
 ## Generate a crate
 
+Use a Ledger 8 checkout with its paired compiler and runtime for the commands
+in this guide, including the metadata and origin controls.
+
 Use the current compiler and its matching source runtime:
 
 ```sh

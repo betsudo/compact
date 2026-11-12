@@ -63,6 +63,20 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def validate_pinned_zkir_artifacts(generated: Path, manifest: Path) -> None:
+    """Bind the raw circuit roster and emitted library before external key generation."""
+    pins = json.loads(manifest.read_text())
+    if "contract/lib.rs" not in pins:
+        raise GateError(f"Ledger 9 generated library pin is absent from {manifest}")
+    expected = {name for name in pins if name.startswith("zkir/") and name.endswith(".zkir")}
+    actual = {f"zkir/{path.name}" for path in (generated / "zkir").glob("*.zkir")}
+    if not expected or expected != actual:
+        raise GateError(f"Ledger 9 raw circuit inventory differs from {manifest}")
+    for name, digest in pins.items():
+        if sha256(generated / name) != digest:
+            raise GateError(f"Ledger 9 artifact differs from the pinned fixture: {name}")
+
+
 def git_head() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
 

@@ -22,7 +22,7 @@ The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter
 
 The Set and Map transition sources retain the export sets of the existing Rust fixtures. Capture them with `compactc --skip-zk` in a directory that resolves the pinned npm packages. Run `runtime-rs/tests/fixtures/capture-ledger9-counter.mjs` or `capture-ledger9-collection.mjs` with the generated contract entry and matching Compact runtime entry. The collection script also takes `initial`, `set`, `map`, or `list`. The tests compare full serialized contract states.
 
-The migration branch is an integration worktree. The active Rust workspace resolves the published Ledger 9 package graph from crates.io. The existing proof runner still follows the v2 producer recipe, now pinned to the published ZKIR 2.2.0 package. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
+The migration branch is an integration worktree. The active Rust workspace resolves the published Ledger 9 package graph from crates.io. The initial migration retained the v2 producer recipe with ZKIR 2.2.0. The Ledger 9 proof gates below use ZKIR 3.2.0. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
 
 Port the remaining fixture and proof consumers and pass the required Linux, package and end-to-end gates before switching the distribution default.
 
@@ -1227,9 +1227,11 @@ The local package audit verified 17 locked crate archives and 21
 installed files from three pinned npm archives. Forty compiler-closure
 and workflow controls passed. The compiler, Rust CLI, TypeScript runtime
 and native ZKIR derivations evaluated for macOS arm64 and Linux x86_64.
-Required Linux workflow gates remain in place. Native Linux execution,
-review of the composed revision and distribution changes belong to
-integration after this local qualification.
+The three required Linux product jobs also run the nine standalone
+migration gates with the same compiler recipe, pinned TypeScript runtime
+and native ZKIR. Each gate checks the emitted Rust library and raw ZKIR
+roster before generating fresh keys. Native Linux execution of this
+revision and distribution changes belong to integration.
 
 Local evidence is retained under
 `rust-ast-ledger9-migration-20261111` in

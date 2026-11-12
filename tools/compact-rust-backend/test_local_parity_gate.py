@@ -333,6 +333,32 @@ class WorkspaceTestPlanTests(unittest.TestCase):
 
 
 class MaintainedFixtureAndProofTests(unittest.TestCase):
+    def test_pinned_raw_zkir_and_rust_are_checked_before_key_generation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = root / "zkir/run.zkir"
+            library = root / "contract/lib.rs"
+            raw.parent.mkdir()
+            library.parent.mkdir()
+            raw.write_bytes(b"selected circuit")
+            library.write_bytes(b"generated library")
+            pins = root / "artifacts.json"
+            pins.write_text(json.dumps({"zkir/run.zkir": gate.sha256(raw),
+                                        "contract/lib.rs": gate.sha256(library)}))
+            gate.validate_pinned_zkir_artifacts(root, pins)
+            extra = raw.with_name("unexpected.zkir")
+            extra.write_bytes(b"another circuit")
+            with self.assertRaisesRegex(gate.GateError, "raw circuit inventory differs"):
+                gate.validate_pinned_zkir_artifacts(root, pins)
+            extra.unlink()
+            raw.write_bytes(b"another circuit")
+            with self.assertRaisesRegex(gate.GateError, "pinned fixture: zkir/run.zkir"):
+                gate.validate_pinned_zkir_artifacts(root, pins)
+            raw.write_bytes(b"selected circuit")
+            library.write_bytes(b"another library")
+            with self.assertRaisesRegex(gate.GateError, "pinned fixture: contract/lib.rs"):
+                gate.validate_pinned_zkir_artifacts(root, pins)
+
     def test_recording_support_does_not_imply_frontend_proof_applicability(self):
         source = gate.ROOT / "examples/bugs/pm-19252/example_ten.compact"
         self.assertIn('ownPublicKey();', source.read_text())
