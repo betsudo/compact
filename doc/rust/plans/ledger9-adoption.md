@@ -1072,6 +1072,23 @@ control observed a genuine k9 model. Corrupt proofs, a different verifier,
 changed public binding and changed result at the same atom widths all
 refused. The other exports retain model and native coverage.
 
+### Standalone stateful Vector value qualification
+
+Signed source `9d00dfd42` passed the standalone Ledger 9 gate on macOS arm64.
+The 23 sources matched the independent and historical raw IR and the 23 new
+Ledger 9 checked Program fixtures. The native gate passed 37 TypeScript/Rust
+cases, 23 strict SDK checks, seven source refusals, seven malformed IR
+refusals, and three changed-producer controls.
+
+The two k7 exports used fresh ZKIR 3.2.0 keys. All three selected cases
+passed separate standalone v3 verification and distinct funded default-strict
+transaction proof/application with positive-fee Dust. Replay returned
+`IntentAlreadyExists` with byte-identical ledger state. Changed IR,
+changed or missing checked Programs, and changed ZKIR refused before
+key generation. The genuine k9 refusal and corrupt-proof, wrong-verifier,
+changed-binding and same-geometry changed-result controls passed. The
+other exports retain model and native coverage.
+
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
 gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
