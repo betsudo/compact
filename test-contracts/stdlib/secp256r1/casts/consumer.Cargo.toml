@@ -20,6 +20,8 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+point_witness = { package = "compact-contract-upstream-witness", path = "../../family-first/transport/upstream-witness/ts-rust/.build/contract", features = ["ledger-transaction"] }
+point_tuple_hash = { package = "compact-contract-upstream-hash608", path = "../../family-first/transport/upstream-hash608/ts-rust/.build/contract", features = ["ledger-transaction"] }
 group_computed = { package = "compact-contract-upstream-computed", path = "../../family-first/accessors/upstream-computed/ts-rust/.build/contract", features = ["ledger-transaction"] }
 group_guarded = { package = "compact-contract-guarded", path = "../../family-first/group/guarded/ts-rust/.build/contract", features = ["ledger-transaction"] }
 accessor_roundtrip = { package = "compact-contract-upstream-roundtrip", path = "../../family-first/point/upstream-roundtrip/ts-rust/.build/contract", features = ["ledger-transaction"] }

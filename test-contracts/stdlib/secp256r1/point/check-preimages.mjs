@@ -19,7 +19,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { identity, modulus, pointCases } from './cases.mjs';
+import { identity, pointAtoms, pointBytes, pointCases } from './cases.mjs';
 
 assert.equal(process.argv.length, 5, 'expected family output, SDK WASM package and new output directory');
 const [family, wasmPackage, output] = process.argv.slice(2).map((arg) => resolve(arg));
@@ -54,20 +54,6 @@ const hex = (value) => typeof value === 'bigint' ? value.toString(16).padStart(6
   : Buffer.from(value).toString('hex');
 const encodePoint = ({ x, y, identity }) => ({ x: hex(x), y: hex(y), identity });
 
-function coordinateBytes(value) {
-  const shifted = (value + modulus - 1n) % modulus;
-  return Uint8Array.from({ length: 32 }, (_, i) => Number(shifted >> BigInt(i * 8) & 255n));
-}
-function pointBytes(value) {
-  const canonical = value.identity ? identity : value;
-  return [coordinateBytes(canonical.x), coordinateBytes(canonical.y)];
-}
-function pointAtoms(value) {
-  const [x, y] = pointBytes(value);
-  const normalize = (bytes) => bytes.slice(0, bytes.findLastIndex((byte) => byte !== 0) + 1);
-  return [x.slice(0, 24), x.slice(24), y.slice(0, 24), y.slice(24),
-    Uint8Array.of(Number(value.identity))].map(normalize);
-}
 function referenceHash(value) {
   const data = Buffer.alloc(96);
   const [x, y] = pointBytes(value);

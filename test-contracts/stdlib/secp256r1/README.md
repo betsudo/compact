@@ -63,3 +63,6 @@ roundtrip and the direct and guarded identity cases.
 
 The [group fixtures](group/README.md) cover the original computed-identity
 case, typed group arithmetic and guarded point results.
+
+The [transport fixtures](transport/README.md) cover the original
+point witnesses and the issue #608 tuple hash.

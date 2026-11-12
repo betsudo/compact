@@ -16,6 +16,21 @@
 export const modulus = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
 export const identity = { x: 0n, y: 0n, identity: true };
 
+function coordinateBytes(value) {
+  const shifted = (value + modulus - 1n) % modulus;
+  return Uint8Array.from({ length: 32 }, (_, i) => Number(shifted >> BigInt(i * 8) & 255n));
+}
+export function pointBytes(value) {
+  const canonical = value.identity ? identity : value;
+  return [coordinateBytes(canonical.x), coordinateBytes(canonical.y)];
+}
+export function pointAtoms(value) {
+  const [x, y] = pointBytes(value);
+  const normalize = (bytes) => bytes.slice(0, bytes.findLastIndex((byte) => byte !== 0) + 1);
+  return [x.slice(0, 24), x.slice(24), y.slice(0, 24), y.slice(24),
+    Uint8Array.of(Number(value.identity))].map(normalize);
+}
+
 export function pointCases(p256) {
   const generator = (scalar) => {
     const { x, y } = p256.Point.BASE.multiplyUnsafe(scalar).toAffine();

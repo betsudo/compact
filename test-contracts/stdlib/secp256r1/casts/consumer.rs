@@ -57,12 +57,16 @@ use std::{env, error::Error, fmt::Debug, fs, io, path::Path, sync::Arc};
 
 type TestResult<T> = Result<T, Box<dyn Error>>;
 
-fn check_recording<Output: PartialEq + Debug>(
-    native: &CircuitResult<(), Output>,
-    recorded: RecordedCircuitResult<(), Output>,
+fn check_recording<Private: PartialEq + Debug, Output: PartialEq + Debug>(
+    native: &CircuitResult<Private, Output>,
+    recorded: RecordedCircuitResult<Private, Output>,
     witnesses: usize,
 ) -> TestResult<()> {
     assert_eq!(native.result, recorded.execution.result);
+    assert_eq!(
+        native.context.private_state,
+        recorded.execution.context.private_state
+    );
     assert_eq!(native.public_state(), recorded.public_state());
     assert_eq!(
         native.private_transcript_outputs,
@@ -82,17 +86,20 @@ struct Case<'a> {
     k: u8,
 }
 
-fn funded<Output, F>(
+fn funded<Private, Output, F>(
     root: &Path,
     out: &Path,
     case: Case<'_>,
     initial_state: StateValue<DefaultDB>,
-    native: &CircuitResult<(), Output>,
+    native: &CircuitResult<Private, Output>,
     call: F,
 ) -> TestResult<()>
 where
+    Private: PartialEq + Debug,
     Output: Into<AlignedValue> + PartialEq + Debug,
-    F: for<'a> Fn(&'a ObservedContractState) -> Result<RecordedCall<'a, (), Output>, CompactError>,
+    F: for<'a> Fn(
+        &'a ObservedContractState,
+    ) -> Result<RecordedCall<'a, Private, Output>, CompactError>,
 {
     let name = case.circuit.to_owned();
     let expected_state = native.public_state();
@@ -101,6 +108,8 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("upstream-witness", _) => "upstream-hash608-test-0",
+        ("upstream-hash608", _) => "upstream-witness-test0",
         ("upstream-computed", "upstream-computed-storePoint-0") => {
             "upstream-computed-storeXOfSum-0"
         }
@@ -126,6 +135,7 @@ where
     let family = root.join("family-first");
     let fixture = match case.fixture {
         "arithmetic" => family.join(case.fixture),
+        name if transport_fixture(name) => family.join("transport").join(name),
         "upstream-computed" => family.join("accessors/upstream-computed"),
         "guarded-group" => family.join("group/guarded"),
         name if unary_fixture(name) => family.join("unary").join(name),
@@ -181,6 +191,10 @@ where
     let recorded = call(&observed)?;
     assert_eq!(recorded.recorded().execution.result, native.result);
     assert_eq!(
+        recorded.recorded().execution.context.private_state,
+        native.context.private_state
+    );
+    assert_eq!(
         recorded.recorded().execution.private_transcript_outputs,
         native.private_transcript_outputs
     );
@@ -190,7 +204,7 @@ where
             .execution
             .private_transcript_outputs
             .len(),
-        0
+        usize::from(case.fixture == "upstream-witness")
     );
     assert_eq!(recorded.recorded().execution.public_state(), expected_state);
     let prepared = recorded.prepare(verifier, randomness)?;
@@ -198,7 +212,9 @@ where
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
     let typescript: ProofPreimage = tagged_deserialize(fs::File::open(
-        root.join(if group_fixture(case.fixture) {
+        root.join(if transport_fixture(case.fixture) {
+            "preimages-transport"
+        } else if group_fixture(case.fixture) {
             "preimages-group"
         } else {
             "preimages-first"
@@ -375,6 +391,10 @@ fn group_fixture(name: &str) -> bool {
     matches!(name, "upstream-computed" | "guarded-group")
 }
 
+fn transport_fixture(name: &str) -> bool {
+    matches!(name, "upstream-witness" | "upstream-hash608")
+}
+
 fn point_fixture(name: &str) -> bool {
     matches!(name, "upstream-equality" | "upstream-identity")
 }
@@ -392,6 +412,92 @@ fn check_bool_cell(state: &StateValue<DefaultDB>, expected: bool) {
         fields.get(0).unwrap(),
         &r::ledger::constructor_cell(expected)
     );
+}
+
+struct PointWitness {
+    value: Secp256r1Point,
+    step: u32,
+    second: bool,
+}
+
+impl point_witness::ledger_contract::Witnesses<u32> for PointWitness {
+    fn point0(
+        &self,
+        ctx: r::context::WitnessContext<'_, u32, point_witness::ledger_contract::LedgerView<'_>>,
+    ) -> (u32, Secp256r1Point) {
+        assert!(!self.second, "unexpected point0 callback");
+        (*ctx.private_state + self.step, self.value)
+    }
+
+    fn point1(
+        &self,
+        ctx: r::context::WitnessContext<'_, u32, point_witness::ledger_contract::LedgerView<'_>>,
+    ) -> (u32, Secp256r1Point) {
+        assert!(self.second, "unexpected point1 callback");
+        (*ctx.private_state + self.step, self.value)
+    }
+}
+
+fn run_point_witness(
+    root: &Path,
+    id: &str,
+    row: &Value,
+    funded_output: Option<&Path>,
+) -> TestResult<()> {
+    use point_witness::ledger_contract as contract;
+    let circuit = row["circuit"].as_str().unwrap();
+    let value = decode_point(&row["expected"]);
+    let initial: u32 = row["initial"].as_u64().unwrap().try_into()?;
+    let step: u32 = row["step"].as_u64().unwrap().try_into()?;
+    let contract = contract::Contract::from(PointWitness {
+        value,
+        step,
+        second: circuit == "test1",
+    });
+    let initial_state = || contract::initial_state(ConstructorContext::new(initial));
+    let context =
+        || Ok::<_, CompactError>(initial_state()?.into_circuit_context(ContractAddress::default()));
+    macro_rules! exercise {
+        ($method:ident, $call:ident) => {{
+            let native = contract.$method(context()?)?;
+            assert_eq!(native.result, value);
+            assert_eq!(contract::PublicStateView::from(&native).point()?, value);
+            assert_eq!(native.context.private_state, initial + step);
+            assert_eq!(
+                native.private_transcript_outputs,
+                [AlignedValue::from(value)]
+            );
+            check_recording(&native, contract.recording().$method(context()?)?, 1)?;
+            if let Some(out) = funded_output {
+                let models: Value =
+                    serde_json::from_slice(&fs::read(root.join("slow-proof/receipt.json"))?)?;
+                let model = &models[id];
+                let fixture = "upstream-witness";
+                assert_eq!(model["fixture"], fixture);
+                assert_eq!(model["circuit"], circuit);
+                let case = Case {
+                    id,
+                    fixture,
+                    circuit,
+                    k: model["k"].as_u64().unwrap().try_into()?,
+                };
+                funded(
+                    root,
+                    out,
+                    case,
+                    context()?.query.state.get_ref().clone(),
+                    &native,
+                    |observed| contract.recording().$call(observed, initial),
+                )?;
+            }
+        }};
+    }
+    match circuit {
+        "test0" => exercise!(test0, test0_call),
+        "test1" => exercise!(test1, test1_call),
+        _ => return Err("unknown P-256 witness export".into()),
+    }
+    Ok(())
 }
 
 fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) -> TestResult<()> {
@@ -497,6 +603,16 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     let seed = || decode_point(&row["seed"]);
     let written = || decode_base(&row["written"]);
     match (fixture, circuit) {
+        ("upstream-witness", _) => run_point_witness(root, id, row, funded_output)?,
+        ("upstream-hash608", "test") => exercise!(
+            point_tuple_hash,
+            test,
+            test_call,
+            (point(0), point(1)),
+            |view| {
+                assert_eq!(view.hash()?, FixedBytes::<32>::new(from_hex(expected)));
+            }
+        ),
         ("upstream-computed", "storePoint") => exercise!(
             group_computed,
             storePoint,
@@ -1019,7 +1135,12 @@ fn main() -> TestResult<()> {
     let group_lane = mode_name == "group-parity"
         || mode_name.starts_with("upstream-computed-")
         || mode_name.starts_with("guarded-group-");
-    let preimages = if group_lane {
+    let transport_lane = mode_name == "transport-parity"
+        || mode_name.starts_with("upstream-witness-")
+        || mode_name.starts_with("upstream-hash608-");
+    let preimages = if transport_lane {
+        "preimages-transport"
+    } else if group_lane {
         "preimages-group"
     } else {
         "preimages-first"
@@ -1034,6 +1155,7 @@ fn main() -> TestResult<()> {
         Some("point-parity") => Some(17),
         Some("accessor-parity") => Some(18),
         Some("group-parity") => Some(19),
+        Some("transport-parity") => Some(5),
         _ => None,
     } {
         assert_eq!(cases.len(), expected);
@@ -1055,6 +1177,10 @@ fn main() -> TestResult<()> {
                 group_fixture(row["fixture"].as_str().unwrap()),
                 mode == "group-parity"
             );
+            assert_eq!(
+                transport_fixture(row["fixture"].as_str().unwrap()),
+                mode == "transport-parity"
+            );
             run_case(root, id, row, None)?;
         }
         if mode == "unary-parity" {
@@ -1070,6 +1196,13 @@ fn main() -> TestResult<()> {
             check_group_refusals(cases)?;
             println!(
                 "pure group operations and three native and recorded computed-identity refusals passed"
+            );
+        }
+        if mode == "transport-parity" {
+            let zero = Secp256r1Base::default();
+            assert!(Secp256r1Point::from_affine(zero, zero).is_none());
+            println!(
+                "typed witness selection, private state, FAB atoms and malformed point refusal passed"
             );
         }
         println!(

@@ -258,8 +258,12 @@ port typed point addition, multiplication and generator multiplication.
 They run the intact computed-identity test and check canonical identity,
 finite coordinates, guarded results and cross-curve rejection. The
 explicit slow proof lane covers all four original exports and both
-branches of each guarded group operation. Nested point collections,
-point witness transport and the signature suites follow separately.
+branches of each guarded group operation. The
+[P-256 transport fixtures](../../../test-contracts/stdlib/secp256r1/transport)
+preserve both original point witnesses and the issue #608 tuple hash.
+They check the five private FAB atoms, witness selection and private
+state, ordered hashing, and refusal of altered preimages. Nested
+point collections and signature suites follow separately.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519
