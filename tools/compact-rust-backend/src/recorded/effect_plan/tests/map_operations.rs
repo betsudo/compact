@@ -214,8 +214,12 @@ fn child_map_initialization_rejects_an_unsupported_inner_key() {
             elements: vec![Type::Field; 9],
         }),
     };
-    assert!(checked(&c).is_err());
-    assert!(validate::validate(plan.plan(), &declarations(&c)).is_err());
+    let Err(PlanError::Unsupported(gap) | PlanError::Invalid(gap)) = checked(&c) else {
+        panic!("expected invalid child Map key to be refused during lowering");
+    };
+    assert_eq!(gap.detail, "unsupported nested Map key type");
+    let gap = validate::validate(plan.plan(), &declarations(&c)).unwrap_err();
+    assert_eq!(gap.detail, "unsupported nested Map key type");
 }
 
 #[test]
