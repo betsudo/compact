@@ -40,8 +40,10 @@ match by mode and object identity, 287 differ and 1,121 are absent at those
 paths. These are file counts. A matching test file still needs its compiler,
 runner and dependency admission verified.
 
-The standalone suite accounts for 943 files. It includes keyword and primitive
-semantics, stdlib cryptography, coverage and test-runner support. Compiler
+The standalone suite accounts for 943 files, including 372 Compact sources,
+185 compile-pass, 173 compile-fail, 174 runtime-pass and 6 runtime-fail
+declarations. Six declarations live under a `slow` path. An individual
+declaration can drive many inputs, including cryptographic vectors. Compiler
 Scheme cases, runtime tests, generated contract and composable tests, compiler
 E2E, source-map tests and host tools have separate runners. Tests embedded in
 CLI, editor, release actions and specification owners also belong in the
@@ -56,6 +58,9 @@ parses as-is. If an adapter is needed for the synchronous runtime, keep the
 inputs and expected values, diagnostics and refusals. Keep original slow and
 platform-specific cases runnable in their own lanes. The ledger of cases must
 account for every suite before integration can be called complete.
+The candidate reports language 0.23.105. A probe that removes a newer
+language pragma is diagnostic evidence. Admission of an intact fixture
+requires implementing and qualifying the language features it uses.
 
 ### Sequence and integration gate
 
@@ -84,7 +89,42 @@ historical Ledger 8 fixtures and proof receipts. Keep the existing
 `k <= 8` automatic test limit and route larger upstream proof cases to a
 declared slow lane.
 
-### Initial port
+### Cryptography and cross-contract sequencing
+
+The pinned ZKIR tool provides Keccak, SHA-512 and the foreign-curve
+instructions. Current Keccak runtime encoding collapses trailing zero bytes
+before hashing. The upstream fixed-width encoding distinguishes those inputs.
+Qualify the new encoder against the nine upstream Keccak fixtures and the
+ZKIR interpreter. Keep the historical encoding identifiable in archived
+fixtures and checked programs. Admit the new encoding to generated code
+alongside independently regenerated current fixtures and proofs.
+
+Port foreign field and point layouts, defaults, arithmetic and checked
+decoding before signature circuits. Separate K1, P-256 and Ed25519
+verification and test their distinct scalar, identity, subgroup and encoding
+rules. Preserve upstream vector exclusions with reasons and test malformed
+encodings at the decoder boundary. Use SHA-512 and canonical scalar
+conversion for Ed25519.
+
+Start cross-contract calls with the pinned EntryPoint caller and callee
+fixtures and one provable fixed callee. Bind the address, compile-time
+`EntryPointBuf::ep_hash` and arguments/result commitment to the caller's
+claim. Preserve the same-shape sibling-entrypoint refusal before enabling
+general calls. Authenticate the observed installed operation and expected
+verifier, and combine both calls using the Ledger 9 transaction API's joint
+partitioning. Prove and independently verify both calls, then apply the
+funded transaction and test replay and invalid-binding refusals.
+
+The upstream compiler runs 11 composable TypeScript suites with 47 active
+tests and five explicitly skipped reentry cases. Four composable compiler
+E2E paths have 48 active upstream cases. Also track the expected-verifier
+compiler E2E suite and 105 direct cases in upstream conformance, contract
+resolution, cross-contract Zswap, module resolution and verifier-key hash
+runtime suites. Preserve the original tests and add transcript immutability
+and own-property name controls to address [#72][transcripts] and
+[#73][names].
+
+### Initial ports
 
 The [upstream assertion fix][assert] gives a successful `assert` the empty
 tuple value. Port its two conditional witness-analysis cases, generated
@@ -100,6 +140,22 @@ consumer compiled from fresh both-target output. The consumer exercised both
 conditional orderings, bound, direct and nested empty tuples, and the typed
 assertion failure. The fixture used the off-chain pure-circuit API.
 
+The [vector-spread disclosure fix][spread] preserves nested Boolean analysis.
+Before the fix, the intact upstream refusal fixture compiled to TypeScript.
+The patched compiler diagnoses the undeclared disclosure on both targets
+without publishing output. The original fixture and refusal metadata are
+retained at their upstream paths. The existing capability gate runs its
+diagnostic against both targets. The port includes all six Scheme forms from
+the upstream change, and the local run passed 3,898 compiler checks, six
+source-map tests and the capability gate. General Rust vector spreads remain
+open.
+
+The [Boolean cast family](../../../test-contracts/primitives/boolean/README.md)
+preserves two upstream sources, two compile-pass declarations and two
+runtime-pass declarations byte-for-byte. The local adapter ran four
+TypeScript executions and two Rust 1.99 tests against the integrated
+compiler. Compiler metadata identifies both exports as pure circuits.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9
@@ -114,3 +170,4 @@ assertion failure. The fixture used the off-chain pure-circuit API.
 [transcripts]: https://github.com/betsudo/compact/issues/72
 [names]: https://github.com/betsudo/compact/issues/73
 [assert]: https://github.com/LFDT-Minokawa/compact/commit/7517ecef491cd9655cf288cd7ae96d1927e12070
+[spread]: https://github.com/LFDT-Minokawa/compact/commit/3a560ed6827510b13cc177d44fe80eb6d674b6a8
