@@ -103,6 +103,7 @@
             cp -r ${self.packages.${system}.runtime.node-modules}/node_modules node_modules
             chown $USER -R node_modules
             chmod u+w -R node_modules
+            mkdir -p node_modules/@midnight-ntwrk
             cp -r ${self.packages.${system}.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
             chown $USER -R node_modules
             chmod u+w -R node_modules
@@ -287,6 +288,7 @@
             checkPhase = ''
               cp -r ${packages.runtime.node-modules}/node_modules node_modules
               chmod -R +rw node_modules
+              mkdir -p node_modules/@midnight-ntwrk
               cp -r ${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
               ./compiler/go
               ./srcMaps/test.sh
