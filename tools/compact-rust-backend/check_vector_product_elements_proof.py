@@ -332,17 +332,18 @@ def run(args):
                              *sorted((generated / source / "contract/checked-programs").glob("*.json")),
                              ir, goldens / "artifacts.json", *sorted((goldens / "checked-programs").glob("*.json"))])
         require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual SDK/Program dependency")
-        worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
-                           if Path(path).is_relative_to(ROOT)}
-        require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
-                "runner worktree dependency was not pinned before build")
         physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes", "generated_build_inputs_before_compile"] for p, sha in report[field].items()}
+        target_directory = Path(env.get("CARGO_TARGET_DIR", ROOT / "target")).resolve(strict=True)
+        worktree_inputs, generated_build_inputs = common.pin_runner_worktree_inputs(
+            tracked, ROOT, target_directory, report["source_hashes"],
+            report["generated_build_inputs_before_compile"])
         actual_files = set(tracked)
         require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
                 "actual runner dependency missing from physical prebuild input map")
         report["runner_physical_inputs_before_build"] = {p: physical_inputs[p] for p in sorted(actual_files)}
         report["runner_depfile"].update(membership_status="passed", all_generated_includes=True,
-                worktree_inputs_pinned_before_build=worktree_inputs)
+                worktree_inputs_pinned_before_build=worktree_inputs,
+                generated_build_inputs_pinned_before_build=generated_build_inputs)
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-product-elements", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for source in SOURCES:

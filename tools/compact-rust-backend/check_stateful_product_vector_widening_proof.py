@@ -141,6 +141,13 @@ def run(args):
         common.run([admitted["rust_tools"]["cargo"]["path"], "clippy", "--profile", "proof-checks", "--locked", "--offline",
                     "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"],
                    "all-features-runner-clippy-without-sdk", output, report, env=plain)
+        # Cargo build-script outputs live under the checkout target directory,
+        # but are generated inputs rather than tracked source. Pin them before
+        # the qualifying build so the depfile can bind their exact bytes.
+        target_directory = Path(env.get("CARGO_TARGET_DIR", ROOT / "target")).resolve(strict=True)
+        prepared_build = target_directory / "proof-checks/build"
+        report["generated_build_inputs_before_compile"] = hashes(
+            p for p in prepared_build.rglob("*") if p.is_file())
         execute("build-runner", ["cargo", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                 "compact-rust-proof-smoke", "--features", "stateful-product-vector-widening", "--message-format=json"], output / "build.jsonl")
         artifacts = [json.loads(line) for line in (output / "build.jsonl").read_text().splitlines() if line.startswith("{")]
@@ -163,15 +170,15 @@ def run(args):
                      *sorted((main_gate.FIXTURES / "ledger9-goldens/proofs/checked-programs").glob("*.json"))]:
             require(str(path.resolve(strict=True)) in tracked,
                     "runner omitted an actual generated SDK/Program dependency")
-        worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
-                           if Path(path).is_file() and Path(path).is_relative_to(ROOT)}
-        require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
-                "runner worktree dependency was not pinned before build")
+        worktree_inputs, generated_build_inputs = common.pin_runner_worktree_inputs(
+            tracked, ROOT, target_directory, report["source_hashes"],
+            report["generated_build_inputs_before_compile"])
         retained_depfile = output / "runner.d"
         shutil.copyfile(depfile, retained_depfile)
         report["runner_depfile"] = {"path": str(retained_depfile), "build_path": str(depfile),
                 "sha256": digest(retained_depfile), "all_generated_includes": True,
-                "worktree_inputs_pinned_before_build": worktree_inputs}
+                "worktree_inputs_pinned_before_build": worktree_inputs,
+                "generated_build_inputs_pinned_before_build": generated_build_inputs}
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "stateful-product-vector-widening", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for label, message in [("changed-ir", "stateful-product-vector complete IR bytes differ"),

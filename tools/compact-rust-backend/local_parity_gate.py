@@ -63,6 +63,28 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def pin_runner_worktree_inputs(paths, root, target_dir, source_hashes, generated_hashes):
+    """Check depfile inputs against the prebuild map for their physical owner.
+
+    Cargo target outputs can reside below the checkout without being source
+    files. They must be pinned as build-generated inputs, not source hashes.
+    """
+    root = Path(root).resolve(strict=True)
+    target_dir = Path(target_dir).resolve(strict=True)
+    source_inputs = {}
+    generated_inputs = {}
+    for name in paths:
+        path = Path(name).resolve(strict=True)
+        if path.is_relative_to(target_dir):
+            generated_inputs[str(path)] = generated_hashes.get(str(path))
+        elif path.is_relative_to(root):
+            source_inputs[str(path)] = source_hashes.get(str(path))
+    for inventory in (source_inputs, generated_inputs):
+        if any(digest is None or sha256(Path(name)) != digest for name, digest in inventory.items()):
+            raise GateError("runner worktree dependency was not pinned before build")
+    return source_inputs, generated_inputs
+
+
 def validate_pinned_zkir_artifacts(generated: Path, manifest: Path) -> None:
     """Bind the raw circuit roster and emitted library before external key generation."""
     pins = json.loads(manifest.read_text())

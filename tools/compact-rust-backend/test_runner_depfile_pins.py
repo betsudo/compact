@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+
+"""A Cargo build output under the checkout is not a tracked source input."""
+from pathlib import Path
+import tempfile
+import unittest
+
+import local_parity_gate as gate
+
+
+class RunnerDepfilePins(unittest.TestCase):
+    def test_source_and_generated_target_have_distinct_prebuild_pins(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory).resolve()
+            source = root / "src/lib.rs"
+            generated = root / "target/proof-checks/build/example/out/contract.rs"
+            external = Path(outside).resolve() / "external-dependency"
+            source.parent.mkdir()
+            generated.parent.mkdir(parents=True)
+            source.write_text("source")
+            generated.write_text("generated")
+            external.write_text("external")
+            source_pins = {str(source): gate.sha256(source)}
+            generated_pins = {str(generated): gate.sha256(generated)}
+            tracked = {str(source), str(generated), str(external)}
+            pinned_source, pinned_generated = gate.pin_runner_worktree_inputs(
+                tracked, root, root / "target", source_pins, generated_pins)
+            self.assertEqual(pinned_source, source_pins)
+            self.assertEqual(pinned_generated, generated_pins)
+            with self.assertRaises(gate.GateError):
+                gate.pin_runner_worktree_inputs(tracked, root, root / "target", source_pins, {})
+            generated.write_text("changed after prebuild pin")
+            with self.assertRaises(gate.GateError):
+                gate.pin_runner_worktree_inputs(tracked, root, root / "target", source_pins, generated_pins)
+
+
+if __name__ == "__main__":
+    unittest.main()
