@@ -125,7 +125,7 @@ fn branch_call() -> CheckedPlan {
 fn nested_call_effects_keep_parent_guard_and_collect_executor_capabilities() {
     let checked = branch_call();
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let call = program
         .effects()
         .iter()
@@ -161,7 +161,7 @@ fn nested_call_effects_keep_parent_guard_and_collect_executor_capabilities() {
 fn nested_call_missing_authority_and_missing_target_capability_refuse() {
     let checked = branch_call();
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let nested = program
         .effects()
         .iter()
@@ -173,10 +173,10 @@ fn nested_call_missing_authority_and_missing_target_capability_refuse() {
     let mut missing = Authority::new();
     missing.missing = Some(nested);
     assert!(matches!(
-        FunctionalProgram::project(&checked, &missing, Ledger8Target::PINNED),
+        FunctionalProgram::project(&checked, &missing, Ledger9Target::PINNED),
         Err(ProjectionRefusal::MissingSourceAuthority { .. })
     ));
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::Select, Capability::CellRead],
     };
     assert!(matches!(
@@ -210,7 +210,7 @@ fn two_calls_retain_noncopy_arguments_and_keep_fresh_formal_scopes() {
         .collect();
     let checked = checked(&[root, helper], &[]);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let formals: Vec<_> = program
         .effects()
         .iter()
@@ -249,7 +249,7 @@ fn checked_pure_calls_reuse_the_same_certified_syntax_as_ordinary_recording() {
     );
     let checked = checked(&[root], &[pure]);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let binding = program
         .effects()
         .iter()
@@ -310,7 +310,7 @@ fn certified_unit_calls_keep_one_fallible_statement_without_a_unit_local() {
         let checked = checked(&[root], &[pure]);
         let authority = Authority::new();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         let rendered = super::super::functional_render::render(&program)
             .unwrap()
             .body
@@ -353,7 +353,7 @@ fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
         .unwrap();
     let authority = Authority::new();
     assert!(matches!(
-        FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED),
+        FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
         Err(ProjectionRefusal::OutsideFunctionalSubset { path }) if path==unsupported.path
     ));
 }
@@ -376,7 +376,7 @@ fn calls_skip_exact_unit_aliases_but_retain_empty_tuple_formals() {
         let checked = checked(&[root, helper], &[]);
         let authority = Authority::new();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         let formal = program
             .effects()
             .iter()

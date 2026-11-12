@@ -62,7 +62,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["verifyAttestation", "acceptAttestation"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -74,7 +74,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn schnorr_constructor_and_digest_match_typescript() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/schnorr-attest-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-schnorr-attest-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64), &OracleWitness).unwrap();
@@ -167,7 +167,7 @@ fn recorded_schnorr_calls_match_original_queries_private_transcript_and_replay()
     use compact_rust_schnorr_attest_oracle_fixture::ledger_contract::recorded;
 
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/schnorr-attest-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-schnorr-attest-oracle.json"
     ))
     .unwrap();
     let digest = attestationDigest(
@@ -331,7 +331,7 @@ impl Witnesses<u64> for BadReduction {
 fn malformed_schnorr_reduction_and_identity_announcement_fail_recording() {
     use compact_rust_schnorr_attest_oracle_fixture::ledger_contract::recorded;
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/schnorr-attest-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-schnorr-attest-oracle.json"
     ))
     .unwrap();
     let digest = attestationDigest(

@@ -14,10 +14,11 @@
 // limitations under the License.
 
 //! Complete Fold helper SDK, two selected proofs and separate strict transactions.
-use super::*;
+use super::{local_v3_application as v3, positional_transaction, *};
 use crate::fold_vector_result_fixture::{ledger_contract as c, ledger_slots as slots};
 use midnight_compact_runtime::{BoundedUint, Field, FixedVector};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 const IR: &[u8] = include_bytes!(
     "../../compact-rust-backend/tests/fold_vector_result_widening/goldens/helper/source-ir.json"
 );
@@ -25,16 +26,19 @@ const PROGRAMS: &[(&str, &[u8])] = &[
     (
         "program-0.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/fold_vector_result_widening/goldens/helper/checked-programs/program-0.json"
+            "../../compact-rust-backend/tests/fold_vector_result_widening/ledger9-goldens/helper/checked-programs/program-0.json"
         ),
     ),
     (
         "program-1.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/fold_vector_result_widening/goldens/helper/checked-programs/program-1.json"
+            "../../compact-rust-backend/tests/fold_vector_result_widening/ledger9-goldens/helper/checked-programs/program-1.json"
         ),
     ),
 ];
+const ARTIFACTS: &str = include_str!(
+    "../../compact-rust-backend/tests/fold_vector_result_widening/ledger9-goldens/helper/artifacts.json"
+);
 
 fn vector<const N: usize>(values: [u128; N]) -> FixedVector<BoundedUint<255>, N> {
     FixedVector::new(values.map(|x| BoundedUint::new(x).unwrap()))
@@ -72,10 +76,10 @@ pub(super) fn models(root: &Path) -> Result<(), Box<dyn Error>> {
     validate_bindings(root)?;
     let mut rows = Vec::new();
     for name in ["run", "run_checked"] {
-        let ir = IrSource::load(BufReader::new(File::open(
+        let ir = IrSourceV3::load(BufReader::new(File::open(
             root.join(format!("zkir/{name}.zkir")),
         )?))?;
-        let k = ir.model().k();
+        let k = ir.k();
         rows.push(serde_json::json!({"circuit":name,"k":k}));
     }
     println!(
@@ -97,6 +101,7 @@ pub(super) fn models(root: &Path) -> Result<(), Box<dyn Error>> {
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     validate_bindings(root)?;
+    v3::validate_pinned_artifacts(root, ARTIFACTS)?;
     if root.join("fold-vector-result-proof-result.json").exists() {
         return Err("Fold Vector result proof already exists".into());
     }
@@ -111,7 +116,13 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         let expected = result_vector(values);
         let mut rng = StdRng::seed_from_u64(0x0164_0000 + index as u64);
         let initial = c::initial_state(ConstructorContext::new(7_u64))?;
-        let deploy = make_deploy(root, name, initial.ledger_state.get_ref().clone(), &mut rng)?;
+        let (ir, verifier, operation) = v3::operation(root, name, 7)?;
+        let deploy = v3::deploy(
+            initial.ledger_state.get_ref().clone(),
+            name,
+            operation,
+            &mut rng,
+        );
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -158,10 +169,8 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         let state = native.context.query.state.get_ref().clone();
         let input = AlignedValue::from((vector(input_values), vector(seed_values)));
-        let prepared = check_generated_trace(root, name, functional, input)?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
+        let prepared =
+            positional_transaction::check_generated_trace(root, name, functional, input)?;
         let facade = c::Contract::default();
         let ordinary = match name {
             "run" => facade.recording().run_call(
@@ -184,34 +193,32 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 "Fold Vector result observed call differs from functional preparation".into(),
             );
         }
-        let proof_bytes = prove(root, name, index, &prepared, &verifier)?;
-        let transaction_bytes = apply(root, name, index, prepared, deploy, &state, rng)?;
+        let stem = format!("fold-vector-result-{index}");
+        let changed_output = AlignedValue::from(result_vector([values[1], values[0]]));
+        let proof = prove(root, name, &stem, &prepared, &verifier, &ir, changed_output)?;
+        positional_transaction::verify_separately(root, name, &stem)?;
+        let transaction_proof_bytes =
+            v3::apply(root, name, &stem, prepared, deploy, &state, &proof)?;
+        let transaction_bytes =
+            std::fs::metadata(root.join(format!("{stem}-transaction.bin")))?.len();
         rows.push(serde_json::json!({"circuit":name,"selected":null,"input":input_values,"seed":seed_values,"expected":values,"seen":seen,
-            "witness_count":0,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
+            "witness_count":0,"proof_bytes":proof.0.len(),"transaction_bytes":transaction_bytes,
+            "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,"positive_fee_dust_spends":1,"standalone_verified_separately":true,
             "standalone_proof":format!("fold-vector-result-{index}.proof"),"applied_transaction":format!("fold-vector-result-{index}-transaction.bin"),
             "transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,
             "changed_result_rejected":true,"changed_result_same_geometry":true,"wrong_verifier_rejected":true,
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-fold-vector-result-proof/v1","status":"passed",
+    let result = serde_json::json!({"format":"compact-fold-vector-result-proof/v2","status":"passed",
         "scope":"two selected Fold helper exports, fresh proofs and independently proved funded default-strict transactions",
         "constructor_execution_proved":false,"all_exports_proved":false,"helper_exports_proved":["run","run_checked"],"unproved_helper_exports":[],"calls":rows});
-    write_new(
+    v3::write_new(
         root.join("fold-vector-result-proof-result.json"),
         &serde_json::to_vec_pretty(&result)?,
     )?;
     println!("{result}");
     Ok(())
 }
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
-}
-
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
     let mut fields = Vec::new();
     call.input.value_only_field_repr(&mut fields);
@@ -222,26 +229,25 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 fn prove(
     root: &Path,
     name: &str,
-    index: usize,
+    stem: &str,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+    changed_output: AlignedValue,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected fold-vector-result proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{name}.bzkir")),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.prover")),
     )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -295,9 +301,16 @@ fn prove(
     // Bind a genuinely different public result through the exact upstream
     // communication commitment, rather than changing an arbitrary input slot.
     let mut changed_call = call.clone();
-    changed_call.output = AlignedValue::from(result_vector([999, 998]));
+    changed_call.output = changed_output;
     if changed_call.output.alignment != call.output.alignment
         || changed_call.output.value.0.len() != call.output.value.0.len()
+        || changed_call
+            .output
+            .value
+            .0
+            .iter()
+            .zip(&call.output.value.0)
+            .any(|(left, right)| left.0.len() != right.0.len())
     {
         return Err("changed fold-vector-result result geometry differs".into());
     }
@@ -320,110 +333,19 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed fold-vector-result proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("fold-vector-result IR accepted changed result".into());
     }
-    write_new(
-        root.join(format!("fold-vector-result-{index}.proof")),
-        &proof.0,
-    )?;
+    v3::write_new(root.join(format!("{stem}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
-    write_new(
-        root.join(format!("fold-vector-result-{index}.preimage")),
-        &bytes,
-    )?;
+    v3::write_new(root.join(format!("{stem}.preimage")), &bytes)?;
+    bytes.clear();
+    tagged_serialize(&inputs, &mut bytes)?;
+    v3::write_new(root.join(format!("{stem}.inputs")), &bytes)?;
     println!(
-        "fold-vector-result {index}: {}-byte proof verified; changed binding/result refused",
+        "{stem}: {}-byte proof verified; changed binding/result refused",
         proof.0.len()
     );
-    Ok(proof.0.len())
-}
-
-fn apply(
-    root: &Path,
-    name: &'static str,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<usize, Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0164_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0164_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("fold-vector-result strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("fold-vector-result contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("fold-vector-result applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(format!(
-            "fold-vector-result replay refused incorrectly or mutated ledger: {result:?}"
-        )
-        .into());
-    }
-    write_new(
-        root.join(format!("fold-vector-result-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(
-        root.join(format!("fold-vector-result-{index}-state.bin")),
-        &bytes,
-    )?;
-    println!(
-        "fold-vector-result {index}: funded default-strict apply; replay refused without mutation"
-    );
-    Ok(transaction_bytes.len())
+    Ok(proof)
 }

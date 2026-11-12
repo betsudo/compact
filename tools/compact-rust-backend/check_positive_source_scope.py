@@ -19,8 +19,8 @@
 
 This gate establishes compiler acceptance and capability metadata only. It does
 not execute TypeScript, Rust, proofs, or ledger transactions. A cohort may opt
-into a native Cargo check. When a cohort names a Rust fixture, compare the
-formatted generated crate source exactly.
+into a native Cargo check. A cohort can bind the formatted generated crate
+source to a flat fixture or to a registered Cargo build-script artifact.
 """
 
 import argparse
@@ -28,9 +28,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
+
+import fixture_inventory
+import source_consumer_gate
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +72,46 @@ def cohort_membership_failures(manifest: dict, root: Path = ROOT) -> list[str]:
         return []
     return [f"{manifest['source_glob']}: source cohort membership changed "
             f"(added={sorted(actual - expected)}, removed={sorted(expected - actual)})"]
+
+
+def generated_consumer_artifact(expected: dict, output: Path) -> tuple[Path, dict]:
+    source = ROOT / expected.get("rust_fixture_source", expected["source"])
+    wrapper = ROOT / expected["rust_consumer"]
+    registration = next(
+        (row for row in fixture_inventory.source_registry(ROOT) if row.source == source),
+        None,
+    )
+    if (registration is None or registration.role is not fixture_inventory.SourceRole.GENERATED_CONSUMER
+            or registration.consumer != wrapper or registration.frontend_flags):
+        raise ValueError(f"invalid generated consumer binding: {source} -> {wrapper}")
+
+    cargo = ["cargo", "+1.99.0"]
+    metadata = subprocess.run(
+        [*cargo, "metadata", "--no-deps", "--format-version", "1", "--locked"],
+        cwd=ROOT, check=True, capture_output=True,
+    )
+    messages = output / "consumer-build.jsonl"
+    with messages.open("wb") as stdout:
+        subprocess.run(
+            [*cargo, "build", "-p", registration.package, "--lib", "--all-features",
+             "--locked", "--message-format=json"],
+            cwd=ROOT, check=True, stdout=stdout, stderr=subprocess.PIPE,
+        )
+    workspace = json.loads(metadata.stdout)
+    directories = source_consumer_gate.cargo_output_directories(messages, workspace)
+    original = source_consumer_gate.consumer_artifact(registration, directories)
+    formatted = output / "consumer-artifact.rs"
+    shutil.copyfile(original, formatted)
+    generated = output / "rust/contract/lib.rs"
+    generated.write_bytes(source_consumer_gate.place_in_host(generated.read_bytes(), registration.namespace))
+    return formatted, {
+        "rust_consumer": expected["rust_consumer"],
+        "rust_consumer_source": str(source.relative_to(ROOT)),
+        "rust_consumer_source_sha256": registration.source_sha256,
+        "rust_consumer_artifact": str(original),
+        "rust_consumer_artifact_sha256": sha256(original),
+        "rust_consumer_build_sha256": sha256(messages),
+    }
 
 
 def check(compiler: Path, manifest_path: Path = MANIFEST) -> tuple[dict, list[str]]:
@@ -174,9 +218,24 @@ def check(compiler: Path, manifest_path: Path = MANIFEST) -> tuple[dict, list[st
                         if (output / "rust/contract/Cargo.lock").is_file() else None)
                     if cargo.returncode:
                         failures.append(f"{source.name}: generated native crate Cargo check failed")
-                if "rust_fixture" in expected:
+                if "rust_fixture" in expected or "rust_consumer" in expected:
                     generated = output / "rust/contract/lib.rs"
-                    fixture = ROOT / expected["rust_fixture"]
+                    try:
+                        if "rust_consumer" in expected:
+                            if "rust_fixture" in expected:
+                                raise ValueError("ambiguous flat fixture and generated consumer")
+                            fixture, binding = generated_consumer_artifact(expected, output)
+                            row.update(binding)
+                            subprocess.run(["rustfmt", "--edition", "2024", str(fixture)],
+                                           cwd=ROOT, capture_output=True, check=True)
+                        else:
+                            fixture = ROOT / expected["rust_fixture"]
+                    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+                        details = error.stderr.decode(errors="replace").strip() if (
+                            isinstance(error, subprocess.CalledProcessError) and error.stderr) else str(error)
+                        failures.append(f"{source.name}: generated consumer binding failed: {details}")
+                        receipt["sources"].append(row)
+                        continue
                     if not generated.is_file() or not fixture.is_file():
                         failures.append(f"{source.name}: missing generated Rust or checked fixture")
                     else:
@@ -185,7 +244,9 @@ def check(compiler: Path, manifest_path: Path = MANIFEST) -> tuple[dict, list[st
                         if formatted.returncode:
                             failures.append(f"{source.name}: generated Rust formatting failed: {formatted.stderr.strip()}")
                         else:
-                            row["rust_fixture"] = expected["rust_fixture"]
+                            if "rust_fixture" in expected:
+                                row["rust_fixture"] = expected["rust_fixture"]
+                            row["generated_rust_sha256"] = sha256(generated)
                             row["rust_fixture_sha256"] = sha256(fixture)
                             row["rust_fixture_match"] = generated.read_bytes() == fixture.read_bytes()
                             if not row["rust_fixture_match"]:

@@ -16,6 +16,7 @@
 """Focused scenario dispatch and fake-compiler acceptance boundaries."""
 
 from contextlib import ExitStack, redirect_stdout
+import hashlib
 import inspect
 import io
 import json
@@ -119,10 +120,26 @@ class FocusedTargetChecks(unittest.TestCase):
                 with self.subTest(proof=proof, recorded=recorded), tempfile.TemporaryDirectory() as tmp:
                     base = Path(tmp)
                     events = []
-                    run = self.compiler(events, names, recorded=recorded)
+                    root = base / "repo"
+                    output = base / "field-observation"
+                    compile_fixture = self.compiler(events, names, recorded=recorded)
+                    artifacts = ("contract/compact-rust-ir.json", "contract/lib.rs",
+                                 *(f"zkir/{name}.zkir" for name in names))
+                    pins = root / "tools/compact-rust-backend/tests/field-observation-ledger9-artifacts.json"
+                    pins.parent.mkdir(parents=True)
+                    pins.write_text(json.dumps({
+                        path: hashlib.sha256(path.encode()).hexdigest() for path in artifacts
+                    }))
+                    def run(*args):
+                        compile_fixture(*args)
+                        if args[0] == "compiler-under-test":
+                            for path in artifacts:
+                                artifact = output / path
+                                artifact.parent.mkdir(parents=True, exist_ok=True)
+                                artifact.write_text(path)
                     def invoke():
                         recording_checks.check_field_observation("compiler-under-test", base,
-                            root=Path("repo"), proof_requested=proof, run=run)
+                            root=root, proof_requested=proof, run=run)
                     with redirect_stdout(io.StringIO()):
                         if recorded:
                             invoke()
@@ -130,14 +147,22 @@ class FocusedTargetChecks(unittest.TestCase):
                             with self.assertRaises(AssertionError):
                                 invoke()
                     self.assertEqual(events[0], ("compiler-under-test", "--target", "rust",
-                        "--rust-require-recording", *([] if proof else ["--skip-zk"]),
-                        "repo/examples/rust_backend/field_observation_oracle.compact",
-                        str(base / "field-observation")))
-                    self.assertEqual(len(events), 2 if proof and recorded else 1)
+                        "--rust-require-recording", "--skip-zk",
+                        str(root / "examples/rust_backend/field_observation_oracle.compact"),
+                        str(output)))
+                    self.assertEqual(len(events), 4 if proof and recorded else 1)
                     if proof and recorded:
-                        self.assertEqual(events[1], ("cargo", "run", "--quiet", "-p",
-                            "compact-rust-proof-smoke", "--", "--field-observation",
-                            str(base / "field-observation")))
+                        self.assertEqual(events[1], ("zkir-v3", "compile-many",
+                            str(output / "zkir"), str(output / "keys")))
+                        self.assertEqual([event[-2] for event in events[2:]],
+                            ["--field-observation", "--field-observation-verify"])
+                        expected = json.loads(pins.read_text())
+                        expected["zkir/direct.zkir"] = "0" * 64
+                        pins.write_text(json.dumps(expected))
+                        events.clear()
+                        with self.assertRaisesRegex(ValueError, "zkir/direct[.]zkir"):
+                            invoke()
+                        self.assertEqual(len(events), 1)
 
     def test_intent_check_keeps_native_check_before_explicit_key_generation(self):
         for proof in (False, True):
@@ -156,7 +181,7 @@ class FocusedTargetChecks(unittest.TestCase):
                             ("cargo", "+1.99.0", "check", "--offline", "--manifest-path",
                              str(output / "contract/Cargo.toml"))]
                 if proof:
-                    expected += [("zkir", "compile", str(output / "zkir/receive_then_send.zkir"),
+                    expected += [("zkir-v3", "compile", str(output / "zkir/receive_then_send.zkir"),
                                   str(output / "keys/receive_then_send.prover"),
                                   str(output / "keys/receive_then_send.verifier")),
                                  ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke",
@@ -164,33 +189,50 @@ class FocusedTargetChecks(unittest.TestCase):
                 self.assertEqual(events, expected)
 
     def test_coracle_source_boundary_precedes_proof_generation(self):
-        for proof in (False, True):
-            with self.subTest(proof=proof), tempfile.TemporaryDirectory() as tmp:
-                base = Path(tmp)
-                events = []
-                def source(compiler, output_base):
-                    events.append(("source", compiler, output_base))
-                    (output_base / "coracle").mkdir()
-                with redirect_stdout(io.StringIO()):
-                    application_checks.check_coracle_start("compiler-under-test", base,
-                        proof_requested=proof, run=lambda *a: events.append(a),
-                        check_coracle_source=source)
-                self.assertEqual(events[0], ("source", "compiler-under-test", base))
-                self.assertEqual(len(events), 3 if proof else 1)
-                if proof:
-                    self.assertEqual(events[1][0:2], ("zkir", "compile"))
-                    self.assertEqual(events[2][-2], "--coracle-start")
+        checks = {
+            "start": application_checks.check_coracle_start,
+            "concede": application_checks.check_coracle_concede,
+            "withdraw": application_checks.check_coracle_withdraw,
+            "guess": application_checks.check_coracle_guess,
+        }
+        for circuit, check in checks.items():
+            for proof in (False, True):
+                with self.subTest(circuit=circuit, proof=proof), tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    output = base / "coracle"
+                    events = []
+                    def source(compiler, output_base):
+                        events.append(("source", compiler, output_base))
+                        output.mkdir()
+                    with redirect_stdout(io.StringIO()):
+                        check("compiler-under-test", base,
+                              proof_requested=proof, run=lambda *a: events.append(a),
+                              check_coracle_source=source)
+                    expected = [("source", "compiler-under-test", base)]
+                    if proof:
+                        expected.extend([
+                            ("zkir-v3", "compile", str(output / f"zkir/{circuit}.zkir"),
+                             str(output / f"keys/{circuit}.prover"), str(output / f"keys/{circuit}.verifier")),
+                            ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke",
+                             "--", f"--coracle-{circuit}", str(output)),
+                        ])
+                    self.assertEqual(events, expected)
 
     def test_captured_compiler_call_preserves_options_and_failure_diagnostics(self):
         for returncode in (0, 7):
             with self.subTest(returncode=returncode), tempfile.TemporaryDirectory() as tmp:
                 base = Path(tmp)
+                root = base / "repo"
+                compatibility = root / "runtime-rs/compatibility.json"
+                compatibility.parent.mkdir(parents=True)
+                compatibility.write_text(json.dumps({"runtime_abi": 61}))
                 captured = []
                 def run(*args):
                     output = Path(args[-1]) / "contract"
                     output.mkdir(parents=True)
                     (output / "lib.rs").write_text(
-                        "runtime::add_wide_unsigned runtime::narrow_wide_uint RUST_RUNTIME_ABI == 53")
+                        "runtime::add_wide_unsigned runtime::narrow_wide_uint "
+                        "assert!(runtime::RUST_RUNTIME_ABI == 61);")
                     (output / "rust-capabilities.json").write_text(json.dumps({"circuits": [{
                         "recorded": True, "observed_call": True, "proof_required": False,
                         "recording_status": "not_applicable"}]}))
@@ -205,34 +247,59 @@ class FocusedTargetChecks(unittest.TestCase):
                     if returncode:
                         with self.assertRaisesRegex(AssertionError, "compiler diagnostic"):
                             scalar_checks.check_wide_add("compiler-under-test", base,
-                                root=Path("repo"), run=run, capture=capture)
+                                root=root, run=run, capture=capture)
                     else:
                         scalar_checks.check_wide_add("compiler-under-test", base,
-                            root=Path("repo"), run=run, capture=capture)
+                            root=root, run=run, capture=capture)
                 self.assertEqual(captured, [(
                     ["compiler-under-test", "--target", "rust", "--skip-zk",
-                     "repo/test-center/test-contracts/micro-dao.compact", str(base / "original-dao")],
-                    {"cwd": Path("repo"), "capture_output": True, "text": True})])
+                     str(root / "test-center/test-contracts/micro-dao.compact"), str(base / "original-dao")],
+                    {"cwd": root, "capture_output": True, "text": True})])
 
     def test_scalar_counter_ir_must_contain_both_read_and_comparison(self):
-        for comparison in (False, True):
-            with self.subTest(comparison=comparison), tempfile.TemporaryDirectory() as tmp:
+        for comparison, matching in ((False, True), (True, False), (True, True)):
+            with self.subTest(comparison=comparison, matching=matching), tempfile.TemporaryDirectory() as tmp:
                 base = Path(tmp)
+                root = base / "repo"
+                retained = root / "tools/compact-rust-backend/tests/counter-less-than-schema15-ir.json"
+                retained.parent.mkdir(parents=True)
+                retained.write_text(json.dumps({
+                    "schema_version": 15, "kind": "counter_read",
+                    "child": {"kind": "counter_less_than"},
+                }))
                 events = []
                 ir = {"schema_version": 20, "kind": "counter_read"}
                 if comparison:
                     ir["child"] = {"kind": "counter_less_than"}
+                if not matching:
+                    ir["changed"] = True
                 run = self.compiler(events, ["compare", "nested", "short_circuit", "checked"], ir=ir)
+                def invoke():
+                    scalar_checks.check_counter_less_than("compiler-under-test", base,
+                        root=root, proof_requested=True, run=run)
                 with redirect_stdout(io.StringIO()):
-                    if comparison:
-                        scalar_checks.check_counter_less_than("compiler-under-test", base,
-                            root=Path("repo"), proof_requested=True, run=run)
-                    else:
+                    if not comparison:
                         with self.assertRaises(AssertionError):
-                            scalar_checks.check_counter_less_than("compiler-under-test", base,
-                                root=Path("repo"), proof_requested=True, run=run)
-                self.assertEqual(len(events), 2 if comparison else 1)
-                self.assertNotIn("--skip-zk", events[0])
+                            invoke()
+                    elif not matching:
+                        with self.assertRaisesRegex(ValueError, "source IR differs"):
+                            invoke()
+                    else:
+                        invoke()
+                output = base / "counter-less-than"
+                self.assertIn("--skip-zk", events[0])
+                if comparison and matching:
+                    self.assertEqual(events[1:], [
+                        ("zkir-v3", "compile", str(output / "zkir/compare.zkir"),
+                         str(output / "keys/compare.prover"), str(output / "keys/compare.verifier")),
+                        ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                         "--counter-less-than", str(output)),
+                        ("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                         "--counter-less-than-verify", str(output)),
+                    ])
+                else:
+                    self.assertEqual(len(events), 1)
+                    self.assertFalse((output / "keys").exists())
 
 
 if __name__ == "__main__":

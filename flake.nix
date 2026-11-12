@@ -34,29 +34,12 @@
       url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3"; # zkir-v2
       inputs.zkir.follows = "zkir";
     };
-    onchain-runtime-v3 = {
-      # dependency for compact-runtime release
-      # all notes for the zkir input applies to onchain-runtime input too.
-      url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-wasm = {
-      # dependency for test-center
-      url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-v3 = {
-      # zkir-v3 binary for v3 IR format
-      url = "github:midnightntwrk/midnight-ledger/3a7ae0361d03e6eed4fc91e31f6600f334f605d5"; # zkir-v3
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-v3-wasm = {
-      # zkir-v3-wasm for test-center v3 support
-      url = "github:midnightntwrk/midnight-ledger/3a7ae0361d03e6eed4fc91e31f6600f334f605d5";
-      inputs.zkir.follows = "zkir";
-    };
     n2c.url = "github:nlewo/nix2container";
     chez-exe.url = "github:tkerber/chez-exe";
+    fenix = {
+      url = "github:nix-community/fenix/5b3016c5f8cdd37d5e557646d369ce76e30666de";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
@@ -70,14 +53,11 @@
   outputs = {
     self,
     zkir,
-    onchain-runtime-v3,
-    zkir-wasm,
-    zkir-v3,
-    zkir-v3-wasm,
     nixpkgs,
     utils,
     inclusive,
     chez-exe,
+    fenix,
     npmlock2nix,
     ...
   } @ inputs:
@@ -94,15 +74,24 @@
         sources = (import ./_sources/generated.nix) {inherit (pkgs) fetchgit fetchurl fetchFromGitHub;};
         nanopass = sources.nanopass.src;
         rough-draft = sources.rough-draft.src;
-        onchain-runtime-npm-compat = import ./nix/compat/npm-scope-compat.nix {
-          inherit pkgs;
-          profile = "onchain-runtime-v3";
-          upstream = onchain-runtime-v3.packages.${system}.onchain-runtime-wasm;
-        };
-        zkir-v2-npm-compat = import ./nix/compat/npm-scope-compat.nix {
-          inherit pkgs;
-          profile = "zkir-v2";
-          upstream = zkir-wasm.packages.${system}.zkir-wasm;
+        # Cross to static musl with the native toolchain and matching target std.
+        rust-linking-pkgs = if pkgs.stdenv.hostPlatform.isLinux then pkgs.pkgsStatic else pkgs;
+        rust-host-target = pkgs.stdenv.hostPlatform.rust.rustcTarget;
+        rust-cli-target = rust-linking-pkgs.stdenv.hostPlatform.rust.rustcTarget;
+        rust = fenix.packages.${system};
+        rust-version = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel;
+        rust-manifest = builtins.fromTOML (builtins.readFile (builtins.fetchurl {
+          url = "https://static.rust-lang.org/dist/channel-rust-${rust-version}.toml";
+          sha256 = "sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=";
+        }));
+        rust-cli-toolchain = rust.combine (
+          [(rust.fromManifest rust-manifest).minimalToolchain]
+          ++ pkgs.lib.optional (rust-cli-target != rust-host-target)
+            (rust.targets.${rust-cli-target}.fromManifest rust-manifest).rust-std
+        );
+        rust-cli-platform = rust-linking-pkgs.makeRustPlatform {
+          cargo = rust-cli-toolchain;
+          rustc = rust-cli-toolchain;
         };
         runtime-version = (__fromJSON (__readFile ./runtime/package.json)).version;
         vscode-extension-version = (__fromJSON (__readFile ./editor-support/vsc/compact/package.json)).version;
@@ -114,6 +103,7 @@
             cp -r ${self.packages.${system}.runtime.node-modules}/node_modules node_modules
             chown $USER -R node_modules
             chmod u+w -R node_modules
+            mkdir -p node_modules/@midnight-ntwrk
             cp -r ${self.packages.${system}.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
             chown $USER -R node_modules
             chmod u+w -R node_modules
@@ -157,8 +147,6 @@
           overlays.pretzel-fetcher = (import pretzel/fetcher.nix).overlay;
           overlays.pretzel-js = lib.pretzel-js.overlay;
           packages.pretzel-dry-install = dry-install.package;
-          packages.onchain-runtime-npm-scope-compat = onchain-runtime-npm-compat.package;
-          packages.zkir-v2-npm-scope-compat = zkir-v2-npm-compat.package;
           packages.runtime = let
             inclusive-src = inclusive.lib.inclusive ./. [
               ./runtime
@@ -175,19 +163,13 @@
             #name = "compact-runtime";
             #version = runtime-version;
             src = "${inclusive-src}/runtime";
+            # Dependency installation only has the two npm manifests. The
+            # runtime's prepare script runs when packing the full source.
+            nodeModulesAttrs.npm_config_ignore_scripts = "true";
             overrideBuildAttrs = {
-              common = pkgs.lib.trivial.id;
-              package = oldAttrs: oldAttrs // {
-                buildInputs = [ chez ];
+              common = oldAttrs: oldAttrs // {
+                buildInputs = (oldAttrs.buildInputs or []) ++ [chez];
                 CHEZSCHEMELIBDIRS = "${inclusive-src}/compiler:${inclusive-src}/third_party/compiler";
-              };
-              tests = pkgs.lib.trivial.id;
-              lints = pkgs.lib.trivial.id;
-            };
-
-            nixDependenciesMap = {
-              "@midnight-ntwrk/onchain-runtime-v3" = {
-                inherit (onchain-runtime-npm-compat) tarPath libPath;
               };
             };
           };
@@ -198,18 +180,6 @@
               overlays = [overlays.pretzel-js];
             };
             src = ./test-center;
-
-            nixDependenciesMap = {
-              "@midnight-ntwrk/zkir-v2" = {
-                inherit (zkir-v2-npm-compat) tarPath libPath;
-              };
-              "@midnight-ntwrk/zkir-v3" = let
-                pkg = zkir-v3-wasm.packages.${system}.zkir-v3-wasm;
-              in {
-                tarPath = "${pkg}/lib/midnight-zkir-v3-${pkg.version}.tgz";
-                libPath = "${pkg}/lib/node_modules/@midnight-ntwrk/zkir-v3";
-              };
-            };
           };
 
           packages.compactc-no-runtime = packages.compactc.overrideAttrs (oldAttrs: {
@@ -222,11 +192,7 @@
             checkPhase = "";
           });
 
-          packages.compact-rust-cli = let
-            # Cross to static musl with native build tools, avoiding a
-            # musl-hosted Rust/LLVM bootstrap just to package the Linux CLI.
-            linking-pkgs = if pkgs.lib.hasSuffix "linux" system then pkgs.pkgsStatic else pkgs;
-          in linking-pkgs.rustPlatform.buildRustPackage ({
+          packages.compact-rust-cli = rust-cli-platform.buildRustPackage ({
             pname = "compact-rust-cli";
             version = "0.2.0";
             # The CLI build needs only its crate sources; local harness scripts
@@ -239,7 +205,6 @@
             ];
             cargoLock = {
               lockFile = ./tools/compact-rust-backend/Cargo.lock;
-              outputHashes."midnight-base-crypto-1.0.2" = "sha256-iNrhLPBGrWxeospwl8eW4TtYNlk+vY5Y564OTRjwBoM=";
             };
             cargoBuildFlags = [ "--bin" "compactc" ];
             # Compiler-backed gates run in build-compiler.yml against the full
@@ -272,7 +237,7 @@
 
           packages.compactc = pkgs.stdenv.mkDerivation {
             name = "compactc";
-            version = "0.31.210"; # NB: also update compiler-version in compiler/compiler-version.ss
+            version = "0.31.211"; # NB: also update compiler-version in compiler/compiler-version.ss
             src = inclusive.lib.inclusive ./. [
               ./compiler
               ./examples
@@ -323,6 +288,7 @@
             checkPhase = ''
               cp -r ${packages.runtime.node-modules}/node_modules node_modules
               chmod -R +rw node_modules
+              mkdir -p node_modules/@midnight-ntwrk
               cp -r ${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
               ./compiler/go
               ./srcMaps/test.sh
@@ -402,12 +368,28 @@
             '' else "");
           };
 
+          packages.zkir-v3 = rust-cli-platform.buildRustPackage rec {
+            pname = "midnight-zkir-v3";
+            version = (builtins.fromJSON (builtins.readFile ./test-center/package.json)).dependencies."@midnightntwrk/zkir-v3";
+            src = pkgs.fetchurl {
+              url = "https://static.crates.io/crates/midnight-zkir/midnight-zkir-${version}.crate";
+              name = "midnight-zkir-${version}.tar.gz";
+              hash = "sha256-r5jDrGGPRKYJ30lj20vmm+10EjoxEbVHXiKoHOxK2Fc=";
+            };
+            cargoLock.lockFile = ./nix/zkir-v3/Cargo.lock;
+            postPatch = ''
+              cp ${cargoLock.lockFile} Cargo.lock
+            '';
+            cargoBuildFlags = [ "--locked" "--bin" "zkir" "--features" "binary" ];
+            doCheck = false;
+          };
+
           # The upstream zkir-v3 package produces bin/zkir (same name as
           # zkir v2).  Wrap it so the binary is available as bin/zkir-v3,
           # which is the name the compiler invokes.
           packages.zkir-v3-bin = pkgs.runCommand "zkir-v3-bin" {} ''
             mkdir -p $out/bin
-            ln -s ${zkir-v3.packages.${system}.zkir-v3}/bin/zkir $out/bin/zkir-v3
+            ln -s ${packages.zkir-v3}/bin/zkir $out/bin/zkir-v3
           '';
 
           packages.compactc-binaryWrapperScript-nixos = pkgs.writeShellScriptBin "run-compactc" ''
@@ -427,7 +409,7 @@
               mv $out/bin/compactc $out/bin/compactc.bin
               cp bin/compactc-scheme $out/bin/compactc-scheme
               cp ${zkir.packages.${system}.zkir}/bin/zkir $out/lib/zkir
-              cp ${zkir-v3.packages.${system}.zkir-v3}/bin/zkir $out/lib/zkir-v3
+              cp ${packages.zkir-v3}/bin/zkir $out/lib/zkir-v3
 
               chmod +w $out/lib/zkir
               chmod +w $out/lib/zkir-v3
@@ -441,7 +423,7 @@
               done
             '' + (if isDarwin then ''
               install_name_tool -change ${inputs.zkir.inputs.nixpkgs.legacyPackages.${system}.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir"
-              install_name_tool -change ${inputs.zkir-v3.inputs.nixpkgs.legacyPackages.${system}.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir-v3"
+              install_name_tool -change ${pkgs.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir-v3"
             '' else "");
 
             # Execution on a Nix-equipped host can hide store-only libraries.

@@ -265,17 +265,22 @@ pub(super) fn field_to_bytes32(
 
 pub(super) fn literal_bytes_field(
     arguments: &mut impl Iterator<Item = OsString>,
+    selector: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --literal-bytes-field <proof-output>")?;
+    let usage = || format!("usage: compact-rust-proof-smoke {selector} <proof-output>");
+    let root = arguments.next().ok_or_else(usage)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --literal-bytes-field <proof-output>".into());
+        return Err(usage().into());
+    }
+    if selector == "--literal-bytes-field-verify" {
+        return literal_bytes_field::run(Path::new(&root), true);
     }
     let proof = std::thread::Builder::new()
         .name("literal-bytes-field-proof".into())
         .stack_size(64 * 1024 * 1024)
-        .spawn(move || literal_bytes_field::run(Path::new(&root)).map_err(|e| e.to_string()))?;
+        .spawn(move || {
+            literal_bytes_field::run(Path::new(&root), false).map_err(|e| e.to_string())
+        })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(error.into()),
@@ -307,21 +312,30 @@ pub(super) fn terminal_lexical_return(
 
 pub(super) fn field_observation(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --field-observation <proof-output>")?;
+    const USAGE: &str =
+        "usage: compact-rust-proof-smoke --field-observation[-verify] <proof-output>";
+    let root = arguments.next().ok_or(USAGE)?;
     if arguments.next().is_some() {
-        return Err("usage: compact-rust-proof-smoke --field-observation <proof-output>".into());
+        return Err(USAGE.into());
     }
     let proof = std::thread::Builder::new()
         .name("field-observation-proof".into())
         .stack_size(64 * 1024 * 1024)
-        .spawn(move || field_observation::run(Path::new(&root)).map_err(|e| e.to_string()))?;
+        .spawn(move || {
+            let root = Path::new(&root);
+            if verify {
+                field_observation::verify(root)
+            } else {
+                field_observation::run(root)
+            }
+            .map_err(|e| e.to_string())
+        })?;
     match proof.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(error.into()),
-        Err(_) => Err("stateful struct proof thread panicked".into()),
+        Err(_) => Err("field observation proof thread panicked".into()),
     }
 }
 
@@ -539,6 +553,17 @@ pub(super) fn wide_zero(
     }
 }
 
+pub(super) fn wide_zero_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --wide-zero-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::wide_zero::verify(Path::new(&root))
+}
+
 pub(super) fn opaque_cell_input(
     arguments: &mut impl Iterator<Item = OsString>,
 ) -> Result<(), Box<dyn Error>> {
@@ -558,21 +583,6 @@ pub(super) fn opaque_cell_input(
         Ok(Err(error)) => Err(error.into()),
         Err(_) => Err("opaque-cell-input proof thread panicked".into()),
     }
-}
-
-/// Selected source-bound strict-funded snapshot; historical runner stays available.
-pub(super) fn literal_bytes_field_strict(
-    arguments: &mut impl Iterator<Item = OsString>,
-) -> Result<(), Box<dyn Error>> {
-    let root = arguments
-        .next()
-        .ok_or("usage: compact-rust-proof-smoke --literal-bytes-field-strict <proof-output>")?;
-    if arguments.next().is_some() {
-        return Err(
-            "usage: compact-rust-proof-smoke --literal-bytes-field-strict <proof-output>".into(),
-        );
-    }
-    literal_bytes_field::run_strict(Path::new(&root))
 }
 
 /// Original source-paired attestation endpoints with strict funded ledger checks.

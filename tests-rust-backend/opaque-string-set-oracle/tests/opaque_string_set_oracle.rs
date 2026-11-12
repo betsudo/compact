@@ -32,7 +32,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["addName", "hasName"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -44,7 +44,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn variable_length_set_key_matches_typescript_state() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/opaque-string-set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-opaque-string-set-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();
@@ -164,7 +164,7 @@ fn check_call<Output>(
 #[test]
 fn closed_opaque_set_calls_match_typescript_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/opaque-string-set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-opaque-string-set-oracle.json"
     ))
     .unwrap();
     let native_initial = initial_state(ConstructorContext::new(7_u64)).unwrap();

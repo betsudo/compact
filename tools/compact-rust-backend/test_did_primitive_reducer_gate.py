@@ -38,6 +38,37 @@ class EvidenceTests(unittest.TestCase):
     def test_complete_rows_pass(self):
         gate.validate_summary(self.good,self.row)
 
+    def test_current_summary_requires_v3_funding_separate_verification_and_corruption_refusal(self):
+        with self.assertRaises(gate.common.GateError):
+            gate.validate_summary(self.good, self.row, require_v3=True)
+        current = copy.deepcopy(self.good)
+        current["format"] = "compact-did-primitive-reducer-proof/v2"
+        for row in current["calls"]:
+            row.update(transaction_proof_bytes=10, transaction_proof_version=3,
+                       funded_dust_spends=1, separate_verification=True, corrupt_proof_rejected=True)
+        gate.validate_summary(current, self.row, require_v3=True)
+        for field, bad in (("transaction_proof_version", 2), ("funded_dust_spends", True),
+                           ("separate_verification", False), ("corrupt_proof_rejected", False)):
+            changed = copy.deepcopy(current)
+            changed["calls"][0][field] = bad
+            with self.subTest(field=field), self.assertRaises(gate.common.GateError):
+                gate.validate_summary(changed, self.row, require_v3=True)
+
+    def test_current_capture_requires_exact_ledger9_bytes_and_frozen_historical_binding(self):
+        fixture = "tests-rust-backend/did-point-digest-reducer"
+        oracle = gate.ROOT / fixture / "oracle"
+        with tempfile.TemporaryDirectory() as temp:
+            capture = Path(temp) / "fresh.json"
+            raw = (oracle / "ledger9-cases.json").read_bytes()
+            capture.write_bytes(raw)
+            self.assertEqual(set(gate.validate_current_capture(capture, fixture)),
+                             {str(oracle / name) for name in
+                              ("ledger9-binding.json", "ledger9-cases.json", "cases.json",
+                               "reviewed-rust-binding.json")})
+            capture.write_bytes(raw + b" ")
+            with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
+                gate.validate_current_capture(capture, fixture)
+
     def test_missing_duplicate_extra_or_wrong_operation_refuse(self):
         for change in ('missing','duplicate','extra','reordered','operation'):
             value=copy.deepcopy(self.good)

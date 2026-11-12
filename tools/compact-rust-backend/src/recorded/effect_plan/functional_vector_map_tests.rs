@@ -159,7 +159,7 @@ fn recursive_map_if_certified_call_and_assert_fold_without_executor_capture() {
     let root = root(Type::Field, vector(Type::Field, 2), 3, body);
     let checked = checked(&root, &[pure]);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     for capability in [
         Capability::VectorMap,
         Capability::Pure,
@@ -207,10 +207,10 @@ fn empty_maps_still_require_body_authority_and_require_capability() {
     let mut authority = Authority::new();
     authority.missing = Some(assertion.value.id);
     assert!(
-        matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority {path}) if path==assertion.path)
+        matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority {path}) if path==assertion.path)
     );
     let authority = Authority::new();
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::VectorMap],
     };
     assert!(matches!(
@@ -220,7 +220,7 @@ fn empty_maps_still_require_body_authority_and_require_capability() {
             ..
         })
     ));
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure, Capability::Require],
     };
     assert!(matches!(
@@ -252,7 +252,7 @@ fn context_free_keccak_does_not_gain_pinned_zkir_v2_admission() {
         .find(|b| matches!(b.operation, Operation::Keccak256(_)))
         .unwrap();
     assert!(
-        matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==hash.path)
+        matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==hash.path)
     );
 }
 #[test]
@@ -282,7 +282,7 @@ fn owned_source_and_captures_are_retained_inside_non_move_mapping_closure() {
     };
     let checked = checked(&root, &[]);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let expression = super::super::functional_pure_blocks::vector_map(
         map_binding(&checked),
         checked.declarations(),
@@ -343,7 +343,7 @@ fn transient_hash_map_reuses_shared_owner_and_precise_capability() {
     );
     let checked = checked(&root, &[]);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(program.requirements().contains(&Capability::VectorMap));
     assert!(program.requirements().contains(&Capability::Hashing));
     let expression = super::super::functional_pure_blocks::vector_map(

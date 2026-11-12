@@ -57,7 +57,7 @@ fn policy(enforce_max_age: bool) -> VerifierPolicy {
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"recordFreshEnough".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -76,7 +76,7 @@ fn assertion_error<T>(result: Result<T, runtime::CompactError>, oracle: &serde_j
 #[test]
 fn exact_guarded_nested_arithmetic_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/guarded-assert-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-guarded-assert-arith-oracle.json"
     ))
     .unwrap();
     let att = attestation(100);
@@ -168,7 +168,7 @@ fn vm_shape(operations: Value) -> Value {
 #[test]
 fn guarded_counter_recording_matches_typescript_success_and_failure() {
     let oracle: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/guarded-recording-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-guarded-recording-oracle.json"
     ))
     .unwrap();
     for case in ["fresh", "unchecked_age", "future", "expired"] {

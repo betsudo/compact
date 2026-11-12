@@ -66,7 +66,9 @@ pub(super) fn seed_and_fund(
     let (seeded_zswap, seed_indices) = ledger.zswap.try_apply(&seed_offer, None)?;
     // Local genesis insertion is privileged. Seal its Merkle root as a block
     // update so the later input references an accepted historical root.
-    ledger.zswap = midnight_storage_core::arena::Sp::new(seeded_zswap.post_block_update(time));
+    ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded_zswap.post_block_update(time, ledger.parameters.global_ttl),
+    );
     let seed_index = *seed_indices
         .get(&seed_commitment)
         .ok_or("seed coin commitment was not allocated")?;
@@ -109,13 +111,20 @@ pub(super) fn seed_and_fund(
 }
 
 pub(super) fn fee_funded_state(rng: &mut StdRng) -> Result<TestState<DefaultDB>, Box<dyn Error>> {
+    fee_funded_state_with_utxos(rng, 1)
+}
+
+pub(super) fn fee_funded_state_with_utxos(
+    rng: &mut StdRng,
+    utxos: usize,
+) -> Result<TestState<DefaultDB>, Box<dyn Error>> {
     std::env::var("MIDNIGHT_LEDGER_TEST_STATIC_DIR")
         .map_err(|_| "set MIDNIGHT_LEDGER_TEST_STATIC_DIR for the upstream fee funding fixture")?;
     let mut state = TestState::new(rng);
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(state.give_fee_token(rng, 1));
+        .block_on(state.give_fee_token(rng, utxos));
     // give_fee_token registers Dust generation, rewards Night, and advances
     // fixture time to the Dust cap. balance_tx later proves the fee spend.
     Ok(state)

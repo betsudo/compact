@@ -228,7 +228,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -241,7 +241,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn election_owner_operations_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-oracle.json"
     ))
     .unwrap();
     let witness = FixedWitness;
@@ -286,7 +286,7 @@ fn election_owner_operations_match_typescript_state() {
 fn recorded_topic_preserves_authority_phase_opaque_state_and_private_effects() {
     use compact_rust_election_oracle_fixture::ledger_contract::recorded;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-topic-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-topic-oracle.json"
     ))
     .unwrap();
     let initial = |authority| {
@@ -424,7 +424,7 @@ fn recorded_advance_preserves_all_phase_transitions_and_optional_presence() {
     use compact_rust_election_oracle_fixture::ledger_contract::recorded;
     use compact_rust_election_oracle_fixture::types::PublicState;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-advance-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-advance-oracle.json"
     ))
     .unwrap();
     let initial = |authority| {
@@ -575,7 +575,7 @@ fn recorded_advance_preserves_all_phase_transitions_and_optional_presence() {
 fn recorded_add_voter_uses_live_tree_witness_and_preserves_two_private_outputs() {
     use compact_rust_election_oracle_fixture::ledger_contract::recorded;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-add-voter-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-add-voter-oracle.json"
     ))
     .unwrap();
     let initial = |authority| {
@@ -764,7 +764,7 @@ fn recorded_commit_preserves_ballots_membership_and_short_circuit_witnesses() {
     use commit_support::{Mode, Private, Witness, seeded};
     use compact_rust_election_oracle_fixture::ledger_contract::{recorded, vote_commit};
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-commit-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-commit-oracle.json"
     ))
     .unwrap();
     for scenario in oracle["scenarios"].as_array().unwrap() {
@@ -959,7 +959,7 @@ fn recorded_reveal_preserves_ballots_membership_counters_and_short_circuit_witne
     use commit_support::{Mode, Private, Witness, reveal_seeded};
     use compact_rust_election_oracle_fixture::ledger_contract::{recorded, vote_reveal};
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/election-reveal-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-election-reveal-oracle.json"
     ))
     .unwrap();
     for scenario in oracle["scenarios"].as_array().unwrap() {

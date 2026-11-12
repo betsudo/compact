@@ -26,7 +26,7 @@ use midnight_storage::storage::HashMap;
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new().insert(
         EntryPointBuf(b"ping".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -48,7 +48,7 @@ fn values(state: &StateValue<DefaultDB>) -> Vec<String> {
 #[test]
 fn vector_map_arithmetic_matches_typescript_state() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/map-lambda-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-map-lambda-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -71,7 +71,7 @@ fn vector_map_arithmetic_matches_typescript_state() {
 #[test]
 fn recorded_identity_map_matches_typescript_and_replays() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/map-lambda-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-map-lambda-oracle.json"
     ))
     .unwrap();
     let context = || {

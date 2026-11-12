@@ -37,7 +37,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["append", "append_h"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -253,7 +253,7 @@ fn generated_local_merkle_views_preserve_kind_leaf_and_depth() {
 #[test]
 fn generated_path_conversions_match_typescript_witness_output() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-path-witness.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-path-witness.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

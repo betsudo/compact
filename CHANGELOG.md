@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.211, language 0.23.105, runtime 0.17.0]
+
+Unreleased Ledger 9 migration.
+
+### Changed
+
+- Pair the synchronous TypeScript runtime with the published Ledger 9 Onchain
+  Runtime 4.0.1 package. Generated TypeScript selects the new runtime minor.
+- Emit one ZKIR v3 impact per transcript operation, as required by the Ledger 9
+  transaction prover.
+- Generated Rust requires Rust 1.99 and Compact runtime ABI 54. Use
+  `--rust-functional-ledger9` for functional generation with the paired Ledger 9
+  compiler and runtime.
+
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 
 Unreleased local Rust-backend slice; generated API, native and proof

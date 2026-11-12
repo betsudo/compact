@@ -60,7 +60,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["checked_write", "read_cell"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -112,7 +112,7 @@ fn assert_private_outputs(
 #[test]
 fn recorded_witness_assertion_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/assert-witness.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-assert-witness.json"
     ))
     .unwrap();
     let expected = &oracle["writePass"];
@@ -214,7 +214,7 @@ fn recorded_witness_assertion_matches_typescript_and_replays() {
 #[test]
 fn witnessed_assertions_short_circuit_in_typescript_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/assert-witness.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-assert-witness.json"
     ))
     .unwrap();
     for (name, first, second) in [
@@ -257,7 +257,7 @@ fn witnessed_assertions_short_circuit_in_typescript_order() {
 #[test]
 fn witnessed_assertion_guards_ledger_write() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/assert-witness.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-assert-witness.json"
     ))
     .unwrap();
     for (name, flag) in [("writePass", true), ("writeFails", false)] {

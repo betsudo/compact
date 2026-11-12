@@ -38,12 +38,13 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in [
         "write_secret",
         "write_twice",
+        "write_offset",
         "write_nested_twice",
         "read_cell",
     ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -234,7 +235,7 @@ fn assert_oracle_output(write: CircuitResult<u64, ()>, oracle: &serde_json::Valu
 #[test]
 fn witnessed_cell_writes_keep_ledger_and_private_effects_in_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-cell-write-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-cell-write-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -257,7 +258,7 @@ fn witnessed_cell_writes_keep_ledger_and_private_effects_in_order() {
 #[test]
 fn witnessed_writes_record_private_values_and_public_operations_in_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-cell-write-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-cell-write-ts-output.json"
     ))
     .unwrap();
     let seed = Field::from(2_u64);
@@ -318,7 +319,7 @@ fn witnessed_writes_record_private_values_and_public_operations_in_order() {
 #[test]
 fn nested_witnessed_writes_record_the_same_private_and_public_effects() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-cell-write-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-cell-write-ts-output.json"
     ))
     .unwrap();
     let seed = Field::from(2_u64);
@@ -374,7 +375,7 @@ fn nested_witnessed_writes_record_the_same_private_and_public_effects() {
 #[test]
 fn contract_facade_exposes_witnessed_circuits_with_typed_arguments() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-cell-write-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-cell-write-ts-output.json"
     ))
     .unwrap();
     let contract = Contract::from(Secret);
@@ -388,7 +389,7 @@ fn contract_facade_exposes_witnessed_circuits_with_typed_arguments() {
 #[test]
 fn native_frame_preserves_witness_and_nested_call_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-cell-write-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-cell-write-ts-output.json"
     ))
     .unwrap();
     let seed = Field::from(2_u64);
@@ -524,7 +525,8 @@ fn gas_limit_guards_each_ledger_query_while_observed_cost_sums_queries() {
         read_time: one_read.read_time,
         compute_time: one_read.compute_time,
         bytes_written: u64::MAX,
-        bytes_deleted: u64::MAX,
+        // Ledger 9 treats this bound as the minimum deletion credit.
+        bytes_deleted: 0,
     };
     context.gas_limit = Some(one_query_limit);
 

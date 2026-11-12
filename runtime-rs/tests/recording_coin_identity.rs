@@ -153,7 +153,7 @@ mod preparation {
     fn observed(key: Option<u8>, verifier: &VerifierKey) -> ObservedContractState {
         let operations = midnight_storage::storage::HashMap::new().insert(
             EntryPointBuf(b"identity".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
         let contract = ContractState::new(
             context().query.state.get_ref().clone(),
@@ -244,7 +244,7 @@ mod preparation {
 
     #[test]
     fn default_offer_preparation_enforces_final_identity_without_changing_empty_plan_policy() {
-        use midnight_ledger::structure::LedgerState;
+        use midnight_ledger_v9::structure::LedgerState;
         use midnight_transient_crypto::proofs::ProofPreimage;
         use midnight_zswap::{Offer, Output};
         let mut rng = StdRng::seed_from_u64(206);

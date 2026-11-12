@@ -24,11 +24,13 @@ moves from the legacy shape planner to the compositional effect plan.
   Its 120 success cases include field wraparound and both selected branches; four
   callback-refusal cases check selected and skipped callbacks.
 
-The existing `compact-rust-proof-smoke --effectful-return <artifacts>` route uses
-this package and therefore proves the fresh generated implementation. Its two
-cases prove, verify and ledger-apply both selected branches with the shared smoke
-policy (balancing disabled). Key artifacts must come from the matching Compact
-source, `examples/rust_backend/effectful_return_oracle.compact`.
+The `check_compactc_target.py --effectful-return --proof` gate compares the
+compiler output with the complete retained IR before generating v3 keys from
+`examples/rust_backend/effectful_return_oracle.compact`. The proof runner
+exercises both selected branches of the generated implementation. A separate
+process verifies the two standalone proofs and rejects corrupted copies.
+Each branch deploys and applies a separately proved call with funding under
+default ledger strictness, then checks exact replay refusal and unchanged state.
 
 Run the package by itself to check the default emitter without Cargo feature
 unification from the separate experimental fixture:

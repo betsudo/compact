@@ -16,10 +16,30 @@ scope. To run the token qualification:
 cargo test -p compact-rust-test-center-micro-dao-fixture --all-features --test token_query
 ```
 
-Compile the exact original source using `compactc --target rust`, generate keys for
-`dao_voting_token`, and run `compact-rust-proof-smoke --micro-dao-token OUTPUT`.
-The proof adapter compares the complete retained IR before opening any key file;
-its negative test rejects a changed declaration and the historical projection.
-This is a real proof, verification and ledger application from constructor state
-under the shared **unbalanced smoke policy**. It is not a funded DAO lifecycle test
-or a proof of every export.
+Use `check_compactc_target.py --micro-dao-token --proof` to compile the complete
+original source and generate ZKIR v3 keys for `dao_voting_token`. The maintained
+`--micro-dao-advance --proof` and `--micro-dao-reveal --proof` selectors use the
+same recipe for their respective exports. The adapters bind the full retained
+IR, exact generated Rust, all seven raw circuits, and the selected binary IR and
+verifier before proving. The source control rejects a changed declaration and the
+historical projection.
+
+Each state call produces a fresh standalone proof, verifies it in a separate
+process, and exercises a distinct default-strict Ledger 9 transaction with
+Night-backed Dust and exact unchanged replay refusal. The token uses constructor
+state. The three advance phases and two reveal ballots use explicit prior-state
+fixtures. The reveal also checks the applied-state double-vote refusal.
+
+The maintained offer selectors `--micro-dao-set-topic`, `--micro-dao-buy-in`,
+`--micro-dao-cash-out`, and `--micro-dao-vote-commit` use the same Ledger 9
+source and selected-artifact checks with `--proof`. Each offer case verifies a
+fresh standalone proof separately, then funds and applies a deployment and a
+distinct default-strict transaction. The checks retain guaranteed and fallible
+offer placement, exact commitment and nullifier effects, scenario-specific
+rollback controls, and unchanged transaction replay. Explicit prior-state
+fixtures supply the preceding DAO and coin states.
+
+Both `buy_in` cases and empty-pot `set_topic` use automatic guaranteed
+placement. Occupied-pot `set_topic`, `cash_out`, and both `vote_commit`
+cases request whole-fallible placement before proof construction so they can
+exercise the selected segment's rollback boundary.

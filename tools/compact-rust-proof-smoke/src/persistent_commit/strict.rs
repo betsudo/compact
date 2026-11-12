@@ -1,7 +1,20 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Original declared-Field commitment with source binding and strict funded application.
+use super::super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_call_arg_declared_type_fixture::ledger_slots as slots;
 use midnight_compact_runtime::recording::RecordingFrame;
@@ -81,17 +94,21 @@ pub(crate) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/commitSmall.verifier"),
     )?))?;
-    let prepared = call.prepare(verifier.clone(), Fr::from(0_u64))?;
+    let prepared = call.prepare(verifier, Fr::from(0_u64))?;
     if prepared.input != AlignedValue::from(())
         || prepared.output != AlignedValue::from(())
         || format!("{direct:?}") != format!("{prepared:?}")
     {
         return Err("Field commitment observed preparation binding differs".into());
     }
-    kernel_shielded_effects::prove_and_verify_call(root, CIRCUIT, &prepared, &verifier)?;
-    opaque_public::apply_funded(root, CIRCUIT, prepared, deploy, &expected_state, rng, 611)?;
+    check_transaction(root, CIRCUIT, deploy, prepared, &mut rng, |state| {
+        if state.data.get_ref() != &expected_state {
+            return Err("Field commitment applied unexpected public state".into());
+        }
+        Ok(())
+    })?;
     println!(
-        "Field commitment: exact declared input, native/recorded/observed/manual replay, proof and changed-binding rejection, strict funded ledger8 apply; constructor opening supplied, not proved"
+        "Field commitment: exact declared input and funded default-strict Ledger 9 application passed"
     );
     Ok(())
 }

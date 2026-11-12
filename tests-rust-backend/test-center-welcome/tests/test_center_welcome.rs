@@ -106,7 +106,7 @@ fn vm_shape(actual: serde_json::Value) -> serde_json::Value {
 #[test]
 fn original_welcome_check_in_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-welcome.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-welcome.json"
     ))
     .unwrap();
     let success = &oracle["cases"][1]["checkIn"];
@@ -259,7 +259,7 @@ fn original_welcome_check_in_matches_typescript_and_replays() {
 #[test]
 fn original_welcome_organizer_gate_matches_typescript_success_and_failures() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-welcome.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-welcome.json"
     ))
     .unwrap();
     for (case_name, participant) in [("participantSuccess", true), ("organizerSuccess", false)] {
@@ -457,7 +457,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["add_participant", "add_organizer", "check_in"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -469,7 +469,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn original_welcome_constructor_matches_typescript_empty_and_one_participant() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-welcome.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-welcome.json"
     ))
     .unwrap();
     assert_eq!(

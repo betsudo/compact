@@ -205,7 +205,7 @@ def main():
         for alias, source in SOURCES.items():
             destination = output / alias
             run("compile-" + alias, [compiler, "--target", "rust", "--skip-zk",
-                "--rust-functional-ledger8", "--rust-require-recording",
+                "--rust-functional-ledger9", "--rust-require-recording",
                 "--rust-runtime-root", ROOT, source, destination])
             check_manifest(destination)
             manifest = tomllib.loads((destination / "contract/Cargo.toml").read_text())

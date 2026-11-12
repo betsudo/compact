@@ -26,9 +26,9 @@ use midnight_onchain_vm::cost_model::INITIAL_COST_MODEL;
 use midnight_serialize::tagged_serialize;
 use midnight_storage::storage::HashMap;
 
-fn expected_bytes(json: &str) -> Vec<u8> {
+fn first_step_bytes(json: &str) -> Vec<u8> {
     let reference: serde_json::Value = serde_json::from_str(json).unwrap();
-    hex::decode(reference["stateHex"].as_str().unwrap()).unwrap()
+    hex::decode(reference["steps"][0]["stateHex"].as_str().unwrap()).unwrap()
 }
 
 fn state_bytes(state: StateValue<DefaultDB>, entry_points: &[&str]) -> Vec<u8> {
@@ -36,7 +36,7 @@ fn state_bytes(state: StateValue<DefaultDB>, entry_points: &[&str]) -> Vec<u8> {
     for name in entry_points {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -72,7 +72,7 @@ fn assert_sequence_step(
 
 #[test]
 fn set_insert_state_matches_typescript_transition_bytes() {
-    let expected = expected_bytes(include_str!("fixtures/set-ts-after-add.json"));
+    let expected = first_step_bytes(include_str!("fixtures/ledger9-set-transition.json"));
     let result = insert_set(
         &context(vec![constructor_set(), constructor_set()]),
         0,
@@ -99,7 +99,7 @@ fn set_insert_state_matches_typescript_transition_bytes() {
 
 #[test]
 fn map_insert_state_matches_typescript_transition_bytes() {
-    let expected = expected_bytes(include_str!("fixtures/map-ts-after-put.json"));
+    let expected = first_step_bytes(include_str!("fixtures/ledger9-map-transition.json"));
     let result = insert_map(
         &context(vec![constructor_map()]),
         0,
@@ -127,7 +127,7 @@ fn map_insert_state_matches_typescript_transition_bytes() {
 
 #[test]
 fn list_prepend_state_matches_typescript_transition_bytes() {
-    let expected = expected_bytes(include_str!("fixtures/list-ts-after-prepend.json"));
+    let expected = first_step_bytes(include_str!("fixtures/ledger9-list-transition.json"));
     let result = push_front_list(
         &context(vec![constructor_list()]),
         0,
@@ -153,7 +153,7 @@ fn list_prepend_state_matches_typescript_transition_bytes() {
 #[test]
 fn set_mutation_sequence_matches_typescript_state_bytes() {
     let reference: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/set-ts-sequence.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/ledger9-set-transition.json")).unwrap();
     let names = [
         "add",
         "contains",
@@ -215,7 +215,7 @@ fn set_mutation_sequence_matches_typescript_state_bytes() {
 #[test]
 fn map_mutation_sequence_matches_typescript_state_bytes() {
     let reference: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/map-ts-sequence.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/ledger9-map-transition.json")).unwrap();
     let names = [
         "put",
         "put_default",
@@ -279,7 +279,7 @@ fn map_mutation_sequence_matches_typescript_state_bytes() {
 #[test]
 fn list_mutation_sequence_matches_typescript_state_bytes() {
     let reference: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/list-ts-sequence.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/ledger9-list-transition.json")).unwrap();
     let names = [
         "item_count",
         "items_empty",

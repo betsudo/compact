@@ -30,7 +30,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["read_count", "read_value"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -43,7 +43,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn constructor_counter_steps_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-counter-actions.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-counter-actions.json"
     ))
     .unwrap();
     let constructor = initial_state(

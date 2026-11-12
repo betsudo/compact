@@ -66,7 +66,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub(crate) fn identity(
         value: crate::types::Envelope,
     ) -> Result<crate::types::Envelope, runtime::CompactError> {
@@ -87,7 +87,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -105,7 +105,7 @@ pub mod ledger_contract {
             crate::ledger_slots::phase.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }

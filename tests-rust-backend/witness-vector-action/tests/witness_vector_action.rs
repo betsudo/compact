@@ -71,7 +71,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["keepResult", "discardResult", "reuseResult"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -108,7 +108,7 @@ fn assert_oracle(result: CircuitResult<u64, ()>, calls: usize, oracle: &serde_js
 #[test]
 fn witness_vector_actions_evaluate_once_and_preserve_transcript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-vector-action.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-vector-action.json"
     ))
     .unwrap();
 
@@ -147,7 +147,7 @@ fn witness_vector_actions_evaluate_once_and_preserve_transcript() {
 #[test]
 fn recorded_vector_witnesses_match_typescript_and_evaluate_once() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-vector-action.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-vector-action.json"
     ))
     .unwrap();
     for name in ["keepResult", "discardResult", "reuseResult"] {

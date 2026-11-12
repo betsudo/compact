@@ -15,6 +15,8 @@
 //! The unchanged original Coracle start is exercised from explicit red/blue
 //! prestates. This native check does not imply a funded two-call lifecycle.
 
+#[path = "../../support/ledger9_partition.rs"]
+mod ledger9_partition;
 use compact_rust_test_center_coracle_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
 };
@@ -130,7 +132,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
             .fold(HashMap::new(), |m, n| {
                 m.insert(
                     EntryPointBuf(n.as_bytes().to_vec()),
-                    ContractOperation::new(None),
+                    ContractOperation::new(None, None),
                 )
             });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -221,7 +223,7 @@ fn normalized_effects(mut effects: Value) -> Value {
 #[test]
 fn original_start_native_matches_corrected_ts_from_seeded_prestates() {
     let fixture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/coracle-start.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-coracle-start.json"
     ))
     .unwrap();
     assert_eq!(fixture["rows"].as_array().unwrap().len(), 27);
@@ -434,12 +436,10 @@ fn original_start_native_matches_corrected_ts_from_seeded_prestates() {
             assert_eq!(json!(out.gas_cost)[dim], sum, "{} {dim}", row["name"]);
             assert_eq!(sum.to_string(), row["queryCostSum"][dim]);
         }
+        ledger9_partition::assert_partition(&recorded, row);
+        assert!(row["partition"][1].is_null());
         assert_eq!(
-            row["partition"][if row["name"].as_str().unwrap().starts_with("blue") {
-                1
-            } else {
-                0
-            }]["programLength"],
+            row["partition"][0]["programLength"],
             if row["name"].as_str().unwrap().starts_with("blue") {
                 97
             } else {

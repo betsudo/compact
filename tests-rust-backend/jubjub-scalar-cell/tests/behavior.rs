@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use compact_rust_jubjub_scalar_cell_fixture::{ledger_contract as c, runtime as r};
 use midnight_compact_testkit::{ArtifactIdentity, ContractLab, Environment, LabError};
 use r::context::{ConstructorContext, ConstructorResult};
@@ -77,7 +89,8 @@ fn encoded(value: &r::ledger::ContractState<r::ledger::DefaultDB>) -> String {
 
 #[test]
 fn scalar_boundaries_match_original_oracle_ts_state_and_recorded_execution() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
     assert_eq!(capture["format"], "compact-acc-jubjub-wrapper-capture/v1");
     let rows = capture["cases"].as_array().unwrap();
     assert_eq!(rows.len(), 7);
@@ -211,7 +224,8 @@ fn scalar_boundaries_match_original_oracle_ts_state_and_recorded_execution() {
 
 #[test]
 fn generated_raw_mul_preserves_canonical_refusal_and_rollback() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/cases-ledger9.json")).unwrap();
     let rows = capture["rawCases"].as_array().unwrap();
     assert_eq!(rows.len(), 2);
     for row in rows {

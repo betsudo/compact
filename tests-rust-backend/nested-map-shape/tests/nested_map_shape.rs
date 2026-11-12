@@ -26,7 +26,7 @@ use midnight_storage::storage::HashMap;
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new().insert(
         EntryPointBuf(b"check_nested_empty".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -37,7 +37,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn nested_map_shape_query_is_typed_and_replayable() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-map-shape.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-map-shape.json"
     ))
     .unwrap();
     assert_eq!(users_by_org.path(), &[0]);

@@ -30,7 +30,7 @@ use midnight_compact_runtime::ledger::{
 };
 use rand::rngs::StdRng;
 
-use super::{check_generated_trace, check_transaction, make_deploy};
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 
 pub(super) fn check_plain(merkle_root: &Path, rng: &mut StdRng) -> Result<(), Box<dyn Error>> {
     let circuit = "append";

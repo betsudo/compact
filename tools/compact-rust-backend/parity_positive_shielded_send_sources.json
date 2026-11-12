@@ -18,7 +18,7 @@
       "expected_recorded_circuits": ["send_to_self", "send_to_user", "send_to_contract", "send_forward"],
       "pure_declarations": 0,
       "exported_pure_declarations": 0,
-      "rust_fixture": "tests-rust-backend/shielded-send-oracle/lib.rs"
+      "rust_consumer": "tests-rust-backend/shielded-send-oracle/lib.rs"
     }
   ],
   "expected_rejections": []

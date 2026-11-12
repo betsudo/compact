@@ -36,7 +36,9 @@ use midnight_onchain_vm::ops::Op;
 use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
-use super::{check_generated_trace, check_observed_call_parity, check_transaction, make_deploy};
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
+};
 
 mod remaining;
 pub(crate) use remaining::run as run_remaining;

@@ -14,11 +14,16 @@
 // limitations under the License.
 
 //! Prove unchanged qualified sendShielded and apply an exact funded offer.
+use super::local_v3_application as v3;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_shielded_send_oracle_fixture::{ledger_contract as contract, types};
+use midnight_base_crypto::hash::persistent_hash;
 use midnight_compact_runtime as runtime;
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{ObservedCallError, OfferBackedObservedState, ZswapIntentError};
+
+const NAME: &str = "send_to_self";
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     run_case(root, false)
@@ -28,21 +33,59 @@ pub(super) fn run_observational(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>> {
     // Pair the complete generated source before deployment, keys or funding.
-    // This guards source pairing; key provenance is qualified separately.
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_shielded_send_oracle_fixture::RETAINED_IR,
     )?;
-    const NAME: &str = "send_to_self";
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("shielded send requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    for (path, expected) in [
+        (
+            "contract/lib.rs",
+            "0208ef2a7eac22dbb82413651501ab78d7cbd0fd1ab6fb7ec8938b2095b00922",
+        ),
+        (
+            "zkir/send_to_self.zkir",
+            "8af8fdfcd1c11a1813ea0933cde79968b634848a0164c2c417d11d6d19868fc9",
+        ),
+    ] {
+        if hex::encode(persistent_hash(&std::fs::read(root.join(path))?).0) != expected {
+            return Err(format!("shielded send source/proof artifact differs: {path}").into());
+        }
+    }
+    let (ir, verifier, operation) = v3::operation(root, NAME, 15)?;
+    if ir.model().rows() != 23_445 {
+        return Err("shielded send v3 row count differs".into());
+    }
+    let stem = if observation_policy {
+        "observational-send-full"
+    } else {
+        "shielded-send-full"
+    };
     let mut rng = StdRng::seed_from_u64(0x0203_0001);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        NAME,
+        operation,
+        &mut rng,
+    );
     let address = deploy.address();
-    let mut fee_state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fee_state.ledger.contract = fee_state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
+    let mut fee_state = fee_funded_state_with_utxos(&mut rng, 3)?;
+    let resolver = fee_resolver(root, NAME)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    v3::apply_funded_deployment(
+        root,
+        stem,
+        &deploy,
+        &mut fee_state,
+        &mut rng,
+        &executor,
+        &resolver,
+    )?;
     let time = fee_state.time;
     let seed_info = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([1; 32]),
@@ -57,7 +100,9 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     let seed_index = *indices
         .get(&seed_commitment)
         .ok_or("missing seeded index")?;
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     let input = Input::new_contract_owned(
         &mut rng,
@@ -107,9 +152,6 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         bound_native.context.circuit_zswap().next_index(),
         native.context.circuit_zswap().next_index()
     );
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/send_to_self.verifier"),
-    )?))?;
     let call = contract::Contract::default()
         .recording()
         .send_to_self_call(
@@ -128,12 +170,6 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         bound_native.context.circuit_zswap()
     );
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
     let mut wrong = compact_input.clone();
     wrong.mt_index = BoundedUint::new(index.into())?;
     let wrong_call = contract::Contract::default()
@@ -155,7 +191,7 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         partial,
         Err(runtime::CompactError::ZswapOfferOutputMismatch)
     ));
-    let tx = if observation_policy {
+    let updated = if observation_policy {
         use runtime::transaction::{ObservationalOfferBackedState, OfferAdmission};
         let observed = super::shielded_receive::observed(address, deploy.initial_state.clone());
         let checkpoint = super::observational_binding::checkpoint(&ledger, &observed)?;
@@ -173,48 +209,32 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
             prepared.prototype(),
             observed_prepared.prototype(),
         )?;
-        observed_prepared.into_transaction(&mut rng, Timestamp::from_secs(time.to_secs() + 3600))
-    } else {
-        prepared.into_transaction(
+        v3::prove_and_apply_offer(
+            root,
+            (NAME, stem),
+            observed_prepared,
+            &mut fee_state,
             &mut rng,
-            "local-test",
-            Timestamp::from_secs(time.to_secs() + 3600),
-        )
+            &verifier,
+            bound_native.context.query.state.get_ref(),
+        )?
+    } else {
+        v3::prove_and_apply_offer(
+            root,
+            (NAME, stem),
+            prepared,
+            &mut fee_state,
+            &mut rng,
+            &verifier,
+            bound_native.context.query.state.get_ref(),
+        )?
     };
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0203_0002),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0203_0003));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fee_state.balance_tx(rng.clone(), sealed, &resolver))?;
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: time,
-            last_block_time: time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, outcome) = ledger.apply(&verified, &context);
-    if !matches!(outcome, TransactionResult::Success(_)) {
-        return Err(format!("shielded send apply failed: {outcome:?}").into());
-    }
     assert_eq!(
         updated.zswap.coin_coms.index(index).map(|(hash, _)| hash),
         Some(commitment.0)
     );
     assert_eq!(updated.zswap.first_free, index + 1);
+    assert!(updated.zswap.nullifiers.contains_key(&nullifier));
     assert!(matches!(updated.zswap.try_apply(&offer, None),
         Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found)) if found==nullifier));
     if !observation_policy {
@@ -297,7 +317,9 @@ fn partial_order_cases(
     let seed_offer: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], vec![same_seed, reverse_seed], vec![]).ok_or("empty partial seed")?;
     let (seeded, seed_indices) = fee_state.ledger.zswap.try_apply(&seed_offer, None)?;
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     for (byte, seed_com, same_order) in [(same, same_com, true), (reversed, reverse_com, false)] {
         let seed_index = *seed_indices
@@ -381,46 +403,15 @@ fn partial_order_cases(
             native.context.circuit_zswap().outputs()
         );
         let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
-        super::kernel_shielded_effects::prove_and_verify_call(
+        let updated = v3::prove_and_apply_offer(
             root,
-            "send_to_self",
-            prepared.prototype(),
-            verifier,
-        )?;
-        let tx = prepared.into_transaction(
+            (NAME, "shielded-send-partial"),
+            prepared,
+            fee_state,
             rng,
-            "local-test",
-            Timestamp::from_secs(time.to_secs() + 3600),
-        );
-        let resolver = super::qualified_coin_funding::fee_resolver(root, "send_to_self")?;
-        let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-        let provider = LocalProvingProvider {
-            rng: StdRng::seed_from_u64(0x0203_0017),
-            resolver: &resolver,
-            params: &params,
-        };
-        let proven = futures_executor::block_on(
-            tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+            verifier,
+            native.context.query.state.get_ref(),
         )?;
-        let sealed = proven.seal(StdRng::seed_from_u64(0x0203_0018));
-        let sealed = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?
-            .block_on(fee_state.balance_tx(rng.clone(), sealed, &resolver))?;
-        let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
-        let context = TransactionContext {
-            ref_state: ledger.clone(),
-            block_context: BlockContext {
-                tblock: time,
-                last_block_time: time,
-                ..BlockContext::default()
-            },
-            whitelist: None,
-        };
-        let (updated, outcome) = ledger.apply(&verified, &context);
-        if !matches!(outcome, TransactionResult::Success(_)) {
-            return Err(format!("partial send apply failed: {outcome:?}").into());
-        }
         assert_eq!(
             updated.contract.get(&address).unwrap().data.get_ref(),
             contract_state.data.get_ref()
@@ -442,6 +433,7 @@ fn partial_order_cases(
             Some(change_com.0)
         );
         assert_eq!(updated.zswap.first_free, ledger.zswap.first_free + 2);
+        assert!(updated.zswap.nullifiers.contains_key(&nullifier));
         assert!(matches!(updated.zswap.try_apply(&offer, None),
             Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found)) if found==nullifier));
         println!(

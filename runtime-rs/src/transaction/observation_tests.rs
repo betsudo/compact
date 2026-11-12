@@ -15,7 +15,7 @@
 use super::*;
 use crate::ledger::{CoinInfo, CoinRecipient, QualifiedCoinInfo, StateValue};
 use crate::recording::RecordingFrame;
-use midnight_onchain_state::state::ContractMaintenanceAuthority;
+use midnight_onchain_state::state::{ContractMaintenanceAuthority, IrBuf};
 use midnight_serialize::tagged_serialize;
 use midnight_zswap::{Output, keys::SecretKeys};
 use rand::{SeedableRng, rngs::StdRng};
@@ -41,7 +41,7 @@ impl Fixture {
         );
         contract.operations = contract.operations.insert(
             EntryPointBuf(b"step".to_vec()),
-            ContractOperation::new(Some(verifier.clone())),
+            ContractOperation::new(Some(verifier.clone()), None),
         );
         let mut ledger = LedgerState::new("local-test");
         ledger.contract = ledger.contract.insert(address, contract);
@@ -74,7 +74,8 @@ impl Fixture {
         )
         .unwrap();
         let (state, indices) = ledger.zswap.try_apply(&seed, None).unwrap();
-        ledger.zswap = Sp::new(state.post_block_update(Timestamp::from_secs(0)));
+        ledger.zswap =
+            Sp::new(state.post_block_update(Timestamp::from_secs(0), ledger.parameters.global_ttl));
         let wallet = midnight_zswap::local::State::new()
             .apply(&keys, &seed)
             .unwrap();
@@ -109,7 +110,7 @@ impl Fixture {
                 observation: self.observation(),
                 address: self.address,
                 network_id: "local-test".into(),
-                ledger_version: "8.1.3".into(),
+                ledger_version: "9.1.0.1".into(),
                 zswap_root: self.ledger.zswap.coin_coms.rehash().root().unwrap(),
                 first_free: self.ledger.zswap.first_free,
                 final_zswap_event_id: 19,
@@ -121,7 +122,7 @@ impl Fixture {
                 block_hash: [2; 32],
                 block_height: 3,
                 network_id: "local-test".into(),
-                ledger_version: "8.1.3".into(),
+                ledger_version: "9.1.0.1".into(),
                 applied_event_id: 19,
                 wallet_state_sha256: midnight_base_crypto::hash::persistent_hash(&bytes(
                     &self.wallet,
@@ -260,6 +261,30 @@ fn real_wallet_and_contract_inputs_have_equal_recorded_and_prepared_transactions
             assert_eq!(bytes(&a), bytes(&b));
         }
     }
+}
+
+#[test]
+fn recorded_call_preserves_the_installed_operation() {
+    let fixture = Fixture::new();
+    let mut observed = fixture.observed();
+    // Opaque test bytes exercise preservation. No proof or IR parser runs here.
+    let operation = ContractOperation::new(
+        Some(fixture.verifier.clone()),
+        Some(Sp::new(IrBuf::from(vec![1, 2, 3]))),
+    );
+    observed.contract.operations = observed
+        .contract
+        .operations
+        .insert(EntryPointBuf(b"step".to_vec()), operation.clone());
+    let recorded = RecordingFrame::new(observed.circuit_context(()))
+        .kernel_self()
+        .unwrap()
+        .0
+        .finish(());
+    let prepared = RecordedCall::new(&observed, recorded, "step", ())
+        .prepare(fixture.verifier, Fr::from(0))
+        .unwrap();
+    assert_eq!(prepared.op, operation);
 }
 
 #[test]

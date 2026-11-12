@@ -1,0 +1,43 @@
+{
+  "source": {
+    "contract/compact-rust-ir.json": "39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d",
+    "contract/lib.rs": "a9fb29d07f5ed17cffcffcfbead2ef5e655c4f9eb8461a26d08171214535ad31",
+    "zkir/advance.zkir": "89e413273c11dd124bc85cf17a5c2705df729a92273aeee87c1171b35b7b48b5",
+    "zkir/buy_in.zkir": "8d06cb5cf1053ff8a8ab8b86e235b209988709cd14f7e6799b76055531bf8979",
+    "zkir/cash_out.zkir": "d48ce894826cf23aeb2c17638f0beff5c358aef8b0922088cc693ec5bda32f55",
+    "zkir/dao_voting_token.zkir": "b0e0a7a6ad62fb2a9eacf682daf4f7995ea2cfbba48144078107a71e343e8106",
+    "zkir/set_topic.zkir": "611269b2eb482eca5be705bdfcbf7ab3f8979acdfc4ba41227f8f285a4a9cfc9",
+    "zkir/vote_commit.zkir": "8537a2e2180751a43cbb67cc0570290ba7b74162da8b226994d81c7c5398f6c8",
+    "zkir/vote_reveal.zkir": "746fa39ffd53a80be69770f873d0facee121740675cf51096fcb32a22a813dd5"
+  },
+  "material": {
+    "advance": {
+      "zkir/advance.bzkir": "f90c6a9038eb03ae40b7286e5508f1a603bb807ff12ca08f1ac0168039d63aae",
+      "keys/advance.verifier": "b40a4732d69ff41182f91dc532d5db76eac188f4153aec69496f2bb572248e1c"
+    },
+    "dao_voting_token": {
+      "zkir/dao_voting_token.bzkir": "6c0e9b71193f3830addb4684998ff4c35a34c9f95af528b0da19de149856a6cf",
+      "keys/dao_voting_token.verifier": "16acf9149fb14251e2f2f7c55c771403bab9c5220e709aa98eb64f6a593c9bd8"
+    },
+    "vote_reveal": {
+      "zkir/vote_reveal.bzkir": "1f9de4c036e6c2a50ed88a888cfc8fd7034ae4aef29e10f8b0c3cbf1443230f1",
+      "keys/vote_reveal.verifier": "af2fb0a6c078e80fe0125b1e69893259e6c03e1dcfb72a5307843f3d980430b2"
+    },
+    "set_topic": {
+      "zkir/set_topic.bzkir": "3b5f975b352c39dd323bee56a29d3efe3423679713a7e82d36c13a5f37db27ec",
+      "keys/set_topic.verifier": "ab95c6f001a61e0795d3a6a759a95977bf54723a7c2e37e1d1d2cb20c75959e4"
+    },
+    "buy_in": {
+      "zkir/buy_in.bzkir": "80c319d2064b85980563c222205c45ad17431a185cb3b404fc4a9c2b033d9278",
+      "keys/buy_in.verifier": "9ab18f1f04c1e0a0f8b83dc6b58b1cfc0555937478d856be04ca1d8693de6921"
+    },
+    "cash_out": {
+      "zkir/cash_out.bzkir": "570d47837bec426752a466af4646b7e4654bc08be75892b2c447a0c27b702c27",
+      "keys/cash_out.verifier": "e4ab68cef5a548bcc1db548e0f4581e8f5f0b29d86dda28ec697019b383d6d1e"
+    },
+    "vote_commit": {
+      "zkir/vote_commit.bzkir": "1d5c77474c8aa009eb5711ef8b1bd60caec0e647709f7b582e5327141c927a74",
+      "keys/vote_commit.verifier": "d7b1c2824a618353dbe083ebdaf28f5a98b7977bd600a201e69c10dbc83fc70c"
+    }
+  }
+}

@@ -35,7 +35,7 @@ mod constructor_witness;
 
 fn capture(id: &str) -> Value {
     let document: Value =
-        serde_json::from_str(include_str!("../data/unit-composition.json")).unwrap();
+        serde_json::from_str(include_str!("../data/ledger9-unit-composition.json")).unwrap();
     document["cases"]
         .as_array()
         .unwrap()

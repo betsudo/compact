@@ -33,7 +33,7 @@ fn expected_field(value: &serde_json::Value) -> Field {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/literal-bytes-field-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-literal-bytes-field-oracle.json"
     ))
     .unwrap()
 }
@@ -41,7 +41,7 @@ fn oracle() -> serde_json::Value {
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new().insert(
         EntryPointBuf(b"snapshot".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

@@ -42,7 +42,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in CIRCUITS {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -134,7 +134,7 @@ fn assert_recorded_step(
 #[test]
 fn vector_key_recorded_calls_match_native_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/vector-key-adt.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-vector-key-adt.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(()))
@@ -186,7 +186,7 @@ fn vector_key_recorded_calls_match_native_and_replay() {
 #[test]
 fn vector_keys_match_typescript_state_bytes_and_lookup() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/vector-key-adt.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-vector-key-adt.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

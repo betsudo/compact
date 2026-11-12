@@ -39,6 +39,20 @@ ROOT = common.ROOT
 CASES = ("counter-local-capture", "counter-capture", "single", "empty-ordered", "captured", "multiple-inputs", "effectful-reducer", "witness-reducer", "inline-effectful", "inline-branch")
 
 
+GEOMETRY = {
+    "counter-local-capture": (8, 192),
+    "counter-capture": (8, 134),
+    "single": (7, 93),
+    "empty-ordered": (6, 46),
+    "captured": (7, 97),
+    "multiple-inputs": (7, 119),
+    "effectful-reducer": (7, 116),
+    "witness-reducer": (7, 93),
+    "inline-effectful": (7, 118),
+    "inline-branch": (8, 234),
+}
+
+
 def require(value, message):
     if not value:
         raise common.GateError(message)
@@ -48,8 +62,9 @@ def run(args):
     selected_cases = tuple(name for name in CASES if not args.only or name in args.only)
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
+    require("MIDNIGHT_PROOF_SERVER" not in os.environ, "direct Fold requires local proving")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-direct-fold-proof-gate/v1", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-direct-fold-proof-gate/v2", "status": "incomplete", "commands": [],
                "scope": f"{sum(2 if name == 'inline-branch' else 1 for name in selected_cases)} selected source-bound functional-derived Field call proofs and default-strict funded local transactions",
                "selected_cases": list(selected_cases), "complete_selected_family": args.only is None,
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
@@ -73,8 +88,8 @@ def run(args):
         receipt["source_dirty_paths"] = common.dirty_paths()
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
-        selected_zkir = args.zkir or shutil.which("zkir", path=env.get("PATH"))
-        require(selected_zkir is not None, "official direct zkir must be selected")
+        selected_zkir = args.zkir or shutil.which("zkir-v3", path=env.get("PATH"))
+        require(selected_zkir is not None, "official direct zkir-v3 must be selected")
         (output / "bin").mkdir()
         components = receipt["components"] = {}
         for name, path in [("compactc", compiler), ("compactc-scheme", scheme), ("zkir", Path(selected_zkir).resolve(strict=True))]:
@@ -103,7 +118,7 @@ def run(args):
             source = SOURCES / f"{name}.compact"
             destination = generated / name
             fixture = ROOT / f"tests-rust-backend/direct-fold-{name}-source"
-            execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger8",
+            execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger9",
                      "--rust-require-recording", "--rust-runtime-root", ROOT, "--skip-zk",
                      source.relative_to(ROOT), destination], f"generate-{name}")
             snapshot = receipt["generated"][name] = generated_manifest_snapshot(destination)
@@ -133,59 +148,70 @@ def run(args):
             require(not (negative / "keys").exists() and not list(negative.glob("fold-*")),
                     f"{name} changed IR refusal created proof/state outputs")
             receipt["changed_ir_refusals"][name] = {"exit_code":refused.returncode,"before_keys_or_state":True}
+        zkir = components["zkir"]["snapshot"]
+        version = output / "zkir-version.stdout"
+        execute([zkir, "--version"], "zkir-version", version)
+        require(version.read_text().strip() == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
+        receipt["models"] = {}
+        for name in selected_cases:
+            execute([zkir, "mock-compile", generated / name / "zkir/run.zkir"], f"model-{name}")
+            match = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
+            require(match is not None and tuple(map(int, match.groups())) == GEOMETRY[name], f"{name} unexpected v3 model")
+            receipt["models"][name] = dict(k=GEOMETRY[name][0], rows=GEOMETRY[name][1])
+        ks = sorted({row["k"] for row in receipt["models"].values()})
         material = output / "proof-material.json"
-        execute([runner, "--prepare-proof-material", "--verify-only"], "verify-builtins", material)
+        execute([runner, "--prepare-proof-material", "--verify-only", *[arg for k in ks for arg in ("--parameter-k", k)]],
+                "verify-builtins-and-selected-parameters", material)
         prepared = json.loads(material.read_text())
-        require(prepared["mode"] == "verify-only" and prepared["verification"] == "all files checked against locked upstream SHA256 tables", "built-in verification receipt differs")
+        require(prepared["mode"] == "verify-only" and prepared["verification"] == "all files checked against locked upstream SHA256 tables"
+                and set(ks).issubset(row["k"] for row in prepared["parameters"]), "built-in verification receipt differs")
         require(Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected parameter directory")
-        execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
+        selected_material = [Path(prepared["cache_directory"]) / row["name"] for row in prepared["assets"] + prepared["parameters"]]
         receipt["keygen"] = {}
-        receipt["material_hashes"] = {}
+        receipt["material_hashes"] = hashes(selected_material)
         receipt["proof_results"] = {}
         receipt["result_hashes"] = {}
-        selected_material = {}
         for name in selected_cases:
             destination = generated / name
             (destination / "keys").mkdir()
-            execute([components["zkir"]["snapshot"], "compile", destination / "zkir/run.zkir",
+            execute([zkir, "compile", destination / "zkir/run.zkir",
                      destination / "keys/run.prover", destination / "keys/run.verifier"], f"keygen-{name}")
-            model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-            require(model is not None, f"{name} keygen omitted actual circuit model")
-            k, rows = map(int, model.groups())
-            receipt["keygen"][name] = {"mode":"fresh direct native","circuit":"run","k":k,"rows":rows}
-            if k not in selected_material:
-                # The SDK verifies locked tables and only fetches a missing SRS.
-                # Hash verification then runs separately before this proof lane.
-                execute([runner, "--prepare-proof-material", "--parameter-k", k],
-                        f"prepare-selected-{k}", output / f"prepared-material-{k}.json")
-                execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
-                        f"verify-selected-{k}", output / f"selected-material-{k}.json")
-                selected = json.loads((output / f"selected-material-{k}.json").read_text())
-                require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]), "selected SRS not verified")
-                require(Path(selected["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected selected parameter directory")
-                selected_material[k] = [Path(selected["cache_directory"]) / row["name"] for row in selected["assets"] + selected["parameters"]]
+            match = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
+            require(match is not None and tuple(map(int, match.groups())) == GEOMETRY[name], f"{name} key generation model differs")
+            receipt["keygen"][name] = dict(mode="fresh direct native", circuit="run", **receipt["models"][name])
             artifacts = [destination / f"keys/run.{ext}" for ext in ("prover","verifier")]
             artifacts += [destination / f"zkir/run.{ext}" for ext in ("zkir","bzkir")]
-            material_paths = selected_material[k] + artifacts
-            require(all(p.is_file() and p.stat().st_size for p in material_paths), f"{name} proof material missing")
-            receipt["material_hashes"].update(hashes(material_paths))
+            require(all(p.is_file() and p.stat().st_size for p in artifacts), f"{name} proof material missing")
+            unchanged(receipt["material_hashes"])
+            receipt["material_hashes"].update(hashes(artifacts))
             execute([runner, "--direct-fold", name, destination], f"prove-verify-apply-{name}")
             summary = json.loads((destination / "fold-proof-result.json").read_text())
-            require(summary["format"] == "compact-direct-fold-proof/v1" and summary["status"] == "passed"
+            require(summary["format"] == "compact-direct-fold-proof/v2" and summary["status"] == "passed"
                     and summary["case"] == name and summary["constructor_execution_proved"] is False
                     and summary["unselected_sources_proved"] is False, f"{name} invalid proof summary")
             expected = [11] if name == "counter-local-capture" else [6] if name == "counter-capture" else [123,134] if name == "inline-branch" else [24] if name == "multiple-inputs" else [12] if name == "single" else [9] if name == "empty-ordered" else [123]
             require([row["expected"] for row in summary["calls"]] == expected, f"{name} selected calls differ")
-            for row in summary["calls"]:
+            for index, row in enumerate(summary["calls"]):
                 require(type(row["proof_bytes"]) is int and row["proof_bytes"] > 0 and
+                        type(row["transaction_proof_bytes"]) is int and row["transaction_proof_bytes"] > 0 and
+                        row["transaction_proof_version"] == 3 and row["positive_fee_dust_spends"] == 1 and
                         row["private_state"] == (9 if name in {"witness-reducer", "empty-ordered"} else 7) and
                         row["witness_calls"] == (2 if name in {"witness-reducer", "empty-ordered"} else 0) and
                         row["changed_result_same_geometry"] is True and row["changed_binding_rejected"] is True and
                         row["changed_result_rejected"] is True and row["strict_application"] == "default" and
                         row["replay_refusal"] == "IntentAlreadyExists" and row["replay_unchanged"] is True,
                         f"{name} incomplete proof/application controls")
+                stem = destination / f"fold-{index}"
+                standalone = Path(f"{stem}.proof").read_bytes()
+                transaction = Path(f"{stem}-transaction.proof").read_bytes()
+                require(len(standalone) == row["proof_bytes"] and len(transaction) == row["transaction_proof_bytes"]
+                        and standalone != transaction, f"{name} distinct proof artifact binding differs")
+                after = Path(f"{stem}-ledger-after.bin").read_bytes()
+                require(after and after == Path(f"{stem}-ledger-replay.bin").read_bytes(), f"{name} serialized replay differs")
             receipt["proof_results"][name] = summary
             receipt["result_hashes"].update(hashes([p for p in destination.glob("fold-*") if p.is_file()]))
+            execute([runner, "--direct-fold-verify", name, destination], f"independent-standalone-verification-{name}")
+            unchanged(receipt["result_hashes"])
         unchanged(receipt["source_hashes"])
         unchanged(receipt["dust_fixture_hashes"])
         unchanged(receipt["material_hashes"])

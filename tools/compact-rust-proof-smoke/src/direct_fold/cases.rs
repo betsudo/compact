@@ -57,7 +57,7 @@ macro_rules! scenario {
             use $fixture::{ledger_contract as c, ledger_slots as slots};
             let mut rng = StdRng::seed_from_u64(0x0661_0000 + index as u64);
             let initial = c::initial_state(ConstructorContext::new(7_u64))?;
-            let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+            let (deploy, ir, verifier) = deployment(root, initial.ledger_state.get_ref().clone(), &mut rng)?;
             let observed = ObservedContractState::new(deploy.address(), deploy.initial_state.clone(),
                 Observation{transaction_hash:[0;32],block_hash:[0;32],block_height:0});
             let witnesses: [Witness;5] = std::array::from_fn(|_| Witness::default());
@@ -89,11 +89,12 @@ macro_rules! scenario {
             })?
             let expected_state = native.context.query.state.get_ref().clone();
             let input = AlignedValue::concat(&[$(AlignedValue::from($arg)),*]);
-            let prepared = check_generated_trace(root, NAME, functional, input)?;
-            let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(root.join("keys/run.verifier"))?))?;
+            let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+            let prepared = r::transaction::RecordedCall::new(&observed, functional, NAME, input)
+                .prepare(verifier.clone(), randomness)?;
             let facade = c::Contract::from(witnesses[4].clone());
             let ordinary = facade.recording().run_call(&observed, 7, $($arg,)*)?
-                .prepare(verifier.clone(), Fr::from(0_u64))?;
+                .prepare(verifier.clone(), randomness)?;
             if format!("{prepared:?}") != format!("{ordinary:?}") {
                 return Err("functional Fold preparation differs from ordinary observed call".into());
             }
@@ -103,10 +104,13 @@ macro_rules! scenario {
             for witness in witnesses { if *witness.0.borrow() != journal {
                 return Err("Fold witness count/order changed".into());
             }}
-            let proof_bytes = prove(root, index, &prepared, &verifier)?;
-            apply(root, index, prepared, deploy, &expected_state, rng)?;
+            let proof = prove(root, index, &prepared, &verifier, &ir)?;
+            let transaction_proof_bytes = v3::apply(
+                root, NAME, &format!("fold-{index}"), prepared, deploy, &expected_state, &proof,
+            )?;
             Ok(serde_json::json!({"variant":index,"expected":$expected,"private_state":$private,
-                "witness_calls":journal.len(),"proof_bytes":proof_bytes,"changed_binding_rejected":true,
+                "witness_calls":journal.len(),"proof_bytes":proof.0.len(),"transaction_proof_bytes":transaction_proof_bytes,
+                "transaction_proof_version":3,"positive_fee_dust_spends":1,"changed_binding_rejected":true,
                 "changed_result_rejected":true,"changed_result_same_geometry":true,"strict_application":"default",
                 "replay_refusal":"IntentAlreadyExists","replay_unchanged":true}))
         }

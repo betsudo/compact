@@ -131,7 +131,8 @@ fn error(text: &str) -> r::CompactError {
     r::CompactError::AssertionFailed(text.strip_prefix("failed assert: ").unwrap_or(text).into())
 }
 fn run(id: &str) {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/lifecycle.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9/lifecycle.json")).unwrap();
     let s = capture["scenarios"]
         .as_array()
         .unwrap()

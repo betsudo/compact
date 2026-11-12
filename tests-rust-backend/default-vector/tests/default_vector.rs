@@ -28,7 +28,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
     let operations = operations.insert(
         EntryPointBuf(b"read_values".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn typed_default_vector_matches_typescript_state_and_hash() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/default-vector.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-default-vector.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

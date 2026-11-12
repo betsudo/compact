@@ -33,7 +33,7 @@ impl c::Witnesses<u64> for Witness {
 #[test]
 fn selected_and_empty_branches_preserve_declared_paths() {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/unit-composition-paths.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-unit-composition-paths.json"
     ))
     .unwrap();
     let rows: Vec<_> = capture["cases"]

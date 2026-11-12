@@ -251,7 +251,7 @@ def main(*, tuple_guards=False):
         for role in roles:
             source = fixtures / (tuple_expected[role]["path"] if tuple_guards else role + ".compact")
             raw, ts, rust = [out / role / target for target in ("raw", "ts", "rust")]
-            result = run(role + "-raw", [tools["compactc-scheme"], "--emit-rust-ir", "--skip-zk", "--skip-ts", source, raw],
+            result = run(role + "-raw", [tools["compactc-scheme"], "--emit-rust-ir", "--feature-zkir-v3", "--skip-zk", "--skip-ts", source, raw],
                          expected=255 if role in raw_refusals else 0)
             if role in raw_refusals:
                 require(result.returncode == 255 and raw_refusals[role] in result.stderr,
@@ -272,7 +272,7 @@ def main(*, tuple_guards=False):
             bound.update({str(ts / p): h for p, h in inventory(ts).items()})
             frozen_directories[str(ts)] = inventory(ts)
             result = run(role + "-rust", [tools["compactc"], "--target", "rust", "--skip-zk",
-                "--rust-functional-ledger8", "--rust-require-recording", "--rust-runtime-root", ROOT,
+                "--rust-functional-ledger9", "--rust-require-recording", "--rust-runtime-root", ROOT,
                 source, rust], expected=1 if role in refusals else 0)
             if role in refusals:
                 require(refusals[role] in result.stderr, "unrelated scope refusal: " + role)

@@ -58,7 +58,7 @@ mod type_declarations;
 mod value_lowering;
 mod witness;
 
-const RUNTIME_ABI_VERSION: u32 = 53;
+const RUNTIME_ABI_VERSION: u32 = 54;
 
 const GENERATED_HEADER: &str = r#"// This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
@@ -3746,7 +3746,7 @@ fn render_with_refusals(
     )?;
     let public_state_view = (!public_state_getters.is_empty()).then(|| {
         quote! {
-            /// Read-only projection of an existing ledger-8 public state.
+            /// Read-only projection of the contract's public state.
             pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
                 state: &'a runtime::ledger::StateValue<D>,
             }

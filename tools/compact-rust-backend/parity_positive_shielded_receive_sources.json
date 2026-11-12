@@ -16,7 +16,7 @@
       "expected_recorded_circuits": ["accept", "accept_renamed"],
       "pure_declarations": 0,
       "exported_pure_declarations": 0,
-      "rust_fixture": "tests-rust-backend/shielded-receive-oracle/lib.rs"
+      "rust_consumer": "tests-rust-backend/shielded-receive-oracle/lib.rs"
     }
   ],
   "expected_rejections": []

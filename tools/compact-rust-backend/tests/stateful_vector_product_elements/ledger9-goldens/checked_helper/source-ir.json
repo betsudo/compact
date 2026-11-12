@@ -1,0 +1,467 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "seen",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "checked_helper.compact",
+        "line": 5,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "checked",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "4294967295"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "255"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "65535"
+            }
+          ]
+        }
+      },
+      "body": {
+        "kind": "sequence",
+        "steps": [
+          {
+            "kind": "assert",
+            "condition": {
+              "kind": "parameter",
+              "name": "ok"
+            },
+            "message": "helper denied"
+          }
+        ],
+        "value": {
+          "kind": "vector",
+          "element": {
+            "kind": "tuple",
+            "elements": [
+              {
+                "kind": "vector",
+                "length": 2,
+                "element": {
+                  "kind": "unsigned",
+                  "max": "255"
+                }
+              },
+              {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            ]
+          },
+          "elements": [
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  "elements": [
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 1
+                          },
+                          "index": 0
+                        },
+                        "index": 0
+                      }
+                    },
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 1
+                          },
+                          "index": 0
+                        },
+                        "index": 1
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned_cast",
+                  "max": "65535",
+                  "value": {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 1
+                    },
+                    "index": 1
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "255"
+                  },
+                  "elements": [
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 0
+                          },
+                          "index": 0
+                        },
+                        "index": 0
+                      }
+                    },
+                    {
+                      "kind": "unsigned_cast",
+                      "max": "255",
+                      "value": {
+                        "kind": "tuple_index",
+                        "value": {
+                          "kind": "tuple_index",
+                          "value": {
+                            "kind": "tuple_index",
+                            "value": {
+                              "kind": "parameter",
+                              "name": "input"
+                            },
+                            "index": 0
+                          },
+                          "index": 0
+                        },
+                        "index": 1
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "unsigned_cast",
+                  "max": "65535",
+                  "value": {
+                    "kind": "tuple_index",
+                    "value": {
+                      "kind": "tuple_index",
+                      "value": {
+                        "kind": "parameter",
+                        "name": "input"
+                      },
+                      "index": 0
+                    },
+                    "index": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "checked_helper.compact",
+        "line": 6,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "run",
+      "parameters": [
+        {
+          "name": "ok",
+          "ty": {
+            "kind": "boolean"
+          }
+        },
+        {
+          "name": "input",
+          "ty": {
+            "kind": "vector",
+            "length": 2,
+            "element": {
+              "kind": "tuple",
+              "elements": [
+                {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "unsigned",
+                    "max": "65535"
+                  }
+                },
+                {
+                  "kind": "unsigned",
+                  "max": "4294967295"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "vector",
+        "length": 2,
+        "element": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "vector",
+              "length": 2,
+              "element": {
+                "kind": "unsigned",
+                "max": "65535"
+              }
+            },
+            {
+              "kind": "unsigned",
+              "max": "4294967295"
+            }
+          ]
+        }
+      },
+      "return_value": {
+        "kind": "effectful",
+        "body": {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_7",
+                  "ty": {
+                    "kind": "field"
+                  },
+                  "value": {
+                    "kind": "field_literal",
+                    "value": "1"
+                  }
+                }
+              ],
+              "action": {
+                "kind": "cell_write",
+                "field": "seen",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_7"
+                }
+              }
+            }
+          ],
+          "result": {
+            "kind": "let",
+            "bindings": [
+              {
+                "name": "wide",
+                "ty": {
+                  "kind": "vector",
+                  "length": 2,
+                  "element": {
+                    "kind": "tuple",
+                    "elements": [
+                      {
+                        "kind": "vector",
+                        "length": 2,
+                        "element": {
+                          "kind": "unsigned",
+                          "max": "65535"
+                        }
+                      },
+                      {
+                        "kind": "unsigned",
+                        "max": "4294967295"
+                      }
+                    ]
+                  }
+                },
+                "value": {
+                  "kind": "coerce",
+                  "value": {
+                    "kind": "call",
+                    "name": "checked",
+                    "arguments": [
+                      {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "parameter",
+                          "name": "ok"
+                        },
+                        "ty": {
+                          "kind": "boolean"
+                        }
+                      },
+                      {
+                        "kind": "coerce",
+                        "value": {
+                          "kind": "parameter",
+                          "name": "input"
+                        },
+                        "ty": {
+                          "kind": "vector",
+                          "length": 2,
+                          "element": {
+                            "kind": "tuple",
+                            "elements": [
+                              {
+                                "kind": "vector",
+                                "length": 2,
+                                "element": {
+                                  "kind": "unsigned",
+                                  "max": "65535"
+                                }
+                              },
+                              {
+                                "kind": "unsigned",
+                                "max": "4294967295"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "ty": {
+                    "kind": "vector",
+                    "length": 2,
+                    "element": {
+                      "kind": "tuple",
+                      "elements": [
+                        {
+                          "kind": "vector",
+                          "length": 2,
+                          "element": {
+                            "kind": "unsigned",
+                            "max": "65535"
+                          }
+                        },
+                        {
+                          "kind": "unsigned",
+                          "max": "4294967295"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "result": {
+              "kind": "value",
+              "value": {
+                "kind": "parameter",
+                "name": "wide"
+              }
+            }
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "checked_helper.compact",
+        "line": 13,
+        "column": 1
+      }
+    }
+  ]
+}

@@ -48,7 +48,8 @@ fn call(
 }
 #[test]
 fn independent_ts_native_recorded_program_gas_and_rollback() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9-cases.json")).unwrap();
     assert_eq!(capture["format"], "compact-did-relation-reducer-capture/v1");
     assert_eq!(capture["kind"], "four");
     for row in capture["cases"].as_array().unwrap() {

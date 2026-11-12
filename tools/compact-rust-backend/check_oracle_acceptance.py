@@ -30,6 +30,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = Path(__file__).with_name("oracle_acceptance.json")
+LEDGER9_BINDINGS = Path(__file__).with_name("oracle_ledger9_bindings.json")
 
 
 def non_comment_lines(data: bytes) -> bytes:
@@ -47,13 +48,69 @@ def relative_file(name: str) -> Path:
 
 
 
-def reviewed_behavior_failures() -> list[str]:
+def ledger9_bindings() -> dict:
+    bindings = json.loads(LEDGER9_BINDINGS.read_text())
+    compatibility = json.loads(relative_file("runtime-rs/compatibility.json").read_text())
+    if (bindings["format"] != "compact-oracle-ledger9-bindings/v1"
+            or bindings["ledger_version"] != compatibility["ledger_version"]):
+        raise ValueError("Ledger 9 oracle binding version differs")
+
+    reviewed = {}
+    for filename, field in (
+        ("oracle_direct_behavior_review.json", "reviewed_rust_test_sha256"),
+        ("oracle_call_registry_behavior_review.json", "artifact_sha256"),
+        ("oracle_behavior_review.json", "reviewed_file_sha256"),
+    ):
+        for path, digest in json.loads(MANIFEST.with_name(filename).read_text())[field].items():
+            reviewed.setdefault(path, set()).add(digest)
+
+    used_captures = set()
+    for name, binding in bindings["tests"].items():
+        path = Path(name)
+        is_test = (path.parts[:1] == ("tests-rust-backend",) and path.suffix == ".rs"
+                   and ("tests" in path.parts or name == "tests-rust-backend/support/oracle_recorded_trace.rs"))
+        if not is_test or reviewed.get(name) != {binding["historical_sha256"]}:
+            raise ValueError(f"unreviewed Ledger 9 test binding: {name}")
+        contents = relative_file(name).read_bytes()
+        if hashlib.sha256(contents).hexdigest() != binding["current_sha256"]:
+            raise ValueError(f"Ledger 9 reviewed Rust test changed: {name}")
+        for historical in binding["capture_paths"]:
+            current = bindings["captures"][historical]["current"]
+            if (current + '"').encode() not in contents:
+                raise ValueError(f"Ledger 9 test does not reference {current}: {name}")
+            used_captures.add(historical)
+    if used_captures != set(bindings["captures"]):
+        raise ValueError("Ledger 9 reviewed capture membership differs")
+
+    for historical, binding in bindings["captures"].items():
+        path = Path(historical)
+        current = str(path.with_name("ledger9-" + path.name))
+        if path.parent != Path("runtime-rs/tests/fixtures") or binding["current"] != current:
+            raise ValueError(f"invalid Ledger 9 capture path: {historical}")
+        for name, field in ((historical, "historical_sha256"), (current, "current_sha256")):
+            if hashlib.sha256(relative_file(name).read_bytes()).hexdigest() != binding[field]:
+                raise ValueError(f"reviewed capture changed: {name}")
+    return bindings
+
+
+def reviewed_test_matches(path: str, digest: str, bindings: dict) -> bool:
+    # The loader has already checked both historical authority and active bytes.
+    binding = bindings["tests"].get(path)
+    if binding is not None:
+        return digest == binding["historical_sha256"]
+    return hashlib.sha256(relative_file(path).read_bytes()).hexdigest() == digest
+
+
+def reviewed_behavior_failures(bindings: dict) -> list[str]:
     """Check reviewed artifact identity/links, never infer semantic coverage from text."""
     review = json.loads(Path(__file__).with_name("oracle_direct_behavior_review.json").read_text())
     failures = []
-    for path, digest in (review["source_hashes"] | review["reviewed_rust_test_sha256"]).items():
+    for path, digest in review["source_hashes"].items():
         if hashlib.sha256(relative_file(path).read_bytes()).hexdigest() != digest:
             failures.append(f"reviewed behavior artifact changed; re-review required: {path}")
+    for path, digest in review["reviewed_rust_test_sha256"].items():
+        if not reviewed_test_matches(path, digest, bindings):
+            failures.append(f"reviewed behavior test changed; re-review required: {path}")
     capture_path = "runtime-rs/tests/fixtures/oracle-direct-behavior.json"
     for path, digest in [(capture_path, review["capture_sha256"]),
                          (review["capture_script"], review["capture_script_sha256"])]:
@@ -107,11 +164,11 @@ def reviewed_ternary_failures() -> list[str]:
     return failures
 
 
-def reviewed_call_registry_failures() -> list[str]:
+def reviewed_call_registry_failures(bindings: dict) -> list[str]:
     review = json.loads(Path(__file__).with_name("oracle_call_registry_behavior_review.json").read_text())
     failures = []
     for path, digest in review["artifact_sha256"].items():
-        if hashlib.sha256(relative_file(path).read_bytes()).hexdigest() != digest:
+        if not reviewed_test_matches(path, digest, bindings):
             failures.append(f"reviewed call/registry artifact changed: {path}")
     capture = json.loads(relative_file(review["capture"]).read_text())
     cases = capture["cases"]
@@ -132,7 +189,7 @@ def reviewed_call_registry_failures() -> list[str]:
     return failures
 
 
-def reviewed_inventory_failures(fixtures: list[dict]) -> list[str]:
+def reviewed_inventory_failures(fixtures: list[dict], bindings: dict) -> list[str]:
     """The full source review records limits, not a claim of full behavior coverage."""
     review = json.loads(Path(__file__).with_name("oracle_behavior_review.json").read_text())
     failures = []
@@ -144,7 +201,7 @@ def reviewed_inventory_failures(fixtures: list[dict]) -> list[str]:
     if review["behavioral_coverage_complete"] or review["proof_ledger_audit_complete"]:
         failures.append("reviewed inventory exceeds its explicit acceptance scope")
     for path, digest in review["reviewed_file_sha256"].items():
-        if hashlib.sha256(relative_file(path).read_bytes()).hexdigest() != digest:
+        if not reviewed_test_matches(path, digest, bindings):
             failures.append(f"behavior review evidence changed; re-review required: {path}")
     for row in rows:
         if not row["limits"] or not row["dimensions"] or not row["source_review"]:
@@ -160,6 +217,11 @@ def main() -> int:
     manifest = json.loads(MANIFEST.read_text())
     fixtures = manifest["fixtures"]
     failures = []
+    try:
+        bindings = ledger9_bindings()
+    except (KeyError, ValueError, OSError) as exc:
+        print(f"FAIL Ledger 9 oracle binding: {exc}", file=sys.stderr)
+        return 1
     if len(fixtures) != 37:
         failures.append(f"expected 37 oracle entries, found {len(fixtures)}")
     names = [entry["oracle_source"] for entry in fixtures]
@@ -183,16 +245,17 @@ def main() -> int:
             test_contents = [relative_file(path).read_text() for path in tests]
             for path in references:
                 relative_file(path)
-                if not any(path.split("/")[-1] in text for text in test_contents):
+                active = bindings["captures"].get(path, {}).get("current", path)
+                if not any(Path(active).name in text for text in test_contents):
                     failures.append(f"{name}: test does not reference {path}")
         except (KeyError, ValueError, UnicodeDecodeError) as exc:
             failures.append(f"{name}: {exc}")
 
     try:
-        failures.extend(reviewed_behavior_failures())
+        failures.extend(reviewed_behavior_failures(bindings))
         failures.extend(reviewed_ternary_failures())
-        failures.extend(reviewed_call_registry_failures())
-        failures.extend(reviewed_inventory_failures(fixtures))
+        failures.extend(reviewed_call_registry_failures(bindings))
+        failures.extend(reviewed_inventory_failures(fixtures, bindings))
     except (KeyError, ValueError, OSError) as exc:
         failures.append(f"reviewed behavior matrix: {exc}")
 

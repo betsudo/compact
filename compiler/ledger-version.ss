@@ -18,7 +18,7 @@
 (library (ledger-version)
   (export ledger-version-strings)
   (import (except (chezscheme) errorf))
-  (import (utils))
+  (import (utils) (json))
 
   (define ledger-version-strings
     (let-syntax ([a (lambda (x)
@@ -37,10 +37,13 @@
                               (assertf (eof-object? (get-line ip))
                                        "grep/sed pipeline found more than one match for key ~a" key)
                               version-string))))
-                      ;; List of keys.
-                      (define keys '("zkir-v2" "zkir-v3"))
+                      (define (zkir-v3-version)
+                        (let ([file "test-center/package.json"])
+                          (#%$require-include file)
+                          (let* ([manifest (read-json-file file)]
+                                 [deps (cdr (assoc "dependencies" manifest))])
+                            (cdr (assoc "@midnightntwrk/zkir-v3" deps)))))
 
-                      #`'#,(map (lambda (key)
-                                  (cons key (grep-for key)))
-                                keys))])
+                      #`'#,(list (cons "zkir-v2" (grep-for "zkir-v2"))
+                                 (cons "zkir-v3" (zkir-v3-version))))])
       a)))

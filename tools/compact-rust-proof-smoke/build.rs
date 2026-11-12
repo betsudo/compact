@@ -179,6 +179,7 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(compact_vector_product_elements_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED");
     println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_HELPER_GENERATED");
+    println!("cargo::rerun-if-env-changed=COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED");
     if std::env::var_os("CARGO_FEATURE_VECTOR_PRODUCT_ELEMENTS").is_some()
         && let Some(root) = std::env::var_os("COMPACT_VECTOR_PRODUCT_ELEMENTS_GENERATED")
         && !root.is_empty()
@@ -206,6 +207,27 @@ fn main() {
                 .canonicalize()
                 .expect("paired sibling helper SDK must exist"),
             "helper SDK must be the candidate pool's complete helper sibling"
+        );
+        let checked = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED")
+                .expect("complete checked-helper SDK is required"),
+        );
+        assert!(
+            checked.is_absolute() && checked.join("contract/lib.rs").is_file(),
+            "COMPACT_VECTOR_PRODUCT_ELEMENTS_CHECKED_GENERATED must name the complete checked-helper SDK"
+        );
+        let expected_checked = root
+            .parent()
+            .expect("candidate SDK pool required")
+            .join("checked_helper");
+        assert_eq!(
+            checked
+                .canonicalize()
+                .expect("checked-helper SDK must exist"),
+            expected_checked
+                .canonicalize()
+                .expect("checked-helper sibling SDK must exist"),
+            "checked-helper SDK must be the candidate pool's complete checked_helper sibling"
         );
         println!("cargo::rustc-cfg=compact_vector_product_elements_generated");
     }

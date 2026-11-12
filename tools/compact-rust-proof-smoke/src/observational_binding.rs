@@ -25,6 +25,7 @@ pub(super) fn checkpoint(
     ledger: &LedgerState<DefaultDB>,
     observed: &ObservedContractState,
 ) -> Result<TrustedObservationCheckpoint, Box<dyn Error>> {
+    const LEDGER_VERSION: &str = "9.1.0.1";
     let frontier = ledger.zswap.first_free;
     let wallet: midnight_zswap::local::State<DefaultDB> = if frontier == 0 {
         midnight_zswap::local::State::new()
@@ -46,7 +47,7 @@ pub(super) fn checkpoint(
                 observation,
                 address: observed.address(),
                 network_id: "local-test".into(),
-                ledger_version: "8.1.3".into(),
+                ledger_version: LEDGER_VERSION.into(),
                 zswap_root: ledger
                     .zswap
                     .coin_coms
@@ -67,7 +68,7 @@ pub(super) fn checkpoint(
                 block_hash: observation.block_hash,
                 block_height: observation.block_height,
                 network_id: "local-test".into(),
-                ledger_version: "8.1.3".into(),
+                ledger_version: LEDGER_VERSION.into(),
                 applied_event_id: 1,
                 wallet_state_sha256,
             },

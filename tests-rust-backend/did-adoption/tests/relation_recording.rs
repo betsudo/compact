@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Original DID relation cases: typed calls, independent TS observations and rollback.
 use compact_rust_did_adoption_fixture::{ledger_contract as c, runtime as r};
 use midnight_compact_testkit::{ArtifactIdentity, ContractLab, Environment, LabError};
@@ -233,8 +245,8 @@ fn original_42_relation_calls_match_native_recorded_replay_and_owned_rollback() 
     let mut success = 0;
     let mut failure = 0;
     for capture in [
-        include_str!("../oracle/lifecycle.json"),
-        include_str!("../oracle/jwk-method-lifecycle.json"),
+        include_str!("../oracle/ledger9/lifecycle.json"),
+        include_str!("../oracle/ledger9/jwk-method-lifecycle.json"),
     ] {
         let data: Value = serde_json::from_str(capture).unwrap();
         for scenario in data["scenarios"].as_array().unwrap() {

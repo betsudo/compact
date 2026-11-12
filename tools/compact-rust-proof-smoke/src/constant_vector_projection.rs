@@ -18,4 +18,21 @@ use compact_rust_constant_vector_projection_source_fixture as fixture;
 const SOURCE_LABEL: &str = "literal-vector-projection";
 const IR: &str =
     include_str!("../../../tests-rust-backend/constant-vector-projection-source/original-ir.json");
+const PROGRAMS: [&[u8]; 5] = [
+    include_bytes!(
+        "../../../tests-rust-backend/constant-vector-projection-source/checked-programs/program-0.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-vector-projection-source/checked-programs/program-1.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-vector-projection-source/checked-programs/program-2.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-vector-projection-source/checked-programs/program-3.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-vector-projection-source/checked-programs/program-4.json"
+    ),
+];
 include!("vector_projection_protocol.rs");

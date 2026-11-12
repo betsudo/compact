@@ -29,7 +29,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["contains_seen", "contains_history"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -42,7 +42,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn constructor_set_actions_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-set-actions.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-set-actions.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

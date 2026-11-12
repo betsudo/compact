@@ -13,10 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //! Original microDAO token query: real nonempty proof and ledger application.
+use super::local_v3_application as v3;
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_test_center_micro_dao_fixture::{ledger_contract as c, types};
-use midnight_base_crypto::hash::HashOutput;
+use midnight_base_crypto::hash::{HashOutput, persistent_hash};
 use midnight_compact_runtime::{BoundedUint, FixedBytes};
+use std::collections::BTreeMap;
+
+const ARTIFACT_PINS: &str =
+    include_str!("../../compact-rust-backend/tests/micro-dao-state-ledger9-artifacts.json");
+
+#[derive(serde::Deserialize)]
+struct ArtifactPins {
+    source: BTreeMap<String, String>,
+    material: BTreeMap<String, BTreeMap<String, String>>,
+}
+
 fn validate_ir(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     let expected: serde_json::Value =
         serde_json::from_str(compact_rust_test_center_micro_dao_fixture::RETAINED_IR)?;
@@ -27,9 +40,63 @@ fn validate_ir(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+pub(super) fn validate_artifacts(root: &Path, name: &str) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("MicroDAO state proof requires local proving".into());
+    }
     validate_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)?;
+    validate_artifact_files(root, name)
+}
+
+pub(super) fn validate_offer_artifacts(root: &Path, name: &str) -> Result<(), Box<dyn Error>> {
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        compact_rust_test_center_micro_dao_fixture::RETAINED_IR,
+    )?;
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("MicroDAO offer proof requires local proving".into());
+    }
+    validate_artifact_files(root, name)
+}
+
+fn validate_artifact_files(root: &Path, name: &str) -> Result<(), Box<dyn Error>> {
+    if std::fs::read(root.join("contract/lib.rs"))?
+        != compact_rust_test_center_micro_dao_fixture::RENDERED_SOURCE
+    {
+        return Err("MicroDAO generated Rust differs from the linked fixture".into());
+    }
+    let pins: ArtifactPins = serde_json::from_str(ARTIFACT_PINS)?;
+    let raw = std::fs::read_dir(root.join("zkir"))?
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "zkir"))
+        .count();
+    if raw
+        != pins
+            .source
+            .keys()
+            .filter(|path| path.ends_with(".zkir"))
+            .count()
+    {
+        return Err("MicroDAO raw circuit inventory differs from the original fixture".into());
+    }
+    let material = pins
+        .material
+        .get(name)
+        .ok_or("unsupported MicroDAO state circuit")?;
+    for (path, expected) in pins.source.iter().chain(material) {
+        if hex::encode(persistent_hash(&std::fs::read(root.join(path))?).0) != *expected {
+            return Err(
+                format!("MicroDAO artifact differs from the retained fixture: {path}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let name = "dao_voting_token";
+    validate_artifacts(root, name)?;
     let mut rng = StdRng::seed_from_u64(0x0190_0000);
     let initial = c::initial_state(
         ConstructorContext::new(vec![77u8]),
@@ -71,9 +138,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("token derivation differs at deployed address".into());
     }
     let manual = check_generated_trace(root, name, recorded, ())?;
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{name}.verifier")),
-    )?))?;
+    let verifier = v3::read_verifier(root, name)?;
     let typed = c::recorded::Contract.dao_voting_token_call(&observed, vec![77u8])?;
     let prepared = typed.prepare(verifier, Fr::from(0u64))?;
     if format!("{manual:?}") != format!("{prepared:?}") {
@@ -86,7 +151,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         Ok(())
     })?;
     println!(
-        "original microDAO.dao_voting_token proved, verified and ledger-applied at deployed address under shared unbalanced smoke policy; no funding claim"
+        "original microDAO.dao_voting_token preserved its deployed-address derivation after funded default-strict application"
     );
     Ok(())
 }

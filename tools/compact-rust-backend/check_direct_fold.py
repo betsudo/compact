@@ -130,7 +130,7 @@ def main():
             name = definition["source"]
             source = SOURCES / f"{name}.compact"
             run(f"generate-{name}", [compiler, "--target", "rust", "--target", "ts",
-                 "--rust-require-recording", "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                 "--rust-require-recording", "--rust-functional-ledger9", "--rust-runtime-root", ROOT,
                  "--skip-zk", source.relative_to(ROOT), generated / name])
             report["generated"][name] = generated_manifest_snapshot(generated / name)
             capabilities = json.loads((generated / name / "contract/rust-capabilities.json").read_text())

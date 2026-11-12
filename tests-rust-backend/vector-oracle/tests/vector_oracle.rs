@@ -25,7 +25,7 @@ use midnight_storage::storage::HashMap;
 #[test]
 fn exact_vector_oracle_initial_state_matches_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/vector-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-vector-oracle.json"
     ))
     .unwrap();
     assert!(oracle["operations"].as_array().unwrap().is_empty());

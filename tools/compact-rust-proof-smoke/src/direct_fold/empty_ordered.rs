@@ -50,7 +50,8 @@ impl c::TryWitnesses<u64> for Witness {
 pub(super) fn run(root: &Path, index: usize) -> Result<serde_json::Value, Box<dyn Error>> {
     let mut rng = StdRng::seed_from_u64(0x0661_0100 + index as u64);
     let initial = c::initial_state(ConstructorContext::new(7_u64))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let (deploy, ir, verifier) =
+        deployment(root, initial.ledger_state.get_ref().clone(), &mut rng)?;
     let observed = ObservedContractState::new(
         deploy.address(),
         deploy.initial_state.clone(),
@@ -100,14 +101,13 @@ pub(super) fn run(root: &Path, index: usize) -> Result<serde_json::Value, Box<dy
         return Err("empty Fold recording or stored Cell differs".into());
     }
     let expected_state = native.context.query.state.get_ref().clone();
-    let prepared = check_generated_trace(root, NAME, functional, AlignedValue::from(()))?;
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/run.verifier"),
-    )?))?;
+    let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+    let prepared = r::transaction::RecordedCall::new(&observed, functional, NAME, ())
+        .prepare(verifier.clone(), randomness)?;
     let ordinary = c::Contract::from(witnesses[4].clone())
         .recording()
         .run_call(&observed, 7)?
-        .prepare(verifier.clone(), Fr::from(0_u64))?;
+        .prepare(verifier.clone(), randomness)?;
     if format!("{prepared:?}") != format!("{ordinary:?}") {
         return Err("empty Fold preparation differs from ordinary observed call".into());
     }
@@ -116,9 +116,17 @@ pub(super) fn run(root: &Path, index: usize) -> Result<serde_json::Value, Box<dy
             return Err("empty Fold operands not evaluated exactly once in order".into());
         }
     }
-    let proof_bytes = prove(root, index, &prepared, &verifier)?;
-    apply(root, index, prepared, deploy, &expected_state, rng)?;
+    let proof = prove(root, index, &prepared, &verifier, &ir)?;
+    let transaction_proof_bytes = v3::apply(
+        root,
+        NAME,
+        &format!("fold-{index}"),
+        prepared,
+        deploy,
+        &expected_state,
+        &proof,
+    )?;
     Ok(
-        serde_json::json!({"variant":index,"expected":9,"private_state":9,"witness_calls":2,"proof_bytes":proof_bytes,"changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}),
+        serde_json::json!({"variant":index,"expected":9,"private_state":9,"witness_calls":2,"proof_bytes":proof.0.len(),"transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,"positive_fee_dust_spends":1,"changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}),
     )
 }

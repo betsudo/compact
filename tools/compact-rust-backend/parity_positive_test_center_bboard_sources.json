@@ -8,7 +8,7 @@
       "source": "test-center/test-contracts/bboard.compact",
       "typescript_capture": "runtime-rs/tests/fixtures/capture-test-center-bboard.mjs",
       "typescript_fixture": "runtime-rs/tests/fixtures/test-center-bboard.json",
-      "rust_fixture": "tests-rust-backend/test-center-bboard/lib.rs",
+      "rust_consumer": "tests-rust-backend/test-center-bboard/lib.rs",
       "rust_test": "tests-rust-backend/test-center-bboard/tests/test_center_bboard.rs",
       "expected_ts": "success",
       "expected_rust": "success",

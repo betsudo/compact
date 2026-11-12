@@ -17,7 +17,7 @@
 
 """Compare checked-in Rust fixtures with fresh Compact compiler output.
 
-Set COMPACTC to a ledger-8 compactc executable. Pass --update to replace
+Set COMPACTC to a Ledger 9 compactc executable. Pass --update to replace
 stale generated fixture libraries after reviewing the backend changes.
 """
 
@@ -80,7 +80,7 @@ def main() -> int:
             if compiler is None and registrations[source].frontend_flags:
                 failures.append(f"{source.name}: set COMPACTC to pass registered frontend flags")
                 continue
-            functional = "--rust-functional-ledger8" in registrations[source].frontend_flags
+            functional = "--rust-functional-ledger9" in registrations[source].frontend_flags
             # Keep source labels portable in the complete, unmodified checked
             # program assets. Passing a relative source path is a compiler input,
             # not post-generation metadata rewriting.

@@ -37,7 +37,7 @@ def check_coracle_start(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/start.zkir"), str(output / "keys/start.prover"), str(output / "keys/start.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/start.zkir"), str(output / "keys/start.prover"), str(output / "keys/start.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-start", str(output))
     print("original Coracle start recorded with exact two-wallet paths; all four proof-required exports have recording APIs")
 
@@ -54,7 +54,7 @@ def check_coracle_concede(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/concede.zkir"), str(output / "keys/concede.prover"), str(output / "keys/concede.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/concede.zkir"), str(output / "keys/concede.prover"), str(output / "keys/concede.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-concede", str(output))
     print("original Coracle concede recorded; all four proof-required exports have recording APIs")
 
@@ -71,7 +71,7 @@ def check_coracle_withdraw(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/withdraw.zkir"), str(output / "keys/withdraw.prover"), str(output / "keys/withdraw.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/withdraw.zkir"), str(output / "keys/withdraw.prover"), str(output / "keys/withdraw.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-withdraw", str(output))
     print("original Coracle withdraw recorded; all four proof-required exports have recording APIs")
 
@@ -88,9 +88,34 @@ def check_coracle_guess(
     output = base / "coracle"
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
-        run("zkir", "compile", str(output / "zkir/guess.zkir"), str(output / "keys/guess.prover"), str(output / "keys/guess.verifier"))
+        run("zkir-v3", "compile", str(output / "zkir/guess.zkir"), str(output / "keys/guess.prover"), str(output / "keys/guess.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--coracle-guess", str(output))
     print("original Coracle guess, concede, withdraw and start recorded")
+
+
+def prove_root_let_action_return(
+    compiler: str,
+    source: Path,
+    output: Path,
+    *,
+    run: Callable[..., None],
+) -> None:
+    retained = Path(__file__).resolve().parents[1] / "tests/root-let-action-return-schema20-ir.json"
+    preflight = output.with_name(output.name + "-preflight")
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(preflight))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((preflight / "contract/compact-rust-ir.json").read_text()), sort_keys=True)
+    if actual != expected or (preflight / "keys").exists():
+        raise ValueError("root Let source IR differs or preflight produced keys")
+    run(compiler, "--target", "rust", "--rust-require-recording",
+        str(source), str(output))
+    for name in ("contract/compact-rust-ir.json", "zkir/step.zkir"):
+        if (output / name).read_bytes() != (preflight / name).read_bytes():
+            raise ValueError(f"root Let proof compilation changed {name}")
+    for selector in ("--root-let-action-return", "--root-let-action-return-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
 
 
 def check_coracle_root_let(
@@ -142,11 +167,9 @@ def check_coracle_root_let(
     ]
     check_coracle_source(compiler, base)
     if proof_requested:
-        proof = base / "root-let-action-return-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording",
-            str(root_let_action_return_source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--root-let-action-return", str(proof))
+        prove_root_let_action_return(
+            compiler, root_let_action_return_source, base / "root-let-action-return-proof", run=run,
+        )
     print("root Let actions retained; complete Coracle compiles with guess recorded and 3 explicit recording gaps")
 
 

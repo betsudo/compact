@@ -15,6 +15,7 @@
 
 //! Prove each helper-formal persistent-hash assertion from the original source.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_inline_type_scope_oracle_fixture::ledger_contract as contract;
 use midnight_compact_runtime as runtime;

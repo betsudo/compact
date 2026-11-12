@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prove typed indexed insertion and default-leaf insertion on ledger-8.
+//! Prove typed indexed insertion and default-leaf insertion on Ledger 9.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
@@ -86,7 +87,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
     }
-    println!("typed indexed Merkle insertions proved and applied through ledger-8");
+    println!("typed indexed Merkle insertions proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -193,6 +194,6 @@ pub(super) fn run_historic(insert_root: &Path, default_root: &Path) -> Result<()
         }
         Ok(())
     })?;
-    println!("typed historic indexed Merkle insertions proved and applied through ledger-8");
+    println!("typed historic indexed Merkle insertions proved and applied through Ledger 9");
     Ok(())
 }

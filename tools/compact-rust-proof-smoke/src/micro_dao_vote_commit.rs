@@ -16,6 +16,9 @@
 //! Full default-strict wallet/transient segment with separate Dust funding.
 #[path = "../../../tests-rust-backend/test-center-micro-dao/support/vote_commit.rs"]
 mod support;
+use super::local_v3_application as v3;
+use super::micro_dao_buy_in::{FundedMicroDao, deploy_funded};
+use super::micro_dao_token::validate_offer_artifacts;
 use super::*;
 use compact_rust_test_center_micro_dao_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -44,12 +47,7 @@ fn compact_coin(coin: runtime::ledger::CoinInfo) -> types::ShieldedCoinInfo {
     }
 }
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    // Bind the entire source fixture before any key reads or deployment setup.
-    // This checks input pairing; it does not authenticate key provenance.
-    counter_scenario::validate_ir(
-        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
-        compact_rust_test_center_micro_dao_fixture::RETAINED_IR,
-    )?;
+    validate_offer_artifacts(root, "vote_commit")?;
     for (ballot, round) in [(true, 0), (false, u64::MAX)] {
         run_case(root, ballot, round)?;
     }
@@ -59,7 +57,18 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     const NAME: &str = "vote_commit";
     let mut rng = StdRng::seed_from_u64(0x0214_0000 + u64::from(ballot));
     let prior = support::seeded(types::LedgerState::commit, round, 0, false, false)?;
-    let deploy = make_deploy(root, NAME, prior.query.state.get_ref().clone(), &mut rng)?;
+    let stem = format!("vote-commit-{ballot}");
+    let FundedMicroDao {
+        deploy,
+        verifier,
+        state: mut fees,
+    } = deploy_funded(
+        root,
+        (NAME, &stem),
+        prior.query.state.get_ref().clone(),
+        11,
+        &mut rng,
+    )?;
     let address = deploy.address();
     // Derive the instance-specific color in a separate native setup call. No
     // token issuance or complete voting lifecycle is being proved here.
@@ -70,15 +79,6 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     ))?
     .result;
     let coin = runtime::ledger::coin_info_from_compact(FixedBytes::new([3; 32]), token, 1);
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.give_fee_token(&mut rng, 10));
-    fees.ledger.contract = fees
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
     let keys = midnight_zswap::keys::SecretKeys::from_rng_seed(&mut rng);
     let padding = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([91; 32]),
@@ -107,7 +107,9 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     .unwrap();
     let (state, _) = fees.ledger.zswap.try_apply(&padding_offer, None)?;
     let (state, _) = state.try_apply(&wallet_offer, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(state.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        state.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     assert_eq!(ledger.zswap.first_free, 2);
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()
@@ -161,10 +163,11 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     let (_, indices) = ledger.zswap.try_apply(&offer, None)?;
     assert_eq!(indices.get(&output_commitment), Some(&2));
     assert_eq!(indices.get(&transient_commitment), Some(&3));
-    let placement = OfferPlacement::Fallible(NonZeroU16::new(1).unwrap());
+    let segment = NonZeroU16::MIN;
+    let placement = OfferPlacement::Fallible(segment);
     let options = OfferBindingOptions::default()
         .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-        .with_offer_placement(placement)
+        .with_wholly_fallible_offer(segment)
         .with_wallet_funding(
             WalletFundingInputs::from_inputs(vec![wallet_input])
                 .map_err(|e| format!("wallet: {e:?}"))?,
@@ -235,44 +238,26 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
     )?;
     assert_eq!(replay.context.state, native.context.query.state);
     assert_eq!(replay.context.effects, native.context.query.effects);
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/vote_commit.verifier"),
-    )?))?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0))?;
     assert!(prepared.prototype().guaranteed_public_transcript.is_none());
     assert!(prepared.prototype().fallible_public_transcript.is_some());
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let sealed = v3::prove_funded_offer(
         root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (NAME, &stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let Transaction::Standard(structure) = &tx else {
-        panic!("standard")
-    };
-    assert!(structure.guaranteed_coins.is_none());
-    assert_eq!(structure.fallible_coins.iter().count(), 1);
-    assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0214_5052 + u64::from(ballot)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        |tx| {
+            let Transaction::Standard(structure) = tx else {
+                panic!("standard")
+            };
+            assert!(structure.guaranteed_coins.is_none());
+            assert_eq!(structure.fallible_coins.iter().count(), 1);
+            assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+            Ok(())
+        },
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0214_5345 + u64::from(ballot)));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
     tagged_serialize(
         &sealed,
         &mut File::create(root.join(format!("vote-commit-{ballot}-sealed.bin")))?,
@@ -350,6 +335,10 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
         matches!(result, TransactionResult::Success(_)),
         "{result:?}"
     );
+    assert_eq!(
+        updated.contract.get(&address).unwrap().operations,
+        deploy.initial_state.operations,
+    );
     let data = &updated.contract.get(&address).unwrap().data;
     assert_eq!(*data, native.context.query.state);
     assert_eq!(
@@ -396,6 +385,7 @@ fn run_case(root: &Path, ballot: bool, round: u64) -> Result<(), Box<dyn Error>>
         updated.zswap.try_apply(&offer, None),
         Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(_))
     ));
+    v3::check_offer_replay(root, &stem, &updated, &verified, context)?;
     println!(
         "original vote_commit ballot={ballot} round={round}: strict funded proof/application, exact tree/participant mutation, private witness state, canonical output, rollback and replay passed"
     );

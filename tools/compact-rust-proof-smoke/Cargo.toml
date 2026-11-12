@@ -17,7 +17,7 @@
 name = "compact-rust-proof-smoke"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 publish = false
 description = "Ledger-8 proof compatibility gate for Rust Compact output"
 
@@ -36,7 +36,7 @@ direct-stateful-vector-literal-returns = ["ledger-transaction", "midnight-compac
 stateful-vector-value-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-local-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
 stateful-product-vector-widening = ["ledger-transaction", "midnight-compact-runtime/experimental-functional"]
-vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-product-elements-proof-helper", "compact-rust-vector-product-elements-proof-helper/generated-sdk"]
+vector-product-elements = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-product-elements-proof-helper", "compact-rust-vector-product-elements-proof-helper/generated-sdk", "dep:compact-rust-vector-product-elements-proof-checked", "compact-rust-vector-product-elements-proof-checked/generated-sdk"]
 vector-component-products = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-vector-component-products-witness-before-sdk", "dep:compact-rust-vector-component-products-witness-after-sdk", "dep:compact-rust-vector-component-products-inner-product-single-sdk", "compact-rust-vector-component-products-witness-before-sdk/generated-sdk", "compact-rust-vector-component-products-witness-after-sdk/generated-sdk", "compact-rust-vector-component-products-inner-product-single-sdk/generated-sdk"]
 nested-component-products = ["ledger-transaction", "midnight-compact-runtime/experimental-functional", "dep:compact-rust-nested-component-products-sdk", "compact-rust-nested-component-products-sdk/generated-sdk"]
 ledger-transaction = ["midnight-compact-runtime/ledger-transaction"]
@@ -52,6 +52,7 @@ compact-rust-vector-component-products-witness-before-sdk = { path = "vector-com
 compact-rust-vector-component-products-witness-after-sdk = { path = "vector-component-products-witness-after-sdk", optional = true }
 compact-rust-vector-component-products-inner-product-single-sdk = { path = "vector-component-products-inner-product-single-sdk", optional = true }
 compact-rust-vector-product-elements-proof-helper = { path = "vector-product-elements-helper-sdk", optional = true }
+compact-rust-vector-product-elements-proof-checked = { path = "vector-product-elements-checked-sdk", optional = true }
 did_contract = { package = "compact-rust-did-functional-lifecycle-source-fixture", path = "../../tests-rust-backend/did-functional-lifecycle-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-captured-source-fixture = { path = "../../tests-rust-backend/direct-fold-captured-source", features = ["ledger-transaction"] }
 compact-rust-direct-fold-counter-capture-source-fixture = { path = "../../tests-rust-backend/direct-fold-counter-capture-source", features = ["ledger-transaction"] }
@@ -174,22 +175,23 @@ compact-rust-pure-call-action-fixture = { path = "../../tests-rust-backend/pure-
 compact-rust-assert-parity-oracle-fixture = { path = "../../tests-rust-backend/assert-parity-oracle", features = ["ledger-transaction"] }
 compact-rust-nested-witness-call-oracle-fixture = { path = "../../tests-rust-backend/nested-witness-call-oracle" }
 midnight-compact-runtime = { path = "../../runtime-rs", features = ["ledger-transaction"] }
-midnight-ledger = { version = "=8.1.3", features = ["proving", "test-utilities"], git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-zswap = { version = "=8.1.3", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-coin-structure = { version = "=2.0.2", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-onchain-state = { version = "=3.0.2", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-onchain-runtime = { version = "=3.1.2", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-onchain-vm = { version = "=3.1.2", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-storage = { version = "=2.0.3", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-zkir = { version = "=2.1.1", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-serialize = { version = "=1.1.1", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-transient-crypto = { version = "=2.1.1", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-base-crypto = { version = "=1.0.2", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
-midnight-circuits = "=6.1.0"
-midnight-curves = "=0.2.0"
-midnight-proofs = "=0.7.1"
-midnight-zk-stdlib = "=1.1.0"
-midnight-storage-core = { version = "=1.2.1", git = "https://github.com/midnightntwrk/midnight-ledger", rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a" }
+midnight-ledger = { version = "=1.0.1", package = "midnight-ledger-v9", features = ["proving", "test-utilities"] }
+midnight-zswap = "=9.0.1"
+midnight-coin-structure = "=3.0.1"
+midnight-onchain-state = "=4.0.1"
+midnight-onchain-runtime = "=4.0.1"
+midnight-onchain-vm = "=4.0.1"
+midnight-storage = "=3.0.0"
+midnight-zkir = "=2.2.0"
+midnight-zkir-v3 = { package = "midnight-zkir", version = "=3.2.0" }
+midnight-serialize = "=1.2.1"
+midnight-transient-crypto = "=3.0.1"
+midnight-base-crypto = "=1.1.1"
+midnight-circuits = "=7.3.0"
+midnight-curves = "=0.3.1"
+midnight-proofs = "=0.8.2"
+midnight-zk-stdlib = "=2.4.0"
+midnight-storage-core = "=1.2.3"
 rand = "=0.8.6"
 rand_chacha = "=0.3.1"
 futures-executor = "=0.3.32"

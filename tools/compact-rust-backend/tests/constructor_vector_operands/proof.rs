@@ -17,29 +17,25 @@
 //! Constructor-state insertion and fee funding are privileged fixture setup.
 use contract as generated;
 use contract::{ledger_contract as c, runtime as r};
-use midnight_base_crypto::{
-    data_provider::{FetchMode, MidnightDataProvider, OutputMode},
-    signatures::Signature,
-    time::Timestamp,
-};
+use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
 use midnight_compact_testkit::ProofLab;
 use midnight_ledger::{
     construct::{ContractCallExt, ContractCallPrototype},
     dust::{DUST_EXPECTED_FILES, DustResolver},
     prove::Resolver as LedgerResolver,
-    semantics::{TransactionContext, TransactionResult},
+    semantics::TransactionResult,
     structure::{
-        ContractDeploy, INITIAL_PARAMETERS, Intent, ProofPreimageMarker, ProofPreimageVersioned,
-        Transaction,
+        ContractDeploy, Intent, ProofPreimageMarker, ProofPreimageVersioned, ProofVersioned,
+        Signature, Transaction,
     },
-    test_utilities::TestState,
+    test_utilities::{TestState, tx_prove},
     verify::WellFormedStrictness,
 };
-use midnight_onchain_runtime::context::BlockContext;
 use midnight_onchain_state::state::{
-    ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf,
+    ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf, IrBuf,
 };
-use midnight_serialize::{tagged_deserialize, tagged_serialize};
+use midnight_serialize::{Deserializable, Tagged, tagged_deserialize, tagged_serialize};
+use midnight_storage::arena::Sp;
 use midnight_storage::storage::HashMap;
 use midnight_transient_crypto::{
     commitment::PedersenRandomness,
@@ -47,10 +43,11 @@ use midnight_transient_crypto::{
     fab::AlignedValueExt,
     hash::transient_commit,
     proofs::{
-        KeyLocation, PARAMS_VERIFIER, ProofPreimage, ProvingKeyMaterial, ProvingProvider, Resolver,
-        VerifierKey,
+        KeyLocation, PARAMS_VERIFIER, Proof, ProofPreimage, ProverKey, ProvingKeyMaterial,
+        Resolver, VerifierKey, Zkir,
     },
 };
+use midnight_zkir::IrSource;
 use midnight_zswap::prove::ZswapResolver;
 use r::{
     Field,
@@ -58,8 +55,8 @@ use r::{
     fab::AlignedValue,
     ledger::DefaultDB,
     transaction::{
-        CallSpec, EncodedSizeLimit, Observation, ObservedContractState, PrepareCallError,
-        prepare_call,
+        EncodedSizeLimit, Observation, ObservedCallError, ObservedContractState, PrepareCallError,
+        RecordedCall,
     },
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -117,15 +114,37 @@ fn call_preimage(call: &ContractCallPrototype<DefaultDB>) -> Result<ProofPreimag
         _ => Err("unsupported proof version".into()),
     }
 }
-fn public_inputs(p: &ProofPreimage) -> Result<Vec<Fr>, Box<dyn Error>> {
-    // Exact pinned upstream protocol for this unconditional source. Provider.check
-    // below rejects skip-bearing executions; this is not a general PI interpreter.
-    let mut inputs = vec![
-        p.binding_input,
-        p.communications_commitment.ok_or("missing commitment")?.0,
-    ];
-    inputs.extend(p.public_transcript_inputs.iter().copied());
-    Ok(inputs)
+fn read_tagged<T: Deserializable + Tagged>(path: &Path) -> Result<T, Box<dyn Error>> {
+    let bytes = fs::read(path)?;
+    let mut reader = bytes.as_slice();
+    let value = tagged_deserialize(&mut reader)?;
+    if !reader.is_empty() {
+        return Err(format!("trailing bytes in {}", path.display()).into());
+    }
+    Ok(value)
+}
+
+fn verify_standalone(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
+    let verifier: VerifierKey = read_tagged(&root.join("keys/advance.verifier"))?;
+    let other: VerifierKey = read_tagged(&root.join("keys/advance_other.verifier"))?;
+    assert_ne!(verifier, other);
+    let proof = Proof(fs::read(out.join("standalone.proof"))?);
+    let inputs: Vec<Fr> = read_tagged(&out.join("standalone.inputs"))?;
+    verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
+    assert!(
+        other
+            .verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())
+            .is_err()
+    );
+    let mut corrupted = proof.clone();
+    *corrupted.0.first_mut().ok_or("empty standalone proof")? ^= 1;
+    assert!(
+        verifier
+            .verify(&PARAMS_VERIFIER, &corrupted, inputs.iter().copied())
+            .is_err()
+    );
+    verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
+    Ok(())
 }
 fn assert_same_call(
     actual: &ContractCallPrototype<DefaultDB>,
@@ -260,18 +279,29 @@ fn initialized(case: &Value) -> Result<ConstructorResult<u64>, Box<dyn Error>> {
 fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Error>> {
     fs::create_dir(out)?;
     let verifier_bytes = fs::read(root.join("keys/advance.verifier"))?;
-    let verifier: VerifierKey = tagged_deserialize(&mut verifier_bytes.as_slice())?;
+    let verifier: VerifierKey = read_tagged(&root.join("keys/advance.verifier"))?;
     let other_bytes = fs::read(root.join("keys/advance_other.verifier"))?;
     assert_ne!(verifier_bytes, other_bytes);
-    let other: VerifierKey = tagged_deserialize(&mut other_bytes.as_slice())?;
+    let other: VerifierKey = read_tagged(&root.join("keys/advance_other.verifier"))?;
     assert_ne!(verifier, other);
-    let mut rng = StdRng::seed_from_u64(0x6740_0042);
+    let ir = IrSource::load(fs::File::open(root.join("zkir/advance.zkir"))?)?;
+    let model = ir.model();
+    assert_eq!((model.k(), model.rows()), (7, 78));
+    assert!(ir.do_communications_commitment);
+    let binary_ir = fs::read(root.join("zkir/advance.bzkir"))?;
+    let mut expected_ir = Vec::new();
+    tagged_serialize(&ir, &mut expected_ir)?;
+    assert_eq!(binary_ir, expected_ir);
+    let prover: ProverKey<IrSource> = read_tagged(&root.join("keys/advance.prover"))?;
+    let mut rng = StdRng::from_rng(rand::rngs::OsRng)?;
     let initial = initialized(case)?;
     let private = initial.private_state;
-    let operations = HashMap::new().insert(
-        EntryPointBuf(NAME.as_bytes().to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
+    let operation = ContractOperation::new(
+        Some(verifier.clone()),
+        Some(Sp::new(IrBuf::from(binary_ir))),
     );
+    let operations = HashMap::new().insert(entry.clone(), operation.clone());
     let initial_contract = ContractState::new(
         initial.ledger_state.get_ref().clone(),
         operations,
@@ -283,10 +313,10 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
     // declared test setup. Neither is a constructor/deployment/wallet proof.
     std::env::var("MIDNIGHT_LEDGER_TEST_STATIC_DIR")?;
     let mut state: TestState<DefaultDB> = TestState::new(&mut rng);
-    tokio::runtime::Builder::new_current_thread()
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(state.give_fee_token(&mut rng, 1));
+        .build()?;
+    executor.block_on(state.give_fee_token(&mut rng, 1));
     state.ledger.contract = state
         .ledger
         .contract
@@ -307,11 +337,11 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         .execute_recorded(observed.circuit_context(private))?;
     malformed.execution.context.query.state = initial.ledger_state.clone();
     assert!(matches!(
-        prepare_call(
-            malformed,
-            CallSpec::new(NAME, verifier.clone(), delta, communication_randomness)
-        ),
-        Err(PrepareCallError::ReplayStateMismatch)
+        RecordedCall::new(&observed, malformed, NAME, delta)
+            .prepare(verifier.clone(), communication_randomness),
+        Err(ObservedCallError::Prepare(
+            PrepareCallError::ReplayStateMismatch
+        ))
     ));
     let recorded = c::functional::advance::Program::new(delta)
         .execute_recorded(observed.circuit_context(private))?;
@@ -323,17 +353,15 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         generated::ledger_slots::stored.inspect(&expected)?,
         expected_value
     );
-    let prepared = prepare_call(
-        recorded,
-        CallSpec::new(NAME, verifier.clone(), delta, communication_randomness),
-    )?;
-    let ordinary = c::recorded::advance(observed.circuit_context(private), delta)?;
-    assert_eq!(ordinary.execution.result, expected_value);
-    let ordinary = prepare_call(
-        ordinary,
-        CallSpec::new(NAME, verifier.clone(), delta, communication_randomness),
-    )?;
+    let prepared = RecordedCall::new(&observed, recorded, NAME, delta)
+        .prepare(verifier.clone(), communication_randomness)?;
+    let ordinary = c::recorded::Contract.advance_call(&observed, private, delta)?;
+    assert_eq!(ordinary.recorded().execution.result, expected_value);
+    let ordinary = ordinary.prepare(verifier.clone(), communication_randomness)?;
     assert_same_call(&prepared, &ordinary);
+    assert_eq!(prepared.address, address);
+    assert_eq!(prepared.entry_point, entry);
+    assert_eq!(prepared.op, operation);
     let lab = ProofLab::new(
         Artifacts(root.to_owned()),
         MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?,
@@ -344,14 +372,25 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
     ))?;
     assert_eq!(resolved, verifier);
     let preimage = call_preimage(&prepared)?;
-    let provider = lab.provider(StdRng::seed_from_u64(0x6740_5052));
-    let skips = futures_executor::block_on(provider.check(&preimage))?;
+    let skips = ir.check(&preimage)?;
     assert!(
         skips.iter().all(Option::is_none),
         "no skipped public inputs admitted"
     );
-    let proof = futures_executor::block_on(provider.prove(&preimage, None))?;
-    let inputs = public_inputs(&preimage)?;
+    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
+    let (proof, inputs, proved_skips) =
+        futures_executor::block_on(ir.prove(rand::rngs::OsRng, &params, prover, &preimage))?;
+    assert_eq!(proved_skips, skips);
+    assert_eq!(inputs.first(), Some(&preimage.binding_input));
+    assert_eq!(
+        inputs.get(1),
+        Some(
+            &preimage
+                .communications_commitment
+                .ok_or("missing commitment")?
+                .0
+        )
+    );
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
     let mut binding = inputs.clone();
     binding[0] = binding[0] + Fr::from(1_u64);
@@ -379,7 +418,11 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         assert_ne!(*slot, replacement);
         *slot = replacement;
         let bad = call_preimage(&changed)?;
-        let changed_inputs = public_inputs(&bad)?;
+        let mut changed_inputs = inputs.clone();
+        changed_inputs[1] = bad
+            .communications_commitment
+            .ok_or("missing changed commitment")?
+            .0;
         assert_ne!(inputs[1], changed_inputs[1]);
         let rejected = verifier
             .verify(&PARAMS_VERIFIER, &proof, changed_inputs.into_iter())
@@ -388,8 +431,7 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         communication_refusals.push(rejected);
         // Unlike an unconstrained witness-return relation, advance computes
         // stored + delta: changing only its input or output must fail check.
-        let rejected =
-            futures_executor::block_on(lab.provider(StdRng::seed_from_u64(7)).check(&bad)).is_err();
+        let rejected = ir.check(&bad).is_err();
         assert!(rejected);
         preimage_refusals.push(rejected);
     }
@@ -417,34 +459,44 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         other_bytes
     );
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
+        Intent::empty(&mut rng, state.time + state.ledger.parameters.global_ttl)
             .add_call::<ProofPreimage>(prepared);
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let fee_lab = ProofLab::new(
-        fee_resolver(root)?,
-        MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?,
-    );
-    let proven = futures_executor::block_on(tx.prove(
-        fee_lab.provider(StdRng::seed_from_u64(0x6740_5458)),
-        &INITIAL_PARAMETERS.cost_model.runtime_cost_model,
-    ))?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x6740_5345));
     let resolver = fee_resolver(root)?;
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(state.balance_tx(rng, sealed, &resolver))?;
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("constructor Vector v3 transaction proving failed: {error:?}"))?;
+    let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
+    let sealed = executor.block_on(state.balance_tx(rng, sealed, &resolver))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls
+        .next()
+        .ok_or("missing funded constructor Vector call")?;
+    let ProofVersioned::V3(transaction_proof) = &call.proof else {
+        return Err("expected transaction-bound v3 proof".into());
+    };
+    assert!(calls.next().is_none());
+    assert_ne!(transaction_proof, &proof);
+    let dust_spends = sealed
+        .intents()
+        .filter_map(|(_, intent)| intent.dust_actions)
+        .map(|actions| {
+            actions
+                .spends
+                .iter()
+                .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
+                .count()
+        })
+        .sum::<usize>();
+    assert_eq!(dust_spends, 1);
     let verified =
         sealed.well_formed(&state.ledger, WellFormedStrictness::default(), state.time)?;
-    let context = TransactionContext {
-        ref_state: state.ledger.clone(),
-        block_context: BlockContext {
-            tblock: state.time,
-            last_block_time: state.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
+    let mut context = state.context();
+    context.block_context.last_block_time = state.time;
     let (updated, result) = state.ledger.apply(&verified, &context);
     assert!(
         matches!(result, TransactionResult::Success(_)),
@@ -455,14 +507,12 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         .get(&address)
         .ok_or("missing applied contract")?;
     assert_eq!(actual.data.get_ref(), &expected);
+    assert_eq!(actual.operations.get(&entry).as_deref(), Some(&operation));
     assert_eq!(
         generated::ledger_slots::stored.inspect(actual.data.get_ref())?,
         expected_value
     );
-    let context = TransactionContext {
-        ref_state: updated.clone(),
-        ..context
-    };
+    context.ref_state = updated.clone();
     let (replayed, result) = updated.apply(&verified, &context);
     assert!(matches!(
         result,
@@ -473,13 +523,26 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
         )
     ));
     assert_eq!(replayed, updated);
+    let mut updated_bytes = Vec::new();
+    let mut replayed_bytes = Vec::new();
+    tagged_serialize(&updated, &mut updated_bytes)?;
+    tagged_serialize(&replayed, &mut replayed_bytes)?;
+    assert_eq!(replayed_bytes, updated_bytes);
     let mut transaction = Vec::new();
     tagged_serialize(&sealed, &mut transaction)?;
     fs::write(out.join("standalone.proof"), &proof.0)?;
+    let mut public_inputs = Vec::new();
+    tagged_serialize(&inputs, &mut public_inputs)?;
+    fs::write(out.join("standalone.inputs"), public_inputs)?;
+    fs::write(out.join("transaction-bound.proof"), &transaction_proof.0)?;
     fs::write(out.join("applied-transaction.bin"), &transaction)?;
+    fs::write(out.join("ledger-after.bin"), &updated_bytes)?;
+    fs::write(out.join("ledger-replay.bin"), &replayed_bytes)?;
     let result = json!({"status":"passed","case":case["id"],"initial_stored":case["expected"],
         "delta":4,"final_stored":case["expected"].as_u64().unwrap()+4,
         "standalone_proof_bytes":proof.0.len(),"transaction_bytes":transaction.len(),
+        "transaction_proof_version":3,"transaction_proof_bytes":transaction_proof.0.len(),
+        "positive_fee_dust_spends":dust_spends,
         "proof_relationship":"separate standalone proof and independently proved funded transaction",
         "changed_binding_rejected":true,"changed_input_rejected":communication_refusals[0],
         "changed_output_rejected":communication_refusals[1],
@@ -494,8 +557,27 @@ fn prove_case(root: &Path, out: &Path, case: &Value) -> Result<Value, Box<dyn Er
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "constructor Vector requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     let mut args = std::env::args_os().skip(1);
     let mode = args.next().ok_or("mode required")?;
+    if mode == "--verify-standalone" {
+        let material = PathBuf::from(args.next().ok_or("material required")?);
+        let output = PathBuf::from(args.next().ok_or("case directory required")?);
+        if args.next().is_some() {
+            return Err("unexpected verifier argument".into());
+        }
+        verify_standalone(&material, &output)?;
+        println!(
+            "{}",
+            json!({"status":"passed","standalone_verified":true,
+            "corrupted_proof_rejected":true,"distinct_verifier_rejected":true})
+        );
+        return Ok(());
+    }
     if mode != "--preflight" && mode != "--prove" {
         return Err("unsupported mode".into());
     }

@@ -31,7 +31,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["set_tiny", "set_medium", "set_wide"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -115,7 +115,7 @@ fn assert_single_query_capture(
 #[test]
 fn exact_bug11_oracle_matches_non_power_of_two_uint_cell_widths() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/bug11-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-bug11-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -164,7 +164,7 @@ fn exact_bug11_oracle_matches_non_power_of_two_uint_cell_widths() {
 #[test]
 fn non_power_of_two_uint_writes_record_typescript_parity_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/bug11-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-bug11-oracle.json"
     ))
     .unwrap();
     let initial = || {

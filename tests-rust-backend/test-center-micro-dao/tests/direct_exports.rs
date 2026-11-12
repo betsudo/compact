@@ -21,7 +21,7 @@ use midnight_compact_runtime::{
 
 fn captured_reveal_state() -> (ContractState<DefaultDB>, FixedBytes<32>) {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-reveal.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-reveal.json"
     ))
     .unwrap();
     let row = oracle

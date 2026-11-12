@@ -30,7 +30,7 @@
       ],
       "pure_declarations": 0,
       "exported_pure_declarations": 0,
-      "rust_fixture": "tests-rust-backend/shielded-merge-oracle/lib.rs",
+      "rust_consumer": "tests-rust-backend/shielded-merge-oracle/lib.rs",
       "typescript_capture": "runtime-rs/tests/fixtures/capture-shielded-merge-oracle.mjs",
       "typescript_fixture": "runtime-rs/tests/fixtures/shielded-merge-oracle.json",
       "rust_test": "tests-rust-backend/shielded-merge-oracle/tests/shielded_merge.rs",

@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Local nonproduction probes. No parameters, proof generation or network access.
 
@@ -136,6 +147,7 @@ fn local_resolution_admits_exact_bytes_and_rejects_one_under() {
 #[test]
 fn local_official_provider_checks_real_assertion_without_proving_or_parameters() {
     let ir = IrSource {
+        version: midnight_zkir::IrMinorVersion::V0,
         num_inputs: 1,
         do_communications_commitment: false,
         instructions: vec![Instruction::Assert { cond: 0 }].into(),

@@ -14,7 +14,10 @@
 // limitations under the License.
 //! Original set_topic: guaranteed empty pot and whole-fallible funded merge.
 //! Prior contract/coin state is explicitly seeded offline, not a proved DAO lifecycle.
+use super::local_v3_application as v3;
 use super::micro_dao_advance_support as support;
+use super::micro_dao_buy_in::{FundedMicroDao, deploy_funded};
+use super::micro_dao_token::validate_offer_artifacts;
 use super::*;
 use compact_rust_test_center_micro_dao_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -51,12 +54,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
-    // Pair the complete original DAO before keys, deployment or seeded state.
-    // This checks source identity; proving-key provenance is qualified separately.
-    counter_scenario::validate_ir(
-        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
-        compact_rust_test_center_micro_dao_fixture::RETAINED_IR,
-    )?;
+    validate_offer_artifacts(root, "set_topic")?;
     let name = "set_topic";
     let mut rng = StdRng::seed_from_u64(0x0211_0000 + u64::from(occupied));
     let h = runtime::ledger::coin_info_from_compact(
@@ -84,17 +82,19 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
             .context;
         prior = slots::pot_has_coin.write(prior, true)?.context;
     }
-    let deploy = make_deploy(root, name, prior.query.state.get_ref().clone(), &mut rng)?;
+    let stem = format!("set-topic-{occupied}");
+    let FundedMicroDao {
+        deploy,
+        verifier,
+        state: mut fees,
+    } = deploy_funded(
+        root,
+        (name, &stem),
+        prior.query.state.get_ref().clone(),
+        11,
+        &mut rng,
+    )?;
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.give_fee_token(&mut rng, 10));
-    fees.ledger.contract = fees
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
     let keys = midnight_zswap::keys::SecretKeys::from_rng_seed(&mut rng);
     // Offline prior-state fixture. Sequential seeds fix history at index0 and
     // wallet at index1 without a deployment-address/normalized-order cycle.
@@ -118,7 +118,9 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     .unwrap();
     let (state, _) = fees.ledger.zswap.try_apply(&seed_h, None)?;
     let (state, _) = state.try_apply(&seed_w, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(state.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        state.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     assert_eq!(ledger.zswap.first_free, 2);
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()
@@ -127,7 +129,7 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     assert_eq!(wallet.merkle_tree.root(), ledger.zswap.coin_coms.root());
     let segment = occupied.then_some(1);
     let placement = if occupied {
-        OfferPlacement::Fallible(NonZeroU16::new(1).unwrap())
+        OfferPlacement::Fallible(NonZeroU16::MIN)
     } else {
         OfferPlacement::Guaranteed
     };
@@ -201,13 +203,14 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     }
     let mut options = OfferBindingOptions::default()
         .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-        .with_offer_placement(placement)
         .with_wallet_funding(funding);
-    if occupied {
-        options = options.with_transient_coins(
-            ContractTransientCoins::from_transients_for_placement(transients, placement)
-                .map_err(|e| format!("transient selection {e:?}"))?,
-        );
+    if let OfferPlacement::Fallible(segment) = placement {
+        options = options
+            .with_wholly_fallible_offer(segment)
+            .with_transient_coins(
+                ContractTransientCoins::from_transients_for_placement(transients, placement)
+                    .map_err(|e| format!("transient selection {e:?}"))?,
+            );
     }
     let bound = OfferBackedObservedState::with_options(observe(), &ledger, offer.clone(), options)?;
     let native = c::set_topic(
@@ -264,9 +267,6 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     )?;
     assert_eq!(replay.context.state, native.context.query.state);
     assert_eq!(replay.context.effects, native.context.query.effects);
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/set_topic.verifier"),
-    )?))?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0))?;
     assert_eq!(
         prepared.prototype().guaranteed_public_transcript.is_some(),
@@ -276,43 +276,28 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
         prepared.prototype().fallible_public_transcript.is_some(),
         occupied
     );
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let sealed = v3::prove_funded_offer(
         root,
-        name,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (name, &stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let Transaction::Standard(structure) = &tx else {
-        panic!("standard")
-    };
-    if occupied {
-        assert!(structure.guaranteed_coins.is_none());
-        assert_eq!(structure.fallible_coins.iter().count(), 1);
-        assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
-    } else {
-        assert!(structure.fallible_coins.is_empty());
-        assert_eq!(**structure.guaranteed_coins.as_ref().unwrap(), offer);
-    }
-    let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0211_5052 + u64::from(occupied)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        |tx| {
+            let Transaction::Standard(structure) = tx else {
+                panic!("standard")
+            };
+            if occupied {
+                assert!(structure.guaranteed_coins.is_none());
+                assert_eq!(structure.fallible_coins.iter().count(), 1);
+                assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+            } else {
+                assert!(structure.fallible_coins.is_empty());
+                assert_eq!(**structure.guaranteed_coins.as_ref().unwrap(), offer);
+            }
+            Ok(())
+        },
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0211_5345 + u64::from(occupied)));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
     tagged_serialize(
         &sealed,
         &mut File::create(root.join(format!("set-topic-{occupied}-sealed.bin")))?,
@@ -400,6 +385,10 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
         "{result:?}"
     );
     assert_eq!(
+        updated.contract.get(&address).unwrap().operations,
+        deploy.initial_state.operations,
+    );
+    assert_eq!(
         updated.contract.get(&address).unwrap().data,
         native.context.query.state
     );
@@ -434,6 +423,7 @@ fn run_case(root: &Path, occupied: bool) -> Result<(), Box<dyn Error>> {
     let pot = slots::pot.read(final_state)?.result;
     assert_eq!(pot.mt_index.value(), 2);
     assert_eq!(pot.value.value(), if occupied { 27 } else { 10 });
+    v3::check_offer_replay(root, &stem, &updated, &verified, context)?;
     println!(
         "original set_topic occupied={occupied}: default-strict proof/application, actual wallet funding, canonical qualified pot and replay refusal passed"
     );

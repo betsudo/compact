@@ -14,12 +14,15 @@
 // limitations under the License.
 
 // Compile vector_tuple_cell.compact with --skip-zk, link generated contract to
-// this branch's runtime, then pass contract/index.js as the argument.
+// this branch's runtime, then pass contract/index.js and, optionally, the
+// corresponding packed runtime entry.
 import { pathToFileURL } from 'node:url';
-import * as runtime from '../../../runtime/dist/index.js';
 
-const [contractPath] = process.argv.slice(2);
+const [contractPath, runtimePath] = process.argv.slice(2);
 if (!contractPath) throw new Error('expected contract/index.js');
+const runtime = runtimePath
+  ? await import(pathToFileURL(runtimePath).href)
+  : await import('../../../runtime/dist/index.js');
 const { Contract } = await import(pathToFileURL(contractPath).href);
 const contract = new Contract({});
 const coinPublicKey = { bytes: new Uint8Array(32) };

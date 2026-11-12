@@ -44,7 +44,7 @@ impl Witnesses<u64> for SecretWitness {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-bboard.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-bboard.json"
     ))
     .unwrap()
 }
@@ -53,11 +53,11 @@ fn contract_state(state: StateValue<DefaultDB>) -> ContractState<DefaultDB> {
     let operations = HashMap::new()
         .insert(
             EntryPointBuf(b"post".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"take_down".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     ContractState::new(state, operations, ContractMaintenanceAuthority::default())
 }

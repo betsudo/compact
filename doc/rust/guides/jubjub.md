@@ -56,7 +56,18 @@ cargo +1.99.0 test --locked --offline -p compact-rust-jubjub-scalar-cell-fixture
 python3 -m unittest discover -s tools/compact-rust-backend -p 'test_acc_jubjub_gate.py'
 ```
 
-The maintained strict gate is `tools/compact-rust-backend/acc_jubjub_gate.py`. It requires explicit compiler, Scheme, Cargo target and new output-directory paths, cached Midnight proof parameters, and verified ledger static fixtures. It regenerates source, checks TS/reference parity, runs Rust behavior tests, makes fresh k11/1190-row keys, and requires seven real proof applications plus changed-binding and replay refusals. Each delivered proof is3296 bytes. The gate is now a required child of the local parity orchestration.
+The maintained Ledger 9 gate is `tools/compact-rust-backend/acc_jubjub_gate.py`. It requires explicit compiler, Scheme, Cargo target and new output-directory paths, ZKIR v3, and verified Ledger static fixtures. Set `COMPACT_TS_RUNTIME_DIR` if the paired Compact TypeScript runtime is installed outside the checkout's `runtime` directory.
+
+The gate checks the fresh Ledger 9 capture against the retained current
+capture and the independent historical point oracle. It requires fresh k12
+keys for the 2,236-row `apply` circuit, then checks all seven standalone
+proofs in a separate process, separate funded default-strict applications,
+and changed-binding, corrupted-proof and replay refusals. The `raw` circuit
+is modeled at k10 with 796 rows. The gate remains a required child of local
+full parity.
+
+The historical Ledger 8 run used k11 keys and 1,190 rows, with 3,296-byte
+proofs. Those measurements remain in the original qualification.
 
 ## Limits
 

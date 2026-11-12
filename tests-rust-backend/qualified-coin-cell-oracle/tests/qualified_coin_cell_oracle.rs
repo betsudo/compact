@@ -25,7 +25,7 @@ use runtime::ledger::{CoinInfo, CoinRecipient, ContractAddress, DefaultDB, State
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/qualified-coin-cell-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-qualified-coin-cell-oracle.json"
     ))
     .unwrap()
 }
@@ -34,11 +34,11 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new()
         .insert(
             EntryPointBuf(b"write_coin".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"read_coin".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -304,7 +304,7 @@ fn qualified_cell_write_matches_typescript_allocation_and_replacement() {
 #[test]
 fn qualified_cell_parent_path_matches_independent_chunked_typescript() {
     let expected: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/qualified-coin-cell-chunked-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-qualified-coin-cell-chunked-oracle.json"
     ))
     .unwrap();
     for (name, left, index, occupied) in [

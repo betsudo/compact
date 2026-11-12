@@ -71,7 +71,7 @@ class ReleaseInspectionTests(unittest.TestCase):
         return path
 
     def test_current_pair_and_external_target_archive(self):
-        self.assertEqual(release.compatibility_record()["runtime_abi"], 53)
+        self.assertEqual(release.compatibility_record()["runtime_abi"], 54)
         path = self.archive()
         receipt = release.inspect_package("midnight-compact-runtime")
         self.assertEqual(receipt["archive"], str(path))
@@ -99,28 +99,34 @@ class ReleaseInspectionTests(unittest.TestCase):
 
     def test_stale_source_record_refused(self):
         path = self.root / "runtime-rs/compatibility.json"
-        path.write_text(path.read_text().replace('"runtime_abi": 53', '"runtime_abi": 49'))
+        record = json.loads(path.read_text())
+        record["runtime_abi"] -= 1
+        path.write_text(json.dumps(record))
         with self.assertRaisesRegex(RuntimeError, "differs from compiler"):
             release.compatibility_record()
 
     def test_mixed_manifest_graph_refused(self):
         path = self.root / "runtime-rs/Cargo.toml"
-        path.write_text(path.read_text().replace('midnight-onchain-vm = { version = "=3.1.2"', 'midnight-onchain-vm = { version = "=4.0.0"'))
+        original = path.read_text()
+        declaration = 'midnight-onchain-vm = { version = "=4.0.1"'
+        self.assertIn(declaration, original)
+        path.write_text(original.replace(declaration, declaration.replace("4.0.1", "4.0.0")))
         with self.assertRaisesRegex(RuntimeError, "midnight-onchain-vm"):
             release.compatibility_record()
 
-    def test_alternate_git_source_cannot_hide_behind_equal_versions(self):
+    def test_alternate_source_cannot_hide_behind_equal_versions(self):
         path = self.root / "runtime-rs/Cargo.toml"
         original = path.read_text()
-        for before, after in (
-            ('b5d3e965a18e4cac17fac4f38446fc55c524439a', '0' * 40),
-            ('https://github.com/midnightntwrk/midnight-ledger', 'https://invalid.example/ledger'),
-            ('rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a"', 'branch = "ledger-8"'),
+        declaration = 'midnight-onchain-vm = { version = "=4.0.1" }'
+        self.assertIn(declaration, original)
+        for source in (
+            'git = "https://invalid.example/ledger", rev = "' + '0' * 40 + '"',
+            'git = "https://invalid.example/ledger", branch = "ledger-9"',
+            'registry = "unselected"',
         ):
-            with self.subTest(after=after):
-                self.assertIn(before, original)
-                path.write_text(original.replace(before, after))
-                with self.assertRaisesRegex(RuntimeError, "dependency mismatch"):
+            with self.subTest(source=source):
+                path.write_text(original.replace(declaration, declaration[:-2] + ", " + source + " }"))
+                with self.assertRaisesRegex(RuntimeError, "dependency mismatch: midnight-onchain-vm"):
                     release.compatibility_record()
         path.write_text(original)
 

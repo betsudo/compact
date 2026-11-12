@@ -273,7 +273,7 @@ jobs:
         id: constructor_vector_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-vector-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-vector-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-vector-proof"
 
@@ -918,7 +918,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Check generated functional Ledger8 consumers
+      - name: Check generated functional Ledger 9 consumers
         run: |
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_functional_effects.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-functional-consumer" --report "$RUNNER_TEMP/compact-functional-consumer.json"
 
@@ -1184,7 +1184,7 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 --parameter-k 11 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Qualify constructor guard origins, APIs and sixteen selected proofs
@@ -1192,7 +1192,7 @@ jobs:
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-equality-recipe"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_tuple_equality_scope.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-equality-recipe/receipt.json" --output "$RUNNER_TEMP/compact-constructor-tuple-scope"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_equality_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-equality-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-equality-proof"
 
@@ -1213,7 +1213,7 @@ jobs:
         id: constructor_boundaries_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-boundaries-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_equality_boundaries_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-boundaries-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-boundaries-proof"
 
@@ -1233,7 +1233,7 @@ jobs:
         id: constructor_tuple_guards_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           CARGO_TARGET_DIR="$RUNNER_TEMP/compact-constructor-equality-target" env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_constructor_tuple_equality_proof.py --compiler-receipt "$RUNNER_TEMP/compact-constructor-tuple-guards-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-constructor-tuple-guards-proof"
 
@@ -1271,7 +1271,8 @@ jobs:
       - name: Qualify wide-zero multiplication proofs
         id: wide_zero_proof
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-wide-zero-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_wide_zero_multiplication_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-wide-zero-proof"
 
       - name: Qualify constant-valued Vector index proofs
         run: |
@@ -1283,15 +1284,18 @@ jobs:
 
       - name: Qualify selected direct Fold proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-direct-fold-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_direct_fold_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-direct-fold-proof"
 
       - name: Qualify selected Field return-wrapper proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_field_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-field-wrappers-proof"
 
       - name: Qualify selected tuple return-wrapper proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_tuple_return_wrappers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-tuple-wrappers-proof"
 
       - name: Qualify selected original DID functional proof
         run: |
@@ -1319,7 +1323,8 @@ jobs:
 
       - name: Qualify selected Unit mutation initializer proofs
         run: |
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_unit_mutation_initializers_proof.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-unit-initializers-proof"
 
       - name: Retain failed wide-zero proof diagnostics
         if: failure() && steps.wide_zero_proof.outcome == 'failure'
@@ -1353,8 +1358,17 @@ jobs:
             ${{ runner.temp }}/compact-wide-zero-proof/receipt.json
             ${{ runner.temp }}/compact-wide-zero-proof/generated/
             ${{ runner.temp }}/compact-constant-valued-vector-proof/receipt.json
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/logs/
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/*.stdout
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/*.stderr
+            ${{ runner.temp }}/compact-constant-valued-vector-proof/proof-material.json
             ${{ runner.temp }}/compact-constant-valued-vector-proof/generated/
             ${{ runner.temp }}/compact-vector-projection-proof/receipt.json
+            ${{ runner.temp }}/compact-vector-projection-proof/logs/
+            ${{ runner.temp }}/compact-vector-projection-proof/*.stdout
+            ${{ runner.temp }}/compact-vector-projection-proof/*.stderr
+            ${{ runner.temp }}/compact-vector-projection-proof/proof-material.json
+            ${{ runner.temp }}/compact-vector-projection-proof/generated/
             ${{ runner.temp }}/compact-field-wrappers-proof/receipt.json
             ${{ runner.temp }}/compact-field-wrappers-proof/generated/
             ${{ runner.temp }}/compact-tuple-wrappers-proof/receipt.json
@@ -1362,6 +1376,11 @@ jobs:
             ${{ runner.temp }}/compact-unit-initializers-proof/receipt.json
             ${{ runner.temp }}/compact-unit-initializers-proof/generated/
             ${{ runner.temp }}/compact-map-size-expression-proof/receipt.json
+            ${{ runner.temp }}/compact-map-size-expression-proof/logs/
+            ${{ runner.temp }}/compact-map-size-expression-proof/*.stdout
+            ${{ runner.temp }}/compact-map-size-expression-proof/*.stderr
+            ${{ runner.temp }}/compact-map-size-expression-proof/proof-material.json
+            ${{ runner.temp }}/compact-map-size-expression-proof/generated/
             ${{ runner.temp }}/compact-direct-fold-proof/receipt.json
             ${{ runner.temp }}/compact-direct-fold-proof/generated/
           if-no-files-found: ignore
@@ -1506,7 +1525,7 @@ jobs:
         id: vector_component_products
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-vector-component-products-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_vector_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-vector-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-vector-component-products-proof"
 
@@ -1525,7 +1544,7 @@ jobs:
         id: nested_component_products
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-nested-component-products-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_nested_component_products_proof.py --compiler-receipt "$RUNNER_TEMP/compact-nested-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-nested-component-products-proof"
 
@@ -1539,6 +1558,16 @@ jobs:
             ${{ runner.temp }}/compact-nested-component-products-proof/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in stateful_product_vector_widening stateful_local_vector_widening stateful_vector_value_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-nested-component-products-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
 
       - name: Retain nested product proof diagnostics
         if: always()
@@ -1557,6 +1586,8 @@ jobs:
             !${{ runner.temp }}/compact-nested-request-field/**/cargo-target/**
             !${{ runner.temp }}/compact-vector-component-products-proof/**/cargo-target/**
             !${{ runner.temp }}/compact-nested-component-products-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1679,11 +1710,11 @@ jobs:
           cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
-      - name: Qualify component-product Vector APIs and fourteen selected proofs
+      - name: Qualify component-product Vector APIs and fifteen selected proofs
         id: component_product_vector
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-component-product-vector-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_component_product_vector_proof.py --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-component-product-vector-proof"
 
@@ -1697,6 +1728,16 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-proof/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in direct_stateful_vector_literal_returns fold_vector_result_widening vector_alias_source_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-component-product-vector-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
+
       - name: Retain component-product Vector proof diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -1708,6 +1749,8 @@ jobs:
             ${{ runner.temp }}/compact-component-product-vector-recipe/
             ${{ runner.temp }}/compact-component-product-vector-proof/
             !${{ runner.temp }}/compact-component-product-vector-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1830,13 +1873,23 @@ jobs:
           cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
-      - name: Qualify outer-Vector product APIs and fifteen selected proofs
+      - name: Qualify outer-Vector product APIs and sixteen selected proofs
         id: outer_vector_product_proof
         run: |
           python3 tools/compact-rust-backend/record_compiler_recipe.py --compiler "$COMPACTC" --output "$RUNNER_TEMP/compact-outer-vector-product-recipe"
-          ZKIR="$(env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -c 'import pathlib, shutil; path = shutil.which("zkir"); assert path; print(pathlib.Path(path).resolve(strict=True))')"
+          ZKIR="$(env -u LD_LIBRARY_PATH nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
           TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_outer_vector_product_proof.py --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" --output "$RUNNER_TEMP/compact-outer-vector-product-proof"
+
+      - name: Qualify migrated Ledger 9 Vector proofs
+        run: |
+          ZKIR="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          for gate in vector_product_elements aggregate_literal_projection_widening struct_member_literal_widening; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u "tools/compact-rust-backend/check_${gate}_proof.py" \
+              --compiler-receipt "$RUNNER_TEMP/compact-outer-vector-product-recipe/receipt.json" --ts-runtime "$TS_RUNTIME" --zkir "$ZKIR" \
+              --output "$RUNNER_TEMP/compact-ledger9-vector-proofs/$gate"
+          done
 
       - name: Retain outer-Vector product proof diagnostics
         if: always() && (steps.outer_vector_product_proof.outcome == 'success' || steps.outer_vector_product_proof.outcome == 'failure')
@@ -1847,6 +1900,8 @@ jobs:
             ${{ runner.temp }}/compact-outer-vector-product-recipe/
             ${{ runner.temp }}/compact-outer-vector-product-proof/
             !${{ runner.temp }}/compact-outer-vector-product-proof/**/cargo-target/**
+            ${{ runner.temp }}/compact-ledger9-vector-proofs/
+            !${{ runner.temp }}/compact-ledger9-vector-proofs/**/cargo-target/**
           if-no-files-found: ignore
           retention-days: 14
 
@@ -1971,7 +2026,9 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
+          # Built-in proof material contributes k13 through k15. The named
+          # Ledger 9 circuits also use k9, k10, k16 and k17.
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 --parameter-k 9 --parameter-k 10 --parameter-k 16 --parameter-k 17 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Run assigned named native scenarios with proofs
@@ -2107,7 +2164,8 @@ jobs:
         run: |
           export MIDNIGHT_PP="$RUNNER_TEMP/compact-proof-parameters"
           printf '%s\n' "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
-          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 6 --parameter-k 8 --parameter-k 7 --parameter-k 5 > "$RUNNER_TEMP/compact-proof-material.json"
+          # Use the explicit SRS roster from local Ledger 9 core and wallet qualification.
+          cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- --prepare-proof-material --parameter-k 5 --parameter-k 6 --parameter-k 7 --parameter-k 8 --parameter-k 9 --parameter-k 10 --parameter-k 11 > "$RUNNER_TEMP/compact-proof-material.json"
           cat "$RUNNER_TEMP/compact-proof-material.json"
 
       - name: Check and test native Rust backend

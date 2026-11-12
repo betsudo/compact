@@ -1,0 +1,1119 @@
+{
+  "provenance": {
+    "runtimeVersion": "0.17.0",
+    "sources": {
+      "literal_coercion_oracle": {
+        "sourceSha256": "36f96813375018305b362745442cc3acbcebeb152fd7f44f5c79a4551c58d6a5",
+        "generatedIndexSha256": "bde186d378bae4a0dd076d895aa039ff810aedb2c18955c9f62dc3f18f8afc49"
+      },
+      "assert_parity_oracle": {
+        "sourceSha256": "0a9bbadf7e52ef1e7a8149d093531f6ad5b295778510807bf7b4740425b00c60",
+        "generatedIndexSha256": "01d1bb0fb02a073b9011e9648072135dd91f9a95a0d5b8f32f5b08f0975436d0"
+      },
+      "ternary_cond_oracle": {
+        "sourceSha256": "e95aef740573d9e5ba8980a74c0eabdf1c5fad4948750aeaa2a80502c3025b73",
+        "generatedIndexSha256": "3d71cd808a9db2abdaada7fb4ff03e954c48fb3e4f61be9a95ff2170a082448f"
+      }
+    },
+    "runtime": {
+      "index.js": "1f8b4de34e526e0e7731fee76c8dca0158298f748be7f17a28f078585f3fbf65",
+      "built-ins.js": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
+      "compact-types.js": "1a58a9085563fe1352e7692c0d38ef4e8e2ab6efbc65fae432048f41e88cb3b4"
+    }
+  },
+  "literal": {
+    "exports": [
+      "addFieldLiteral",
+      "addFieldOnlyLiteral",
+      "addHugeFieldLiteral",
+      "addUintFieldOperand",
+      "callArgFieldOnlyLiteral",
+      "callArgHugeFieldLiteral",
+      "callArgMaxUnsignedPlusOne",
+      "cmpFieldOnlyLiteral",
+      "cmpHugeFieldLiteral",
+      "constFieldOnlyLiteral",
+      "constHugeFieldLiteral",
+      "constThenCall",
+      "hashCallVectorArg",
+      "hashConstVectorArg",
+      "hashDefaultVectorArg",
+      "hashNestedUintVarRefElem",
+      "hashNestedVarRefVectorArg",
+      "hashSameTypeNestedArg",
+      "hashSameTypeVectorArg",
+      "hashStructFieldVectorArg",
+      "hashUintVarRefElem",
+      "hashVarRefVectorArg",
+      "hashZeroLiteral",
+      "idf",
+      "litLhsFieldLiteral",
+      "mulHugeFieldLiteral",
+      "nativeArgFieldOnlyLiteral",
+      "nativeArgLiteral",
+      "nestedFieldArith",
+      "retFieldLiteral",
+      "retFieldOnlyLiteral",
+      "retHugeFieldLiteral",
+      "retU128FieldLiteral",
+      "sameTypeVec",
+      "someFieldLiteral",
+      "structLiteral",
+      "structMemberHugeFieldLiteral",
+      "subFieldLiteral",
+      "subgroupCheck",
+      "u128Rung",
+      "uintToField",
+      "vectorEltHugeFieldLiteral",
+      "vectorEltWise"
+    ],
+    "cases": [
+      {
+        "id": "retFieldLiteral/constant",
+        "export": "retFieldLiteral",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "constThenCall/constant",
+        "export": "constThenCall",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "structLiteral/constant",
+        "export": "structLiteral",
+        "args": [],
+        "result": {
+          "f": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      },
+      {
+        "id": "someFieldLiteral/constant",
+        "export": "someFieldLiteral",
+        "args": [],
+        "result": {
+          "is_some": true,
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      },
+      {
+        "id": "hashZeroLiteral/constant",
+        "export": "hashZeroLiteral",
+        "args": [],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "nativeArgLiteral/constant",
+        "export": "nativeArgLiteral",
+        "args": [],
+        "result": {
+          "x": "b5ac1897cbe492040280fa0499bc1592072512fdfac6ef595d3c383f6793db56",
+          "y": "6af16ad78a2eb492a9401e4742aae5760c6671bf2324fbb02750c1b5704f1f39"
+        }
+      },
+      {
+        "id": "retU128FieldLiteral/constant",
+        "export": "retU128FieldLiteral",
+        "args": [],
+        "result": "ffffffffffffffffffffffffffffffff00000000000000000000000000000000"
+      },
+      {
+        "id": "retHugeFieldLiteral/constant",
+        "export": "retHugeFieldLiteral",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "constHugeFieldLiteral/constant",
+        "export": "constHugeFieldLiteral",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "callArgHugeFieldLiteral/constant",
+        "export": "callArgHugeFieldLiteral",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "structMemberHugeFieldLiteral/constant",
+        "export": "structMemberHugeFieldLiteral",
+        "args": [],
+        "result": {
+          "f": "0000000000000000000000000000000000000000000000000001000000000000"
+        }
+      },
+      {
+        "id": "vectorEltHugeFieldLiteral/constant",
+        "export": "vectorEltHugeFieldLiteral",
+        "args": [],
+        "result": [
+          "0000000000000000000000000000000000000000000000000001000000000000"
+        ]
+      },
+      {
+        "id": "hashConstVectorArg/constant",
+        "export": "hashConstVectorArg",
+        "args": [],
+        "result": "c8b9e6acb00f5b32f776f5466510630a94829c965d35074e9d1620162e8b51df"
+      },
+      {
+        "id": "sameTypeVec/constant",
+        "export": "sameTypeVec",
+        "args": [],
+        "result": [
+          "0500000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000"
+        ]
+      },
+      {
+        "id": "hashCallVectorArg/constant",
+        "export": "hashCallVectorArg",
+        "args": [],
+        "result": "c8b9e6acb00f5b32f776f5466510630a94829c965d35074e9d1620162e8b51df"
+      },
+      {
+        "id": "hashDefaultVectorArg/constant",
+        "export": "hashDefaultVectorArg",
+        "args": [],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "callArgFieldOnlyLiteral/constant",
+        "export": "callArgFieldOnlyLiteral",
+        "args": [],
+        "result": "97e5dedacbe1125a100299791204cd146087262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "constFieldOnlyLiteral/constant",
+        "export": "constFieldOnlyLiteral",
+        "args": [],
+        "result": "97e5dedacbe1125a100299791204cd146087262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "retFieldOnlyLiteral/constant",
+        "export": "retFieldOnlyLiteral",
+        "args": [],
+        "result": "97e5dedacbe1125a100299791204cd146087262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "callArgMaxUnsignedPlusOne/constant",
+        "export": "callArgMaxUnsignedPlusOne",
+        "args": [],
+        "result": "0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      {
+        "id": "subgroupCheck/constant",
+        "export": "subgroupCheck",
+        "args": [],
+        "result": {
+          "x": "e56fd518a3fe2d515f37be7f655c3104eef572b1e37ed35ea31c123a67c4a53e",
+          "y": "cb550cd538ea0cc1138480408e6eaab9b36c613f0dd3f7784fdb6eea837b1357"
+        }
+      },
+      {
+        "id": "idf/0",
+        "export": "idf",
+        "args": [
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "idf/1",
+        "export": "idf",
+        "args": [
+          "1"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "idf/340282366920938463463374607431768211455",
+        "export": "idf",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "ffffffffffffffffffffffffffffffff00000000000000000000000000000000"
+      },
+      {
+        "id": "idf/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "idf",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "addFieldLiteral/0",
+        "export": "addFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "addFieldLiteral/1",
+        "export": "addFieldLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "addFieldLiteral/340282366920938463463374607431768211455",
+        "export": "addFieldLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "0000000000000000000000000000000001000000000000000000000000000000"
+      },
+      {
+        "id": "addFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "addFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "addHugeFieldLiteral/0",
+        "export": "addHugeFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "addHugeFieldLiteral/1",
+        "export": "addHugeFieldLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "addHugeFieldLiteral/340282366920938463463374607431768211455",
+        "export": "addHugeFieldLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "ffffffffffffffffffffffffffffffff00000000000000000001000000000000"
+      },
+      {
+        "id": "addHugeFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "addHugeFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000002000000000000"
+      },
+      {
+        "id": "litLhsFieldLiteral/0",
+        "export": "litLhsFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "litLhsFieldLiteral/1",
+        "export": "litLhsFieldLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "litLhsFieldLiteral/340282366920938463463374607431768211455",
+        "export": "litLhsFieldLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "0000000000000000000000000000000001000000000000000000000000000000"
+      },
+      {
+        "id": "litLhsFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "litLhsFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "0100000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "subFieldLiteral/0",
+        "export": "subFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+      },
+      {
+        "id": "subFieldLiteral/1",
+        "export": "subFieldLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "subFieldLiteral/340282366920938463463374607431768211455",
+        "export": "subFieldLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "feffffffffffffffffffffffffffffff00000000000000000000000000000000"
+      },
+      {
+        "id": "subFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "subFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "ffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000"
+      },
+      {
+        "id": "mulHugeFieldLiteral/0",
+        "export": "mulHugeFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "mulHugeFieldLiteral/1",
+        "export": "mulHugeFieldLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "mulHugeFieldLiteral/340282366920938463463374607431768211455",
+        "export": "mulHugeFieldLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "c883c821398ea28d014898361fc078a3bcb01613278344a2e7c1b00b6cfa5a52"
+      },
+      {
+        "id": "mulHugeFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "mulHugeFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "fc9a2c71235d1cb22ec4c805ffec0ccf581849507ce745466509e871cc67651c"
+      },
+      {
+        "id": "nestedFieldArith/0",
+        "export": "nestedFieldArith",
+        "args": [
+          "0"
+        ],
+        "result": "0200000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "nestedFieldArith/1",
+        "export": "nestedFieldArith",
+        "args": [
+          "1"
+        ],
+        "result": "0600000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "nestedFieldArith/340282366920938463463374607431768211455",
+        "export": "nestedFieldArith",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "feffffff0100000002480300fab78458f64fbcecef4f8c996f05c5ac59b12418"
+      },
+      {
+        "id": "nestedFieldArith/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "nestedFieldArith",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "fe9a2c71235d1cb22ec4c805ffec0ccf581849507ce74546650ce871cc67651c"
+      },
+      {
+        "id": "addFieldOnlyLiteral/0",
+        "export": "addFieldOnlyLiteral",
+        "args": [
+          "0"
+        ],
+        "result": "97e5dedacbe1125a100299791204cd146087262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "addFieldOnlyLiteral/1",
+        "export": "addFieldOnlyLiteral",
+        "args": [
+          "1"
+        ],
+        "result": "98e5dedacbe1125a100299791204cd146087262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "addFieldOnlyLiteral/340282366920938463463374607431768211455",
+        "export": "addFieldOnlyLiteral",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "96e5dedacbe1125a100299791204cd146187262060e7cc20f575a64c9db6cf01"
+      },
+      {
+        "id": "addFieldOnlyLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "addFieldOnlyLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": "97e5dedacbe1125a100299791204cd146087262060e7cc20f576a64c9db6cf01"
+      },
+      {
+        "id": "uintToField/0",
+        "export": "uintToField",
+        "args": [
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "hashUintVarRefElem/0",
+        "export": "hashUintVarRefElem",
+        "args": [
+          "0"
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "hashNestedUintVarRefElem/0",
+        "export": "hashNestedUintVarRefElem",
+        "args": [
+          "0"
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "uintToField/255",
+        "export": "uintToField",
+        "args": [
+          "255"
+        ],
+        "result": "ff00000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "hashUintVarRefElem/255",
+        "export": "hashUintVarRefElem",
+        "args": [
+          "255"
+        ],
+        "result": "483d5e8c70ecbbd7d76b343298d1958cec121b6d1fc24d72801442317b82cfc0"
+      },
+      {
+        "id": "hashNestedUintVarRefElem/255",
+        "export": "hashNestedUintVarRefElem",
+        "args": [
+          "255"
+        ],
+        "result": "483d5e8c70ecbbd7d76b343298d1958cec121b6d1fc24d72801442317b82cfc0"
+      },
+      {
+        "id": "u128Rung/0",
+        "export": "u128Rung",
+        "args": [
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "u128Rung/18446744073709551615",
+        "export": "u128Rung",
+        "args": [
+          "18446744073709551615"
+        ],
+        "result": "ffffffffffffffff000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "u128Rung/18446744073709551616",
+        "export": "u128Rung",
+        "args": [
+          "18446744073709551616"
+        ],
+        "result": "0000000000000000010000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "u128Rung/340282366920938463463374607431768211455",
+        "export": "u128Rung",
+        "args": [
+          "340282366920938463463374607431768211455"
+        ],
+        "result": "ffffffffffffffffffffffffffffffff00000000000000000000000000000000"
+      },
+      {
+        "id": "vectorEltWise/0",
+        "export": "vectorEltWise",
+        "args": [
+          "0"
+        ],
+        "result": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000"
+        ]
+      },
+      {
+        "id": "vectorEltWise/4294967295",
+        "export": "vectorEltWise",
+        "args": [
+          "4294967295"
+        ],
+        "result": [
+          "ffffffff00000000000000000000000000000000000000000000000000000000",
+          "ffffffff00000000000000000000000000000000000000000000000000000000"
+        ]
+      },
+      {
+        "id": "cmpHugeFieldLiteral/0",
+        "export": "cmpHugeFieldLiteral",
+        "args": [
+          "0"
+        ],
+        "result": false
+      },
+      {
+        "id": "cmpHugeFieldLiteral/1606938044258990275541962092341162602522202993782792835301376",
+        "export": "cmpHugeFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376"
+        ],
+        "result": true
+      },
+      {
+        "id": "cmpHugeFieldLiteral/1606938044258990275541962092341162602522202993782792835301377",
+        "export": "cmpHugeFieldLiteral",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301377"
+        ],
+        "result": false
+      },
+      {
+        "id": "cmpFieldOnlyLiteral/0",
+        "export": "cmpFieldOnlyLiteral",
+        "args": [
+          "0"
+        ],
+        "result": false
+      },
+      {
+        "id": "cmpFieldOnlyLiteral/819310549611346726241370945440405716213240158234039660170669895299022906775",
+        "export": "cmpFieldOnlyLiteral",
+        "args": [
+          "819310549611346726241370945440405716213240158234039660170669895299022906775"
+        ],
+        "result": true
+      },
+      {
+        "id": "cmpFieldOnlyLiteral/819310549611346726241370945440405716213240158234039660170669895299022906776",
+        "export": "cmpFieldOnlyLiteral",
+        "args": [
+          "819310549611346726241370945440405716213240158234039660170669895299022906776"
+        ],
+        "result": false
+      },
+      {
+        "id": "addUintFieldOperand/0-0",
+        "export": "addUintFieldOperand",
+        "args": [
+          "0",
+          "0"
+        ],
+        "result": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "addUintFieldOperand/1-255",
+        "export": "addUintFieldOperand",
+        "args": [
+          "1",
+          "255"
+        ],
+        "result": "0001000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "addUintFieldOperand/1606938044258990275541962092341162602522202993782792835301376-255",
+        "export": "addUintFieldOperand",
+        "args": [
+          "1606938044258990275541962092341162602522202993782792835301376",
+          "255"
+        ],
+        "result": "ff00000000000000000000000000000000000000000000000001000000000000"
+      },
+      {
+        "id": "hashVarRefVectorArg/0-0",
+        "export": "hashVarRefVectorArg",
+        "args": [
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "hashNestedVarRefVectorArg/0-0",
+        "export": "hashNestedVarRefVectorArg",
+        "args": [
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "hashSameTypeVectorArg/0-0",
+        "export": "hashSameTypeVectorArg",
+        "args": [
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "hashSameTypeNestedArg/0-0",
+        "export": "hashSameTypeNestedArg",
+        "args": [
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "result": "38723a2e5e8a17aa7950dc008209944e898f69a7bd10a23c839d341e935fd5ca"
+      },
+      {
+        "id": "hashStructFieldVectorArg/0-0",
+        "export": "hashStructFieldVectorArg",
+        "args": [
+          {
+            "v": [
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "result": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+      },
+      {
+        "id": "hashVarRefVectorArg/255-1",
+        "export": "hashVarRefVectorArg",
+        "args": [
+          [
+            "255",
+            "1"
+          ]
+        ],
+        "result": "72654b7c504afbcf742a406e9915b5aa8e675e11b20bb9398d6a437fd968ba3a"
+      },
+      {
+        "id": "hashNestedVarRefVectorArg/255-1",
+        "export": "hashNestedVarRefVectorArg",
+        "args": [
+          [
+            "255",
+            "1"
+          ]
+        ],
+        "result": "72654b7c504afbcf742a406e9915b5aa8e675e11b20bb9398d6a437fd968ba3a"
+      },
+      {
+        "id": "hashSameTypeVectorArg/255-1",
+        "export": "hashSameTypeVectorArg",
+        "args": [
+          [
+            "255",
+            "1"
+          ]
+        ],
+        "result": "72654b7c504afbcf742a406e9915b5aa8e675e11b20bb9398d6a437fd968ba3a"
+      },
+      {
+        "id": "hashSameTypeNestedArg/255-1",
+        "export": "hashSameTypeNestedArg",
+        "args": [
+          [
+            "255",
+            "1"
+          ]
+        ],
+        "result": "acf113f6cf68198f94820711848d13b5e5c406ae12b32b166375c10728ffebf5"
+      },
+      {
+        "id": "hashStructFieldVectorArg/255-1",
+        "export": "hashStructFieldVectorArg",
+        "args": [
+          {
+            "v": [
+              "255",
+              "1"
+            ]
+          }
+        ],
+        "result": "72654b7c504afbcf742a406e9915b5aa8e675e11b20bb9398d6a437fd968ba3a"
+      },
+      {
+        "id": "hashVarRefVectorArg/1-255",
+        "export": "hashVarRefVectorArg",
+        "args": [
+          [
+            "1",
+            "255"
+          ]
+        ],
+        "result": "ae81c032f1596a84bb79ce431a8284a9d561b92a3e860194c329bcc3037ff5ad"
+      },
+      {
+        "id": "hashNestedVarRefVectorArg/1-255",
+        "export": "hashNestedVarRefVectorArg",
+        "args": [
+          [
+            "1",
+            "255"
+          ]
+        ],
+        "result": "ae81c032f1596a84bb79ce431a8284a9d561b92a3e860194c329bcc3037ff5ad"
+      },
+      {
+        "id": "hashSameTypeVectorArg/1-255",
+        "export": "hashSameTypeVectorArg",
+        "args": [
+          [
+            "1",
+            "255"
+          ]
+        ],
+        "result": "ae81c032f1596a84bb79ce431a8284a9d561b92a3e860194c329bcc3037ff5ad"
+      },
+      {
+        "id": "hashSameTypeNestedArg/1-255",
+        "export": "hashSameTypeNestedArg",
+        "args": [
+          [
+            "1",
+            "255"
+          ]
+        ],
+        "result": "d2805c10bee605c2e1e4d8d6f01a6235716c8e6aacc8f6168d9e92064ae1068a"
+      },
+      {
+        "id": "hashStructFieldVectorArg/1-255",
+        "export": "hashStructFieldVectorArg",
+        "args": [
+          {
+            "v": [
+              "1",
+              "255"
+            ]
+          }
+        ],
+        "result": "ae81c032f1596a84bb79ce431a8284a9d561b92a3e860194c329bcc3037ff5ad"
+      },
+      {
+        "id": "nativeArgFieldOnlyLiteral/generator-1",
+        "export": "nativeArgFieldOnlyLiteral",
+        "args": [
+          "1"
+        ],
+        "point": {
+          "x": "e56fd518a3fe2d515f37be7f655c3104eef572b1e37ed35ea31c123a67c4a53e",
+          "y": "cb550cd538ea0cc1138480408e6eaab9b36c613f0dd3f7784fdb6eea837b1357"
+        },
+        "result": {
+          "x": "07cd36b9c95695451e641b0aa46dfc014571568c8e5ccb60fc23633f2c7c084c",
+          "y": "45b846f4ed5f7e44253fea91c4a35fd73179cecca67554f3460d4e8ff2ce642d"
+        }
+      },
+      {
+        "id": "nativeArgFieldOnlyLiteral/generator-2",
+        "export": "nativeArgFieldOnlyLiteral",
+        "args": [
+          "2"
+        ],
+        "point": {
+          "x": "dd1c0d6935aecc606473e78a773750b2c4adfdcab649fbc3042cee7d61dbf13e",
+          "y": "719af0e6e0c6d0aa680f3b7e97dee9c3cbc3a7815979f08e33a640fab8ca9a31"
+        },
+        "result": {
+          "x": "05a55ca8b89cc889933269552c9e7b9de745af476c7ef42babaf6f3dc0453153",
+          "y": "07e8c01baec23c2d4b85dffc8e99edc89aa3b4fa497a319d08eef44b5f63b825"
+        }
+      }
+    ]
+  },
+  "stateful": [
+    {
+      "export": "ping",
+      "args": [],
+      "result": [],
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a5c0008400104000401040408010404080403040c00041008010404145803042448010403040108010404010401040108400100003430747269676765725f6661696c000c000000081c2000042408010404289003043f805ba41e19cc0bb9d995a2607a749b6c518cdff0d1d18bcf7f7d773ad6d74e2d4000141070696e6708302000043408010404389003043f801e72be29cfb7437e947896b963e606c68157b9d3084102ac63c273d98bbbc8b0002c28747269676765725f6f6b08402000044408010404489003043f8015b536df10a4ecd81ff4685c18aa1cb313e142b1f5e1f4d48018aa7121ea23100004004050505050505050502c5050503c504c5008020c1408501854501003000400",
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a5c0008010104000401040408010404080403040c00041008010404145803042448010403040108010404010401040108010100003430747269676765725f6661696c000c000000081c2000042408010404289003043f805ba41e19cc0bb9d995a2607a749b6c518cdff0d1d18bcf7f7d773ad6d74e2d4000141070696e6708302000043408010404389003043f801e72be29cfb7437e947896b963e606c68157b9d3084102ac63c273d98bbbc8b0002c28747269676765725f6f6b08402000044408010404489003043f8015b536df10a4ecd81ff4685c18aa1cb313e142b1f5e1f4d48018aa7121ea23100004004050505050505050502c5050503c504c5008020c1408501854501003000400",
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "36",
+            "bytesDeleted": "36"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1233942932",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      },
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  []
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    1
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": []
+    },
+    {
+      "export": "walkerVectorElement",
+      "args": [
+        false
+      ],
+      "result": [],
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3ad5010008400104000401008c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf594104080401040c08010400080a080414040104180801040018820103c2414104200401042408010400084008042c040104300801040004004038101c2834383838383838383838383808021008043c080414044004030444000448080104044ca40304499400104000001040000010400000104000001040000010400000104000001040000010400000045015020304ff0102010403040108041408010401040108400100010802104001040000010801040401040104018c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf59410001080104040104010401080a08000108010404010401040118820103c24141000108010404010401040108400800010400000104000000484473747265616d43616c6c5769746e657373000c00000008585c00046008010404649003043f80aa16a867be82f11967345a0faa5178b0c263afe816c633225d01d48debae35e0003c3873747265616d4173736572744571086c5c00047008010404749003043f8012302a153abe08fca7164ceef4b72dc021cd850bc5f9e48d09d814d886a9da7000545073747265616d436f6e7374416e6e6f7461746564087c5c00048008010404849003043f80fdc285cef2f215257611ac85ae041762f6d3d833362a6011afea870843030f40003c3877616c6b65724e65737465644966088c5c00049008010404948c03043e7ce0063a6265f543408a14e17db01e8f807ba0d33f2db3ba9b50e8a54be099e900403c73747265616d4e6174697665417267089c5c0004a008010404a48c03043e7c4826fd285c19a5ddc3b087af59c8ef435c350c75ce2999cfb26395b68f8522403838383838383838983838a83838383808020800504c77616c6b6572566563746f72456c656d656e7408b05c0004b408010404b89003043f80fcaf8672cb38c7f153785f34959c23fa2b3284937f76550fd878fe314b5c6df000403c77616c6b65724e617469766541726708c05c0004c408010404c88c03043e7ce5caab71afce7be86d45b6ac5a6056b7bdc6efd035590b60a71c1d7a4751e7004c4877616c6b65725374727563744d656d62657208d05c0004d408010404d88c03043e7cf376abba6061ca9b95784548c7ae0c6865f7d94486d448e934f8f841d9952d00504c73747265616d566563746f72456c656d656e7408e05c0004e408010404e88c03043e7c336c4e0ba293453b00e0ada459bc3d8be2c3edb03d4ae8ffd64ed116988060403838383838383838383838ccdcec383808020c00403c73747265616d436f6d70617265457108f45c0004f808010404fc8c03043e7c3d13302883bda563f24162f8ad035426d2b76323eddd83a36e7aaf96d9a062003c3877616c6b657243616c6c507572650805015c00040901080104040d018c03043e7c2806eb2d243d4eb3525b5520b2365e00f01d34e51349c8e7c24c14f86fc2ec4038383838380101383838383838383838110108020800484477616c6b6572496e6c696e6557726974650819015c00041d010801040421019003043f80a5969b7f34899e06f0cd76a3117f214dfec88a9f749376648cf878a65f026b7000403c73747265616d496e6372656d656e740829015c00042d010801040431018c03043e7c735afe33bcec15046f6841d3ad9b8dd7d48d95e827fab7e2cda296e1b5d94a00545077616c6b6572436f6e7374416e6e6f74617465640839015c00043d010801040441018c03043e7cd89ed05fd4b340c76dd2f7afbd38142deffbabefe0bbf5fa4b097a318f2db940350138383838383838383838383845013838080208002c287769746e657373417267084d015c000451010801040455018c03043e7cdeb3f58b9093f64f7693a040b8a2a4495e1c4f34608ce3d60f23e7c66fc8dd00403c77616c6b6572436f6d706172654571085d015c000461010801040465018c03043e7cca2b0011caccf4eb2ad28955764667128ca953781031e2541c3a453eedc80c4038383838383838383838385901690138383808020800302c77616c6b657257726974650871015c000475010801040479019003043f8036911b2673c0b977fdec3762e0b93463638ddf023bac916800a23f9d5cd0dd70003c3873747265616d43616c6c507572650881015c000485010801040489018c03043d7ce6b2841dfd54c4231f2843f3982ad41d1e2866f85b6dd3dc9157e387bc0930004c4873747265616d5374727563744d656d6265720891015c000495010801040499018c03043d7c0ab2e6cb5269cc35136c7e0906e79dd7d095af90e1585aee991a810a945040408d013838389d01383838383838383838383808020804a10114030801045000302c73747265616d577269746508a9015c0004ad0108010404b1018c03043e7cb251d78d459059704e1bcdd3250695149c1a559eda97b9def2d80f76991b0f003c3873747265616d4e6573746564496608b9015c0004bd0108010404c1018c03043e7c58d1dd4ca13ae115415feb089d7aeadb69f69f5c0dc2bdaf4d3f3b96f8c9f4403838383838383838b5013838383838c5013808020840687888acbc38f0381501250149016d017d01a50138c90108025414403854cd01381003000400",
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3ad5010008400104000401008c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf594104080401040c08010400080a080414040104180801040018820204c2414104200401042408010400084008042c040104300801040004004038101c2834383838383838383838383808021008043c080414044004030444000448080104044ca40304499400104000001040000010400000104000001040000010400000104000001040000010400000045015020304ff0102010403040108041408010401040108400100010802104001040000010801040401040104018c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf59410001080104040104010401080a08000108010404010401040118820204c24141000108010404010401040108400800010400000104000000484473747265616d43616c6c5769746e657373000c00000008585c00046008010404649003043f80aa16a867be82f11967345a0faa5178b0c263afe816c633225d01d48debae35e0003c3873747265616d4173736572744571086c5c00047008010404749003043f8012302a153abe08fca7164ceef4b72dc021cd850bc5f9e48d09d814d886a9da7000545073747265616d436f6e7374416e6e6f7461746564087c5c00048008010404849003043f80fdc285cef2f215257611ac85ae041762f6d3d833362a6011afea870843030f40003c3877616c6b65724e65737465644966088c5c00049008010404948c03043e7ce0063a6265f543408a14e17db01e8f807ba0d33f2db3ba9b50e8a54be099e900403c73747265616d4e6174697665417267089c5c0004a008010404a48c03043e7c4826fd285c19a5ddc3b087af59c8ef435c350c75ce2999cfb26395b68f8522403838383838383838983838a83838383808020800504c77616c6b6572566563746f72456c656d656e7408b05c0004b408010404b89003043f80fcaf8672cb38c7f153785f34959c23fa2b3284937f76550fd878fe314b5c6df000403c77616c6b65724e617469766541726708c05c0004c408010404c88c03043e7ce5caab71afce7be86d45b6ac5a6056b7bdc6efd035590b60a71c1d7a4751e7004c4877616c6b65725374727563744d656d62657208d05c0004d408010404d88c03043e7cf376abba6061ca9b95784548c7ae0c6865f7d94486d448e934f8f841d9952d00504c73747265616d566563746f72456c656d656e7408e05c0004e408010404e88c03043e7c336c4e0ba293453b00e0ada459bc3d8be2c3edb03d4ae8ffd64ed116988060403838383838383838383838ccdcec383808020c00403c73747265616d436f6d70617265457108f45c0004f808010404fc8c03043e7c3d13302883bda563f24162f8ad035426d2b76323eddd83a36e7aaf96d9a062003c3877616c6b657243616c6c507572650805015c00040901080104040d018c03043e7c2806eb2d243d4eb3525b5520b2365e00f01d34e51349c8e7c24c14f86fc2ec4038383838380101383838383838383838110108020800484477616c6b6572496e6c696e6557726974650819015c00041d010801040421019003043f80a5969b7f34899e06f0cd76a3117f214dfec88a9f749376648cf878a65f026b7000403c73747265616d496e6372656d656e740829015c00042d010801040431018c03043e7c735afe33bcec15046f6841d3ad9b8dd7d48d95e827fab7e2cda296e1b5d94a00545077616c6b6572436f6e7374416e6e6f74617465640839015c00043d010801040441018c03043e7cd89ed05fd4b340c76dd2f7afbd38142deffbabefe0bbf5fa4b097a318f2db940350138383838383838383838383845013838080208002c287769746e657373417267084d015c000451010801040455018c03043e7cdeb3f58b9093f64f7693a040b8a2a4495e1c4f34608ce3d60f23e7c66fc8dd00403c77616c6b6572436f6d706172654571085d015c000461010801040465018c03043e7cca2b0011caccf4eb2ad28955764667128ca953781031e2541c3a453eedc80c4038383838383838383838385901690138383808020800302c77616c6b657257726974650871015c000475010801040479019003043f8036911b2673c0b977fdec3762e0b93463638ddf023bac916800a23f9d5cd0dd70003c3873747265616d43616c6c507572650881015c000485010801040489018c03043d7ce6b2841dfd54c4231f2843f3982ad41d1e2866f85b6dd3dc9157e387bc0930004c4873747265616d5374727563744d656d6265720891015c000495010801040499018c03043d7c0ab2e6cb5269cc35136c7e0906e79dd7d095af90e1585aee991a810a945040408d013838389d01383838383838383838383808020804a10114030801045000302c73747265616d577269746508a9015c0004ad0108010404b1018c03043e7cb251d78d459059704e1bcdd3250695149c1a559eda97b9def2d80f76991b0f003c3873747265616d4e6573746564496608b9015c0004bd0108010404c1018c03043e7c58d1dd4ca13ae115415feb089d7aeadb69f69f5c0dc2bdaf4d3f3b96f8c9f4403838383838383838b5013838383838c5013808020840687888acbc38f0381501250149016d017d01a50138c90108025414403854cd01381003000400",
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1233942932",
+            "bytesWritten": "328",
+            "bytesDeleted": "328"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1233942932",
+        "bytesWritten": "328",
+        "bytesDeleted": "328"
+      },
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    3
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    2
+                  ],
+                  [
+                    4
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "field"
+                    }
+                  },
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "field"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": [],
+      "ledgerVector": [
+        "0200000000000000000000000000000000000000000000000000000000000000",
+        "0400000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "export": "walkerVectorElement",
+      "args": [
+        true
+      ],
+      "result": [],
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3ad5010008400104000401008c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf594104080401040c08010400080a080414040104180801040018820103c2414104200401042408010400084008042c040104300801040004004038101c2834383838383838383838383808021008043c080414044004030444000448080104044ca40304499400104000001040000010400000104000001040000010400000104000001040000010400000045015020304ff0102010403040108041408010401040108400100010802104001040000010801040401040104018c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf59410001080104040104010401080a08000108010404010401040118820103c24141000108010404010401040108400800010400000104000000484473747265616d43616c6c5769746e657373000c00000008585c00046008010404649003043f80aa16a867be82f11967345a0faa5178b0c263afe816c633225d01d48debae35e0003c3873747265616d4173736572744571086c5c00047008010404749003043f8012302a153abe08fca7164ceef4b72dc021cd850bc5f9e48d09d814d886a9da7000545073747265616d436f6e7374416e6e6f7461746564087c5c00048008010404849003043f80fdc285cef2f215257611ac85ae041762f6d3d833362a6011afea870843030f40003c3877616c6b65724e65737465644966088c5c00049008010404948c03043e7ce0063a6265f543408a14e17db01e8f807ba0d33f2db3ba9b50e8a54be099e900403c73747265616d4e6174697665417267089c5c0004a008010404a48c03043e7c4826fd285c19a5ddc3b087af59c8ef435c350c75ce2999cfb26395b68f8522403838383838383838983838a83838383808020800504c77616c6b6572566563746f72456c656d656e7408b05c0004b408010404b89003043f80fcaf8672cb38c7f153785f34959c23fa2b3284937f76550fd878fe314b5c6df000403c77616c6b65724e617469766541726708c05c0004c408010404c88c03043e7ce5caab71afce7be86d45b6ac5a6056b7bdc6efd035590b60a71c1d7a4751e7004c4877616c6b65725374727563744d656d62657208d05c0004d408010404d88c03043e7cf376abba6061ca9b95784548c7ae0c6865f7d94486d448e934f8f841d9952d00504c73747265616d566563746f72456c656d656e7408e05c0004e408010404e88c03043e7c336c4e0ba293453b00e0ada459bc3d8be2c3edb03d4ae8ffd64ed116988060403838383838383838383838ccdcec383808020c00403c73747265616d436f6d70617265457108f45c0004f808010404fc8c03043e7c3d13302883bda563f24162f8ad035426d2b76323eddd83a36e7aaf96d9a062003c3877616c6b657243616c6c507572650805015c00040901080104040d018c03043e7c2806eb2d243d4eb3525b5520b2365e00f01d34e51349c8e7c24c14f86fc2ec4038383838380101383838383838383838110108020800484477616c6b6572496e6c696e6557726974650819015c00041d010801040421019003043f80a5969b7f34899e06f0cd76a3117f214dfec88a9f749376648cf878a65f026b7000403c73747265616d496e6372656d656e740829015c00042d010801040431018c03043e7c735afe33bcec15046f6841d3ad9b8dd7d48d95e827fab7e2cda296e1b5d94a00545077616c6b6572436f6e7374416e6e6f74617465640839015c00043d010801040441018c03043e7cd89ed05fd4b340c76dd2f7afbd38142deffbabefe0bbf5fa4b097a318f2db940350138383838383838383838383845013838080208002c287769746e657373417267084d015c000451010801040455018c03043e7cdeb3f58b9093f64f7693a040b8a2a4495e1c4f34608ce3d60f23e7c66fc8dd00403c77616c6b6572436f6d706172654571085d015c000461010801040465018c03043e7cca2b0011caccf4eb2ad28955764667128ca953781031e2541c3a453eedc80c4038383838383838383838385901690138383808020800302c77616c6b657257726974650871015c000475010801040479019003043f8036911b2673c0b977fdec3762e0b93463638ddf023bac916800a23f9d5cd0dd70003c3873747265616d43616c6c507572650881015c000485010801040489018c03043d7ce6b2841dfd54c4231f2843f3982ad41d1e2866f85b6dd3dc9157e387bc0930004c4873747265616d5374727563744d656d6265720891015c000495010801040499018c03043d7c0ab2e6cb5269cc35136c7e0906e79dd7d095af90e1585aee991a810a945040408d013838389d01383838383838383838383808020804a10114030801045000302c73747265616d577269746508a9015c0004ad0108010404b1018c03043e7cb251d78d459059704e1bcdd3250695149c1a559eda97b9def2d80f76991b0f003c3873747265616d4e6573746564496608b9015c0004bd0108010404c1018c03043e7c58d1dd4ca13ae115415feb089d7aeadb69f69f5c0dc2bdaf4d3f3b96f8c9f4403838383838383838b5013838383838c5013808020840687888acbc38f0381501250149016d017d01a50138c90108025414403854cd01381003000400",
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3ad5010008400104000401008c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf594104080401040c08010400080a080414040104180801040018820103c2414104200401042408010400084008042c040104300801040004004038101c2834383838383838383838383808021008043c080414044004030444000448080104044ca40304499400104000001040000010400000104000001040000010400000104000001040000010400000045015020304ff0102010403040108041408010401040108400100010802104001040000010801040401040104018c60018f70b134b63bf38a01ae47df81ae9ce79da5a6574327cebbbffed87f7e5ecf59410001080104040104010401080a08000108010404010401040118820103c24141000108010404010401040108400800010400000104000000484473747265616d43616c6c5769746e657373000c00000008585c00046008010404649003043f80aa16a867be82f11967345a0faa5178b0c263afe816c633225d01d48debae35e0003c3873747265616d4173736572744571086c5c00047008010404749003043f8012302a153abe08fca7164ceef4b72dc021cd850bc5f9e48d09d814d886a9da7000545073747265616d436f6e7374416e6e6f7461746564087c5c00048008010404849003043f80fdc285cef2f215257611ac85ae041762f6d3d833362a6011afea870843030f40003c3877616c6b65724e65737465644966088c5c00049008010404948c03043e7ce0063a6265f543408a14e17db01e8f807ba0d33f2db3ba9b50e8a54be099e900403c73747265616d4e6174697665417267089c5c0004a008010404a48c03043e7c4826fd285c19a5ddc3b087af59c8ef435c350c75ce2999cfb26395b68f8522403838383838383838983838a83838383808020800504c77616c6b6572566563746f72456c656d656e7408b05c0004b408010404b89003043f80fcaf8672cb38c7f153785f34959c23fa2b3284937f76550fd878fe314b5c6df000403c77616c6b65724e617469766541726708c05c0004c408010404c88c03043e7ce5caab71afce7be86d45b6ac5a6056b7bdc6efd035590b60a71c1d7a4751e7004c4877616c6b65725374727563744d656d62657208d05c0004d408010404d88c03043e7cf376abba6061ca9b95784548c7ae0c6865f7d94486d448e934f8f841d9952d00504c73747265616d566563746f72456c656d656e7408e05c0004e408010404e88c03043e7c336c4e0ba293453b00e0ada459bc3d8be2c3edb03d4ae8ffd64ed116988060403838383838383838383838ccdcec383808020c00403c73747265616d436f6d70617265457108f45c0004f808010404fc8c03043e7c3d13302883bda563f24162f8ad035426d2b76323eddd83a36e7aaf96d9a062003c3877616c6b657243616c6c507572650805015c00040901080104040d018c03043e7c2806eb2d243d4eb3525b5520b2365e00f01d34e51349c8e7c24c14f86fc2ec4038383838380101383838383838383838110108020800484477616c6b6572496e6c696e6557726974650819015c00041d010801040421019003043f80a5969b7f34899e06f0cd76a3117f214dfec88a9f749376648cf878a65f026b7000403c73747265616d496e6372656d656e740829015c00042d010801040431018c03043e7c735afe33bcec15046f6841d3ad9b8dd7d48d95e827fab7e2cda296e1b5d94a00545077616c6b6572436f6e7374416e6e6f74617465640839015c00043d010801040441018c03043e7cd89ed05fd4b340c76dd2f7afbd38142deffbabefe0bbf5fa4b097a318f2db940350138383838383838383838383845013838080208002c287769746e657373417267084d015c000451010801040455018c03043e7cdeb3f58b9093f64f7693a040b8a2a4495e1c4f34608ce3d60f23e7c66fc8dd00403c77616c6b6572436f6d706172654571085d015c000461010801040465018c03043e7cca2b0011caccf4eb2ad28955764667128ca953781031e2541c3a453eedc80c4038383838383838383838385901690138383808020800302c77616c6b657257726974650871015c000475010801040479019003043f8036911b2673c0b977fdec3762e0b93463638ddf023bac916800a23f9d5cd0dd70003c3873747265616d43616c6c507572650881015c000485010801040489018c03043d7ce6b2841dfd54c4231f2843f3982ad41d1e2866f85b6dd3dc9157e387bc0930004c4873747265616d5374727563744d656d6265720891015c000495010801040499018c03043d7c0ab2e6cb5269cc35136c7e0906e79dd7d095af90e1585aee991a810a945040408d013838389d01383838383838383838383808020804a10114030801045000302c73747265616d577269746508a9015c0004ad0108010404b1018c03043e7cb251d78d459059704e1bcdd3250695149c1a559eda97b9def2d80f76991b0f003c3873747265616d4e6573746564496608b9015c0004bd0108010404c1018c03043e7c58d1dd4ca13ae115415feb089d7aeadb69f69f5c0dc2bdaf4d3f3b96f8c9f4403838383838383838b5013838383838c5013808020840687888acbc38f0381501250149016d017d01a50138c90108025414403854cd01381003000400",
+      "queries": [
+        {
+          "gasCost": {
+            "readTime": "85000000",
+            "computeTime": "1168248299",
+            "bytesWritten": "0",
+            "bytesDeleted": "0"
+          }
+        }
+      ],
+      "reportedGas": {
+        "readTime": "85000000",
+        "computeTime": "1168248299",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      },
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    3
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    1
+                  ],
+                  [
+                    3
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "field"
+                    }
+                  },
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "field"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": [],
+      "ledgerVector": [
+        "0100000000000000000000000000000000000000000000000000000000000000",
+        "0300000000000000000000000000000000000000000000000000000000000000"
+      ]
+    }
+  ]
+}

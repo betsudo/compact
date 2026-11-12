@@ -86,7 +86,7 @@ impl contract::TryWitnesses<u64> for CountingWitness {
 
 fn oracle_rows() -> Vec<Value> {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-effect-order.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-effect-order.json"
     ))
     .unwrap();
     let rows = capture["rows"].as_array().unwrap().clone();
@@ -102,7 +102,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
             .fold(HashMap::new(), |map, name| {
                 map.insert(
                     EntryPointBuf(name.as_bytes().to_vec()),
-                    ContractOperation::new(None),
+                    ContractOperation::new(None, None),
                 )
             });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

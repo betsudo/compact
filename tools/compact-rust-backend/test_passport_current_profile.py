@@ -75,6 +75,9 @@ class PassportControlTests(unittest.TestCase):
             metadata = {"packages": [local, remote]}
             qualified = {("remote", "1.0.0", "registry+qualified"): "abc"}
             gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
+            with self.assertRaisesRegex(ValueError, "required native onchain packages"):
+                gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified,
+                                           [("midnight-onchain-runtime", "4.0.1", "registry+qualified")])
             for changed in [dict(local, manifest_path=str(root.parent / "Cargo.toml")),
                             dict(remote, version="2.0.0"), dict(remote, source="git+unapproved#other")]:
                 with self.subTest(package=changed), self.assertRaises(ValueError):
@@ -82,6 +85,37 @@ class PassportControlTests(unittest.TestCase):
             lock.write_text(lock.read_text().replace('checksum="abc"', 'checksum="other"'))
             with self.assertRaisesRegex(ValueError, "checksum differs"):
                 gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
+
+    def test_ledger9_admission_requires_the_published_runtime_and_lock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime = root / "runtime-rs"
+            runtime.mkdir()
+            manifest = runtime / "Cargo.toml"
+            declared = (gate.ROOT / "runtime-rs/Cargo.toml").read_text()
+            manifest.write_text(declared)
+            shutil.copyfile(gate.ROOT / "runtime-rs/compatibility.json", runtime / "compatibility.json")
+            lock = root / "Cargo.lock"
+            locked = (gate.ROOT / "Cargo.lock").read_text()
+            lock.write_text(locked)
+            with patch.object(gate, "ROOT", root):
+                identities = gate.ledger9_identity()
+                self.assertEqual(identities["midnight-ledger-v9"]["version"], "1.0.1")
+                onchain = identities["midnight-onchain-runtime"]
+                self.assertEqual(onchain["version"], "4.0.1")
+                for changed in (locked.replace('name = "midnight-ledger-v9"', 'name = "midnight-ledger"'),
+                                locked.replace("registry+", "git+"),
+                                locked.replace(onchain["checksum"], "bad")):
+                    lock.write_text(changed)
+                    with self.assertRaisesRegex(ValueError, "registry lock identity"):
+                        gate.ledger9_identity()
+                lock.write_text(locked)
+                manifest.write_text(declared.replace("midnight-ledger-v9 =", "midnight-ledger ="))
+                with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime"):
+                    gate.ledger9_identity()
+                manifest.write_text(declared.replace("=4.0.1", "=4.0.0"))
+                with self.assertRaisesRegex(ValueError, "native onchain pins"):
+                    gate.ledger9_identity()
 
     def test_refusal_requires_one_exact_type_error_and_real_failure(self):
         def result(code="E0308", exit_code=101):
@@ -127,7 +161,8 @@ class PassportControlTests(unittest.TestCase):
                 (root / "package.json").write_bytes((gate.ROOT / "runtime/package.json").read_bytes())
                 output = root / "result"
                 process = SimpleNamespace(returncode=0, stdout=reported, stderr="")
-                with patch.object(gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": ""}), patch.object(
+                        gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
                         gate, "bounded_command", return_value=process) as execute, patch.object(
                         gate.shutil, "which", return_value=str(compiler)):
                     with self.assertRaisesRegex(ValueError, "compiler version differs"):
@@ -158,6 +193,7 @@ class PassportControlTests(unittest.TestCase):
             original.write_text(raw)
             def formatter(label, command):
                 self.assertEqual(Path(command[-1]), copy)
+                self.assertEqual(command[-3:-1], ["--config-path", gate.FORMAT_CONFIG])
                 copy.write_text("fn original() { true }\n")
             self.assertEqual(gate.formatted_copy(original, copy, formatter), gate.digest(copy))
             self.assertEqual(original.read_text(), raw)
@@ -166,6 +202,17 @@ class PassportControlTests(unittest.TestCase):
                 original.write_text("changed original SDK\n")
             with self.assertRaisesRegex(ValueError, "changed the original"):
                 gate.formatted_copy(original, copy, corrupting_formatter)
+
+    @unittest.skipUnless(shutil.which("rustfmt"), "rustfmt required for the formatting control")
+    def test_formatting_ignores_output_directory_configuration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, destination = root / "raw.rs", root / "formatted.rs"
+            source.write_text("fn sample(){\nlet x=1;\n}\n")
+            (root / "rustfmt.toml").write_text("hard_tabs = true\n")
+            gate.formatted_copy(source, destination,
+                                lambda _, cmd: subprocess.run(cmd, check=True, capture_output=True))
+            self.assertEqual(destination.read_text(), "fn sample() {\n    let x = 1;\n}\n")
 
     def test_original_oracle_pin_authority_cannot_silently_lose_an_entry(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -235,9 +282,11 @@ class PassportControlTests(unittest.TestCase):
         child = "import time;print('descendant ready',flush=True);time.sleep(10)"
         parent = "import subprocess,sys,time;subprocess.Popen([sys.executable,'-u','-c'," + repr(child) + "]);print('parent ready',flush=True);time.sleep(10)"
         started = time.monotonic()
-        with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3):
+        with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3), patch.object(
+                gate.os, "killpg", wraps=gate.os.killpg) as kill_group:
             with self.assertRaises(subprocess.TimeoutExpired) as caught:
                 gate.bounded_command([sys.executable, "-u", "-c", parent], dict(os.environ))
+        kill_group.assert_called_once()
         self.assertIn("parent ready", caught.exception.stdout)
         self.assertIn("descendant ready", caught.exception.stdout)
         self.assertLess(time.monotonic() - started, 3, "descendant pipe remained live after timeout")

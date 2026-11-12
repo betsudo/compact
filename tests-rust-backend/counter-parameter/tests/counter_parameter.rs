@@ -32,7 +32,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["decrement_by", "increment_by", "reset_round"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -101,7 +101,7 @@ fn recorded_counter_parameter_replays_the_generated_amount() {
 #[test]
 fn recorded_reset_matches_native_and_replays_from_a_nonzero_counter() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/counter-parameter-reset-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-counter-parameter-reset-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

@@ -127,7 +127,7 @@ class PreflightModelControls(unittest.TestCase):
         enclosing = [n for n in ast.walk(tree) if isinstance(n, ast.If)
                      and isinstance(n.test, ast.Name) and n.test.id == 'extended'
                      and g in list(ast.walk(n)) and m in list(ast.walk(n))]
-        self.assertEqual(len(enclosing), 1)
+        self.assertEqual(enclosing, [], "all three Ledger 9 cohorts must admit model geometry")
 
     def test_all_preflight_modes_stay_exclusive(self):
         with self.assertRaisesRegex(ValueError, 'one finite cohort'):

@@ -33,7 +33,7 @@ if [[ "${1:-}" == --wallet-only ]]; then
 fi
 env -u LD_LIBRARY_PATH nix develop .#compiler --command env COMPACTC="${COMPACTC:-compactc}" COMPACT_RUST_WALLET_HANDOFF="$RUNNER_TEMP/compact-counter-wallet-handoff.bin" COMPACT_RUST_DEPLOY_HANDOFF="$RUNNER_TEMP/compact-counter-deploy-handoff.bin" python3 -X faulthandler -u tools/compact-rust-backend/check_compactc_target.py --consumer --proof "${native_mode[@]}"
 nix develop .#compiler --command npm ci --prefix tools/compact-rust-backend/wallet-handoff --ignore-scripts
-nix develop .#compiler --command node tools/compact-rust-backend/check_wallet_handoff.mjs "$RUNNER_TEMP/compact-counter-deploy-handoff.bin" "$RUNNER_TEMP/compact-counter-wallet-handoff.bin" tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v8
+nix develop .#compiler --command node tools/compact-rust-backend/check_wallet_handoff.mjs "$RUNNER_TEMP/compact-counter-deploy-handoff.bin" "$RUNNER_TEMP/compact-counter-wallet-handoff.bin" tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v9
 python3 tools/compact-rust-backend/check_oracle_acceptance.py
 if [[ "${1:-}" == --wallet-only ]]; then
   exit 0

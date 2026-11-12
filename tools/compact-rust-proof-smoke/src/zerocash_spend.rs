@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_zerocash_oracle_fixture::ledger_contract as contract;
 #[path = "../../../tests-rust-backend/zerocash-oracle/support.rs"]
@@ -74,16 +75,17 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         // Both application lanes must preserve the exact recipient ciphertext
         // and commitment index, in addition to the complete expected state.
         use compact_rust_zerocash_oracle_fixture::ledger_slots;
-        if ledger_slots::ciphertexts.inspect(&expected)?
-            != support::ciphertext(
-                &support::destination().encryption,
-                &support::coin(if historical { 7 } else { 5 }),
-            )
+        let ciphertext = support::ciphertext(
+            &support::destination().encryption,
+            &support::coin(if historical { 7 } else { 5 }),
+        );
+        let next_commitment = if historical { 3 } else { 2 };
+        if ledger_slots::ciphertexts.inspect(&expected)? != ciphertext
             || ledger_slots::commitments
                 .inspect(&expected)?
                 .first_free()?
                 .value()
-                != if historical { 3 } else { 2 }
+                != next_commitment
         {
             return Err("recipient ciphertext/commitment mismatch".into());
         }
@@ -105,35 +107,24 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         if format!("{manual:?}") != format!("{prepared:?}") {
             return Err("spend observed-call mismatch".into());
         }
-        if !historical {
-            // Seeded contract data is the same pre-call snapshot used by native
-            // and recorded execution. This contract's commitments are its own
-            // ledger data; no official Zswap offer is invented for this test.
-            opaque_public::apply_funded(root, "spend", prepared, deploy, &expected, rng, 0x5601)?;
-            println!(
-                "Zerocash current-root spend: funded default-strict ledger-8 application passed"
-            );
-        } else {
-            check_transaction(root, "spend", deploy, prepared, &mut rng, |applied| {
-                if applied.data.get_ref() != &expected {
-                    return Err("applied spend state mismatch".into());
-                }
-                let view = contract::PublicStateView::from(applied);
-                if view.ciphertexts()?
-                    != support::ciphertext(
-                        &support::destination().encryption,
-                        &support::coin(if historical { 7 } else { 5 }),
-                    )
-                    || view.commitments()?.first_free()?.value() != if historical { 3 } else { 2 }
-                {
-                    return Err("recipient ciphertext/commitment mismatch".into());
-                }
-                Ok(())
-            })?;
-            println!(
-                "Zerocash historical-root spend: relaxed-balancing diagnostic application passed"
-            );
-        }
+        // The commitment tree is contract state. Both spend paths use the
+        // same funded state-only transaction route.
+        check_transaction(root, "spend", deploy, prepared, &mut rng, |applied| {
+            if applied.data.get_ref() != &expected {
+                return Err("applied spend state mismatch".into());
+            }
+            let view = contract::PublicStateView::from(applied);
+            if view.ciphertexts()? != ciphertext
+                || view.commitments()?.first_free()?.value() != next_commitment
+            {
+                return Err("recipient ciphertext/commitment mismatch".into());
+            }
+            Ok(())
+        })?;
+        let root_kind = if historical { "historical" } else { "current" };
+        println!(
+            "Zerocash {root_kind}-root spend: funded default-strict Ledger 9 application passed"
+        );
     }
     Ok(())
 }

@@ -23,7 +23,7 @@ use super::model::{Binding, Block, CheckedPlan, Operation, Value};
 use crate::ir::SourceLocation;
 use std::collections::BTreeSet;
 
-/// Capabilities of this first functional projection, not all ledger8 support.
+/// Capabilities of this functional projection, not all Ledger 9 support.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Capability {
     Pure,
@@ -70,13 +70,13 @@ pub(crate) enum Capability {
     MerkleResetHistory,
 }
 
-/// Only the pinned ledger8 adapter exists. Other target revisions are not
+/// Only the pinned Ledger 9 adapter exists. Other target revisions are not
 /// implicitly accepted because they happen to recognize the same node names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Ledger8Target {
+pub(crate) struct Ledger9Target {
     capabilities: &'static [Capability],
 }
-impl Ledger8Target {
+impl Ledger9Target {
     pub(crate) const PINNED: Self = Self {
         capabilities: &[
             Capability::Pure,
@@ -124,7 +124,7 @@ impl Ledger8Target {
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
-        "8.1.3"
+        "9.1.0.1"
     }
     pub(crate) fn supports(self, capability: Capability) -> bool {
         self.capabilities.contains(&capability)
@@ -299,7 +299,7 @@ impl<'plan, 'source> Effect<'plan, 'source> {
 #[derive(Debug)]
 pub(super) struct FunctionalProgram<'plan, 'source> {
     checked: &'plan CheckedPlan,
-    target: Ledger8Target,
+    target: Ledger9Target,
     root_origin: OriginEvidence<'source>,
     guards: Vec<EffectiveGuard>,
     inputs: Vec<Input<'plan, 'source>>,
@@ -310,7 +310,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
     pub(super) fn project(
         checked: &'plan CheckedPlan,
         authority: &'source dyn SourceAuthority,
-        target: Ledger8Target,
+        target: Ledger9Target,
     ) -> Result<Self, ProjectionRefusal> {
         let root = checked
             .declarations()
@@ -598,7 +598,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
     pub(super) fn checked(&self) -> &'plan CheckedPlan {
         self.checked
     }
-    pub(super) fn target(&self) -> Ledger8Target {
+    pub(super) fn target(&self) -> Ledger9Target {
         self.target
     }
     pub(super) fn root_origin(&self) -> OriginEvidence<'source> {

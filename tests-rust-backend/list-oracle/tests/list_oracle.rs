@@ -26,7 +26,7 @@ use runtime::ledger::{ContractAddress, DefaultDB, StateValue};
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"ping".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -38,7 +38,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_list_oracle_matches_typescript_seed_and_flag_write() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/list-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-list-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

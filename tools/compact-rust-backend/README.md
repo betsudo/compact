@@ -1,17 +1,17 @@
-# Compact Rust backend (ledger 8)
+# Compact Rust backend
 
 Start with the [task guides](../../doc/rust/guides/index.md) for installation, generated contracts, witnesses and ContractLab examples. This page describes backend capabilities and their development history.
 
 Architecture history: [Rust backend and runtime ADRs](https://github.com/MediaNoxLabs/compact/tree/codex/rust-backend-ast/doc/rust/adr), with decision status, code examples and delivery evidence.
 
-This backend compiles Compact through the ledger-8 Scheme frontend and renders
+This backend compiles Compact through the Compact Scheme frontend and renders
 its typed Rust IR as native Rust source. It is independent of the TypeScript
 backend. The generated code uses [`midnight-compact-runtime`](../../runtime-rs),
 which delegates state, encoding, hashing, curves, and VM operations to the
-ledger-8 Midnight crates.
+published Ledger 9 Midnight crates in the migration branch.
 Generated Merkle witness views expose local `root`, `first_free`, path, and
 historic history methods alongside fallible `is_full` and `check_root` methods.
-The latter two execute canonical ledger-8 VM queries and contribute their cost
+The latter two execute canonical ledger VM queries and contribute their cost
 to Rust circuit results. TypeScript currently reports zero wrapper gas for
 witness-only VM queries; the Rust result sums the observed query costs.
 
@@ -191,7 +191,7 @@ See [the active plan](../../doc/rust/plans/implicit-tuple-equality-guards.md).
 
 The default recorder lowers supported typed operations and composition into a checked plan. Ordinary roots use the checked route; Effectful roots retain their earlier checked boundary. Unsupported operations return checked refusals; invalid plans are fatal. The former StartFunding and generic/profile fallback paths are test history. They do not accept rejected production plans. Profile names describe retained examples and tests, not formal algebraic theorems or production admission authority.
 
-Pure expressions use one shared semantic fold. `NativeSink` produces Rust syntax; `BodyCheckSink` checks the same body rules without constructing native syntax. Current runtime ABI is **53**, private IR **20**, finalized capability schema **3** and private origin transport **3**. Native ledger is **8.1.3**, pinned to official revision `b5d3e965a18e4cac17fac4f38446fc55c524439a`; generated consumers require Rust 1.89. See [current versions and retained receipts](../../doc/rust/guides/versions-and-targets.md).
+Pure expressions use one shared semantic fold. `NativeSink` produces Rust syntax; `BodyCheckSink` checks the same body rules without constructing native syntax. The Ledger 9 migration uses runtime ABI **54**, private IR **20**, finalized capability schema **3** and private origin transport **3**. The runtime resolves `midnight-ledger-v9@1.0.1` and the exact dependencies in [runtime compatibility](../../runtime-rs/compatibility.json). Generated consumers require Rust **1.99**. See [current versions and retained receipts](../../doc/rust/guides/versions-and-targets.md).
 
 Read the [current extension and diagnostics guide](../../doc/rust/guides/checked-recording.md) and [capability and retirement book](../../doc/rust/recording-effect-algebra/capability-and-retirement-book.md). The following development checkpoints preserve their original support and ABI claims; their earlier fallback/profile descriptions are historical. Detailed historical acceptance follows the [evidence availability policy](../../doc/rust/recording-effect-algebra/evidence-availability.md).
 
@@ -236,17 +236,24 @@ producer, compiler-build and intact-model receipts:
 python3 tools/compact-rust-backend/check_constructor_vector_proof_preflight.py \
   --producer-receipt FUNCTIONAL_RECEIPT --producer-root COMPLETE_SDK_ROOT \
   --compiler-receipt ORIGINAL_BUILD_RECEIPT --model-receipt MODEL_RECEIPT \
+  --zkir RELEASED_ZKIR_V3 \
   --output NEW_DIRECTORY
 ```
 
-It requires existing official proof material, the ledger test fixtures, native
-`zkir` and Rust 1.99. Each external SDK closure has exactly five local packages
+The Ledger 9 preflight requires verified k6 and k7 proof material, Ledger 9
+Dust fixtures, native ZKIR v3 3.2.0 and Rust 1.99. Each SDK closure has five local packages
 and one untouched bundled runtime. Physical Git sources must match the admitted
 commit and index; registry sources must match cached crate archives with locked
 checksums. The selected local recipe requires those archives to be readable;
 this is not a vendored-distribution claim. Full memberships, tool identities,
 parameters and source bytes are checked before builds and completion. This
 command executes native preflight only and never generates keys or proves.
+
+The Ledger 9 `check_constructor_vector_proof.py` composes the current
+14-source API, model, and preflight gates and runs all 17 selected later-entry
+proofs. It verifies standalone proofs in a separate process and retains the
+distinct transaction proof, the funded transaction and both serialized ledger
+states from the replay check.
 
 At separate qualifier `a8133996b`, the retained reviewed local proof recipe
 passes 15 fresh standalone proofs with immutable verification and 15 separately
@@ -622,24 +629,13 @@ points to that one runtime source package, allowing the contracts to share a
 Cargo graph. This mode depends on the chosen local path; the default bundled
 mode keeps each individual generated contract self-contained.
 
-Use `--rust-runtime-registry` to generate a crate that depends on the
-compiler-distributed runtime version exactly, without copying runtime or macro
-sources:
+Ledger 9 Rust generation requires the selected shared runtime root or bundled
+runtime sources. The compiler rejects `--rust-runtime-registry`. The offline
+archive rehearsal below uses shared-source generation and resolves the
+generated contracts against the exact runtime and macro archives in an
+isolated consumer.
 
-```sh
-compactc --target rust --rust-runtime-registry \
-  examples/rust_backend/counter.compact /tmp/compact-counter-registry
-```
-
-The generated dependency is
-`midnight-compact-runtime = { version = "=0.2.0", package = "midnight-compact-runtime" }`
-for this compiler. The option cannot be combined with `--rust-runtime-root`.
-The package is not yet published, so use this mode with the local archive-only
-release rehearsal below until macro and runtime crates are available from a
-registry. The default bundled mode remains the way to build one generated
-crate without a registry release.
-
-The packaged command keeps the ledger-8 Scheme compiler as a sibling named
+The packaged command keeps the Scheme frontend as a sibling named
 `compactc-scheme`. For compiler development, set `COMPACTC_SCHEME` to a local
 Scheme executable and run `cargo run -p compact-rust-backend --bin compactc --`.
 The older `compact-rustc` command remains available for fixture generation; it
@@ -721,9 +717,9 @@ Compact spelling without warning in consumer builds.
 
 | Boundary | Current contract | Failure behavior |
 |---|---|---|
-| Compact compiler | Toolchain 0.31.133, language 0.23.105 | Versions are recorded in `compiler/contract-manifest.json`. |
+| Compact compiler | Toolchain 0.31.211, language 0.23.105 | Versions are recorded in `compiler/contract-manifest.json`. |
 | Rust IR | Schema 20, private to this backend | The renderer rejects any other schema before writing `lib.rs`. Schema 20 adds typed Kernel mint/claim effects. Schema 19 adds single-owner typed effectful return plans. Schema 18 adds typed native circuit Zswap intents. Schema 16 adds native qualified-coin Cell writes. Schema 15 adds typed Counter less-than queries. Schema 14 adds typed qualified-coin Set insertion. Schema 13 adds an explicit typed Field-to-Bytes32 expression and nested Counter read; the cast uses midnight-zk's canonical 32-byte little-endian Field representation. Ledger, circuit, witness, constructor, and exported alias declarations carry optional Compact source locations for diagnostics. |
-| Generated code and Rust runtime | ABI 50 | Generated modules assert the ABI at Rust compile time. ABI 49 adds recorded native own-key outputs and sealed execution identity. ABI 48 adds exact offer-bound native intent recording and sealed intent reconciliation. ABI 47 adds bounded recorded Kernel effects using canonical upstream programs. ABI 46 adds checked native wide unsigned addition. ABI 45 adds native Kernel shielded effects through upstream VM queries. ABI 44 adds recorded qualified-coin Cell writes through the shared native VM builder. ABI 43 adds typed circuit Zswap intents and locked observed allocation. ABI 42 adds native qualified-coin Cell writes; ABI 41 adds typed Counter less-than queries; ABI 40 adds recorded qualified-coin Set insertion, metered `kernel.self()`, and offer-backed observed calls. ABI 39 adds qualified-coin Set insertion using ledger coin and recipient types and the allocated commitment index. ABI 38 adds audited local-helper adoption for private witnesses, gas, and transcript while checking the public and Zswap context. ABI 37 adds a caller coin key for native `ownPublicKey()` and its private output; ABI 36 adds recorded plain Merkle root checks through typed slots; ABI 35 adds recorded Counter reset through typed slots; ABI 34 adds recorded direct plain/historic Merkle fullness reads; ABI 33 adds typed local plain/historic Merkle views with checked depth; ABI 32 adds List views; ABI 31 adds cell-valued Map views; ABI 30 adds Set views; ABI 29 adds Cell/Counter views; ABI 25–28 add physical List paths, chunked Map and Cell calls, and Cell-read scalar returns; ABI 21–24 add typed multi-argument observed calls and composite/chunked Set calls. The [runtime guide](../../runtime-rs/README.md) records earlier ABI changes. |
+| Generated code and Rust runtime | ABI 54 | Generated modules assert the ABI at Rust compile time. Earlier ABI 49 adds recorded native own-key outputs and sealed execution identity. ABI 48 adds exact offer-bound native intent recording and sealed intent reconciliation. ABI 47 adds bounded recorded Kernel effects using canonical upstream programs. ABI 46 adds checked native wide unsigned addition. ABI 45 adds native Kernel shielded effects through upstream VM queries. ABI 44 adds recorded qualified-coin Cell writes through the shared native VM builder. ABI 43 adds typed circuit Zswap intents and locked observed allocation. ABI 42 adds native qualified-coin Cell writes; ABI 41 adds typed Counter less-than queries; ABI 40 adds recorded qualified-coin Set insertion, metered `kernel.self()`, and offer-backed observed calls. ABI 39 adds qualified-coin Set insertion using ledger coin and recipient types and the allocated commitment index. ABI 38 adds audited local-helper adoption for private witnesses, gas, and transcript while checking the public and Zswap context. ABI 37 adds a caller coin key for native `ownPublicKey()` and its private output; ABI 36 adds recorded plain Merkle root checks through typed slots; ABI 35 adds recorded Counter reset through typed slots; ABI 34 adds recorded direct plain/historic Merkle fullness reads; ABI 33 adds typed local plain/historic Merkle views with checked depth; ABI 32 adds List views; ABI 31 adds cell-valued Map views; ABI 30 adds Set views; ABI 29 adds Cell/Counter views; ABI 25–28 add physical List paths, chunked Map and Cell calls, and Cell-read scalar returns; ABI 21–24 add typed multi-argument observed calls and composite/chunked Set calls. The [runtime guide](../../runtime-rs/README.md) records earlier ABI changes. |
 | Rust runtime source | Bundled runtime crates or an explicit shared source root | Cargo resolves the matching runtime and its pinned Midnight crates. |
 
 `--runtime-version` reports the TypeScript runtime version; the Rust runtime
@@ -816,8 +812,11 @@ patch was used during archive verification. The `midnight` vault's ADR-0013
 records the decision; [issue #114](https://github.com/MediaNoxLabs/compact/issues/114)
 tracks this historical package-rehearsal scope.
 
-After packaging, rehearse separately generated Counter and Boolean Cell
-contracts together against the two exact archives in that manifest:
+### Offline archive consumer
+
+After packaging, rehearse the separately generated Counter, Boolean Cell,
+Set, Map, List, and Merkle contracts together against the two exact archives
+in that manifest:
 
 ```sh
 nix develop .#compiler --command python3 \
@@ -825,16 +824,21 @@ nix develop .#compiler --command python3 \
   --manifest target/rust-runtime-release.json
 ```
 
-This isolated gate vendors the pinned upstream crates and installs the macro
-and runtime from their `.crate` bytes. It compiles both contracts independently
-with `compactc --target rust --rust-runtime-registry` and runs their untouched
-generated crates from one external consumer. It checks
-that Cargo resolves exactly one shared runtime and macro as registry-style
-packages from the archive source, including direct dependencies from both
-generated crates. No local path patch is used for the final consumer. Source
-replacement is a local release rehearsal. Crates.io publication and a public
-registry consumer are outside v2; dedicated branch publication and same-revision
-remote CI remain separate from the local Nix acceptance evidence.
+This isolated gate vendors pinned upstream crates and installs the runtime and
+macro packages from their exact `.crate` bytes. It generates each contract with
+`compactc --target rust --rust-runtime-root <repo> --skip-zk`, verifies the
+generated contract and compatibility records, and matches the compiler's
+runtime source fingerprints against the archives. It copies the verified
+contracts into an external consumer and replaces only each copy's runtime
+path dependency with the exact release version. The original compiler output
+and the generated Rust used by the consumer retain their original bytes.
+
+Cargo resolves each generated crate to one shared archived runtime and that
+runtime to one archived macro. The gate checks the resolved archive locations
+and both archive checksums in the consumer lock, then runs the positive and
+compile-fail controls offline with that lock. This rehearsal uses Cargo source
+replacement. Crates.io publication and public-registry consumption remain
+outside this gate.
 
 ## Source model
 
@@ -893,49 +897,51 @@ profiles. This changes compilation, not the selected proofs or their assertions.
 Set `COMPACT_RUST_PROOF_PROFILE=dev` when running `check_compactc_target.py` for
 the original dev-profile qualification. Direct `cargo run` remains dev by default.
 Unknown profile overrides fail; no proof or test result is cached. The ordinary
-gate invokes native ZKIR directly for fresh key generation. Forge comparison
-helpers are parked on `experiment/zkir-forge`.
+gate invokes native ZKIR directly for fresh key generation.
 
 ```sh
 cargo fmt --all -- --check
 nix develop .#compiler --command env COMPACTC=compactc \
   python3 tools/compact-rust-backend/check_compactc_target.py --consumer --proof
-COMPACTC=/path/to/ledger-8/compactc \
+COMPACTC=/path/to/ledger-9/compactc \
   python3 tools/compact-rust-backend/check_fixture_outputs.py
 python3 tools/compact-rust-backend/check_oracle_acceptance.py
-COMPACTC=/path/to/ledger-8/compactc \
+COMPACTC=/path/to/ledger-9/compactc \
   python3 tools/compact-rust-backend/check_rejections.py
 cargo test --workspace --exclude compact
 ```
 
-### Ledger-v8 wallet byte handoff
+### Ledger 9 wallet byte handoff
 
-The proof smoke can export its sealed counter deployment and proven call as
-two sequential ledger transactions. The matching JavaScript ledger package
-must accept the exact bytes that Rust writes and confirm that the call targets
-the deployment address:
+The positional proof smoke exports the funded Counter deployment and call
+after both transactions pass default strict validation and application on
+the offline Ledger 9 fixture. It also checks exact replay refusal and verifies
+the standalone proofs in a separate process. The pinned JavaScript decoder
+checks the contract and fee intents, matching addresses, and byte-for-byte
+reserialization.
 
 ```sh
 nix develop .#compiler --command env COMPACTC=compactc \
   COMPACT_RUST_WALLET_HANDOFF=/tmp/compact-counter-wallet-handoff.bin \
   COMPACT_RUST_DEPLOY_HANDOFF=/tmp/compact-counter-deploy-handoff.bin \
-  python3 tools/compact-rust-backend/check_compactc_target.py --proof
+  python3 tools/compact-rust-backend/check_compactc_target.py --consumer --proof --core-only
 npm ci --prefix tools/compact-rust-backend/wallet-handoff --ignore-scripts
 node tools/compact-rust-backend/check_wallet_handoff.mjs \
   /tmp/compact-counter-deploy-handoff.bin \
   /tmp/compact-counter-wallet-handoff.bin \
-  tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v8
+  tools/compact-rust-backend/wallet-handoff/node_modules/@midnight-ntwrk/ledger-v9
 ```
 
-The pinned `@midnight-ntwrk/ledger-v8@8.0.3` decoder checks both transactions'
-signature, proof and binding markers, one deploy and one call, matching
-addresses, and byte-for-byte reserialization. The proof gate applies the
-deployment with ledger semantics before checking and applying the call. These
-exported transactions are **offline fixtures**: their network ID is
-`local-test`, their intent TTL is timestamp zero, and fee balancing is disabled.
-For an isolated ledger-8 devnet, opt in to that network ID and a future Unix
-expiry no more than one hour ahead. The proof smoke applies each transaction
-with a matching block timestamp and still checks all 58 offline calls:
+The exported transactions use `local-test` and the funded fixture's ledger
+clock. The required core gate also exercises the remaining positional and
+named consumers. Its qualification status is recorded in the
+[Ledger 9 adoption plan](../../doc/rust/plans/ledger9-adoption.md).
+
+### Historical Ledger 8 devnet handoff
+
+Use the retained Ledger 8 branch for the original devnet handoff commands.
+The historical smoke accepts an isolated devnet ID and a future Unix expiry
+no more than one hour ahead.
 
 ```sh
 COMPACT_RUST_HANDOFF_TTL_SECS=$(python3 -c 'import time; print(int(time.time()) + 1800)')

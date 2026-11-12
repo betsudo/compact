@@ -187,7 +187,7 @@ def main():
         def execute(label, command, expected=0):
             return run(spec["name"] + "-" + label, command, expected)
         generated = output / "cases" / spec["name"] / "generated"
-        execute("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger8",
+        execute("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger9",
             "--rust-require-recording", "--rust-runtime-root", ROOT, spec["source"].relative_to(ROOT), generated])
         independent = output / "cases" / spec["name"] / "independent"
         execute("independent-ir", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", spec["source"].relative_to(ROOT), independent])

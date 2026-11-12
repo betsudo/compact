@@ -23,6 +23,7 @@ import unittest
 from unittest.mock import patch
 
 import did_relation_gate as gate
+from test_did_proof_gate import put_artifacts
 
 
 class RelationGateTests(unittest.TestCase):
@@ -36,7 +37,19 @@ class RelationGateTests(unittest.TestCase):
                 return {"snapshot": str(destination), "sha256": gate.common.sha256(destination)}
 
             def command(argv, label, directory, receipt, *, env, stdout_path=None):
-                if label.startswith("compile-"):
+                log = directory / f"{label}.log"
+                log.write_text("ok")
+                receipt["commands"].append({"log": str(log)})
+                if label == "zkir-version":
+                    stdout_path.write_text(gate.did.ZKIR_VERSION)
+                elif label == "model-did":
+                    log.write_text("\n".join(
+                        f'circuit "{op}" (k={k}, rows=1)' for op, k in gate.did.EXPECTED_K.items()))
+                elif label.removeprefix("model-") in gate.REDUCER_GEOMETRY:
+                    log.write_text("\n".join(
+                        f'circuit "{op}" (k={k}, rows={rows})'
+                        for op, (k, rows) in gate.REDUCER_GEOMETRY[label.removeprefix("model-")].items()))
+                elif label.startswith("compile-"):
                     output = Path(argv[-1])
                     (output / "contract").mkdir(parents=True)
                     (output / "compiler").mkdir()
@@ -47,8 +60,13 @@ class RelationGateTests(unittest.TestCase):
                     else:
                         _, fixture_name, operation = gate.REDUCERS[label.removeprefix("compile-")]
                         fixture = gate.ROOT / f"tests-rust-backend/{fixture_name}/lib.rs"
-                        operations = [operation]
+                        operations = gate.REDUCER_GEOMETRY[label.removeprefix("compile-")]
+                        programs = output / "contract/checked-programs"
+                        programs.mkdir()
+                        (programs / "program-0.json").write_bytes(b"checked program")
                     (output / "contract/lib.rs").write_bytes(fixture.read_bytes())
+                    (output / "contract/compact-rust-ir.json").write_bytes(b"ir")
+                    (output / "compiler/contract-manifest.json").write_bytes(b"manifest")
                     capabilities = [{"name": op, "recorded": True, "observed_call": True,
                                      "proof_required": True, "recording_status": "available"}
                                     for op in operations]
@@ -59,9 +77,17 @@ class RelationGateTests(unittest.TestCase):
                     for operation in operations:
                         (output / f"zkir/{operation}.zkir").write_bytes(b"ir")
                     self.assertFalse((output / "keys").exists())
-                elif label == "prepare-proof-material":
+                elif label in ("prepare-proof-material", "prepare-reducer-proof-material"):
+                    expected = (11, 12) if label == "prepare-proof-material" else (8, 9)
+                    self.assertEqual(tuple(map(int, argv[3::2])), expected)
+                    parameters = [{"name": f"bls_midnight_2p{k}", "k": k} for k in expected]
+                    for row in parameters:
+                        (root / row["name"]).write_bytes(b"material")
                     stdout_path.write_text(json.dumps({"format": "compact-proof-material/v1",
-                        "mode": "prepare", "cache_directory": str(root)}))
+                        "mode": "prepare", "cache_directory": str(root), "assets": [],
+                        "parameters": parameters,
+                        "requested_parameter_k": list(expected),
+                        "verification": "all files checked against locked upstream SHA256 tables"}))
                 elif label.startswith("keygen-"):
                     # Like zkir, write into an existing output parent; do not
                     # let the command double hide missing harness setup.
@@ -69,6 +95,12 @@ class RelationGateTests(unittest.TestCase):
                     Path(argv[-1]).write_bytes(b"verifier")
                     Path(argv[-3]).with_suffix(".bzkir").write_bytes(b"binary ir")
                     keygens.append(label)
+                    op = label.removeprefix("keygen-")
+                    if op in gate.did.EXPECTED_K:
+                        log.write_text(f"Compiling circuit (k={gate.did.EXPECTED_K[op]}, rows=1)")
+                    elif op in gate.REDUCERS:
+                        k, rows = gate.REDUCER_GEOMETRY[op][gate.REDUCERS[op][2]]
+                        log.write_text(f"Compiling circuit (k={k}, rows={rows})")
                 elif label.startswith("prove-"):
                     name = label.removeprefix("prove-")
                     output = Path(argv[-1])
@@ -76,11 +108,19 @@ class RelationGateTests(unittest.TestCase):
                         summary = self.original(name)
                         (output / f"did-{name}-result.json").write_text(json.dumps(summary))
                         (output / summary["final_state_file"]).write_bytes(b"state")
+                        put_artifacts(output, name, summary["calls"])
                     else:
                         summary = self.reducer(name)
                         (output / "proof-result.json").write_text(json.dumps(summary))
+                        for suffix in ("deployment.bin", "ledger-after-deploy.bin"):
+                            (output / f"reducer-{suffix}").write_bytes(b"data")
                         for call in summary["calls"]:
-                            (output / f"{call['case']}-state.bin").write_bytes(b"state")
+                            stem = call["case"]
+                            (output / f"{stem}.proof").write_bytes(b"p")
+                            (output / f"{stem}-transaction.proof").write_bytes(b"tx")
+                            (output / f"{stem}-state.bin").write_bytes(b"s")
+                            for suffix in (".inputs", "-transaction.bin", "-ledger-after.bin", "-ledger-replay.bin"):
+                                (output / f"{stem}{suffix}").write_bytes(b"data")
 
             prerequisites = {"MIDNIGHT_PP": str(root), "MIDNIGHT_LEDGER_TEST_STATIC_DIR": str(root),
                              "zkir": str(root / "zkir")}
@@ -98,28 +138,33 @@ class RelationGateTests(unittest.TestCase):
 
     def original(self, scenario):
         selector, cases, operations = gate.SCENARIOS[scenario]
-        return {'format': 'compact-did-proof-result/v1', 'scenario': scenario,
+        installed = (["setVerificationMethod", "removeVerificationMethod", gate.RELATION]
+                     if scenario == "relations" else ["setSchnorrJubjubVerificationMethod",
+                         "verifySchnorrJubjubDigestSignature", gate.RELATION])
+        return {'format': 'compact-did-proof-result/v2', 'scenario': scenario,
                 'selector': selector, 'strictness': 'default', 'deployment_applied': True,
-                'installed_operations': (["setVerificationMethod", "removeVerificationMethod",
-                                          gate.RELATION] if scenario == "relations" else
-                                         ["setSchnorrJubjubVerificationMethod",
-                                          "verifySchnorrJubjubDigestSignature", gate.RELATION]),
+                'installed_operations': installed,
+                'v3_operations': [name for name in installed if name in operations],
                 'constructor_execution_proved': False,
                 'final_state_file': f'did-{scenario}-final-state.bin',
                 'calls': [{'case': case, 'operation': operation, 'proof_bytes': 1,
-                           'applied': True, 'changed_binding_rejected': True,
-                           'replay_refusal': 'IntentAlreadyExists'}
+                           'transaction_proof_bytes': 1, 'transaction_proof_version': 3,
+                           'funded_dust_spends': 1, 'applied': True, 'changed_binding_rejected': True,
+                           'replay_refusal': 'IntentAlreadyExists', 'replay_unchanged': True}
                           for case, operation in zip(cases, operations)]}
 
     def reducer(self, kind):
         cases = {'relation-two': ('authentication-insert', 'authentication-remove'),
                  'relation-four': ('delegation-insert', 'delegation-remove'),
                  'relation-nested': ('missing-signing-short-circuit', 'x25519-check')}[kind]
-        return {'format': 'compact-did-primitive-reducer-proof/v1', 'kind': kind,
+        return {'format': 'compact-did-primitive-reducer-proof/v2', 'kind': kind,
                 'status': 'passed', 'strictness': 'default',
                 'constructor_data_deployed': True, 'constructor_execution_proved': False,
                 'calls': [{'case': case, 'operation': gate.REDUCERS[kind][2],
                            'proof_bytes': 1, 'state_bytes': 1, 'applied': True,
+                           'transaction_proof_bytes': 2, 'transaction_proof_version': 3,
+                           'funded_dust_spends': 1, 'separate_verification': True,
+                           'corrupt_proof_rejected': True,
                            'changed_binding_rejected': True, 'recorded_state_matches': True,
                            'replay_unchanged': True, 'replay_refusal': 'IntentAlreadyExists'}
                           for case in cases]}
@@ -152,7 +197,8 @@ class RelationGateTests(unittest.TestCase):
             base = self.reducer(kind)
             gate.validate_reducer(base, kind)
             for key, value in [('applied', False), ('recorded_state_matches', False),
-                               ('replay_unchanged', False), ('proof_bytes', 0)]:
+                               ('replay_unchanged', False), ('proof_bytes', 0),
+                               ('transaction_proof_version', 2), ('separate_verification', False)]:
                 mutant = copy.deepcopy(base); mutant['calls'][0][key] = value
                 with self.subTest(kind=kind, key=key), self.assertRaises(gate.common.GateError):
                     gate.validate_reducer(mutant, kind)

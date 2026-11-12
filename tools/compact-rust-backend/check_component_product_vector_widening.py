@@ -154,7 +154,7 @@ def main():
         for spec in definitions:
             name = spec['source']
             root = O / 'generated' / name
-            run('generate-' + name, [C, '--target', 'rust', '--target', 'ts', '--skip-zk', '--rust-runtime-root', W, '--rust-functional-ledger8', '--rust-require-recording', spec['path'], root])
+            run('generate-' + name, [C, '--target', 'rust', '--target', 'ts', '--skip-zk', '--rust-runtime-root', W, '--rust-functional-ledger9', '--rust-require-recording', spec['path'], root])
             run('independent-' + name, [S, '--emit-rust-ir', '--skip-ts', '--skip-zk', spec['path'], O / 'independent' / name])
             require((root / 'contract/compact-rust-ir.json').read_bytes() == (O / 'independent' / name / 'contract/compact-rust-ir.json').read_bytes(), 'qualification invariant failed')
             caps = json.loads((root / 'contract/rust-capabilities.json').read_text())['circuits']
@@ -167,7 +167,7 @@ def main():
                 golden = F / 'proof-goldens' / name
                 require((root / 'contract/compact-rust-ir.json').read_bytes() == (golden / 'source-ir.json').read_bytes(), 'whole raw selected-source IR differs from the independently checked fixture')
                 actual_programs = root / 'contract/checked-programs'
-                expected_programs = golden / 'checked-programs'
+                expected_programs = F / 'ledger9-proof-goldens' / name / 'checked-programs'
                 require({p.name for p in actual_programs.iterdir()} == {p.name for p in expected_programs.iterdir()}, 'whole Program membership differs')
                 require(all(p.read_bytes() == (expected_programs / p.name).read_bytes() for p in actual_programs.iterdir()), 'whole raw Program bytes differ')
             raw[name] = {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
@@ -186,7 +186,7 @@ def main():
         (modules / 'compact-runtime').symlink_to(RT, target_is_directory=True)
         (O / 'package.json').write_text('{"type":"module"}\n')
         ts = O / 'ts-results.json'
-        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.16.102', '--output', ts])
+        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.17.0', '--output', ts])
         r = json.loads(ts.read_text())
         require(r['status'] == 'passed' and len(r['rows']) == 26, 'qualification invariant failed')
         bound[str(ts)] = sha(ts)

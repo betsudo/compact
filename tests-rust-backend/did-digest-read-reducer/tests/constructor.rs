@@ -20,7 +20,8 @@ use std::collections::BTreeSet;
 
 #[test]
 fn constructor_derives_exact_ts_prestate_for_each_captured_case() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9-cases.json")).unwrap();
     assert_eq!(
         capture["format"],
         "compact-did-digest-read-reducer-capture/v1"

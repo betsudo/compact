@@ -35,7 +35,7 @@ mod constructor_witness;
 
 fn capture(id: &str) -> Value {
     let document: Value =
-        serde_json::from_str(include_str!("../data/unit-composition.json")).unwrap();
+        serde_json::from_str(include_str!("../data/ledger9-unit-composition.json")).unwrap();
     document["cases"]
         .as_array()
         .unwrap()
@@ -233,7 +233,7 @@ fn did_functional_late_witness_failure_keeps_lab_checkpoint_and_journal() {
 #[test]
 fn did_all_captured_failure_controls_match_across_four_routes() {
     let document: Value =
-        serde_json::from_str(include_str!("../data/unit-composition.json")).unwrap();
+        serde_json::from_str(include_str!("../data/ledger9-unit-composition.json")).unwrap();
     let failures: Vec<_> = document["cases"]
         .as_array()
         .unwrap()

@@ -168,6 +168,18 @@ class IsolatedSdkControls(unittest.TestCase):
                 self.assertEqual(failed["status"], "failed")
                 self.assertEqual(failed["commands"], [])
 
+    def test_proof_server_refuses_before_prerequisites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "qualification"
+            with patch.dict(os.environ, {"MIDNIGHT_PROOF_SERVER": "http://localhost:9"}, clear=True), \
+                 patch.object(gate.common, "git_head", return_value="head"), \
+                 patch.object(gate.common, "dirty_paths", return_value=[]), \
+                 patch.object(gate.did_proof_gate, "prerequisites") as prerequisites:
+                with self.assertRaisesRegex(ValueError, "requires local proving"):
+                    gate.main(["--compiler", "compiler", "--material-runner", "runner",
+                               "--output", str(output)])
+                prerequisites.assert_not_called()
+
     def test_installed_runtime_selection_matches_cli_prefix_order_and_refuses_fallback(self):
         for layout in ("flat", "bin", "both", "missing", "first-is-file"):
             with self.subTest(layout=layout), tempfile.TemporaryDirectory() as directory:
@@ -363,6 +375,26 @@ class IsolatedSdkControls(unittest.TestCase):
                            ("final_state_hex", ""), ("changed_input_new_statement_check", "unqualified")):
             with self.assertRaises(ValueError):
                 gate.validate_result(dict(result, **{key: value}))
+
+    def test_ledger9_result_requires_distinct_funded_v3_proof(self):
+        result = dict(transaction_proof_version=3, funded_dust_spends=1,
+                      standalone_proof_bytes=2, transaction_proof_bytes=2,
+                      transaction_bytes=3)
+        with tempfile.TemporaryDirectory() as directory:
+            application = Path(directory)
+            (application / "standalone.proof").write_bytes(b"aa")
+            (application / "transaction-bound.proof").write_bytes(b"bb")
+            (application / "applied-transaction.bin").write_bytes(b"txn")
+            with patch.object(gate, "validate_result") as base:
+                gate.validate_ledger9_result(result, application)
+                base.assert_called_once_with(result)
+                for key, value in (("transaction_proof_version", 2), ("funded_dust_spends", True),
+                                   ("funded_dust_spends", 0), ("transaction_proof_bytes", 3)):
+                    with self.assertRaises(ValueError):
+                        gate.validate_ledger9_result(dict(result, **{key: value}), application)
+                (application / "transaction-bound.proof").write_bytes(b"aa")
+                with self.assertRaisesRegex(ValueError, "must be distinct"):
+                    gate.validate_ledger9_result(result, application)
 
     def test_selected_config_refuses_compiler_substitution_and_unchecked_profiles(self):
         for key in ("RUSTC_WRAPPER", "RUSTC_BOOTSTRAP", "CARGO_PROFILE_PROOF_CHECKS_DEBUG_ASSERTIONS",

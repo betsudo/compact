@@ -26,7 +26,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
     let operations = operations.insert(
         EntryPointBuf(b"ping".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -38,7 +38,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_oracle_constructor_fold_uses_each_loop_element() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/fold-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-fold-oracle.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

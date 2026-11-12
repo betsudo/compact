@@ -14,7 +14,7 @@ The core receipt also rejects incomplete checks or changed Cargo locks.
 | Lane | Checks |
 | --- | --- |
 | Rust core owners | Formatting; locked/offline all-feature tests and strict all-target Clippy for backend, runtime, macros and testkit |
-| Rust 1.89 | Backend and generated Jubjub consumer; separately packaged backend; unchanged locks |
+| Ledger 9 MSRV, Rust 1.99.0 | Backend and generated Jubjub consumer; separately packaged backend; unchanged locks |
 | Public Python controls | Ordinary backend Python discovery plus all eight explicit historical-sharder unit methods; exact manual-graph skip policy |
 
 The public Python job runs:
@@ -50,13 +50,10 @@ The local-only delivery prepares the workflow and tests; it does not mutate
 GitHub rulesets or dispatch CI. A repository administrator must enable enforcement
 when the workflow is merged. Issue #654 records that remaining operational step.
 
-## Forge separation
+## Proof execution
 
-This required gate has no Forge dependency and uses ordinary tests. Forge
-adoption is deferred on `experiment/zkir-forge`; any later adoption must preserve actual
-proofs, verification, assertions and an uncached key-generation lane. Build caches
-are not cached test results. Do not add a key-cache setup cost to lanes that
-perform no key generation.
+Proof jobs generate keys with native ZKIR and run the proof, verification and
+assertion checks. Build caches reuse build inputs and compiled dependencies.
 
 ## Temporary repository workflow profiles
 

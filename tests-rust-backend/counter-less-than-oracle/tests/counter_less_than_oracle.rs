@@ -26,7 +26,7 @@ use runtime::recording::RecordedCircuitResult;
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/counter-less-than-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-counter-less-than-oracle.json"
     ))
     .unwrap()
 }
@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["compare", "nested", "short_circuit", "checked"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

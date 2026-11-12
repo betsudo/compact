@@ -43,7 +43,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
     let operations = operations.insert(
         EntryPointBuf(b"increment".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -94,7 +94,7 @@ fn assert_private_output(outputs: &[runtime::fab::AlignedValue], oracle: &serde_
 #[test]
 fn original_counter_preserves_public_then_private_effects_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-counter.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-counter.json"
     ))
     .unwrap();
     assert_eq!(

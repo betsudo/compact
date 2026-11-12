@@ -30,6 +30,7 @@ import time
 import tomllib
 
 import check_functional_source_sdk as sdk
+from check_constructor_vector_models import GEOMETRY, INVENTORY_FORMAT
 import constructor_proof_dependencies as dependencies
 import did_proof_gate
 import local_parity_gate as common
@@ -127,6 +128,7 @@ def main():
     parser.add_argument("--producer-root", type=Path, required=True)
     parser.add_argument("--compiler-receipt", type=Path, required=True)
     parser.add_argument("--model-receipt", type=Path, required=True)
+    parser.add_argument("--zkir", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     output = args.output.resolve()
@@ -134,7 +136,7 @@ def main():
             "fresh output outside checkout required")
     output.mkdir(parents=True, mode=0o700)
     report = dict(
-        format="constructor-vector-proof-preflight/v1",
+        format="constructor-vector-proof-preflight/v2",
         status="running",
         commands=[],
         sources={},
@@ -203,12 +205,15 @@ def main():
         models = json.loads(args.model_receipt.read_text())
         require(producer["status"] == compiler["status"] == models["status"] == "passed", "accepted predecessors required")
         require(producer["head"] == compiler["head"] == models["producer_source"], "producer identities differ")
+        require(models["inventory"]["format"] == INVENTORY_FORMAT and models["observed_k"] == [6, 7],
+                "Ledger 9 constructor model inventory required")
         report["producer_head"] = producer["head"]
         report["model_observer_head"] = models["qualifier_source"]
         require(subprocess.run(["git","merge-base","--is-ancestor",producer["head"],report["qualifier_head"]],cwd=ROOT).returncode == 0,
                 "producer is not an ancestor")
         paths = [args.producer_receipt, args.compiler_receipt, args.model_receipt, Path(__file__),
                  Path(sdk.__file__), Path(dependencies.__file__), Path(did_proof_gate.__file__), Path(common.__file__),
+                 Path(__file__).with_name("check_constructor_vector_models.py"),
                  ROOT / "Cargo.toml", ROOT / "Cargo.lock", sdk.EXAMPLE / "consumer/Cargo.toml"]
         paths += sdk.tracked_source_files(FIXTURE)
         paths += sdk.tracked_source_files(ROOT / "testkit-rs")
@@ -229,7 +234,8 @@ def main():
         compiler_path = Path(compiler["compiler"])
         require(sdk.digest(compiler_path) == compiler["compiler_sha256"], "producer compiler changed")
         frozen[str(compiler_path)] = sdk.digest(compiler_path)
-        prereq = did_proof_gate.prerequisites(env)
+        zkir_name = str(args.zkir.resolve(strict=True)) if args.zkir else "zkir-v3"
+        prereq = did_proof_gate.prerequisites(env, zkir_name=zkir_name)
         report["prerequisites"] = prereq
         report["dust_fixture_hashes"] = did_proof_gate.dust_fixture_inventory(Path(prereq["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
         frozen.update(report["dust_fixture_hashes"])
@@ -252,10 +258,14 @@ def main():
         ):
             report["versions"][tool] = run(tool + "-version", command).stdout.strip()
         require(report["versions"]["compiler"] == compiler["version"], "compiler version differs")
-        material = json.loads(run("verify-material",[binary,"--prepare-proof-material","--verify-only","--parameter-k","6"]).stdout)
+        require(report["versions"]["zkir"] == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
+        material = json.loads(run("verify-material", [
+            binary, "--prepare-proof-material", "--verify-only", "--parameter-k", "6", "--parameter-k", "7",
+        ]).stdout)
         require(material.get("mode") == "verify-only" and material.get("verification") == "all files checked against locked upstream SHA256 tables"
                 and Path(material["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve()
-                and 6 in [p["k"] for p in material["parameters"]], "official k6 material verification required")
+                and {6, 7}.issubset(p["k"] for p in material["parameters"]),
+                "official k6 and k7 material verification required")
         report["verified_material"] = material
         for asset in material["assets"]+material["parameters"]:
             p = Path(env["MIDNIGHT_PP"]) / asset["name"]
@@ -263,6 +273,8 @@ def main():
         specs = json.loads((FIXTURE / "sources.json").read_text())
         cases = json.loads((FIXTURE / "cases.json").read_text())
         require(len(specs)==14 and len([c for c in cases if c["error"] is None])==17, "complete source/case membership differs")
+        require(models["observed_models"] == len(models["inventory"]["circuits"]) == 42,
+                "complete Ledger 9 constructor model roster required")
         cohort = {(p["name"],p["version"],p.get("source")):p.get("checksum") for p in tomllib.loads((ROOT/"Cargo.lock").read_text())["package"]}
         for spec in specs:
             role=spec["role"]
@@ -270,7 +282,10 @@ def main():
             check_source(ROOT/spec["path"], spec["sha256"])
             for entry in spec["entries"]:
                 row=[m for m in models["inventory"]["circuits"] if m["source"]==role and m["circuit"]==entry]
-                require(len(row)==1 and row[0]["k"]==6, "exact intact model observation differs")
+                raw_ir = args.producer_root / role / "zkir" / f"{entry}.zkir"
+                require(len(row) == 1 and (row[0]["k"], row[0]["rows"]) == GEOMETRY[entry]
+                        and row[0]["zkir_sha256"] == sdk.digest(raw_ir),
+                        "exact intact model observation differs")
             original=args.producer_root/role
             expected_manifest=producer["sources"][role]["manifest"]
             complete=check_assets(original,expected_manifest)

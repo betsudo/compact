@@ -210,11 +210,11 @@ impl FrontendArtifacts {
         render::render(self, options)
     }
 
-    /// Opt-in ledger8 functional prototype. Source evidence comes exclusively
+    /// Opt-in Ledger 9 functional prototype. Source evidence comes exclusively
     /// from this retained frontend invocation; originless IR cannot enable it.
     /// Publish the returned functional_assets() alongside the generated lib.rs;
     /// its review constants include these files relative to that library.
-    pub fn render_functional_ledger8(
+    pub fn render_functional_ledger9(
         &self,
         options: render::RenderOptions,
     ) -> Result<render::FrontendRender, render::FunctionalCompileFailure> {

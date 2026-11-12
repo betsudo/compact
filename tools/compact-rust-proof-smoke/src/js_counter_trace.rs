@@ -369,7 +369,7 @@ pub(super) fn run_counter(root: &Path, directory: &Path) -> Result<(), Box<dyn E
         let call = ContractCallPrototype {
             address: deploy.address(),
             entry_point: EntryPointBuf(b"adjust".to_vec()),
-            op: ContractOperation::new(Some(verifier)),
+            op: ContractOperation::new(Some(verifier), None),
             guaranteed_public_transcript: guaranteed,
             fallible_public_transcript: fallible,
             private_transcript_outputs: vec![],

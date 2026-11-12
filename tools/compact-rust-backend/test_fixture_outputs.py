@@ -40,7 +40,7 @@ class FunctionalFixtureUpdateTests(unittest.TestCase):
         self.programs = {"program-0.json": b'{"complete":true}\n'}
 
     def invoke(self, update=False):
-        row = SimpleNamespace(source=self.source, frontend_flags=("--rust-functional-ledger8",))
+        row = SimpleNamespace(source=self.source, frontend_flags=("--rust-functional-ledger9",))
         def execute(argv, **kwargs):
             if argv[0] == "fixture-test-compiler":
                 contract = Path(argv[-1]) / "contract"

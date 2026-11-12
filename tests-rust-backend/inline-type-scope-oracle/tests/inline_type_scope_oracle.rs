@@ -36,7 +36,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -64,7 +64,7 @@ where
 #[test]
 fn internal_helper_formal_scopes_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/inline-type-scope-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-inline-type-scope-oracle.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();
@@ -158,7 +158,7 @@ fn bytes_cell_recording_matches_native_and_replays() {
 #[test]
 fn recorded_helper_formals_match_typescript_reads_writes_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/inline-type-scope-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-inline-type-scope-oracle.json"
     ))
     .unwrap();
     fn seeded(hash: FixedBytes<32>) -> CircuitContext<()> {

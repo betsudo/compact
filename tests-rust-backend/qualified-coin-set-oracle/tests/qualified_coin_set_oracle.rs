@@ -25,7 +25,7 @@ use runtime::ledger::{CoinInfo, CoinRecipient, ContractAddress, DefaultDB, State
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/qualified-coin-set-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-qualified-coin-set-oracle.json"
     ))
     .unwrap()
 }
@@ -34,11 +34,11 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new()
         .insert(
             EntryPointBuf(b"insert_coin".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"contains".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();

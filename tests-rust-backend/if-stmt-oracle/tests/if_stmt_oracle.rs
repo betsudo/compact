@@ -35,7 +35,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_if_statement_oracle_executes_both_branches() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/if-stmt-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-if-stmt-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

@@ -134,7 +134,7 @@ impl<D: DB> TrustedObservationCheckpoint<D> {
         if metadata.network_id.is_empty() || metadata.network_id != wallet_checkpoint.network_id {
             return Err(ObservationBindingError::NetworkMismatch);
         }
-        if metadata.ledger_version != "8.1.3"
+        if metadata.ledger_version != "9.1.0.1"
             || metadata.ledger_version != wallet_checkpoint.ledger_version
         {
             return Err(ObservationBindingError::LedgerVersionMismatch);
@@ -310,7 +310,11 @@ impl<D: DB> ObservationalOfferBackedState<D> {
         self.reconciliation()
             .reconcile(&call.recorded)
             .map_err(ObservedCallError::ZswapIntent)?;
-        let prepared = call.prepare_inner(verifier, communication_commitment_rand, true)?;
+        let prepared = call.prepare_inner(
+            verifier,
+            communication_commitment_rand,
+            Some(OfferTranscriptPartition::Automatic),
+        )?;
         if prepared.fallible_public_transcript.is_some() {
             return Err(ObservedCallError::ZswapIntent(
                 ZswapIntentError::OfferTranscriptPlacementMismatch,

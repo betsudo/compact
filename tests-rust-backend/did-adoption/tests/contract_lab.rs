@@ -33,7 +33,7 @@ mod constructor_witness;
 
 fn capture(id: &str) -> Value {
     let document: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/unit-composition.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-unit-composition.json"
     ))
     .unwrap();
     document["cases"]

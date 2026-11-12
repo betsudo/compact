@@ -15,6 +15,7 @@
 
 //! Prove typed asset watch Add and Drop with a Unicode opaque key.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_asset_registry_oracle_fixture::ledger_contract as asset;
 use compact_rust_asset_registry_oracle_fixture::types::{ListMutation, RecordMutation};
@@ -192,7 +193,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
             root.join("keys/setWatch.verifier"),
         )?))?;
-        let typed = call.prepare(verifier.clone(), Fr::from(0_u64))?;
+        let typed = call.prepare(verifier, Fr::from(0_u64))?;
         if typed.input != input || typed.output != AlignedValue::from(()) {
             return Err("watch declared input/Unit output binding differs".into());
         }
@@ -226,18 +227,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        kernel_shielded_effects::prove_and_verify_call(root, CIRCUIT, &typed, &verifier)?;
-        opaque_public::apply_funded(
-            root,
-            CIRCUIT,
-            typed,
-            deploy,
-            &expected_state,
-            rng,
-            592 + u64::from(drop),
-        )?;
+        check_transaction(root, CIRCUIT, deploy, typed, &mut rng, |state| {
+            if state.data.get_ref() != &expected_state {
+                return Err("applied asset state differs from native execution".into());
+            }
+            Ok(())
+        })?;
         println!(
-            "typed asset watch drop={drop}: verified proof, changed-binding refusal and default-strict funded ledger-8 application; constructor and seed state supplied, deployment and seed calls not proved"
+            "typed asset watch drop={drop}: funded default-strict Ledger 9 application passed"
         );
     }
     Ok(())

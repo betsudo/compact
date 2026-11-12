@@ -30,7 +30,7 @@ use runtime::recording::RecordedCircuitResult;
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/chunked-set-observed.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-chunked-set-observed.json"
     ))
     .unwrap()
 }
@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["insert_key", "roundtrip_key", "key_count", "empty"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());

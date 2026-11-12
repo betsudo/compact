@@ -66,7 +66,8 @@ fn state(row: &Value, key: &str) -> r::ledger::ContractState<r::ledger::DefaultD
 }
 #[test]
 fn maintained_source_semantics_match_independent_ts_and_recorded_replay() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9-cases.json")).unwrap();
     assert_eq!(
         capture["format"],
         "compact-did-primitive-reducer-capture/v1"

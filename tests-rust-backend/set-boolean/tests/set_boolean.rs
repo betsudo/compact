@@ -44,7 +44,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -185,7 +185,7 @@ fn generated_set_contract_inserts_and_checks_membership() {
 #[test]
 fn conditional_set_actions_keep_the_selected_branch_and_following_query() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-set-actions.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-set-actions.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(()))
@@ -216,7 +216,7 @@ fn conditional_set_actions_keep_the_selected_branch_and_following_query() {
 #[test]
 fn conditional_set_recording_matches_typescript_and_replays_all_branches() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-set-recording-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-set-recording-oracle.json"
     ))
     .unwrap();
     let contract = Contract::default();
