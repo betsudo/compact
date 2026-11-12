@@ -115,16 +115,20 @@ verifier, and combine both calls using the Ledger 9 transaction API's joint
 partitioning. Prove and independently verify both calls, then apply the
 funded transaction and test replay and invalid-binding refusals.
 
-The intact EntryPoint callee compiles for both targets. Its caller reaches a
-ZKIR v3 contract-type assertion in TypeScript. The initial Rust CLI looked for
-the callee's `compiler/contract-info.json` beside the staging directory. The
-local fix resolves it beside the requested output and keeps publication
-atomic in both Rust entry points. The interface-only gate covers missing,
+Both Rust entry points look for the callee's `compiler/contract-info.json`
+beside the requested output. The interface-only gate covers missing,
 malformed, stale and mismatched metadata and preserves the previous complete
-output on refusal. The intact caller now reaches Rust's unsupported
-contract-type diagnostic. Keep the original compiler composition suite in
-the port. Direct TypeScript compilation with a trailing output separator
-remains a CLI portability case.
+output on refusal. Direct TypeScript compilation with a trailing output
+separator remains a CLI portability case.
+
+The exact upstream EntryPoint caller, callee and sibling-substitution tests
+are retained under `test-center`. The derived `AddressCompare.compact`
+fixture exercises constructor arguments, typed ledger reads and equality of
+contract references. ZKIR v3 uses one 32-byte atom backed by two scalar limbs.
+Generated TypeScript and Rust share byte-identical ZKIR for the comparison.
+Generated Rust exposes a distinct address carrier for the declared interface.
+Both targets still refuse the intact caller at the call site. The next
+compiler step is the caller statement with an immutable entrypoint hash.
 
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler

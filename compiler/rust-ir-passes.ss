@@ -191,9 +191,9 @@
       ;; Module expansion can leave distinct structs with the same source
       ;; name. Use the complete field structure, including nested structs,
       ;; to choose one stable Rust name at every type and value site.
-      (define (struct-rust-name source-name fields)
+      (define (struct-rust-name source-name fields kind)
         (let* ([source-name (symbol->string source-name)]
-               [fingerprint (cons source-name fields)]
+               [fingerprint (list kind source-name fields)]
                [existing (assoc fingerprint struct-shape-names)])
           (if existing
               (cdr existing)
@@ -249,6 +249,14 @@
           [(tbytes ,src ,len)
            (object (cons "kind" "bytes")
                    (cons "length" len))]
+          [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+           (let ([fields
+                   (vector
+                     (object (cons "name" "bytes")
+                             (cons "ty" (object (cons "kind" "bytes") (cons "length" 32)))))])
+             (object (cons "kind" "struct")
+                     (cons "name" (struct-rust-name contract-name fields 'contract))
+                     (cons "fields" fields)))]
           [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
            (let ([fields
                    (list->vector
@@ -257,7 +265,7 @@
                                     (cons "ty" (type-ir ty owner-src))))
                           elt-name* type*))])
              (object (cons "kind" "struct")
-                     (cons "name" (struct-rust-name struct-name fields))
+                     (cons "name" (struct-rust-name struct-name fields 'struct))
                      (cons "fields" fields)))]
           [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
            (object (cons "kind" "enum")

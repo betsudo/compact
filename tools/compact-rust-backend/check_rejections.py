@@ -260,10 +260,9 @@ def check_contract_dependency_publication(compactc: str, directory: Path) -> lis
     """Check sibling interface metadata through the public compiler's Rust stage."""
     directory = directory / "contract dependencies"
     directory.mkdir()
+    fixtures = ROOT / "test-center/composable/EntryPoint"
     dependency = directory / "Callee.compact"
-    dependency.write_text(
-        "export circuit transfer(value: Uint<64>): Uint<64> { return value; }\n"
-    )
+    dependency.write_bytes((fixtures / dependency.name).read_bytes())
     caller = directory / "InterfaceOnly.compact"
     caller.write_text(
         "contract Callee { circuit transfer(value: Uint<64>): Uint<64>; }\n"
@@ -322,6 +321,23 @@ def check_contract_dependency_publication(compactc: str, directory: Path) -> lis
         failures.append(f"contract dependency mismatch: wrong refusal:\n{mismatch.stderr}")
     if snapshot(directory / "both") != before or any(directory.glob(".both.compactc-stage-*")):
         failures.append("contract dependency refusal changed or left debris beside complete output")
+
+    compare = directory / "AddressCompare.compact"
+    compare.write_bytes((fixtures / compare.name).read_bytes())
+    caller = directory / "Caller.compact"
+    caller.write_bytes((fixtures / caller.name).read_bytes())
+    compiled = compile_source(compare, "addresses", "ts", "rust")
+    address_output = directory / "addresses"
+    address_files = ("contract/index.js", "contract/lib.rs", "zkir/same_address.zkir")
+    if compiled.returncode or not all((address_output / path).is_file() for path in address_files):
+        failures.append(f"contract address comparison failed:\n{compiled.stderr}")
+    for target in ("ts", "rust"):
+        name = f"caller-{target}"
+        result = compile_source(caller, name, target)
+        if result.returncode == 0 or "cross-contract calls are not yet supported" not in result.stderr:
+            failures.append(f"contract invocation {target}: wrong refusal:\n{result.stderr}")
+        if (directory / name).exists() or any(directory.glob(f".{name}.compactc-stage-*")):
+            failures.append(f"contract invocation {target}: published output or staging debris")
     return failures
 
 

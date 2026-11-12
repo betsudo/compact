@@ -2240,8 +2240,7 @@
                    (do ([len len (- len 1)] [a* a* (append a^* a*)])
                        ((eqv? len 0) a*)))]
                 [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ... )
-                 ; FIXME: acontract?
-                 (cons `(acontract) a*)]
+                 (cons (if (feature-zkir-v3) `(abytes 32) `(acontract)) a*)]
                 [(ttuple ,src ,type* ...)
                  (fold-right f a* type*)]
                 [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
@@ -2252,6 +2251,11 @@
         (with-output-language (Lflattened Type)
           `(ty (,(type->alignments original-type) ...)
                (,pt* ...))))
+      (define (bytes->primitive-types len)
+        (with-output-language (Lflattened Primitive-Type)
+          (let-values ([(q r) (div-and-mod len (field-bytes))])
+            (let ([full (make-list q `(tfield ,(- (expt 2 (* (field-bytes) 8)) 1)))])
+              (if (fx= r 0) full (cons `(tfield ,(- (expt 2 (* r 8)) 1)) full))))))
       (define (do-argument var-name original-type wump)
         (let-values ([(wump vn.pt*)
                       (wump-fold-right
@@ -2324,11 +2328,10 @@
       [(tvector ,src ,len ,[Type->Wump : type -> * wump])
        (Wump-vector (make-list len wump))]
       [(tbytes ,src ,len)
-       (Wump-bytes
-         (with-output-language (Lflattened Primitive-Type)
-           (let-values ([(q r) (div-and-mod len (field-bytes))])
-             (let ([ls (make-list q `(tfield ,(- (expt 2 (* (field-bytes) 8)) 1)))])
-               (if (fx= r 0) ls (cons `(tfield ,(max 0 (- (expt 2 (* r 8)) 1))) ls))))))]
+       (Wump-bytes (bytes->primitive-types len))]
+      [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+       (guard (feature-zkir-v3))
+       (Wump-bytes (bytes->primitive-types 32))]
       [(ttuple ,src ,[Type->Wump : type* -> * wump*] ...)
        (Wump-vector wump*)]
       [(tstruct ,src ,struct-name (,elt-name* ,[Type->Wump : type -> * wump*]) ...)
@@ -2586,9 +2589,9 @@
              (list `(= ,test
                        (,var-name* ...)
                        (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op^ ,triv* ...))))))]
-      ; NB: the uses of Single-Triv and Single-Type will probably have to change with the
-      ; replacement of abstract contract values with contract addresses, since a contract address
-      ; might not fit into one field
+      [(contract-call ,src ,elt-name (,triv ,type) ,triv* ...)
+       (guard (feature-zkir-v3))
+       (source-errorf src "cross-contract calls are not yet supported")]
       [(contract-call ,src ,elt-name (,[Single-Triv : triv] ,type) ,[* wump*] ...)
        (let-values ([(wump var-name*)
                      (wump-fold-right

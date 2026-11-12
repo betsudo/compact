@@ -2712,7 +2712,7 @@
             (with-output-to-string
               (lambda ()
                 (let f ([type type] [i 0] [indent 4])
-                  (nanopass-case (Ltypescript Type) (de-alias type)
+                  (nanopass-case (Ltypescript Type) (subst-tcontract (de-alias type))
                     [(tbytes ,src ,len)
                      (print-indent indent)
                      (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
@@ -3213,19 +3213,12 @@
          [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
           ; this should be caught by ledger meta-type checks or by propagate-ledger-paths
           (when (public-adt? type) (source-errorf src "incomplete reference to nested ADT"))
-          (let ([descriptor-name? (and (eq? op-class 'read) (type->maybe-descriptor-name type))])
+          (let ([descriptor-name? (and (eq? op-class 'read)
+                                       (type->maybe-descriptor-name (subst-tcontract type)))])
             (let ([q (construct-query src path-elt* adt-formal* adt-arg* adt-op expr*)])
-              (nanopass-case (Ltypescript Type) (de-alias type)
-                [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
-                 (assert not-implemented)]
-                [else
-                 (if descriptor-name?
-                     (make-Qconcat
-                       descriptor-name?
-                       ".fromValue("
-                       q
-                       ".value)")
-                     q)])))])]
+              (if descriptor-name?
+                  (make-Qconcat descriptor-name? ".fromValue(" q ".value)")
+                  q)))])]
       [(contract-call ,src ,elt-name (,[Expr : expr (precedence add1 comma) outer-pure? -> * expr] ,type) ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (source-errorf src "contract types are not yet implemented")])
     (Map-Argument : Map-Argument (ir level outer-pure?) -> * (Q byte-ref?)
