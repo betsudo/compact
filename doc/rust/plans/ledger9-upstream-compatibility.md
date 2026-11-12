@@ -94,6 +94,12 @@ The baseline compiler failed internally when a conditional combined
 `CompactError::AssertionFailed` for refusal. This slice is tracked under
 [#728][compiler].
 
+Local macOS arm64 qualification passed 3,891 Scheme harness checks across
+both ZKIR modes, six source-map tests, 82 runtime tests, and a Rust 1.99
+consumer compiled from fresh both-target output. The consumer exercised both
+conditional orderings, bound, direct and nested empty tuples, and the typed
+assertion failure. The fixture used the off-chain pure-circuit API.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9

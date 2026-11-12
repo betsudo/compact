@@ -19,6 +19,11 @@ Unreleased Ledger 9 migration.
   `--rust-functional-ledger9` for functional generation with the paired Ledger 9
   compiler and runtime.
 
+### Fixed
+
+- Successful assertions produce the empty tuple in generated TypeScript.
+  A conditional can combine an assertion and an empty tuple literal.
+
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 
 Unreleased local Rust-backend slice; generated API, native and proof

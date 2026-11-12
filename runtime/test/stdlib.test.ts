@@ -65,7 +65,7 @@ describe('__compact.assert', () => {
   };
 
   test('Check for success', () => {
-    compactRuntime.assert(true, msg);
+    expect(compactRuntime.assert(true, msg)).toEqual([]);
   });
 
   test('Check for error type', () => {

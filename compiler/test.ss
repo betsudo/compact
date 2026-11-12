@@ -32308,6 +32308,25 @@ groups than for single tests.
       message: "~a:\n  ~?"
       irritants: '("testfile.compact line 7 char 5" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness w at line 4 char 1" ("\n    nature of the disclosure:\n      ledger operation might disclose the witness value\n    via this path through the program:\n      the binding of s at line 6 char 9\n      the right-hand side of = at line 7 char 5"))))
     )
+
+  ; the value of an assert is [], so it combines with a [] literal in a conditional
+  (test
+    '(
+      "export circuit foo(b: Boolean): [] {"
+      "  return disclose(b) ? assert(true, 'x') : [];"
+      "}"
+      )
+    (succeeds)
+    )
+
+  (test
+    '(
+      "export circuit foo(b: Boolean): [] {"
+      "  return disclose(b) ? [] : assert(true, 'x');"
+      "}"
+      )
+    (succeeds)
+    )
 )
 
 ; examples of where disclose can be placed
@@ -69921,6 +69940,39 @@ groups than for single tests.
         "test('check 1', () => {"
         "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
         "  expect(C.circuits.foo(Ctxt).result).toEqual(3);"
+        "});"
+        ))
+    )
+
+  ; the value of an assert is []
+  (test
+    '(
+      "export circuit bound(): [] {"
+      "  const r: [] = assert(true, 'a');"
+      "  return r;"
+      "}"
+      "export circuit direct(): [] {"
+      "  return assert(true, 'a');"
+      "}"
+      "export circuit in_tuple(): [[], Field] {"
+      "  return [assert(true, 'a'), 1 as Field];"
+      "}"
+      "export circuit in_conditional(b: Boolean): [] {"
+      "  return disclose(b) ? assert(true, 'a') : [];"
+      "}"
+      "export circuit fails(b: Boolean): [] {"
+      "  assert(disclose(b), 'boom');"
+      "}"
+      )
+    (stage-javascript
+      `(
+        "test('check 1', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect((C.circuits.bound(Ctxt)).result).toEqual([]);"
+        "  expect((C.circuits.direct(Ctxt)).result).toEqual([]);"
+        "  expect((C.circuits.in_tuple(Ctxt)).result).toEqual([[], 1n]);"
+        "  expect((C.circuits.in_conditional(Ctxt, true)).result).toEqual([]);"
+        "  expect(() => C.circuits.fails(Ctxt, false)).toThrow('failed assert: boom');"
         "});"
         ))
     )
