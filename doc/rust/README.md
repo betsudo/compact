@@ -11,6 +11,8 @@ The Rust target uses the Compact frontend, a typed private IR, a Rust AST emitte
 Use the [Ledger 9 adoption plan](plans/ledger9-adoption.md) for the local
 migration status and the [versions and targets guide](guides/versions-and-targets.md)
 for the matching compiler, Rust and TypeScript runtime, and ZKIR tools.
+The [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
+tracks mainstream Ledger 9 capabilities and test coverage across both targets.
 
 ## Retained Ledger 8 delivery
 
