@@ -1053,6 +1053,25 @@ wrong verifier, changed binding and same-geometry changed result controls
 also passed. This proof roster covers both typed branch results and the Field
 export. The other standalone functional families remain separate work.
 
+### Standalone stateful local Vector qualification
+
+Signed source `0e0584a5f` passed the standalone Ledger 9 gate on macOS arm64.
+The 24 original sources matched the independent and historical raw IR.
+Their 24 checked Programs match the Ledger 9 goldens, with separate Ledger 8
+goldens retained. The native gate passed 34 TypeScript cases, their Rust
+counterparts, 24 strict SDK checks, seven source refusals, eight malformed IR
+refusals, and four changed-producer controls.
+
+ZKIR 3.2.0 generated fresh k7 keys for `run` and `run_field`. Both unsigned
+branch cases and the Field case produced standalone v3 proofs that verified
+in a separate process. Distinct funded default-strict transaction proofs
+applied each call, spent one positive-fee Dust input, and returned
+`IntentAlreadyExists` on replay with byte-identical ledger state. Changed IR,
+checked Program and raw ZKIR refused before key generation. The over-cap
+control observed a genuine k9 model. Corrupt proofs, a different verifier,
+changed public binding and changed result at the same atom widths all
+refused. The other exports retain model and native coverage.
+
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector
 gate, direct k7 and k8 key generation took 1.2 seconds. Three direct
