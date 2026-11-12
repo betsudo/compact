@@ -24,6 +24,7 @@ import { expect, test } from 'vitest';
 import roundtripCompile from './base/roundtrip/compile.pass.test.ts';
 import roundtripRuntime from './base/roundtrip/runtime.pass.test.ts';
 import { registerArithmeticChecks } from './arithmetic/checks.mjs';
+import { registerUnaryChecks } from './unary/checks.mjs';
 import { registerByteCastChecks } from './casts/checks.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -113,3 +114,4 @@ test('refuses the original P-256 roundtrip in the legacy proof profile', () => {
 
 registerByteCastChecks(compile);
 registerArithmeticChecks(compile);
+registerUnaryChecks(compile);

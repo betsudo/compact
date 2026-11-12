@@ -38,8 +38,13 @@ fn binding(name: &str, ty: Type, value: Expr) -> LocalBinding {
 }
 
 #[test]
-fn discarded_secp256k1_operations_and_equal_arm_guards_keep_inverse_checks() {
-    for ty in [Type::Secp256k1Base, Type::Secp256k1Scalar] {
+fn discarded_foreign_field_operations_and_equal_arm_guards_keep_inverse_checks() {
+    for ty in [
+        Type::Secp256k1Base,
+        Type::Secp256k1Scalar,
+        Type::Secp256r1Base,
+        Type::Secp256r1Scalar,
+    ] {
         let parameters = HashMap::from([("x", (&ty, syn::parse_quote!(x)))]);
         let inverse = Expr::Secp256k1Inv {
             value: Box::new(reference("x")),

@@ -225,7 +225,7 @@
 
       (define (secp256k1-unary-ir kind src args lower)
         (unless (= (length args) 1)
-          (source-errorf src "secp256k1 unary operation expects one argument"))
+          (source-errorf src "foreign field or coordinate operation expects one argument"))
         (object (cons "kind" kind) (cons "value" (lower (car args)))))
       (define current-variable-types (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
@@ -1367,8 +1367,10 @@
         (nanopass-case (Lnodisclose Program-Element) pelt
           [(native ,src ,function-name ,native-entry (,arg* ...) ,type)
            (let ([kind (case (native-entry-function native-entry)
-                         [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg") "secp256k1_neg"]
-                         [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv") "secp256k1_inv"]
+                         [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg"
+                           "__compactRuntime.secp256r1BaseNeg" "__compactRuntime.secp256r1ScalarNeg") "secp256k1_neg"]
+                         [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv"
+                           "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv") "secp256k1_inv"]
                          [("__compactRuntime.secp256k1PointX") "secp256k1_point_x"]
                          [("__compactRuntime.secp256k1PointY") "secp256k1_point_y"]
                          [else #f])])

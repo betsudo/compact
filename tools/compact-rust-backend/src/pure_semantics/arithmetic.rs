@@ -105,7 +105,14 @@ impl Secp256k1Unary {
     pub(crate) fn result_type(self, operand: &Type) -> Result<Type, RenderError> {
         match self {
             Self::Negate | Self::Invert => {
-                if matches!(operand, Type::Secp256k1Base | Type::Secp256k1Scalar) {
+                // The serialized operation names predate the shared field support.
+                if matches!(
+                    operand,
+                    Type::Secp256k1Base
+                        | Type::Secp256k1Scalar
+                        | Type::Secp256r1Base
+                        | Type::Secp256r1Scalar
+                ) {
                     Ok(operand.clone())
                 } else {
                     Err(RenderError::ExpectedSecp256k1Field(operand.clone()))

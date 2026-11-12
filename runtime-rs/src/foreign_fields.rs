@@ -169,7 +169,7 @@ macro_rules! impl_foreign_field_arithmetic {
     };
 }
 
-macro_rules! impl_secp256k1_unary {
+macro_rules! impl_foreign_field_unary {
     ($field:ident, $zero_inverse:ident) => {
         impl $field {
             /// Return the multiplicative inverse, or a field-specific error for zero.
@@ -300,5 +300,7 @@ impl_foreign_field_arithmetic!(Secp256k1Scalar, k256::Fq);
 impl_foreign_field_arithmetic!(Secp256r1Base, p256::Fp);
 impl_foreign_field_arithmetic!(Secp256r1Scalar, p256::Fq);
 
-impl_secp256k1_unary!(Secp256k1Base, Secp256k1BaseZeroInverse);
-impl_secp256k1_unary!(Secp256k1Scalar, Secp256k1ScalarZeroInverse);
+impl_foreign_field_unary!(Secp256k1Base, Secp256k1BaseZeroInverse);
+impl_foreign_field_unary!(Secp256k1Scalar, Secp256k1ScalarZeroInverse);
+impl_foreign_field_unary!(Secp256r1Base, Secp256r1BaseZeroInverse);
+impl_foreign_field_unary!(Secp256r1Scalar, Secp256r1ScalarZeroInverse);

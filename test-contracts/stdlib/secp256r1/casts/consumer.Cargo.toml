@@ -20,6 +20,9 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+unary_base = { package = "compact-contract-upstream-base", path = "../../family-first/unary/upstream-base/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unary_scalar = { package = "compact-contract-upstream-scalar", path = "../../family-first/unary/upstream-scalar/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unary_controls = { package = "compact-contract-unary-controls", path = "../../family-first/unary/unary-controls/ts-rust/.build/contract", features = ["ledger-transaction"] }
 arithmetic = { package = "compact-contract-arithmetic", path = "../../family-first/arithmetic/ts-rust/.build/contract", features = ["ledger-transaction"] }
 decode = { package = "compact-contract-decode", path = "../../family-first/casts/decode/ts-rust/.build/contract", features = ["ledger-transaction"] }
 encode = { package = "compact-contract-encode", path = "../../family-first/casts/encode/ts-rust/.build/contract", features = ["ledger-transaction"] }

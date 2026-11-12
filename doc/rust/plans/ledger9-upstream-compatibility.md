@@ -238,8 +238,11 @@ retain the original six stateful exports and 34 assertions. The generated
 Rust and TypeScript preserve separate base and scalar operands and
 returns. The proof lane checks changed ledger writes and returns,
 then independently verifies a selected statement per export and
-applies a separate funded transaction. P-256 unary operations, points
-and signature suites remain separate.
+applies a separate funded transaction. The [P-256 unary fixtures](../../../test-contracts/stdlib/secp256r1/unary)
+retain both original negation and inversion pairs. They verify field-specific
+zero refusal, inactive branches, discarded inverses and overload resolution.
+The explicit proof lane covers both original fixtures and both inactive-zero
+branches. P-256 points and signature suites remain separate.
 
 Port foreign field and point layouts, defaults, arithmetic and checked
 decoding before signature circuits. Separate K1, P-256 and Ed25519

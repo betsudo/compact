@@ -15,6 +15,7 @@
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { p256 } from '@noble/curves/nist.js';
 import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
@@ -106,6 +107,19 @@ export function secp256r1BaseMul(x: bigint, y: bigint): bigint {
   return (x * y) % SECP256R1_BASE_MODULUS;
 }
 
+/** Negate a canonical P-256 base field element. */
+export function secp256r1BaseNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256R1_BASE_MODULUS);
+}
+
+/** Invert a nonzero canonical P-256 base field element. */
+export function secp256r1BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256r1 base field has no inverse for 0');
+  }
+  return p256.Point.Fp.inv(x);
+}
+
 /** Add two canonical P-256 scalar field elements. */
 export function secp256r1ScalarAdd(x: bigint, y: bigint): bigint {
   const sum = x + y;
@@ -120,6 +134,19 @@ export function secp256r1ScalarSub(x: bigint, y: bigint): bigint {
 /** Multiply two canonical P-256 scalar field elements. */
 export function secp256r1ScalarMul(x: bigint, y: bigint): bigint {
   return (x * y) % SECP256R1_SCALAR_MODULUS;
+}
+
+/** Negate a canonical P-256 scalar field element. */
+export function secp256r1ScalarNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256R1_SCALAR_MODULUS);
+}
+
+/** Invert a nonzero canonical P-256 scalar field element. */
+export function secp256r1ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256r1 scalar field has no inverse for 0');
+  }
+  return p256.Point.Fn.inv(x);
 }
 
 /** Extract the affine x-coordinate of a finite secp256k1 point. */

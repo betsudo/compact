@@ -98,6 +98,8 @@ where
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
     let verifier: VerifierKey = tagged_deserialize(verifier_bytes.as_slice())?;
     let wrong_id = match (case.fixture, case.id) {
+        ("upstream-base", _) => "upstream-scalar-test-3",
+        ("upstream-scalar" | "unary-controls", _) => "upstream-base-test-3",
         ("arithmetic", "mulb-6") => "muls-6",
         ("arithmetic", _) => "mulb-6",
         (_, "decode-14") => "encode-14",
@@ -111,10 +113,10 @@ where
     assert_ne!(verifier, wrong);
     let standalone: Proof = tagged_deserialize(fs::File::open(key_dir.join("statement.proof"))?)?;
     let family = root.join("family-first");
-    let fixture = if case.fixture == "arithmetic" {
-        family.join(case.fixture)
-    } else {
-        family.join("casts").join(case.fixture)
+    let fixture = match case.fixture {
+        "arithmetic" => family.join(case.fixture),
+        name if unary_fixture(name) => family.join("unary").join(name),
+        name => family.join("casts").join(name),
     };
     let raw = fixture
         .join("ts-rust/.build/zkir")
@@ -331,6 +333,21 @@ fn decode_scalar(value: &Value) -> Secp256r1Scalar {
     Secp256r1Scalar::from_le_bytes(field_bytes(value)).unwrap()
 }
 
+fn unary_fixture(name: &str) -> bool {
+    matches!(name, "upstream-base" | "upstream-scalar" | "unary-controls")
+}
+
+fn check_proof_flag(state: &StateValue<DefaultDB>, expected: bool) {
+    let StateValue::Array(fields) = state else {
+        panic!("expected unary fixture state")
+    };
+    assert_eq!(fields.len(), 1);
+    assert_eq!(
+        fields.get(0).unwrap(),
+        &r::ledger::constructor_cell(expected)
+    );
+}
+
 fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) -> TestResult<()> {
     let fixture = row["fixture"].as_str().unwrap();
     let circuit = row["circuit"].as_str().unwrap();
@@ -346,6 +363,9 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             let init = || contract::initial_state(ConstructorContext::new(()));
             let context = || Ok::<_, CompactError>(init()?.into_circuit_context(ContractAddress::default()));
             let native = contract::$method(context()?, $($arg),*)?;
+            if unary_fixture(fixture) {
+                check_proof_flag(native.public_state(), true);
+            }
             let $view = contract::PublicStateView::from(&native);
             $(let $result = native.result;)?
             $verify
@@ -392,7 +412,83 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
             )
         };
     }
+    macro_rules! unary_control {
+        ($method:ident, $call:ident, ($($arg:expr),*), $expected:expr) => {
+            exercise!(unary_controls, $method, $call, ($($arg),*), |_view, result| {
+                assert_eq!(result, $expected);
+            })
+        };
+    }
     match (fixture, circuit) {
+        ("upstream-base", "test") => exercise!(
+            unary_base,
+            test,
+            test_call,
+            (decode_base(&inputs[0])),
+            |_view, result| {
+                assert_eq!(
+                    result,
+                    (decode_base(&expected[0]), decode_base(&expected[1]))
+                );
+            }
+        ),
+        ("upstream-scalar", "test") => exercise!(
+            unary_scalar,
+            test,
+            test_call,
+            (decode_scalar(&inputs[0])),
+            |_view, result| {
+                assert_eq!(
+                    result,
+                    (decode_scalar(&expected[0]), decode_scalar(&expected[1]))
+                );
+            }
+        ),
+        ("unary-controls", "negBase") => unary_control!(
+            negBase,
+            negBase_call,
+            (decode_base(&inputs[0])),
+            decode_base(expected)
+        ),
+        ("unary-controls", "negScalar") => unary_control!(
+            negScalar,
+            negScalar_call,
+            (decode_scalar(&inputs[0])),
+            decode_scalar(expected)
+        ),
+        ("unary-controls", "guardedInvBase") => unary_control!(
+            guardedInvBase,
+            guardedInvBase_call,
+            (guard(), decode_base(&inputs[1])),
+            decode_base(expected)
+        ),
+        ("unary-controls", "guardedInvScalar") => unary_control!(
+            guardedInvScalar,
+            guardedInvScalar_call,
+            (guard(), decode_scalar(&inputs[1])),
+            decode_scalar(expected)
+        ),
+        ("unary-controls", "discardInvBase") => unary_control!(
+            discardInvBase,
+            discardInvBase_call,
+            (decode_base(&inputs[0])),
+            expected.as_bool().unwrap()
+        ),
+        ("unary-controls", "discardInvScalar") => unary_control!(
+            discardInvScalar,
+            discardInvScalar_call,
+            (decode_scalar(&inputs[0])),
+            expected.as_bool().unwrap()
+        ),
+        ("unary-controls", "localOverloads") => unary_control!(
+            localOverloads,
+            localOverloads_call,
+            (guard()),
+            (
+                expected[0].as_bool().unwrap(),
+                expected[1].as_bool().unwrap()
+            )
+        ),
         ("arithmetic", "addb") => base_arithmetic!(addb, addb_call),
         ("arithmetic", "subb") => base_arithmetic!(subb, subb_call),
         ("arithmetic", "mulb") => base_arithmetic!(mulb, mulb_call),
@@ -472,6 +568,63 @@ fn run_case(root: &Path, id: &str, row: &Value, funded_output: Option<&Path>) ->
     Ok(())
 }
 
+fn check_zero_inverse() -> TestResult<()> {
+    let base = Secp256r1Base::default();
+    let scalar = Secp256r1Scalar::default();
+    macro_rules! refuse {
+        ($package:ident, $method:ident, ($($arg:expr),*), $error:ident) => {{
+            use $package::ledger_contract as contract;
+            let initial = contract::initial_state(ConstructorContext::new(()))?;
+            let state = initial.ledger_state.clone();
+            check_proof_flag(state.get_ref(), false);
+            let context = initial.into_circuit_context(ContractAddress::default());
+            assert!(matches!(contract::$method(context, $($arg),*), Err(CompactError::$error)));
+            let recorded = contract::initial_state(ConstructorContext::new(()))?
+                .into_circuit_context(ContractAddress::default());
+            assert!(matches!(contract::recorded::$method(recorded, $($arg),*), Err(CompactError::$error)));
+            check_proof_flag(state.get_ref(), false);
+        }};
+    }
+    refuse!(unary_base, test, (base), Secp256r1BaseZeroInverse);
+    refuse!(unary_scalar, test, (scalar), Secp256r1ScalarZeroInverse);
+    refuse!(
+        unary_controls,
+        guardedInvBase,
+        (true, base),
+        Secp256r1BaseZeroInverse
+    );
+    refuse!(
+        unary_controls,
+        guardedInvScalar,
+        (true, scalar),
+        Secp256r1ScalarZeroInverse
+    );
+    refuse!(
+        unary_controls,
+        discardInvBase,
+        (base),
+        Secp256r1BaseZeroInverse
+    );
+    refuse!(
+        unary_controls,
+        discardInvScalar,
+        (scalar),
+        Secp256r1ScalarZeroInverse
+    );
+
+    use unary_controls::pure_circuits::pureDiscardInvScalar;
+    let mut two = [0; 32];
+    two[0] = 2;
+    assert!(pureDiscardInvScalar(
+        Secp256r1Scalar::from_le_bytes(two).unwrap()
+    )?);
+    assert_eq!(
+        pureDiscardInvScalar(scalar),
+        Err(CompactError::Secp256r1ScalarZeroInverse)
+    );
+    Ok(())
+}
+
 fn main() -> TestResult<()> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let [mode, root, out] = args.as_slice() else {
@@ -483,13 +636,24 @@ fn main() -> TestResult<()> {
     let vectors: Value =
         serde_json::from_slice(&fs::read(root.join("preimages-first/vectors.json"))?)?;
     let cases = vectors.as_object().ok_or("expected case map")?;
-    if mode == "parity" || mode == "arithmetic-parity" {
-        let arithmetic = mode == "arithmetic-parity";
-        let expected = if arithmetic { 34 } else { 41 };
+    if let Some(expected) = match mode.to_str() {
+        Some("parity") => Some(41),
+        Some("arithmetic-parity") => Some(34),
+        Some("unary-parity") => Some(30),
+        _ => None,
+    } {
         assert_eq!(cases.len(), expected);
         for (id, row) in cases {
-            assert_eq!(row["fixture"] == "arithmetic", arithmetic);
+            assert_eq!(row["fixture"] == "arithmetic", mode == "arithmetic-parity");
+            assert_eq!(
+                unary_fixture(row["fixture"].as_str().unwrap()),
+                mode == "unary-parity"
+            );
             run_case(root, id, row, None)?;
+        }
+        if mode == "unary-parity" {
+            check_zero_inverse()?;
+            println!("six native and recorded active-zero refusals, plus pure discarded inverse");
         }
         println!(
             "{expected} generated Rust cases matched the TypeScript ledger values and public VM replay"

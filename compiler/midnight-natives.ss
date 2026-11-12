@@ -79,6 +79,28 @@
   ([s (TypeRef Secp256k1Scalar) (discloses "the inverse of")])
   (TypeRef Secp256k1Scalar))
 
+;; ==== Secp256r1 unary field operations
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256r1BaseNeg"
+  ([s (TypeRef Secp256r1Base) (discloses "the negation of")])
+  (TypeRef Secp256r1Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256r1BaseInv"
+  ([s (TypeRef Secp256r1Base) (discloses "the inverse of")])
+  (TypeRef Secp256r1Base))
+
+;; -- Secp256r1Scalar
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256r1ScalarNeg"
+  ([s (TypeRef Secp256r1Scalar) (discloses "the negation of")])
+  (TypeRef Secp256r1Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256r1ScalarInv"
+  ([s (TypeRef Secp256r1Scalar) (discloses "the inverse of")])
+  (TypeRef Secp256r1Scalar))
+
 (declare-native-entry circuit secp256k1PointX
   "__compactRuntime.secp256k1PointX"
   ([pt (TypeRef Secp256k1Point) (discloses "the x-coordinate of")])

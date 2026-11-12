@@ -380,7 +380,7 @@ impl fmt::Display for RenderError {
             Self::ExpectedSecp256k1Field(actual) => {
                 write!(
                     f,
-                    "expression has type {actual:?}, expected Secp256k1Base or Secp256k1Scalar"
+                    "expression has type {actual:?}, expected a secp256k1 or secp256r1 base or scalar field"
                 )
             }
             Self::ExpectedUnsigned(actual) => {

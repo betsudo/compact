@@ -98,6 +98,8 @@ pub enum CompactError {
     InvalidJubjubPoint,
     Secp256k1BaseZeroInverse,
     Secp256k1ScalarZeroInverse,
+    Secp256r1BaseZeroInverse,
+    Secp256r1ScalarZeroInverse,
     Secp256k1IdentityX,
     Secp256k1IdentityY,
     InvalidSecp256k1Signature,
@@ -134,6 +136,12 @@ impl std::fmt::Display for CompactError {
             }
             Self::Secp256k1ScalarZeroInverse => {
                 write!(f, "secp256k1 scalar field has no inverse for 0")
+            }
+            Self::Secp256r1BaseZeroInverse => {
+                write!(f, "secp256r1 base field has no inverse for 0")
+            }
+            Self::Secp256r1ScalarZeroInverse => {
+                write!(f, "secp256r1 scalar field has no inverse for 0")
             }
             Self::Secp256k1IdentityX => {
                 write!(

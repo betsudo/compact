@@ -35,8 +35,9 @@ workspace lock and build with Rust 1.99 and the pinned offline dependency
 cohort. The `parity` mode takes the evidence root and an unused output
 argument. It compares all generated Rust cases with the TypeScript
 ledger expectations and replays the recorded VM operations. The same
-consumer supports the arithmetic fixture emitted by the family runner.
-Use `arithmetic-parity` with its separately generated preimages.
+consumer also supports the arithmetic and unary fixtures emitted by the
+family runner. Use `arithmetic-parity` or `unary-parity` with the
+corresponding separately generated preimages.
 
 The funded modes take a selected case ID from `preimages-first/vectors.json`,
 the evidence root and a fresh output directory. Supply the matching

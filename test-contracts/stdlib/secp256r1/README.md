@@ -50,3 +50,6 @@ the upstream width refusals, conversions and guarded ledger cases.
 The [arithmetic fixtures](arithmetic/README.md) cover the six original
 P-256 addition, subtraction and multiplication circuits and the 34
 original assertions.
+
+The [unary fixtures](unary/README.md) preserve the original base and
+scalar negation and inversion pairs and check active and inactive zero.
