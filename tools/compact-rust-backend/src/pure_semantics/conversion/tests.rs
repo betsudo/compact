@@ -455,3 +455,36 @@ fn bytes_from_chunks_checks_carriers_arity_and_total_width() {
         Err(RenderError::InvalidByteChunks { .. })
     ));
 }
+
+#[test]
+fn enum_cast_checks_direction_and_ordinal_carriers() {
+    use super::{EnumCast, EnumOrdinalSource};
+    use crate::pure_semantics::numeric::UnsignedCastStrategy;
+
+    let color = Type::Enum {
+        name: "Color".into(),
+        variants: vec!["Red".into(), "Green".into(), "Blue".into()],
+    };
+    let uint = Type::Unsigned { max: "1".into() };
+    assert!(matches!(EnumCast::check(&color, &Type::Field), Ok(EnumCast::ToField)));
+    assert!(matches!(
+        EnumCast::check(&color, &uint),
+        Ok(EnumCast::ToUnsigned {
+            max_ordinal: 2,
+            strategy: UnsignedCastStrategy::SmallToSmall { source: 2, target: 1 },
+        })
+    ));
+    assert!(matches!(
+        EnumCast::check(&uint, &color),
+        Ok(EnumCast::FromNumber { source: EnumOrdinalSource::Small, .. })
+    ));
+    assert!(matches!(
+        EnumCast::check(&Type::Field, &color),
+        Ok(EnumCast::FromNumber { source: EnumOrdinalSource::Field, .. })
+    ));
+    for (source, target) in [(&color, &color), (&uint, &uint), (&Type::Boolean, &color)] {
+        assert!(matches!(EnumCast::check(source, target), Err(RenderError::InvalidEnumCast { .. })));
+    }
+    let empty = Type::Enum { name: "Empty".into(), variants: Vec::new() };
+    assert!(matches!(EnumCast::check(&uint, &empty), Err(RenderError::InvalidEnumCast { .. })));
+}

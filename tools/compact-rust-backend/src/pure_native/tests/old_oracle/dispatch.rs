@@ -94,6 +94,7 @@ fn expression_with_calls(
         | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),
         Expr::JubjubCast { .. } => Err(RenderError::EffectfulExpression),
+        Expr::EnumCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1Neg { .. }
         | Expr::Secp256k1Inv { .. }

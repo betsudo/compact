@@ -69096,6 +69096,26 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "enum Color { RED, GREEN, BLUE }"
+      "export circuit serialize_enum (c: Color): Bytes<1> {"
+      "  return serialize<Color, 1>(c);"
+      "}"
+      "export circuit deserialize_enum(c: Bytes<1>): Color {"
+      "  return deserialize<Color, 1>(c);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('enum codecs use declaration-order ordinals and check the byte range', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.serialize_enum(Ctxt, 2).result).toEqual(Uint8Array.of(2));"
+        "  expect(C.circuits.deserialize_enum(Ctxt, Uint8Array.of(1)).result).toBe(1);"
+        "  expect(() => C.circuits.deserialize_enum(Ctxt, Uint8Array.of(3))).toThrow(runtime.CompactError);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

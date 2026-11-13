@@ -250,7 +250,8 @@ cover Boolean, Bytes, native Uint and Field encoding and decoding.
 The aggregate slices cover the five upstream product encoders and
 decoders, the intact `d1`/`d2` checked-Boolean fixture and the original
 `foo`/`unfoo` alias roundtrip. The local proof lanes cover `d2` at k=11,
-`foo` at k=12 and `unfoo` at k=13. Enum and wide Uint codecs, broader
+`foo` at k=12 and `unfoo` at k=13. Enum codecs use checked declaration-order
+ordinals, with stateful coverage at k=7. Wider Uint codecs, broader
 aggregate proof cases and native Linux qualification remain open.
 
 The supplemental group fixture covers addition, scalar multiplication,

@@ -152,6 +152,36 @@ pub(crate) fn jubjub_cast_syntax(value: syn::Expr, cast: JubjubCast) -> syn::Exp
     }
 }
 
+pub(crate) fn enum_cast_syntax(
+    value: syn::Expr,
+    cast: crate::pure_semantics::conversion::EnumCast,
+) -> syn::Expr {
+    use crate::pure_semantics::conversion::{EnumCast, EnumOrdinalSource};
+    match cast {
+        EnumCast::ToField => syn::parse_quote!(runtime::FieldRepr::field_vec(&(#value))[0]),
+        EnumCast::ToUnsigned { max_ordinal, strategy } => {
+            let bound = syn::LitInt::new(&format!("{max_ordinal}u128"), Span::call_site());
+            let ordinal = syn::parse_quote!({
+                let field = runtime::FieldRepr::field_vec(&(#value))[0];
+                let ordinal = <u128 as runtime::FromFieldRepr>::from_field_repr(&[field])
+                    .ok_or(runtime::CompactError::InvalidUnsignedValue)?;
+                runtime::BoundedUint::<#bound>::new(ordinal)?
+            });
+            coercion::render_unsigned_cast(ordinal, strategy)
+        }
+        EnumCast::FromNumber { name, source } => {
+            let name = crate::naming::checked_ident(&name);
+            let field: syn::Expr = match source {
+                EnumOrdinalSource::Field => value,
+                EnumOrdinalSource::Small => syn::parse_quote!(runtime::Field::from((#value).value())),
+                EnumOrdinalSource::Wide => syn::parse_quote!((#value).as_field()),
+            };
+            syn::parse_quote!(<crate::types::#name as runtime::FromFieldRepr>::from_field_repr(&[#field])
+                .ok_or(runtime::CompactError::InvalidUnsignedValue)?)
+        }
+    }
+}
+
 pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1BytesCast) -> syn::Expr {
     match cast {
         Secp256k1BytesCast::ToBase => {

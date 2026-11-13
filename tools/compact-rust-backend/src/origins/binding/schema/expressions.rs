@@ -104,6 +104,10 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             unary!("jubjub_cast", "value", value);
             s.node("ty", Owner::Type(ty));
         }
+        Expr::EnumCast { value, ty } => {
+            unary!("enum_cast", "value", value);
+            s.node("ty", Owner::Type(ty));
+        }
         Expr::Secp256k1BytesCast { value, ty } => {
             unary!("secp256k1_bytes_cast", "value", value);
             s.node("ty", Owner::Type(ty));

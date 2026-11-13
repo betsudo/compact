@@ -740,6 +740,10 @@ pub enum Expr {
         value: Box<Expr>,
         ty: Type,
     },
+    EnumCast {
+        value: Box<Expr>,
+        ty: Type,
+    },
     Secp256k1BytesCast {
         value: Box<Expr>,
         ty: Type,

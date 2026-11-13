@@ -638,6 +638,17 @@
         (and (or (nominal-product-type? type) (nominal-product-type? type^))
              (equal? (type-ir type src) (type-ir type^ src))))
 
+      (define (enum-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (enum-carrier? type^)]
+          [else #f]))
+
+      (define (enum-cast-ir type src value)
+        (object (cons "kind" "enum_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
       (define (bytes-carrier-width type)
         (nanopass-case (Lnodisclose Type) type
           [(tbytes ,src ,len) len]
@@ -893,6 +904,14 @@
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-product-carrier? type type^ src))
            (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (enum-carrier? type) (enum-carrier? type^)
+                  (equal? (type-ir type src) (type-ir type^ src)))
+           (expression-ir expr src)]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (expression-ir expr src))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (expression-ir expr src))]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
            (typed-expression-ir expr type^ src)]
@@ -2915,6 +2934,14 @@
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-product-carrier? type type^ src))
            (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (enum-carrier? type) (enum-carrier? type^)
+                  (equal? (type-ir type src) (type-ir type^ src)))
+           (stateful-expression-ir expr src witness-ids)]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (stateful-expression-ir expr src witness-ids))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (stateful-expression-ir expr src witness-ids))]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
            (stateful-typed-expression-ir expr type^ src witness-ids)]

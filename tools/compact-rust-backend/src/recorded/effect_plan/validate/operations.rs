@@ -204,6 +204,9 @@ pub(super) fn validate(
                 Conversion::JubjubCast => {
                     crate::pure_semantics::conversion::JubjubCast::check(&value.ty, ty).is_ok()
                 }
+                Conversion::EnumCast => {
+                    crate::pure_semantics::conversion::EnumCast::check(&value.ty, ty).is_ok()
+                }
                 Conversion::Secp256k1BytesCast => {
                     crate::pure_semantics::conversion::Secp256k1BytesCast::check(&value.ty, ty)
                         .is_ok()

@@ -132,6 +132,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. } => 12,
                 E::Add { .. }
@@ -254,6 +255,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -317,6 +319,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
                 | E::Secp256k1PointX { .. }
@@ -402,6 +405,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
                 | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Secp256k1Neg { .. }
                 | E::Secp256k1Inv { .. }
                 | E::Secp256k1PointX { .. }

@@ -116,3 +116,16 @@ node test-contracts/stdlib/serialization/check-encode-products.mjs \
 The runner preserves the original alias roundtrip and tests ignored decode
 padding, an invalid Boolean byte and changed proof output. The two stateful
 circuits use the local slow proof lane at k=12 and k=13.
+
+## Enum serialization
+
+`enum.compact` retains the original Color encoder and decoder. Additional
+cases cover nominal aliases, padding, the zero-byte single-variant encoding
+and checked direct casts. `enum-stateful.compact` decodes a byte before
+writing the enum to the ledger. The runner checks all 256 ordinal byte
+values and emits three SDK preimages at k=7.
+
+```sh
+node test-contracts/stdlib/serialization/check-enum.mjs \
+  "$OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/enum-preimages"
+```

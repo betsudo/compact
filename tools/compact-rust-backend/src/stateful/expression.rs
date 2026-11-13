@@ -560,6 +560,7 @@ fn render_operation_expression(
         | Expr::BytesSlice { .. }
         | Expr::JubjubCast { .. }
         | Expr::Secp256k1BytesCast { .. }
+        | Expr::EnumCast { .. }
         | Expr::UnsignedCast { .. } => render_conversion_operation(
             value,
             parameters,
@@ -1613,6 +1614,13 @@ fn render_conversion_operation(
                 ty.clone(),
                 effect,
             ))
+        }
+        Expr::EnumCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value, parameters, statements, next_temp, query_effect, environment,
+            )?;
+            let cast = crate::pure_semantics::conversion::EnumCast::check(&actual, ty)?;
+            Ok((crate::value_lowering::enum_cast_syntax(rendered, cast), ty.clone(), effect))
         }
         Expr::Secp256k1BytesCast { value, ty } => {
             let (rendered, actual, effect) = render_state_expression_observed(

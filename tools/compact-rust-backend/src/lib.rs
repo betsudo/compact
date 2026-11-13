@@ -223,6 +223,7 @@ pub enum RenderError {
     },
     ExpectedBytes(Type),
     UnsupportedUintBytesWidth,
+    InvalidEnumCast { source: Type, target: Type },
     InvalidSecp256k1BytesCast {
         source: Type,
         target: Type,
@@ -388,6 +389,9 @@ impl fmt::Display for RenderError {
             ),
             Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
             Self::UnsupportedUintBytesWidth => write!(f, "unsupported width for native Uint/Bytes conversion"),
+            Self::InvalidEnumCast { source, target } => {
+                write!(f, "cannot cast between {source:?} and {target:?}; expected an enum and a numeric type")
+            }
             Self::InvalidSecp256k1BytesCast { source, target } => write!(
                 f,
                 "cannot cast {source:?} to {target:?}; expected Bytes<32> and a supported foreign field"
@@ -884,7 +888,8 @@ fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
-        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {
+        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }
+            | Expr::EnumCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins, observer)?;
             collect_named_types_observed(ty, structs, enums, observer, Some(origins))?;
         }
@@ -1551,6 +1556,7 @@ fn pure_conversion_expression(
         Expr::FieldCast { value } => ConversionSource::FieldCast { value },
         Expr::FieldToBytes32 { value } => ConversionSource::FieldToBytes32 { value },
         Expr::JubjubCast { value, ty } => ConversionSource::JubjubCast { value, ty },
+        Expr::EnumCast { value, ty } => ConversionSource::EnumCast { value, ty },
         Expr::Secp256k1BytesCast { value, ty } => {
             ConversionSource::Secp256k1BytesCast { value, ty }
         }

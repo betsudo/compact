@@ -37,6 +37,10 @@ pub(crate) enum ConversionSource<'a> {
         value: &'a Expr,
         ty: &'a Type,
     },
+    EnumCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
     Secp256k1BytesCast {
         value: &'a Expr,
         ty: &'a Type,
@@ -59,6 +63,7 @@ pub(crate) enum ConversionFacts {
     UintToField { wide: bool },
     FieldToBytes32,
     JubjubCast(JubjubCast),
+    EnumCast(EnumCast),
     Secp256k1BytesCast(Secp256k1BytesCast),
     FixedBytes(FixedBytesConversion),
     Coercion(CoercionPlan),
@@ -236,6 +241,53 @@ impl JubjubCast {
     }
 }
 
+pub(crate) enum EnumCast {
+    ToField,
+    ToUnsigned { max_ordinal: u128, strategy: UnsignedCastStrategy },
+    FromNumber {
+        name: super::identifier::CheckedName,
+        source: EnumOrdinalSource,
+    },
+}
+
+pub(crate) enum EnumOrdinalSource {
+    Field,
+    Small,
+    Wide,
+}
+
+impl EnumCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Enum { variants, .. }, Type::Field) if !variants.is_empty() => Ok(Self::ToField),
+            (Type::Enum { variants, .. }, Type::Unsigned { max }) if !variants.is_empty() => {
+                let max_ordinal = (variants.len() - 1) as u128;
+                Ok(Self::ToUnsigned {
+                    max_ordinal,
+                    strategy: cast_strategy_from_bounds(
+                        UnsignedMaximum::Small(max_ordinal),
+                        unsigned_maximum(max)?,
+                    ),
+                })
+            }
+            (Type::Field | Type::Unsigned { .. }, Type::Enum { name, variants })
+                if !variants.is_empty() =>
+            {
+                let source = match source {
+                    Type::Field => EnumOrdinalSource::Field,
+                    Type::Unsigned { max } => match unsigned_maximum(max)? {
+                        UnsignedMaximum::Small(_) => EnumOrdinalSource::Small,
+                        UnsignedMaximum::Wide { .. } => EnumOrdinalSource::Wide,
+                    },
+                    _ => unreachable!("enum cast source is numeric"),
+                };
+                Ok(Self::FromNumber { name: super::identifier::check_name(name)?, source })
+            }
+            _ => Err(RenderError::InvalidEnumCast { source: source.clone(), target: target.clone() }),
+        }
+    }
+}
+
 pub(crate) enum Secp256k1BytesCast {
     ToBase,
     ToScalar,
@@ -312,6 +364,11 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
             let child = children.visit(value, sink)?;
             let cast = JubjubCast::check(&child.ty, ty)?;
             (ConversionFacts::JubjubCast(cast), child.output, ty.clone())
+        }
+        ConversionSource::EnumCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = EnumCast::check(&child.ty, ty)?;
+            (ConversionFacts::EnumCast(cast), child.output, ty.clone())
         }
         ConversionSource::Secp256k1BytesCast { value, ty } => {
             let child = children.visit(value, sink)?;

@@ -170,7 +170,8 @@ macro_rules! dispatch {
             | $crate::ir::Expr::BytesFromChunks { .. }
             | $crate::ir::Expr::BytesSlice { .. }
             | $crate::ir::Expr::JubjubCast { .. }
-            | $crate::ir::Expr::Secp256k1BytesCast { .. } => {
+            | $crate::ir::Expr::Secp256k1BytesCast { .. }
+            | $crate::ir::Expr::EnumCast { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::Coerce { .. } => {

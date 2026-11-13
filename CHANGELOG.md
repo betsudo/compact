@@ -23,6 +23,7 @@ Unreleased Ledger 9 migration.
   components in the TypeScript and Rust backends.
 - Encode fixed-width structs, tuples and vectors with little-endian
   components and zero padding in the TypeScript and Rust backends.
+- Encode and decode enum ordinals with checked bounds in both backends.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust. Successful circuit contexts expose the
   VM-decoded event and its emitting contract address.

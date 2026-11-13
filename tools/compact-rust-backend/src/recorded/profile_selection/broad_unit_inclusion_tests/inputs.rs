@@ -300,8 +300,18 @@ fn bytes_from_chunks_manifest() -> Result<Value, String> {
     serde_json::from_slice(BYTES_FROM_CHUNKS).map_err(|error| error.to_string())
 }
 
+const ENUM_CAST: &[u8] = include_bytes!("enum-cast-expression.json");
+
+fn enum_cast_manifest() -> Result<Value, String> {
+    if digest(ENUM_CAST) != "bf12fb434e7532ecc2db9dc669442e3c02f468f80ffccee5879fefffe46f058d" {
+        return Err("unreviewed enum cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(ENUM_CAST).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &bytes_from_chunks_manifest()?)?;
+    let current = legacy_source(path, current, &enum_cast_manifest()?)?;
+    let current = legacy_source(path, &current, &bytes_from_chunks_manifest()?)?;
     let current = legacy_source(path, &current, &field_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;

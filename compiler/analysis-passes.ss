@@ -2028,6 +2028,8 @@
           [(tfield ,src^) (+ 1 (field-bytes))]
           [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
           [(tbytes ,src^ ,len) len]
+          [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+           (unsigned-serialized-width (length elt-name*))]
           [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
            (apply + (map (lambda (field-type) (serialization-width src field-type operation)) type*))]
           [(ttuple ,src^ ,type* ...)
@@ -2035,6 +2037,13 @@
           [(tvector ,src^ ,len ,type)
            (* len (serialization-width src type operation))]
           [else (source-errorf src "~a does not yet support type ~a" operation (format-type type))]))
+
+      (define (enum-to-serialized-bytes src type carrier expr maximum width)
+        (with-output-language (Ltypes Expression)
+          `(field->bytes ,src ,width
+             (safe-cast ,src (tfield ,src) (tunsigned ,src ,maximum)
+               (cast-from-enum ,src (tunsigned ,src ,maximum) ,carrier
+                 ,(maybe-safecast src carrier type expr))))))
 
       (define (serialize-product src type expr len)
         (define (collect type expr parts)
@@ -2073,6 +2082,11 @@
                    (add width `(field->bytes ,src ,width ,(maybe-safecast src carrier type expr))))]
                 [(tbytes ,src^ ,len^)
                  (if (= len^ 0) parts (add len^ (maybe-safecast src carrier type expr)))]
+                [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+                 (let* ([maximum (length elt-name*)] [width (unsigned-serialized-width maximum)])
+                   (if (= width 0)
+                       parts
+                       (add width (enum-to-serialized-bytes src type carrier expr maximum width))))]
                 [(tunsigned ,src^ ,nat)
                  (let ([width (unsigned-serialized-width nat)])
                    (if (= width 0)
@@ -2133,6 +2147,14 @@
                                  (if (= len^ 0)
                                      `(quote ,src 0)
                                      `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^))))]
+                              [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+                               (let* ([maximum (length elt-name*)]
+                                      [width (unsigned-serialized-width maximum)])
+                                 (if (= width 0)
+                                     `(enum-ref ,src ,carrier ,elt-name)
+                                     `(cast-to-enum ,src ,carrier (tunsigned ,src ,maximum)
+                                        (cast-from-bytes ,src (tunsigned ,src ,maximum) ,width
+                                          ,(prefix index width)))))]
                               [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
                                `(new ,src ,carrier ,(fields type* index) ...)]
                               [(ttuple ,src^ ,type* ...)
@@ -3234,6 +3256,17 @@
                     (pad-serialized-bytes src
                       `(field->bytes ,src ,len^ (safe-cast ,src ,field-type ,carrier ,value))
                       len^ len)))
+              (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+          (let* ([maximum (length elt-name*)] [width (unsigned-serialized-width maximum)]
+                 [carrier (de-alias type #t)])
+            (check-serialization-width src type width len)
+            (values
+              (if (= width 0)
+                  (maybe-bind src type^ expr (lambda (value) `(quote ,src ,(make-bytevector len 0))))
+                  (pad-serialized-bytes src
+                    (enum-to-serialized-bytes src type^ carrier expr maximum width)
+                    width len))
               (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
          [else
           (values (serialize-product src type (maybe-safecast src type type^ expr) len)

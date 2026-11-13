@@ -109,6 +109,7 @@ pub(super) enum Conversion {
     Coerce,
     UnsignedCast,
     JubjubCast,
+    EnumCast,
     Secp256k1BytesCast,
     FixedBytes(crate::pure_semantics::conversion::FixedBytesConversion),
 }

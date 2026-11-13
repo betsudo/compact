@@ -487,6 +487,7 @@ fn expression_contains_with_actions<'source>(
         | Expr::FieldToBytes32 { value }
         | Expr::JubjubCast { value, .. }
         | Expr::Secp256k1BytesCast { value, .. }
+        | Expr::EnumCast { value, .. }
         | Expr::Coerce { value, .. }
         | Expr::StructField { value, .. }
         | Expr::TupleIndex { value, .. }
