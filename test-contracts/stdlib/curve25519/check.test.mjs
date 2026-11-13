@@ -32,6 +32,7 @@ import defaultCompile from './default/maybe_either/compile.pass.test.ts';
 import defaultRuntime from './default/maybe_either/runtime.pass.test.ts';
 import ed25519Compile from './verify/compile.pass.test.ts';
 import ed25519Runtime from './verify/runtime.pass.test.ts';
+import ed25519Sequential from './slow/verify_sequential/compile.pass.test.ts';
 
 const { MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR } = runtime;
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -314,24 +315,40 @@ test('runs the original stateful Ed25519 callback on paired output', async () =>
   await run((_, check) => check(), expect, code, startContract, runtime, ed25519);
 });
 
+function compileEd25519Fixture(fixture, filename, definition) {
+  expect(definition.result).toBe('pass');
+  const options = {
+    ...definition.options,
+    compilerArgs: [...(definition.options.compilerArgs ?? []), '--rust-require-recording'],
+  };
+  const targets = ['ts', 'rust'];
+  const intact = compile(fixture, options, targets);
+  if (intact.result.status === 0) return intact.build;
+
+  expect(intact.result.stderr).toMatch(/language version [\d.]+ mismatch/);
+  expect(existsSync(intact.build)).toBe(false);
+  const source = readFileSync(join(root, fixture, filename), 'utf8');
+  const pragma = 'pragma language_version >= 0.25.0;\n';
+  expect(source.split(pragma)).toHaveLength(2);
+  const derivative = join(output, filename);
+  writeFileSync(derivative, source.replace(pragma, ''), {flag: 'wx'});
+  const probe = compile(`${fixture}/pragma-probe`, options, targets, '--feature-zkir-v3', derivative);
+  expect(probe.result.status, probe.result.stderr).toBe(0);
+  return probe.build;
+}
+
 test('runs the original Ed25519 corpus driver after recording language admission', async () => {
-  expect(ed25519Compile.result).toBe('pass');
   expect(ed25519Runtime.result).toBe('pass');
-  const intact = compile('verify', ed25519Compile.options, ['ts', 'rust']);
-  let build = intact.build;
-  if (intact.result.status !== 0) {
-    expect(intact.result.stderr).toMatch(/language version [\d.]+ mismatch/);
-    expect(existsSync(intact.build)).toBe(false);
-    const source = readFileSync(join(root, 'verify/curve25519_verify.compact'), 'utf8');
-    const pragma = 'pragma language_version >= 0.25.0;\n';
-    expect(source.split(pragma)).toHaveLength(2);
-    const derivative = join(output, 'curve25519_verify.compact');
-    writeFileSync(derivative, source.replace(pragma, ''), {flag: 'wx'});
-    const probe = compile('verify/pragma-probe', ed25519Compile.options, ['ts', 'rust'],
-      '--feature-zkir-v3', derivative);
-    expect(probe.result.status, probe.result.stderr).toBe(0);
-    build = probe.build;
-  }
+  const build = compileEd25519Fixture('verify', 'curve25519_verify.compact', ed25519Compile);
   const {Contract, pureCircuits} = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
   await ed25519Runtime.run(Contract, pureCircuits);
+});
+
+test('compiles both original sequential Ed25519 statements with checked recording', () => {
+  const build = compileEd25519Fixture(
+    'slow/verify_sequential', 'curve25519_verify_sequential.compact', ed25519Sequential,
+  );
+  const capabilities = JSON.parse(readFileSync(join(build, 'contract/rust-capabilities.json'), 'utf8'));
+  expect(capabilities.circuits.map(({name, recorded, observed_call}) => [name, recorded, observed_call]))
+    .toEqual([['two', true, true], ['three', true, true]]);
 });
