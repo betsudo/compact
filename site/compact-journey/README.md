@@ -105,10 +105,13 @@ python3 site/compact-journey/revisions.py from the repository checkout
 before rebuilding. It reads the edition's Git objects and freezes the
 metadata in sources/revisions.json. Ordinary builds use that snapshot.
 
-## Visual reference
+## Reading themes
 
-The reading theme follows the Midnight DID documentation site at
-https://midnightntwrk.github.io/midnight-did/, including its charcoal
-surfaces, blue accents, Outfit and DM Mono fonts, and light code panels.
-Fonts and their licenses are bundled locally. The theme retains a light
-reading option and the complete print view.
+Clear is the light theme, using a white page, Inter body text, and crisp
+code panels. Dusk is the dark theme, using muted slate, PT Serif body
+text, and softer code colors. Both follow the owner's selected local
+reading previews. The theme control names its destination, and the
+reader's choice is remembered. New readers start with Clear.
+
+Fonts and licenses are bundled locally. The complete print view uses
+a light page with dark text.

@@ -60,12 +60,12 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
     body = REFERENCES.rewrite(body, prefix)
     toc = REFERENCES.rewrite(toc, prefix, details=False)
     return f'''<!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="{escape(description)}">
-<meta name="theme-color" content="#101010">
+<meta name="theme-color" content="#ffffff">
 <title>{escape(title)} · The Compact journey</title>
 <link rel="stylesheet" href="{prefix}assets/fonts.css?v={ASSET_VERSIONS["fonts.css"]}">
 <link rel="stylesheet" href="{prefix}assets/book.css?v={ASSET_VERSIONS["book.css"]}">
@@ -80,7 +80,7 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 <header class="masthead">
 <a class="wordmark" href="{prefix}index.html">COMPACT <span>ENGINEERING BOOK</span></a>
 <nav aria-label="Primary"><a href="{prefix}index.html">The story</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
-<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to light theme">Light</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to Dusk (dark) theme">Dusk</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="{prefix}index.html">From source to proof</a>

@@ -33,10 +33,13 @@ limitations under the License.
   };
   const updateTheme = (theme) => {
     root.dataset.theme = theme;
-    themeButton.textContent = theme === "dark" ? "Light" : "Dark";
-    themeButton.setAttribute("aria-label", "Switch to " + (theme === "dark" ? "light" : "dark") + " theme");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      "content", theme === "dark" ? "#19232d" : "#ffffff",
+    );
+    themeButton.textContent = theme === "dark" ? "Clear" : "Dusk";
+    themeButton.setAttribute("aria-label", "Switch to " + (theme === "dark" ? "Clear (light)" : "Dusk (dark)") + " theme");
   };
-  const storedTheme = readStored("compact-journey-theme", "dark");
+  const storedTheme = readStored("compact-journey-theme", "light");
   updateTheme(storedTheme === "dark" ? "dark" : "light");
   themeButton.addEventListener("click", () => {
     const theme = root.dataset.theme === "dark" ? "light" : "dark";
