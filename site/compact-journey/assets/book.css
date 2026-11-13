@@ -114,6 +114,7 @@ body:has(.on-this-page) main { margin-right: 190px; }
 .prose li { padding-left: .3rem; margin-bottom: .5rem; }
 .prose blockquote { margin: 1.5rem 0; padding: 1.1rem 1.25rem; background: var(--wash); border-left: 3px solid var(--accent); font-family: var(--sans); font-size: .85rem; }
 .prose blockquote p:last-child { margin-bottom: 0; }
+.prose img { display: block; width: auto; max-width: 100%; max-height: 37rem; object-fit: contain; margin: 1.5rem auto; border: 1px solid var(--rule); border-radius: 8px; }
 .prose code { font-family: var(--mono); font-size: .79em; background: var(--wash); border-radius: 3px; padding: .15em .3em; }
 .prose pre { background: var(--surface); border: 1px solid var(--rule); padding: 1.2rem; overflow-x: auto; line-height: 1.7; font-size: .85rem; }
 .prose pre code { padding: 0; background: transparent; overflow-wrap: normal; }
@@ -194,7 +195,7 @@ body:has(.on-this-page) main { margin-right: 190px; }
   .masthead,.sidebar,.on-this-page,.footer,.print-controls,.chapter-actions,.chapter-pagination,.skip-link { display:none; }
   main,body:has(.on-this-page) main { margin:0; } .print-chapter { max-width:none; padding:0; break-before:page; }
   .prose { font-size:10.5pt; line-height:1.65; } .prose h2,.prose h3 { break-after:avoid; }
-  .prose pre,.prose table { break-inside:avoid; } a { color:black; } .reader { max-width:none; padding:0; }
+  .prose pre,.prose table,.prose img { break-inside:avoid; } .prose img { max-height: 6.5in; } a { color:black; } .reader { max-width:none; padding:0; }
 }
 .iteration-phase { margin: 3rem 0; }
 .iteration-phase > h2 { font-family: var(--serif); font-size: 1.8rem; font-weight: normal; border-bottom: 1px solid var(--rule); padding-bottom: 1rem; }

@@ -22,6 +22,31 @@ Keep Scheme as the shared Compact frontend. Move target-specific semantic admiss
 
 This change was about ownership of decisions. It did not require a new Compact language, a replacement ledger VM, or a parallel cryptographic specification.
 
+## Before and after · Emitting a nested calculation
+
+![Both Rust paths share the Scheme frontend. The original uses Ltypescript and assembles Rust text. The AST backend lowers versioned IR and builds Rust syntax.](../assets/diagrams/compiler-boundary.png)
+
+[Mermaid source](../assets/diagrams/compiler-boundary.mmd)
+
+### Before · Splice rendered expressions into text
+
+An emitter for multiply-after-add must put parentheses around the rendered addition. Dropping them can produce valid Rust with different arithmetic.
+
+~~~text
+Illustrative text emission
+"(" + emit(a) + " + " + emit(b) + ") * " + emit(c)
+~~~
+
+### After · Represent the grouping in the tree
+
+The outer multiplication receives a checked addition as its left operand. The renderer receives that structure and can emit the required parentheses. The syntax node names below are schematic.
+
+~~~text
+Multiply(Add(a, b), c)
+~~~
+
+With 2, 3 and 4, the intended result is 20. A string that comes out as 2 + 3 * 4 would give 14. This illustrates why the project tests source behavior in addition to compiling the emitted Rust.
+
 ## A contributor's test
 
 When investigating an old generated example, identify the source revision, backend line and runtime family first. Two files both called generated Rust can belong to different architectures and ABI generations. A bug fixed in the oracle is a clue for the AST line, with a separate port and test still required.

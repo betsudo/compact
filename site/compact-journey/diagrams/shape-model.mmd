@@ -1,0 +1,10 @@
+flowchart TB
+    C["Stateful circuit<br/>parameters · actions · return"]
+    D["Ledger declarations<br/>slot index · value type"]
+    M{"Does a recognizer match<br/>the entire circuit?"}
+    R["Selected recording recipe<br/>for that shape"]
+    X["Recording unavailable<br/>for this circuit"]
+    C --> M
+    D --> M
+    M -->|match| R
+    M -->|no match| X

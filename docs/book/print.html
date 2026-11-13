@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Complete book · The Compact journey</title>
 <link rel="stylesheet" href="./assets/fonts.css">
-<link rel="stylesheet" href="./assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="./assets/book.css?v=2f691729bb02">
 <script defer src="./assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -84,6 +84,19 @@
 <h2 id="the-first-rust-emitter-the-decision">The decision</h2>
 <p>Keep Scheme as the shared Compact frontend. Move target-specific semantic admission into a versioned internal model. Let a Rust backend construct Rust syntax through Rust syntax-tree libraries.</p>
 <p>This change was about ownership of decisions. It did not require a new Compact language, a replacement ledger VM, or a parallel cryptographic specification.</p>
+<h2 id="the-first-rust-emitter-before-and-after-emitting-a-nested-calculation">Before and after · Emitting a nested calculation</h2>
+<p><img alt="Both Rust paths share the Scheme frontend. The original uses Ltypescript and assembles Rust text. The AST backend lowers versioned IR and builds Rust syntax." src="assets/diagrams/compiler-boundary.png" /></p>
+<p><a href="assets/diagrams/compiler-boundary.mmd">Mermaid source</a></p>
+<h3 id="the-first-rust-emitter-before-splice-rendered-expressions-into-text">Before · Splice rendered expressions into text</h3>
+<p>An emitter for multiply-after-add must put parentheses around the rendered addition. Dropping them can produce valid Rust with different arithmetic.</p>
+<pre><code class="language-text">Illustrative text emission
+&quot;(&quot; + emit(a) + &quot; + &quot; + emit(b) + &quot;) * &quot; + emit(c)
+</code></pre>
+<h3 id="the-first-rust-emitter-after-represent-the-grouping-in-the-tree">After · Represent the grouping in the tree</h3>
+<p>The outer multiplication receives a checked addition as its left operand. The renderer receives that structure and can emit the required parentheses. The syntax node names below are schematic.</p>
+<pre><code class="language-text">Multiply(Add(a, b), c)
+</code></pre>
+<p>With 2, 3 and 4, the intended result is 20. A string that comes out as 2 + 3 * 4 would give 14. This illustrates why the project tests source behavior in addition to compiling the emitted Rust.</p>
 <h2 id="the-first-rust-emitter-a-contributors-test">A contributor's test</h2>
 <p>When investigating an old generated example, identify the source revision, backend line and runtime family first. Two files both called generated Rust can belong to different architectures and ABI generations. A bug fixed in the oracle is a clue for the AST line, with a separate port and test still required.</p>
 <h3 id="the-first-rust-emitter-source-trail">Source trail</h3>
@@ -116,6 +129,18 @@
 </ul></div></article><article class="print-chapter"><p class="eyebrow">Recorded contracts milestone</p><h1>Recording is an execution</h1><div class="prose"><h2 id="recording-is-an-execution-a-correct-result-still-leaves-a-missing-statement">A correct result still leaves a missing statement</h2>
 <p>A native function can return the expected value without retaining the operations needed for proof preparation. Re-running the function elsewhere also risks observing a different state or a different witness result.</p>
 <p>The project introduced recorded execution as an explicit result. Execute against a context, retain the ordered ledger trace, and return both the native result and its recording. Replay then checks that the operations reproduce the expected public transition.</p>
+<h2 id="recording-is-an-execution-before-and-after-a-counter-advances-from-1-to-2">Before and after · A counter advances from 1 to 2</h2>
+<h3 id="recording-is-an-execution-before-observe-the-answer">Before · Observe the answer</h3>
+<p>A caller can see the return value and the new counter. To explain the public transition later, it needs the starting context and the exact operations the circuit performed.</p>
+<h3 id="recording-is-an-execution-after-keep-the-operations-from-that-execution">After · Keep the operations from that execution</h3>
+<pre><code class="language-text">Illustrative recording
+initial round = 1
+  increment round by 1
+expected final round = 2
+</code></pre>
+<p><img alt="Generated execution returns a value and updated context and retains an ordered ledger trace for replay against the initial state." src="assets/diagrams/record-and-replay.png" /></p>
+<p><a href="assets/diagrams/record-and-replay.mmd">Mermaid source</a></p>
+<p>Replay gives a second check on the public transition. A reader can see both what the call returned and how it moved the ledger. The proof and funded transaction add their own checks later.</p>
 <h2 id="recording-is-an-execution-give-the-ledger-slot-an-owner">Give the ledger slot an owner</h2>
 <p>Typed field descriptors connect a source declaration to its physical ledger path. A CellSlot knows the value type and where the VM should read or write. Generated code supplies arguments and propagates the returned context.</p>
 <p>That division prevents arbitrary path arithmetic from spreading across generated bodies. It also creates a reusable boundary for witness ledger views and public state inspection.</p>
@@ -157,12 +182,101 @@
 <li><a href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">Qualified 0.3.0 implementation</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">0.3.0 closeout</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/blob/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a/doc/rust/0.3.0-closure.md">Closure report</a></li>
-</ul></div></article><article class="print-chapter"><p class="eyebrow">Compositional recording</p><h1>Operations instead of shapes</h1><div class="prose"><h2 id="operations-instead-of-shapes-how-success-created-a-bottleneck">How success created a bottleneck</h2>
-<p>Recording support expanded by recognizing particular program shapes. A known contract pattern could select a recorder that understood its reads, writes and returns. This approach delivered useful capabilities, but each new combination risked needing another recognizer.</p>
-<p>A contract with a supported Map operation inside an unfamiliar expression might fail even though its primitive behavior was already understood. The implementation had learned a catalogue of complete shapes faster than it had learned their composition.</p>
-<h2 id="operations-instead-of-shapes-the-checked-effect-graph">The checked effect graph</h2>
-<p>The replacement treats an operation as part of a typed effect program. Reads, writes, witness observations, calls, returns, branches and sequencing carry explicit semantic information. Checked lowering determines whether the composed program is legal.</p>
-<p>This gives the compiler a place to reason about ordering and ownership before choosing a renderer. A shared semantic fold can interpret the same admitted program through native and recorded adapters.</p>
+</ul></div></article><article class="print-chapter"><p class="eyebrow">Compositional recording</p><h1>Operations instead of shapes</h1><div class="prose"><h2 id="operations-instead-of-shapes-before-recognize-the-whole-circuit">Before · Recognize the whole circuit</h2>
+<p>The early recorder worked like a set of templates. It inspected a circuit’s parameters, ledger actions and return value, then chose a recipe for a known pattern. The recipe could enforce the exact type and physical ledger slot. A different arrangement of familiar operations could still fail to find a recipe.</p>
+<p><img alt="A recognizer compares a circuit and its ledger declarations with an entire known pattern. A match selects a recording recipe." src="assets/diagrams/shape-model.png" /></p>
+<p><a href="assets/diagrams/shape-model.mmd">Mermaid source</a></p>
+<h3 id="operations-instead-of-shapes-two-shapes-the-old-recorder-knew">Two shapes the old recorder knew</h3>
+<p>The Set insert comes from the historical oracle fixture. The Field example illustrates the saved-read pattern. Both excerpts omit their ledger declarations.</p>
+<table>
+<thead>
+<tr>
+<th>Shape</th>
+<th>What the recognizer looked for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Insert into an opaque-string Set</td>
+<td>One string parameter, exactly one insertion of that parameter into the declared Set slot, then a Unit result. A related membership shape expected no write and returned the membership Boolean.</td>
+</tr>
+<tr>
+<td>Read an old Field value, update state and return the old value</td>
+<td>A root binding that reads a declared Field cell once, actions inside that binding, then a return of the saved Field value.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-compact">// Shape 1 · The value inserted comes directly from the parameter.
+export circuit addName(name: Opaque&lt;&quot;string&quot;&gt;): [] {
+  names.insert(disclose(name));
+}
+
+// Shape 2 · The result is the value from before the write.
+export circuit replaceValue(next: Field): Field {
+  const before = state.read();
+  state.write(disclose(next));
+  return before;
+}
+</code></pre>
+<p>Here, a <em>shape</em> was a recognizer’s predicate over the existing circuit representation. The relevant entities were the circuit, its declarations, and the recording recipe selected by the recognizer. There was no common Shape object with child shapes that the compiler could assemble into a larger program.</p>
+<h2 id="operations-instead-of-shapes-after-build-a-plan-from-typed-operations">After · Build a plan from typed operations</h2>
+<p>The replacement describes a circuit as an ordered plan. A <strong>block</strong> is a list of bindings plus a result. Each <strong>binding</strong> pairs an operation with a typed value and an IR location. A read produces a value other operations can use. A write updates a declared slot. An <em>if</em> operation contains two blocks. The validator checks both branches, including their result types, while execution takes only the selected branch.</p>
+<p><img alt="A plan owns typed parameters and a block. Blocks order bindings, and a branch operation owns two blocks. A validator admits the plan against ledger declarations." src="assets/diagrams/operation-model.png" /></p>
+<p><a href="assets/diagrams/operation-model.mmd">Mermaid source</a></p>
+<pre><code class="language-text">Illustrative plans using the integrated operation model
+
+addName(name: OpaqueString)
+_      : Unit  = SetInsert(names, name)
+return Unit
+
+replaceValue(next: Field)
+
+before : Field = CellRead(state)
+_      : Unit  = CellWrite(state, next)
+return before
+</code></pre>
+<p>The integrated model gives Set insertion and membership their own typed operations, with the Set slot and element as inputs. In the Field example, the write and the return each refer to their own value, so returning the saved read stays explicit. A read, write or assertion now has the same place in the model inside a branch as it does at the top level. The validator can reject a value used before its definition or incompatible branch results at the operation that introduces the problem. In the integrated design, a shared semantic fold walks the admitted operations for native and recorded execution.</p>
+<h2 id="operations-instead-of-shapes-walkthrough-what-a-witness-sees-depends-on-order">Walkthrough · What a witness sees depends on order</h2>
+<p>The prototype’s original orderedObservation circuit writes state, then takes one of three paths. The old recorder refused this circuit when recording was required. The pilot admitted the same source using the checked operation plan.</p>
+<pre><code class="language-compact">const before = state.read();
+state.write(before + 1);
+if (disclose(selector) == 0) {
+  const observed = mark();
+  assert(disclose(observed) == 77, &quot;unexpected mark&quot;);
+  round.increment(2);
+  return disclose(state.read() + observed);
+}
+</code></pre>
+<p>This excerpt is the first branch. The other live witness branch increments the round and writes the new state before calling mark(). A witness is a host-supplied function. Which ledger state it observes depends on the writes already performed in the selected branch.</p>
+<p><img alt="In orderedObservation, selector zero calls the witness before incrementing the round, selector one writes and increments before the witness, and the remaining branch skips the witness." src="assets/diagrams/witness-order.png" /></p>
+<p><a href="assets/diagrams/witness-order.mmd">Mermaid source</a></p>
+<table>
+<thead>
+<tr>
+<th>Prototype case</th>
+<th>What the witness saw</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Selector 0, next = 9</td>
+<td>State 1 and round 0</td>
+<td>Returns 78. State stays 1 and round ends at 2.</td>
+</tr>
+<tr>
+<td>Selector 1, next = 9</td>
+<td>State 12 and round 3</td>
+<td>Returns 12. State stays 12 and round stays 3.</td>
+</tr>
+<tr>
+<td>Selector 2 with next = 0</td>
+<td>No witness call</td>
+<td>Returns 3 and restores state to 0.</td>
+</tr>
+</tbody>
+</table>
+<p>The cases start from the fixture’s zero state and round. The tests compared native and recorded execution with an independent TypeScript reference, including witness order, ledger state and gas. This pilot established execution and replay behavior. Its proof obligation remained separate.</p>
 <h2 id="operations-instead-of-shapes-why-a-versioned-ir-matters-here">Why a versioned IR matters here</h2>
 <p>Every new node has consequences for traversal, validation, lowering, capabilities and diagnostics. Exhaustive handling makes those obligations visible. A version change can state that the boundary has changed instead of letting a consumer guess from generated text.</p>
 <p>Source spans matter for the same reason. An unsupported child expression should point back to Compact source. A Rust panic or a generic target failure leaves users debugging the implementation rather than their program.</p>
@@ -178,6 +292,7 @@
 <p>A compositional foundation still needs specific source features, result conversions, public interfaces and proof gates. The following iterations show that work in concrete terms.</p>
 <h3 id="operations-instead-of-shapes-source-trail">Source trail</h3>
 <ul>
+<li><a href="https://github.com/betsudo/compact/commit/9de0e55be25d66c4af54ea52798c5b2ab4c846ba">Operation-plan pilot, including the original Compact circuits</a> <button type="button" class="commit-details" data-commit="9de0e55be25d66c4af54ea52798c5b2ab4c846ba" aria-haspopup="dialog" aria-label="Commit details for feat(rust): prototype compositional recording plans">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/issues/508">Checked effect epic #508</a></li>
 <li><a href="https://github.com/betsudo/compact/issues/482">IR boundary #482</a></li>
 <li><a href="https://github.com/betsudo/compact/commit/0437c894cd069af475bd8d5b254c24cc73615a09">Checked effects integration</a> <button type="button" class="commit-details" data-commit="0437c894cd069af475bd8d5b254c24cc73615a09" aria-haspopup="dialog" aria-label="Commit details for feat(rust): replace recording shape admission with checked effects [skip ci] (#641)">Details</button></li>
@@ -237,6 +352,23 @@ let recorded = request.execute_recorded(context)?;
 <h2 id="ergonomics-one-semantic-gap-at-a-time-projection-is-not-tuple-selection">Projection is not tuple selection</h2>
 <p>A source index into a fixed vector carries different type and result obligations from a tuple projection. Confusing them can make a generated value have the wrong shape even when one constant example works.</p>
 <p>The accepted projection slice retained that distinction. Nested Map size and Fold then reused the checked foundation while adding their own ownership and effect requirements.</p>
+<h2 id="ergonomics-one-semantic-gap-at-a-time-before-and-after-index-a-vector-by-a-named-constant">Before and after · Index a Vector by a named constant</h2>
+<h3 id="ergonomics-one-semantic-gap-at-a-time-before-use-the-position-directly">Before · Use the position directly</h3>
+<p>A literal made the fixed position visible to the Rust backend. A source program using a constant expression could hit an unsupported projection even though the position was knowable during compilation.</p>
+<pre><code class="language-compact">// Illustrative literal-index version.
+export pure circuit first(items: Vector&lt;2, Field&gt;): Field {
+  return items[0];
+}
+</code></pre>
+<h3 id="ergonomics-one-semantic-gap-at-a-time-after-let-the-compiler-work-out-the-position">After · Let the compiler work out the position</h3>
+<pre><code class="language-compact">// From the accepted fixture. Idx is an alias for Uint&lt;8&gt;.
+export pure circuit first(items: Vector&lt;2, Field&gt;): Field {
+  const i: Idx = 1;
+  const index = i * 0;
+  return items[index];
+}
+</code></pre>
+<p>For input [7, 9], both versions select 7. The second version lets the programmer name and calculate the position. The same slice checks bounds and keeps dynamic indices outside this fixed-position feature.</p>
 <h2 id="ergonomics-one-semantic-gap-at-a-time-wide-multiplication-by-zero">Wide multiplication by zero</h2>
 <p>A wide unsigned result cannot always be squeezed into a convenient native integer. Multiplying by zero still has a precise result type and output geometry.</p>
 <p>PR #700 preserved that typed zero behavior. The review also retained a known limit around stateful zero-width results and frontend/ZKIR commitment agreement. The selected proof APIs declare Uint&lt;8&gt; results and establish those statements. They do not settle general zero-width proof readiness.</p>
@@ -265,6 +397,13 @@ let recorded = request.execute_recorded(context)?;
 <h2 id="ledger9-is-a-protocol-migration-a-failing-transaction-exposed-an-emitter-bug">A failing transaction exposed an emitter bug</h2>
 <p>The initial standalone Counter proof passed, but transaction proving exhausted its skip entries. The earlier emitter grouped expanded ledger operations into one impact. Ledger 9 consumes a skip entry for each transcript operation.</p>
 <p>The repair preserved those boundaries and omitted suppressed operations. The Counter's three impacts then matched the released reference. This is a particularly useful migration lesson. A proof result from an isolated statement can pass while the transaction consumer exposes an incompatibility in the same generated circuit.</p>
+<h2 id="ledger9-is-a-protocol-migration-before-and-after-count-the-steps-the-prover-reads">Before and after · Count the steps the prover reads</h2>
+<h3 id="ledger9-is-a-protocol-migration-before-count-one-source-action">Before · Count one source action</h3>
+<p>Imagine one action expanding into three transcript operations, A, B and C. Grouping them together emitted one impact and provided one skip entry. The transaction prover consumed that entry for A and still needed entries for B and C.</p>
+<h3 id="ledger9-is-a-protocol-migration-after-count-each-emitted-operation">After · Count each emitted operation</h3>
+<p>Emit one impact per active operation and omit suppressed operations. The repaired Counter had three impacts and matched the released reference. The lettering below explains the mapping without abbreviating the actual Counter transcript into invented instructions.</p>
+<p><img alt="One source action expands to three transcript operations. The earlier grouping yields one skip entry. Ledger 9 emission provides one ordered entry for each operation." src="assets/diagrams/ledger9-skips.png" /></p>
+<p><a href="assets/diagrams/ledger9-skips.mmd">Mermaid source</a></p>
 <h2 id="ledger9-is-a-protocol-migration-funding-is-part-of-the-test">Funding is part of the test</h2>
 <p>The Ledger 9 lane used released dust/10/spend material. The retained Ledger 8 dust/9/spend material belonged to the historical line. The contract verifier and the Dust verifier also serve different roles.</p>
 <p>The qualified Counter run generated fresh keys and a standalone proof. A separate process verified that proof and refused changed bindings, commitment, wrong verifier and corrupt bytes. A separately proved, Dust-funded transaction then passed default strictness, applied the expected state and refused exact replay with unchanged ledger bytes.</p>
@@ -287,6 +426,17 @@ let recorded = request.execute_recorded(context)?;
 <h2 id="porting-the-cryptographic-surface-fields-before-points">Fields before points</h2>
 <p>Base and scalar fields have different moduli. Rust types preserve that distinction, so an ordinary call cannot accidentally substitute one carrier for another. Explicit source casts have their defined modular behavior. An untrusted host decoder still needs a canonicality check.</p>
 <p>Foreign field ledger transport also uses shifted values and split atoms. For the selected K1 and P-256 layouts, the low and high parts occupy 24 and 8 bytes. A plain integer comparison would miss a representation error.</p>
+<h2 id="porting-the-cryptographic-surface-before-and-after-make-the-curve-part-of-the-type">Before and after · Make the curve part of the type</h2>
+<h3 id="porting-the-cryptographic-surface-before-a-byte-string-needs-context">Before · A byte string needs context</h3>
+<p>Consider a host program with bytes from two curves. Both values can be held in a byte array. The caller has to remember which one belongs with the next operation.</p>
+<h3 id="porting-the-cryptographic-surface-after-a-generated-call-can-express-the-distinction">After · A generated call can express the distinction</h3>
+<pre><code class="language-rust">// Schematic Rust. Names illustrate the roles in the API.
+fn multiply_k1(point: K1Point, scalar: K1Scalar) -&gt; K1Point;
+
+multiply_k1(k1_point, k1_scalar);   // The carriers match.
+multiply_k1(k1_point, p256_scalar); // Type error.
+</code></pre>
+<p>The example uses schematic names because the exact API depends on the generated interface. The ordinary typed call rejects the mix-up during compilation. Data arriving from outside Rust still needs the runtime’s canonical decoding and point validation.</p>
 <h2 id="porting-the-cryptographic-surface-unary-and-guarded-operations">Unary and guarded operations</h2>
 <p>Inversion of zero must fail on an active path, including when the result is discarded. A proof VM may evaluate an operation eagerly even when source control flow makes its result inactive.</p>
 <p>Guarded lowering therefore supplies a typed neutral input to the inactive operation while preserving active-path refusal. These cases show why the source semantics, host runtime and constraint model need to be checked together.</p>
@@ -319,6 +469,19 @@ let recorded = request.execute_recorded(context)?;
 <h2 id="wire-values-events-and-state-byte-equality-is-content-equality">Byte equality is content equality</h2>
 <p>Two separately allocated Uint8Arrays with identical bytes should compare according to Compact's value semantics. The TypeScript path previously exposed a reference-equality mismatch.</p>
 <p>The port checks length and contents, including values nested in products and vectors. All 23 original cases passed generated execution, SDK preflight, independent proofs and funded strict replay checks. The unchanged Rust and raw ZKIR outputs made the location of the fix particularly clear.</p>
+<h2 id="wire-values-events-and-state-before-and-after-compare-bytes-from-two-sources">Before and after · Compare bytes from two sources</h2>
+<h3 id="wire-values-events-and-state-before-two-objects-with-the-same-contents-compare-unequal">Before · Two objects with the same contents compare unequal</h3>
+<pre><code class="language-typescript">// This JavaScript example reproduces the reference-equality pitfall.
+const stored = new Uint8Array([4, 8]);
+const received = new Uint8Array([4, 8]);
+stored === received; // false
+</code></pre>
+<h3 id="wire-values-events-and-state-after-compare-the-byte-sequence">After · Compare the byte sequence</h3>
+<pre><code class="language-typescript">// The behavior the generated comparison must preserve.
+stored.length === received.length &amp;&amp;
+  stored.every((byte, index) =&gt; byte === received[index]); // true
+</code></pre>
+<p>Changing the second byte to 9 produces false. The same rule applies when the arrays appear inside a product or Vector. The Compact source compares the values directly, and generated code supplies the value semantics.</p>
 <h2 id="wire-values-events-and-state-events-are-ordered-effects">Events are ordered effects</h2>
 <p>The event migration covered ShieldedSpend, ShieldedBurn, ShieldedMint, ShieldedReceive, their unshielded counterparts, Paused, Unpaused and Misc. Each event has its own tag and payload.</p>
 <p>Optional and Either fields preserve inactive bytes as required by the source representation. Disclosure analysis must also inspect those fields. A branch that is inactive at runtime cannot become a way to hide undeclared witness disclosure.</p>
@@ -345,6 +508,13 @@ let recorded = request.execute_recorded(context)?;
 <p>Typed address comparisons, entrypoint hash binding, native claim recording and replay are implemented prerequisites. The runtime can prepare a supplied caller and leaf-callee recording from a shared ledger snapshot.</p>
 <p>Preparation checks the installed verifiers and the exact claim before using Ledger 9's joint partitioner. The pair-preparation tests use synthetic verifier carriers and cover honest preparation and refusal controls.</p>
 <p>The internal compiler statement probe also produced a selected standalone caller proof with an adapter-built preimage. Same-output sibling entrypoint, wrong verifier, binding and corruption controls passed for that bounded statement.</p>
+<h2 id="cross-contract-calls-and-the-held-boundary-before-and-after-two-entrypoints-return-the-same-value">Before and after · Two entrypoints return the same value</h2>
+<h3 id="cross-contract-calls-and-the-held-boundary-before-comparing-the-answer-leaves-an-identity-gap">Before · Comparing the answer leaves an identity gap</h3>
+<p>Suppose a caller expects entrypoint A, and sibling B accepts the same arguments and also returns 7. A test that checks only the 7 would pass even if the wrong entrypoint supplied it.</p>
+<h3 id="cross-contract-calls-and-the-held-boundary-after-preparation-checks-which-entrypoint-produced-the-claim">After · Preparation checks which entrypoint produced the claim</h3>
+<p><img alt="Pair preparation resolves the callee and operation and checks the installed verifier and claim. A wrong identity is refused even when returned values match." src="assets/diagrams/entrypoint-binding.png" /></p>
+<p><a href="assets/diagrams/entrypoint-binding.mmd">Mermaid source</a></p>
+<p>The pair-preparation tests exercise the check on supplied recordings. The selected standalone statement also refuses the same-output sibling. The next section records where that check still needs to reach ordinary generated calls.</p>
 <h2 id="cross-contract-calls-and-the-held-boundary-what-is-still-held">What is still held</h2>
 <p>Ordinary generated invocation of the intact caller and a real joint funded two-contract transaction remain on hold. The canonical worktree preserves three uncommitted compiler files for this direction.</p>
 <p>Runtime preparation of supplied recordings is a useful prerequisite. It does not establish that the generated source call constructs those recordings correctly.</p>
@@ -376,6 +546,34 @@ let recorded = request.execute_recorded(context)?;
 <p>Construct a separate transaction-bound proof. Preserve the observed installed operation. Include genuine fee funding and default-strict ledger verification. Compare the applied state and events to generated native execution.</p>
 <h3 id="a-proof-is-one-stage-replay-and-rollback">Replay and rollback</h3>
 <p>Apply the same verified transaction again. The accepted result in the selected lanes is IntentAlreadyExists with unchanged whole-ledger bytes and no repeated events. A broader transaction failure may also require rollback tests.</p>
+<h2 id="a-proof-is-one-stage-before-and-after-what-does-the-proof-passed-tell-you">Before and after · What does “the proof passed” tell you?</h2>
+<h3 id="a-proof-is-one-stage-before-verify-one-statement-in-isolation">Before · Verify one statement in isolation</h3>
+<p>For Counter, a valid standalone proof established its selected statement. The transaction prover still exposed the missing skip entries described in the Ledger 9 chapter.</p>
+<h3 id="a-proof-is-one-stage-after-test-the-two-paths-separately">After · Test the two paths separately</h3>
+<p><img alt="Fresh keys feed an independent standalone verification lane and a separate funded transaction lane that tests strict application and replay." src="assets/diagrams/proof-lanes.png" /></p>
+<p><a href="assets/diagrams/proof-lanes.mmd">Mermaid source</a></p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>What the reader can look for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Verify the standalone proof</td>
+<td>The verifier, bindings and proof bytes match the intended statement.</td>
+</tr>
+<tr>
+<td>Prove and apply a funded transaction</td>
+<td>The ledger accepts the transaction under default strictness and reaches the expected state.</td>
+</tr>
+<tr>
+<td>Submit the same transaction again</td>
+<td>The ledger refuses the replay and leaves the state unchanged.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="a-proof-is-one-stage-why-compile-fail-tests-belong-in-the-guide">Why compile-fail tests belong in the guide</h2>
 <p>The generated Rust API should reject invalid ordinary use at compile time where the type system can express the constraint. Passing a P-256 carrier to a K1 method is one example.</p>
 <p>Unknown bytes, installed verifier material and decoded protocol data cross untrusted boundaries. Those inputs need explicit diagnostics and runtime errors. A useful API makes that distinction predictable.</p>

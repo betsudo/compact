@@ -122,6 +122,8 @@ def build():
     OUTPUT.mkdir()
     (OUTPUT/'assets').mkdir()
     shutil.copytree(ROOT/'assets', OUTPUT/'assets', dirs_exist_ok=True)
+    for diagram in sorted((ROOT/'diagrams').glob('*.mmd')):
+        shutil.copyfile(diagram, OUTPUT/'assets'/'diagrams'/diagram.name)
     (OUTPUT/'sources').mkdir()
     for name in ('edition.json','ledger9-adoption.md','ledger9-upstream-compatibility.md',
                  'ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','revisions.json'):
@@ -155,6 +157,7 @@ def build():
         search.append(dict(slug=chapter['slug'], title=chapter['title'], phase=chapter['phase'],
                            text=re.sub(r'<[^>]+>', ' ', content), words=words, kind=chapter['kind']))
         printable = re.sub(r'href="\.\./sources/', 'href="sources/', content)
+        printable = re.sub(r'(src|href)="\.\./assets/diagrams/', r'\1="assets/diagrams/', printable)
         # Prefix each article's fragment identifiers in the combined print document.
         printable = re.sub(r'id="([^"]+)"', lambda m: f'id="{chapter["slug"]}-{m[1]}"', printable)
         printable = re.sub(r'href="#([^"]+)"', lambda m: f'href="#{chapter["slug"]}-{m[1]}"', printable)

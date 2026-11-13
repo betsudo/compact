@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Recording is an execution · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -30,11 +30,23 @@
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Recorded contracts milestone <span>· 2 min read</span></p>
+<header class="chapter-heading"><p class="eyebrow">Recorded contracts milestone <span>· 3 min read</span></p>
 <h1>Recording is an execution</h1><p class="deck">Milestone 2 makes ordered effects and installed state visible.</p></header>
 <div class="prose"><h2 id="a-correct-result-still-leaves-a-missing-statement">A correct result still leaves a missing statement</h2>
 <p>A native function can return the expected value without retaining the operations needed for proof preparation. Re-running the function elsewhere also risks observing a different state or a different witness result.</p>
 <p>The project introduced recorded execution as an explicit result. Execute against a context, retain the ordered ledger trace, and return both the native result and its recording. Replay then checks that the operations reproduce the expected public transition.</p>
+<h2 id="before-and-after-a-counter-advances-from-1-to-2">Before and after · A counter advances from 1 to 2</h2>
+<h3 id="before-observe-the-answer">Before · Observe the answer</h3>
+<p>A caller can see the return value and the new counter. To explain the public transition later, it needs the starting context and the exact operations the circuit performed.</p>
+<h3 id="after-keep-the-operations-from-that-execution">After · Keep the operations from that execution</h3>
+<pre><code class="language-text">Illustrative recording
+initial round = 1
+  increment round by 1
+expected final round = 2
+</code></pre>
+<p><img alt="Generated execution returns a value and updated context and retains an ordered ledger trace for replay against the initial state." src="../assets/diagrams/record-and-replay.png" /></p>
+<p><a href="../assets/diagrams/record-and-replay.mmd">Mermaid source</a></p>
+<p>Replay gives a second check on the public transition. A reader can see both what the call returned and how it moved the ledger. The proof and funded transaction add their own checks later.</p>
 <h2 id="give-the-ledger-slot-an-owner">Give the ledger slot an owner</h2>
 <p>Typed field descriptors connect a source declaration to its physical ledger path. A CellSlot knows the value type and where the VM should read or write. Generated code supplies arguments and propagates the returned context.</p>
 <p>That division prevents arbitrary path arithmetic from spreading across generated bodies. It also creates a reusable boundary for witness ledger views and public state inspection.</p>
@@ -61,6 +73,11 @@
 <aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
 <ul>
 <li><a href="#a-correct-result-still-leaves-a-missing-statement">A correct result still leaves a missing statement</a></li>
+<li><a href="#before-and-after-a-counter-advances-from-1-to-2">Before and after · A counter advances from 1 to 2</a><ul>
+<li><a href="#before-observe-the-answer">Before · Observe the answer</a></li>
+<li><a href="#after-keep-the-operations-from-that-execution">After · Keep the operations from that execution</a></li>
+</ul>
+</li>
 <li><a href="#give-the-ledger-slot-an-owner">Give the ledger slot an owner</a></li>
 <li><a href="#keep-procedural-macros-mechanical">Keep procedural macros mechanical</a></li>
 <li><a href="#from-a-recording-to-a-deployed-operation">From a recording to a deployed operation</a></li>

@@ -1,0 +1,6 @@
+flowchart TB
+    S["Initial ledger context + arguments"] --> E["Execute generated circuit"]
+    E --> R["Return value + updated context"]
+    E --> T["Ordered ledger trace"]
+    T --> P["Replay against initial public state"]
+    P --> C["Check expected public transition"]

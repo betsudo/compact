@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Wire values, events and state · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -44,6 +44,19 @@
 <h2 id="byte-equality-is-content-equality">Byte equality is content equality</h2>
 <p>Two separately allocated Uint8Arrays with identical bytes should compare according to Compact's value semantics. The TypeScript path previously exposed a reference-equality mismatch.</p>
 <p>The port checks length and contents, including values nested in products and vectors. All 23 original cases passed generated execution, SDK preflight, independent proofs and funded strict replay checks. The unchanged Rust and raw ZKIR outputs made the location of the fix particularly clear.</p>
+<h2 id="before-and-after-compare-bytes-from-two-sources">Before and after · Compare bytes from two sources</h2>
+<h3 id="before-two-objects-with-the-same-contents-compare-unequal">Before · Two objects with the same contents compare unequal</h3>
+<pre><code class="language-typescript">// This JavaScript example reproduces the reference-equality pitfall.
+const stored = new Uint8Array([4, 8]);
+const received = new Uint8Array([4, 8]);
+stored === received; // false
+</code></pre>
+<h3 id="after-compare-the-byte-sequence">After · Compare the byte sequence</h3>
+<pre><code class="language-typescript">// The behavior the generated comparison must preserve.
+stored.length === received.length &amp;&amp;
+  stored.every((byte, index) =&gt; byte === received[index]); // true
+</code></pre>
+<p>Changing the second byte to 9 produces false. The same rule applies when the arrays appear inside a product or Vector. The Compact source compares the values directly, and generated code supplies the value semantics.</p>
 <h2 id="events-are-ordered-effects">Events are ordered effects</h2>
 <p>The event migration covered ShieldedSpend, ShieldedBurn, ShieldedMint, ShieldedReceive, their unshielded counterparts, Paused, Unpaused and Misc. Each event has its own tag and payload.</p>
 <p>Optional and Either fields preserve inactive bytes as required by the source representation. Disclosure analysis must also inspect those fields. A branch that is inactive at runtime cannot become a way to hide undeclared witness disclosure.</p>
@@ -70,6 +83,11 @@
 <li><a href="#empty-does-not-mean-invalid">Empty does not mean invalid</a></li>
 <li><a href="#a-leading-character-can-be-protocol-data">A leading character can be protocol data</a></li>
 <li><a href="#byte-equality-is-content-equality">Byte equality is content equality</a></li>
+<li><a href="#before-and-after-compare-bytes-from-two-sources">Before and after · Compare bytes from two sources</a><ul>
+<li><a href="#before-two-objects-with-the-same-contents-compare-unequal">Before · Two objects with the same contents compare unequal</a></li>
+<li><a href="#after-compare-the-byte-sequence">After · Compare the byte sequence</a></li>
+</ul>
+</li>
 <li><a href="#events-are-ordered-effects">Events are ordered effects</a></li>
 <li><a href="#nested-defaults-are-observable">Nested defaults are observable</a></li>
 <li><a href="#later-qualification-receipts">Later qualification receipts</a><ul>

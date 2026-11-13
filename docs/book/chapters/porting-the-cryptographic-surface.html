@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Porting the cryptographic surface · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -38,6 +38,17 @@
 <h2 id="fields-before-points">Fields before points</h2>
 <p>Base and scalar fields have different moduli. Rust types preserve that distinction, so an ordinary call cannot accidentally substitute one carrier for another. Explicit source casts have their defined modular behavior. An untrusted host decoder still needs a canonicality check.</p>
 <p>Foreign field ledger transport also uses shifted values and split atoms. For the selected K1 and P-256 layouts, the low and high parts occupy 24 and 8 bytes. A plain integer comparison would miss a representation error.</p>
+<h2 id="before-and-after-make-the-curve-part-of-the-type">Before and after · Make the curve part of the type</h2>
+<h3 id="before-a-byte-string-needs-context">Before · A byte string needs context</h3>
+<p>Consider a host program with bytes from two curves. Both values can be held in a byte array. The caller has to remember which one belongs with the next operation.</p>
+<h3 id="after-a-generated-call-can-express-the-distinction">After · A generated call can express the distinction</h3>
+<pre><code class="language-rust">// Schematic Rust. Names illustrate the roles in the API.
+fn multiply_k1(point: K1Point, scalar: K1Scalar) -&gt; K1Point;
+
+multiply_k1(k1_point, k1_scalar);   // The carriers match.
+multiply_k1(k1_point, p256_scalar); // Type error.
+</code></pre>
+<p>The example uses schematic names because the exact API depends on the generated interface. The ordinary typed call rejects the mix-up during compilation. Data arriving from outside Rust still needs the runtime’s canonical decoding and point validation.</p>
 <h2 id="unary-and-guarded-operations">Unary and guarded operations</h2>
 <p>Inversion of zero must fail on an active path, including when the result is discarded. A proof VM may evaluate an operation eagerly even when source control flow makes its result inactive.</p>
 <p>Guarded lowering therefore supplies a typed neutral input to the inactive operation while preserving active-path refusal. These cases show why the source semantics, host runtime and constraint model need to be checked together.</p>
@@ -66,6 +77,11 @@
 <ul>
 <li><a href="#a-curve-name-is-only-the-beginning">A curve name is only the beginning</a></li>
 <li><a href="#fields-before-points">Fields before points</a></li>
+<li><a href="#before-and-after-make-the-curve-part-of-the-type">Before and after · Make the curve part of the type</a><ul>
+<li><a href="#before-a-byte-string-needs-context">Before · A byte string needs context</a></li>
+<li><a href="#after-a-generated-call-can-express-the-distinction">After · A generated call can express the distinction</a></li>
+</ul>
+</li>
 <li><a href="#unary-and-guarded-operations">Unary and guarded operations</a></li>
 <li><a href="#points-and-group-operations">Points and group operations</a></li>
 <li><a href="#signatures-hashes-and-recovery">Signatures, hashes and recovery</a></li>

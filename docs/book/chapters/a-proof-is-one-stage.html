@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>A proof is one stage · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -30,7 +30,7 @@
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Technical guide <span>· 2 min read</span></p>
+<header class="chapter-heading"><p class="eyebrow">Technical guide <span>· 3 min read</span></p>
 <h1>A proof is one stage</h1><p class="deck">An evidence ladder for contributors and reviewers.</p></header>
 <div class="prose"><h2 id="follow-one-circuit-all-the-way">Follow one circuit all the way</h2>
 <p>The pipeline explorer shows eight stages. Each stage has an owner, a useful output and a failure that the next stage can expose.</p>
@@ -50,6 +50,34 @@
 <p>Construct a separate transaction-bound proof. Preserve the observed installed operation. Include genuine fee funding and default-strict ledger verification. Compare the applied state and events to generated native execution.</p>
 <h3 id="replay-and-rollback">Replay and rollback</h3>
 <p>Apply the same verified transaction again. The accepted result in the selected lanes is IntentAlreadyExists with unchanged whole-ledger bytes and no repeated events. A broader transaction failure may also require rollback tests.</p>
+<h2 id="before-and-after-what-does-the-proof-passed-tell-you">Before and after · What does “the proof passed” tell you?</h2>
+<h3 id="before-verify-one-statement-in-isolation">Before · Verify one statement in isolation</h3>
+<p>For Counter, a valid standalone proof established its selected statement. The transaction prover still exposed the missing skip entries described in the Ledger 9 chapter.</p>
+<h3 id="after-test-the-two-paths-separately">After · Test the two paths separately</h3>
+<p><img alt="Fresh keys feed an independent standalone verification lane and a separate funded transaction lane that tests strict application and replay." src="../assets/diagrams/proof-lanes.png" /></p>
+<p><a href="../assets/diagrams/proof-lanes.mmd">Mermaid source</a></p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>What the reader can look for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Verify the standalone proof</td>
+<td>The verifier, bindings and proof bytes match the intended statement.</td>
+</tr>
+<tr>
+<td>Prove and apply a funded transaction</td>
+<td>The ledger accepts the transaction under default strictness and reaches the expected state.</td>
+</tr>
+<tr>
+<td>Submit the same transaction again</td>
+<td>The ledger refuses the replay and leaves the state unchanged.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="why-compile-fail-tests-belong-in-the-guide">Why compile-fail tests belong in the guide</h2>
 <p>The generated Rust API should reject invalid ordinary use at compile time where the type system can express the constraint. Passing a P-256 carrier to a K1 method is one example.</p>
 <p>Unknown bytes, installed verifier material and decoded protocol data cross untrusted boundaries. Those inputs need explicit diagnostics and runtime errors. A useful API makes that distinction predictable.</p>
@@ -82,6 +110,11 @@
 <li><a href="#fresh-standalone-proof-and-verification">Fresh standalone proof and verification</a></li>
 <li><a href="#funded-transaction">Funded transaction</a></li>
 <li><a href="#replay-and-rollback">Replay and rollback</a></li>
+</ul>
+</li>
+<li><a href="#before-and-after-what-does-the-proof-passed-tell-you">Before and after · What does “the proof passed” tell you?</a><ul>
+<li><a href="#before-verify-one-statement-in-isolation">Before · Verify one statement in isolation</a></li>
+<li><a href="#after-test-the-two-paths-separately">After · Test the two paths separately</a></li>
 </ul>
 </li>
 <li><a href="#why-compile-fail-tests-belong-in-the-guide">Why compile-fail tests belong in the guide</a></li>

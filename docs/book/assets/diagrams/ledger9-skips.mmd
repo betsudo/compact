@@ -1,0 +1,6 @@
+flowchart TB
+    S["One source-level ledger action"] --> E["Expanded transcript operations<br/>A · B · C"]
+    E -->|earlier emission| G["One grouped impact<br/>1 skip entry"]
+    E -->|Ledger 9 emission| P["A → skip entry 1<br/>B → skip entry 2<br/>C → skip entry 3"]
+    G --> X["Transaction prover<br/>runs out of entries"]
+    P --> Y["Transaction prover<br/>consumes entries in order"]

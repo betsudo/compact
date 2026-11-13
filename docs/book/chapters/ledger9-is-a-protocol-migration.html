@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Ledger 9 is a protocol migration · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -30,7 +30,7 @@
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Ledger 9 foundation <span>· 2 min read</span></p>
+<header class="chapter-heading"><p class="eyebrow">Ledger 9 foundation <span>· 3 min read</span></p>
 <h1>Ledger 9 is a protocol migration</h1><p class="deck">Package pins, representation identities, and real transactions.</p></header>
 <div class="prose"><h2 id="why-a-branch-boundary-mattered">Why a branch boundary mattered</h2>
 <p>Ledger 9 adoption began on a dedicated line so the Ledger 8 implementation and its evidence remained available. Changing a dependency family can affect state tags, serialization, gas, proof version, fee material, transaction APIs and installed operations.</p>
@@ -41,6 +41,13 @@
 <h2 id="a-failing-transaction-exposed-an-emitter-bug">A failing transaction exposed an emitter bug</h2>
 <p>The initial standalone Counter proof passed, but transaction proving exhausted its skip entries. The earlier emitter grouped expanded ledger operations into one impact. Ledger 9 consumes a skip entry for each transcript operation.</p>
 <p>The repair preserved those boundaries and omitted suppressed operations. The Counter's three impacts then matched the released reference. This is a particularly useful migration lesson. A proof result from an isolated statement can pass while the transaction consumer exposes an incompatibility in the same generated circuit.</p>
+<h2 id="before-and-after-count-the-steps-the-prover-reads">Before and after · Count the steps the prover reads</h2>
+<h3 id="before-count-one-source-action">Before · Count one source action</h3>
+<p>Imagine one action expanding into three transcript operations, A, B and C. Grouping them together emitted one impact and provided one skip entry. The transaction prover consumed that entry for A and still needed entries for B and C.</p>
+<h3 id="after-count-each-emitted-operation">After · Count each emitted operation</h3>
+<p>Emit one impact per active operation and omit suppressed operations. The repaired Counter had three impacts and matched the released reference. The lettering below explains the mapping without abbreviating the actual Counter transcript into invented instructions.</p>
+<p><img alt="One source action expands to three transcript operations. The earlier grouping yields one skip entry. Ledger 9 emission provides one ordered entry for each operation." src="../assets/diagrams/ledger9-skips.png" /></p>
+<p><a href="../assets/diagrams/ledger9-skips.mmd">Mermaid source</a></p>
 <h2 id="funding-is-part-of-the-test">Funding is part of the test</h2>
 <p>The Ledger 9 lane used released dust/10/spend material. The retained Ledger 8 dust/9/spend material belonged to the historical line. The contract verifier and the Dust verifier also serve different roles.</p>
 <p>The qualified Counter run generated fresh keys and a standalone proof. A separate process verified that proof and refused changed bindings, commitment, wrong verifier and corrupt bytes. A separately proved, Dust-funded transaction then passed default strictness, applied the expected state and refused exact replay with unchanged ledger bytes.</p>
@@ -66,6 +73,11 @@
 <li><a href="#why-a-branch-boundary-mattered">Why a branch boundary mattered</a></li>
 <li><a href="#the-dependency-and-abi-contract">The dependency and ABI contract</a></li>
 <li><a href="#a-failing-transaction-exposed-an-emitter-bug">A failing transaction exposed an emitter bug</a></li>
+<li><a href="#before-and-after-count-the-steps-the-prover-reads">Before and after · Count the steps the prover reads</a><ul>
+<li><a href="#before-count-one-source-action">Before · Count one source action</a></li>
+<li><a href="#after-count-each-emitted-operation">After · Count each emitted operation</a></li>
+</ul>
+</li>
 <li><a href="#funding-is-part-of-the-test">Funding is part of the test</a></li>
 <li><a href="#the-integrated-local-result">The integrated local result</a></li>
 <li><a href="#foundation-publication">Foundation publication</a><ul>

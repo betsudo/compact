@@ -4,6 +4,27 @@ A native function can return the expected value without retaining the operations
 
 The project introduced recorded execution as an explicit result. Execute against a context, retain the ordered ledger trace, and return both the native result and its recording. Replay then checks that the operations reproduce the expected public transition.
 
+## Before and after · A counter advances from 1 to 2
+
+### Before · Observe the answer
+
+A caller can see the return value and the new counter. To explain the public transition later, it needs the starting context and the exact operations the circuit performed.
+
+### After · Keep the operations from that execution
+
+~~~text
+Illustrative recording
+initial round = 1
+  increment round by 1
+expected final round = 2
+~~~
+
+![Generated execution returns a value and updated context and retains an ordered ledger trace for replay against the initial state.](../assets/diagrams/record-and-replay.png)
+
+[Mermaid source](../assets/diagrams/record-and-replay.mmd)
+
+Replay gives a second check on the public transition. A reader can see both what the call returned and how it moved the ledger. The proof and funded transaction add their own checks later.
+
 ## Give the ledger slot an owner
 
 Typed field descriptors connect a source declaration to its physical ledger path. A CellSlot knows the value type and where the VM should read or write. Generated code supplies arguments and propagates the returned context.

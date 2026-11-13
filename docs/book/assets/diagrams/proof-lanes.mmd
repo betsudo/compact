@@ -1,0 +1,7 @@
+flowchart TB
+    A["Exact compiled circuit + pinned parameters"] --> K["Fresh keys"]
+    K --> P["Standalone statement proof"]
+    P --> V["Independent verification<br/>binding and corruption controls"]
+    K --> T["Separate funded transaction proof"]
+    T --> S["Default-strict application<br/>check state and events"]
+    S --> R["Replay exact transaction<br/>refusal and unchanged state"]

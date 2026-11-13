@@ -16,6 +16,20 @@ The initial standalone Counter proof passed, but transaction proving exhausted i
 
 The repair preserved those boundaries and omitted suppressed operations. The Counter's three impacts then matched the released reference. This is a particularly useful migration lesson. A proof result from an isolated statement can pass while the transaction consumer exposes an incompatibility in the same generated circuit.
 
+## Before and after · Count the steps the prover reads
+
+### Before · Count one source action
+
+Imagine one action expanding into three transcript operations, A, B and C. Grouping them together emitted one impact and provided one skip entry. The transaction prover consumed that entry for A and still needed entries for B and C.
+
+### After · Count each emitted operation
+
+Emit one impact per active operation and omit suppressed operations. The repaired Counter had three impacts and matched the released reference. The lettering below explains the mapping without abbreviating the actual Counter transcript into invented instructions.
+
+![One source action expands to three transcript operations. The earlier grouping yields one skip entry. Ledger 9 emission provides one ordered entry for each operation.](../assets/diagrams/ledger9-skips.png)
+
+[Mermaid source](../assets/diagrams/ledger9-skips.mmd)
+
 ## Funding is part of the test
 
 The Ledger 9 lane used released dust/10/spend material. The retained Ledger 8 dust/9/spend material belonged to the historical line. The contract verifier and the Dust verifier also serve different roles.

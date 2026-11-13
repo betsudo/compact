@@ -10,6 +10,32 @@ A source index into a fixed vector carries different type and result obligations
 
 The accepted projection slice retained that distinction. Nested Map size and Fold then reused the checked foundation while adding their own ownership and effect requirements.
 
+## Before and after · Index a Vector by a named constant
+
+### Before · Use the position directly
+
+A literal made the fixed position visible to the Rust backend. A source program using a constant expression could hit an unsupported projection even though the position was knowable during compilation.
+
+~~~compact
+// Illustrative literal-index version.
+export pure circuit first(items: Vector<2, Field>): Field {
+  return items[0];
+}
+~~~
+
+### After · Let the compiler work out the position
+
+~~~compact
+// From the accepted fixture. Idx is an alias for Uint<8>.
+export pure circuit first(items: Vector<2, Field>): Field {
+  const i: Idx = 1;
+  const index = i * 0;
+  return items[index];
+}
+~~~
+
+For input [7, 9], both versions select 7. The second version lets the programmer name and calculate the position. The same slice checks bounds and keeps dynamic indices outside this fixed-position feature.
+
 ## Wide multiplication by zero
 
 A wide unsigned result cannot always be squeezed into a convenient native integer. Multiplying by zero still has a precise result type and output geometry.

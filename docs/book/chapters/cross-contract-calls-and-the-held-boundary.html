@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Cross-contract calls and the held boundary · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -42,6 +42,13 @@
 <p>Typed address comparisons, entrypoint hash binding, native claim recording and replay are implemented prerequisites. The runtime can prepare a supplied caller and leaf-callee recording from a shared ledger snapshot.</p>
 <p>Preparation checks the installed verifiers and the exact claim before using Ledger 9's joint partitioner. The pair-preparation tests use synthetic verifier carriers and cover honest preparation and refusal controls.</p>
 <p>The internal compiler statement probe also produced a selected standalone caller proof with an adapter-built preimage. Same-output sibling entrypoint, wrong verifier, binding and corruption controls passed for that bounded statement.</p>
+<h2 id="before-and-after-two-entrypoints-return-the-same-value">Before and after · Two entrypoints return the same value</h2>
+<h3 id="before-comparing-the-answer-leaves-an-identity-gap">Before · Comparing the answer leaves an identity gap</h3>
+<p>Suppose a caller expects entrypoint A, and sibling B accepts the same arguments and also returns 7. A test that checks only the 7 would pass even if the wrong entrypoint supplied it.</p>
+<h3 id="after-preparation-checks-which-entrypoint-produced-the-claim">After · Preparation checks which entrypoint produced the claim</h3>
+<p><img alt="Pair preparation resolves the callee and operation and checks the installed verifier and claim. A wrong identity is refused even when returned values match." src="../assets/diagrams/entrypoint-binding.png" /></p>
+<p><a href="../assets/diagrams/entrypoint-binding.mmd">Mermaid source</a></p>
+<p>The pair-preparation tests exercise the check on supplied recordings. The selected standalone statement also refuses the same-output sibling. The next section records where that check still needs to reach ordinary generated calls.</p>
 <h2 id="what-is-still-held">What is still held</h2>
 <p>Ordinary generated invocation of the intact caller and a real joint funded two-contract transaction remain on hold. The canonical worktree preserves three uncommitted compiler files for this direction.</p>
 <p>Runtime preparation of supplied recordings is a useful prerequisite. It does not establish that the generated source call constructs those recordings correctly.</p>
@@ -64,6 +71,11 @@
 <li><a href="#the-attractive-surface">The attractive surface</a></li>
 <li><a href="#start-from-the-mainstream-implementation">Start from the mainstream implementation</a></li>
 <li><a href="#what-is-already-available">What is already available</a></li>
+<li><a href="#before-and-after-two-entrypoints-return-the-same-value">Before and after · Two entrypoints return the same value</a><ul>
+<li><a href="#before-comparing-the-answer-leaves-an-identity-gap">Before · Comparing the answer leaves an identity gap</a></li>
+<li><a href="#after-preparation-checks-which-entrypoint-produced-the-claim">After · Preparation checks which entrypoint produced the claim</a></li>
+</ul>
+</li>
 <li><a href="#what-is-still-held">What is still held</a></li>
 <li><a href="#the-eventual-acceptance-path">The eventual acceptance path</a></li>
 <li><a href="#why-this-boundary-improves-the-api">Why this boundary improves the API</a><ul>

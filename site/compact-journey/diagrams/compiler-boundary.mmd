@@ -1,0 +1,4 @@
+flowchart TB
+    C["Compact source"] --> F["Shared Scheme frontend"]
+    F -->|original Rust path| O["Ltypescript representation"] --> T["Assemble Rust source text"]
+    F -->|Rust AST path| I["Versioned Rust backend IR"] --> L["Check and lower"] --> A["Construct and render Rust syntax"]

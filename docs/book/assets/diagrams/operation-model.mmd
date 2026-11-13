@@ -1,0 +1,8 @@
+flowchart TB
+    P["Plan<br/>typed parameters · result type"] --> B["Block<br/>ordered bindings · result value"]
+    B --> V["Binding<br/>typed value · IR location"]
+    V --> O["Operation<br/>read · write · assert · witness · if"]
+    O -->|if owns two| B
+    P --> Q{"Validator"}
+    D["Ledger declarations<br/>slot identity · type"] --> Q
+    Q -->|admitted| C["Checked plan"]

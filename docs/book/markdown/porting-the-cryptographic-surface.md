@@ -10,6 +10,24 @@ Base and scalar fields have different moduli. Rust types preserve that distincti
 
 Foreign field ledger transport also uses shifted values and split atoms. For the selected K1 and P-256 layouts, the low and high parts occupy 24 and 8 bytes. A plain integer comparison would miss a representation error.
 
+## Before and after · Make the curve part of the type
+
+### Before · A byte string needs context
+
+Consider a host program with bytes from two curves. Both values can be held in a byte array. The caller has to remember which one belongs with the next operation.
+
+### After · A generated call can express the distinction
+
+~~~rust
+// Schematic Rust. Names illustrate the roles in the API.
+fn multiply_k1(point: K1Point, scalar: K1Scalar) -> K1Point;
+
+multiply_k1(k1_point, k1_scalar);   // The carriers match.
+multiply_k1(k1_point, p256_scalar); // Type error.
+~~~
+
+The example uses schematic names because the exact API depends on the generated interface. The ordinary typed call rejects the mix-up during compilation. Data arriving from outside Rust still needs the runtime’s canonical decoding and point validation.
+
 ## Unary and guarded operations
 
 Inversion of zero must fail on an active path, including when the result is discarded. A proof VM may evaluate an operation eagerly even when source control flow makes its result inactive.

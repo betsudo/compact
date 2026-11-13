@@ -1,0 +1,6 @@
+flowchart TB
+    C["Caller claims a specific entrypoint"] --> S["Resolve callee address and operation"]
+    S --> V["Check installed verifier and claim"]
+    V --> J["Pair caller and callee recordings"]
+    V -->|wrong identity| X["Refuse the pair<br/>even when result values match"]
+    J --> H["Joint preparation<br/>from the shared ledger snapshot"]

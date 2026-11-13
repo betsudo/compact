@@ -44,6 +44,20 @@ The older site/rust-ast-storybook/package.py historically accepts only its
 own root files. Use the new book builder to update docs/book/. Preserve
 the complete book/ directory when packaging the earlier overview.
 
+## Illustrations
+
+Editable Mermaid sources live in diagrams/. The book and print view use
+local, pre-rendered PNGs. Each chapter includes a text explanation and
+links to the diagrams' Mermaid source. Ordinary builds reuse the
+checked-in images.
+
+After editing a diagram, use Mermaid CLI 11.12.0 to regenerate the images
+and rebuild the book.
+
+~~~sh
+sh site/compact-journey/render-diagrams.sh /path/to/mmdc
+~~~
+
 ## Refresh an edition
 
 A refresh is an explicit editorial operation, separate from a normal build.

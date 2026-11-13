@@ -18,6 +18,20 @@ Preparation checks the installed verifiers and the exact claim before using Ledg
 
 The internal compiler statement probe also produced a selected standalone caller proof with an adapter-built preimage. Same-output sibling entrypoint, wrong verifier, binding and corruption controls passed for that bounded statement.
 
+## Before and after · Two entrypoints return the same value
+
+### Before · Comparing the answer leaves an identity gap
+
+Suppose a caller expects entrypoint A, and sibling B accepts the same arguments and also returns 7. A test that checks only the 7 would pass even if the wrong entrypoint supplied it.
+
+### After · Preparation checks which entrypoint produced the claim
+
+![Pair preparation resolves the callee and operation and checks the installed verifier and claim. A wrong identity is refused even when returned values match.](../assets/diagrams/entrypoint-binding.png)
+
+[Mermaid source](../assets/diagrams/entrypoint-binding.mmd)
+
+The pair-preparation tests exercise the check on supplied recordings. The selected standalone statement also refuses the same-output sibling. The next section records where that check still needs to reach ordinary generated calls.
+
 ## What is still held
 
 Ordinary generated invocation of the intact caller and a real joint funded two-contract transaction remain on hold. The canonical worktree preserves three uncommitted compiler files for this direction.

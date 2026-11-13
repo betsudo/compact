@@ -1,0 +1,10 @@
+flowchart TB
+    A["Read state · write state + 1"] --> B{"selector = 0?"}
+    B -->|yes| C["Call mark()<br/>witness sees round 0"]
+    C --> D["Increment round by 2<br/>return state + mark"]
+    B -->|no| E["Increment round by 3<br/>read round"]
+    E --> F{"selector = 1?"}
+    F -->|yes| G["Write next + round"]
+    G --> H["Call mark()<br/>witness sees updated state and round 3"]
+    H --> I["Return current state"]
+    F -->|no| J["Assert next = 0<br/>restore state · return round"]

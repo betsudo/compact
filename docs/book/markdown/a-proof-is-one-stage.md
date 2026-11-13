@@ -34,6 +34,24 @@ Construct a separate transaction-bound proof. Preserve the observed installed op
 
 Apply the same verified transaction again. The accepted result in the selected lanes is IntentAlreadyExists with unchanged whole-ledger bytes and no repeated events. A broader transaction failure may also require rollback tests.
 
+## Before and after · What does “the proof passed” tell you?
+
+### Before · Verify one statement in isolation
+
+For Counter, a valid standalone proof established its selected statement. The transaction prover still exposed the missing skip entries described in the Ledger 9 chapter.
+
+### After · Test the two paths separately
+
+![Fresh keys feed an independent standalone verification lane and a separate funded transaction lane that tests strict application and replay.](../assets/diagrams/proof-lanes.png)
+
+[Mermaid source](../assets/diagrams/proof-lanes.mmd)
+
+| Test | What the reader can look for |
+| --- | --- |
+| Verify the standalone proof | The verifier, bindings and proof bytes match the intended statement. |
+| Prove and apply a funded transaction | The ledger accepts the transaction under default strictness and reaches the expected state. |
+| Submit the same transaction again | The ledger refuses the replay and leaves the state unchanged. |
+
 ## Why compile-fail tests belong in the guide
 
 The generated Rust API should reject invalid ordinary use at compile time where the type system can express the constraint. Passing a P-256 carrier to a K1 method is one example.

@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>The first Rust emitter · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<link rel="stylesheet" href="../assets/book.css?v=2f691729bb02">
 <script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -30,7 +30,7 @@
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Ledger 8 foundations <span>· 2 min read</span></p>
+<header class="chapter-heading"><p class="eyebrow">Ledger 8 foundations <span>· 3 min read</span></p>
 <h1>The first Rust emitter</h1><p class="deck">Make the second target useful, then learn from its maintenance cost.</p></header>
 <div class="prose"><h2 id="the-first-useful-proof-of-direction">The first useful proof of direction</h2>
 <p>The retained original Rust backend showed that Compact could produce useful Rust. Its Scheme passes operated on TypeScript-oriented compiler representations and assembled Rust source text. The original oracle's ancestry introduces the eight-file Ltypescript emitter in June 2026.</p>
@@ -44,6 +44,19 @@
 <h2 id="the-decision">The decision</h2>
 <p>Keep Scheme as the shared Compact frontend. Move target-specific semantic admission into a versioned internal model. Let a Rust backend construct Rust syntax through Rust syntax-tree libraries.</p>
 <p>This change was about ownership of decisions. It did not require a new Compact language, a replacement ledger VM, or a parallel cryptographic specification.</p>
+<h2 id="before-and-after-emitting-a-nested-calculation">Before and after · Emitting a nested calculation</h2>
+<p><img alt="Both Rust paths share the Scheme frontend. The original uses Ltypescript and assembles Rust text. The AST backend lowers versioned IR and builds Rust syntax." src="../assets/diagrams/compiler-boundary.png" /></p>
+<p><a href="../assets/diagrams/compiler-boundary.mmd">Mermaid source</a></p>
+<h3 id="before-splice-rendered-expressions-into-text">Before · Splice rendered expressions into text</h3>
+<p>An emitter for multiply-after-add must put parentheses around the rendered addition. Dropping them can produce valid Rust with different arithmetic.</p>
+<pre><code class="language-text">Illustrative text emission
+&quot;(&quot; + emit(a) + &quot; + &quot; + emit(b) + &quot;) * &quot; + emit(c)
+</code></pre>
+<h3 id="after-represent-the-grouping-in-the-tree">After · Represent the grouping in the tree</h3>
+<p>The outer multiplication receives a checked addition as its left operand. The renderer receives that structure and can emit the required parentheses. The syntax node names below are schematic.</p>
+<pre><code class="language-text">Multiply(Add(a, b), c)
+</code></pre>
+<p>With 2, 3 and 4, the intended result is 20. A string that comes out as 2 + 3 * 4 would give 14. This illustrates why the project tests source behavior in addition to compiling the emitted Rust.</p>
 <h2 id="a-contributors-test">A contributor's test</h2>
 <p>When investigating an old generated example, identify the source revision, backend line and runtime family first. Two files both called generated Rust can belong to different architectures and ABI generations. A bug fixed in the oracle is a clue for the AST line, with a separate port and test still required.</p>
 <h3 id="source-trail">Source trail</h3>
@@ -61,6 +74,11 @@
 <li><a href="#where-text-emission-becomes-expensive">Where text emission becomes expensive</a></li>
 <li><a href="#why-retain-the-original">Why retain the original</a></li>
 <li><a href="#the-decision">The decision</a></li>
+<li><a href="#before-and-after-emitting-a-nested-calculation">Before and after · Emitting a nested calculation</a><ul>
+<li><a href="#before-splice-rendered-expressions-into-text">Before · Splice rendered expressions into text</a></li>
+<li><a href="#after-represent-the-grouping-in-the-tree">After · Represent the grouping in the tree</a></li>
+</ul>
+</li>
 <li><a href="#a-contributors-test">A contributor's test</a><ul>
 <li><a href="#source-trail">Source trail</a></li>
 </ul>

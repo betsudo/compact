@@ -22,6 +22,27 @@ Two separately allocated Uint8Arrays with identical bytes should compare accordi
 
 The port checks length and contents, including values nested in products and vectors. All 23 original cases passed generated execution, SDK preflight, independent proofs and funded strict replay checks. The unchanged Rust and raw ZKIR outputs made the location of the fix particularly clear.
 
+## Before and after · Compare bytes from two sources
+
+### Before · Two objects with the same contents compare unequal
+
+~~~typescript
+// This JavaScript example reproduces the reference-equality pitfall.
+const stored = new Uint8Array([4, 8]);
+const received = new Uint8Array([4, 8]);
+stored === received; // false
+~~~
+
+### After · Compare the byte sequence
+
+~~~typescript
+// The behavior the generated comparison must preserve.
+stored.length === received.length &&
+  stored.every((byte, index) => byte === received[index]); // true
+~~~
+
+Changing the second byte to 9 produces false. The same rule applies when the arrays appear inside a product or Vector. The Compact source compares the values directly, and generated code supplies the value semantics.
+
 ## Events are ordered effects
 
 The event migration covered ShieldedSpend, ShieldedBurn, ShieldedMint, ShieldedReceive, their unshielded counterparts, Paused, Unpaused and Misc. Each event has its own tag and payload.
