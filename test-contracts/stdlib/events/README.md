@@ -80,3 +80,19 @@ node test-contracts/stdlib/events/check-shielded-receive.mjs \
 The runner checks the exact wire order, both flag positions, unchanged
 input context, conditional emission and refusal of substituted or
 reordered logs.
+
+## UnshieldedSpend
+
+`UnshieldedSpend.compact` retains the seven original exports and
+`unshielded-spend-upstream.ss.txt` preserves their compiler test. The
+version 1, tag 4 payload contains the sender selector and both sender
+branches, the domain separator, the token type and the 128-bit amount.
+Its structural encoding retains the inactive sender branch.
+
+```sh
+node test-contracts/stdlib/events/check-unshielded-spend.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/unshielded-spend-preimages"
+```
+
+The runner covers exact payload bytes, both sender variants, an invalid
+selector, and refusal of a substituted inactive branch and reordered logs.

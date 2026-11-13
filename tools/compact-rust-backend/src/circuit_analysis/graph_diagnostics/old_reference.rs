@@ -457,7 +457,7 @@ pub(crate) fn expression_contains<'source>(
         | Expr::UnsignedSubtract { left, right, .. }
         | Expr::UnsignedMultiply { left, right, .. } => visit(left) || visit(right),
         Expr::CounterLessThan { threshold, .. } => visit(threshold),
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::KernelClaim { value, .. } => visit(value),
+        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),

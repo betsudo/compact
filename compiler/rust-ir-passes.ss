@@ -2739,6 +2739,7 @@
                                   [(1) "emit_shielded_receive"]
                                   [(2) "emit_shielded_mint"]
                                   [(3) "emit_shielded_burn"]
+                                  [(4) "emit_unshielded_spend"]
                                   [else (assert cannot-happen)]))
                    (cons "value" (stateful-expression-ir expr src witness-ids)))]
           [(assert ,src ,expr ,mesg)

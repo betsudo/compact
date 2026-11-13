@@ -287,6 +287,14 @@ export const emitShieldedReceive = (context: CircuitContext, proofData: PartialP
   return emitEvent(context, proofData, 1n, payload, 578);
 };
 
+/** @internal */
+export const emitUnshieldedSpend = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 145) {
+    throw new CompactError('UnshieldedSpend payload must be Bytes<145>');
+  }
+  return emitEvent(context, proofData, 4n, payload, 145);
+};
+
 const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
   const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
     tag: 'cell',

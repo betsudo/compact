@@ -277,6 +277,11 @@ single and ordered emissions, and structural preservation of inactive
 fields. Additional controls reject invalid optional flags, substituted
 addresses and swapped event order.
 
+`UnshieldedSpend` carries the full `Either` sender in its 145-byte
+payload. The original fixture emits with each sender variant. The
+codec controls distinguish both sender branches, the domain separator,
+the token type and the amount, and refuse a malformed selector.
+
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is
 k=17. The remaining original point fixtures and proof coverage for the
