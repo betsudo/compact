@@ -20,7 +20,30 @@ The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter
 | Map transitions | `examples/rust_backend/map_boolean_field.compact` | `bd2415e156e0f63189aebba8258aff43eeba6545` |
 | List transitions | `examples/rust_backend/list_field.compact` | `09c75e289` |
 
-The Set and Map transition sources retain the export sets of the existing Rust fixtures. Capture them with `compactc --skip-zk` in a directory that resolves the pinned npm packages. Run `runtime-rs/tests/fixtures/capture-ledger9-counter.mjs` or `capture-ledger9-collection.mjs` with the generated contract entry and matching Compact runtime entry. The collection script also takes `initial`, `set`, `map`, or `list`. The tests compare full serialized contract states.
+The historical Set and Map transition oracles use the circuit export sets before
+later `choose` and `put_pair` additions to the maintained examples. The
+licensed `ledger9-set-transition-v018.compact` and
+`ledger9-map-transition-v018.compact` fixtures freeze those circuit bodies;
+the List source remains the checked-in `list_field.compact`. The earlier
+capture used `compactc --skip-zk` and
+`runtime-rs/tests/fixtures/capture-ledger9-collection.mjs` with the generated
+contract entry and matching runtime. It accepts `initial`, `set`, `map`, or
+`list` and emits full serialized contract states. The Rust parity tests compare
+their own state bytes with the retained transition captures.
+
+The separate `capture-ledger9-paired-collection-v018.mjs` runner compiles those
+three sources itself with compiler 0.31.213 and the built Compact Runtime
+0.18.0 package. It checks generated metadata and manifest hashes, Onchain
+Runtime 4.0.1 module identity, the exact initial and four transition state
+bytes against the independent oracles, and records all four gas fields per step. Set,
+Map and List pass locally on macOS arm64; a copied Set runtime package outside
+the Git checkout produces byte-identical capture JSON. Wrong-runtime and
+reused-output controls refuse. The existing Rust transition parity test passes
+all six cases against those oracle files. This is runtime transition parity,
+not a generated Rust consumer or proof qualification. Native Linux remains
+required. Its hashes identify observed source, compiler wrapper, generated
+artifacts and runtime distribution bytes; they do not attest how the supplied
+compiler or runtime package was built.
 
 The migration branch is an integration worktree. The active Rust workspace resolves the published Ledger 9 package graph from crates.io. The initial migration retained the v2 producer recipe with ZKIR 2.2.0. The Ledger 9 proof gates below use ZKIR 3.2.0. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
 
@@ -55,6 +78,20 @@ The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the offic
 ## TypeScript package pairing
 
 The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. Draft PR #735 advances the local runtime source to `0.18.0`; the historical captures and exact version guards remain bound to `0.17.0`, and a separate regeneration path for the new pair remains open. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
+
+The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
+path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
+fresh output directory. It compiles the checked-in Counter itself, checks
+compiler 0.31.213, language 0.23.105 and runtime 0.18.0 in both generated
+metadata files, verifies the manifest hashes, and checks Onchain Runtime
+4.0.1 module identity. Its capture records the source, supplied compiler,
+generated JavaScript and declaration, runtime and official oracle hashes,
+the exact serialized before/after bytes, and four gas fields. The 0.17.0
+capture and its historical binding remain untouched. This is a local macOS
+arm64 TypeScript recapture for Counter; it does not regenerate the broader
+historical fixture matrix, qualify Rust parity or make a proof claim.
+The file hashes identify observed bytes and do not attest how a supplied
+compiler executable or runtime package was built.
 
 Build `.#compactc` and `.#runtime.package`. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
 
