@@ -91,6 +91,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }

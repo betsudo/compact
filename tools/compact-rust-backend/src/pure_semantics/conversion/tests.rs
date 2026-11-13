@@ -370,13 +370,13 @@ fn native_uint_byte_conversions_validate_source_and_maximum() {
     let uint = Type::Unsigned { max: "511".into() };
     let bytes = Type::Bytes { length: 2 };
     assert_eq!(UintToBytes { length: 2 }.result_type(&uint).unwrap(), bytes);
-    assert_eq!(BytesToUint { max: 511 }.result_type(&bytes).unwrap(), uint);
+    assert_eq!(BytesToUint { max: "511".into(), bound: UnsignedMaximum::Small(511) }.result_type(&bytes).unwrap(), uint);
     assert!(matches!(
         UintToBytes { length: 2 }.result_type(&Type::Field),
         Err(RenderError::ExpectedUnsigned(Type::Field))
     ));
     assert!(matches!(
-        BytesToUint { max: 511 }.result_type(&Type::Field),
+        BytesToUint { max: "511".into(), bound: UnsignedMaximum::Small(511) }.result_type(&Type::Field),
         Err(RenderError::ExpectedBytes(Type::Field))
     ));
 }
@@ -487,4 +487,29 @@ fn enum_cast_checks_direction_and_ordinal_carriers() {
     }
     let empty = Type::Enum { name: "Empty".into(), variants: Vec::new() };
     assert!(matches!(EnumCast::check(&uint, &empty), Err(RenderError::InvalidEnumCast { .. })));
+}
+
+#[test]
+fn wide_wire_conversion_preserves_canonical_bound_and_checks_carrier() {
+    use super::FixedBytesConversion::{BytesToUint, WideUintToBytes};
+    const MAX: &str = "680564733841876926926749214863536422911";
+    let wide = Type::Unsigned { max: MAX.into() };
+    let bytes = Type::Bytes { length: 17 };
+    let bound = UnsignedMaximum::Wide { high: 1, low: u128::MAX };
+    assert_eq!(
+        WideUintToBytes { length: 17 }.result_type(&wide).unwrap(),
+        bytes,
+    );
+    assert_eq!(
+        BytesToUint { max: MAX.into(), bound }.result_type(&bytes).unwrap(),
+        wide,
+    );
+    assert!(matches!(
+        WideUintToBytes { length: 17 }.result_type(&Type::Unsigned { max: "255".into() }),
+        Err(RenderError::UnsupportedUintBytesWidth)
+    ));
+    assert!(matches!(
+        (BytesToUint { max: "255".into(), bound }).result_type(&bytes),
+        Err(RenderError::InvalidUnsignedMaximum(_))
+    ));
 }

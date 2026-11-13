@@ -613,8 +613,10 @@
             (or (nanopass-case (Lnodisclose Expression) expr
                   [(safe-cast ,src^ ,type ,type^ ,expr^)
                    (let ([maximum (rust-unsigned-maximum type^)])
-                     (and maximum (<= (integer-length maximum) 128)
-                          (object (cons "kind" "uint_to_bytes")
+                     (and maximum
+                          (object (cons "kind" (if (<= (integer-length maximum) 128)
+                                                   "uint_to_bytes"
+                                                   "wide_uint_to_bytes"))
                                   (cons "value" (lower expr^))
                                   (cons "length" len))))]
                   [else #f])

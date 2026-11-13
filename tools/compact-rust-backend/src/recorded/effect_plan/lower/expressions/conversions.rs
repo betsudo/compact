@@ -36,6 +36,7 @@ impl Lowerer<'_> {
             Expr::VectorToBytes { .. }
             | Expr::BytesToVector { .. }
             | Expr::UintToBytes { .. }
+            | Expr::WideUintToBytes { .. }
             | Expr::BytesToField { .. }
             | Expr::BytesToUint { .. }
             | Expr::BytesZeroPad { .. }

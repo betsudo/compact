@@ -309,8 +309,18 @@ fn enum_cast_manifest() -> Result<Value, String> {
     serde_json::from_slice(ENUM_CAST).map_err(|error| error.to_string())
 }
 
+const WIDE_UINT_BYTES: &[u8] = include_bytes!("wide-uint-bytes-expression.json");
+
+fn wide_uint_bytes_manifest() -> Result<Value, String> {
+    if digest(WIDE_UINT_BYTES) != "5f0bcd041ee2631eb97c9e0333fb469aac311b6d41944cc735983e1b911b8766" {
+        return Err("unreviewed wide Uint byte compatibility checkpoint".into());
+    }
+    serde_json::from_slice(WIDE_UINT_BYTES).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &enum_cast_manifest()?)?;
+    let current = legacy_source(path, current, &wide_uint_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &enum_cast_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_from_chunks_manifest()?)?;
     let current = legacy_source(path, &current, &field_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;

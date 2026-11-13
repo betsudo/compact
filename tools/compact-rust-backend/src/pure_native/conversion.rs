@@ -36,7 +36,7 @@ impl ConversionSink for NativeLeafSink {
             ConversionFacts::EnumCast(cast) => crate::value_lowering::enum_cast_syntax(child, cast),
             ConversionFacts::Secp256k1BytesCast(cast) => secp256k1_bytes_cast_syntax(child, cast),
             ConversionFacts::FixedBytes(operation) => {
-                fixed_bytes_conversion_syntax(child, operation)
+                fixed_bytes_conversion_syntax(child, &operation)
             }
             ConversionFacts::Coercion(plan) => coercion::render(&plan, child, 0),
             ConversionFacts::ExplicitUnsignedCast(cast) => {

@@ -152,6 +152,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
         | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }

@@ -880,6 +880,7 @@ fn collect_expression_types<'ir>(
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
         | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
@@ -1563,6 +1564,7 @@ fn pure_conversion_expression(
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }

@@ -162,7 +162,7 @@ pub(in super::super) fn expression(
                 unsigned_max(&binding.value.ty),
             ),
             Conversion::FixedBytes(operation) => Ok(
-                crate::value_lowering::fixed_bytes_conversion_syntax(value(input), *operation),
+                crate::value_lowering::fixed_bytes_conversion_syntax(value(input), operation),
             ),
             Conversion::JubjubCast => {
                 crate::pure_semantics::conversion::JubjubCast::check(&input.ty, &binding.value.ty)

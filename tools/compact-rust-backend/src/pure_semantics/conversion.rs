@@ -70,7 +70,7 @@ pub(crate) enum ConversionFacts {
     ExplicitUnsignedCast(UnsignedCastStrategy),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum FixedBytesConversion {
     ToVector { length: usize },
     FromVector { length: usize },
@@ -79,7 +79,8 @@ pub(crate) enum FixedBytesConversion {
     FromChunks { length: usize, chunk_count: usize },
     UintToBytes { length: usize },
     BytesToField,
-    BytesToUint { max: u128 },
+    WideUintToBytes { length: usize },
+    BytesToUint { max: String, bound: UnsignedMaximum },
 }
 
 impl FixedBytesConversion {
@@ -88,12 +89,10 @@ impl FixedBytesConversion {
             Expr::VectorToBytes { value, length } => (value, Self::FromVector { length: *length }),
             Expr::BytesToVector { value, length } => (value, Self::ToVector { length: *length }),
             Expr::UintToBytes { value, length } => (value, Self::UintToBytes { length: *length }),
+            Expr::WideUintToBytes { value, length } => (value, Self::WideUintToBytes { length: *length }),
             Expr::BytesToField { value } => (value, Self::BytesToField),
             Expr::BytesToUint { value, max } => {
-                let bound = unsigned_maximum(max).and_then(|bound| match bound {
-                    UnsignedMaximum::Small(bound) => Ok(Self::BytesToUint { max: bound }),
-                    UnsignedMaximum::Wide { .. } => Err(RenderError::UnsupportedUintBytesWidth),
-                });
+                let bound = unsigned_maximum(max).map(|bound| Self::BytesToUint { max: max.clone(), bound });
                 return (value, bound);
             }
             Expr::BytesZeroPad { value, length } => (value, Self::ZeroPad { length: *length }),
@@ -121,8 +120,8 @@ impl FixedBytesConversion {
         }
     }
 
-    pub(crate) fn result_type(self, source: &Type) -> Result<Type, RenderError> {
-        match self {
+    pub(crate) fn result_type(&self, source: &Type) -> Result<Type, RenderError> {
+        match *self {
             Self::ToVector { length } => {
                 let expected = Type::Bytes { length };
                 if *source != expected {
@@ -143,14 +142,14 @@ impl FixedBytesConversion {
                 }
                 Ok(Type::Bytes { length })
             }
-            Self::UintToBytes { length } => {
+            Self::UintToBytes { length } | Self::WideUintToBytes { length } => {
                 let Type::Unsigned { max } = source else {
                     return Err(RenderError::ExpectedUnsigned(source.clone()));
                 };
-                if !matches!(unsigned_maximum(max)?, UnsignedMaximum::Small(_)) {
-                    return Err(RenderError::UnsupportedUintBytesWidth);
-                }
-                if length > crate::resource_limits::recording_byte_payload_limit() {
+                let wide = matches!(unsigned_maximum(max)?, UnsignedMaximum::Wide { .. });
+                if wide != matches!(self, Self::WideUintToBytes { .. })
+                    || length > crate::resource_limits::recording_byte_payload_limit()
+                {
                     return Err(RenderError::UnsupportedUintBytesWidth);
                 }
                 Ok(Type::Bytes { length })
@@ -161,11 +160,14 @@ impl FixedBytesConversion {
                 }
                 Ok(Type::Field)
             }
-            Self::BytesToUint { max } => {
-                let Type::Bytes { .. } = source else {
+            Self::BytesToUint { ref max, bound } => {
+                if !matches!(source, Type::Bytes { .. }) {
                     return Err(RenderError::ExpectedBytes(source.clone()));
-                };
-                Ok(Type::Unsigned { max: max.to_string() })
+                }
+                if unsigned_maximum(max)? != bound {
+                    return Err(RenderError::InvalidUnsignedMaximum(max.clone()));
+                }
+                Ok(Type::Unsigned { max: max.clone() })
             }
             Self::ZeroPad { length } => {
                 let Type::Bytes { length: input_length } = *source else {

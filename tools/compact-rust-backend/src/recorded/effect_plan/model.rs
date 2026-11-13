@@ -104,7 +104,7 @@ pub(super) enum Literal {
     WideUnsigned([u8; 32]),
     Bytes(Vec<u8>),
 }
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) enum Conversion {
     Coerce,
     UnsignedCast,

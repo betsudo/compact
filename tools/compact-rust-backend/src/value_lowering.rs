@@ -59,9 +59,9 @@ pub(crate) fn field_to_bytes_32_syntax(value: syn::Expr) -> syn::Expr {
 
 pub(crate) fn fixed_bytes_conversion_syntax(
     value: syn::Expr,
-    operation: FixedBytesConversion,
+    operation: &FixedBytesConversion,
 ) -> syn::Expr {
-    match operation {
+    match *operation {
         FixedBytesConversion::ToVector { .. } => syn::parse_quote!(runtime::FixedVector::new(
             (#value).into_array().map(|byte| runtime::BoundedUint::<255>::new(u128::from(byte)).expect("byte fits Uint<8>"))
         )),
@@ -93,7 +93,31 @@ pub(crate) fn fixed_bytes_conversion_syntax(
                 "byte vector exceeds maximum value of Field type".into()
             ))?
         }),
-        FixedBytesConversion::BytesToUint { max } => {
+        FixedBytesConversion::WideUintToBytes { length } => syn::parse_quote!({
+            let value = #value;
+            let bytes = value.as_le_bytes();
+            let len = #length.min(bytes.len());
+            if bytes[len..].iter().any(|&byte| byte != 0) {
+                Err(runtime::CompactError::InvalidUnsignedValue)
+            } else {
+                let mut output = [0u8; #length];
+                output[..len].copy_from_slice(&bytes[..len]);
+                Ok(runtime::FixedBytes::new(output))
+            }?
+        }),
+        FixedBytesConversion::BytesToUint { bound: UnsignedMaximum::Wide { high, low }, .. } => {
+            let target = wide_uint_type(high, low);
+            syn::parse_quote!({
+                let input = (#value).into_array();
+                let len = input.len().min(32);
+                if input[len..].iter().any(|&byte| byte != 0) {
+                    Err(runtime::CompactError::InvalidUnsignedValue)
+                } else {
+                    <#target>::from_le_bytes(&input[..len])
+                }?
+            })
+        }
+        FixedBytesConversion::BytesToUint { bound: UnsignedMaximum::Small(max), .. } => {
             let max = syn::LitInt::new(&format!("{max}u128"), Span::call_site());
             syn::parse_quote!({
                 let input = (#value).into_array();

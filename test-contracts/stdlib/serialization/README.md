@@ -129,3 +129,19 @@ values and emits three SDK preimages at k=7.
 node test-contracts/stdlib/serialization/check-enum.mjs \
   "$OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/enum-preimages"
 ```
+
+## Wide Uint serialization
+
+`wide-uint.compact` covers little-endian Uint<129> and Uint<248> codecs,
+nominal aliases, nested products and direct casts. Serialization pads
+with zeros and deserialization ignores the trailing wire padding.
+Direct casts check any bytes outside the destination width.
+`wide-uint-stateful.compact` writes the decoded Uint<129> to the ledger.
+The SDK runner exports three preimages at k=8. It checks that matching
+overflow statements fail at the bound even when the ledger write and
+return agree with the input.
+
+```sh
+node test-contracts/stdlib/serialization/check-wide-uint.mjs \
+  "$OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/wide-uint-preimages"
+```

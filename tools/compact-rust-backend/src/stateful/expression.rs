@@ -553,6 +553,7 @@ fn render_operation_expression(
         | Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
@@ -1577,6 +1578,7 @@ fn render_conversion_operation(
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
@@ -1594,7 +1596,7 @@ fn render_conversion_operation(
             )?;
             let ty = operation.result_type(&actual)?;
             Ok((
-                crate::value_lowering::fixed_bytes_conversion_syntax(rendered, operation),
+                crate::value_lowering::fixed_bytes_conversion_syntax(rendered, &operation),
                 ty,
                 effect,
             ))

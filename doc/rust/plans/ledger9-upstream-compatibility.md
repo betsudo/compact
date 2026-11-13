@@ -251,8 +251,9 @@ The aggregate slices cover the five upstream product encoders and
 decoders, the intact `d1`/`d2` checked-Boolean fixture and the original
 `foo`/`unfoo` alias roundtrip. The local proof lanes cover `d2` at k=11,
 `foo` at k=12 and `unfoo` at k=13. Enum codecs use checked declaration-order
-ordinals, with stateful coverage at k=7. Wider Uint codecs, broader
-aggregate proof cases and native Linux qualification remain open.
+ordinals, with stateful coverage at k=7. Wide Uint codecs cover 129-bit
+and 248-bit inputs. The stateful 129-bit write has a local k=8 proof
+lane. Broader aggregate proofs and native Linux qualification remain open.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

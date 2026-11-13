@@ -124,6 +124,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
                 | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
@@ -247,6 +248,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
                 | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
@@ -311,6 +313,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
                 | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
@@ -397,6 +400,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
                 | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }

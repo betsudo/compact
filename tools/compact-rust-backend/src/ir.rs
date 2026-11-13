@@ -715,6 +715,10 @@ pub enum Expr {
         value: Box<Expr>,
         length: usize,
     },
+    WideUintToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
     BytesToField {
         value: Box<Expr>,
     },
