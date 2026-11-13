@@ -52,6 +52,10 @@ const cases = [
   ["opaque", join(root, "circuit-signatures-opaque.compact")],
   ["opaque-point", join(root, "circuit-signatures-opaque-point.compact")],
   ["proto", join(root, "circuit-signatures-proto.compact")],
+  [
+    "contract-argument",
+    join(root, "circuit-signatures-contract-argument.compact"),
+  ],
 ];
 const builds = [];
 for (const [name, source] of cases) {
@@ -118,12 +122,10 @@ if (contractProbe.error) throw contractProbe.error;
 writeFileSync(join(output, "contract.stderr.log"), contractProbe.stderr);
 if (
   contractProbe.status === 0 ||
-  !/exported circuit arguments cannot include contract values/.test(
-    contractProbe.stderr,
-  )
+  !/cross-contract calls are not yet supported/.test(contractProbe.stderr)
 ) {
   throw Error(
-    `unexpected contract argument result (${contractProbe.status}): ${contractProbe.stderr}`,
+    `unexpected cross-contract call result (${contractProbe.status}): ${contractProbe.stderr}`,
   );
 }
 

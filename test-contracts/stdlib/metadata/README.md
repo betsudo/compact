@@ -16,11 +16,14 @@ Run `node check.mjs <compactc> <built-compact-runtime> <new-output-dir>` from
 this directory. The runner compiles each program with `--skip-zk`, binds the
 generated modules to the selected runtime, and executes all assertions.
 
-The pinned `declaredInterfaces` export and contract-typed argument signature
-are separate open compiler IR and secure-call gaps. This frontend refuses the
-original exported contract argument, even when its declaration matches the
-compiled contract. The runner checks that refusal.
+The runner now checks the generated `declaredInterfaces` export and accepts a
+contract-typed exported argument when its declaration matches the compiled
+contract. Its signature retains the declared `Adder` interface. That program
+does not call another contract, so the called-interface table is empty. The
+table has no inherited JavaScript keys.
+Secure call-time checking remains open: the original `useAdder` program reaches
+the compiler's cross-contract call refusal after its argument is accepted.
 The original upstream `Adder.compact` supplies only `addTo`; the current
 compiler rejects a declaration that also names `peek`. The runner retains and
 checks that refusal, then uses `Adder-compatible.compact` with `peek` present
-to isolate the exported contract-argument refusal.
+to isolate the call-time refusal.

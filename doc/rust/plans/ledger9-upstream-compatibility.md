@@ -369,14 +369,16 @@ at their typed boundaries. The three point-family tags are checked in
 contract info and Rust IR. A local metadata slice now emits the pinned
 `circuitSignatures` JavaScript export and declaration, including these three
 P-256 tags. It retains the original upstream metadata fixtures and assertions.
-The associated `declaredInterfaces` export and call-time interface checking
-remain separate open gaps. This metadata slice has local macOS arm64 checks;
-native Linux qualification remains required.
-The pinned contract-argument fixture declares `peek` beyond the compiled
-`Adder` contract. The current frontend refuses that declaration; the metadata
-runner preserves the original refusal. A matching `Adder` variant still
-refuses the exported contract argument, so its nested signature assertion
-remains unported pending the secure-call frontend and `declaredInterfaces` work.
+An isolated local follow-up emits `declaredInterfaces` and accepts exported
+contract-typed arguments when the compiled contract matches the declaration.
+The generated `takesAdder` signature retains the `Adder` circuit interface;
+its called-interface table is empty because the fixture makes no external call.
+The original pinned `Adder` implementation lacks declared `peek`, so its
+declaration-mismatch refusal remains intact. The original `useAdder` call
+still receives the compiler's cross-contract refusal; a nonempty called
+interface table, secure call-time checking and real two-contract qualification
+remain open. These metadata checks are local macOS arm64; native Linux
+qualification remains required.
 The [P-256 accessor fixtures](../../../test-contracts/stdlib/secp256r1/accessors)
 run the intact point roundtrip and original direct, ledger and checked
 assertion cases. The proof checks cover guarded active and inactive

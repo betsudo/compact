@@ -3759,7 +3759,7 @@
           [else #f])))
 
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (parameterize ([current-rust-origins (make-rust-origins)])
        (hashtable-clear! call-argument-types)
        (hashtable-clear! function-rust-names)

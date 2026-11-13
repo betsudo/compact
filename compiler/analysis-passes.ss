@@ -1328,6 +1328,7 @@
 
   (define-pass infer-types : Lexpanded (ir) -> Ltypes ()
     (definitions
+      (define contract-type-ht)
       (define-syntax T
         (syntax-rules ()
           [(T ty clause ...)
@@ -2427,15 +2428,32 @@
       (define (get-contract-name ecdecl)
         (nanopass-case (Lexpanded External-Contract-Declaration) ecdecl
           [(external-contract ,src ,contract-name ,ecdecl-circuit* ...)
-           contract-name])))
+           contract-name]))
+      (define (contract-type-name type)
+        (nanopass-case (Ltypes Contract-Type) type
+          [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+           contract-name]))
+      (define (make-contract-type-hashtable)
+        (make-hashtable
+          (lambda (type) (symbol-hash (contract-type-name type)))
+          sametype?)))
     (Program : Program (ir) -> Program ()
       [(program ,src ((,export-name* ,name*) ...) (,unused-pelt* ...) (,ecdecl* ...) ,pelt* ...)
        (for-each Set-Program-Element-Type! unused-pelt*)
        (for-each Set-Program-Element-Type! pelt*)
        (for-each External-Contract-Declaration! ecdecl*)
-       (maplr Program-Element unused-pelt*)
-       (let ([contract-name* (map get-contract-name ecdecl*)])
-         `(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,(maplr Program-Element pelt*) ...))])
+       (fluid-let ([contract-type-ht (make-contract-type-hashtable)])
+         (maplr Program-Element unused-pelt*))
+       (fluid-let ([contract-type-ht (make-contract-type-hashtable)])
+         (let* ([contract-name* (map get-contract-name ecdecl*)]
+                [pelt* (maplr Program-Element pelt*)]
+                [contract-type*
+                 (sort
+                   (lambda (left right)
+                     (string<? (symbol->string (contract-type-name left))
+                               (symbol->string (contract-type-name right))))
+                   (vector->list (hashtable-keys contract-type-ht)))])
+           `(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)))])
     (Set-Program-Element-Type! : Program-Element (ir) -> * (void)
       (definitions
         (define (build-function kind is-native name arg* type)
@@ -2479,16 +2497,7 @@
          (when (contains-contract? type)
            (source-errorf src "invalid type ~a for circuit ~a return value:\n  exported circuit return values cannot include contract values"
                           (format-type type)
-                          (id-sym function-name)))
-         (for-each
-           (lambda (type argno)
-             (when (contains-contract? type)
-               (source-errorf src "invalid type ~a for circuit ~a argument ~d:\n  exported circuit arguments cannot include contract values"
-                              (format-type type)
-                              (id-sym function-name)
-                              (fx1+ argno))))
-           (map arg->type arg*)
-           (enumerate arg*)))
+                          (id-sym function-name))))
        (let-values ([(expr return-type) (do-circuit-body src (format "circuit ~a" (id-sym function-name)) arg* type expr)])
          `(circuit ,src ,function-name (,arg* ...) ,return-type ,expr))])
     (Native-Declaration : Native-Declaration (ir) -> Native-Declaration ()
@@ -2635,6 +2644,7 @@
            (nanopass-case (Ltypes Type) (de-alias actual-type #t)
              [(tcontract ,src^ ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ... )
               (guard (not adt-type-only?))
+              (hashtable-set! contract-type-ht (de-alias actual-type #t) #t)
               (find-contract-circuit src src^ contract-name elt-name elt-name* type** type* actual-type actual-type* expr expr*)]
              [else (err)]))
          (nanopass-case (Ltypes Type) (de-alias actual-type #t)
@@ -3576,7 +3586,7 @@
               (eq? adt-name 'Kernel)]
              [else (assert cannot-happen)])])))
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (let*-values ([(ldecl* pelt*) (partition Lnotundeclared-Ledger-Declaration? pelt*)]
                      [(lconstructor* pelt*) (partition Lnotundeclared-Ledger-Constructor? pelt*)]
                      [(kernel-ldecl* ldecl*) (partition kernel? ldecl*)])
@@ -3585,7 +3595,7 @@
                                           [(public-ledger-declaration ,src ,ledger-field-name ,type)
                                            ledger-field-name]))
                                       kernel-ldecl*)])
-           `(program ,src (,contract-name* ...) ((,export-name* ,name*) ...)
+           `(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...)
               ,(if (null? kernel-ldecl*)
                    '()
                    (list
@@ -3657,7 +3667,7 @@
         (let ([id (ipelt->function-name ipelt)])
           (or (not id) (id-exported? id)))))
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (let-values ([(exported* nonexported*) (partition exported? (map make-ipelt (enumerate pelt*) pelt*))])
          (for-each
            (lambda (ipelt) (hashtable-set! deferred-ht (ipelt->function-name ipelt) ipelt))
@@ -3665,7 +3675,7 @@
          (fluid-let ([worklist exported*])
            (let loop ([keep* '()])
              (if (null? worklist)
-                 `(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,(map ipelt-pelt (sort ipelt<? keep*)) ...)
+                 `(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,(map ipelt-pelt (sort ipelt<? keep*)) ...)
                  (let ([ipelt (car worklist)])
                    (set! worklist (cdr worklist))
                    (loop (cons (make-ipelt (ipelt-index ipelt) (Program-Element (ipelt-pelt ipelt))) keep*)))))))])
@@ -3714,9 +3724,9 @@
                  (set-cdr! a 'processed)))])))
       )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-circuit! pelt*)
-       `(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,(map Program-Element pelt*) ...)])
+       `(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,(map Program-Element pelt*) ...)])
     (record-circuit! : Program-Element (ir) -> * (void)
       [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
        (eq-hashtable-set! circuit-ht function-name expr)]
@@ -4023,7 +4033,7 @@
           (assert (hashtable-ref ledger-ht ledger-field-name #f))))
       )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-adt-ops! pelt*)
        (guard (c [else (internal-errorf 'check-types/Lnodca
                                         "downstream type-check failure:\n~a"
@@ -4650,7 +4660,7 @@
           [else type]))
     )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-adt-ops! pelt*)
        (for-each record-function! pelt*)
        (for-each Program-Element pelt*)
@@ -4737,7 +4747,7 @@
           [else (assert cannot-happen)]))
     )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-function-kind! pelt*)
        (for-each Program-Element pelt*)
        ir])
@@ -4834,7 +4844,7 @@
           [else type]))
     )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-function-kind! pelt*)
        (for-each Program-Element pelt*)
        ir])
@@ -5013,9 +5023,9 @@
           [else #f]))
       )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-ledger-binding! pelt*)
-       `(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,(map Program-Element pelt*) ...)])
+       `(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,(map Program-Element pelt*) ...)])
     (Program-Element : Program-Element (ir) -> Program-Element ())
     (Type : Type (ir) -> Type ()
       [(tadt ,src ,adt-name ((,adt-formal* ,[adt-arg*]) ...) ,vm-expr (,adt-op* ...) (,[adt-rt-op*] ...))
@@ -5645,7 +5655,7 @@
           [else type]))
     )
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (for-each record-function-kind! pelt*)
        (for-each Program-Element pelt*)
        (vector-for-each
