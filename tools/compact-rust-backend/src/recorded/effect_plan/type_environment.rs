@@ -166,7 +166,7 @@ impl TypeEnvironment {
                     }
                 }
                 Type::Tuple { .. } => {}
-                Type::LedgerMap { .. } => {
+                Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => {
                     refused(observer, RefusalSite::node(Owner::Type(ty)));
                     return Err(invalid(
                         path,

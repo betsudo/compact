@@ -127,7 +127,7 @@ pub(crate) fn build<'a>(
                         // Structural Map values have no CellValue codec. As with
                         // PublicState, omit their scalar-only witness view;
                         // key-only circuit operations still use the typed slot.
-                        if matches!(value, crate::ir::Type::LedgerMap { .. }) {
+                        if value.is_ledger_adt() {
                             return Ok(());
                         }
                         let value = native_header::carrier(value, observer)?;

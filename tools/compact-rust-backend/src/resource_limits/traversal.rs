@@ -877,6 +877,9 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Type(element), visit_depth + 1, owner)?;
                 let _ = length;
             }
+            Type::LedgerMerkle { ty, .. } => {
+                scan.push(Node::Type(ty), visit_depth + 1, owner)?;
+            }
             Type::LedgerMap { key, value } => {
                 scan.push(Node::Type(key), visit_depth + 1, owner)?;
                 scan.push(Node::Type(value), visit_depth + 1, owner)?;

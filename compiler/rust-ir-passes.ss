@@ -45,14 +45,14 @@
                      (loop (cdr tail) #t)
                      (and saw-index? (null? (cdr tail)) (not (integer? element))))))))
 
-      (define (empty-map-default? expr)
+      (define (ledger-default-kind expr)
         (nanopass-case (Lnodisclose Expression) expr
           [(default ,src ,type)
            (let loop ([type type])
              (nanopass-case (Lnodisclose Type) type
                [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
                [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
-                (eq? adt-name 'Map)]
+                adt-name]
                [else #f]))]
           [else #f]))
 
@@ -400,11 +400,17 @@
                    (cons "length" len)
                    (cons "element" (type-ir type owner-src)))]
           [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
-           (if (and (eq? adt-name 'Map) (= (length adt-arg*) 2))
-               (object (cons "kind" "ledger_map")
-                       (cons "key" (type-ir (car adt-arg*) src))
-                       (cons "value" (type-ir (cadr adt-arg*) src)))
-               (source-errorf src "Rust backend does not yet support this ledger ADT type"))]
+           (cond
+             [(and (eq? adt-name 'Map) (= (length adt-arg*) 2))
+              (object (cons "kind" "ledger_map")
+                      (cons "key" (type-ir (car adt-arg*) src))
+                      (cons "value" (type-ir (cadr adt-arg*) src)))]
+             [(and (memq adt-name '(MerkleTree HistoricMerkleTree)) (= (length adt-arg*) 2))
+              (object (cons "kind" "ledger_merkle")
+                      (cons "historic" (eq? adt-name 'HistoricMerkleTree))
+                      (cons "depth" (car adt-arg*))
+                      (cons "ty" (type-ir (cadr adt-arg*) src)))]
+             [else (source-errorf src "Rust backend does not yet support this ledger ADT type")])]
           [(talias ,src ,nominal? ,type-name ,type)
            (type-ir type owner-src)]
           [else (source-errorf owner-src "Rust backend does not yet support this Compact type")]))
@@ -1963,8 +1969,16 @@
                             (cons "inner" (typed-expression-ir (car expr*) (car adt-arg*) src))
                             (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))])]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
-                      (= (length expr*) 2) (empty-map-default? (cadr expr*)))
+                      (= (length expr*) 2) (eq? (ledger-default-kind (cadr expr*)) 'Map))
                  (object (cons "kind" "map_init_child")
+                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
+                [(and (eq? adt-name 'Map)
+                      (or (and (eq? ledger-op 'insertDefault) (= (length expr*) 1))
+                          (and (eq? ledger-op 'insert) (= (length expr*) 2)
+                               (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
+                 (object (cons "kind" "map_insert_default")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
@@ -1976,13 +1990,6 @@
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))
                          (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))]
-                [(and (eq? adt-name 'Map)
-                      (eq? ledger-op 'insertDefault)
-                      (= (length expr*) 1))
-                 (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'remove)
                       (= (length expr*) 1))
@@ -3641,6 +3648,14 @@
                  (object (cons "kind" "list_reset")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*)))]
+                [(and (eq? adt-name 'Map) (or (and (eq? ledger-op 'insertDefault) (= (length expr*) 1))
+                          (and (eq? ledger-op 'insert) (= (length expr*) 2)
+                               (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
+                 (object (cons "kind" "map_insert_default")
+                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
+                                                           parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert) (= (length expr*) 2))
                  (object (cons "kind" "map_insert")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
@@ -3649,12 +3664,6 @@
                                                            parameters bindings src witness-ids))
                          (cons "value" (constructor-value-ir (cadr expr*) (cadr adt-arg*)
                                                              parameters bindings src witness-ids)))]
-                [(and (eq? adt-name 'Map) (eq? ledger-op 'insertDefault) (= (length expr*) 1))
-                 (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
-                                                           parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'remove) (= (length expr*) 1))
                  (object (cons "kind" "map_remove")
                          (cons "field" (symbol->string (id-sym ledger-field-name)))

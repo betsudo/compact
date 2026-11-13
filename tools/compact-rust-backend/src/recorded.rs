@@ -296,7 +296,7 @@ fn recordable_cell_type(ty: &Type) -> bool {
         | Type::Secp256k1Point
         | Type::Secp256r1Point
         | Type::Curve25519Point
-        | Type::LedgerMap { .. } => false,
+        | Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => false,
     }
 }
 

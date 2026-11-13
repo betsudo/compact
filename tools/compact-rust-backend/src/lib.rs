@@ -717,6 +717,9 @@ fn collect_named_types_observed<'ir>(
         Type::Vector { element, .. } => {
             collect_named_types_observed(element, structs, enums, observer, origins.as_deref_mut())?
         }
+        Type::LedgerMerkle { ty, .. } => {
+            collect_named_types_observed(ty, structs, enums, observer, origins)?;
+        }
         Type::LedgerMap { key, value } => {
             collect_named_types_observed(key, structs, enums, observer, origins.as_deref_mut())?;
             collect_named_types_observed(value, structs, enums, observer, origins)?;
@@ -2634,8 +2637,17 @@ fn render_constructor_vm_steps_observed<'a>(
                 let key = retained_value(key, key_ty);
                 let index = ledger_path_expr(declaration);
                 if matches!(step, ConstructorStep::MapInsertDefault { .. }) {
-                    let value_ty = native_header::carrier(value_ty, environment.observer)?;
-                    actions.push(syn::parse_quote!(let step = context.insert_map(#index, #key, <#value_ty as Default>::default())?;));
+                    if matches!(value_ty, Type::LedgerMerkle { .. }) {
+                        let slot = native_header::identifier(
+                            &declaration.id,
+                            RefusalSite::field(Owner::Ledger(declaration), "id"),
+                            environment.observer,
+                        )?;
+                        actions.push(syn::parse_quote!(let step = crate::ledger_slots::#slot.insert_default(context, #key)?;));
+                    } else {
+                        let value_ty = native_header::carrier(value_ty, environment.observer)?;
+                        actions.push(syn::parse_quote!(let step = context.insert_map(#index, #key, <#value_ty as Default>::default())?;));
+                    }
                 } else {
                     actions.push(syn::parse_quote!(let step = context.remove_map(#index, #key)?;));
                 }
@@ -3815,7 +3827,7 @@ fn render_with_refusals(
             }
             LedgerFieldKind::Map { key, value } => {
                 // Nested Map values are structural markers, not CellValue.
-                let has_cell_value = !matches!(value, Type::LedgerMap { .. });
+                let has_cell_value = !value.is_ledger_adt();
                 let Some((key, value)) = map_slot_types(key, value)? else {
                     continue;
                 };

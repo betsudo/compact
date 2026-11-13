@@ -30,6 +30,8 @@ Unreleased Ledger 9 migration.
   secp256k1, P-256 and Curve25519 base and scalar fields.
 - Allow zero-length vectors in wire codecs when their element type
   has no wire codec.
+- Support default insertion into maps of plain and historic Merkle trees
+  in ordinary and recorded Rust.
 - Support standalone `ShieldedMint` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
 - Support standalone `ShieldedReceive` emission and its corrected

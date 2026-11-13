@@ -135,7 +135,7 @@ impl TypeEnvironment {
                     }
                 }
                 Type::Tuple { .. } => {}
-                Type::LedgerMap { .. }
+                Type::LedgerMap { .. } | Type::LedgerMerkle { .. }
                 | Type::Secp256k1Base
                 | Type::Secp256k1Scalar
                 | Type::Secp256r1Base

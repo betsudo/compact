@@ -143,6 +143,15 @@ pub(super) fn equivalent(
                     )?;
                     push(work, &mut pending, Comparison::Type(left_key, right_key))?;
                 }
+                (
+                    Type::LedgerMerkle { historic: left_historic, depth: left_depth, ty: left },
+                    Type::LedgerMerkle { historic: right_historic, depth: right_depth, ty: right },
+                ) => {
+                    if left_historic != right_historic || left_depth != right_depth {
+                        return Ok(false);
+                    }
+                    push(work, &mut pending, Comparison::Type(left, right))?;
+                }
                 // Exhaustiveness belongs to the exhaustive Type match below;
                 // unequal variant pairs are structurally different.
                 (left, _) => match left {
@@ -168,7 +177,8 @@ pub(super) fn equivalent(
                     | Type::Unsigned { .. }
                     | Type::Tuple { .. }
                     | Type::Vector { .. }
-                    | Type::LedgerMap { .. } => return Ok(false),
+                    | Type::LedgerMap { .. }
+                    | Type::LedgerMerkle { .. } => return Ok(false),
                 },
             },
             Comparison::Tuple(left, right) => {

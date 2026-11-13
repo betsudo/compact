@@ -336,6 +336,13 @@ fn map_slot_value_type(value: &Type) -> Result<Option<syn::Type>, RenderError> {
             syn::parse_quote!(runtime::slots::MapNode<#key, #value>),
         ));
     }
+    if let Type::LedgerMerkle { historic, depth, ty } = value {
+        if !(2..=32).contains(depth) {
+            return Err(RenderError::UnsupportedLedgerValueType(value.clone()));
+        }
+        let leaf = rust_type(ty)?;
+        return Ok(Some(syn::parse_quote!(runtime::slots::MerkleNode<#leaf, #depth, #historic>)));
+    }
     match rust_type(value) {
         Ok(ty) => Ok(Some(ty)),
         Err(RenderError::UnsupportedLedgerValueType(_)) => Ok(None),

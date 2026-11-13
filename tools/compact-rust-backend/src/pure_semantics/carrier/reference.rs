@@ -123,7 +123,7 @@ pub(crate) fn rust_type(ty: &Type) -> Result<syn::Type, RenderError> {
             let length = syn::LitInt::new(&length.to_string(), Span::call_site());
             syn::parse_quote!(runtime::FixedVector<#element, #length>)
         }
-        Type::LedgerMap { .. }
+        Type::LedgerMap { .. } | Type::LedgerMerkle { .. }
         | Type::Secp256k1Base
         | Type::Secp256r1Base
         | Type::Curve25519Base

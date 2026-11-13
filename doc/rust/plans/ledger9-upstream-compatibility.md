@@ -485,12 +485,13 @@ depth and entry count fields. The two intact upstream families exercise
 plain and historic depth-32 trees and defaults in nested maps. The v3
 interpreter checked eight TypeScript preimages and refused mutated depth
 values. Generated top-level Rust insert and reset tests also passed.
-The exact nested map Rust case is still unsupported. Both upstream insert
-models measured k=13 and six reset/default models measured k=6–7. Both
-original reset exports produced fresh k=7 proofs and passed detached
-verification. The verifier refused a different key, changed binding and
-corrupted proof for each export. Funded application, replay and the other
-exports remain open.
+The intact plain and historic fixtures generate typed Rust slots for the
+nested map declarations. `insertDefault` and explicit default insertion
+both preserve the declared depth and the SDK's nested value shape.
+Historic map defaults begin with an empty root history. Top-level reset
+seeds the blank root as before. Nested tree values have no scalar codec.
+The eight original ZKIR models are unchanged. Insert measures k=13,
+reset k=7 and the map-default exports k=6 in each family.
 
 The [Boolean cast family](../../../test-contracts/primitives/boolean/README.md)
 preserves two upstream sources, two compile-pass declarations and two

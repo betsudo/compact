@@ -30,6 +30,6 @@ mod set;
 pub use cell::CellSlot;
 pub use counter::CounterSlot;
 pub use list::ListSlot;
-pub use map::{MapNode, MapSlot};
+pub use map::{MapNode, MapSlot, MerkleNode};
 pub use merkle::{HistoricMerkleStateView, MerkleSlot, PlainMerkleStateView};
 pub use set::SetSlot;

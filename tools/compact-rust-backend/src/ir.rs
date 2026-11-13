@@ -640,6 +640,18 @@ pub enum Type {
         key: Box<Type>,
         value: Box<Type>,
     },
+    /// A nested Merkle ADT, which has a ledger shape and no scalar value codec.
+    LedgerMerkle {
+        historic: bool,
+        depth: u8,
+        ty: Box<Type>,
+    },
+}
+
+impl Type {
+    pub(crate) fn is_ledger_adt(&self) -> bool {
+        matches!(self, Self::LedgerMap { .. } | Self::LedgerMerkle { .. })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

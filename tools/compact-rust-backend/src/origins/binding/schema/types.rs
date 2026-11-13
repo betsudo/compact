@@ -60,6 +60,12 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
             s.node("element", Owner::Type(element));
             s.size("length", *length);
         }
+        Type::LedgerMerkle { historic, depth, ty } => {
+            s.tag("ledger_merkle");
+            s.field("historic", Value::Scalar(Scalar::Bool(*historic)));
+            s.size("depth", usize::from(*depth));
+            s.node("ty", Owner::Type(ty));
+        }
         Type::LedgerMap { key, value } => {
             s.tag("ledger_map");
             s.node("key", Owner::Type(key));

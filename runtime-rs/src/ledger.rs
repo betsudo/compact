@@ -420,7 +420,8 @@ pub use collections::{
 pub(crate) use collections::{
     gather_map_lookup, list_head_program, list_is_empty_program, list_length_program,
     list_pop_front_program, list_push_front_program, list_reset_program, map_init_child_program,
-    map_insert_child_program, map_insert_program, map_lookup_child_program, map_lookup_program,
+    map_insert_child_program, map_insert_merkle_default_program, map_insert_program,
+    map_lookup_child_program, map_lookup_program,
     qualified_coin_set_insert_program, set_insert_program, set_is_empty_program,
     set_member_program, set_remove_program, set_reset_program, set_size_program,
 };

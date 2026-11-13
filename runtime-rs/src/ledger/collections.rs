@@ -655,6 +655,27 @@ fn map_insert_at<D: DB>(
     ])
 }
 
+pub(crate) fn map_insert_merkle_default_program<K: CellValue, D: DB>(
+    path: &[u8],
+    key: K,
+    depth: u8,
+    historic: bool,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    if !(2..=32).contains(&depth) {
+        return Err(CompactError::InvalidLedgerCell("invalid nested Merkle depth".into()));
+    }
+    super::checked_path_operand::<D>(path.len(), 0).map_err(super::query_rejected)?;
+    let value = if historic {
+        // Map defaults carry an empty history. Only top-level initialization
+        // and reset seed it with the blank root.
+        super::merkle::blank_historic_merkle_tree(depth)
+    } else {
+        super::merkle::constructor_merkle_tree(depth)
+    };
+    map_insert_at(path_keys(path), super::vm::cell(key)?, super::vm::state(value)?)
+        .map_err(super::query_rejected)
+}
+
 fn map_child_path<K: CellValue>(path: &[u8], outer: K) -> Result<Vec<Key>, CompactError> {
     let mut path = path_keys(path);
     path.push(Key::Value(super::vm::key(try_aligned_cell_value(outer)?)?));

@@ -28,7 +28,7 @@ pub(crate) fn copy_type(ty: &Type) -> bool {
     match ty {
         Type::Struct { .. }
         | Type::Vector { .. }
-        | Type::LedgerMap { .. }
+        | Type::LedgerMap { .. } | Type::LedgerMerkle { .. }
         | Type::OpaqueString
         | Type::OpaqueBytes => false,
         Type::Tuple { elements } => elements.iter().all(copy_type),

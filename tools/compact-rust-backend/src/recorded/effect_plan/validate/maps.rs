@@ -97,6 +97,26 @@ pub(in super::super) fn child_types(
     Ok((outer.clone(), inner.clone(), value.clone()))
 }
 
+pub(in super::super) fn validate_default(
+    declarations: &Declarations,
+    slot: MapSlot,
+    path: &str,
+) -> Result<(), RecordingGap> {
+    let (_, value) = types(declarations, slot, false, path)?;
+    if let Type::LedgerMerkle { depth, ty, .. } = value {
+        declarations.types().validate_at(ty, path)?;
+        if (2..=32).contains(depth) && merkle_leaf_type(ty) {
+            return Ok(());
+        }
+    } else {
+        declarations.types().validate_at(value, path)?;
+        if scalar_value_type(value) && default_value_type(value) {
+            return Ok(());
+        }
+    }
+    Err(invalid(path, "Map default insertion requires a defaultable value"))
+}
+
 pub(super) fn validate(
     operation: &Operation,
     result: &Type,
@@ -136,15 +156,12 @@ pub(super) fn validate(
         | Operation::MapRemove { slot, key }
         | Operation::MapInsertDefault { slot, key } => {
             used(key, scope, declarations, path)?;
-            let scalar = matches!(
-                operation,
-                Operation::MapLookup { .. } | Operation::MapInsertDefault { .. }
-            );
+            let scalar = matches!(operation, Operation::MapLookup { .. });
             let (declared_key, declared_value) = types(declarations, *slot, scalar, path)?;
-            let default_valid = !matches!(operation, Operation::MapInsertDefault { .. })
-                || default_value_type(declared_value);
+            if matches!(operation, Operation::MapInsertDefault { .. }) {
+                validate_default(declarations, *slot, path)?;
+            }
             key.ty == *declared_key
-                && default_valid
                 && *result
                     == match operation {
                         Operation::MapMember { .. } => Type::Boolean,

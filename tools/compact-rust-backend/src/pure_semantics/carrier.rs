@@ -154,7 +154,7 @@ fn fold_bounded<S: CarrierSink>(
             let element = fold_bounded(element, sink, observer)?;
             return Ok(sink.vector(element, *length));
         }
-        Type::LedgerMap { .. } => {
+        Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => {
             if let Some(observer) = observer {
                 observer.refused(RefusalSite::node(Owner::Type(ty)));
             }

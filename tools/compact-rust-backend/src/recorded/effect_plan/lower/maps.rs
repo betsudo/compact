@@ -143,10 +143,11 @@ impl Lowerer<'_> {
             | StateAction::MapReset { field, index } => (field, *index),
             _ => return Err(invalid(path, "Map action dispatch requires a Map mutation")),
         };
-        // Only removal is key-only. Reset deliberately retains the runtime V:CellValue bound.
+        // Default insertion checks its value declaration separately.
         let scalar = !matches!(
             action,
-            StateAction::MapRemove { .. }
+            StateAction::MapInsertDefault { .. }
+                | StateAction::MapRemove { .. }
                 | StateAction::NestedMapInsert { .. }
                 | StateAction::MapInitChild { .. }
         );
@@ -193,17 +194,13 @@ impl Lowerer<'_> {
                 Operation::MapInsert { slot, key, value }
             }
             StateAction::MapInsertDefault { key, .. } | StateAction::MapRemove { key, .. } => {
+                let insert_default = matches!(action, StateAction::MapInsertDefault { .. });
+                if insert_default {
+                    super::super::validate::maps::validate_default(self.declarations, slot, path)?;
+                }
                 let key =
                     self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
-                if matches!(action, StateAction::MapInsertDefault { .. }) {
-                    if !super::super::validate::default_value_type(
-                        value_type.as_ref().expect("scalar default declaration"),
-                    ) {
-                        return Err(invalid(
-                            path,
-                            "Map default insertion requires a defaultable value",
-                        ));
-                    }
+                if insert_default {
                     Operation::MapInsertDefault { slot, key }
                 } else {
                     Operation::MapRemove { slot, key }
