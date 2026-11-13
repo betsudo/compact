@@ -1,0 +1,7 @@
+flowchart TB
+    O["Typed operations<br/>read · write · assert · witness"] --> P["Compose a program<br/>sequence · branches · calls"]
+    P --> C["Check types, scope,<br/>declarations and resource bounds"]
+    C --> N["Native adapter<br/>result + next context"]
+    C --> R["Recorded adapter<br/>execution + ordered trace"]
+    C --> A["Capability report<br/>available APIs or a reason for refusal"]
+    R --> V["Separate proof and transaction gates<br/>verify · apply · replay"]

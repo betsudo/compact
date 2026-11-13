@@ -8,12 +8,12 @@
     "rankSpacing": 28
   },
   "themeVariables": {
-    "background": "#f7f9f6",
+    "background": "#f0f1f4",
     "fontSize": "19px",
-    "primaryColor": "#e3efe9",
-    "primaryTextColor": "#182a26",
-    "primaryBorderColor": "#527b70",
-    "lineColor": "#527b70",
-    "edgeLabelBackground": "#f7f9f6"
+    "primaryColor": "#e1e5ed",
+    "primaryTextColor": "#1d2737",
+    "primaryBorderColor": "#7d8491",
+    "lineColor": "#505d75",
+    "edgeLabelBackground": "#f0f1f4"
   }
 }

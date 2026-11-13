@@ -125,7 +125,7 @@ A feature crosses the source frontend, typed IR, validator, lowerer, renderer an
 
 The checked operation model also supports composition. A read, assertion or write can appear inside a branch or sequence. A shared semantic fold handles admitted behavior through native and recorded adapters, reducing duplicated decisions about ordering and results.
 
-[Explore the shapes and operations domain models](operations-instead-of-shapes.html)
+[Explore shape recognition, algebra and compiler capabilities](operations-instead-of-shapes.html)
 
 ### Test ordinary use and misuse
 

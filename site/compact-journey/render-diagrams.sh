@@ -26,7 +26,7 @@ for source in "$book"/diagrams/*.mmd; do
         --input "$source" \
         --output "$book/assets/diagrams/$name.png" \
         --configFile "$book/diagrams/config.json" \
-        --backgroundColor '#f7f9f6' \
+        --backgroundColor '#f0f1f4' \
         --width 900 \
         --scale 2
 done

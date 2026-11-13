@@ -36,7 +36,7 @@ limitations under the License.
     themeButton.textContent = theme === "dark" ? "Light" : "Dark";
     themeButton.setAttribute("aria-label", "Switch to " + (theme === "dark" ? "light" : "dark") + " theme");
   };
-  const storedTheme = readStored("compact-journey-theme", "light");
+  const storedTheme = readStored("compact-journey-theme", "dark");
   updateTheme(storedTheme === "dark" ? "dark" : "light");
   themeButton.addEventListener("click", () => {
     const theme = root.dataset.theme === "dark" ? "light" : "dark";

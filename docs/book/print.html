@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="The Compact engineering journey from Ledger 8 TypeScript to the Ledger 9 Rust AST backend.">
-<meta name="theme-color" content="#f5f2eb">
+<meta name="theme-color" content="#101010">
 <title>Complete book · The Compact journey</title>
-<link rel="stylesheet" href="./assets/fonts.css">
-<link rel="stylesheet" href="./assets/book.css?v=6174cc653363">
-<script defer src="./assets/book.js?v=1486d1371897"></script>
+<link rel="stylesheet" href="./assets/fonts.css?v=0385bcb0fe43">
+<link rel="stylesheet" href="./assets/book.css?v=7f023487580e">
+<script defer src="./assets/book.js?v=3a441da5685a"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
@@ -19,14 +19,14 @@
 <header class="masthead">
 <a class="wordmark" href="./index.html">COMPACT <span>ENGINEERING BOOK</span></a>
 <nav aria-label="Primary"><a href="./index.html">The story</a><a href="./chapters/typescript-and-rust-ast.html">Backends</a><a href="./iterations.html">Iterations</a><a href="./architecture.html">The pipeline</a><a href="./commits.html">Commit explorer</a><a href="./sources.html">Sources</a></nav>
-<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to light theme">Light</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="./index.html">From source to proof</a>
 <nav class="sidebar-tools" aria-label="Book tools"><a href="./index.html">The story</a><a href="./chapters/typescript-and-rust-ast.html">Backends</a><a href="./iterations.html">Iterations</a><a href="./architecture.html">The pipeline</a><a href="./commits.html">Commit explorer</a><a href="./sources.html">Sources</a></nav>
 <label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
 <p id="chapter-search-status" class="sr-only" role="status"></p>
-<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="./chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="./chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="./chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="./chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="./chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="./chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="./chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="./chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="./chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="./chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="./chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="./chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="./chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="./chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="./chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="./chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="./chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="./chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="./chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="./chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="./chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="./chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="./chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="./chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="./chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="./chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="./chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="./chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="./chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="./chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="./chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="./chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Shapes, operations and algebra</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="./chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="./chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="./chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="./chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="./chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="./chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="./chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="./chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="./chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="./chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="./chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="./chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="./chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="./chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="./chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="./chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
 <div class="sidebar-footer"><a href="./print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><div class="print-controls"><h1>The complete book</h1><p>Use your browser’s Print command to save a PDF. Chapter navigation and controls are hidden in print.</p><button type="button" id="print-book">Print / save PDF</button></div><article class="print-chapter"><p class="eyebrow">Orientation</p><h1>A contract crosses a boundary</h1><div class="prose"><h2 id="a-contract-crosses-a-boundary-start-with-one-state-transition">Start with one state transition</h2>
@@ -188,7 +188,7 @@ let reset = reset_round(increment.context)?;
 <h3 id="typescript-and-rust-ast-give-each-semantic-decision-an-owner">Give each semantic decision an owner</h3>
 <p>A feature crosses the source frontend, typed IR, validator, lowerer, renderer and runtime. Explicit boundaries make the responsibilities reviewable. Unsupported input can produce a diagnostic while its source and operation are still identifiable.</p>
 <p>The checked operation model also supports composition. A read, assertion or write can appear inside a branch or sequence. A shared semantic fold handles admitted behavior through native and recorded adapters, reducing duplicated decisions about ordering and results.</p>
-<p><a href="chapters/operations-instead-of-shapes.html">Explore the shapes and operations domain models</a></p>
+<p><a href="chapters/operations-instead-of-shapes.html">Explore shape recognition, algebra and compiler capabilities</a></p>
 <h3 id="typescript-and-rust-ast-test-ordinary-use-and-misuse">Test ordinary use and misuse</h3>
 <p>Generated-crate tests exercise the same entry points an application imports. Compile-fail cases check wrong element types, wrong Vector lengths and consumed contexts. Behavioral comparisons check return values, ledger state, witness order and gas against an independent reference. Applicable proof lanes then check the statement, verifier, funded application and replay.</p>
 <p>These checks address different failure modes. A type-correct Rust expression can still select the wrong ledger slot or operand, so semantic and proof tests remain part of delivery.</p>
@@ -315,7 +315,7 @@ expected final round = 2
 <li><a href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">Qualified 0.3.0 implementation</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">0.3.0 closeout</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/blob/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a/doc/rust/0.3.0-closure.md">Closure report</a></li>
-</ul></div></article><article class="print-chapter"><p class="eyebrow">Compositional recording</p><h1>Operations instead of shapes</h1><div class="prose"><h2 id="operations-instead-of-shapes-before-recognize-the-whole-circuit">Before · Recognize the whole circuit</h2>
+</ul></div></article><article class="print-chapter"><p class="eyebrow">Compositional recording</p><h1>Shapes, operations and algebra</h1><div class="prose"><h2 id="operations-instead-of-shapes-before-recognize-the-whole-circuit">Before · Recognize the whole circuit</h2>
 <p>The early recorder worked like a set of templates. It inspected a circuit’s parameters, ledger actions and return value, then chose a recipe for a known pattern. The recipe could enforce the exact type and physical ledger slot. A different arrangement of familiar operations could still fail to find a recipe.</p>
 <p><img alt="A recognizer compares a circuit and its ledger declarations with an entire known pattern. A match selects a recording recipe." src="assets/diagrams/shape-model.png" /></p>
 <p><a href="assets/diagrams/shape-model.mmd">Mermaid source</a></p>
@@ -369,6 +369,149 @@ _      : Unit  = CellWrite(state, next)
 return before
 </code></pre>
 <p>The integrated model gives Set insertion and membership their own typed operations, with the Set slot and element as inputs. In the Field example, the write and the return each refer to their own value, so returning the saved read stays explicit. A read, write or assertion now has the same place in the model inside a branch as it does at the top level. The validator can reject a value used before its definition or incompatible branch results at the operation that introduces the problem. In the integrated design, a shared semantic fold walks the admitted operations for native and recorded execution.</p>
+<h2 id="operations-instead-of-shapes-what-algebra-means-in-this-compiler">What “algebra” means in this compiler</h2>
+<p>An algebra supplies a vocabulary of operations and rules for combining them. In this compiler, the vocabulary includes typed reads, writes, arithmetic, assertions, witness calls and control flow. The composition rules say which values are in scope, what each operation accepts and returns, and how a block produces its result.</p>
+<p>The earlier shape recognizer answers “Does this whole circuit fit a recipe I know?” The algebraic model answers a series of smaller questions. Is this read legal for this declared slot? Does this value have the type the write expects? Do both branches produce a compatible result? Can the selected target represent the complete composition?</p>
+<p>The syntax tree emitted at the end is a separate layer. A Rust AST represents the Rust expression or statement. The checked operation program represents the Compact behavior that expression must implement.</p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Responsibility</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operation vocabulary</td>
+<td>Name a supported action and its operands</td>
+<td>Read a Field cell or insert an element into a typed Set.</td>
+</tr>
+<tr>
+<td>Typed composition</td>
+<td>Connect the result of one operation to later operations</td>
+<td>Read the old Field, write the new Field, return the old one.</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Establish scope, types, declaration identity and resource limits</td>
+<td>Refuse a write to an incompatible slot or a value used before definition.</td>
+</tr>
+<tr>
+<td>Interpreter or adapter</td>
+<td>Give the admitted operations meaning for an execution target</td>
+<td>Execute a write natively or execute it while building the recording.</td>
+</tr>
+<tr>
+<td>Rust syntax construction</td>
+<td>Express that admitted behavior in Rust</td>
+<td>Build a function call, block or return expression.</td>
+</tr>
+</tbody>
+</table>
+<p>Effect composition preserves the source order. A write before a witness call can change the witness’s observation. Errors, gas, private state and the public trace also depend on order.</p>
+<p><img alt="Typed operations compose into a program checked for types, scope, declarations and bounds. Native and recorded adapters consume the checked program, while the capability report describes available APIs. Proof and transaction gates follow separately." src="assets/diagrams/algebra-capabilities.png" /></p>
+<p><a href="assets/diagrams/algebra-capabilities.mmd">Mermaid source</a></p>
+<h2 id="operations-instead-of-shapes-from-two-known-pieces-to-a-new-composition">From two known pieces to a new composition</h2>
+<p>Suppose the compiler understands Field reads and writes and a typed conditional. We want to replace the stored value only when the caller selects that branch, while always returning the value from before the call.</p>
+<p>The following Compact source illustrates that composition. Its admission depends on the compiler revision’s support for the listed operations and result types.</p>
+<pre><code class="language-compact">export circuit replaceIf(
+  update: Boolean,
+  next: Field
+): Field {
+  const before = state.read();
+  if (disclose(update)) {
+    state.write(disclose(next));
+  }
+  return before;
+}
+</code></pre>
+<p>A recognizer built for the straight-line replaceValue shape can fail to match this conditional form. Extending the recipe catalogue would require checking a broader shape or adding another recognizer. Knowing the individual read and write operations alone gives that catalogue no general composition rule.</p>
+<p>In the checked operation model, the value read at the start stays in scope through the conditional. Each branch has a Unit result, and the enclosing block returns the original Field.</p>
+<pre><code class="language-text">Illustrative typed plan
+
+before : Field = CellRead(state)
+_ : Unit = If(update,
+    then:
+        _ : Unit = CellWrite(state, next)
+        return Unit
+    otherwise:
+        return Unit)
+return before
+</code></pre>
+<p>Starting from state 4, update = true and next = 9 leaves state 9 and returns 4. With update = false, the state stays 4 and the result is still 4. The chosen branch controls the write, and the outer result keeps its own identity.</p>
+<p>The original orderedObservation fixture below demonstrates a tested composition that the old recording path refused and the operation-plan pilot admitted.</p>
+<h2 id="operations-instead-of-shapes-how-capabilities-change">How capabilities change</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Whole-shape recognition</th>
+<th>Checked operation composition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What is the unit of reuse?</td>
+<td>A recipe for a recognized circuit family.</td>
+<td>A typed operation together with its composition and target rules.</td>
+</tr>
+<tr>
+<td>What happens when a write moves into a branch?</td>
+<td>The new arrangement must match a supported recipe.</td>
+<td>The branch and nested write are checked as part of one plan.</td>
+</tr>
+<tr>
+<td>How is a new primitive added?</td>
+<td>Update the relevant recipe families and their checks.</td>
+<td>Add its representation, validation, lowering and execution behavior, then qualify its permitted compositions.</td>
+</tr>
+<tr>
+<td>Where can an unsupported case be explained?</td>
+<td>At the rejected shape or the narrower checks implemented by that recognizer.</td>
+<td>At the unsupported operation, type, boundary or resource constraint.</td>
+</tr>
+<tr>
+<td>What establishes proof support?</td>
+<td>The applicable generated APIs and selected proof tests.</td>
+<td>The applicable generated APIs and selected proof tests. Proof verification and ledger acceptance require their own executed checks.</td>
+</tr>
+</tbody>
+</table>
+<p>Support is also specific to types and boundaries. A Map can support structural membership or removal while lookup and write need an element codec. A collection being present in the model therefore does not make every operation on every element type available.</p>
+<p>A new primitive still needs work. Adding its name to an enum is only the first step. The frontend must preserve its meaning, the checker must validate operands, and the runtime must execute the corresponding ledger behavior. Native and recorded adapters must agree about result, effects and ordering.</p>
+<p>The benefit is that ordinary combinations can share those definitions. The compiler can grow through supported operations and explicit composition rules instead of accumulating a separate recipe for every useful arrangement.</p>
+<h2 id="operations-instead-of-shapes-read-the-capability-report-by-stage">Read the capability report by stage</h2>
+<p>A capability report tells the caller which generated APIs exist for a particular stateful export. The relevant fields have separate jobs.</p>
+<table>
+<thead>
+<tr>
+<th>Report field</th>
+<th>What it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>recorded</td>
+<td>Can the compiler emit the complete recorded method?</td>
+</tr>
+<tr>
+<td>observed_call</td>
+<td>Can it emit the call method that binds the operation to observed contract state?</td>
+</tr>
+<tr>
+<td>proof_required</td>
+<td>Does frontend metadata say this export needs a proof?</td>
+</tr>
+<tr>
+<td>recording_unavailable</td>
+<td>What prevented complete recorded lowering, when the report supplies a reason?</td>
+</tr>
+</tbody>
+</table>
+<p>A circuit whose frontend metadata says it needs no proof can still have a recorded API. Its recording supports execution and replay, while the report marks proof applicability separately.</p>
+<p>Pure functions have their own generated surface. A stateful capability report is therefore one view of the compiler’s support, with source admission, native behavior, recording, proof verification and transaction application checked in their respective lanes.</p>
+<p>The operation model can report a precise missing composition while retaining other supported APIs. Users can then identify whether they need a new primitive, a new type conversion, an interface boundary or a later proof qualification step.</p>
 <h2 id="operations-instead-of-shapes-walkthrough-what-a-witness-sees-depends-on-order">Walkthrough · What a witness sees depends on order</h2>
 <p>The prototype’s original orderedObservation circuit writes state, then takes one of three paths. The old recorder refused this circuit when recording was required. The pilot admitted the same source using the checked operation plan.</p>
 <pre><code class="language-compact">const before = state.read();
@@ -425,7 +568,13 @@ if (disclose(selector) == 0) {
 <p>A compositional foundation still needs specific source features, result conversions, public interfaces and proof gates. The following iterations show that work in concrete terms.</p>
 <h3 id="operations-instead-of-shapes-source-trail">Source trail</h3>
 <ul>
-<li><a href="https://github.com/betsudo/compact/commit/9de0e55be25d66c4af54ea52798c5b2ab4c846ba">Operation-plan pilot, including the original Compact circuits</a> <button type="button" class="commit-details" data-commit="9de0e55be25d66c4af54ea52798c5b2ab4c846ba" aria-haspopup="dialog" aria-label="Commit details for feat(rust): prototype compositional recording plans">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/blob/0437c894cd069af475bd8d5b254c24cc73615a09/tools/compact-rust-backend/src/recorded/effect_plan/validate.rs">The checked operation model and validator</a></li>
+<li>
+<p><a href="https://github.com/betsudo/compact/blob/0437c894cd069af475bd8d5b254c24cc73615a09/doc/rust/guides/capabilities.md">Capability report field definitions and execution surfaces</a></p>
+</li>
+<li>
+<p><a href="https://github.com/betsudo/compact/commit/9de0e55be25d66c4af54ea52798c5b2ab4c846ba">Operation-plan pilot, including the original Compact circuits</a> <button type="button" class="commit-details" data-commit="9de0e55be25d66c4af54ea52798c5b2ab4c846ba" aria-haspopup="dialog" aria-label="Commit details for feat(rust): prototype compositional recording plans">Details</button></p>
+</li>
 <li><a href="https://github.com/betsudo/compact/issues/508">Checked effect epic #508</a></li>
 <li><a href="https://github.com/betsudo/compact/issues/482">IR boundary #482</a></li>
 <li><a href="https://github.com/betsudo/compact/commit/0437c894cd069af475bd8d5b254c24cc73615a09">Checked effects integration</a> <button type="button" class="commit-details" data-commit="0437c894cd069af475bd8d5b254c24cc73615a09" aria-haspopup="dialog" aria-label="Commit details for feat(rust): replace recording shape admission with checked effects [skip ci] (#641)">Details</button></li>

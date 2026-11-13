@@ -57,9 +57,9 @@
   },
   {
     "slug": "operations-instead-of-shapes",
-    "title": "Operations instead of shapes",
+    "title": "Shapes, operations and algebra",
     "phase": "Compositional recording",
-    "subtitle": "The architectural ceiling that drove 0.4.0.",
+    "subtitle": "From recognizing whole circuits to checking compositions of typed operations.",
     "source": "chapters/operations-instead-of-shapes.md",
     "kind": "narrative"
   },

@@ -104,3 +104,11 @@ When updating the edition or adding a reference, run
 python3 site/compact-journey/revisions.py from the repository checkout
 before rebuilding. It reads the edition's Git objects and freezes the
 metadata in sources/revisions.json. Ordinary builds use that snapshot.
+
+## Visual reference
+
+The reading theme follows the Midnight DID documentation site at
+https://midnightntwrk.github.io/midnight-did/, including its charcoal
+surfaces, blue accents, Outfit and DM Mono fonts, and light code panels.
+Fonts and their licenses are bundled locally. The theme retains a light
+reading option and the complete print view.
