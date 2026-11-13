@@ -8,9 +8,9 @@ primitive and curve tags, exact unsigned bounds, struct and enum shape,
 nominal aliases, sequence normalization, and opaque types. The P-256 point case uses its original fixture under
 `secp256r1/point/upstream-tags`.
 Additional local guards distinguish the standard-library `JubjubPoint` from a
-user opaque with the same string, preserve an own `__proto__` circuit key, and
-report an exported enum name collision before emitting duplicate JavaScript
-bindings.
+user opaque with the same string, preserve an own `__proto__` circuit key,
+exclude inherited JavaScript properties from signature lookups, and report an
+exported enum name collision before emitting duplicate JavaScript bindings.
 
 Run `node check.mjs <compactc> <built-compact-runtime> <new-output-dir>` from
 this directory. The runner compiles each program with `--skip-zk`, binds the

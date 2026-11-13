@@ -2306,6 +2306,7 @@
 
         (define (print-circuit-signatures xpelt*)
           (display-string "export const circuitSignatures = {\n")
+          (display-string "  __proto__: null,\n")
           (for-each
             (lambda (xpelt)
               (XPelt-case xpelt

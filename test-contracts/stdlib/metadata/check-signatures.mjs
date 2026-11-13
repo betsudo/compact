@@ -59,6 +59,9 @@ const [basic, composites, p256, curves, sequences, opaque, opaquePoint, proto] =
   );
 
 const s = basic.circuitSignatures;
+assert.equal(Object.getPrototypeOf(s), null);
+assert.equal(s.constructor, undefined);
+assert.equal(s.toString, undefined);
 assert.deepEqual(Object.keys(s).sort(), [
   "impureProvable",
   "noArgs",
@@ -169,4 +172,5 @@ assert.deepEqual(opaquePoint.circuitSignatures.opaquePoint.argumentTypes, [
 ]);
 assert.deepEqual(Object.keys(proto.circuitSignatures), ["__proto__"]);
 assert.equal(Object.hasOwn(proto.circuitSignatures, "__proto__"), true);
+assert.equal(Object.getPrototypeOf(proto.circuitSignatures), null);
 console.log("pinned circuit signature assertions passed");
