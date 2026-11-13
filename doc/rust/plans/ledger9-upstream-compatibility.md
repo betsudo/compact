@@ -584,8 +584,16 @@ does not prove these circuits or exercise a funded transaction; native Linux
 qualification remains open. A follow-up runs all twelve mutations through
 the generated recorded API and independently replays each public VM trace.
 Executed and replayed states, effects and gas costs match, and the recorded states
-match the same retained TypeScript oracle bytes. Proof and funded transaction
-qualification remain open.
+match the same retained TypeScript oracle bytes. Broader proof and funded
+transaction qualification remain open.
+
+The Runtime 0.18.0 generated Set `add(true)` circuit has a fresh proof
+qualification gate. The generated TypeScript preimage passes ZKIR wasm's
+honest check, while an altered insert count is refused. The raw k=6 ZKIR
+produces a new prover, verifier and proof; a separate process verifies the
+proof and rejects the same-k `remove` verifier, changed binding and corrupt
+proof. This is local macOS arm64 evidence, and funded default-strict
+application and native Linux qualification remain open.
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0

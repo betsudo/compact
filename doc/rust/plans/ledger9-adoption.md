@@ -1302,5 +1302,12 @@ the repository's Rust 1.99 toolchain. A follow-up checks twelve generated
 recorded mutations and independently replays their public VM traces. State,
 effects and gas cost match each replay, and the resulting state bytes match
 the same retained TypeScript oracle.
-Proofs, funded strict application and native Linux still require separate
+Broader proofs, funded strict application and native Linux still require separate
 qualification.
+
+The next generated collection proof slice binds the Runtime 0.18.0 Set
+`add(true)` preimage to the retained both-target source and ZKIR, checks it
+with ZKIR wasm, and proves at k=6. A separate process verifies the fresh
+proof and refuses a different same-k circuit verifier, changed binding and
+corrupt proof. A changed insert transcript is refused before proving.
+Funded default-strict application and native Linux remain separate gates.
