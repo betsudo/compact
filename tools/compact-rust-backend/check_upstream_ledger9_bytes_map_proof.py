@@ -30,6 +30,10 @@ BASE_RECEIPT_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a
 SOURCE_SHA256 = '38f12526a78734b8c93f4be6cffa0ef9efaae59db552d56b3cf36ecbbd924680'
 WASM_TGZ_SHA256 = 'bc3e69e37e452463c1b2f4c98fce1138eb04f8d3776fce704b9081989a699f19'
 ZKIR_SHA256 = '731d8273bd1d212a30b09182898bf7f1f96f49618dcb337e40689de40c96ae0a'
+ZKIR_RAW_SHA256 = {
+    'transformation': 'd35a45c657469547c91d998476943ad004c5e47962ce345d350045ccf691dd34',
+    'slice_composition': 'b76e900ac3a8069c34fdaf21a67d332a61106eae53d716554007cfe5ec368f20',
+}
 PARAMS_K9_SHA256 = 'b9009f1098bcefffec3c461ab3a5e3a17f7e5599f0f08c70fcdc55a89227bcbd'
 RUNNER_SOURCE_SHA256 = {
     'src/main.rs': '2846dd67da2916bcf3a15db93e91a1007cfb5d6b97a1d0070e08c6fe312194e9',
@@ -172,7 +176,8 @@ def main() -> None:
             artifacts[f'{case}/{key}'] = actual
         raw = folder / 'zkir' / f'bytes_map_{case}.zkir'
         base_raw = base / 'paired' / case / 'zkir' / raw.name
-        require(sha(raw) == sha(base_raw), f'{case} ZKIR differs from qualified base')
+        require(sha(raw) == sha(base_raw) == ZKIR_RAW_SHA256[case],
+                f'{case} ZKIR differs from pinned original qualification')
         artifacts[f'{case}/zkir'] = sha(raw)
     raw = fresh / 'zkir/bytes_map_transformation.zkir'
     wrong_raw = wrong / 'zkir/bytes_map_slice_composition.zkir'
