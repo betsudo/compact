@@ -20,7 +20,30 @@ The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter
 | Map transitions | `examples/rust_backend/map_boolean_field.compact` | `bd2415e156e0f63189aebba8258aff43eeba6545` |
 | List transitions | `examples/rust_backend/list_field.compact` | `09c75e289` |
 
-The Set and Map transition sources retain the export sets of the existing Rust fixtures. Capture them with `compactc --skip-zk` in a directory that resolves the pinned npm packages. Run `runtime-rs/tests/fixtures/capture-ledger9-counter.mjs` or `capture-ledger9-collection.mjs` with the generated contract entry and matching Compact runtime entry. The collection script also takes `initial`, `set`, `map`, or `list`. The tests compare full serialized contract states.
+The historical Set and Map transition oracles use the circuit export sets before
+later `choose` and `put_pair` additions to the maintained examples. The
+licensed `ledger9-set-transition-v018.compact` and
+`ledger9-map-transition-v018.compact` fixtures freeze those circuit bodies;
+the List source remains the checked-in `list_field.compact`. The earlier
+capture used `compactc --skip-zk` and
+`runtime-rs/tests/fixtures/capture-ledger9-collection.mjs` with the generated
+contract entry and matching runtime. It accepts `initial`, `set`, `map`, or
+`list` and emits full serialized contract states. The Rust parity tests compare
+their own state bytes with the retained transition captures.
+
+The separate `capture-ledger9-paired-collection-v018.mjs` runner compiles those
+three sources itself with compiler 0.31.213 and the built Compact Runtime
+0.18.0 package. It checks generated metadata and manifest hashes, Onchain
+Runtime 4.0.1 module identity, the exact initial and four transition state
+bytes against the independent oracles, and records all four gas fields per step. Set,
+Map and List pass locally on macOS arm64; a copied Set runtime package outside
+the Git checkout produces byte-identical capture JSON. Wrong-runtime and
+reused-output controls refuse. The existing Rust transition parity test passes
+all six cases against those oracle files. This is runtime transition parity,
+not a generated Rust consumer or proof qualification. Native Linux remains
+required. Its hashes identify observed source, compiler wrapper, generated
+artifacts and runtime distribution bytes; they do not attest how the supplied
+compiler or runtime package was built.
 
 The migration branch is an integration worktree. The active Rust workspace resolves the published Ledger 9 package graph from crates.io. The initial migration retained the v2 producer recipe with ZKIR 2.2.0. The Ledger 9 proof gates below use ZKIR 3.2.0. Use `cargo test -p midnight-compact-runtime --all-features --all-targets --locked` for the Rust runtime.
 
