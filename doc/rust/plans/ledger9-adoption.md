@@ -1314,8 +1314,10 @@ Funded default-strict application and native Linux remain separate gates.
 
 The generated Set `add(true)` follow-up uses the independently qualified
 preimage and proof artifacts to build a funded Ledger 9 call from the recorded
-Rust API. It checks all TypeScript preimage fields against the Rust-prepared
-preimage, applies a distinct transaction proof under default strictness with
+Rust API. It checks the TypeScript preimage fields against the Rust-prepared
+preimage, independently recomputes the communications commitment from the
+prepared call and TypeScript randomness, and applies a distinct transaction
+proof under default strictness with
 one positive-fee Dust spend, and refuses exact replay without changing ledger
 bytes. The replay error is raised at application; default-strict rechecking
 of the already applied transaction succeeds. The test inserts deployed

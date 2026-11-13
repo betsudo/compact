@@ -102,8 +102,9 @@ def main() -> None:
     generated_manifest = gate / 'fresh-dual/contract/Cargo.toml'
     require(sha(generated_manifest) == GENERATED_MANIFEST_SHA256,
             'generated contract manifest changed')
-    runtime_path = Path(tomllib.loads(generated_manifest.read_text())['dependencies']
-                        ['midnight-compact-runtime']['path']).resolve(strict=True)
+    runtime_path = (generated_manifest.parent / Path(
+        tomllib.loads(generated_manifest.read_text())['dependencies']
+        ['midnight-compact-runtime']['path'])).resolve(strict=True)
     runtime_checkout = Path(subprocess.check_output(
         ['git', '-C', str(runtime_path), 'rev-parse', '--show-toplevel'], text=True).strip())
     require(runtime_path == runtime_checkout / 'runtime-rs' and
@@ -159,7 +160,8 @@ def main() -> None:
     require(row['status'] == 'passed' and row['circuit'] == 'add' and row['k'] == 6,
             'funded Set result changed')
     for key in ('default_strict', 'ledger_matches_native', 'typescript_preimage_fields_match',
-                'wrong_verifier_refused', 'replay_unchanged', 'transaction_proof_distinct'):
+                'communication_commitment_recomputed', 'wrong_verifier_refused',
+                'replay_unchanged', 'transaction_proof_distinct'):
         require(row[key] is True, f'funded Set check missing: {key}')
     require(row['positive_fee_dust_spends'] == 1 and row['replay_refusal'] == 'IntentAlreadyExists',
             'funded fee or replay result changed')

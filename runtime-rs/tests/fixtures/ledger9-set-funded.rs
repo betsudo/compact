@@ -5,7 +5,7 @@
 
 use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
 use midnight_ledger::{
-    construct::ContractCallExt,
+    construct::{ContractCallExt, communication_commitment},
     dust::{DUST_EXPECTED_FILES, DustResolver},
     prove::Resolver as LedgerResolver,
     semantics::TransactionResult,
@@ -128,8 +128,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(prepared.address, address);
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
+    let computed_commitment =
+        communication_commitment(prepared.input.clone(), prepared.output.clone(), randomness);
+    assert_eq!(computed_commitment, commitment);
 
-    let ProofPreimageVersioned::V2(rust) = ProofPreimage::construct_proof(&prepared, commitment)
+    let ProofPreimageVersioned::V2(rust) =
+        ProofPreimage::construct_proof(&prepared, computed_commitment)
     else {
         return Err("expected current ledger preimage".into());
     };
@@ -254,6 +258,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         json!({
             "status":"passed","circuit":"add","k":ir.k(),
             "ledger_matches_native":true,"typescript_preimage_fields_match":true,
+            "communication_commitment_recomputed":true,
             "positive_fee_dust_spends":dust_spends,"default_strict":true,
             "wrong_verifier_refused":true,"replay_refusal":"IntentAlreadyExists",
             "replay_unchanged":true,"transaction_proof_distinct":true,

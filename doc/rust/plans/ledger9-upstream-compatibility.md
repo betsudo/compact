@@ -596,7 +596,8 @@ proof. This is local macOS arm64 evidence, and funded default-strict
 application and native Linux qualification remain open.
 
 The follow-up generated Set funded gate checks the TypeScript and generated
-Rust proof preimage fields, builds a separate transaction proof, and applies
+Rust proof preimage fields, recomputes the communications commitment from
+Rust call inputs and outputs, builds a separate transaction proof, and applies
 one recorded `add(true)` call with a positive-fee Dust spend under Ledger 9
 default strictness. Exact replay returns `IntentAlreadyExists` at ledger
 application and leaves serialized ledger bytes unchanged; default-strict
