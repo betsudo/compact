@@ -837,6 +837,27 @@
       ;; operands into a vector of tuples, then bind the original formals from
       ;; each tuple. Bind every operand once, in source order, including for an
       ;; empty vector: an operand can still fail before the map body is skipped.
+      (define (vector-map-source-element-type source-type index src)
+        (nanopass-case (Lnodisclose Type) source-type
+          [(talias ,src^ ,nominal? ,type-name ,type)
+           (vector-map-source-element-type type index src)]
+          [(tbytes ,src^ ,len)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src 255))]
+          [(tvector ,src^ ,len ,type) type]
+          [(ttuple ,src^ ,type* ...) (list-ref type* index)]
+          [else (source-errorf src "Rust backend requires a Vector, Tuple, or Bytes map operand")]))
+
+      (define (vector-map-projection-ir src source-name index element-type formal-type)
+        (let* ([projection
+                 (with-output-language (Lnodisclose Expression)
+                   `(tuple-ref ,src (var-ref ,src ,source-name) ,index))]
+               [value (typed-expression-ir projection element-type src)]
+               [actual (type-ir element-type src)]
+               [target (type-ir formal-type src)])
+          (if (equal? actual target)
+              value
+              (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target)))))
+
       (define (multi-vector-map-ir src len arg* result-type body map-arg*)
         (unless (= (length arg*) (length map-arg*))
           (source-errorf src "Vector map argument count differs from its function arity"))
@@ -855,7 +876,7 @@
                 (object (cons "kind" "tuple")
                         (cons "elements"
                               (list->vector
-                                (map (lambda (input) (type-ir (list-ref input 4) src))
+                                (map (lambda (input) (type-ir (cadr input) src))
                                      input*))))]
                [source
                 (object (cons "kind" "let")
@@ -863,10 +884,20 @@
                               (list->vector
                                 (map (lambda (name input)
                                        (object (cons "name" (sourced-rust-var-name name))
-                                               (cons "ty" (type-ir (list-ref input 3) src))
+                                               (cons "ty"
+                                                     (type-ir
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (byte-vector-type src len)
+                                                           (list-ref input 3)) src))
                                                (cons "value"
-                                                     (typed-expression-ir
-                                                       (list-ref input 2) (list-ref input 3) src))))
+                                                     (let ([value
+                                                             (typed-expression-ir
+                                                               (list-ref input 2) (list-ref input 3) src)])
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (object (cons "kind" "bytes_to_vector")
+                                                                   (cons "value" value)
+                                                                   (cons "length" len))
+                                                           value)))))
                                      source-name* input*)))
                         (cons "body"
                               (object (cons "kind" "vector")
@@ -882,13 +913,13 @@
                                                                 (cons "elements"
                                                                       (list->vector
                                                                         (map
-                                                                          (lambda (name)
-                                                                            (object (cons "kind" "tuple_index")
-                                                                                    (cons "value"
-                                                                                          (object (cons "kind" "parameter")
-                                                                                                  (cons "name" (rust-var-name name))))
-                                                                                    (cons "index" index)))
-                                                                          source-name*))))
+                                                                          (lambda (name input)
+                                                                            (vector-map-projection-ir
+                                                                              src name index
+                                                                              (vector-map-source-element-type
+                                                                                (list-ref input 3) index src)
+                                                                              (cadr input)))
+                                                                          source-name* input*))))
                                                         items)))))))))]
                [item-ref (object (cons "kind" "parameter")
                                  (cons "name" (rust-var-name item-name)))])

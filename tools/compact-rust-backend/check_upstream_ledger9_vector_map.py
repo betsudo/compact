@@ -119,6 +119,32 @@ def main() -> None:
         contracts[family] = paired / 'contract'
         artifacts[f'{family}/paired/rust'] = sha(paired / 'contract/lib.rs')
         artifacts[f'{family}/paired/rust_ir'] = sha(paired / 'contract/compact-rust-ir.json')
+        if sha(default / 'contract/index.js') != sha(paired / 'contract/index.js'):
+            raise RuntimeError(f'{family} default and paired TypeScript differ')
+
+    source = FAMILY / 'review_regressions.compact'
+    default = output / 'default' / 'regressions'
+    paired = output / 'paired' / 'regressions'
+    run([str(compiler), str(source), str(default)], output / 'regressions-default.log')
+    run([str(compiler), '--target', 'ts', '--target', 'rust',
+         '--rust-runtime-root', str(ROOT), '--rust-require-recording', '--skip-zk',
+         str(source), str(paired)], output / 'regressions-paired.log')
+    for label, generated in (('default', default), ('paired', paired)):
+        info = json.loads((generated / 'compiler/contract-info.json').read_text())
+        names = [circuit['name'] for circuit in info['circuits']]
+        if names != ['bytes_map', 'widened_bytes_map', 'widened_vector_map']:
+            raise RuntimeError(f'unexpected regression circuits: {names}')
+        if not all(circuit['pure'] and not circuit['proof'] and len(circuit['arguments']) == 2
+                   for circuit in info['circuits']):
+            raise RuntimeError('regression circuits must be binary pure circuits')
+        run(['node', str(FAMILY / 'check_review_regressions.mjs'),
+             str(generated / 'contract/index.js')], output / f'regressions-{label}-typescript.log')
+        artifacts[f'regressions/{label}/typescript'] = sha(generated / 'contract/index.js')
+    if artifacts['regressions/default/typescript'] != artifacts['regressions/paired/typescript']:
+        raise RuntimeError('regressions default and paired TypeScript differ')
+    contracts['regressions'] = paired / 'contract'
+    artifacts['regressions/paired/rust'] = sha(paired / 'contract/lib.rs')
+    artifacts['regressions/paired/rust_ir'] = sha(paired / 'contract/compact-rust-ir.json')
 
     consumer = output / 'rust-consumer'
     (consumer / 'tests').mkdir(parents=True)
@@ -152,10 +178,13 @@ def main() -> None:
         'compiler_receipt_sha256': sha(receipt_path), 'compiler_sha256': sha(compiler),
         'scheme_sha256': sha(scheme), 'typescript_runtime_version': built_package['version'],
         'typescript_runtime_package_sha256': sha(runtime / 'package.json'),
-        'adapter_sha256': sha(FAMILY / 'check.mjs'), 'rust_consumer_sha256': sha(FAMILY / 'consumer.rs'),
+        'adapter_sha256': sha(FAMILY / 'check.mjs'),
+        'regression_source_sha256': sha(source),
+        'regression_adapter_sha256': sha(FAMILY / 'check_review_regressions.mjs'),
+        'rust_consumer_sha256': sha(FAMILY / 'consumer.rs'),
         'runner_sha256': sha(Path(__file__)), 'artifacts': artifacts,
         'rust_consumer_lock_sha256': sha(lock), 'cargo_test_log_sha256': sha(output / 'cargo-test.log'),
-        'result': 'Both original compile-pass/runtime-pass Vector map cases passed generated TypeScript and Rust',
+        'result': 'Both original Vector map cases and three review regressions passed generated TypeScript and Rust',
         'limitations': ['Local platform only; native Linux remains required.',
                         'These are pure circuits with no ZKIR proof or funded transaction.'],
     }
