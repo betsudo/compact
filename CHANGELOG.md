@@ -14,6 +14,10 @@ Unreleased Ledger 9 migration.
 - Compare `Opaque<"Uint8Array">` values by length and contents in generated
   TypeScript. Distinct arrays with identical bytes now compare equal.
 
+- The Compact standard library's `jubjubSchnorrVerify` now rejects the
+  identity verification key with a failed assertion. This is a breaking change
+  for callers that pass the default `JubjubPoint`.
+
 ### Added
 
 - Support the CompactStandardLibrary Boolean serialization built-ins in
