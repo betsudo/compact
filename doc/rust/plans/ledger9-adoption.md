@@ -1330,3 +1330,13 @@ ZKIR hashes. ZKIR wasm accepts the honest preimage and refuses changed insert
 count and stored Field value. A fresh k=7 proof verifies in a separate process
 and refuses a same-k `has` verifier, changed binding and corrupt proof. Funded
 Map application and native Linux remain separate gates.
+
+The generated Map funded follow-up constructs a recorded `put(true, 42)` call
+from the retained k=7 proof material. It recomputes the communications
+commitment from Rust inputs and outputs with the retained TypeScript
+randomness, checks the complete preimage fields, and applies a distinct
+transaction proof under default strictness with one positive-fee Dust spend.
+Exact replay is refused at ledger application with unchanged serialized
+state; a default-strict recheck alone succeeds. Deployment is inserted into
+the local test ledger, so an applied deployment, real two-contract transaction
+and native Linux remain separate gates.

@@ -612,6 +612,15 @@ while changed insert count and stored value refuse. A separate verifier
 process accepts the honest proof and rejects same-k `has`, changed binding
 and corrupt proof. Funded Map and native Linux qualification remain open.
 
+The generated Map funded gate uses the recorded `put(true, 42)` Rust API and
+the qualified k=7 proof artifacts. TypeScript and Rust preimage fields match,
+the communications commitment is recomputed from the Rust call and retained
+TypeScript randomness, and one positive-fee Dust spend funds a default-strict
+application. Exact replay refuses at ledger application with unchanged bytes;
+default-strict rechecking alone succeeds. Deployment is inserted into the
+local test ledger. Native Linux and the real two-contract transaction remain
+open.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9
