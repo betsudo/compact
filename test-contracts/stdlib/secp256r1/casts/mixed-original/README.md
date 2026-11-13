@@ -29,17 +29,28 @@ also checks the two original `castC25519(false/true, 7, 8)` calls and the
 `castWide()` reduction to five. Each has a separate honest and changed-write
 preimage check, fresh proof with independent verification and three negative
 controls, and fee-funded default-strict transaction with native state parity
-and unchanged-state replay refusal. Its proof runner is rebuilt from the
-archived locked Rust source. The
+and unchanged-state replay refusal. Its proof runner is built or reused by
+Cargo from the archived locked Rust source and hash-checked. The
 [K1/P-256 proof lane](../../../../../tools/compact-rust-backend/check_upstream_ledger9_mixed_k1_r1_proofs.py)
 then checks both original `castK1` and `castR1` Boolean branches and `castZero`.
 Those five calls also have honest and changed-write preimage checks, fresh
 k=11/k=12 proofs with same-k different-circuit verifier, changed-binding and
 corrupt-proof refusals, and separate fee-funded default-strict transactions
-with native state parity and unchanged replay refusal. The five original
-`unused` exports retain generated execution and mock circuit coverage; their
-proof and funded matrix remains open. All reported results are local macOS
-arm64; native Linux remains required.
+with native state parity and unchanged replay refusal. The
+[unused-export proof lane](../../../../../tools/compact-rust-backend/check_upstream_ledger9_mixed_unused_proofs.py)
+checks the five original `unusedK1`, `unusedR1`, `unusedC25519`,
+`unusedFieldK1` and `unusedFieldR1` calls with their original arguments and
+ledger values. Each has an honest preimage and changed-write refusal, a fresh
+k=8 or k=9 proof with same-k different-circuit verifier, changed-binding and
+corrupt-proof refusals, and a separate fee-funded default-strict transaction
+with native state parity and unchanged replay refusal. These fixture casts
+are intentionally unused. The generated APIs execute them, while the proofs
+establish the ledger writes and do not constrain the discarded cast values.
+`unusedFieldK1` and `unusedFieldR1` produce byte-identical ZKIR and verifier
+keys because their field casts are discarded. Their calls have distinct
+entry-point names and ledger values, but this fixture does not establish
+distinct K1 and P-256 circuit behavior for those two exports.
+All reported results are local macOS arm64; native Linux remains required.
 
 Run the complete lane with the signed source's Rust CLI and a Scheme compiler
 built from the same unchanged frontend source, Compact Runtime 0.17.0, ZKIR
@@ -68,3 +79,12 @@ For the extended K1/P-256 lane, run
 add `--wrong-verifier-k12`, pointing to the archived Jubjub identity guard's
 k=12 different-circuit verifier. This driver repeats the Curve25519 lane
 at the signed source before proving and funding the five K1/P-256 cases.
+
+For the extended unused-export lane, run
+`check_upstream_ledger9_mixed_unused_proofs.py` with those arguments and add
+`--wrong-verifier-k9`, pointing to the archived `discarded-scalar` verifier
+from the K1 unary proof lane. The pinned Ledger 9 material directory must
+also contain `bls_midnight_2p9`, whose SHA-256 is
+`b9009f1098bcefffec3c461ab3a5e3a17f7e5599f0f08c70fcdc55a89227bcbd`
+in `midnight-base-crypto` 1.1.1. This driver repeats all prior mixed-cast
+lanes at the signed source before proving and funding the five unused calls.

@@ -342,10 +342,15 @@ applications](../../../test-contracts/stdlib/secp256r1/casts/mixed-original/READ
 each with changed-write, verifier, binding, corrupt-proof and replay refusals.
 The two original `castK1` and two `castR1` branches plus `castZero` also have
 fresh k=11/k=12 proofs and separately funded strict applications with the
-same controls. The five original unused exports remain for proof and funded
-qualification.
-These results are local macOS arm64 only. Remaining original exports retain
-open proof and funded transaction coverage, and native Linux remains required.
+same controls. The five original unused exports now have fresh k=8/k=9
+proofs and separately funded strict applications with the same refusals.
+Their casts are discarded by the original fixture: the generated APIs execute
+them, while these proofs constrain the ledger writes rather than the cast
+values. The original `unusedFieldK1` and `unusedFieldR1` compile to the same
+ZKIR and verifier key after their casts are discarded; the distinct calls
+retain separate entry-point names and ledger values. This fixture cannot
+establish distinct K1 and P-256 circuit behavior for those exports. These
+results are local macOS arm64 only; native Linux remains required.
 The [P-256 arithmetic fixtures](../../../test-contracts/stdlib/secp256r1/arithmetic)
 retain the original six stateful exports and 34 assertions. The generated
 Rust and TypeScript preserve separate base and scalar operands and
