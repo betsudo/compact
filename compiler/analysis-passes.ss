@@ -2026,6 +2026,9 @@
         (nanopass-case (Ltypes Type) (de-alias type #t)
           [(tboolean ,src^) 1]
           [(tfield ,src^) (+ 1 (field-bytes))]
+          [(topaque ,src^ ,opaque-type)
+           (guard (string=? opaque-type "Secp256k1Base"))
+           32]
           [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
           [(tbytes ,src^ ,len) len]
           [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
@@ -2087,6 +2090,10 @@
                 [(tfield ,src^)
                  (let ([width (+ 1 (field-bytes))])
                    (add width `(field->bytes ,src ,width ,(maybe-safecast src carrier type expr))))]
+                [(topaque ,src^ ,opaque-type)
+                 (guard (string=? opaque-type "Secp256k1Base"))
+                 (add 32 `(secp256k1-bytes-cast ,src (tbytes ,src 32)
+                            ,(maybe-safecast src carrier type expr)))]
                 [(tbytes ,src^ ,len^)
                  (if (= len^ 0) parts (add len^ (maybe-safecast src carrier type expr)))]
                 [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
@@ -2149,6 +2156,9 @@
                               [(tfield ,src^)
                                (let ([len^ (+ 1 (field-bytes))])
                                  `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^)))]
+                              [(topaque ,src^ ,opaque-type)
+                               (guard (string=? opaque-type "Secp256k1Base"))
+                               `(secp256k1-bytes-cast ,src ,carrier ,(prefix index 32))]
                               [(tunsigned ,src^ ,nat)
                                (let ([len^ (unsigned-serialized-width nat)])
                                  (if (= len^ 0)

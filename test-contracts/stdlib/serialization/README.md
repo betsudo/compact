@@ -145,3 +145,15 @@ return agree with the input.
 node test-contracts/stdlib/serialization/check-wide-uint.mjs \
   "$OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/wide-uint-preimages"
 ```
+
+## Secp256k1Base serialization
+
+`secp256k1-base-wire.compact` covers nominal aliases, nested products,
+zero padding and modular decode of 32 little-endian bytes. The runner
+tests six boundary values and rejects changed proof outputs. The
+stateful write uses the explicit local slow proof lane at k=10.
+
+```sh
+node test-contracts/stdlib/serialization/check-secp256k1-base.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/secp256k1-base-preimages"
+```
