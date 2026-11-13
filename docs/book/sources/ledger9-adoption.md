@@ -1241,8 +1241,7 @@ Local evidence is retained under
 `qualification-audit-v1/full-parent-readback.json`. The full receipt
 SHA-256 is
 `12ee47fd5280d03c3c708553034d0bd35976e0f682a0810f9cf4866d8b497746`.
-The Ledger 8 branch, historical fixture and proof evidence, and the
-deferred Forge branch were preserved.
+The Ledger 8 branch and historical fixture and proof evidence were preserved.
 
 For local iteration, reuse the exact Nix compiler and SDK closure and
 warm Cargo build products first. In one retained 573-second outer-vector

@@ -67,14 +67,14 @@
       "head": "30a2d76550beb7d920a92bab2be6b1180243f658"
     }
   ],
-  "commit_count": 1664,
-  "main_line_commit_count": 1555,
+  "commit_count": 1616,
+  "main_line_commit_count": 1507,
   "original_only_count": 109,
-  "classification": "Earliest named phase head containing the commit, in listed order. Original-oracle-only commits have their own phase. Topics use subject matching. Dates shown by default are author dates.",
+  "classification": "The catalogue selects commits relevant to the backend journey. Earliest named phase head containing the commit, in listed order. Original-oracle-only commits have their own phase. Topics use subject matching. Dates shown by default are author dates.",
   "published_rule": "Reachable from the verified working-line, existing Pages documentation, or original codegen-rust public head recorded in published_heads. Other records are labeled local at this cutoff.",
   "snapshots": {
     "ledger9-adoption.md": {
-      "sha256": "c3aa35520fe39a37813d100fa00ba4f6d9e7b049db6ddce1eeef370f2a01327a",
+      "sha256": "c2a5b0a792767d290b5dfdd5f0c75bce91a6007c3e362532e94f2d0be9b15325",
       "source_sha256": "7e2d8acf79165c31dbfa7c5f1bd15a5f3654b23d2ae075b4e3dbb968a2a7f73d"
     },
     "ledger9-upstream-compatibility.md": {
@@ -82,7 +82,7 @@
       "source_sha256": "24f92c540e4d99b1e19de1203aa890d96d769f92d095165fd6c028101719cc8c"
     }
   },
-  "chapter_count": 23,
+  "chapter_count": 22,
   "published_heads": {
     "working_line": "05912594fa3c483cf4e7031de83c5f9a103ef95c",
     "documentation": "51a079bd8598b9decb3df7de92ec10768ec9b8dc",

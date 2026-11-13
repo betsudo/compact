@@ -22,6 +22,8 @@ import re
 import subprocess
 from urllib.parse import urlsplit
 
+from editorial import include_commit, select_message
+
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
 DATA = ROOT / 'sources' / 'revisions.json'
@@ -65,9 +67,15 @@ def freeze():
               input='\n'.join(sorted(revisions))+'\n')
     fields = log.removesuffix('\0').split('\0')
     assert len(fields) == 5 * len(revisions)
+    omitted = {
+        fields[index] for index in range(0, len(fields), 5)
+        if not include_commit(fields[index], fields[index + 3])
+    }
     records = {}
     for index in range(0, len(fields), 5):
         sha, authored, committed, subject, message = fields[index:index+5]
+        if sha in omitted:
+            continue
         repository = 'betsudo/compact' if sha in public else (
             'LFDT-Minokawa/compact' if sha in upstream else None
         )
@@ -79,11 +87,12 @@ def freeze():
         if repository:
             body = re.sub(r'(?im)^(?:signed-off-by|co-authored-by|assisted-by):.*\n?', '', message)
             body = re.sub(r'/Users/[^\s<>]+', '[local path]', body).strip()
+            body = select_message(body, omitted)
         records[sha] = dict(sha=sha, subject=subject, authored=authored, committed=committed,
                             url=f'{REPOSITORY_URL}{repository}/commit/{sha}' if repository else None,
                             description=iteration_notes.get(sha, ''), message=body,
                             in_catalogue=sha in catalogue)
-    assert records.keys() == revisions
+    assert records.keys() == revisions - omitted
     DATA.write_text(json.dumps(records, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
     print(f'Frozen descriptions for {len(records)} commits')
 

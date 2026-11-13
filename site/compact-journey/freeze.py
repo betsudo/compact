@@ -21,6 +21,8 @@ import json
 import re
 import subprocess
 
+from editorial import include_commit, include_metadata, select_snapshot
+
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -81,9 +83,13 @@ topics = [
     ('state', r'ledger|map|set\b|list\b|merkle|event|counter'),
 ]
 commits = []
+omitted = set()
 for line in lines:
     sha, parents, authored, committed, subject = line.split('\x1f', 4)
     if sha not in selected:
+        continue
+    if not include_commit(sha, subject):
+        omitted.add(sha)
         continue
     phase = 'oracle' if sha in original else next(
         (key for key, _, _ in phases if sha in ancestor_sets[key]), 'unmapped')
@@ -92,7 +98,7 @@ for line in lines:
                         subject=subject, phase=phase, topics=labels,
                         publication='published' if sha in published else 'local',
                         merge=len(parents.split()) > 1))
-assert {c['sha'] for c in commits} == selected
+assert {c['sha'] for c in commits} == selected - omitted
 commits.sort(key=lambda c: (c['authored'], c['sha']))
 (ROOT/'commits.json').write_text(json.dumps(commits, ensure_ascii=False, separators=(',', ':'))+'\n')
 chapter_list = [c for c in json.loads((ROOT/'chapters.json').read_text()) if c['kind'] != 'archive']
@@ -135,7 +141,7 @@ for filename, title, subtitle in archives:
 snapshots={}
 for name in ('ledger9-adoption.md','ledger9-upstream-compatibility.md'):
     source=subprocess.check_output(['git','-C',str(SOURCE),'show',f'{local}:doc/rust/plans/{name}'])
-    text=source.decode()
+    text=select_snapshot(name, source.decode())
     text=re.sub(r'/Users/[^\s\x60"\'<>)]*', '[local-evidence-path]', text)
     prefix=('> Frozen documentation snapshot for the November 13, 2026 book edition. '
             'Entries retain their historical source-specific scope. Later receipts can supersede earlier open items.\n\n')
@@ -166,9 +172,9 @@ pr_rows=[]
 for line in args.pr_metadata.read_text().splitlines():
     number,title,state,merged_at,head=line.split('\t')
     pr_rows.append(dict(number=int(number),title=title,state=state,merged_at=merged_at or None,head=head))
-(SOURCES/'pull-requests.json').write_text(json.dumps(pr_rows,indent=2)+'\n')
+(SOURCES/'pull-requests.json').write_text(json.dumps([row for row in pr_rows if include_metadata(row)],indent=2)+'\n')
 issues=json.loads(args.issue_metadata.read_text())
-(SOURCES/'issues.json').write_text(json.dumps(issues,indent=2)+'\n')
+(SOURCES/'issues.json').write_text(json.dumps([row for row in issues if include_metadata(row)],indent=2)+'\n')
 edition=dict(title='From source to proof',date='2026-11-13',repository='betsudo/compact',
              historical_site=historical,ledger8_cutoff=ledger8,merged_foundation=merged,
              compatibility_cutoff=local,isolated_followups=[jubjub,keccak],checkpoint=73,
@@ -176,8 +182,9 @@ edition=dict(title='From source to proof',date='2026-11-13',repository='betsudo/
              sdk='Ledger 9.1.0.1',platform='macOS arm64 for local compatibility evidence',
              phases=[dict(id='oracle',title='Original Rust oracle',head=oracle)]+[
                  dict(id=key,title=title,head=head) for key,title,head in phases],
-             commit_count=len(commits),main_line_commit_count=len(main),original_only_count=len(original),
-             classification='Earliest named phase head containing the commit, in listed order. Original-oracle-only commits have their own phase. Topics use subject matching. Dates shown by default are author dates.',
+             commit_count=len(commits),main_line_commit_count=sum(c['sha'] in main for c in commits),
+             original_only_count=sum(c['sha'] in original for c in commits),
+             classification='The catalogue selects commits relevant to the backend journey. Earliest named phase head containing the commit, in listed order. Original-oracle-only commits have their own phase. Topics use subject matching. Dates shown by default are author dates.',
              published_rule='Reachable from the verified working-line, Pages or original codegen-rust public head at the cutoff. Other records are labeled local.',
              published_heads=dict(working_line=merged,documentation=historical,original_oracle=oracle_public),
              snapshots=snapshots,chapter_count=len(chapter_list))

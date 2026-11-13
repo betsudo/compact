@@ -22,6 +22,9 @@ import hashlib
 import json
 import re
 import subprocess
+from zipfile import ZipFile
+
+from editorial import EXPERIMENT, EXPERIMENT_REFERENCE
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
@@ -120,6 +123,24 @@ def main():
     for path in BOOK.rglob('*'):
         if path.is_file() and path.suffix in ('.json','.md','.html','.css','.js'):
             assert '/Users/' not in path.read_text(), path
+    book_text_files = {'.html', '.md', '.json', '.js', '.css', '.mmd'}
+    def check_scope(name, contents):
+        if EXPERIMENT.search(name) or EXPERIMENT_REFERENCE.search(name):
+            failures.append(f'Out-of-scope filename {name}')
+        if Path(name).suffix in book_text_files:
+            text = contents.decode()
+            if EXPERIMENT.search(text) or EXPERIMENT_REFERENCE.search(text):
+                failures.append(f'Out-of-scope content in {name}')
+
+    check_scope('overview/index.html', (BOOK.parent/'index.html').read_bytes())
+    for path in BOOK.rglob('*'):
+        if path.is_file() and path.suffix in book_text_files:
+            check_scope(path.relative_to(BOOK).as_posix(), path.read_bytes())
+    with ZipFile(BOOK/'compact-journey.zip') as archive:
+        for name in archive.namelist():
+            if Path(name).suffix in book_text_files:
+                check_scope(f'compact-journey.zip/{name}', archive.read(name))
+
     manifest = json.loads((BOOK/'build-manifest.json').read_text())
     for name, sha in manifest['files'].items():
         assert hashlib.sha256((BOOK/name).read_bytes()).hexdigest() == sha, name

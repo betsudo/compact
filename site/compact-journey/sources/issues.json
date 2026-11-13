@@ -236,7 +236,7 @@
     "createdAt": "2026-09-30T17:01:01Z",
     "number": 95,
     "state": "OPEN",
-    "title": "[research] Emit Rust from a syntax tree (syn/quote/prettyplease) instead of formatted text \u2014 and decouple emission from Ltypescript",
+    "title": "[research] Emit Rust from a syntax tree (syn/quote/prettyplease) instead of formatted text — and decouple emission from Ltypescript",
     "url": "https://github.com/betsudo/compact/issues/95"
   },
   {
@@ -553,14 +553,6 @@
   },
   {
     "closedAt": null,
-    "createdAt": "2026-10-15T17:37:19Z",
-    "number": 643,
-    "state": "OPEN",
-    "title": "feat(compiler): add opt-in Forge artifact caching with uncached fallback",
-    "url": "https://github.com/betsudo/compact/issues/643"
-  },
-  {
-    "closedAt": null,
     "createdAt": "2026-10-10T08:10:51Z",
     "number": 560,
     "state": "OPEN",
@@ -574,14 +566,6 @@
     "state": "CLOSED",
     "title": "fix(rust): distinguish fixed-vector indexing from tuple projection",
     "url": "https://github.com/betsudo/compact/issues/674"
-  },
-  {
-    "closedAt": null,
-    "createdAt": "2026-10-18T16:37:19Z",
-    "number": 679,
-    "state": "OPEN",
-    "title": "feat(forge): adopt authenticated key reuse in compiler and bounded CI",
-    "url": "https://github.com/betsudo/compact/issues/679"
   },
   {
     "closedAt": "2026-10-17T13:29:05Z",

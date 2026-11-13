@@ -29,7 +29,7 @@ Later slices preserved ordered Unit initializers, terminal effects, tuple return
 
 The October 18 local prototype checkpoint was documented at ec7262e49 with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.
 
-PR #664 later integrated the reviewed Ledger 8 baseline. The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.
+The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.
 
 ## What was better
 
@@ -41,7 +41,6 @@ The broader functional scope was a proposal with its own acceptance work. A narr
 
 ### Source trail
 
-- [Functional prototype PR #664](https://github.com/betsudo/compact/pull/664)
 - [Working-line integration](https://github.com/betsudo/compact/commit/c353907d8c323db16eedb35d5a7f0151aab859bb)
 - [Metadata ownership #665](https://github.com/betsudo/compact/issues/665)
 - [Ordered Unit initializers #694](https://github.com/betsudo/compact/pull/694)

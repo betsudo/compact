@@ -3,8 +3,8 @@
 A pre-rendered interactive book about Compact's journey from the Ledger 8
 TypeScript reference path to a Ledger 9 Rust AST backend.
 
-The November 13, 2026 edition contains 23 chapters, a searchable commit
-catalogue, 37 curated iteration checkpoints, a pipeline explorer, local reading progress, light/dark themes,
+The November 13, 2026 edition contains 22 chapters, a searchable commit
+catalogue, 36 curated iteration checkpoints, a pipeline explorer, local reading progress, light/dark themes,
 and a complete print view. The original October storybook stays available
 at the Pages root.
 
@@ -29,7 +29,7 @@ the pipeline controls. Storage failures leave reading available.
 
 - chapters/ contains the book text.
 - chapters.json supplies reading order, phases and historical-atlas labels.
-- commits.json is the deduplicated frozen Git catalogue.
+- commits.json is the curated Git catalogue of the backend journey.
 - sources/edition.json records source heads and classification rules.
 - sources/ retains public documentation and qualification summaries.
 - assets/ contains the local stylesheet and interactions.

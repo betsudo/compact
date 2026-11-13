@@ -168,25 +168,11 @@
     "head": "a9854331374339d86e71008cf0dec172540441ab"
   },
   {
-    "number": 664,
-    "title": "feat(rust): integrate typed Ledger8 programs and isolate Forge experiment",
-    "state": "closed",
-    "merged_at": "2026-10-27T11:35:25Z",
-    "head": "de0c9ae5fb4218f2203b4c9507511ed1151c1a8a"
-  },
-  {
     "number": 660,
     "title": "feat: improve generated Rust readability and checked proof CI",
     "state": "closed",
     "merged_at": "2026-10-17T13:28:06Z",
     "head": "842218ae9daa578b21c3c461018b74f1425d0980"
-  },
-  {
-    "number": 657,
-    "title": "feat(test): qualify public Forge artifacts and isolated CI snapshots",
-    "state": "closed",
-    "merged_at": "2026-10-17T04:55:29Z",
-    "head": "907458e7388925a46de9a9c7e7120aa6d959f3a6"
   },
   {
     "number": 656,
@@ -243,13 +229,6 @@
     "state": "closed",
     "merged_at": "2026-10-16T12:38:47Z",
     "head": "ef49263e1fd3b3ed67d3b5515703d9e842dc72c1"
-  },
-  {
-    "number": 642,
-    "title": "test(rust): add optional local Forge artifact reuse [skip ci]",
-    "state": "closed",
-    "merged_at": "2026-10-16T10:25:50Z",
-    "head": "8cddd64d8fb46553f8c17f314e94f90e30e898ad"
   },
   {
     "number": 641,

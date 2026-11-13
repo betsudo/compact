@@ -8,7 +8,7 @@ Our journey began with a TypeScript-oriented Compact compiler and a Ledger 8 ref
 
 ## What this book preserves
 
-This edition follows the original Rust text emitter, the Rust AST rebuild, native execution, recorded execution, proof and wallet integration, the 0.3.0 closure, compositional effects, the functional Ledger 8 experiment, and the move to Ledger 9. It records the detours, including Forge, because those decisions explain why the project has its current boundaries.
+This edition follows the original Rust text emitter, the Rust AST rebuild, native execution, recorded execution, proof and wallet integration, the 0.3.0 closure, compositional effects, the functional Ledger 8 experiment, and the move to Ledger 9.
 
 Every chapter asks four questions. What limitation triggered the work? Which owner changed? What behavior became possible? Which evidence established the result? A final section records what was still open at that point.
 

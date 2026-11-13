@@ -64,14 +64,6 @@
     "kind": "narrative"
   },
   {
-    "slug": "forge-and-the-cost-of-evidence",
-    "title": "Forge and the cost of evidence",
-    "phase": "A deferred experiment",
-    "subtitle": "A useful detour, measured limits, and a deliberate return.",
-    "source": "chapters/forge-and-the-cost-of-evidence.md",
-    "kind": "narrative"
-  },
-  {
     "slug": "ergonomics-one-semantic-gap-at-a-time",
     "title": "Ergonomics, one semantic gap at a time",
     "phase": "Semantic delivery",

@@ -192,14 +192,6 @@
     "explanation": "Completes further functional domains through typed leaf adapters while retaining Merkle depth/history and physical paths. The Oct18 snapshot reports 71 of 72 top-level Operation variants conditionally admitted; excluded Keccak belongs to this pinned Ledger8.1.3/ZKIRv2 target. 71/72 measures one enum dimension, not language coverage."
   },
   {
-    "sha": "cfb28592d3e213d3dda58a3dc02f6aa66b61e777",
-    "title": "refactor(compiler): isolate the deferred Forge experiment",
-    "phase": "functional",
-    "date": "2026-10-25",
-    "publication": "published",
-    "explanation": "Owner redirected effort to primary Rust AST work. experiment/zkir-forge preserves continuation; primary compiler cache options/helper/dependencies, qualification/snapshot workflows and three-lap cache drivers were removed. Backend proof implementations, ordinary proof gates, compiler build-once improvements and uncached native ZKIR generation remain. Whole-CI cache value was unknown, not disproved."
-  },
-  {
     "sha": "fa8e8ab178c1f7aa5bebf6b4c9ec1d25554c1909",
     "title": "feat(rust): qualify checked vector projection APIs and proofs",
     "phase": "semantics",
