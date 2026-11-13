@@ -1,0 +1,24 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export pure circuit same(v: Vector<3, Field>, t: [Field, Field, Field]): [] { }
+export pure circuit hetero(h: [Field, Boolean]): [] { }
+export pure circuit ones(v: Vector<1, Boolean>, t: [Boolean]): [] { }
+export pure circuit nested(v: Vector<2, Vector<2, Field>>,
+                           t: [[Field, Field], [Field, Field]]): [] { }
+export pure circuit mixed(m: Vector<2, [Field, Boolean]>): [] { }
+export pure circuit zeros(zf: Vector<0, Field>, zb: Vector<0, Boolean>): [] { }
+export pure circuit unit(u: []): [] { }

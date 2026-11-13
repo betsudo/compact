@@ -366,7 +366,17 @@ The [P-256 point fixtures](../../../test-contracts/stdlib/secp256r1/point)
 retain the original equality and identity-hash assertions. Rust and
 TypeScript encode the same five atoms and reject off-curve finite inputs
 at their typed boundaries. The three point-family tags are checked in
-contract info and Rust IR. The upstream JavaScript circuit signature export remains open.
+contract info and Rust IR. A local metadata slice now emits the pinned
+`circuitSignatures` JavaScript export and declaration, including these three
+P-256 tags. It retains the original upstream metadata fixtures and assertions.
+The associated `declaredInterfaces` export and call-time interface checking
+remain separate open gaps. This metadata slice has local macOS arm64 checks;
+native Linux qualification remains required.
+The pinned contract-argument fixture declares `peek` beyond the compiled
+`Adder` contract. The current frontend refuses that declaration; the metadata
+runner preserves the original refusal. A matching `Adder` variant still
+refuses the exported contract argument, so its nested signature assertion
+remains unported pending the secure-call frontend and `declaredInterfaces` work.
 The [P-256 accessor fixtures](../../../test-contracts/stdlib/secp256r1/accessors)
 run the intact point roundtrip and original direct, ledger and checked
 assertion cases. The proof checks cover guarded active and inactive
