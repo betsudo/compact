@@ -34,6 +34,25 @@ fn plan(operation: Operation) -> Plan {
 fn validate(plan: Plan) -> Result<CheckedPlan, RecordingGap> {
     validate::check(plan, declarations::Declarations::default())
 }
+
+#[test]
+fn mint_event_requires_exact_bytes81_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitShieldedMint(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 81 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 80 },
+        Type::Bytes { length: 82 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
 #[test]
 fn all_closed_claim_kinds_require_bytes32_live_input_and_unit_output() {
     for kind in [

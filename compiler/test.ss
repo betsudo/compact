@@ -69491,6 +69491,100 @@ groups than for single tests.
 
   (test
     '(
+      "import CompactStandardLibrary prefix std_;"
+      "export circuit emit_mint(n: Bytes<32>): [] {"
+      "  emit(std_ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: std_none<Uint<128>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (succeeds)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "constructor(n: Bytes<32>) {"
+      "  emit(ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: none<Uint<128>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 2 char 1" "constructor cannot emit an event but ~a at ~a" ("emits an event" "line 3 char 3")))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export pure circuit bad(n: Bytes<32>): [] {"
+      "  emit(ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: none<Uint<128>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 2 char 1" "circuit ~a is marked pure but is actually impure because it ~a at ~a" (bad "emits a public event" "line 3 char 3")))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary prefix std_;"
+      "struct ShieldedMint { commitment: Bytes<32>, domainSep: Bytes<32>, amount: std_Maybe<Uint<128>> }"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: std_none<Uint<128>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "~a is not a declared event type" ("struct ShieldedMint<commitment: Bytes<32>, domainSep: Bytes<32>, amount: struct Maybe<is_some: Boolean, value: Uint<128>>>")))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Uint<128>;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: some<Uint<128>>(secret()) });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Boolean;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  if (secret()) {"
+      "    emit(ShieldedMint { commitment: disclose(n), domainSep: disclose(n), amount: none<Uint<128>>() });"
+      "  }"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 5 char 5" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      performing this emit operation might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 5 char 5" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
       "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
