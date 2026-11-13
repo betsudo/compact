@@ -85783,6 +85783,59 @@ groups than for single tests.
         ))
     )
 
+  ; Upstream #881: a nominal Uint result with the same range as its inputs
+  ; needs no downcast.  These retain the original input and result cases.
+  (test
+    '(
+      "new type Bit = Uint<1>;"
+      "export circuit mul(x: Bit, y: Bit): Bit {"
+      "  return x * y;"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('nominal Uint<1> multiplication', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.mul(Ctxt, 1n, 1n).result).toEqual(1n);"
+        "  expect(C.circuits.mul(Ctxt, 1n, 0n).result).toEqual(0n);"
+        "  expect(C.circuits.mul(Ctxt, 0n, 0n).result).toEqual(0n);"
+        "});"
+        ))
+    )
+
+  (test
+    '(
+      "new type Zero = Uint<0..1>;"
+      "export circuit add(x: Zero, y: Zero): Zero {"
+      "  return x + y;"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('nominal Uint<0..1> addition', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.add(Ctxt, 0n, 0n).result).toEqual(0n);"
+        "});"
+        ))
+    )
+
+  (test
+    '(
+      "new type Bit = Uint<0..2>;"
+      "export circuit mul(x: Bit, y: Bit): Bit {"
+      "  return x * y;"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('nominal Uint<0..2> multiplication', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.mul(Ctxt, 1n, 1n).result).toEqual(1n);"
+        "  expect(C.circuits.mul(Ctxt, 0n, 1n).result).toEqual(0n);"
+        "});"
+        ))
+    )
+
   (test
     `(
       "new type Q = Uint<8>;"

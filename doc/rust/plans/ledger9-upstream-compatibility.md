@@ -510,6 +510,13 @@ runtime-pass declarations byte-for-byte. The local adapter ran four
 TypeScript executions and two Rust 1.99 tests against the integrated
 compiler. Compiler metadata identifies both exports as pure circuits.
 
+The [nominal Uint arithmetic family](../../../test-contracts/primitives/uint/nominal/README.md)
+preserves the two upstream programs and their compile/runtime declarations.
+The frontend omits a downcast when nominal operands and arithmetic result
+have the same range. The original small-range values and overflow refusal
+run through both generated targets as pure circuits; no proof or funded
+transaction is associated with these exports.
+
 The [opaque-string port][bom] preserves leading U+FEFF on decode. The
 intact upstream ledger fixture exercises receipt, archive, equality and map
 membership. The macOS arm64 run passed all 88 TypeScript runtime tests,
