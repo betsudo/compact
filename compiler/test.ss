@@ -68980,6 +68980,35 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "new type Word = Uint<9>;"
+      "export circuit encode(x: Word): Bytes<4> { return serialize<Word, 4>(x); }"
+      "export circuit decode(x: Bytes<4>): Word { return deserialize<Word, 4>(x); }"
+      "export circuit wide(x: Bytes<16>): Uint<128> { return deserialize<Uint<128>, 16>(x); }"
+      "export circuit zero(x: Bytes<2>): Uint<0..1> { return deserialize<Uint<0..1>, 2>(x); }"
+      )
+    (stage-javascript
+      '(
+        "test('Uint serialization is little-endian and rejects overflow', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.encode(Ctxt, 511n).result).toEqual(Uint8Array.of(255, 1, 0, 0));"
+        "  expect(C.circuits.decode(Ctxt, Uint8Array.of(255, 1, 77, 255)).result).toBe(511n);"
+        "  expect(() => C.circuits.decode(Ctxt, Uint8Array.of(0, 2, 0, 0))).toThrow(runtime.CompactError);"
+        "  expect(C.circuits.wide(Ctxt, new Uint8Array(16).fill(255)).result).toBe((1n << 128n) - 1n);"
+        "  expect(C.circuits.zero(Ctxt, Uint8Array.of(255, 255)).result).toBe(0n);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<1>): Uint<9> { return deserialize<Uint<9>, 1>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (2 1 "Uint<9>"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

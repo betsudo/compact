@@ -354,6 +354,24 @@ fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
 }
 
 #[test]
+fn native_uint_byte_conversions_validate_source_and_maximum() {
+    use super::FixedBytesConversion::{BytesToUint, UintToBytes};
+
+    let uint = Type::Unsigned { max: "511".into() };
+    let bytes = Type::Bytes { length: 2 };
+    assert_eq!(UintToBytes { length: 2 }.result_type(&uint).unwrap(), bytes);
+    assert_eq!(BytesToUint { max: 511 }.result_type(&bytes).unwrap(), uint);
+    assert!(matches!(
+        UintToBytes { length: 2 }.result_type(&Type::Field),
+        Err(RenderError::ExpectedUnsigned(Type::Field))
+    ));
+    assert!(matches!(
+        BytesToUint { max: 511 }.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
 fn bytes_zero_padding_requires_fixed_bytes_and_can_only_widen() {
     use super::FixedBytesConversion::ZeroPad;
 

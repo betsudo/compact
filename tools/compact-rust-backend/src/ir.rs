@@ -711,6 +711,14 @@ pub enum Expr {
         value: Box<Expr>,
         length: usize,
     },
+    UintToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
+    BytesToUint {
+        value: Box<Expr>,
+        max: String,
+    },
     BytesZeroPad {
         value: Box<Expr>,
         length: usize,

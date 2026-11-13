@@ -43,7 +43,7 @@ pub(crate) enum ConversionSource<'a> {
     },
     FixedBytes {
         value: &'a Expr,
-        operation: FixedBytesConversion,
+        operation: Result<FixedBytesConversion, RenderError>,
     },
     Coerce {
         value: &'a Expr,
@@ -71,33 +71,35 @@ pub(crate) enum FixedBytesConversion {
     FromVector { length: usize },
     Slice { start: usize, length: usize },
     ZeroPad { length: usize },
+    UintToBytes { length: usize },
+    BytesToUint { max: u128 },
 }
 
 impl FixedBytesConversion {
-    pub(crate) fn from_expression(expr: &Expr) -> Option<(&Expr, Self)> {
-        match expr {
-            Expr::VectorToBytes { value, length } => {
-                Some((value, Self::FromVector { length: *length }))
+    pub(crate) fn from_expression(expr: &Expr) -> (&Expr, Result<Self, RenderError>) {
+        let (value, operation) = match expr {
+            Expr::VectorToBytes { value, length } => (value, Self::FromVector { length: *length }),
+            Expr::BytesToVector { value, length } => (value, Self::ToVector { length: *length }),
+            Expr::UintToBytes { value, length } => (value, Self::UintToBytes { length: *length }),
+            Expr::BytesToUint { value, max } => {
+                let bound = unsigned_maximum(max).and_then(|bound| match bound {
+                    UnsignedMaximum::Small(bound) => Ok(Self::BytesToUint { max: bound }),
+                    UnsignedMaximum::Wide { .. } => Err(RenderError::UnsupportedUintBytesWidth),
+                });
+                return (value, bound);
             }
-            Expr::BytesToVector { value, length } => {
-                Some((value, Self::ToVector { length: *length }))
-            }
-            Expr::BytesZeroPad { value, length } => {
-                Some((value, Self::ZeroPad { length: *length }))
-            }
+            Expr::BytesZeroPad { value, length } => (value, Self::ZeroPad { length: *length }),
             Expr::BytesSlice {
                 value,
                 start,
                 length,
-            } => Some((
+            } => (
                 value,
-                Self::Slice {
-                    start: *start,
-                    length: *length,
-                },
-            )),
-            _ => None,
-        }
+                Self::Slice { start: *start, length: *length },
+            ),
+            _ => unreachable!("dispatcher selected a fixed bytes conversion"),
+        };
+        (value, Ok(operation))
     }
 
     fn byte_vector(length: usize) -> Type {
@@ -128,6 +130,24 @@ impl FixedBytesConversion {
                     });
                 }
                 Ok(Type::Bytes { length })
+            }
+            Self::UintToBytes { length } => {
+                let Type::Unsigned { max } = source else {
+                    return Err(RenderError::ExpectedUnsigned(source.clone()));
+                };
+                if !matches!(unsigned_maximum(max)?, UnsignedMaximum::Small(_)) {
+                    return Err(RenderError::UnsupportedUintBytesWidth);
+                }
+                if length > crate::resource_limits::recording_byte_payload_limit() {
+                    return Err(RenderError::UnsupportedUintBytesWidth);
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::BytesToUint { max } => {
+                let Type::Bytes { .. } = source else {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                };
+                Ok(Type::Unsigned { max: max.to_string() })
             }
             Self::ZeroPad { length } => {
                 let Type::Bytes { length: input_length } = *source else {
@@ -271,6 +291,7 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
             )
         }
         ConversionSource::FixedBytes { value, operation } => {
+            let operation = operation?;
             let child = children.visit(value, sink)?;
             let ty = operation.result_type(&child.ty)?;
             (ConversionFacts::FixedBytes(operation), child.output, ty)

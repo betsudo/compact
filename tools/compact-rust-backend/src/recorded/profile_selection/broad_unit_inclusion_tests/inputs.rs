@@ -273,8 +273,18 @@ fn bytes_zero_pad_manifest() -> Result<Value, String> {
     serde_json::from_slice(BYTES_ZERO_PAD).map_err(|error| error.to_string())
 }
 
+const UINT_BYTES: &[u8] = include_bytes!("uint-bytes-expression.json");
+
+fn uint_bytes_manifest() -> Result<Value, String> {
+    if digest(UINT_BYTES) != "78ec997f27d23f45ce4d65217c92e8da11843bf29da96a3c16a45df844a14216" {
+        return Err("unreviewed Uint byte conversion compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UINT_BYTES).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &bytes_zero_pad_manifest()?)?;
+    let current = legacy_source(path, current, &uint_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
     legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)
 }

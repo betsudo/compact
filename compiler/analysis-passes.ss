@@ -2003,6 +2003,26 @@
                   (with-output-language (Ltypes Expression)
                     `(let* ,src ([(,t ,result-type) ,expr])
                        ,(k `(var-ref ,src ,t)))))]))
+      (define (check-serialization-width src type width len)
+        (when (> width len)
+          (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
+                         width len (format-type type))))
+      (define (pad-serialized-bytes src expr len^ len)
+        (with-output-language (Ltypes Expression)
+          (if (= len^ len)
+              expr
+              (let ([len^^ (- len len^)])
+                `(vector->bytes ,src ,len
+                   (vector ,src
+                     (spread ,src ,len^ (bytes->vector ,src ,len^ ,expr))
+                     (spread ,src ,len^^
+                       (bytes->vector ,src ,len^^ (quote ,src ,(make-bytevector len^^ 0))))))))))
+      (define (serialized-byte-prefix src expr bytes-type len^ len)
+        (with-output-language (Ltypes Expression)
+          (if (= len^ len) expr
+              `(bytes-slice ,src ,bytes-type ,expr (quote ,src 0) ,len^))))
+      (define (unsigned-serialized-width nat)
+        (quotient (+ (integer-length nat) 7) 8))
       (define (arithmetic-binop src op expr1 expr2 k)
         (let*-values ([(expr1 type1) (Care expr1)] [(expr2 type2) (Care expr2)])
           (define (condense type l/r)
@@ -3052,20 +3072,23 @@
             (values `(if ,src ,expr (quote ,src ,yes) (quote ,src ,no))
                     (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
          [(tbytes ,src^ ,len^)
-          (when (> len^ len)
-            (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
-                           len^ len (format-type type)))
-          (let* ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))]
-                 [value (maybe-safecast src carrier type^ expr)]
-                 [len^^ (- len len^)])
+          (check-serialization-width src type len^ len)
+          (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
+            (values (pad-serialized-bytes src (maybe-safecast src carrier type^ expr) len^ len)
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tunsigned ,src^ ,nat)
+          (let ([len^ (unsigned-serialized-width nat)])
+            (check-serialization-width src type len^ len)
             (values
-              (if (= len^^ 0)
-                  value
-                  `(vector->bytes ,src ,len
-                     (vector ,src
-                       (spread ,src ,len^ (bytes->vector ,src ,len^ ,value))
-                       (spread ,src ,len^^
-                         (bytes->vector ,src ,len^^ (quote ,src ,(make-bytevector len^^ 0)))))))
+              (if (= len^ 0)
+                  (maybe-bind src type^ expr
+                    (lambda (value) `(quote ,src ,(make-bytevector len 0))))
+                  (let* ([carrier (with-output-language (Ltypes Type) `(tunsigned ,src ,nat))]
+                         [field-type (with-output-language (Ltypes Type) `(tfield ,src))]
+                         [value (maybe-safecast src carrier type^ expr)])
+                    (pad-serialized-bytes src
+                      `(field->bytes ,src ,len^ (safe-cast ,src ,field-type ,carrier ,value))
+                      len^ len)))
               (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
          [else (source-errorf src "serialize does not yet support type ~a" (format-type type))])]
       [(deserialize ,src ,len ,[type] ,[Care : expr type^])
@@ -3087,13 +3110,21 @@
                   [boolean-type (with-output-language (Ltypes Type) `(tboolean ,src))])
               (values (maybe-safecast src type boolean-type decoded) type))]
            [(tbytes ,src^ ,len^)
-            (when (> len^ len)
-              (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
-                             len^ len (format-type type)))
-            (let* ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))]
-                   [value (if (= len^ len) expr
-                              `(bytes-slice ,src ,bytes-type ,expr (quote ,src 0) ,len^))])
-              (values (maybe-safecast src type carrier value) type))]
+            (check-serialization-width src type len^ len)
+            (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
+              (values (maybe-safecast src type carrier
+                        (serialized-byte-prefix src expr bytes-type len^ len))
+                      type))]
+           [(tunsigned ,src^ ,nat)
+            (let ([len^ (unsigned-serialized-width nat)]
+                  [carrier (with-output-language (Ltypes Type) `(tunsigned ,src ,nat))])
+              (check-serialization-width src type len^ len)
+              (let ([value (if (= len^ 0)
+                               (maybe-bind src bytes-type expr
+                                 (lambda (value) `(quote ,src 0)))
+                               `(cast-from-bytes ,src ,carrier ,len^
+                                  ,(serialized-byte-prefix src expr bytes-type len^ len)))])
+                (values (maybe-safecast src type carrier value) type)))]
            [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))]
       [(emit ,src ,[Care : expr type])
        (unless (feature-zkir-v3)

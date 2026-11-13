@@ -35,10 +35,12 @@ impl Lowerer<'_> {
             }
             Expr::VectorToBytes { .. }
             | Expr::BytesToVector { .. }
+            | Expr::UintToBytes { .. }
+            | Expr::BytesToUint { .. }
             | Expr::BytesZeroPad { .. }
             | Expr::BytesSlice { .. } => {
-                let (value, operation) = FixedBytesConversion::from_expression(expression)
-                    .expect("dispatcher selected a fixed bytes conversion");
+                let (value, operation) = FixedBytesConversion::from_expression(expression);
+                let operation = operation.map_err(|error| invalid(path, error.to_string()))?;
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
                 let ty = operation
                     .result_type(&value.ty)

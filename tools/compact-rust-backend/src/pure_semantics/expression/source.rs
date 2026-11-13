@@ -90,11 +90,12 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         }
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. } => {
             let (value, operation) =
-                super::super::conversion::FixedBytesConversion::from_expression(expr)
-                    .expect("dispatcher selected a fixed bytes conversion");
+                super::super::conversion::FixedBytesConversion::from_expression(expr);
             Source::Conversion(ConversionSource::FixedBytes { value, operation })
         }
         Expr::JubjubCast { value, ty } => {

@@ -221,6 +221,7 @@ pub enum RenderError {
         input_length: usize,
     },
     ExpectedBytes(Type),
+    UnsupportedUintBytesWidth,
     InvalidSecp256k1BytesCast {
         source: Type,
         target: Type,
@@ -381,6 +382,7 @@ impl fmt::Display for RenderError {
                 "slice index {start} plus length {length} is out-of-bounds for Bytes<{input_length}>"
             ),
             Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
+            Self::UnsupportedUintBytesWidth => write!(f, "unsupported width for native Uint/Bytes conversion"),
             Self::InvalidSecp256k1BytesCast { source, target } => write!(
                 f,
                 "cannot cast {source:?} to {target:?}; expected Bytes<32> and a supported foreign field"
@@ -868,6 +870,8 @@ fn collect_expression_types<'ir>(
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
+        | Expr::UintToBytes { value, .. }
+        | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
@@ -1545,11 +1549,12 @@ fn pure_conversion_expression(
         }
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. } => {
             let (value, operation) =
-                pure_semantics::conversion::FixedBytesConversion::from_expression(expr)
-                    .expect("dispatcher selected a fixed bytes conversion");
+                pure_semantics::conversion::FixedBytesConversion::from_expression(expr);
             ConversionSource::FixedBytes { value, operation }
         }
         Expr::Coerce { value, ty } => ConversionSource::Coerce { value, ty },

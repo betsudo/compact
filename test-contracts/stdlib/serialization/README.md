@@ -48,3 +48,21 @@ The runner checks the output and public write for all three cases and
 rejects substituted prefixes and nonzero output padding in the SDK.
 It writes the binary ZKIR and preimages into a new directory for proof
 generation and independent verification.
+
+## Native Uint serialization
+
+`uint.compact` retains the six upstream Uint<8>, Uint<64>, and Uint<128>
+exports. It also exercises nominal Uint<9>, wire padding, the zero-only
+Uint range, and direct casts at their width boundaries.
+`uint-stateful.compact` records a decoded Uint<9> in a public cell.
+Compile both targets, then run:
+
+```sh
+node test-contracts/stdlib/serialization/check-uint.mjs \
+  "$OUTPUT/uint" "$OUTPUT/uint-stateful" "$ZKIR_WASM_PACKAGE" "$OUTPUT/uint-preimages"
+```
+
+The runner checks little-endian encoding, range refusal and state
+preservation. It exports the exact SDK preimages and binary ZKIR for
+independent proof qualification. The Rust wire lowering in this slice
+covers the native u128 carrier.

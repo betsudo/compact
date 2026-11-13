@@ -578,6 +578,28 @@
           [(talias ,src ,nominal? ,type-name ,type^) (boolean-carrier? type^)]
           [else #f]))
 
+      (define (bytes-cast-ir src type len expr lower)
+        (let ([maximum (rust-unsigned-maximum type)])
+          (if maximum
+              (object (cons "kind" "bytes_to_uint")
+                      (cons "value" (lower expr))
+                      (cons "max" (number->string maximum)))
+              (literal-bytes-field-ir type len expr src))))
+
+      (define (field-to-bytes-ir src len expr lower)
+        (if (= len 32)
+            (object (cons "kind" "field_to_bytes32")
+                    (cons "value" (lower expr)))
+            (or (nanopass-case (Lnodisclose Expression) expr
+                  [(safe-cast ,src^ ,type ,type^ ,expr^)
+                   (let ([maximum (rust-unsigned-maximum type^)])
+                     (and maximum (<= (integer-length maximum) 128)
+                          (object (cons "kind" "uint_to_bytes")
+                                  (cons "value" (lower expr^))
+                                  (cons "length" len))))]
+                  [else #f])
+                (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))))
+
       (define (bytes-carrier-width type)
         (nanopass-case (Lnodisclose Type) type
           [(tbytes ,src ,len) len]
@@ -864,12 +886,9 @@
           [(bytes-slice ,src ,type ,expr ,index ,len)
            (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
-           (literal-bytes-field-ir type len expr src)]
+           (bytes-cast-ir src type len expr (lambda (value) (expression-ir value src)))]
           [(field->bytes ,src ,len ,expr)
-           (unless (= len 32)
-             (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
-           (object (cons "kind" "field_to_bytes32")
-                   (cons "value" (expression-ir expr src)))]
+           (field-to-bytes-ir src len expr (lambda (value) (expression-ir value src)))]
           [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
            (guard (not nat?))
            (jubjub-cast-ir src
@@ -2871,12 +2890,9 @@
            (bytes-slice-ir src expr index len
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
-           (literal-bytes-field-ir type len expr src)]
+           (bytes-cast-ir src type len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(field->bytes ,src ,len ,expr)
-           (unless (= len 32)
-             (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
-           (object (cons "kind" "field_to_bytes32")
-                   (cons "value" (stateful-expression-ir expr src witness-ids)))]
+           (field-to-bytes-ir src len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
            (guard (not nat?))
            (jubjub-cast-ir src
@@ -3066,7 +3082,7 @@
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (object (cons "kind" "expression")
-                   (cons "value" (literal-bytes-field-ir type len expr src)))]
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(field->bytes ,src ,len ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]

@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "83e0e815ae24786000f0a1d6f1dd16d6a831356700a9533d7003cbe91b7df965"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "19c1f894048bd4e19907fad53a615e7415151a70f9fa4ac8922b0551f2274105",
+      "previous_sha256": "613abb5616362b52e1043e193bf1532621d52a88b775816479fe76ac19b12174",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::UintToBytes { value, .. }\n        | Expr::BytesToUint { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "bad9fb68a3ce0f00f0396ea6a8a194203de46222caf76a669449bb03a2aa04c5",
+      "previous_sha256": "1ab396f41ebf525c9e579475624923fc8db061dc64fb38f7eea5ef06fc540deb",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::UintToBytes { value, .. }\n        | Expr::BytesToUint { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "13ba3fe119d4d03b2b806338df8f53a76552ac2963b1673d7432d891e86c252e",
+      "previous_sha256": "42e88122b86af23b2eab9e040ba3b956f9360f038151d7d1afec0ff172c0b22a",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::UintToBytes { .. }\n        | Expr::BytesToUint { .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "938fb1f0126c25601ad2f6637fc40aa4bdf3e7be1a0a0a2284c8582fddceda41",
+      "previous_sha256": "871fc1f4aee61caf0e382040b1f22b2b7fe23930cbe9d0ecb6a47166a4066b80",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::UintToBytes { value, .. }\n        | Expr::BytesToUint { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

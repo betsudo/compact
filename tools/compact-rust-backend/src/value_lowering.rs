@@ -68,6 +68,31 @@ pub(crate) fn fixed_bytes_conversion_syntax(
         FixedBytesConversion::FromVector { .. } => syn::parse_quote!(runtime::FixedBytes::new(
             (#value).into_array().map(|byte| u8::try_from(byte.value()).expect("Uint<8> fits a byte"))
         )),
+        FixedBytesConversion::UintToBytes { length } => syn::parse_quote!({
+            let bytes = (#value).value().to_le_bytes();
+            let len = #length.min(bytes.len());
+            if bytes[len..].iter().any(|&byte| byte != 0) {
+                Err(runtime::CompactError::InvalidUnsignedValue)
+            } else {
+                let mut output = [0u8; #length];
+                output[..len].copy_from_slice(&bytes[..len]);
+                Ok(runtime::FixedBytes::new(output))
+            }?
+        }),
+        FixedBytesConversion::BytesToUint { max } => {
+            let max = syn::LitInt::new(&format!("{max}u128"), Span::call_site());
+            syn::parse_quote!({
+                let input = (#value).into_array();
+                let mut bytes = [0u8; 16];
+                let len = input.len().min(bytes.len());
+                if input[len..].iter().any(|&byte| byte != 0) {
+                    Err(runtime::CompactError::InvalidUnsignedValue)
+                } else {
+                    bytes[..len].copy_from_slice(&input[..len]);
+                    runtime::BoundedUint::<#max>::new(u128::from_le_bytes(bytes))
+                }?
+            })
+        }
         FixedBytesConversion::ZeroPad { length } => syn::parse_quote!({
             let input = (#value).into_array();
             let mut output = [0u8; #length];

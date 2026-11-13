@@ -552,6 +552,8 @@ fn render_operation_expression(
         | Expr::FieldToBytes32 { .. }
         | Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. }
         | Expr::JubjubCast { .. }
@@ -1571,10 +1573,12 @@ fn render_conversion_operation(
         }
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. } => {
-            let (value, operation) = FixedBytesConversion::from_expression(value)
-                .expect("dispatcher selected a fixed bytes conversion");
+            let (value, operation) = FixedBytesConversion::from_expression(value);
+            let operation = operation?;
             let (rendered, actual, effect) = render_state_expression_observed(
                 value,
                 parameters,

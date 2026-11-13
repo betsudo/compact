@@ -123,6 +123,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
@@ -241,6 +243,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
@@ -300,6 +304,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
@@ -381,6 +387,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
