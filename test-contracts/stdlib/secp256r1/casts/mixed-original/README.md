@@ -30,9 +30,16 @@ also checks the two original `castC25519(false/true, 7, 8)` calls and the
 preimage check, fresh proof with independent verification and three negative
 controls, and fee-funded default-strict transaction with native state parity
 and unchanged-state replay refusal. Its proof runner is rebuilt from the
-archived locked Rust source. The other eight original exports have generated
-execution and mock circuit coverage; their full proof and funded matrix remains
-open. All reported results are local macOS arm64; native Linux remains required.
+archived locked Rust source. The
+[K1/P-256 proof lane](../../../../../tools/compact-rust-backend/check_upstream_ledger9_mixed_k1_r1_proofs.py)
+then checks both original `castK1` and `castR1` Boolean branches and `castZero`.
+Those five calls also have honest and changed-write preimage checks, fresh
+k=11/k=12 proofs with same-k different-circuit verifier, changed-binding and
+corrupt-proof refusals, and separate fee-funded default-strict transactions
+with native state parity and unchanged replay refusal. The five original
+`unused` exports retain generated execution and mock circuit coverage; their
+proof and funded matrix remains open. All reported results are local macOS
+arm64; native Linux remains required.
 
 Run the complete lane with the signed source's Rust CLI and a Scheme compiler
 built from the same unchanged frontend source, Compact Runtime 0.17.0, ZKIR
@@ -55,3 +62,9 @@ the archived standalone proof runner, plus `--wrong-verifier-k10` and
 respective k. The material directory's parent must contain its
 `material-receipt.json`. The driver runs the original family lane first
 and writes separate source, preimage, proof, funded and replay receipts.
+
+For the extended K1/P-256 lane, run
+`check_upstream_ledger9_mixed_k1_r1_proofs.py` with those same arguments and
+add `--wrong-verifier-k12`, pointing to the archived Jubjub identity guard's
+k=12 different-circuit verifier. This driver repeats the Curve25519 lane
+at the signed source before proving and funding the five K1/P-256 cases.

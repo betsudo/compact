@@ -340,6 +340,10 @@ The original Curve25519 `castC25519` false and true branches and `castWide`
 reduction also have [fresh k=11/k=10 proofs and separately funded strict
 applications](../../../test-contracts/stdlib/secp256r1/casts/mixed-original/README.md),
 each with changed-write, verifier, binding, corrupt-proof and replay refusals.
+The two original `castK1` and two `castR1` branches plus `castZero` also have
+fresh k=11/k=12 proofs and separately funded strict applications with the
+same controls. The five original unused exports remain for proof and funded
+qualification.
 These results are local macOS arm64 only. Remaining original exports retain
 open proof and funded transaction coverage, and native Linux remains required.
 The [P-256 arithmetic fixtures](../../../test-contracts/stdlib/secp256r1/arithmetic)
