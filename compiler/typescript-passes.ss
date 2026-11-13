@@ -2260,7 +2260,10 @@
                  (format "{tag: ~a}" (format-javascript-string opaque-type))
                  (format "{tag: 'Opaque', tsType: ~a}" (format-javascript-string opaque-type)))]
             [(tvector ,src ,len ,type)
-             (format-signature-sequence (make-list len (format-signature-type type)))]
+             (if (zero? len)
+                 "{tag: 'Tuple', types: []}"
+                 (format "{tag: 'Vector', length: ~d, type: ~a}"
+                   len (format-signature-type type)))]
             [(ttuple ,src ,type* ...)
              (format-signature-sequence (map format-signature-type type*))]
             [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
