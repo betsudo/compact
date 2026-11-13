@@ -23,9 +23,12 @@ import json
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
+import tarfile
 
 from collection_gate_binding import compiler_recipe, git, require, sha
+from check_upstream_ledger9_bytes_map_proof import WASM_TGZ_SHA256, dist_hashes
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +36,7 @@ SOURCE = ROOT / 'compiler/test.ss'
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'
 UPSTREAM = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 BASE = 'f22ad3ff822171758ab87ec7c4b9696323f3f036'
+RUNTIME_BASE_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
 CASES = {
     'k1': {
         'source': '1bc9dacd4e33970b8f7561ad76142e2852ae20b4f781231d431d74002d01fe68',
@@ -98,8 +102,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler-receipt', type=Path, required=True)
     parser.add_argument('--compiler', type=Path, required=True)
-    parser.add_argument('--runtime-package', type=Path, required=True)
-    parser.add_argument('--zkir-wasm', type=Path, required=True)
+    parser.add_argument('--runtime-baseline', type=Path, required=True)
+    parser.add_argument('--zkir-wasm-tgz', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'source checkout must be clean')
@@ -113,15 +117,40 @@ def main() -> None:
     compiler_recipe(args.compiler_receipt.resolve(strict=True), compiler,
                     compiler.with_name('compactc-scheme'),
                     source_head=head, current_head=head)
-    runtime_package = args.runtime_package.resolve(strict=True)
-    require(json.loads((runtime_package / 'package.json').read_text())['version'] == '0.18.0',
-            'Runtime 0.18.0 package changed')
-    wasm = args.zkir_wasm.resolve(strict=True)
-    require(json.loads((wasm / 'package.json').read_text())['version'] == '3.2.0',
-            'ZKIR wasm 3.2.0 package changed')
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     output.mkdir(parents=True)
+    runtime_base = args.runtime_baseline.resolve(strict=True)
+    require(sha(runtime_base) == RUNTIME_BASE_SHA256,
+            'qualified Runtime 0.18.0 baseline receipt changed')
+    baseline = json.loads(runtime_base.read_text())
+    runtime_log = output / 'runtime-recipe.log'
+    runtime_recipe = run([
+        str(Path(shutil.which('nix')).resolve(strict=True)), 'build', '--offline',
+        '--no-link', '--print-out-paths', '--max-jobs', '0', '--builders', '',
+        '--option', 'substitute', 'false', '.#runtime.package',
+    ], runtime_log)
+    runtime_store = Path(runtime_recipe.splitlines()[-1]).resolve(strict=True)
+    runtime_package = runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+    require(json.loads((runtime_package / 'package.json').read_text())['version'] == '0.18.0' and
+            sha(ROOT / 'runtime/package.json') == baseline['typescript_runtime_package_sha256'] and
+            dist_hashes(runtime_package / 'dist') == baseline['typescript_runtime_dist_files'],
+            'exact-head Runtime 0.18.0 package differs from qualified baseline')
+    wasm_tgz = args.zkir_wasm_tgz.resolve(strict=True)
+    require(sha(wasm_tgz) == WASM_TGZ_SHA256,
+            'ZKIR 3.2.0 wasm archive changed')
+    wasm_root = output / 'zkir-wasm'
+    wasm_root.mkdir()
+    with tarfile.open(wasm_tgz, 'r:gz') as archive:
+        members = archive.getmembers()
+        require(all((member.name == 'package' or member.name.startswith('package/')) and
+                    '..' not in Path(member.name).parts and
+                    (member.isfile() or member.isdir()) and not member.issym()
+                    for member in members), 'ZKIR wasm archive has unsafe members')
+        archive.extractall(wasm_root, filter='data')
+    wasm = wasm_root / 'package'
+    require(json.loads((wasm / 'package.json').read_text())['version'] == '3.2.0',
+            'ZKIR wasm package version changed')
     (output / 'package.json').write_text('{"type":"module"}\n')
     module = output / 'node_modules/@midnight-ntwrk/compact-runtime'
     module.parent.mkdir(parents=True)
@@ -166,7 +195,12 @@ def main() -> None:
                'platform': platform.platform(),
                'compiler_receipt_sha256': sha(args.compiler_receipt),
                'compiler_sha256': sha(compiler),
-               'runtime_package': str(runtime_package),
+               'runtime_store': str(runtime_store),
+               'runtime_recipe_log_sha256': sha(runtime_log),
+               'runtime_baseline_sha256': sha(runtime_base),
+               'runtime_manifest_sha256': sha(runtime_package / 'package.json'),
+               'runtime_dist_files': dist_hashes(runtime_package / 'dist'),
+               'zkir_wasm_tgz_sha256': sha(wasm_tgz),
                'capture_source_sha256': sha(CAPTURE),
                'gate_source_sha256': sha(Path(__file__)),
                'artifacts': artifacts, 'captures': captures,
