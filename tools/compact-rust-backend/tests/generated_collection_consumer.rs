@@ -16,7 +16,9 @@
 use compact_contract_ledger9_map_transition_v018 as map;
 use compact_contract_ledger9_set_transition_v018 as set;
 use compact_contract_list_field as list;
+use midnight_compact_runtime::context::CircuitResult;
 use midnight_compact_runtime::ledger::{ContractAddress, DefaultDB, StateValue};
+use midnight_compact_runtime::recording::RecordedCircuitResult;
 use midnight_compact_runtime::{Field, context::ConstructorContext};
 use midnight_onchain_state::state::{
     ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf,
@@ -62,7 +64,33 @@ fn expect_state(
     );
 }
 
-fn set_sequence() {
+fn replay(out: RecordedCircuitResult<(), ()>) -> CircuitResult<(), ()> {
+    let checked = out
+        .public
+        .initial()
+        .query(
+            out.public.verify_ops(),
+            None,
+            &out.execution.context.cost_model,
+        )
+        .expect("independent public replay succeeds");
+    assert_eq!(checked.context.state, out.execution.context.query.state);
+    assert_eq!(checked.context.effects, out.execution.context.query.effects);
+    assert_eq!(checked.gas_cost, out.execution.gas_cost);
+    out.execution
+}
+
+macro_rules! mutation {
+    ($recorded:expr, $module:ident, $name:ident, $context:expr $(, $arg:expr)* $(,)?) => {
+        if $recorded {
+            replay($module::ledger_contract::recorded::$name($context $(, $arg)*).unwrap())
+        } else {
+            $module::ledger_contract::$name($context $(, $arg)*).unwrap()
+        }
+    };
+}
+
+fn set_sequence(recorded: bool) {
     let names = [
         "add",
         "contains",
@@ -83,7 +111,7 @@ fn set_sequence() {
         "set",
     );
     let context = initial.into_circuit_context(ContractAddress::default());
-    let call = set::ledger_contract::add(context, true).unwrap();
+    let call = mutation!(recorded, set, add, context, true);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -91,7 +119,7 @@ fn set_sequence() {
         Some(0),
         "set",
     );
-    let call = set::ledger_contract::remove(call.context, true).unwrap();
+    let call = mutation!(recorded, set, remove, call.context, true);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -99,7 +127,7 @@ fn set_sequence() {
         Some(1),
         "set",
     );
-    let call = set::ledger_contract::add_field(call.context, Field::from(42_u64)).unwrap();
+    let call = mutation!(recorded, set, add_field, call.context, Field::from(42_u64));
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -107,7 +135,7 @@ fn set_sequence() {
         Some(2),
         "set",
     );
-    let call = set::ledger_contract::reset_fields(call.context).unwrap();
+    let call = mutation!(recorded, set, reset_fields, call.context);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -117,7 +145,7 @@ fn set_sequence() {
     );
 }
 
-fn map_sequence() {
+fn map_sequence(recorded: bool) {
     let names = [
         "put",
         "put_default",
@@ -138,7 +166,7 @@ fn map_sequence() {
         "map",
     );
     let context = initial.into_circuit_context(ContractAddress::default());
-    let call = map::ledger_contract::put(context, true, Field::from(42_u64)).unwrap();
+    let call = mutation!(recorded, map, put, context, true, Field::from(42_u64));
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -146,7 +174,7 @@ fn map_sequence() {
         Some(0),
         "map",
     );
-    let call = map::ledger_contract::remove_key(call.context, true).unwrap();
+    let call = mutation!(recorded, map, remove_key, call.context, true);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -154,7 +182,7 @@ fn map_sequence() {
         Some(1),
         "map",
     );
-    let call = map::ledger_contract::put_default(call.context, true).unwrap();
+    let call = mutation!(recorded, map, put_default, call.context, true);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -162,7 +190,7 @@ fn map_sequence() {
         Some(2),
         "map",
     );
-    let call = map::ledger_contract::reset_table(call.context).unwrap();
+    let call = mutation!(recorded, map, reset_table, call.context);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -172,7 +200,7 @@ fn map_sequence() {
     );
 }
 
-fn list_sequence() {
+fn list_sequence(recorded: bool) {
     let names = [
         "item_count",
         "items_empty",
@@ -191,7 +219,7 @@ fn list_sequence() {
         "list",
     );
     let context = initial.into_circuit_context(ContractAddress::default());
-    let call = list::ledger_contract::prepend(context, Field::from(42_u64)).unwrap();
+    let call = mutation!(recorded, list, prepend, context, Field::from(42_u64));
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -199,7 +227,7 @@ fn list_sequence() {
         Some(0),
         "list",
     );
-    let call = list::ledger_contract::prepend(call.context, Field::from(7_u64)).unwrap();
+    let call = mutation!(recorded, list, prepend, call.context, Field::from(7_u64));
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -207,7 +235,7 @@ fn list_sequence() {
         Some(1),
         "list",
     );
-    let call = list::ledger_contract::drop_first(call.context).unwrap();
+    let call = mutation!(recorded, list, drop_first, call.context);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -215,7 +243,7 @@ fn list_sequence() {
         Some(2),
         "list",
     );
-    let call = list::ledger_contract::clear_items(call.context).unwrap();
+    let call = mutation!(recorded, list, clear_items, call.context);
     expect_state(
         call.context.query.state.get_ref().clone(),
         &names,
@@ -226,10 +254,12 @@ fn list_sequence() {
 }
 
 fn main() {
-    set_sequence();
-    map_sequence();
-    list_sequence();
+    for recorded in [false, true] {
+        set_sequence(recorded);
+        map_sequence(recorded);
+        list_sequence(recorded);
+    }
     println!(
-        "generated Set/Map/List initial states and 12 transitions match retained TypeScript oracles"
+        "generated Set/Map/List ordinary and recorded/replayed transitions match retained TypeScript oracles"
     );
 }

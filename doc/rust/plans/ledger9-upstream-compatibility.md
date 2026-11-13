@@ -581,7 +581,11 @@ bytes. On local macOS arm64 with Rust 1.99, all three initial states and
 twelve transitions matched. The newly generated TypeScript modules were
 byte-identical to the paired Runtime 0.18.0 recapture outputs. The consumer
 does not prove these circuits or exercise a funded transaction; native Linux
-and recorded execution qualification remain open.
+qualification remains open. A follow-up runs all twelve mutations through
+the generated recorded API and independently replays each public VM trace.
+Executed and replayed states, effects and gas costs match, and the recorded states
+match the same retained TypeScript oracle bytes. Proof and funded transaction
+qualification remain open.
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0

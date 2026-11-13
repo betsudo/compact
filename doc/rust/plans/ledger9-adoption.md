@@ -1298,5 +1298,9 @@ bytes. Local macOS arm64 matched three initial states and twelve mutation
 steps, and the generated TypeScript files reproduced the paired recapture
 outputs byte for byte. The new check lives in
 `tools/compact-rust-backend/check_generated_collection_parity.py` and uses
-the repository's Rust 1.99 toolchain. Recorded execution, proofs, funded
-strict application and native Linux still require separate qualification.
+the repository's Rust 1.99 toolchain. A follow-up checks twelve generated
+recorded mutations and independently replays their public VM traces. State,
+effects and gas cost match each replay, and the resulting state bytes match
+the same retained TypeScript oracle.
+Proofs, funded strict application and native Linux still require separate
+qualification.

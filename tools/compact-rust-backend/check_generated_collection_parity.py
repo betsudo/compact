@@ -45,10 +45,11 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run(args: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> None:
+def run(args: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> str:
     result = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError(f"{args[0]} exited {result.returncode}:\n{result.stdout[-4000:]}\n{result.stderr[-4000:]}")
+    return result.stdout
 
 
 def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
@@ -91,7 +92,8 @@ def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
         + 'midnight-storage = "=3.0.0"\nserde_json = "1"\nhex = "0.4"\n'
     )
     run(["cargo", "generate-lockfile"], env=env, cwd=consumer)
-    run(["cargo", "run", "--locked", "--quiet"], env=env, cwd=consumer)
+    consumer_output = run(["cargo", "run", "--locked", "--quiet"], env=env, cwd=consumer)
+    assert "ordinary and recorded/replayed transitions match retained TypeScript oracles" in consumer_output
     return {
         "compiler_sha256": sha256(compiler),
         "scheme_frontend_sha256": sha256(scheme),
@@ -100,7 +102,9 @@ def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
         "sources_and_artifacts": artifacts,
         "consumer_source_sha256": sha256(consumer / "src/main.rs"),
         "consumer_lock_sha256": sha256(consumer / "Cargo.lock"),
-        "result": "Generated Rust initial states and 12 Set/Map/List transitions match retained TypeScript state bytes",
+        "result": "Generated Rust ordinary and independently replayed Set/Map/List circuits match three initial and twelve transition TypeScript state bytes",
+        "consumer_output": consumer_output.strip(),
+        "recorded_replay_checks": "state, effects, gas cost for each of 12 mutations",
         "platform": "local; native Linux gate remains required",
     }
 
