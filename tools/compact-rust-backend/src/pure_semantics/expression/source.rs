@@ -63,6 +63,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
         | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

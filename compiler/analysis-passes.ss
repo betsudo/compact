@@ -3305,7 +3305,12 @@
           (guard (stdlib-src? src^) (eq? struct-name 'ShieldedSpend)
                  (eq? elt-name 'nullifier) (= len 32))
           (values
-            `(emit-shielded-spend ,src (elt-ref ,src ,expr ,elt-name 0))
+            `(emit-log ,src 0 32 (elt-ref ,src ,expr ,elt-name 0))
+            (with-output-language (Ltypes Type) `(ttuple ,src)))]
+         [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+          (guard (stdlib-src? src^) (eq? struct-name 'ShieldedBurn))
+          (values
+            `(emit-log ,src 3 49 ,(serialize-product src type expr 49))
             (with-output-language (Ltypes Type) `(ttuple ,src)))]
          [else (source-errorf src "~a is not a declared event type" (format-type type))])]
       [(assert ,src ,[Care : expr type0] ,mesg)
@@ -4319,11 +4324,11 @@
            (let ([type (Care expr)])
              (for-each unset-idtype! var-name*)
              type)))]
-      [(emit-shielded-spend ,src ,[Care : expr -> * type])
+      [(emit-log ,src ,nat ,len ,[Care : expr -> * type])
        (unless (nanopass-case (Lnodca Type) (de-alias type)
-                 [(tbytes ,src^ ,len) (= len 32)]
+                 [(tbytes ,src^ ,len^) (= len^ len)]
                  [else #f])
-         (source-errorf src "ShieldedSpend payload must have type Bytes<32>"))
+         (source-errorf src "event payload must have type Bytes<~d>" len))
        (with-output-language (Lnodca Type) `(ttuple ,src))]
       [(assert ,src ,[Care : expr -> * type] ,mesg)
        (unless (nanopass-case (Lnodca Type) (de-alias type)
@@ -4763,7 +4768,7 @@
                   elt-name
                   (name-of-contract type))
                 #f))]
-      [(emit-shielded-spend ,src ,expr)
+      [(emit-log ,src ,nat ,len ,expr)
        (raise (make-cc-call-condition function-name src "emits an event" #t))])
     (Ledger-Accessor : Ledger-Accessor (ir function-name) -> Ledger-Accessor ())
     (Function : Function (ir function-name) -> Function ()
@@ -4864,7 +4869,7 @@
        ir]
       [else ir])
     (Expression : Expression (ir function-name) -> Expression ()
-      [(emit-shielded-spend ,src ,expr)
+      [(emit-log ,src ,nat ,len ,expr)
        (raise (make-impure-condition function-name src "emits a public event"))]
       [(public-ledger ,src ,ledger-field-name ,sugar? ,accessor* ...)
        (raise (make-impure-condition function-name src
@@ -5903,7 +5908,7 @@
       ; define-pass doesn't realize above pattern covers let*
       [(let* ,src ([,local* ,[* abs*]] ...) ,expr) (assert cannot-happen)]
 
-      [(emit-shielded-spend ,src ,[* abs])
+      [(emit-log ,src ,nat ,len ,[* abs])
        (unless (null? control-witness*)
          (record-leak! src "performing this emit operation" control-witness*))
        (let ([witness* (abs->witnesses abs)])

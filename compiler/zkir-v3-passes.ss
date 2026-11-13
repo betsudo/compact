@@ -1007,16 +1007,17 @@
                (let ([quo (make-temp-id default-src 'quo)])
                  (loop (cdr var-name*) quo
                    (cons `(div_mod_power_of_two ,quo ,(car var-name*) ,var ,8) instr*))))))]
-      [(emit-shielded-spend ,src ,test ,triv* ...)
-       (let* ([alignment* (with-output-language (Lflattened Alignment) (list `(abytes 32)))]
+      [(emit-log ,src ,nat ,len ,test ,triv* ...)
+       (let* ([alignment* (with-output-language (Lflattened Alignment) (list `(abytes ,len)))]
               [env (list (cons 'payload (make-zkir-val alignment* triv*)))]
-              [vm-code (make-vm-code
-                         #'((push [storage #f]
+              [vm-code (with-syntax ([tag (datum->syntax #'push nat)])
+                         (make-vm-code
+                           #'((push [storage #f]
                                   [value (state-value 'array
                                            ((state-value 'cell (align 1 4))
-                                            (state-value 'cell (align 0 1))
+                                            (state-value 'cell (align tag 1))
                                             (state-value 'cell payload)))])
-                            (log)))])
+                              (log))))])
          (assemble test '() '() '() src '() env vm-code instr*))]
       [(= ,test (,var-name* ...) (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...)
                              ,src^ ,adt-op ,triv* ...))

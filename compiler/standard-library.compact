@@ -624,3 +624,8 @@ export circuit ed25519Verify<#n>(
 export struct ShieldedSpend {
   nullifier: Bytes<32>,
 }
+
+export struct ShieldedBurn {
+  nullifier: Bytes<32>,
+  amount: Maybe<Uint<128>>,
+}

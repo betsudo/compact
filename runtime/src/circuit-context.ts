@@ -260,6 +260,18 @@ export const emitShieldedSpend = (context: CircuitContext, proofData: PartialPro
   if (nullifier.length !== 32) {
     throw new CompactError('ShieldedSpend nullifier must be Bytes<32>');
   }
+  return emitEvent(context, proofData, 0n, nullifier, 32);
+};
+
+/** @internal */
+export const emitShieldedBurn = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 49) {
+    throw new CompactError('ShieldedBurn payload must be Bytes<49>');
+  }
+  return emitEvent(context, proofData, 3n, payload, 49);
+};
+
+const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
   const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
     tag: 'cell',
     content: { value, alignment: [{ tag: 'atom', value: { tag: 'bytes', length } }] },
@@ -272,8 +284,8 @@ export const emitShieldedSpend = (context: CircuitContext, proofData: PartialPro
           tag: 'array',
           content: [
             cell(ocrt.bigIntToValue(1n), 4),
-            cell(ocrt.bigIntToValue(0n), 1),
-            cell(new CompactTypeBytes(32).toValue(nullifier), 32),
+            cell(ocrt.bigIntToValue(tag), 1),
+            cell(new CompactTypeBytes(length).toValue(payload), length),
           ],
         },
       },

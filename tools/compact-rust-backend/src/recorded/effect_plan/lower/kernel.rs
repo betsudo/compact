@@ -17,25 +17,24 @@
 use super::*;
 
 impl Lowerer<'_> {
-    pub(super) fn shielded_spend_event(
+    pub(super) fn emit_event(
         &mut self,
         expression: &Expr,
         scope: &Scope,
         bindings: &mut Vec<Binding>,
         path: &str,
     ) -> Result<(Operation, Type), RecordingGap> {
-        let Expr::EmitShieldedSpend { value } = expression else {
-            return Err(invalid(path, "expected ShieldedSpend event"));
+        let (value, length, operation): (_, _, fn(Value) -> Operation) = match expression {
+            Expr::EmitShieldedSpend { value } => (value, 32, Operation::EmitShieldedSpend),
+            Expr::EmitShieldedBurn { value } => (value, 49, Operation::EmitShieldedBurn),
+            _ => return Err(invalid(path, "expected an event expression")),
         };
         let path = format!("{path}.value");
         let value = self.expression(value, scope, bindings, &path)?;
-        if value.ty != (Type::Bytes { length: 32 }) {
-            return Err(invalid(
-                &path,
-                "ShieldedSpend payload must have type Bytes<32>",
-            ));
+        if value.ty != (Type::Bytes { length }) {
+            return Err(invalid(&path, format!("event payload must have type Bytes<{length}>")));
         }
-        Ok((Operation::EmitShieldedSpend(value), Type::Unit))
+        Ok((operation(value), Type::Unit))
     }
 
     pub(super) fn kernel(

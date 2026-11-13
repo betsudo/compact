@@ -3307,8 +3307,13 @@
       [(safe-cast ,src ,type ,type^ ,expr)
        ; no checks needed for safe casts
        (Expr expr level outer-pure?)]
-      [(emit-shielded-spend ,src ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
-       (make-Qconcat "__compactRuntime.emitShieldedSpend(context, partialProofData, " expr ")")]
+      [(emit-log ,src ,nat ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (make-Qconcat
+         (case nat
+           [(0) "__compactRuntime.emitShieldedSpend"]
+           [(3) "__compactRuntime.emitShieldedBurn"]
+           [else (assert cannot-happen)])
+         "(context, partialProofData, " expr ")")]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (nanopass-case (Ltypescript ADT-Op) adt-op
          [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)

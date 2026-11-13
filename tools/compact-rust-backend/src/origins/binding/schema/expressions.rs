@@ -351,6 +351,7 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             s.array("arguments", Slice::Expr(arguments));
         }
         Expr::EmitShieldedSpend { value } => unary!("emit_shielded_spend", "value", value),
+        Expr::EmitShieldedBurn { value } => unary!("emit_shielded_burn", "value", value),
         Expr::KernelClaim { claim, value } => {
             unary!("kernel_claim", "value", value);
             s.text(

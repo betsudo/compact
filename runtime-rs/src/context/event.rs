@@ -14,9 +14,10 @@
 // limitations under the License.
 
 use super::{CircuitContext, CircuitResult};
-use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_spend_program};
+use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_spend_program};
+use midnight_onchain_vm::result_mode::ResultModeVerify;
 use crate::{CompactError, FixedBytes};
-use midnight_onchain_vm::ops::VersionedLogItem;
+use midnight_onchain_vm::ops::{Op, VersionedLogItem};
 
 /// A VM-decoded contract event tagged with the emitting contract address.
 pub struct ContractEvent<D: DB = DefaultDB> {
@@ -55,10 +56,25 @@ impl<Private, D: DB> CircuitContext<Private, D> {
 
     /// Emit a public ShieldedSpend event through the ledger VM.
     pub fn emit_shielded_spend(
-        mut self,
+        self,
         nullifier: FixedBytes<32>,
     ) -> Result<CircuitResult<Private, (), D>, CompactError> {
-        let program = shielded_spend_program(nullifier)?;
+        self.emit_event(shielded_spend_program(nullifier)?)
+    }
+
+    /// Emit a public ShieldedBurn event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_burn(
+        self,
+        payload: FixedBytes<49>,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        self.emit_event(shielded_burn_program(payload)?)
+    }
+
+    fn emit_event(
+        mut self,
+        program: Vec<Op<ResultModeVerify, D>>,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
         let result = self
             .query
             .query(&program, self.gas_limit, &self.cost_model)

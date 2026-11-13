@@ -62,6 +62,7 @@ fn expression_with_calls(
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
         | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

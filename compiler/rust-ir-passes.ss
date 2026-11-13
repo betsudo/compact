@@ -126,7 +126,7 @@
           [(new ,src ,type ,expr* ...) src]
           [(seq ,src ,expr* ... ,expr) src]
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
-          [(emit-shielded-spend ,src ,expr) src]
+          [(emit-log ,src ,nat ,len ,expr) src]
           [(assert ,src ,expr ,mesg) src]
           [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) src]
           [(jubjub-cast ,src ,type ,expr) src]
@@ -1821,7 +1821,7 @@
               (object (cons "kind" (if (id-pure? function-name) "pure_call" "circuit_call"))
                       (cons "name" (rust-function-name function-name))
                       (cons "arguments" (stateful-call-arguments-ir function-name expr* src witness-ids)))])]
-          [(emit-shielded-spend ,src ,expr)
+          [(emit-log ,src ,nat ,len ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir action src witness-ids)))]
           [(assert ,src ,expr ,mesg)
@@ -2733,8 +2733,11 @@
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
-          [(emit-shielded-spend ,src ,expr)
-           (object (cons "kind" "emit_shielded_spend")
+          [(emit-log ,src ,nat ,len ,expr)
+           (object (cons "kind" (case nat
+                                  [(0) "emit_shielded_spend"]
+                                  [(3) "emit_shielded_burn"]
+                                  [else (assert cannot-happen)]))
                    (cons "value" (stateful-expression-ir expr src witness-ids)))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -3098,7 +3101,7 @@
 
       (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
-          [(emit-shielded-spend ,src ,expr)
+          [(emit-log ,src ,nat ,len ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(quote ,src ,datum)

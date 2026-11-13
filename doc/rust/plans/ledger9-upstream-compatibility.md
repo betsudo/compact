@@ -262,6 +262,12 @@ tested JubjubScalar wire codecs. The Rust AST branch reports a source
 error for those codecs.
 Broader aggregate proofs and native Linux qualification remain open.
 
+The [event fixtures](../../../test-contracts/stdlib/events) cover
+`ShieldedSpend` and `ShieldedBurn`. The intact Burn fixture exercises
+single, ordered, conditional and absent emissions plus the 49-byte wire
+codec. The SDK checks all four event statements and rejects swapped
+event order. The two-event circuit uses the explicit k=14 proof lane.
+
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is
 k=17. The remaining original point fixtures and proof coverage for the

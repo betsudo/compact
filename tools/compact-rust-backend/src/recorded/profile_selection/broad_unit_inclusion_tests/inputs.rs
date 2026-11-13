@@ -318,8 +318,18 @@ fn wide_uint_bytes_manifest() -> Result<Value, String> {
     serde_json::from_slice(WIDE_UINT_BYTES).map_err(|error| error.to_string())
 }
 
+const SHIELDED_BURN_EVENT: &[u8] = include_bytes!("shielded-burn-event-expression.json");
+
+fn shielded_burn_event_manifest() -> Result<Value, String> {
+    if digest(SHIELDED_BURN_EVENT) != "cde729d3dd2a6ec2469c103b1b391742280ed743151336e6168b54764875a30b" {
+        return Err("unreviewed ShieldedBurn event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SHIELDED_BURN_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &wide_uint_bytes_manifest()?)?;
+    let current = legacy_source(path, current, &shielded_burn_event_manifest()?)?;
+    let current = legacy_source(path, &current, &wide_uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &enum_cast_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_from_chunks_manifest()?)?;
     let current = legacy_source(path, &current, &field_bytes_manifest()?)?;

@@ -26,3 +26,22 @@ The two-event control measures k=9 and this runner checks its model.
 Standalone cryptographic verification and funded strict application use
 separate proofs. Cross-contract events and the functional Rust target
 remain outside this slice.
+
+## ShieldedBurn
+
+`ShieldedBurn.compact` retains the seven exports from the pinned
+mainstream compiler test. The original Scheme and TypeScript assertions
+are preserved in `shielded-burn-upstream.ss.txt`. The event uses version 1,
+tag 3 and a 49-byte payload consisting of the nullifier, the optional
+amount flag, and the little-endian 128-bit amount.
+
+Run the generated TypeScript and SDK controls with:
+
+```sh
+node test-contracts/stdlib/events/check-shielded-burn.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/shielded-burn-preimages"
+```
+
+The runner checks event order, both conditional outcomes, and a
+substituted transcript with the two events swapped. The proof lane
+uses k=14 and is run explicitly.

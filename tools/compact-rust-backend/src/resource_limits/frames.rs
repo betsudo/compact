@@ -194,6 +194,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
                 | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -219,6 +220,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::KernelSelf { .. }
                 | E::KernelClaim { .. }
                 | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -375,6 +377,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
                 | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -469,6 +472,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
                 | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }

@@ -20,12 +20,25 @@ use midnight_onchain_vm::result_mode::ResultModeVerify;
 pub(crate) fn shielded_spend_program<D: DB>(
     nullifier: FixedBytes<32>,
 ) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::ShieldedSpend, nullifier)
+}
+
+pub(crate) fn shielded_burn_program<D: DB>(
+    payload: FixedBytes<49>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::ShieldedBurn, payload)
+}
+
+fn event_program<D: DB, const LENGTH: usize>(
+    tag: LogEventType,
+    bytes: FixedBytes<LENGTH>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
     // Upstream lower-emit packs the version, event tag and payload in order.
     let payload = StateValue::Array(
         vec![
             vm::literal(1u32),
-            vm::literal(LogEventType::ShieldedSpend as u8),
-            vm::cell(nullifier)?,
+            vm::literal(tag as u8),
+            vm::cell(bytes)?,
         ]
         .into(),
     );
