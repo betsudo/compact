@@ -1903,10 +1903,20 @@ fn render_arithmetic_operation(
                 // evaluations still precede the constant comparison result.
                 statements.push(syn::parse_quote!(let _: () = #right;));
                 syn::parse_quote!(#result)
-            } else if !negated {
-                syn::parse_quote!(#left_name == #right)
             } else {
-                syn::parse_quote!(#left_name != #right)
+                // A nested comparison is a valid Boolean operand, but parsing
+                // interpolated tokens as a new expression treats it as a
+                // chained comparison. Keep the child's syntax tree intact.
+                syn::Expr::Binary(syn::ExprBinary {
+                    attrs: vec![],
+                    left: Box::new(syn::parse_quote!(#left_name)),
+                    op: if negated {
+                        syn::BinOp::Ne(syn::token::Ne::default())
+                    } else {
+                        syn::BinOp::Eq(syn::token::EqEq::default())
+                    },
+                    right: Box::new(right),
+                })
             };
             Ok((rendered, Type::Boolean, left_effect || right_effect))
         }

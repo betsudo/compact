@@ -75,6 +75,8 @@ Unreleased Ledger 9 migration.
 
 ### Fixed
 
+- Preserve nested comparisons inside stateful Boolean equality and inequality
+  when emitting Rust, including the original mixed foreign-field cast case.
 - Avoid an internal compiler error for addition and multiplication of small
   nominal Uint values when the result has the same range as the operands.
   Retain the run-time overflow check when the result can exceed that range.

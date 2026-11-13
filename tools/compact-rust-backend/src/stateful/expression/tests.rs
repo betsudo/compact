@@ -19,6 +19,37 @@ fn mismatch(expected: Type, actual: Type) -> RenderError {
     RenderError::TypeMismatch { expected, actual }
 }
 
+#[test]
+fn nested_unsigned_comparisons_remain_boolean_equality_operands() {
+    for negated in [false, true] {
+        let compare = || Expr::Compare {
+            operator: ComparisonOperator::Less,
+            left: parameter("uint"),
+            right: parameter("uint"),
+        };
+        let expression = if negated {
+            Expr::NotEqual {
+                left: Box::new(compare()),
+                right: Box::new(compare()),
+            }
+        } else {
+            Expr::Equal {
+                left: Box::new(compare()),
+                right: Box::new(compare()),
+            }
+        };
+        let observed = Declarations::default().lower(expression);
+        let (rendered, ty, witness_effect) = observed.result.expect("nested comparison lowers");
+        assert_eq!(ty, Type::Boolean);
+        assert!(!witness_effect && !observed.query_effect);
+        let syn::Expr::Binary(binary) = rendered else {
+            panic!("equality must remain a binary expression");
+        };
+        assert_eq!(matches!(binary.op, syn::BinOp::Ne(_)), negated);
+        assert!(matches!(*binary.right, syn::Expr::Binary(_)));
+    }
+}
+
 #[derive(Default)]
 struct Declarations {
     ledger: Vec<LedgerField>,

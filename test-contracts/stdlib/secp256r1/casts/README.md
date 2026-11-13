@@ -5,8 +5,10 @@ LFDT-Minokawa/compact `672bd0f226f47a7d036c5c074ce71fbe1af1925e`.
 The standalone Compact fixtures retain the original literals after the
 license header. The four TypeScript callbacks use the current synchronous
 query context. `constant` and `unused` extract the original P-256 cases
-from the two mixed-curve tests. Their full Curve25519 cases remain in
-the archives for later execution.
+from the two mixed-curve tests. The [full original mixed cases](mixed-original/README.md)
+now execute K1, P-256 and Curve25519 together through generated TypeScript
+and Rust. Their `castNative` proof and funded application have a separate
+source-bound local qualification lane.
 
 `Bytes<32>` converts to the selected field by little-endian modular
 reduction. The reverse conversion emits the raw canonical bytes.

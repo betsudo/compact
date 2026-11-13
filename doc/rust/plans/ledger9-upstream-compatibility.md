@@ -332,7 +332,12 @@ cover modular little-endian conversion at the `Bytes<32>` boundary and
 guarded ledger writes. Both targets reject the original invalid widths and
 direct casts between different fields. The two original mixed-curve
 Scheme tests are retained in full. Their P-256 cases execute in separate
-fixtures while the Curve25519 cases await their runtime and compiler port.
+fixtures. The [full mixed K1/P-256/Curve25519 cases](../../../test-contracts/stdlib/secp256r1/casts/mixed-original/README.md)
+now execute all original assertions in generated TypeScript and Rust. Their
+`castNative` Boolean comparison has a fresh k=8 independently verified proof
+and separate fee-funded default-strict application with replay refusal.
+These results are local macOS arm64 only. Remaining original exports retain
+open proof and funded transaction coverage, and native Linux remains required.
 The [P-256 arithmetic fixtures](../../../test-contracts/stdlib/secp256r1/arithmetic)
 retain the original six stateful exports and 34 assertions. The generated
 Rust and TypeScript preserve separate base and scalar operands and
