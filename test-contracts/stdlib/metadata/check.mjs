@@ -153,6 +153,33 @@ if (
   );
 }
 
+const interfaceCollisionProbe = spawnSync(
+  compiler,
+  [
+    "--skip-zk",
+    "--compact-path",
+    join(repo, "compiler"),
+    join(root, "declared-interfaces-enum-collision.compact"),
+    join(output, "interface-enum-collision"),
+  ],
+  { cwd: repo, encoding: "utf8" },
+);
+if (interfaceCollisionProbe.error) throw interfaceCollisionProbe.error;
+writeFileSync(
+  join(output, "interface-enum-collision.stderr.log"),
+  interfaceCollisionProbe.stderr,
+);
+if (
+  interfaceCollisionProbe.status === 0 ||
+  !/exported enum name declaredInterfaces conflicts with generated interface metadata export/.test(
+    interfaceCollisionProbe.stderr,
+  )
+) {
+  throw Error(
+    `unexpected interface enum collision result (${interfaceCollisionProbe.status}): ${interfaceCollisionProbe.stderr}`,
+  );
+}
+
 // Preserve the original upstream Adder fixture and record the current
 // compiler's stricter declaration check against it.
 const original = join(output, "original");

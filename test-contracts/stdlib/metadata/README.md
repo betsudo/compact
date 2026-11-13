@@ -21,6 +21,8 @@ contract-typed exported argument when its declaration matches the compiled
 contract. Its signature retains the declared `Adder` interface. That program
 does not call another contract, so the called-interface table is empty. The
 table has no inherited JavaScript keys.
+An exported enum named `declaredInterfaces` is refused before JavaScript
+emission because it would collide with the generated metadata export.
 Secure call-time checking remains open: the original `useAdder` program reaches
 the compiler's cross-contract call refusal after its argument is accepted.
 The original upstream `Adder.compact` supplies only `addTo`; the current

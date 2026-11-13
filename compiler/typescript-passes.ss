@@ -2359,6 +2359,8 @@
                    [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
                     (when (eq? export-name 'circuitSignatures)
                       (source-errorf src "exported enum name circuitSignatures conflicts with generated circuit metadata export"))
+                    (when (eq? export-name 'declaredInterfaces)
+                      (source-errorf src "exported enum name declaredInterfaces conflicts with generated interface metadata export"))
                     (printf "export var ~a;\n" export-name)
                     (printf "(function (~a) {\n" export-name)
                     (let ([elt-name* (cons elt-name elt-name*)])
