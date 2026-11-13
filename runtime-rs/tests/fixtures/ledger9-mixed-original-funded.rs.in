@@ -60,20 +60,20 @@ struct Case {
     source_case: &'static str,
 }
 
-fn funded<Output, F>(
+fn funded<Output, F, N>(
     root: &Path,
     out: &Path,
     case: Case,
     initial_state: StateValue<DefaultDB>,
-    native: &CircuitResult<(), Output>,
     call: F,
+    native_for_address: N,
 ) -> TestResult<()>
 where
     Output: Into<AlignedValue> + PartialEq + Debug,
     F: for<'a> Fn(&'a ObservedContractState) -> Result<RecordedCall<'a, (), Output>, CompactError>,
+    N: FnOnce(ContractAddress) -> Result<CircuitResult<(), Output>, CompactError>,
 {
     let name = case.circuit;
-    let expected_state = native.public_state();
     let key_dir = root.join("proof").join(case.source_case);
     let prover_bytes = fs::read(key_dir.join("statement.prover"))?;
     let verifier_bytes = fs::read(key_dir.join("statement.verifier"))?;
@@ -104,6 +104,8 @@ where
     let mut rng = StdRng::from_rng(rand::rngs::OsRng)?;
     let deploy = ContractDeploy::new(&mut rng, initial_contract);
     let address = deploy.address();
+    let native = native_for_address(address)?;
+    let expected_state = native.public_state();
     env::var("MIDNIGHT_LEDGER_TEST_STATIC_DIR")?;
     let mut state: TestState<DefaultDB> = TestState::new(&mut rng);
     let executor = tokio::runtime::Builder::new_current_thread()
@@ -274,7 +276,7 @@ where
         "ledger_matches_native":true,"case_index":case.index,"k":ir.k(),
         "transaction_proof_bytes":transaction_proof.0.len(),"standalone_proof_bytes":standalone.0.len(),
         "transaction_bytes":tx_bytes.len(),"positive_fee_dust_spends":dust_spends,
-        "default_strict":true,"typescript_preimage_fields_match":true,"communication_commitment_recomputed":true,"wrong_verifier_refused":true,
+        "default_strict":true,"typescript_preimage_fields_match":true,"communication_commitment_recomputed":true,"sdk_prepare_wrong_verifier_refused":true,
         "replay_refusal":"IntentAlreadyExists","replay_unchanged":true})
     );
     Ok(())
@@ -294,9 +296,12 @@ fn main() -> TestResult<()> {
     let mut bytes = [0u8; 32];
     bytes[0] = 4;
     let s = __SCALAR__::from_le_bytes(bytes).ok_or("invalid original scalar 4")?;
-    let native = c::test(initial.into_circuit_context(ContractAddress::default()), j, s)?;
-    assert_eq!(native.result, ());
     let contract = c::Contract::default();
     funded(root, out, Case { circuit: "test", k: __K__, index: 0, wrong_verifier: "__WRONG__", source_case: "__CASE__" },
-        state, &native, |observed| contract.recording().test_call(observed, (), j, s))
+        state, |observed| contract.recording().test_call(observed, (), j, s),
+        |address| {
+            let native = c::test(initial.into_circuit_context(address), j, s)?;
+            assert_eq!(native.result, ());
+            Ok(native)
+        })
 }
