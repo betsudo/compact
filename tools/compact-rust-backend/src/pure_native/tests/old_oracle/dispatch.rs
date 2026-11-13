@@ -88,6 +88,7 @@ fn expression_with_calls(
         Expr::VectorToBytes { .. } => Err(RenderError::EffectfulExpression),
         Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),

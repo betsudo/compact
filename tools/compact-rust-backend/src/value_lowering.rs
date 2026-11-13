@@ -79,6 +79,20 @@ pub(crate) fn fixed_bytes_conversion_syntax(
                 Ok(runtime::FixedBytes::new(output))
             }?
         }),
+        FixedBytesConversion::BytesToField => syn::parse_quote!({
+            let input = (#value).into_array();
+            let mut bytes = [0u8; 32];
+            let len = input.len().min(bytes.len());
+            let field = if input[len..].iter().any(|&byte| byte != 0) {
+                None
+            } else {
+                bytes[..len].copy_from_slice(&input[..len]);
+                runtime::Field::from_le_bytes(&bytes)
+            };
+            field.ok_or_else(|| runtime::CompactError::AssertionFailed(
+                "byte vector exceeds maximum value of Field type".into()
+            ))?
+        }),
         FixedBytesConversion::BytesToUint { max } => {
             let max = syn::LitInt::new(&format!("{max}u128"), Span::call_site());
             syn::parse_quote!({

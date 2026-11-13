@@ -3076,6 +3076,14 @@
           (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
             (values (pad-serialized-bytes src (maybe-safecast src carrier type^ expr) len^ len)
                     (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tfield ,src^)
+          (let ([len^ (+ 1 (field-bytes))]
+                [carrier (with-output-language (Ltypes Type) `(tfield ,src))])
+            (check-serialization-width src type len^ len)
+            (values (pad-serialized-bytes src
+                      `(field->bytes ,src ,len^ ,(maybe-safecast src carrier type^ expr))
+                      len^ len)
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
          [(tunsigned ,src^ ,nat)
           (let ([len^ (unsigned-serialized-width nat)])
             (check-serialization-width src type len^ len)
@@ -3114,6 +3122,14 @@
             (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
               (values (maybe-safecast src type carrier
                         (serialized-byte-prefix src expr bytes-type len^ len))
+                      type))]
+           [(tfield ,src^)
+            (let ([len^ (+ 1 (field-bytes))]
+                  [carrier (with-output-language (Ltypes Type) `(tfield ,src))])
+              (check-serialization-width src type len^ len)
+              (values (maybe-safecast src type carrier
+                        `(cast-from-bytes ,src ,carrier ,len^
+                           ,(serialized-byte-prefix src expr bytes-type len^ len)))
                       type))]
            [(tunsigned ,src^ ,nat)
             (let ([len^ (unsigned-serialized-width nat)]

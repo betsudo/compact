@@ -354,6 +354,16 @@ fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
 }
 
 #[test]
+fn bytes_to_field_validates_the_input_carrier() {
+    let conversion = FixedBytesConversion::BytesToField;
+    assert_eq!(conversion.result_type(&Type::Bytes { length: 32 }).unwrap(), Type::Field);
+    assert!(matches!(
+        conversion.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
 fn native_uint_byte_conversions_validate_source_and_maximum() {
     use super::FixedBytesConversion::{BytesToUint, UintToBytes};
 

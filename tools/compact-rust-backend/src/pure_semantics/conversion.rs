@@ -72,6 +72,7 @@ pub(crate) enum FixedBytesConversion {
     Slice { start: usize, length: usize },
     ZeroPad { length: usize },
     UintToBytes { length: usize },
+    BytesToField,
     BytesToUint { max: u128 },
 }
 
@@ -81,6 +82,7 @@ impl FixedBytesConversion {
             Expr::VectorToBytes { value, length } => (value, Self::FromVector { length: *length }),
             Expr::BytesToVector { value, length } => (value, Self::ToVector { length: *length }),
             Expr::UintToBytes { value, length } => (value, Self::UintToBytes { length: *length }),
+            Expr::BytesToField { value } => (value, Self::BytesToField),
             Expr::BytesToUint { value, max } => {
                 let bound = unsigned_maximum(max).and_then(|bound| match bound {
                     UnsignedMaximum::Small(bound) => Ok(Self::BytesToUint { max: bound }),
@@ -142,6 +144,12 @@ impl FixedBytesConversion {
                     return Err(RenderError::UnsupportedUintBytesWidth);
                 }
                 Ok(Type::Bytes { length })
+            }
+            Self::BytesToField => {
+                if !matches!(source, Type::Bytes { .. }) {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                }
+                Ok(Type::Field)
             }
             Self::BytesToUint { max } => {
                 let Type::Bytes { .. } = source else {

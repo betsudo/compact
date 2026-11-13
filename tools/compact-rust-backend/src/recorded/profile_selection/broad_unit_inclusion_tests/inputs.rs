@@ -282,8 +282,18 @@ fn uint_bytes_manifest() -> Result<Value, String> {
     serde_json::from_slice(UINT_BYTES).map_err(|error| error.to_string())
 }
 
+const FIELD_BYTES: &[u8] = include_bytes!("field-bytes-expression.json");
+
+fn field_bytes_manifest() -> Result<Value, String> {
+    if digest(FIELD_BYTES) != "747714f4a07b6f430b8f7f58a4172c836a821b9cbfe89dfe6733671a0831d6a8" {
+        return Err("unreviewed Field byte conversion compatibility checkpoint".into());
+    }
+    serde_json::from_slice(FIELD_BYTES).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &uint_bytes_manifest()?)?;
+    let current = legacy_source(path, current, &field_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
     legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)

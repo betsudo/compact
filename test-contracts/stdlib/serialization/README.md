@@ -66,3 +66,18 @@ The runner checks little-endian encoding, range refusal and state
 preservation. It exports the exact SDK preimages and binary ZKIR for
 independent proof qualification. The Rust wire lowering in this slice
 covers the native u128 carrier.
+
+## Native Field serialization
+
+`field.compact` retains both upstream Field exports and covers nominal
+aliases, zero padding, and direct casts from shorter and longer buffers.
+`field-stateful.compact` writes the decoded element to a public cell.
+The TypeScript and ZKIR runner checks the modulus boundary and emits
+preimages for independent verification:
+
+```sh
+node test-contracts/stdlib/serialization/check-field.mjs \
+  "$OUTPUT/field" "$OUTPUT/field-stateful" "$ZKIR_WASM_PACKAGE" "$OUTPUT/field-preimages"
+```
+
+The stateful fixture measures k=9 and runs in the local slow proof lane.

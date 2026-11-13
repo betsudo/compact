@@ -479,6 +479,7 @@ fn expression_contains_with_actions<'source>(
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::UintToBytes { value, .. }
+        | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }

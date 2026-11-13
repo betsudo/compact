@@ -497,6 +497,17 @@
       ;; it does not reduce an out-of-range integer modulo the field prime.
       ;; Keep this normalization closed over literal data, without evaluating
       ;; variables, calls, or effects at compile time.
+      (define (literal-bytes-expression? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(quote ,src ,datum) (bytevector? datum)]
+          [(vector->bytes ,src ,len (tuple ,src^ ,tuple-arg* ...))
+           (andmap (lambda (arg)
+                     (nanopass-case (Lnodisclose Tuple-Argument) arg
+                       [(single ,src (quote ,src^ ,datum)) #t]
+                       [else #f]))
+                   tuple-arg*)]
+          [else #f]))
+
       (define (literal-bytes-field-ir type len expr src)
         (define (literal-byte arg)
           (nanopass-case (Lnodisclose Tuple-Argument) arg
@@ -508,9 +519,8 @@
                     (source-errorf src^^ "Rust Bytes-to-Field vector requires literal bytes"))]
                [else (source-errorf src^ "Rust Bytes-to-Field cast requires literal bytes")])]
             [else (source-errorf src "Rust Bytes-to-Field cast does not support vector spreads")]))
-        (nanopass-case (Lnodisclose Type) type
-          [(tfield ,src^) (void)]
-          [else (source-errorf src "Rust backend supports literal Bytes-to-Field casts only")])
+        (unless (field-carrier? type)
+          (source-errorf src "Rust backend requires a Field or Uint target for a Bytes cast"))
         (let ([bytes
                 (nanopass-case (Lnodisclose Expression) expr
                   [(quote ,src^ ,datum)
@@ -578,13 +588,23 @@
           [(talias ,src ,nominal? ,type-name ,type^) (boolean-carrier? type^)]
           [else #f]))
 
+      (define (field-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tfield ,src) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (field-carrier? type^)]
+          [else #f]))
+
       (define (bytes-cast-ir src type len expr lower)
-        (let ([maximum (rust-unsigned-maximum type)])
-          (if maximum
-              (object (cons "kind" "bytes_to_uint")
-                      (cons "value" (lower expr))
-                      (cons "max" (number->string maximum)))
-              (literal-bytes-field-ir type len expr src))))
+        (cond
+          [(rust-unsigned-maximum type) =>
+           (lambda (maximum)
+             (object (cons "kind" "bytes_to_uint")
+                     (cons "value" (lower expr))
+                     (cons "max" (number->string maximum))))]
+          [(and (field-carrier? type) (not (literal-bytes-expression? expr)))
+           (object (cons "kind" "bytes_to_field")
+                   (cons "value" (lower expr)))]
+          [else (literal-bytes-field-ir type len expr src)]))
 
       (define (field-to-bytes-ir src len expr lower)
         (if (= len 32)
@@ -826,7 +846,8 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (guard (or (and (boolean-carrier? type) (boolean-carrier? type^))
+                      (and (field-carrier? type) (field-carrier? type^))))
            (expression-ir expr src)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (let ([width (bytes-carrier-width type)])
@@ -2844,7 +2865,8 @@
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
-           (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (guard (or (and (boolean-carrier? type) (boolean-carrier? type^))
+                      (and (field-carrier? type) (field-carrier? type^))))
            (stateful-expression-ir expr src witness-ids)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (let ([width (bytes-carrier-width type)])

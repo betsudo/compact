@@ -553,6 +553,7 @@ fn render_operation_expression(
         | Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. }
@@ -1574,6 +1575,7 @@ fn render_conversion_operation(
         Expr::VectorToBytes { .. }
         | Expr::BytesToVector { .. }
         | Expr::UintToBytes { .. }
+        | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
         | Expr::BytesSlice { .. } => {

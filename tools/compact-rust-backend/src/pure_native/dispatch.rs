@@ -164,6 +164,7 @@ macro_rules! dispatch {
             $crate::ir::Expr::VectorToBytes { .. }
             | $crate::ir::Expr::BytesToVector { .. }
             | $crate::ir::Expr::UintToBytes { .. }
+            | $crate::ir::Expr::BytesToField { .. }
             | $crate::ir::Expr::BytesToUint { .. }
             | $crate::ir::Expr::BytesZeroPad { .. }
             | $crate::ir::Expr::BytesSlice { .. }

@@ -715,6 +715,9 @@ pub enum Expr {
         value: Box<Expr>,
         length: usize,
     },
+    BytesToField {
+        value: Box<Expr>,
+    },
     BytesToUint {
         value: Box<Expr>,
         max: String,

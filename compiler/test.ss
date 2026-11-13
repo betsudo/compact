@@ -69009,6 +69009,35 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "new type Element = Field;"
+      "export circuit encode(x: Element): Bytes<34> { return serialize<Element, 34>(x); }"
+      "export circuit decode(x: Bytes<34>): Element { return deserialize<Element, 34>(x); }"
+      )
+    (stage-javascript
+      '(
+        "test('Field serialization checks canonical little-endian encodings', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  const modulus = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n;"
+        "  const wire = (n: bigint) => Uint8Array.from({ length: 34 }, (_, i) => Number((n >> BigInt(8 * i)) & 255n));"
+        "  expect(C.circuits.encode(Ctxt, modulus - 1n).result).toEqual(wire(modulus - 1n));"
+        "  const padded = wire(modulus - 1n);"
+        "  padded[32] = 255;"
+        "  expect(C.circuits.decode(Ctxt, padded).result).toBe(modulus - 1n);"
+        "  expect(() => C.circuits.decode(Ctxt, wire(modulus))).toThrow(runtime.CompactError);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<31>): Field { return deserialize<Field, 31>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (32 31 "Field"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

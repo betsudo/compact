@@ -917,6 +917,9 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Expr::FieldCast { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
+            Expr::BytesToField { value } => {
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+            }
             Expr::BytesToUint { value, max } => {
                 scan.push(Node::Text(max), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;

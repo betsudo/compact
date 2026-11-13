@@ -34,6 +34,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
         | Expr::UintToBytes { value, .. }
+        | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }

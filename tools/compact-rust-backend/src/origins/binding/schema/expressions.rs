@@ -77,6 +77,7 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             unary!("uint_to_bytes", "value", value);
             s.size("length", *length);
         }
+        Expr::BytesToField { value } => unary!("bytes_to_field", "value", value),
         Expr::BytesToUint { value, max } => {
             unary!("bytes_to_uint", "value", value);
             s.text("max", max);
