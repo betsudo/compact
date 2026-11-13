@@ -135,6 +135,7 @@ def main() -> None:
                         if not (key.startswith('CARGO_') or key in
                                 {'RUSTFLAGS', 'RUSTDOCFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
                                  'RUSTC_WORKSPACE_WRAPPER', 'RUSTUP_TOOLCHAIN'})}
+    require('CARGO_HOME' not in runner_build_env, 'external Cargo home was not cleared')
     runner_build_env['CARGO_TARGET_DIR'] = str(runner_target)
     cargo_home = Path(runner_build_env.get('HOME', str(Path.home()))) / '.cargo'
     config_roots = (source_root, *source_root.parents, cargo_home)
@@ -244,6 +245,8 @@ def main() -> None:
             part: sha(Path(runner_source[part]['path'])) for part in ('main', 'manifest', 'lock')
         },
         'proof_runner_build_command': runner_command,
+        'proof_runner_build_cwd': str(source_root),
+        'proof_runner_cargo_home': str(cargo_home),
         'proof_runner_build_log_sha256': sha(output / 'runner-build.log'),
         'proof_runner_rustc_version': rustc_version,
         'proof_runner_path': str(rebuilt_runner),
