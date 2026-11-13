@@ -10,7 +10,7 @@ at the Pages root.
 
 ## Build
 
-Use Python 3 with the exact build dependency. The website itself has no
+Use Python 3 with the pinned build dependencies. The website itself has no
 runtime packages, third-party scripts, analytics, or remote assets.
 
 ~~~sh
@@ -115,3 +115,22 @@ reader's choice is remembered. New readers start with Clear.
 
 Fonts and licenses are bundled locally. The complete print view uses
 a light page with dark text.
+
+## Syntax highlighting
+
+Compact, Rust, and TypeScript code fences are highlighted during the
+Python build. Rust and TypeScript use pinned Pygments lexers. The Compact
+lexer reuses keyword and built-in type patterns from the repository's
+Compact editor grammar. Highlighting verifies that the complete token
+stream preserves the example text. Plain-text plans retain their original
+presentation.
+
+Clear, Dusk and print colors are defined in assets/syntax.css.
+The published HTML contains the token markup. It displays without a
+client-side highlighting library or network request.
+
+Run the focused checks with the same build environment.
+
+~~~sh
+python3 -m unittest discover -s site/compact-journey -p test_highlighting.py
+~~~

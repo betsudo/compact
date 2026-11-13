@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>Read the generated Rust · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
-<link rel="stylesheet" href="../assets/book.css?v=cce8b36d5f19">
+<link rel="stylesheet" href="../assets/book.css?v=ab6aa6c8b8d6">
+<link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
 <script defer src="../assets/book.js?v=c6070295e76c"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -43,24 +44,24 @@ The excerpts are shortened for explanation; links point to the complete source.<
 <h2 id="1-compact-declares-meaning">1. Compact declares meaning</h2>
 <p><a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/examples/rust_backend/tiny_oracle.compact"><code>examples/rust_backend/tiny_oracle.compact</code></a>
 declares a small state machine:</p>
-<pre><code class="language-compact">enum STATE { unset, set }
+<pre data-language="Compact"><code class="language-compact"><span class="syn-keyword">enum</span> <span class="syn-type">STATE</span> { unset, set }
 
-ledger authority: Bytes&lt;32&gt;;
-export ledger value: Field;
-ledger state: STATE;
+<span class="syn-keyword">ledger</span> authority<span class="syn-operator">:</span> <span class="syn-type">Bytes</span><span class="syn-operator">&lt;</span><span class="syn-number">32</span><span class="syn-operator">&gt;</span>;
+<span class="syn-keyword">export</span> <span class="syn-keyword">ledger</span> value<span class="syn-operator">:</span> <span class="syn-type">Field</span>;
+<span class="syn-keyword">ledger</span> state<span class="syn-operator">:</span> <span class="syn-type">STATE</span>;
 
-witness private$secret_key(): Bytes&lt;32&gt;;
+<span class="syn-keyword">witness</span> <span class="syn-keyword">private</span>$<span class="syn-function">secret_key</span>()<span class="syn-operator">:</span> <span class="syn-type">Bytes</span><span class="syn-operator">&lt;</span><span class="syn-number">32</span><span class="syn-operator">&gt;</span>;
 
-circuit set(v: Field): [] {
-  assert(in_state(STATE.unset), &quot;set: attempted to overwrite recorded value&quot;);
-  const sk = private$secret_key();
-  authority = public_key(sk);
-  value = disclose(v);
-  state = STATE.set;
+<span class="syn-keyword">circuit</span> <span class="syn-function">set</span>(v<span class="syn-operator">:</span> <span class="syn-type">Field</span>)<span class="syn-operator">:</span> [] {
+  <span class="syn-keyword">assert</span>(<span class="syn-function">in_state</span>(<span class="syn-type">STATE</span>.unset), <span class="syn-string">"set: attempted to overwrite recorded value"</span>);
+  <span class="syn-keyword">const</span> sk <span class="syn-operator">=</span> <span class="syn-keyword">private</span>$<span class="syn-function">secret_key</span>();
+  authority <span class="syn-operator">=</span> <span class="syn-function">public_key</span>(sk);
+  value <span class="syn-operator">=</span> <span class="syn-keyword">disclose</span>(v);
+  state <span class="syn-operator">=</span> <span class="syn-type">STATE</span>.set;
 }
 
-circuit get(): Maybe&lt;Field&gt; {
-  return in_state(STATE.set) ? some&lt;Field&gt;(value) : none&lt;Field&gt;();
+<span class="syn-keyword">circuit</span> <span class="syn-function">get</span>()<span class="syn-operator">:</span> <span class="syn-type">Maybe</span><span class="syn-operator">&lt;</span><span class="syn-type">Field</span><span class="syn-operator">&gt;</span> {
+  <span class="syn-keyword">return</span> <span class="syn-function">in_state</span>(<span class="syn-type">STATE</span>.set) <span class="syn-operator">?</span> some<span class="syn-operator">&lt;</span><span class="syn-type">Field</span><span class="syn-operator">&gt;</span>(value) <span class="syn-operator">:</span> none<span class="syn-operator">&lt;</span><span class="syn-type">Field</span><span class="syn-operator">&gt;</span>();
 }
 </code></pre>
 <p>Compact owns source typing, disclosure rules, witness declarations, circuit
@@ -70,55 +71,55 @@ from a Rust string template.</p>
 <p>The generated library
 <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/tests-rust-backend/tiny-oracle/lib.rs"><code>tests-rust-backend/tiny-oracle/lib.rs</code></a>
 turns the source enum and product into ordinary Rust types:</p>
-<pre><code class="language-rust">#[derive(Clone, Debug, Default, PartialEq, Eq,
-         runtime::CompactCellValue, runtime::CompactStructRepr)]
-pub struct Maybe {
-    pub is_some: bool,
-    pub value: runtime::Field,
+<pre data-language="Rust"><code class="language-rust"><span class="syn-comment">#[</span><span class="syn-comment">derive(Clone, Debug, Default, PartialEq, Eq,
+         runtime::CompactCellValue, runtime::CompactStructRepr)</span><span class="syn-comment">]</span>
+<span class="syn-keyword">pub</span> <span class="syn-keyword">struct</span> <span class="syn-type">Maybe</span> {
+    <span class="syn-keyword">pub</span> is_some: <span class="syn-type">bool</span>,
+    <span class="syn-keyword">pub</span> value: <span class="syn-type">runtime</span>::Field,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq,
-         runtime::CompactCellValue, runtime::CompactEnum)]
-pub enum STATE { unset, set }
+<span class="syn-comment">#[</span><span class="syn-comment">derive(Clone, Copy, Debug, PartialEq, Eq,
+         runtime::CompactCellValue, runtime::CompactEnum)</span><span class="syn-comment">]</span>
+<span class="syn-keyword">pub</span> <span class="syn-keyword">enum</span> <span class="syn-type">STATE</span> { unset, set }
 </code></pre>
 <p>The macros implement only mechanical representation rules: FAB alignment,
 Cell conversion, field/binary representation and checked enum ordinals. They
 do not interpret circuit bodies.</p>
 <h2 id="3-ledger-declarations-become-typed-slots">3. Ledger declarations become typed slots</h2>
-<pre><code class="language-rust">pub const authority: runtime::slots::CellSlot&lt;runtime::FixedBytes&lt;32&gt;&gt; =
-    runtime::slots::CellSlot::new(&amp;[0]);
-pub const value: runtime::slots::CellSlot&lt;runtime::Field&gt; =
-    runtime::slots::CellSlot::new(&amp;[1]);
-pub const state: runtime::slots::CellSlot&lt;crate::types::STATE&gt; =
-    runtime::slots::CellSlot::new(&amp;[2]);
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">pub</span> <span class="syn-keyword">const</span> authority: <span class="syn-type">runtime</span>::slots::CellSlot<span class="syn-operator">&lt;</span>runtime::FixedBytes<span class="syn-operator">&lt;</span><span class="syn-number">32</span><span class="syn-operator">&gt;</span><span class="syn-operator">&gt;</span> <span class="syn-operator">=</span>
+    runtime::slots::CellSlot::new(<span class="syn-operator">&amp;</span>[<span class="syn-number">0</span>]);
+<span class="syn-keyword">pub</span> <span class="syn-keyword">const</span> value: <span class="syn-type">runtime</span>::slots::CellSlot<span class="syn-operator">&lt;</span>runtime::Field<span class="syn-operator">&gt;</span> <span class="syn-operator">=</span>
+    runtime::slots::CellSlot::new(<span class="syn-operator">&amp;</span>[<span class="syn-number">1</span>]);
+<span class="syn-keyword">pub</span> <span class="syn-keyword">const</span> state: <span class="syn-type">runtime</span>::slots::CellSlot<span class="syn-operator">&lt;</span><span class="syn-keyword">crate</span>::types::STATE<span class="syn-operator">&gt;</span> <span class="syn-operator">=</span>
+    runtime::slots::CellSlot::new(<span class="syn-operator">&amp;</span>[<span class="syn-number">2</span>]);
 </code></pre>
 <p>A slot binds the source declaration's value type to its physical ledger path.
 Generated code asks the slot to read, write, inspect or record. The runtime
 owns the canonical ledger-8 VM program for that operation.</p>
 <h2 id="4-native-rust-makes-order-and-cost-visible">4. Native Rust makes order and cost visible</h2>
 <p>The generated <code>set</code> function is ordinary fallible Rust. A simplified excerpt:</p>
-<pre><code class="language-rust">let prior = in_state(context, STATE::unset)?;
-context = prior.context;
-total_cost += prior.gas_cost;
-if !prior.result {
-    return Err(runtime::CompactError::AssertionFailed(
-        &quot;set: attempted to overwrite recorded value&quot;.to_owned(),
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> prior <span class="syn-operator">=</span> in_state(context, STATE::unset)<span class="syn-operator">?</span>;
+context <span class="syn-operator">=</span> prior.context;
+total_cost <span class="syn-operator">+</span><span class="syn-operator">=</span> prior.gas_cost;
+<span class="syn-keyword">if</span> <span class="syn-operator">!</span>prior.result {
+    <span class="syn-keyword">return</span> <span class="syn-type">Err</span>(runtime::CompactError::AssertionFailed(
+        <span class="syn-string">"</span><span class="syn-string">set: attempted to overwrite recorded value</span><span class="syn-string">"</span>.to_owned(),
     ));
 }
 
-let meter = runtime::context::WitnessReadMeter::new(&amp;context);
-let (next_private, sk) = witnesses.private_secret_key(
+<span class="syn-keyword">let</span> meter <span class="syn-operator">=</span> runtime::context::WitnessReadMeter::new(<span class="syn-operator">&amp;</span>context);
+<span class="syn-keyword">let</span> (next_private, sk) <span class="syn-operator">=</span> witnesses.private_secret_key(
     context.witness_context_with(LedgerView {
-        state: context.query.state.get_ref(),
-        meter: &amp;meter,
+        state: <span class="syn-type">context</span>.query.state.get_ref(),
+        meter: <span class="syn-keyword">&amp;</span><span class="syn-type">meter</span>,
     }),
-)?;
-total_cost += meter.gas_cost();
-context.private_state = next_private;
+)<span class="syn-operator">?</span>;
+total_cost <span class="syn-operator">+</span><span class="syn-operator">=</span> meter.gas_cost();
+context.private_state <span class="syn-operator">=</span> next_private;
 
-let step = ledger_slots::authority.write(context, public_key(sk)?)?;
-let context = step.context;
-total_cost += step.gas_cost;
+<span class="syn-keyword">let</span> step <span class="syn-operator">=</span> ledger_slots::authority.write(context, public_key(sk)<span class="syn-operator">?</span>)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> context <span class="syn-operator">=</span> step.context;
+total_cost <span class="syn-operator">+</span><span class="syn-operator">=</span> step.gas_cost;
 </code></pre>
 <p>The successor context is consumed and returned. Query costs are accumulated in
 source order. Witness ledger reads are metered without making private witness
@@ -126,24 +127,24 @@ values part of the public verification program.</p>
 <h2 id="5-recording-uses-the-same-domain-operations">5. Recording uses the same domain operations</h2>
 <p>Where the complete circuit is admitted, the generator also emits a recorded
 path:</p>
-<pre><code class="language-rust">let frame = runtime::recording::RecordingFrame::new(context);
-let (frame, prior) = ledger_slots::state.record_read(frame)?;
-if prior != STATE::unset {
-    return Err(runtime::CompactError::AssertionFailed(
-        &quot;set: attempted to overwrite recorded value&quot;.to_owned(),
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> frame <span class="syn-operator">=</span> runtime::recording::RecordingFrame::new(context);
+<span class="syn-keyword">let</span> (frame, prior) <span class="syn-operator">=</span> ledger_slots::state.record_read(frame)<span class="syn-operator">?</span>;
+<span class="syn-keyword">if</span> prior <span class="syn-operator">!</span><span class="syn-operator">=</span> STATE::unset {
+    <span class="syn-keyword">return</span> <span class="syn-type">Err</span>(runtime::CompactError::AssertionFailed(
+        <span class="syn-string">"</span><span class="syn-string">set: attempted to overwrite recorded value</span><span class="syn-string">"</span>.to_owned(),
     ));
 }
-let (frame, sk) = frame.try_witness_metered(|context, meter| {
+<span class="syn-keyword">let</span> (frame, sk) <span class="syn-operator">=</span> frame.try_witness_metered(<span class="syn-operator">|</span>context, meter<span class="syn-operator">|</span> {
     witnesses.private_secret_key(
         context.witness_context_with(LedgerView {
-            state: context.query.state.get_ref(), meter,
+            state: <span class="syn-type">context</span>.query.state.get_ref(), meter,
         }),
     )
-})?;
-let frame = ledger_slots::authority.record_write(frame, public_key(sk)?)?;
-let frame = ledger_slots::value.record_write(frame, v)?;
-let frame = ledger_slots::state.record_write(frame, STATE::set)?;
-Ok(frame.finish(()))
+})<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> frame <span class="syn-operator">=</span> ledger_slots::authority.record_write(frame, public_key(sk)<span class="syn-operator">?</span>)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> frame <span class="syn-operator">=</span> ledger_slots::value.record_write(frame, v)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> frame <span class="syn-operator">=</span> ledger_slots::state.record_write(frame, STATE::set)<span class="syn-operator">?</span>;
+<span class="syn-type">Ok</span>(frame.finish(()))
 </code></pre>
 <p>The native execution result and replayable public trace remain distinct inside
 <code>RecordedCircuitResult</code>. Recording support is emitted only when every required
@@ -154,10 +155,10 @@ witnesses are needed, and—with the transaction feature—typed observed-call
 builders. The consumer supplies private state, witnesses, observed public
 state and exact verifier artifacts; generated code preserves the Compact entry
 point and typed public input.</p>
-<pre><code class="language-rust">let native = contract.set(context, value)?;
-let recorded = contract.recording().set(context, value)?;
-let call = contract.recording().set_call(&amp;observed, private, value)?;
-let prototype = call.prepare(verifier, commitment_randomness)?;
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> native <span class="syn-operator">=</span> contract.set(context, value)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> recorded <span class="syn-operator">=</span> contract.recording().set(context, value)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> call <span class="syn-operator">=</span> contract.recording().set_call(<span class="syn-operator">&amp;</span>observed, private, value)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> prototype <span class="syn-operator">=</span> call.prepare(verifier, commitment_randomness)<span class="syn-operator">?</span>;
 </code></pre>
 <p>These three lines do not make equivalent claims. The first executes natively,
 the second also produces a trace, and the third binds that trace to an observed
@@ -166,26 +167,26 @@ contract and verifier before ledger preparation.</p>
 <p>A proof-capable consumer continues explicitly from the generated <code>*_call</code>
 builder. The exact provider API depends on the integration harness, but the
 ownership boundary remains visible:</p>
-<pre><code class="language-rust">let call = contract
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> call <span class="syn-operator">=</span> contract
     .recording()
-    .commit_call(&amp;observed, private_state, value)?;
+    .commit_call(<span class="syn-operator">&amp;</span>observed, private_state, value)<span class="syn-operator">?</span>;
 
-let prepared = call.prepare(verifier, Fr::from(0_u64))?;
+<span class="syn-keyword">let</span> prepared <span class="syn-operator">=</span> call.prepare(verifier, Fr::from(<span class="syn-number">0_</span><span class="syn-keyword">u64</span>))<span class="syn-operator">?</span>;
 
-let intent = Intent::empty(&amp;mut rng, expiry)
-    .add_call::&lt;ProofPreimage&gt;(prepared);
+<span class="syn-keyword">let</span> intent <span class="syn-operator">=</span> Intent::empty(<span class="syn-operator">&amp;</span><span class="syn-keyword">mut</span> rng, expiry)
+    .add_call::<span class="syn-operator">&lt;</span>ProofPreimage<span class="syn-operator">&gt;</span>(prepared);
 
-let transaction = Transaction::from_intents(
-    &quot;local-test&quot;,
-    HashMap::new().insert(1_u16, intent),
+<span class="syn-keyword">let</span> transaction <span class="syn-operator">=</span> Transaction::from_intents(
+    <span class="syn-string">"</span><span class="syn-string">local-test</span><span class="syn-string">"</span>,
+    HashMap::new().insert(<span class="syn-number">1_</span><span class="syn-keyword">u16</span>, intent),
 );
 
-let proven = transaction
+<span class="syn-keyword">let</span> proven <span class="syn-operator">=</span> transaction
     .prove(
         provider,
-        &amp;INITIAL_PARAMETERS.cost_model.runtime_cost_model,
+        <span class="syn-operator">&amp;</span>INITIAL_PARAMETERS.cost_model.runtime_cost_model,
     )
-    .await?;
+    .<span class="syn-keyword">await</span><span class="syn-operator">?</span>;
 </code></pre>
 <p>The generated call builder knows the typed entry point and public input. The
 consumer supplies the observation, verifier artifact, commitment randomness,

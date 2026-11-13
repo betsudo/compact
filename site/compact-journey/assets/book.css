@@ -147,6 +147,7 @@ body:has(.on-this-page) main { margin-right: 190px; }
 .backend-comparison > section { min-width: 0; }
 .backend-comparison h3 { margin-top: 1rem; }
 .backend-comparison pre { padding: .8rem; }
+.backend-comparison pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .prose table { background: var(--surface); border-radius: 8px; overflow: hidden; width: 100%; font-family: var(--serif); font-size: .9em; border-collapse: collapse; margin: 2rem 0; line-height: 1.7; }
 .prose th, .prose td { text-align: left; padding: .8rem; border: 1px solid var(--rule); vertical-align: top; }
 .prose th { color: var(--ink); background: var(--wash); }
@@ -231,7 +232,7 @@ body:has(.on-this-page) main { margin-right: 190px; }
   .masthead,.sidebar,.on-this-page,.footer,.print-controls,.chapter-actions,.chapter-pagination,.skip-link { display:none; }
   main,body:has(.on-this-page) main { margin:0; } .print-chapter { max-width:none; padding:0; break-before:page; }
   .prose { font-size:10.5pt; line-height:1.65; } .prose h2,.prose h3 { break-after:avoid; }
-  .backend-comparison pre { white-space: pre-wrap; }
+  .prose pre, .prose pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
   .prose pre,.prose table,.prose img { break-inside:avoid; } .prose img { max-height: 6.5in; } a { color:black; } .reader { max-width:none; padding:0; }
 }
 .iteration-phase { margin: 3rem 0; }

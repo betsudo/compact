@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>TypeScript and Rust AST · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
-<link rel="stylesheet" href="../assets/book.css?v=cce8b36d5f19">
+<link rel="stylesheet" href="../assets/book.css?v=ab6aa6c8b8d6">
+<link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
 <script defer src="../assets/book.js?v=c6070295e76c"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -90,15 +91,15 @@
 </tr>
 </tbody>
 </table>
-<pre><code class="language-rust">let amount = BoundedUint::&lt;65_535&gt;::new(7)?;
-let increment = increment_by(context, amount)?;
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> amount <span class="syn-operator">=</span> BoundedUint::<span class="syn-operator">&lt;</span><span class="syn-number">65_535</span><span class="syn-operator">&gt;</span>::new(<span class="syn-number">7</span>)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> increment <span class="syn-operator">=</span> increment_by(context, amount)<span class="syn-operator">?</span>;
 </code></pre>
 <p>The Rust compiler refuses a plain <code>u16</code> in this position. It also distinguishes carriers with different declared bounds. The integer’s value is checked when the bounded value is constructed. For example, <code>new(65_536)</code> returns an error.</p>
 <p>TypeScript already rejects a <code>number</code> where the declaration expects <code>bigint</code>. Rust makes the contract’s bound part of the parameter type as well.</p>
 <h3 id="make-the-state-handoff-explicit">Make the state handoff explicit</h3>
 <p>A sequence of calls needs to continue from the returned context. The Rust call takes the context by value, so the compiler tracks which binding has been consumed.</p>
-<pre><code class="language-rust">let increment = increment_by(context, amount)?;
-let reset = reset_round(increment.context)?;
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> increment <span class="syn-operator">=</span> increment_by(context, amount)<span class="syn-operator">?</span>;
+<span class="syn-keyword">let</span> reset <span class="syn-operator">=</span> reset_round(increment.context)<span class="syn-operator">?</span>;
 </code></pre>
 <p>Trying <code>reset_round(context)</code> after the increment produces <code>E0382</code>, “use of moved value.” In the TypeScript interface, the original and returned contexts have the same type and the caller selects which one to pass. Rust’s ownership rule catches reuse of that consumed binding before the application runs.</p>
 <p><a href="one-counter-two-backends.html">Open the complete Counter example and the locally exercised diagnostics</a></p>

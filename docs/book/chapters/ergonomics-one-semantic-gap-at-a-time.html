@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>Ergonomics, one semantic gap at a time · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
-<link rel="stylesheet" href="../assets/book.css?v=cce8b36d5f19">
+<link rel="stylesheet" href="../assets/book.css?v=ab6aa6c8b8d6">
+<link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
 <script defer src="../assets/book.js?v=c6070295e76c"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -41,17 +42,17 @@
 <h2 id="before-and-after-index-a-vector-by-a-named-constant">Before and after · Index a Vector by a named constant</h2>
 <h3 id="before-use-the-position-directly">Before · Use the position directly</h3>
 <p>A literal made the fixed position visible to the Rust backend. A source program using a constant expression could hit an unsupported projection even though the position was knowable during compilation.</p>
-<pre><code class="language-compact">// Illustrative literal-index version.
-export pure circuit first(items: Vector&lt;2, Field&gt;): Field {
-  return items[0];
+<pre data-language="Compact"><code class="language-compact"><span class="syn-comment">// Illustrative literal-index version.</span>
+<span class="syn-keyword">export</span> <span class="syn-keyword">pure</span> <span class="syn-keyword">circuit</span> <span class="syn-function">first</span>(items<span class="syn-operator">:</span> <span class="syn-type">Vector</span><span class="syn-operator">&lt;</span><span class="syn-number">2</span>, <span class="syn-type">Field</span><span class="syn-operator">&gt;</span>)<span class="syn-operator">:</span> <span class="syn-type">Field</span> {
+  <span class="syn-keyword">return</span> items[<span class="syn-number">0</span>];
 }
 </code></pre>
 <h3 id="after-let-the-compiler-work-out-the-position">After · Let the compiler work out the position</h3>
-<pre><code class="language-compact">// From the accepted fixture. Idx is an alias for Uint&lt;8&gt;.
-export pure circuit first(items: Vector&lt;2, Field&gt;): Field {
-  const i: Idx = 1;
-  const index = i * 0;
-  return items[index];
+<pre data-language="Compact"><code class="language-compact"><span class="syn-comment">// From the accepted fixture. Idx is an alias for Uint&lt;8&gt;.</span>
+<span class="syn-keyword">export</span> <span class="syn-keyword">pure</span> <span class="syn-keyword">circuit</span> <span class="syn-function">first</span>(items<span class="syn-operator">:</span> <span class="syn-type">Vector</span><span class="syn-operator">&lt;</span><span class="syn-number">2</span>, <span class="syn-type">Field</span><span class="syn-operator">&gt;</span>)<span class="syn-operator">:</span> <span class="syn-type">Field</span> {
+  <span class="syn-keyword">const</span> i<span class="syn-operator">:</span> <span class="syn-type">Idx</span> <span class="syn-operator">=</span> <span class="syn-number">1</span>;
+  <span class="syn-keyword">const</span> index <span class="syn-operator">=</span> i <span class="syn-operator">*</span> <span class="syn-number">0</span>;
+  <span class="syn-keyword">return</span> items[index];
 }
 </code></pre>
 <p>For input [7, 9], both versions select 7. The second version lets the programmer name and calculate the position. The same slice checks bounds and keeps dynamic indices outside this fixed-position feature.</p>

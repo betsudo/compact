@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>Shapes, operations and algebra · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
-<link rel="stylesheet" href="../assets/book.css?v=cce8b36d5f19">
+<link rel="stylesheet" href="../assets/book.css?v=ab6aa6c8b8d6">
+<link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
 <script defer src="../assets/book.js?v=c6070295e76c"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -56,16 +57,16 @@
 </tr>
 </tbody>
 </table>
-<pre><code class="language-compact">// Shape 1 · The value inserted comes directly from the parameter.
-export circuit addName(name: Opaque&lt;&quot;string&quot;&gt;): [] {
-  names.insert(disclose(name));
+<pre data-language="Compact"><code class="language-compact"><span class="syn-comment">// Shape 1 · The value inserted comes directly from the parameter.</span>
+<span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">addName</span>(name<span class="syn-operator">:</span> <span class="syn-type">Opaque</span><span class="syn-operator">&lt;</span><span class="syn-string">"string"</span><span class="syn-operator">&gt;</span>)<span class="syn-operator">:</span> [] {
+  names.<span class="syn-function">insert</span>(<span class="syn-keyword">disclose</span>(name));
 }
 
-// Shape 2 · The result is the value from before the write.
-export circuit replaceValue(next: Field): Field {
-  const before = state.read();
-  state.write(disclose(next));
-  return before;
+<span class="syn-comment">// Shape 2 · The result is the value from before the write.</span>
+<span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">replaceValue</span>(next<span class="syn-operator">:</span> <span class="syn-type">Field</span>)<span class="syn-operator">:</span> <span class="syn-type">Field</span> {
+  <span class="syn-keyword">const</span> before <span class="syn-operator">=</span> state.<span class="syn-function">read</span>();
+  state.<span class="syn-function">write</span>(<span class="syn-keyword">disclose</span>(next));
+  <span class="syn-keyword">return</span> before;
 }
 </code></pre>
 <p>Here, a <em>shape</em> was a recognizer’s predicate over the existing circuit representation. The relevant entities were the circuit, its declarations, and the recording recipe selected by the recognizer. There was no common Shape object with child shapes that the compiler could assemble into a larger program.</p>
@@ -132,15 +133,15 @@ return before
 <h2 id="from-two-known-pieces-to-a-new-composition">From two known pieces to a new composition</h2>
 <p>Suppose the compiler understands Field reads and writes and a typed conditional. We want to replace the stored value only when the caller selects that branch, while always returning the value from before the call.</p>
 <p>The following Compact source illustrates that composition. Its admission depends on the compiler revision’s support for the listed operations and result types.</p>
-<pre><code class="language-compact">export circuit replaceIf(
-  update: Boolean,
-  next: Field
-): Field {
-  const before = state.read();
-  if (disclose(update)) {
-    state.write(disclose(next));
+<pre data-language="Compact"><code class="language-compact"><span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">replaceIf</span>(
+  update<span class="syn-operator">:</span> <span class="syn-type">Boolean</span>,
+  next<span class="syn-operator">:</span> <span class="syn-type">Field</span>
+)<span class="syn-operator">:</span> <span class="syn-type">Field</span> {
+  <span class="syn-keyword">const</span> before <span class="syn-operator">=</span> state.<span class="syn-function">read</span>();
+  <span class="syn-keyword">if</span> (<span class="syn-keyword">disclose</span>(update)) {
+    state.<span class="syn-function">write</span>(<span class="syn-keyword">disclose</span>(next));
   }
-  return before;
+  <span class="syn-keyword">return</span> before;
 }
 </code></pre>
 <p>A recognizer built for the straight-line replaceValue shape can fail to match this conditional form. Extending the recipe catalogue would require checking a broader shape or adding another recognizer. Knowing the individual read and write operations alone gives that catalogue no general composition rule.</p>
@@ -231,13 +232,13 @@ return before
 <p>The operation model can report a precise missing composition while retaining other supported APIs. Users can then identify whether they need a new primitive, a new type conversion, an interface boundary or a later proof qualification step.</p>
 <h2 id="walkthrough-what-a-witness-sees-depends-on-order">Walkthrough · What a witness sees depends on order</h2>
 <p>The prototype’s original orderedObservation circuit writes state, then takes one of three paths. The old recorder refused this circuit when recording was required. The pilot admitted the same source using the checked operation plan.</p>
-<pre><code class="language-compact">const before = state.read();
-state.write(before + 1);
-if (disclose(selector) == 0) {
-  const observed = mark();
-  assert(disclose(observed) == 77, &quot;unexpected mark&quot;);
-  round.increment(2);
-  return disclose(state.read() + observed);
+<pre data-language="Compact"><code class="language-compact"><span class="syn-keyword">const</span> before <span class="syn-operator">=</span> state.<span class="syn-function">read</span>();
+state.<span class="syn-function">write</span>(before <span class="syn-operator">+</span> <span class="syn-number">1</span>);
+<span class="syn-keyword">if</span> (<span class="syn-keyword">disclose</span>(selector) <span class="syn-operator">==</span> <span class="syn-number">0</span>) {
+  <span class="syn-keyword">const</span> observed <span class="syn-operator">=</span> <span class="syn-function">mark</span>();
+  <span class="syn-keyword">assert</span>(<span class="syn-keyword">disclose</span>(observed) <span class="syn-operator">==</span> <span class="syn-number">77</span>, <span class="syn-string">"unexpected mark"</span>);
+  round.<span class="syn-function">increment</span>(<span class="syn-number">2</span>);
+  <span class="syn-keyword">return</span> <span class="syn-keyword">disclose</span>(state.<span class="syn-function">read</span>() <span class="syn-operator">+</span> observed);
 }
 </code></pre>
 <p>This excerpt is the first branch. The other live witness branch increments the round and writes the new state before calling mark(). A witness is a host-supplied function. Which ledger state it observes depends on the writes already performed in the selected branch.</p>

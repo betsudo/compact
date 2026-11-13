@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>One Counter, two backends · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
-<link rel="stylesheet" href="../assets/book.css?v=cce8b36d5f19">
+<link rel="stylesheet" href="../assets/book.css?v=ab6aa6c8b8d6">
+<link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
 <script defer src="../assets/book.js?v=c6070295e76c"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
@@ -35,20 +36,20 @@
 <div class="prose"><p><a href="typescript-and-rust-ast.html">Compare the backend architecture and Rust benefits</a>.</p>
 <h2 id="one-source-file">One source file</h2>
 <p>Start with a public counter at zero. Call <code>increment_by</code> with 7, read the counter, then reset it. The source also exports <code>decrement_by</code> so a caller can subtract from the counter. The file is byte-for-byte identical at the two source revisions linked below.</p>
-<pre><code class="language-compact">import CompactStandardLibrary;
+<pre data-language="Compact"><code class="language-compact"><span class="syn-keyword">import</span> <span class="syn-type">CompactStandardLibrary</span>;
 
-export ledger round: Counter;
+<span class="syn-keyword">export</span> <span class="syn-keyword">ledger</span> round<span class="syn-operator">:</span> <span class="syn-type">Counter</span>;
 
-export circuit increment_by(amount: Uint&lt;16&gt;): [] {
-  round.increment(disclose(amount));
+<span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">increment_by</span>(amount<span class="syn-operator">:</span> <span class="syn-type">Uint</span><span class="syn-operator">&lt;</span><span class="syn-number">16</span><span class="syn-operator">&gt;</span>)<span class="syn-operator">:</span> [] {
+  round.<span class="syn-function">increment</span>(<span class="syn-keyword">disclose</span>(amount));
 }
 
-export circuit decrement_by(amount: Uint&lt;16&gt;): [] {
-  round.decrement(disclose(amount));
+<span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">decrement_by</span>(amount<span class="syn-operator">:</span> <span class="syn-type">Uint</span><span class="syn-operator">&lt;</span><span class="syn-number">16</span><span class="syn-operator">&gt;</span>)<span class="syn-operator">:</span> [] {
+  round.<span class="syn-function">decrement</span>(<span class="syn-keyword">disclose</span>(amount));
 }
 
-export circuit reset_round(): [] {
-  round.resetToDefault();
+<span class="syn-keyword">export</span> <span class="syn-keyword">circuit</span> <span class="syn-function">reset_round</span>()<span class="syn-operator">:</span> [] {
+  round.<span class="syn-function">resetToDefault</span>();
 }
 </code></pre>
 <p><code>Uint&lt;16&gt;</code> admits 0 through 65,535. The <code>[]</code> return is Compact’s Unit value. The calls change ledger state, so the examples read the new value from the returned context.</p>
@@ -68,44 +69,44 @@ compact_rust_counter_parameter_fixture = { package = &quot;compact-contract-coun
 <section>
 <h3 id="ledger-8-typescript">Ledger 8 · TypeScript</h3>
 <p>The generated method takes a <code>bigint</code>. The ledger helper projects the counter from the new context.</p>
-<pre><code class="language-typescript">import {
+<pre data-language="TypeScript"><code class="language-typescript"><span class="syn-keyword">import</span> {
   createCircuitContext, dummyContractAddress,
   emptyZswapLocalState,
-} from &quot;@midnight-ntwrk/compact-runtime&quot;;
-import { Contract, ledger } from &quot;./contract/index.js&quot;;
+} <span class="syn-keyword">from</span> <span class="syn-string">"@midnight-ntwrk/compact-runtime"</span>;
+<span class="syn-keyword">import</span> { Contract, ledger } <span class="syn-keyword">from</span> <span class="syn-string">"./contract/index.js"</span>;
 
-const contract = new Contract&lt;null&gt;({});
-const coinKey = { bytes: new Uint8Array(32) };
-const initial = contract.initialState({
-  initialPrivateState: null,
-  initialZswapLocalState: emptyZswapLocalState(coinKey),
+<span class="syn-keyword">const</span> contract <span class="syn-operator">=</span> <span class="syn-operator">new</span> Contract<span class="syn-operator">&lt;</span><span class="syn-keyword">null</span><span class="syn-operator">&gt;</span>({});
+<span class="syn-keyword">const</span> coinKey <span class="syn-operator">=</span> { bytes<span class="syn-operator">:</span> <span class="syn-type">new</span> <span class="syn-type">Uint8Array</span>(<span class="syn-number">32</span>) };
+<span class="syn-keyword">const</span> initial <span class="syn-operator">=</span> contract.initialState({
+  initialPrivateState<span class="syn-operator">:</span> <span class="syn-type">null</span>,
+  initialZswapLocalState<span class="syn-operator">:</span> <span class="syn-type">emptyZswapLocalState</span>(coinKey),
 });
-const context = createCircuitContext(
+<span class="syn-keyword">const</span> context <span class="syn-operator">=</span> createCircuitContext(
   dummyContractAddress(),
   coinKey,
   initial.currentContractState.data,
   initial.currentPrivateState,
 );
 
-const increment =
-  contract.circuits.increment_by(context, 7n);
-const after = ledger(
+<span class="syn-keyword">const</span> increment <span class="syn-operator">=</span>
+  contract.circuits.increment_by(context, <span class="syn-number">7n</span>);
+<span class="syn-keyword">const</span> after <span class="syn-operator">=</span> ledger(
   increment.context.currentQueryContext.state,
 );
-console.log(after.round); // 7n
+console.log(after.round); <span class="syn-comment">// 7n</span>
 
-const reset =
+<span class="syn-keyword">const</span> reset <span class="syn-operator">=</span>
   contract.circuits.reset_round(increment.context);
-const cleared = ledger(
+<span class="syn-keyword">const</span> cleared <span class="syn-operator">=</span> ledger(
   reset.context.currentQueryContext.state,
 );
-console.log(cleared.round); // 0n
+console.log(cleared.round); <span class="syn-comment">// 0n</span>
 </code></pre>
 </section>
 <section>
 <h3 id="ledger-9-rust-ast">Ledger 9 · Rust AST</h3>
 <p>The generated function takes a <code>BoundedUint&lt;65535&gt;</code>. The generated <code>round</code> slot reads the counter from the new context.</p>
-<pre><code class="language-rust">use compact_rust_counter_parameter_fixture::{
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">use</span> compact_rust_counter_parameter_fixture::{
     ledger_contract::{
         initial_state, increment_by, reset_round,
     },
@@ -116,21 +117,21 @@ console.log(cleared.round); // 0n
     },
 };
 
-fn main() -&gt; Result&lt;(), CompactError&gt; {
-    let initial =
-        initial_state(ConstructorContext::new(()))?;
-    let context = initial
-        .into_circuit_context(Default::default());
-    let amount = BoundedUint::&lt;65_535&gt;::new(7)?;
+<span class="syn-keyword">fn</span> <span class="syn-function">main</span>() -&gt; <span class="syn-type">Result</span><span class="syn-operator">&lt;</span>(), CompactError<span class="syn-operator">&gt;</span> {
+    <span class="syn-keyword">let</span> initial <span class="syn-operator">=</span>
+        initial_state(ConstructorContext::new(()))<span class="syn-operator">?</span>;
+    <span class="syn-keyword">let</span> context <span class="syn-operator">=</span> initial
+        .into_circuit_context(<span class="syn-type">Default</span>::default());
+    <span class="syn-keyword">let</span> amount <span class="syn-operator">=</span> BoundedUint::<span class="syn-operator">&lt;</span><span class="syn-number">65_535</span><span class="syn-operator">&gt;</span>::new(<span class="syn-number">7</span>)<span class="syn-operator">?</span>;
 
-    let increment = increment_by(context, amount)?;
-    let state = increment.context.query.state.get_ref();
-    assert_eq!(round.inspect(state)?, 7);
+    <span class="syn-keyword">let</span> increment <span class="syn-operator">=</span> increment_by(context, amount)<span class="syn-operator">?</span>;
+    <span class="syn-keyword">let</span> state <span class="syn-operator">=</span> increment.context.query.state.get_ref();
+    <span class="syn-function">assert_eq!</span>(round.inspect(state)<span class="syn-operator">?</span>, <span class="syn-number">7</span>);
 
-    let reset = reset_round(increment.context)?;
-    let state = reset.context.query.state.get_ref();
-    assert_eq!(round.inspect(state)?, 0);
-    Ok(())
+    <span class="syn-keyword">let</span> reset <span class="syn-operator">=</span> reset_round(increment.context)<span class="syn-operator">?</span>;
+    <span class="syn-keyword">let</span> state <span class="syn-operator">=</span> reset.context.query.state.get_ref();
+    <span class="syn-function">assert_eq!</span>(round.inspect(state)<span class="syn-operator">?</span>, <span class="syn-number">0</span>);
+    <span class="syn-type">Ok</span>(())
 }
 </code></pre>
 </section>
@@ -163,13 +164,13 @@ fn main() -&gt; Result&lt;(), CompactError&gt; {
 </tbody>
 </table>
 <p>Two intentionally invalid Rust calls show the actual diagnostics, shortened here to the relevant lines.</p>
-<pre><code class="language-rust">increment_by(context, 7_u16)?;
-// E0308: expected BoundedUint&lt;65535&gt;, found u16
-</code></pre>
-<pre><code class="language-rust">let increment = increment_by(context, amount)?;
-reset_round(context)?;
-// E0382: use of moved value: context
-</code></pre>
+<pre data-language="Rust"><code class="language-rust">increment_by(context, <span class="syn-number">7_</span><span class="syn-keyword">u16</span>)<span class="syn-operator">?</span>;
+<span class="syn-comment">// E0308: expected BoundedUint&lt;65535&gt;, found u16
+</span></code></pre>
+<pre data-language="Rust"><code class="language-rust"><span class="syn-keyword">let</span> increment <span class="syn-operator">=</span> increment_by(context, amount)<span class="syn-operator">?</span>;
+reset_round(context)<span class="syn-operator">?</span>;
+<span class="syn-comment">// E0382: use of moved value: context
+</span></code></pre>
 <p>Rust’s ownership check applies to the context binding passed by value. The range check applies when an integer becomes a Compact argument. A caller can handle an invalid amount before entering the circuit.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>

@@ -25,6 +25,7 @@ import tempfile
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import markdown
 from revisions import DATA, References
+from highlighting import highlight_code_blocks
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT.parents[1] / 'docs' / 'book'
@@ -33,7 +34,7 @@ EDITION = json.loads((ROOT / 'sources' / 'edition.json').read_text())
 REFERENCES = References(json.loads(DATA.read_text()))
 ASSET_VERSIONS = {
     name: hashlib.sha256((ROOT/'assets'/name).read_bytes()).hexdigest()[:12]
-    for name in ('book.css','book.js','fonts.css')
+    for name in ('book.css','book.js','fonts.css','syntax.css')
 }
 
 def escape(value):
@@ -69,6 +70,7 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 <title>{escape(title)} · The Compact journey</title>
 <link rel="stylesheet" href="{prefix}assets/fonts.css?v={ASSET_VERSIONS["fonts.css"]}">
 <link rel="stylesheet" href="{prefix}assets/book.css?v={ASSET_VERSIONS["book.css"]}">
+<link rel="stylesheet" href="{prefix}assets/syntax.css?v={ASSET_VERSIONS["syntax.css"]}">
 <script defer src="{prefix}assets/book.js?v={ASSET_VERSIONS["book.js"]}"></script>
 <noscript><style>
 .header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {{display:none}}
@@ -103,7 +105,7 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 def parse(chapter):
     text = (ROOT / chapter['source']).read_text()
     parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'toc', 'sane_lists', 'md_in_html'])
-    content = parser.convert(text)
+    content = highlight_code_blocks(parser.convert(text))
     words = len(re.findall(r'\b\w+\b', text))
     return content, parser.toc, words
 

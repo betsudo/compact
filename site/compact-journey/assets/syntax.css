@@ -1,0 +1,69 @@
+/*
+This file is part of Compact.
+Copyright (C) 2026 Midnight Foundation
+SPDX-License-Identifier: Apache-2.0
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/* Code token colors for Clear, Dusk, and the printed book. */
+:root {
+  --syntax-comment: #586b80;
+  --syntax-keyword: #6f42a6;
+  --syntax-string: #24683a;
+  --syntax-number: #8b4b0d;
+  --syntax-type: #006575;
+  --syntax-function: #245bbc;
+  --syntax-attribute: #7b4d00;
+  --syntax-operator: #53617a;
+}
+html[data-theme="dark"] {
+  --syntax-comment: #a4b5c4;
+  --syntax-keyword: #c5a3ef;
+  --syntax-string: #9bceae;
+  --syntax-number: #e1b77b;
+  --syntax-type: #8fcbd2;
+  --syntax-function: #9bc7f0;
+  --syntax-attribute: #dbbf90;
+  --syntax-operator: #bdcbd9;
+}
+.prose pre[data-language]::before {
+  content: attr(data-language);
+  display: block;
+  margin-bottom: .85rem;
+  color: var(--code-ink);
+  font-family: var(--sans);
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.prose pre .syn-comment { color: var(--syntax-comment); font-style: italic; }
+.prose pre .syn-keyword { color: var(--syntax-keyword); }
+.prose pre .syn-string { color: var(--syntax-string); }
+.prose pre .syn-number { color: var(--syntax-number); }
+.prose pre .syn-type { color: var(--syntax-type); }
+.prose pre .syn-function { color: var(--syntax-function); }
+.prose pre .syn-attribute { color: var(--syntax-attribute); }
+.prose pre .syn-operator { color: var(--syntax-operator); }
+
+@media print {
+  html[data-theme] {
+    --syntax-comment: #586b80;
+    --syntax-keyword: #6f42a6;
+    --syntax-string: #24683a;
+    --syntax-number: #8b4b0d;
+    --syntax-type: #006575;
+    --syntax-function: #245bbc;
+    --syntax-attribute: #7b4d00;
+    --syntax-operator: #53617a;
+  }
+}
