@@ -48,8 +48,9 @@ def require(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
-def run(command: list[str], *, env: dict[str, str] | None = None, log: Path | None = None) -> str:
-    result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
+def run(command: list[str], *, env: dict[str, str] | None = None,
+        log: Path | None = None, cwd: Path = ROOT) -> str:
+    result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True)
     if log:
         log.write_text(result.stdout + result.stderr)
     if result.returncode:
@@ -125,7 +126,9 @@ def main() -> None:
                     for dependency in manifest_data['dependencies'].values()),
             'proof runner manifest has a changed binary name or path dependency')
     rustc_version = run(['rustc', '+1.99.0', '-vV']).strip()
-    require('release: 1.99.0' in rustc_version, 'proof runner Rust toolchain changed')
+    require('release: 1.99.0' in rustc_version.splitlines() and
+            'commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4' in rustc_version.splitlines(),
+            'proof runner Rust toolchain changed')
     output.mkdir(parents=True)
     runner_target = output / 'runner-target'
     runner_build_env = {key: value for key, value in os.environ.items()
@@ -133,9 +136,19 @@ def main() -> None:
                                 {'RUSTFLAGS', 'RUSTDOCFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
                                  'RUSTC_WORKSPACE_WRAPPER', 'RUSTUP_TOOLCHAIN'})}
     runner_build_env['CARGO_TARGET_DIR'] = str(runner_target)
+    cargo_home = Path(runner_build_env.get('HOME', str(Path.home()))) / '.cargo'
+    config_roots = (source_root, *source_root.parents, cargo_home)
+    for directory in config_roots:
+        for name in ('.cargo/config', '.cargo/config.toml') if directory != cargo_home else ('config', 'config.toml'):
+            require(not (directory / name).exists(), f'unpinned Cargo config at {directory / name}')
+    for directory in source_root.parents:
+        candidate = directory / 'Cargo.toml'
+        if candidate.is_file():
+            require('workspace' not in tomllib.loads(candidate.read_text()),
+                    f'unpinned parent Cargo workspace at {candidate}')
     runner_command = ['cargo', '+1.99.0', 'build', '--locked', '--offline', '--bin',
                       'secp256k1-unary-proof', '--manifest-path', str(manifest)]
-    run(runner_command, env=runner_build_env, log=output / 'runner-build.log')
+    run(runner_command, env=runner_build_env, log=output / 'runner-build.log', cwd=source_root)
     rebuilt_runner = runner_target / 'debug/secp256k1-unary-proof'
     require(rebuilt_runner.is_file(), 'fresh proof runner build produced no binary')
     material_receipt = json.loads((paths['material'].parent / 'material-receipt.json').read_text())
