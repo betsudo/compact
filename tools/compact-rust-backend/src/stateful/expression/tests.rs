@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Diagnostic contracts at the native stateful expression dispatch boundary.
 use super::*;
 use crate::ir::{Parameter, StateReturn};
@@ -47,6 +59,50 @@ fn nested_unsigned_comparisons_remain_boolean_equality_operands() {
         };
         assert_eq!(matches!(binary.op, syn::BinOp::Ne(_)), negated);
         assert!(matches!(*binary.right, syn::Expr::Binary(_)));
+    }
+}
+
+#[test]
+fn ordered_comparison_groups_compound_right_operands() {
+    let right = || Expr::If {
+        condition: parameter("boolean"),
+        then: parameter("uint"),
+        otherwise: Box::new(Expr::Default { ty: uint("255") }),
+    };
+    for operator in [
+        ComparisonOperator::Less,
+        ComparisonOperator::LessEqual,
+        ComparisonOperator::Greater,
+        ComparisonOperator::GreaterEqual,
+    ] {
+        for right in [
+            right(),
+            Expr::UnsignedAdd {
+                max: "255".into(),
+                left: parameter("uint"),
+                right: parameter("uint"),
+            },
+        ] {
+            let observed = Declarations::default().lower(Expr::Compare {
+                operator,
+                left: parameter("uint"),
+                right: Box::new(right),
+            });
+            let (rendered, ty, witness_effect) = observed.result.expect("comparison lowers");
+            assert_eq!(ty, Type::Boolean);
+            assert!(!witness_effect && !observed.query_effect);
+            let syn::Expr::Binary(binary) = rendered else {
+                panic!("ordered comparison must remain a binary expression");
+            };
+            let syn::Expr::MethodCall(method) = *binary.right else {
+                panic!("right value must be extracted before comparing");
+            };
+            assert_eq!(method.method, "value");
+            assert!(matches!(
+                *method.receiver,
+                syn::Expr::If(_) | syn::Expr::Try(_) | syn::Expr::Paren(_)
+            ));
+        }
     }
 }
 
