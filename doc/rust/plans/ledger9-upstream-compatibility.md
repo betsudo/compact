@@ -336,6 +336,10 @@ fixtures. The [full mixed K1/P-256/Curve25519 cases](../../../test-contracts/std
 now execute all original assertions in generated TypeScript and Rust. Their
 `castNative` Boolean comparison has a fresh k=8 independently verified proof
 and separate fee-funded default-strict application with replay refusal.
+The original Curve25519 `castC25519` false and true branches and `castWide`
+reduction also have [fresh k=11/k=10 proofs and separately funded strict
+applications](../../../test-contracts/stdlib/secp256r1/casts/mixed-original/README.md),
+each with changed-write, verifier, binding, corrupt-proof and replay refusals.
 These results are local macOS arm64 only. Remaining original exports retain
 open proof and funded transaction coverage, and native Linux remains required.
 The [P-256 arithmetic fixtures](../../../test-contracts/stdlib/secp256r1/arithmetic)

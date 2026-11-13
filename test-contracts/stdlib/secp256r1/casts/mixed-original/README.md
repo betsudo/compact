@@ -23,9 +23,16 @@ cell write, generates a fresh k=8 proof, verifies independently with wrong
 verifier, changed-binding and corrupt-proof controls, then separately proves
 and applies a funded Ledger 9 transaction with default strictness. The Rust
 recording agrees with the TypeScript input and transcript and rejects replay
-without changing ledger state. The other ten original exports have generated
-execution coverage; their full proof and funded matrix remains open. All
-reported results are local macOS arm64; native Linux remains required.
+without changing ledger state. The
+[Curve25519 proof lane](../../../../../tools/compact-rust-backend/check_upstream_ledger9_mixed_curve_proofs.py)
+also checks the two original `castC25519(false/true, 7, 8)` calls and the
+`castWide()` reduction to five. Each has a separate honest and changed-write
+preimage check, fresh proof with independent verification and three negative
+controls, and fee-funded default-strict transaction with native state parity
+and unchanged-state replay refusal. Its proof runner is rebuilt from the
+archived locked Rust source. The other eight original exports have generated
+execution and mock circuit coverage; their full proof and funded matrix remains
+open. All reported results are local macOS arm64; native Linux remains required.
 
 Run the complete lane with the signed source's Rust CLI and a Scheme compiler
 built from the same unchanged frontend source, Compact Runtime 0.17.0, ZKIR
@@ -39,3 +46,12 @@ python3 tools/compact-rust-backend/check_upstream_ledger9_mixed_foreign_casts.py
   --wrong-verifier "$WRONG_VERIFIER" --output "$OUTPUT" \
   --cargo-target "$CARGO_TARGET_DIR"
 ```
+
+For the extended Curve25519 lane, run
+`check_upstream_ledger9_mixed_curve_proofs.py` with the same arguments and add
+`--proof-source "$PROOF_SOURCE"`, pointing to the locked source directory of
+the archived standalone proof runner, plus `--wrong-verifier-k10` and
+`--wrong-verifier-k11` paths to different-circuit verifier keys from the same
+respective k. The material directory's parent must contain its
+`material-receipt.json`. The driver runs the original family lane first
+and writes separate source, preimage, proof, funded and replay receipts.
