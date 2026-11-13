@@ -425,7 +425,7 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
     if (!Array.isArray(asRecord(implemented)?.argumentTypes)) {
       return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
     }
-    if (implemented.provable !== true) {
+    if (implemented.provable !== true || implemented.pure !== false) {
       return { outcome: 'Violation', circuitId, check: 'Provability' };
     }
     if (declared.argumentTypes.length !== implemented.argumentTypes.length) {

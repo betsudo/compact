@@ -330,6 +330,15 @@ describe('checkConformance', () => {
     });
   });
 
+  test('an external descriptor cannot claim both purity and a proof', () => {
+    const contradictory: CircuitSignatures = { ...conforming, balance: sig(true, true, [], FIELD) };
+    expect(checkConformance(declaration, contradictory)).toEqual({
+      outcome: 'Violation',
+      circuitId: 'balance',
+      check: 'Provability',
+    });
+  });
+
   test('an impure implementation without a proof cannot satisfy a declaration either', () => {
     const notProvable: CircuitSignatures = { ...conforming, transfer: sig(false, false, [FIELD, uint('255')], BOOL) };
     expect(checkConformance(declaration, notProvable)).toEqual({
