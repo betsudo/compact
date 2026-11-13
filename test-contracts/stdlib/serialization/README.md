@@ -157,3 +157,13 @@ stateful write uses the explicit local slow proof lane at k=10.
 node test-contracts/stdlib/serialization/check-secp256k1-base.mjs \
   "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/secp256k1-base-preimages"
 ```
+
+`foreign-field-wire.compact` covers the other five 32-byte fields.
+It exercises the distinct moduli, a mixed product with a nominal
+Curve25519 scalar, output padding and ignored input padding. Each
+stateful write uses the explicit k=10 slow lane.
+
+```sh
+node test-contracts/stdlib/serialization/check-foreign-field-wire.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/foreign-field-preimages"
+```

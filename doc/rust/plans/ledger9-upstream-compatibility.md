@@ -253,8 +253,9 @@ decoders, the intact `d1`/`d2` checked-Boolean fixture and the original
 `foo` at k=12 and `unfoo` at k=13. Enum codecs use checked declaration-order
 ordinals, with stateful coverage at k=7. Wide Uint codecs cover 129-bit
 and 248-bit inputs. The stateful 129-bit write has a local k=8 proof
-lane. The first foreign-field codec covers Secp256k1Base with mainstream's
-32-byte encoding and modular decode. Its stateful lane measures k=10.
+lane. The six secp256k1, P-256 and Curve25519 field codecs use mainstream's
+32-byte encoding and modular decode. The stateful lanes measure k=10.
+JubjubScalar has a separate conversion path and remains open.
 Broader aggregate proofs and native Linux qualification remain open.
 
 The supplemental group fixture covers addition, scalar multiplication,

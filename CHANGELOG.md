@@ -26,6 +26,8 @@ Unreleased Ledger 9 migration.
 - Encode and decode enum ordinals with checked bounds in both backends.
 - Encode and decode Uint values through Uint<248> in the Rust backend.
 - Encode and decode Secp256k1Base with the Ledger 9 wire format in both backends.
+- Extend Ledger 9 wire encoding and modular decoding to the remaining
+  secp256k1, P-256 and Curve25519 base and scalar fields.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust. Successful circuit contexts expose the
   VM-decoded event and its emitting contract address.

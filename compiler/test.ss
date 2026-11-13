@@ -69195,6 +69195,51 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "new type Element = Curve25519Scalar;"
+      "export circuit encode(x: [Secp256r1Base, Element]): Bytes<65> {"
+      "  return serialize<[Secp256r1Base, Element], 65>(x);"
+      "}"
+      "export circuit decode(x: Bytes<65>): [Secp256r1Base, Element] {"
+      "  return deserialize<[Secp256r1Base, Element], 65>(x);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('foreign fields use separate wire limbs and moduli in a nominal product', () => {"
+        "  const { encode, decode } = contractCode.pureCircuits;"
+        "  const p = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;"
+        "  const l = (1n << 252n) + 27742317777372353535851937790883648493n;"
+        "  const bytes = new Uint8Array(65);"
+        "  bytes[0] = 1;"
+        "  bytes[32] = 2;"
+        "  expect(encode([1n, 2n])).toEqual(bytes);"
+        "  for (let i = 0; i < 32; i++) {"
+        "    bytes[i] = Number(((p + 1n) >> BigInt(i * 8)) & 255n);"
+        "    bytes[i + 32] = Number((l >> BigInt(i * 8)) & 255n);"
+        "  }"
+        "  bytes[64] = 255;"
+        "  expect(decode(bytes)).toEqual([1n, 0n]);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Secp256k1Scalar): Bytes<31> { return serialize<Secp256k1Scalar, 31>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (32 31 "Secp256k1Scalar"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<31>): Curve25519Base { return deserialize<Curve25519Base, 31>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (32 31 "Curve25519Base"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

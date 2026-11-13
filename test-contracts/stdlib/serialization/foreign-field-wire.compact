@@ -1,0 +1,91 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+import CompactStandardLibrary;
+
+new type EdwardsScalar = Curve25519Scalar;
+
+export ledger stored_k1_scalar: Secp256k1Scalar;
+export pure circuit encode_k1_scalar(x: Secp256k1Scalar): Bytes<34> {
+  return serialize<Secp256k1Scalar, 34>(x);
+}
+export pure circuit decode_k1_scalar(x: Bytes<34>): Secp256k1Scalar {
+  return deserialize<Secp256k1Scalar, 34>(x);
+}
+export circuit store_k1_scalar(x: Bytes<32>): Secp256k1Scalar {
+  const value = deserialize<Secp256k1Scalar, 32>(x);
+  stored_k1_scalar = disclose(value);
+  return value;
+}
+
+export ledger stored_r1_base: Secp256r1Base;
+export pure circuit encode_r1_base(x: Secp256r1Base): Bytes<34> {
+  return serialize<Secp256r1Base, 34>(x);
+}
+export pure circuit decode_r1_base(x: Bytes<34>): Secp256r1Base {
+  return deserialize<Secp256r1Base, 34>(x);
+}
+export circuit store_r1_base(x: Bytes<32>): Secp256r1Base {
+  const value = deserialize<Secp256r1Base, 32>(x);
+  stored_r1_base = disclose(value);
+  return value;
+}
+
+export ledger stored_r1_scalar: Secp256r1Scalar;
+export pure circuit encode_r1_scalar(x: Secp256r1Scalar): Bytes<34> {
+  return serialize<Secp256r1Scalar, 34>(x);
+}
+export pure circuit decode_r1_scalar(x: Bytes<34>): Secp256r1Scalar {
+  return deserialize<Secp256r1Scalar, 34>(x);
+}
+export circuit store_r1_scalar(x: Bytes<32>): Secp256r1Scalar {
+  const value = deserialize<Secp256r1Scalar, 32>(x);
+  stored_r1_scalar = disclose(value);
+  return value;
+}
+
+export ledger stored_c25519_base: Curve25519Base;
+export pure circuit encode_c25519_base(x: Curve25519Base): Bytes<34> {
+  return serialize<Curve25519Base, 34>(x);
+}
+export pure circuit decode_c25519_base(x: Bytes<34>): Curve25519Base {
+  return deserialize<Curve25519Base, 34>(x);
+}
+export circuit store_c25519_base(x: Bytes<32>): Curve25519Base {
+  const value = deserialize<Curve25519Base, 32>(x);
+  stored_c25519_base = disclose(value);
+  return value;
+}
+
+export ledger stored_c25519_scalar: EdwardsScalar;
+export pure circuit encode_c25519_scalar(x: EdwardsScalar): Bytes<34> {
+  return serialize<EdwardsScalar, 34>(x);
+}
+export pure circuit decode_c25519_scalar(x: Bytes<34>): EdwardsScalar {
+  return deserialize<EdwardsScalar, 34>(x);
+}
+export circuit store_c25519_scalar(x: Bytes<32>): EdwardsScalar {
+  const value = deserialize<EdwardsScalar, 32>(x);
+  stored_c25519_scalar = disclose(value);
+  return value;
+}
+
+export pure circuit encode_pair(x: [Secp256r1Base, EdwardsScalar]): Bytes<65> {
+  return serialize<[Secp256r1Base, EdwardsScalar], 65>(x);
+}
+export pure circuit decode_pair(x: Bytes<65>): [Secp256r1Base, EdwardsScalar] {
+  return deserialize<[Secp256r1Base, EdwardsScalar], 65>(x);
+}

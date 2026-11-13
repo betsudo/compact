@@ -2027,7 +2027,7 @@
           [(tboolean ,src^) 1]
           [(tfield ,src^) (+ 1 (field-bytes))]
           [(topaque ,src^ ,opaque-type)
-           (guard (string=? opaque-type "Secp256k1Base"))
+           (guard (foreign-field-max opaque-type))
            32]
           [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
           [(tbytes ,src^ ,len) len]
@@ -2091,7 +2091,7 @@
                  (let ([width (+ 1 (field-bytes))])
                    (add width `(field->bytes ,src ,width ,(maybe-safecast src carrier type expr))))]
                 [(topaque ,src^ ,opaque-type)
-                 (guard (string=? opaque-type "Secp256k1Base"))
+                 (guard (foreign-field-max opaque-type))
                  (add 32 `(secp256k1-bytes-cast ,src (tbytes ,src 32)
                             ,(maybe-safecast src carrier type expr)))]
                 [(tbytes ,src^ ,len^)
@@ -2157,7 +2157,7 @@
                                (let ([len^ (+ 1 (field-bytes))])
                                  `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^)))]
                               [(topaque ,src^ ,opaque-type)
-                               (guard (string=? opaque-type "Secp256k1Base"))
+                               (guard (foreign-field-max opaque-type))
                                `(secp256k1-bytes-cast ,src ,carrier ,(prefix index 32))]
                               [(tunsigned ,src^ ,nat)
                                (let ([len^ (unsigned-serialized-width nat)])
