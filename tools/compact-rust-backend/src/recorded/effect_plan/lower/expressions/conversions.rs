@@ -39,6 +39,7 @@ impl Lowerer<'_> {
             | Expr::BytesToField { .. }
             | Expr::BytesToUint { .. }
             | Expr::BytesZeroPad { .. }
+            | Expr::BytesFromChunks { .. }
             | Expr::BytesSlice { .. } => {
                 let (value, operation) = FixedBytesConversion::from_expression(expression);
                 let operation = operation.map_err(|error| invalid(path, error.to_string()))?;

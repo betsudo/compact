@@ -99,3 +99,20 @@ little-endian Uint fields, rollback and rejection of a changed output.
 It exports binary ZKIR and three preimages for independent proof
 verification. The stateful `d2` fixture runs in the local slow proof lane
 at k=11.
+
+## Aggregate serialization
+
+`encode-products.compact` retains the five upstream struct, tuple and
+Vector encoders, including the exact byte Vector assertion. It also
+covers nested nominal products, zero padding and an empty Vector with a
+checked input. `alias-roundtrip.compact` retains upstream's `foo` and
+`unfoo` with their ledger operations. Compile both targets and run:
+
+```sh
+node test-contracts/stdlib/serialization/check-encode-products.mjs \
+  "$OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/encoding-preimages"
+```
+
+The runner preserves the original alias roundtrip and tests ignored decode
+padding, an invalid Boolean byte and changed proof output. The two stateful
+circuits use the local slow proof lane at k=12 and k=13.

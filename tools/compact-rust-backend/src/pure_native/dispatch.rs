@@ -167,6 +167,7 @@ macro_rules! dispatch {
             | $crate::ir::Expr::BytesToField { .. }
             | $crate::ir::Expr::BytesToUint { .. }
             | $crate::ir::Expr::BytesZeroPad { .. }
+            | $crate::ir::Expr::BytesFromChunks { .. }
             | $crate::ir::Expr::BytesSlice { .. }
             | $crate::ir::Expr::JubjubCast { .. }
             | $crate::ir::Expr::Secp256k1BytesCast { .. } => {

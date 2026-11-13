@@ -127,6 +127,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -248,6 +249,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -310,6 +312,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -394,6 +397,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::BytesToField { .. }
                 | E::BytesToUint { .. }
                 | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }

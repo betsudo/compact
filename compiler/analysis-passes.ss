@@ -2022,19 +2022,82 @@
       ;; Follow the declaration order and fixed little-endian widths used
       ;; by the standard library wire format. Alias identity is restored after
       ;; decoding the underlying carrier.
-      (define (deserialized-width src type)
+      (define (serialization-width src type operation)
         (nanopass-case (Ltypes Type) (de-alias type #t)
           [(tboolean ,src^) 1]
           [(tfield ,src^) (+ 1 (field-bytes))]
           [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
           [(tbytes ,src^ ,len) len]
           [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
-           (apply + (map (lambda (field-type) (deserialized-width src field-type)) type*))]
+           (apply + (map (lambda (field-type) (serialization-width src field-type operation)) type*))]
           [(ttuple ,src^ ,type* ...)
-           (apply + (map (lambda (element-type) (deserialized-width src element-type)) type*))]
+           (apply + (map (lambda (element-type) (serialization-width src element-type operation)) type*))]
           [(tvector ,src^ ,len ,type)
-           (* len (deserialized-width src type))]
-          [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))
+           (* len (serialization-width src type operation))]
+          [else (source-errorf src "~a does not yet support type ~a" operation (format-type type))]))
+
+      (define (serialize-product src type expr len)
+        (define (collect type expr parts)
+          (let ([carrier (de-alias type #t)])
+            (with-output-language (Ltypes Expression)
+              (define (add width bytes)
+                (cons (with-output-language (Ltypes Tuple-Argument)
+                        `(spread ,src ,width (bytes->vector ,src ,width ,bytes)))
+                      parts))
+              (nanopass-case (Ltypes Type) carrier
+                [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+                 (let loop ([names elt-name*] [types type*] [index 0] [parts parts])
+                   (if (null? types)
+                       parts
+                       (loop (cdr names) (cdr types) (+ index 1)
+                         (collect (car types) `(elt-ref ,src ,expr ,(car names) ,index) parts))))]
+                [(ttuple ,src^ ,type* ...)
+                 (let loop ([types type*] [index 0] [parts parts])
+                   (if (null? types)
+                       parts
+                       (loop (cdr types) (+ index 1)
+                         (collect (car types) `(tuple-ref ,src ,expr ,index) parts))))]
+                [(tvector ,src^ ,len^ ,type^)
+                 (if (= (serialization-width src type^ "serialize") 0)
+                     parts
+                     (let loop ([index 0] [parts parts])
+                       (if (= index len^)
+                           parts
+                           (loop (+ index 1)
+                             (collect type^ `(tuple-ref ,src ,expr ,index) parts)))))]
+                [(tboolean ,src^)
+                 (add 1 `(if ,src ,(maybe-safecast src carrier type expr)
+                              (quote ,src #vu8(1)) (quote ,src #vu8(0))))]
+                [(tfield ,src^)
+                 (let ([width (+ 1 (field-bytes))])
+                   (add width `(field->bytes ,src ,width ,(maybe-safecast src carrier type expr))))]
+                [(tbytes ,src^ ,len^)
+                 (if (= len^ 0) parts (add len^ (maybe-safecast src carrier type expr)))]
+                [(tunsigned ,src^ ,nat)
+                 (let ([width (unsigned-serialized-width nat)])
+                   (if (= width 0)
+                       parts
+                       (add width
+                         `(field->bytes ,src ,width
+                            (safe-cast ,src (tfield ,src) ,carrier ,(maybe-safecast src carrier type expr))))))]
+                [else (assert cannot-happen)]))))
+        (let ([width (serialization-width src type "serialize")])
+          (check-serialization-width src type width len)
+          (maybe-bind src type expr
+            (lambda (expr)
+              (with-output-language (Ltypes Expression)
+                (if (= width 0)
+                    `(quote ,src ,(make-bytevector len 0))
+                    (let* ([parts (collect type expr '())]
+                           [padding (- len width)]
+                           [parts (if (= padding 0)
+                                      parts
+                                      (cons (with-output-language (Ltypes Tuple-Argument)
+                                              `(spread ,src ,padding
+                                                 (bytes->vector ,src ,padding
+                                                   (quote ,src ,(make-bytevector padding 0)))))
+                                            parts))])
+                      `(vector->bytes ,src ,len (vector ,src ,(reverse parts) ...)))))))))
 
       (define (deserialize-value src type bytes-type len expr)
         (define (decode expr)
@@ -2049,7 +2112,7 @@
                   (reverse result)
                   (let ([type (car types)])
                     (loop (cdr types)
-                          (+ index (deserialized-width src type))
+                          (+ index (serialization-width src type "deserialize"))
                           (cons (at type index) result))))))
           (define (at type index)
             (let* ([carrier (de-alias type #t)]
@@ -2076,7 +2139,7 @@
                                `(tuple ,src ,(map (lambda (item) `(single ,src ,item))
                                                   (fields type* index)) ...)]
                               [(tvector ,src^ ,len^ ,type)
-                               (if (= (deserialized-width src carrier) 0)
+                               (if (= (serialization-width src carrier "deserialize") 0)
                                    `(default ,src ,carrier)
                                    (let ([types (make-list len^ type)])
                                      `(safe-cast ,src ,carrier (ttuple ,src ,types ...)
@@ -2085,7 +2148,7 @@
                               [else (assert cannot-happen)]))])
               (maybe-safecast src type carrier value)))
           (at type 0))
-        (let ([width (deserialized-width src type)])
+        (let ([width (serialization-width src type "deserialize")])
           (check-serialization-width src type width len)
           ;; A zero-byte or aggregate result may omit or reuse its operand.
           ;; Bind once to retain checks and prevent duplicate evaluation.
@@ -3172,7 +3235,9 @@
                       `(field->bytes ,src ,len^ (safe-cast ,src ,field-type ,carrier ,value))
                       len^ len)))
               (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
-         [else (source-errorf src "serialize does not yet support type ~a" (format-type type))])]
+         [else
+          (values (serialize-product src type (maybe-safecast src type type^ expr) len)
+                  (with-output-language (Ltypes Type) `(tbytes ,src ,len)))])]
       [(deserialize ,src ,len ,[type] ,[Care : expr type^])
        (let ([bytes-type (with-output-language (Ltypes Type) `(tbytes ,src ,len))])
          (unless (sametype? type^ bytes-type)

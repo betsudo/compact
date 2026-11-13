@@ -97,6 +97,7 @@ impl Lowerer<'_> {
             | Expr::BytesToField { .. }
             | Expr::BytesToUint { .. }
             | Expr::BytesZeroPad { .. }
+            | Expr::BytesFromChunks { .. }
             | Expr::BytesSlice { .. }
             | Expr::JubjubCast { .. }
             | Expr::Secp256k1BytesCast { .. } => Self::conversion_operation,

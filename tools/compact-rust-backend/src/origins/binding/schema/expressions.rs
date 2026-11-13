@@ -86,6 +86,11 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             unary!("bytes_zero_pad", "value", value);
             s.size("length", *length);
         }
+        Expr::BytesFromChunks { value, length, chunk_count } => {
+            unary!("bytes_from_chunks", "value", value);
+            s.size("length", *length);
+            s.size("chunk_count", *chunk_count);
+        }
         Expr::BytesSlice {
             value,
             start,

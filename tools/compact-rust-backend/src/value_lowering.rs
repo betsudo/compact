@@ -113,6 +113,22 @@ pub(crate) fn fixed_bytes_conversion_syntax(
             output[..input.len()].copy_from_slice(&input);
             runtime::FixedBytes::new(output)
         }),
+        FixedBytesConversion::FromChunks { length, chunk_count } => {
+            let indices = (0..chunk_count).map(syn::Index::from);
+            syn::parse_quote!({
+                let chunks = #value;
+                let mut output = [0u8; #length];
+                let mut remaining = output.as_mut_slice();
+                #(
+                    let chunk = chunks.#indices.into_array();
+                    let (destination, suffix) = remaining.split_at_mut(chunk.len());
+                    destination.copy_from_slice(&chunk);
+                    remaining = suffix;
+                )*
+                debug_assert!(remaining.is_empty());
+                runtime::FixedBytes::new(output)
+            })
+        }
         FixedBytesConversion::Slice { start, length } => {
             let end = start + length;
             syn::parse_quote!(runtime::FixedBytes::<#length>::new(

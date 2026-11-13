@@ -482,6 +482,7 @@ fn expression_contains_with_actions<'source>(
         | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
         | Expr::JubjubCast { value, .. }

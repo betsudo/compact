@@ -928,6 +928,7 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             | Expr::BytesToVector { value, .. }
             | Expr::UintToBytes { value, .. }
             | Expr::BytesZeroPad { value, .. }
+            | Expr::BytesFromChunks { value, .. }
             | Expr::BytesSlice { value, .. }
             | Expr::FieldToBytes32 { value }
             | Expr::Secp256k1Neg { value }

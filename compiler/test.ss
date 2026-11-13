@@ -69073,6 +69073,29 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export circuit serialize_vector(x: Vector<4, Uint<8>>): Bytes<4> {"
+      "  return serialize<Vector<4, Uint<8>>, 4>(x);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('aggregate encoding preserves the upstream byte Vector layout', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.serialize_vector(Ctxt, [0x31n, 0x43n, 0x7fn, 0xffn]).result).toEqual(new Uint8Array([0x31, 0x43, 0x7f, 0xff]));"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: [Boolean, Uint<16>]): Bytes<2> { return serialize<[Boolean, Uint<16>], 2>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (3 2 "[Boolean, Uint<16>]"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

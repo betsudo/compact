@@ -556,6 +556,7 @@ fn render_operation_expression(
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. }
         | Expr::JubjubCast { .. }
         | Expr::Secp256k1BytesCast { .. }
@@ -1578,6 +1579,7 @@ fn render_conversion_operation(
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. } => {
             let (value, operation) = FixedBytesConversion::from_expression(value);
             let operation = operation?;

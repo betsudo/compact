@@ -94,6 +94,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. } => {
             let (value, operation) =
                 super::super::conversion::FixedBytesConversion::from_expression(expr);

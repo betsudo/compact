@@ -71,6 +71,7 @@ pub(crate) enum FixedBytesConversion {
     FromVector { length: usize },
     Slice { start: usize, length: usize },
     ZeroPad { length: usize },
+    FromChunks { length: usize, chunk_count: usize },
     UintToBytes { length: usize },
     BytesToField,
     BytesToUint { max: u128 },
@@ -91,6 +92,10 @@ impl FixedBytesConversion {
                 return (value, bound);
             }
             Expr::BytesZeroPad { value, length } => (value, Self::ZeroPad { length: *length }),
+            Expr::BytesFromChunks { value, length, chunk_count } => (
+                value,
+                Self::FromChunks { length: *length, chunk_count: *chunk_count },
+            ),
             Expr::BytesSlice {
                 value,
                 start,
@@ -163,6 +168,25 @@ impl FixedBytesConversion {
                 };
                 if input_length > length {
                     return Err(RenderError::InvalidBytesPadding { length, input_length });
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::FromChunks { length, chunk_count } => {
+                let invalid = || RenderError::InvalidByteChunks { length, chunk_count };
+                let Type::Tuple { elements } = source else {
+                    return Err(invalid());
+                };
+                if chunk_count == 0 || elements.len() != chunk_count
+                    || length > crate::resource_limits::recording_byte_payload_limit()
+                {
+                    return Err(invalid());
+                }
+                let total = elements.iter().try_fold(0usize, |total, ty| match ty {
+                    Type::Bytes { length } => total.checked_add(*length),
+                    _ => None,
+                });
+                if total != Some(length) {
+                    return Err(invalid());
                 }
                 Ok(Type::Bytes { length })
             }

@@ -1,0 +1,44 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+struct Pair { a: Boolean, b: Uint<8> }
+export circuit serialize_tuple(x: [Boolean, Field]): Bytes<33> {
+  return serialize<[Boolean, Field], 33>(x);
+}
+export circuit serialize_uints(x: [Uint<8>, Uint<16>, Uint<32>]): Bytes<7> {
+  return serialize<[Uint<8>, Uint<16>, Uint<32>], 7>(x);
+}
+export circuit serialize_vector(x: Vector<4, Uint<8>>): Bytes<4> {
+  return serialize<Vector<4, Uint<8>>, 4>(x);
+}
+export circuit serialize_struct (p: Pair): Bytes<2> {
+  return serialize<Pair, 2>(p);
+}
+export circuit serialize_nested(x: Vector<2, [Boolean, Uint<8>]>): Bytes<4> {
+  return serialize<Vector<2, [Boolean, Uint<8>]>, 4>(x);
+}
+new type Header = [Boolean, Uint<16>];
+struct Message { header: Header, tail: Vector<2, [Boolean, Uint<8>]> }
+export circuit encode_message(value: Message): Bytes<8> {
+  return serialize<Message, 8>(value);
+}
+export circuit encode_empty(valid: Boolean): Bytes<2> {
+  return serialize<Vector<0, Boolean>, 2>(checked_empty(valid));
+}
+circuit checked_empty(valid: Boolean): Vector<0, Boolean> {
+  assert(valid, "checked empty input");
+  return default<Vector<0, Boolean>>;
+}

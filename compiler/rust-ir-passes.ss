@@ -778,10 +778,29 @@
                                   (cons "length" len)))]
                     [else #f]))]
             [else #f]))
+        (define (byte-chunk arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(spread ,src^ ,nat (bytes->vector ,src^^ ,len^ ,expr))
+             (and (= nat len^)
+                  (cons nat (lambda ()
+                    (lower expr (with-output-language (Lnodisclose Type)
+                                  `(tbytes ,src^ ,nat))))))]
+            [else #f]))
+        (define (from-chunks args)
+          (let ([chunks (map byte-chunk args)])
+            (and (pair? chunks) (for-all pair? chunks)
+                 (= len (apply + (map car chunks)))
+                 (object (cons "kind" "bytes_from_chunks")
+                         (cons "value" (object (cons "kind" "tuple")
+                                               (cons "elements" (list->vector
+                                                 (map (lambda (chunk) ((cdr chunk))) chunks)))))
+                         (cons "length" len)
+                         (cons "chunk_count" (length chunks))))))
         (nanopass-case (Lnodisclose Expression) value
           [(vector ,src^ ,tuple-arg* ...)
            (or (and (= (length tuple-arg*) 2)
                     (zero-padded-prefix (car tuple-arg*) (cadr tuple-arg*)))
+               (from-chunks tuple-arg*)
                (from-vector (with-output-language (Lnodisclose Expression)
                               `(tuple ,src^ ,tuple-arg* ...))))]
           [else (from-vector value)]))

@@ -91,6 +91,7 @@ fn expression_with_calls(
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),
         Expr::JubjubCast { .. } => Err(RenderError::EffectfulExpression),
         Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),

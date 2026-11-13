@@ -726,6 +726,11 @@ pub enum Expr {
         value: Box<Expr>,
         length: usize,
     },
+    BytesFromChunks {
+        value: Box<Expr>,
+        length: usize,
+        chunk_count: usize,
+    },
     BytesSlice {
         value: Box<Expr>,
         start: usize,

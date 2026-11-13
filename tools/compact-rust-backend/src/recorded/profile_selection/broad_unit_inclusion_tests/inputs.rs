@@ -291,8 +291,18 @@ fn field_bytes_manifest() -> Result<Value, String> {
     serde_json::from_slice(FIELD_BYTES).map_err(|error| error.to_string())
 }
 
+const BYTES_FROM_CHUNKS: &[u8] = include_bytes!("bytes-from-chunks-expression.json");
+
+fn bytes_from_chunks_manifest() -> Result<Value, String> {
+    if digest(BYTES_FROM_CHUNKS) != "3de7907495cf58af98752fe9fca5a5818f73238537784bbd44daff6e8bb09c40" {
+        return Err("unreviewed Bytes chunk compatibility checkpoint".into());
+    }
+    serde_json::from_slice(BYTES_FROM_CHUNKS).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &field_bytes_manifest()?)?;
+    let current = legacy_source(path, current, &bytes_from_chunks_manifest()?)?;
+    let current = legacy_source(path, &current, &field_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;

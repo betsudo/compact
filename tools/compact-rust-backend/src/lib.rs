@@ -215,6 +215,7 @@ pub enum RenderError {
         length: usize,
         input_length: usize,
     },
+    InvalidByteChunks { length: usize, chunk_count: usize },
     InvalidBytesSlice {
         start: usize,
         length: usize,
@@ -372,6 +373,10 @@ impl fmt::Display for RenderError {
             Self::InvalidBytesPadding { length, input_length } => write!(
                 f,
                 "cannot zero-pad Bytes<{input_length}> to the shorter length {length}"
+            ),
+            Self::InvalidByteChunks { length, chunk_count } => write!(
+                f,
+                "expected a tuple of {chunk_count} fixed Bytes chunks totaling {length} bytes"
             ),
             Self::InvalidBytesSlice {
                 start,
@@ -874,6 +879,7 @@ fn collect_expression_types<'ir>(
         | Expr::BytesToField { value }
         | Expr::BytesToUint { value, .. }
         | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
@@ -1554,6 +1560,7 @@ fn pure_conversion_expression(
         | Expr::BytesToField { .. }
         | Expr::BytesToUint { .. }
         | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
         | Expr::BytesSlice { .. } => {
             let (value, operation) =
                 pure_semantics::conversion::FixedBytesConversion::from_expression(expr);

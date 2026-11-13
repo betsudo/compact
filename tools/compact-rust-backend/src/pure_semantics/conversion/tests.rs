@@ -428,3 +428,30 @@ fn vector_to_bytes_requires_a_fixed_vector_of_bounded_bytes() {
         ));
     }
 }
+
+#[test]
+fn bytes_from_chunks_checks_carriers_arity_and_total_width() {
+    use super::FixedBytesConversion::FromChunks;
+
+    let bytes = |length| Type::Bytes { length };
+    let tuple = |elements| Type::Tuple { elements };
+    let op = FromChunks { length: 3, chunk_count: 2 };
+    assert_eq!(op.result_type(&tuple(vec![bytes(1), bytes(2)])).unwrap(), bytes(3));
+    for input in [
+        bytes(3),
+        tuple(vec![bytes(3)]),
+        tuple(vec![bytes(1), Type::Boolean]),
+        tuple(vec![bytes(1), bytes(1)]),
+        tuple(vec![bytes(usize::MAX), bytes(4)]),
+    ] {
+        assert!(matches!(
+            op.result_type(&input),
+            Err(RenderError::InvalidByteChunks { length: 3, chunk_count: 2 })
+        ));
+    }
+    let length = crate::resource_limits::recording_byte_payload_limit() + 1;
+    assert!(matches!(
+        (FromChunks { length, chunk_count: 1 }).result_type(&tuple(vec![bytes(length)])),
+        Err(RenderError::InvalidByteChunks { .. })
+    ));
+}
