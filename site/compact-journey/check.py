@@ -33,10 +33,14 @@ class Page(HTMLParser):
         self.ids = []
         self.links = []
         self.scripts = []
+        self.protected = None
+        self.visible_text = []
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag in ('pre','script','style') or (tag == 'details' and attrs.get('class') == 'revision-identity'):
+            self.protected = tag
         if 'id' in attrs:
             self.ids.append(attrs['id'])
         if tag in ('a', 'link') and attrs.get('href'):
@@ -45,6 +49,14 @@ class Page(HTMLParser):
             self.links.append(attrs['src'])
         if tag == 'script' and attrs.get('src'):
             self.scripts.append(attrs['src'])
+
+    def handle_endtag(self, tag):
+        if tag == self.protected:
+            self.protected = None
+
+    def handle_data(self, data):
+        if not self.protected:
+            self.visible_text.append(data)
 
 def main():
     failures = []
@@ -88,11 +100,21 @@ def main():
     assert all(re.fullmatch('[0-9a-f]{40}', c['sha']) for c in commits)
     assert all(c['phase'] in {p['id'] for p in edition['phases']} for c in commits)
     assert all(c['publication'] in ('local','published') for c in commits)
-    assert len(pages) == len(chapters) + 6
+    assert len(pages) == len(chapters) + 7
     iterations=json.loads((ROOT/'sources/iterations.json').read_text())
     identities={commit['sha'] for commit in commits}
     assert all(row['sha'] in identities for row in iterations)
     assert len({row['sha'] for row in iterations})==len(iterations)
+    revisions = json.loads((ROOT/'sources/revisions.json').read_text())
+    assert identities <= revisions.keys()
+    assert all(sha == row['sha'] and row['subject'] for sha, row in revisions.items())
+    prefixes = {sha[:length] for sha in revisions for length in range(7, len(sha)+1)}
+    reading_pages = dict(pages)
+    reading_pages[BOOK.parent/'index.html'] = Page((BOOK.parent/'index.html').read_text())
+    for path, page in reading_pages.items():
+        bare = prefixes.intersection(re.findall(r'\b[0-9a-f]{7,40}\b', ' '.join(page.visible_text)))
+        if bare:
+            failures.append(f'Bare revision labels in {path.name}: {sorted(bare)}')
     for name, identity in edition['snapshots'].items():
         assert hashlib.sha256((ROOT/'sources'/name).read_bytes()).hexdigest() == identity['sha256']
     for path in BOOK.rglob('*'):

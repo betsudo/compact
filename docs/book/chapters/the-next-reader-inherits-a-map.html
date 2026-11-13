@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>The next reader inherits a map · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -34,7 +34,7 @@
 <h1>The next reader inherits a map</h1><p class="deck">What is delivered, what remains, and how to keep the story accurate.</p></header>
 <div class="prose"><h2 id="the-state-at-this-edition">The state at this edition</h2>
 <p>The Ledger 9 migration foundation is merged through PR #725. The later compatibility programme has local arm64 evidence for large portions of cryptography, hashing, serialization, collections, event semantics and generated Rust/TypeScript parity.</p>
-<p>The frozen local compatibility cutoff for this edition is 7a4fab772ee34c19053ce293d08052b501ce4b50. The signed isolated Jubjub identity-key assertion and Keccak opaque diagnostic commits are recorded separately at 6eef58425bb53883c8f3b417b601246820c7d675 and 30a2d76550beb7d920a92bab2be6b1180243f658.</p>
+<p>The frozen local compatibility cutoff for this edition is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-7a4fab772ee34c19053ce293d08052b501ce4b50">test(ledger9): cover nested opaque byte equality</a> <button type="button" class="commit-details" data-commit="7a4fab772ee34c19053ce293d08052b501ce4b50" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): cover nested opaque byte equality">Details</button></span>. The signed isolated Jubjub identity-key assertion and Keccak opaque diagnostic commits are recorded separately at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-6eef58425bb53883c8f3b417b601246820c7d675">fix(stdlib): reject identity keys in Jubjub Schnorr verification</a> <button type="button" class="commit-details" data-commit="6eef58425bb53883c8f3b417b601246820c7d675" aria-haspopup="dialog" aria-label="Commit details for fix(stdlib): reject identity keys in Jubjub Schnorr verification">Details</button></span> and <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-30a2d76550beb7d920a92bab2be6b1180243f658">fix(compiler): reject opaque Keccak input</a> <button type="button" class="commit-details" data-commit="30a2d76550beb7d920a92bab2be6b1180243f658" aria-haspopup="dialog" aria-label="Commit details for fix(compiler): reject opaque Keccak input">Details</button></span>.</p>
 <p>Their local review follow-ups were resolved in checkpoint v73. They await canonical integration and final qualification.</p>
 <h2 id="the-remaining-milestone">The remaining milestone</h2>
 <p>The programme still needs complete applicable upstream corpus accounting, the semantics required for intact newer-language admission, remaining fixture-specific proof matrices, required native Linux qualification, and the held generated two-contract path.</p>
@@ -76,5 +76,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

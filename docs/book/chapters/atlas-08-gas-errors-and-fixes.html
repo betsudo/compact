@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Gas, errors and corrected boundaries · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -34,7 +34,7 @@
 <h1>Gas, errors and corrected boundaries</h1><p class="deck">How the original target assigned errors and costs.</p></header>
 <div class="prose"><blockquote>
 <p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
-<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/08-gas-errors-and-fixes.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/08-gas-errors-and-fixes.md">original chapter at docs(rust): visualize runtime primitive boundaries</a> <button type="button" class="commit-details" data-commit="51a079bd8598b9decb3df7de92ec10768ec9b8dc" aria-haspopup="dialog" aria-label="Commit details for docs(rust): visualize runtime primitive boundaries">Details</button>. The documented implementation cutoff is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span> on October 14. The documentation snapshot and implementation revision are distinct.</p>
 </blockquote>
 <p>The backend became more trustworthy by moving failures to the earliest layer
 that has enough information to explain them—without pretending every failure
@@ -49,7 +49,7 @@ query. Generated Rust accumulated every query. The accepted decision in
 kept the Rust total and changed the comparison to the sum of captured
 TypeScript query costs. For <code>clear</code>, <code>set</code> and <code>get</code>, all four dimensions then
 matched exactly at commit
-<a href="https://github.com/betsudo/compact/commit/3799746acec6e5898e5e7b121621045d8dac925a"><code>3799746a</code></a>.</p>
+<a href="https://github.com/betsudo/compact/commit/3799746acec6e5898e5e7b121621045d8dac925a"><code>test(rust-backend): pin tiny per-query gas parity</code></a> <button type="button" class="commit-details" data-commit="3799746acec6e5898e5e7b121621045d8dac925a" aria-haspopup="dialog" aria-label="Commit details for test(rust-backend): pin tiny per-query gas parity">Details</button>.</p>
 <pre><code class="language-text">reported TS wrapper cost       = last query only
 captured TS comparison cost    = Σ every executed query
 Rust CircuitResult.gas_cost    = Σ every executed query
@@ -61,10 +61,10 @@ deleted. They should not be collapsed into one scalar.</p>
 <p>A witness could read a ledger Cell structurally while TypeScript executed a VM
 read. Rust therefore underreported the call. The explicit <code>WitnessReadMeter</code>
 introduced at
-<a href="https://github.com/betsudo/compact/commit/98d33ca7d8ee52ab129d861f0604dc0826d929ca"><code>98d33ca7</code></a>
+<a href="https://github.com/betsudo/compact/commit/98d33ca7d8ee52ab129d861f0604dc0826d929ca"><code>feat(rust-runtime): meter witness ledger view reads</code></a> <button type="button" class="commit-details" data-commit="98d33ca7d8ee52ab129d861f0604dc0826d929ca" aria-haspopup="dialog" aria-label="Commit details for feat(rust-runtime): meter witness ledger view reads">Details</button>
 charges canonical witness projection queries while keeping their private value
 out of the public trace. The Set extension followed at
-<a href="https://github.com/betsudo/compact/commit/2ca64f6f26390b17f018ba5319f5330dd4ec3922"><code>2ca64f6f</code></a>.</p>
+<a href="https://github.com/betsudo/compact/commit/2ca64f6f26390b17f018ba5319f5330dd4ec3922"><code>feat(rust-runtime): meter witness Set queries</code></a> <button type="button" class="commit-details" data-commit="2ca64f6f26390b17f018ba5319f5330dd4ec3922" aria-haspopup="dialog" aria-label="Commit details for feat(rust-runtime): meter witness Set queries">Details</button>.</p>
 <p>One witnessed Cell write moved from an incomplete Rust read-time total of
 85,000,000 to the exact captured total of 255,000,000: 170,000,000 for the
 witness read plus 85,000,000 for the write. That is corrected accounting, not
@@ -73,7 +73,7 @@ a cheaper VM operation.</p>
 <p>At ledger-8, <code>CircuitContext.gas_limit</code> guards each query independently. A
 circuit containing two accepted reads may therefore report a total above the
 configured one-query limit. Commit
-<a href="https://github.com/betsudo/compact/commit/7c4898929a7c9ab8bc357d844a1843c5531129c8"><code>7c489892</code></a>
+<a href="https://github.com/betsudo/compact/commit/7c4898929a7c9ab8bc357d844a1843c5531129c8"><code>docs(rust-backend): define per-query ledger gas limits</code></a> <button type="button" class="commit-details" data-commit="7c4898929a7c9ab8bc357d844a1843c5531129c8" aria-haspopup="dialog" aria-label="Commit details for docs(rust-backend): define per-query ledger gas limits">Details</button>
 made that contract explicit and tested. Silently turning it into a cumulative
 budget would diverge from the pinned TypeScript/ledger behavior and introduce
 new rollback questions.</p>
@@ -134,28 +134,28 @@ new rollback questions.</p>
 <p>Distinct Compact circuit names such as <code>a$b</code> and <code>a_b</code> normalize to the same
 Rust identifier. Before, rustc rejected a duplicated function after emission.
 Commit
-<a href="https://github.com/betsudo/compact/commit/c70dd63cf91ce59e2bda82a0f27f32073639c669"><code>c70dd63c</code></a>
+<a href="https://github.com/betsudo/compact/commit/c70dd63cf91ce59e2bda82a0f27f32073639c669"><code>test(rust): strengthen semantic boundary coverage and declaration checks</code></a> <button type="button" class="commit-details" data-commit="c70dd63cf91ce59e2bda82a0f27f32073639c669" aria-haspopup="dialog" aria-label="Commit details for test(rust): strengthen semantic boundary coverage and declaration checks">Details</button>
 added target-namespace preflight and reports both source names at the later
 declaration. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0246-reject-circuit-collisions-in-emitted-rust-namespaces.md">RUST-ADR-0246</a>.</p>
 <h3 id="macro-expansion-stopped-depending-on-caller-names">Macro expansion stopped depending on caller names</h3>
 <p>Derives introduced unqualified <code>Result</code>, <code>Option</code>, <code>Vec</code> and <code>From</code>, so valid
 consumer names could break compilation. Commit
-<a href="https://github.com/betsudo/compact/commit/77c9ee144f3c326f29cb44a69b7174c5d81b8945"><code>77c9ee14</code></a>
+<a href="https://github.com/betsudo/compact/commit/77c9ee144f3c326f29cb44a69b7174c5d81b8945"><code>fix(rust): qualify macro-owned names in consumer expansions</code></a> <button type="button" class="commit-details" data-commit="77c9ee144f3c326f29cb44a69b7174c5d81b8945" aria-haspopup="dialog" aria-label="Commit details for fix(rust): qualify macro-owned names in consumer expansions">Details</button>
 fully qualified macro-owned names. Source structs named <code>Option</code>, <code>Fr</code>,
 <code>MemWrite</code>, <code>runtime</code> or <code>FieldRepr</code> exposed a second failure in upstream
 derive/import expansion; the owned <code>CompactStructRepr</code> boundary fixed the
 bounded generated shapes at
-<a href="https://github.com/betsudo/compact/commit/ee768a60706607580d4ff8b3c949f22c882501b0"><code>ee768a60</code></a>.</p>
+<a href="https://github.com/betsudo/compact/commit/ee768a60706607580d4ff8b3c949f22c882501b0"><code>fix(rust): isolate generated types from representation support names</code></a> <button type="button" class="commit-details" data-commit="ee768a60706607580d4ff8b3c949f22c882501b0" aria-haspopup="dialog" aria-label="Commit details for fix(rust): isolate generated types from representation support names">Details</button>.</p>
 <h3 id="forged-recursive-ir-stopped-becoming-recursive-rust">Forged recursive IR stopped becoming recursive Rust</h3>
 <p>The normal frontend rejected recursive Compact, but direct schema-20 IR could
 still emit recursive pure Rust. Commit
-<a href="https://github.com/betsudo/compact/commit/dbfd7dc248b6bbe3b188a5a362142facf06621de"><code>dbfd7dc2</code></a>
+<a href="https://github.com/betsudo/compact/commit/dbfd7dc248b6bbe3b188a5a362142facf06621de"><code>fix(rust): reject recursive pure calls in private IR</code></a> <button type="button" class="commit-details" data-commit="dbfd7dc248b6bbe3b188a5a362142facf06621de" aria-haspopup="dialog" aria-label="Commit details for fix(rust): reject recursive pure calls in private IR">Details</button>
 moved the refusal to private-IR semantic admission while preserving acyclic
 shared helpers. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0332-reject-recursive-pure-calls-at-the-private-ir-admission-boundary.md">RUST-ADR-0332</a>.</p>
 <h3 id="malformed-ledger-paths-stopped-panicking-or-truncating">Malformed ledger paths stopped panicking or truncating</h3>
 <p>Merkle/list reset builders used <code>split_last().expect</code>; other builders narrowed
 path lengths before constructing compact VM operands. Commit
-<a href="https://github.com/betsudo/compact/commit/e68078846260e4c6b2d18f40ec9ec1a2571cae33"><code>e6807884</code></a>
+<a href="https://github.com/betsudo/compact/commit/e68078846260e4c6b2d18f40ec9ec1a2571cae33"><code>fix(rust): validate ledger VM path operands before lowering</code></a> <button type="button" class="commit-details" data-commit="e68078846260e4c6b2d18f40ec9ec1a2571cae33" aria-haspopup="dialog" aria-label="Commit details for fix(rust): validate ledger VM path operands before lowering">Details</button>
 checks the actual 4-bit <code>Ins</code>/<code>Idx</code> encoding limits and returns the existing
 fallible ledger error rather than panicking, truncating or emitting an
 ambiguous program. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0351-check-merkle-vm-path-operands-before-program-construction.md">RUST-ADR-0351</a>.</p>
@@ -163,7 +163,7 @@ ambiguous program. See <a href="https://github.com/betsudo/compact/blob/51a079bd
 <p>Valid wide unsigned types could be represented, but subtraction,
 multiplication and ordered comparison were unsupported. They were incorrectly
 reported as malformed maxima. Commit
-<a href="https://github.com/betsudo/compact/commit/6aa345fd76cf99ba491a761c42a39608d7e207eb"><code>6aa345fd</code></a>
+<a href="https://github.com/betsudo/compact/commit/6aa345fd76cf99ba491a761c42a39608d7e207eb"><code>fix(rust): distinguish unsupported wide integer operations</code></a> <button type="button" class="commit-details" data-commit="6aa345fd76cf99ba491a761c42a39608d7e207eb" aria-haspopup="dialog" aria-label="Commit details for fix(rust): distinguish unsupported wide integer operations">Details</button>
 added <code>UnsupportedWideUnsignedOperation</code> without widening accepted behavior.
 See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0352-distinguish-unsupported-wide-operations-from-malformed-uint-bounds.md">RUST-ADR-0352</a>.</p>
 <h2 id="the-architectural-rule">The architectural rule</h2>
@@ -193,5 +193,10 @@ rejection must not be simulated by compiler heuristics.</p></div>
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

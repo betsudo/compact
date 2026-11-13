@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>The first Rust emitter · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -48,8 +48,8 @@
 <p>When investigating an old generated example, identify the source revision, backend line and runtime family first. Two files both called generated Rust can belong to different architectures and ABI generations. A bug fixed in the oracle is a clue for the AST line, with a separate port and test still required.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>
-<li><a href="https://github.com/betsudo/compact/commit/67f7cbc8b2ea3164d9fb225c7f9fd67a9aa3d552">Original Ltypescript emitter introduction</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/589c92ef961ce89ac730140e81b76d4c08222a70">Original Rust oracle comparison</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/67f7cbc8b2ea3164d9fb225c7f9fd67a9aa3d552">Original Ltypescript emitter introduction</a> <button type="button" class="commit-details" data-commit="67f7cbc8b2ea3164d9fb225c7f9fd67a9aa3d552" aria-haspopup="dialog" aria-label="Commit details for rust-passes: lower Ltypescript → Rust crate (8-file module suite)">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/commit/589c92ef961ce89ac730140e81b76d4c08222a70">Original Rust oracle comparison</a> <button type="button" class="commit-details" data-commit="589c92ef961ce89ac730140e81b76d4c08222a70" aria-haspopup="dialog" aria-label="Commit details for test(codegen-rust): pin the TODO guard&#x27;s string-literal exclusion (#99)">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/issues/95">Architecture decision research #95</a></li>
 </ul></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/the-first-rust-emitter.md">Read the frozen Markdown source</a></div>
@@ -68,5 +68,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

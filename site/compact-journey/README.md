@@ -78,3 +78,15 @@ progress and corrections. The milestone remains incomplete at this edition.
 Content and source remain under the repository's Apache-2.0 license.
 
 The downloadable ZIP fixes file metadata. Its compressed bytes are reproducible within the same Python/zlib environment and can differ across zlib versions.
+
+## Commit references
+
+The build replaces prose revision hashes with the corresponding commit
+subjects. Published revisions link to GitHub. Local revisions have a
+static book entry with their provenance. Use **Details** to open the
+message, iteration context and full identity in a side panel.
+
+When updating the edition or adding a reference, run
+python3 site/compact-journey/revisions.py from the repository checkout
+before rebuilding. It reads the edition's Git objects and freezes the
+metadata in sources/revisions.json. Ordinary builds use that snapshot.

@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Follow the pipeline · The Compact journey</title>
 <link rel="stylesheet" href="./assets/fonts.css">
-<link rel="stylesheet" href="./assets/book.css">
-<script defer src="./assets/book.js"></script>
+<link rel="stylesheet" href="./assets/book.css?v=ab6d7e4293fe">
+<script defer src="./assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -34,5 +34,10 @@
 <div class="prose"><h2>The shared semantic thread</h2><p>Compact source flows through shared frontend analysis into a typed internal model. Checked lowering assigns legal target operations. The Rust AST renderer constructs syntax, while the runtime delegates protocol behavior to the ledger SDK.</p><p>Native execution and recorded execution expose different results from the same admitted behavior. Proof preparation binds the observed operation, verifier and statement. Proving and ledger application add their own acceptance gates.</p><h2>What type safety contributes</h2><p>A separate Rust carrier can prevent an ordinary K1 call from accepting a P-256 value. Checked decoding can refuse malformed bytes at a host boundary. Neither replaces validation of the installed operation or cryptographic verification of a statement.</p><a href="chapters/a-proof-is-one-stage.html">Read the complete evidence guide →</a></div>
 <noscript><p>Read the <a href="chapters/a-proof-is-one-stage.html">pipeline chapter</a> for the complete text without JavaScript.</p></noscript></article></main>
 
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="./sources.html">Edition and sources</a></footer>
 </body></html>

@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Wire values, events and state · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -52,13 +52,13 @@
 <p>A historic Merkle tree default inside a Map begins with empty history. A top-level reset has its own blank-root behavior. Reusing the wrong constructor can produce a plausible tree with the wrong historic semantics.</p>
 <p>Both intact plain and historic upstream fixtures now generate typed Rust nested slots. Their eight original exports have selected fresh proof and funded application coverage on arm64.</p>
 <h2 id="later-qualification-receipts">Later qualification receipts</h2>
-<p>The later BOM receipt at 360af593b records six proofs and six funded export calls. The nested Merkle receipt at 3a178e916 records eight proofs and eight funded calls. Opaque-byte equality at 7a4fab772 records 23 of each. These source-specific results supersede the earlier open-proof descriptions preserved in the plan snapshot.</p>
+<p>The later BOM receipt at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-360af593b84fe3b2786bbdd3a2408ef472e69777">test(ledger9): retain upstream SHA-512 point-pair circuit</a> <button type="button" class="commit-details" data-commit="360af593b84fe3b2786bbdd3a2408ef472e69777" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): retain upstream SHA-512 point-pair circuit">Details</button></span> records six proofs and six funded export calls. The nested Merkle receipt at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-3a178e916c3e1bf9d92777736bdba1ac46cea9b5">test(ledger9): complete the map refusal test header</a> <button type="button" class="commit-details" data-commit="3a178e916c3e1bf9d92777736bdba1ac46cea9b5" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): complete the map refusal test header">Details</button></span> records eight proofs and eight funded calls. Opaque-byte equality at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-7a4fab772ee34c19053ce293d08052b501ce4b50">test(ledger9): cover nested opaque byte equality</a> <button type="button" class="commit-details" data-commit="7a4fab772ee34c19053ce293d08052b501ce4b50" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): cover nested opaque byte equality">Details</button></span> records 23 of each. These source-specific results supersede the earlier open-proof descriptions preserved in the plan snapshot.</p>
 <p>The <a href="../sources/ledger9-delivery-register.json">public delivery register</a> retains the receipt identities and selected funded-result summaries without witness or key material.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>
 <li><a href="https://github.com/betsudo/compact/issues/728">Compiler compatibility issue #728</a></li>
 <li><a href="https://github.com/betsudo/compact/issues/731">ABI and generated-interface issue #731</a></li>
-<li><a href="https://github.com/LFDT-Minokawa/compact/commit/eb17cc004b5f025ef964dd7991f96197f010e732">Original opaque-byte equality change</a></li>
+<li><a href="https://github.com/LFDT-Minokawa/compact/commit/eb17cc004b5f025ef964dd7991f96197f010e732">Original opaque-byte equality change</a> <button type="button" class="commit-details" data-commit="eb17cc004b5f025ef964dd7991f96197f010e732" aria-haspopup="dialog" aria-label="Commit details for Change `Opaque&lt;&#x27;Uint8Array&#x27;&gt;` JS equality to be more in line with ZKIR (#670)">Details</button></li>
 <li><a href="../sources/ledger9-upstream-compatibility.md">Published compatibility source snapshot</a></li>
 </ul></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/wire-values-events-and-state.md">Read the frozen Markdown source</a></div>
@@ -79,5 +79,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Ledger 9 is a protocol migration · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -45,7 +45,7 @@
 <p>The Ledger 9 lane used released dust/10/spend material. The retained Ledger 8 dust/9/spend material belonged to the historical line. The contract verifier and the Dust verifier also serve different roles.</p>
 <p>The qualified Counter run generated fresh keys and a standalone proof. A separate process verified that proof and refused changed bindings, commitment, wrong verifier and corrupt bytes. A separately proved, Dust-funded transaction then passed default strictness, applied the expected state and refused exact replay with unchanged ledger bytes.</p>
 <h2 id="the-integrated-local-result">The integrated local result</h2>
-<p>At frozen source 9409b7da1cc652940469903a8380000b0b707239, the full local parity gate on macOS arm64 with Rust 1.99.0 checked 286 fixtures and bound 87 generated consumers to their executed artifacts. Checked recording was observed for 688 selected exports, including 626 proof-eligible exports.</p>
+<p>At frozen source <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/9409b7da1cc652940469903a8380000b0b707239">docs(rust): record literal projection Ledger 9 proofs</a> <button type="button" class="commit-details" data-commit="9409b7da1cc652940469903a8380000b0b707239" aria-haspopup="dialog" aria-label="Commit details for docs(rust): record literal projection Ledger 9 proofs">Details</button></span>, the full local parity gate on macOS arm64 with Rust 1.99.0 checked 286 fixtures and bound 87 generated consumers to their executed artifacts. Checked recording was observed for 688 selected exports, including 626 proof-eligible exports.</p>
 <p>Nine child proof gates passed for 87 selected calls. Those counts overlap across gates and belong to that frozen revision. They are not an aggregate count of every later compatibility proof.</p>
 <h2 id="foundation-publication">Foundation publication</h2>
 <p>PR #725 merged on November 12. The publication and CI repair history belongs to that PR. The extensive subsequent upstream ports remained a separate local compatibility milestone.</p>
@@ -53,8 +53,8 @@
 <h3 id="source-trail">Source trail</h3>
 <ul>
 <li><a href="https://github.com/betsudo/compact/pull/725">Migration PR #725</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/05912594fa3c483cf4e7031de83c5f9a103ef95c">Merged foundation</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/9fb0ca9c7c7e075461d3122b9f606a00c88de06a">Ledger 9 foundation source</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/05912594fa3c483cf4e7031de83c5f9a103ef95c">Merged foundation</a> <button type="button" class="commit-details" data-commit="05912594fa3c483cf4e7031de83c5f9a103ef95c" aria-haspopup="dialog" aria-label="Commit details for Migrate the Rust AST backend to Ledger 9 (#725)">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/commit/9fb0ca9c7c7e075461d3122b9f606a00c88de06a">Ledger 9 foundation source</a> <button type="button" class="commit-details" data-commit="9fb0ca9c7c7e075461d3122b9f606a00c88de06a" aria-haspopup="dialog" aria-label="Commit details for test(ci): qualify migrated Ledger 9 proof lanes on Linux">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/issues/726">Current compatibility issue #726</a></li>
 </ul>
 <p>The frozen initial full receipt has SHA-256 12ee47fd5280d03c3c708553034d0bd35976e0f682a0810f9cf4866d8b497746. Its public summary is retained in this book's source snapshots.</p></div>
@@ -75,5 +75,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

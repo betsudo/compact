@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>The functional Ledger 8 line · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -47,8 +47,8 @@ let recorded = request.execute_recorded(context)?;
 <p>An immutable description does not make execution order irrelevant. Witness callbacks can return values and update private state. Ledger operations observe and change public state. A Unit-valued call may still have an essential effect.</p>
 <p>Later slices preserved ordered Unit initializers, terminal effects, tuple returns and named bind receivers. Each one corrected a boundary where a superficially small expression could lose behavior during lowering.</p>
 <h2 id="from-the-prototype-to-the-working-branch">From the prototype to the working branch</h2>
-<p>The October 18 local prototype checkpoint was documented at ec7262e49 with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.</p>
-<p>PR #664 later integrated the reviewed Ledger 8 baseline. The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.</p>
+<p>The October 18 local prototype checkpoint was documented at <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/ec7262e4946fd76b14b3019f18db4d3296ba3cf0">docs(rust): explain functional Ledger8 APIs and measured limits</a> <button type="button" class="commit-details" data-commit="ec7262e4946fd76b14b3019f18db4d3296ba3cf0" aria-haspopup="dialog" aria-label="Commit details for docs(rust): explain functional Ledger8 APIs and measured limits">Details</button></span> with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.</p>
+<p>PR #664 later integrated the reviewed Ledger 8 baseline. The working branch integration <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/c353907d8c323db16eedb35d5a7f0151aab859bb">merge(rust): integrate reviewed Ledger8 baseline (#664)</a> <button type="button" class="commit-details" data-commit="c353907d8c323db16eedb35d5a7f0151aab859bb" aria-haspopup="dialog" aria-label="Commit details for merge(rust): integrate reviewed Ledger8 baseline (#664)">Details</button></span> records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.</p>
 <h2 id="what-was-better">What was better</h2>
 <p>The programme model made native and recording behavior easier to relate. The generated API could express a request whose operations had already passed semantic checks, with review material outside its main execution text.</p>
 <h2 id="what-remained">What remained</h2>
@@ -56,7 +56,7 @@ let recorded = request.execute_recorded(context)?;
 <h3 id="source-trail">Source trail</h3>
 <ul>
 <li><a href="https://github.com/betsudo/compact/pull/664">Functional prototype PR #664</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/c353907d8c323db16eedb35d5a7f0151aab859bb">Working-line integration</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/c353907d8c323db16eedb35d5a7f0151aab859bb">Working-line integration</a> <button type="button" class="commit-details" data-commit="c353907d8c323db16eedb35d5a7f0151aab859bb" aria-haspopup="dialog" aria-label="Commit details for merge(rust): integrate reviewed Ledger8 baseline (#664)">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/issues/665">Metadata ownership #665</a></li>
 <li><a href="https://github.com/betsudo/compact/pull/694">Ordered Unit initializers #694</a></li>
 <li><a href="https://github.com/betsudo/compact/pull/693">DID lifecycle #693</a></li>
@@ -78,5 +78,10 @@ let recorded = request.execute_recorded(context)?;
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

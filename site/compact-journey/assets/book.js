@@ -169,6 +169,76 @@ limitations under the License.
     selectStage(0);
   }
 
+  const panel = document.getElementById("commit-panel");
+  const panelTitle = document.getElementById("commit-panel-title");
+  const panelContent = document.getElementById("commit-panel-content");
+  let revisions;
+  let openedCommit;
+  let detailTrigger;
+  function showCommit(record) {
+    panelTitle.textContent = record.subject;
+    const description = document.createElement("p");
+    description.textContent = record.description || (
+      record.url ? "Commit recorded in the edition’s published history." :
+        "Local revision preserved at this edition’s cutoff."
+    );
+    const metadata = document.createElement("dl");
+    for (const [label, value] of [
+      ["Authored", record.authored.slice(0, 10)],
+      ["Committed", record.committed.slice(0, 10)],
+      ["Commit", record.sha]
+    ]) {
+      const term = document.createElement("dt");
+      term.textContent = label;
+      const detail = document.createElement("dd");
+      detail.textContent = value;
+      metadata.append(term, detail);
+    }
+    panelContent.replaceChildren(description);
+    if (record.message) {
+      const heading = document.createElement("h3");
+      heading.textContent = "Commit message";
+      const message = document.createElement("div");
+      message.className = "commit-message";
+      message.textContent = record.message;
+      panelContent.append(heading, message);
+    }
+    const link = document.createElement("a");
+    link.href = record.url || prefix + "revisions.html#commit-" + record.sha;
+    link.textContent = record.url ? "View commit on GitHub ↗" : "View local revision";
+    panelContent.append(metadata, link);
+  }
+  document.addEventListener("click", async (event) => {
+    const trigger = event.target.closest("button[data-commit]");
+    if (!trigger) return;
+    detailTrigger = trigger;
+    const sha = trigger.dataset.commit;
+    openedCommit = sha;
+    panelTitle.textContent = "Commit details";
+    panelContent.textContent = "Loading commit details…";
+    if (!panel.open) panel.showModal();
+    panel.querySelector("button").focus();
+    try {
+      revisions ??= fetch(prefix + "sources/revisions.json").then((response) => {
+        if (!response.ok) throw Error("Commit descriptions unavailable");
+        return response.json();
+      });
+      const record = (await revisions)[sha];
+      if (openedCommit !== sha) return;
+      if (!record) throw Error("Commit description missing");
+      showCommit(record);
+    } catch {
+      revisions = undefined;
+      if (openedCommit === sha) {
+        panelContent.textContent = "Details could not load. Close the panel and try again, or follow the commit title.";
+      }
+    }
+  });
+  panel.addEventListener("close", () => {
+    openedCommit = undefined;
+    detailTrigger?.focus();
+  });
+
   const table = document.getElementById("commit-results");
   if (!table) return;
   const fields = Object.fromEntries(["query", "phase", "topic", "publication", "order"].map((key) =>
@@ -193,23 +263,23 @@ limitations under the License.
     filtered.slice(page * pageSize, (page + 1) * pageSize).forEach((record) => {
       const tr = document.createElement("tr");
       const description = cell("");
-      const subject = document.createElement("span");
+      const subject = document.createElement("a");
       subject.className = "commit-subject";
       subject.textContent = record.subject;
-      const identity = document.createElement(record.publication === "published" ? "a" : "code");
-      identity.textContent = record.sha.slice(0, 10);
-      if (identity.tagName === "A") identity.href = "https://github.com/betsudo/compact/commit/" + record.sha;
+      subject.href = record.publication === "published"
+        ? "https://github.com/betsudo/compact/commit/" + record.sha
+        : prefix + "revisions.html#commit-" + record.sha;
+      const details = document.createElement("button");
+      details.type = "button";
+      details.className = "commit-details";
+      details.dataset.commit = record.sha;
+      details.textContent = "Details";
+      details.setAttribute("aria-haspopup", "dialog");
+      details.setAttribute("aria-label", "Commit details for " + record.subject);
       const tags = document.createElement("div");
       tags.className = "tags";
       tags.textContent = record.topics.join(" · ");
-      const details = document.createElement("details");
-      const summary = document.createElement("summary");
-      summary.textContent = "Commit identity";
-      const metadata = document.createElement("p");
-      metadata.textContent = "SHA " + record.sha + ". Author date " + record.authored +
-        ". Committer date " + record.committed + ". Parents " + record.parents.join(", ") + ".";
-      details.append(summary, metadata);
-      description.append(subject, identity, tags, details);
+      description.append(subject, details, tags);
       const scope = cell("");
       const label = document.createElement("span");
       label.className = "scope " + record.publication;

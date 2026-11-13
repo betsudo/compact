@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>A contract crosses a boundary · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -44,7 +44,7 @@
 <p>Read the chapters in order for the engineering story. Follow the Architecture link to walk a circuit through the pipeline. Use the Commit explorer to move from a milestone to its individual steps, then follow a published commit back to code.</p>
 <p>The historical atlas preserves the earlier October documentation as an explicitly dated snapshot. The later chapters explain which earlier limitations were subsequently resolved.</p>
 <h2 id="the-edition-boundary">The edition boundary</h2>
-<p>The mainstream compatibility reference is LFDT-Minokawa/compact at 672bd0f226f47a7d036c5c074ce71fbe1af1925e. Released Compact 0.36.0 and the Ledger 9.1.0.1 SDK package matrix supply a separate interoperability reference. The local compatibility checkpoint used for this edition is v73 on November 13, 2026.</p>
+<p>The mainstream compatibility reference is LFDT-Minokawa/compact at <span class="commit-reference"><a class="commit-title" href="https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e">Merge pull request #787 from golddydev/gd/add-more-crypto-fixtures</a> <button type="button" class="commit-details" data-commit="672bd0f226f47a7d036c5c074ce71fbe1af1925e" aria-haspopup="dialog" aria-label="Commit details for Merge pull request #787 from golddydev/gd/add-more-crypto-fixtures">Details</button></span>. Released Compact 0.36.0 and the Ledger 9.1.0.1 SDK package matrix supply a separate interoperability reference. The local compatibility checkpoint used for this edition is v73 on November 13, 2026.</p>
 <p>PR #725 merged the migration foundation into the working branch. The broad upstream-compatibility work continued locally afterward. Two final isolated commits in this edition await canonical integration. A merged foundation and complete upstream compatibility are distinct milestones.</p>
 <h2 id="why-the-distinctions-matter">Why the distinctions matter</h2>
 <p>A guide becomes misleading when a reader cannot tell whether an example was merely generated, executed natively, proved, or applied to a ledger. This book keeps those stages visible. It also keeps historical Ledger 8 evidence useful while explaining the changed Ledger 9 SDK and representation contracts.</p>
@@ -71,5 +71,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

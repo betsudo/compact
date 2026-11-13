@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>A closed Rust boundary · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -42,7 +42,7 @@
 <p>A Rust syntax tree gives the emitter a representation for expressions, statements, blocks, paths and types. The formatter can render those nodes without encoding semantics in whitespace or string fragments.</p>
 <p>That benefit has a boundary. Constructing an AST does not prove that the correct field operation or source conversion was chosen. The semantic checks still need to occur before rendering. The long-term architecture therefore pairs structured syntax with checked lowering.</p>
 <h2 id="the-milestone-1-result">The Milestone 1 result</h2>
-<p>The broad local native baseline closed at ea4cc006f973632c4c7b1fb4569af2b4c93ff38a. Publication followed at a5ee30f171322f07c06e3846117f20c9e075ef95 on October 2. Historical notes record 128 generated sources and 410 workspace test/doc-test groups.</p>
+<p>The broad local native baseline closed at <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">test(rust): gate rejected Rust constructs and witness secrecy</a> <button type="button" class="commit-details" data-commit="ea4cc006f973632c4c7b1fb4569af2b4c93ff38a" aria-haspopup="dialog" aria-label="Commit details for test(rust): gate rejected Rust constructs and witness secrecy">Details</button></span>. Publication followed at <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/a5ee30f171322f07c06e3846117f20c9e075ef95">docs(site): pin the rewritten milestone implementation commit</a> <button type="button" class="commit-details" data-commit="a5ee30f171322f07c06e3846117f20c9e075ef95" aria-haspopup="dialog" aria-label="Commit details for docs(site): pin the rewritten milestone implementation commit">Details</button></span> on October 2. Historical notes record 128 generated sources and 410 workspace test/doc-test groups.</p>
 <p>The milestone used private IR schema 6 and runtime ABI 3. Its wrapper forced skip-zk. That is an essential scope boundary when reading the early success report.</p>
 <h2 id="what-was-solved">What was solved</h2>
 <p>Compact could generate useful typed Rust that executed a supported contract subset natively through the ledger runtime. The compiler boundary became inspectable, and new source cases had named owners.</p>
@@ -50,9 +50,9 @@
 <p>Recording a transcript, preparing a call, generating a proof and applying a funded transaction were later deliveries. Native execution established an important foundation for them.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>
-<li><a href="https://github.com/betsudo/compact/commit/67064813977a9af901792e5cfb62e295e49bff43">Start typed Rust from Ledger 8</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">Milestone 1 local baseline</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/a5ee30f171322f07c06e3846117f20c9e075ef95">Published native baseline</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/67064813977a9af901792e5cfb62e295e49bff43">Start typed Rust from Ledger 8</a> <button type="button" class="commit-details" data-commit="67064813977a9af901792e5cfb62e295e49bff43" aria-haspopup="dialog" aria-label="Commit details for feat(rust): start typed Rust backend from ledger-8">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">Milestone 1 local baseline</a> <button type="button" class="commit-details" data-commit="ea4cc006f973632c4c7b1fb4569af2b4c93ff38a" aria-haspopup="dialog" aria-label="Commit details for test(rust): gate rejected Rust constructs and witness secrecy">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/commit/a5ee30f171322f07c06e3846117f20c9e075ef95">Published native baseline</a> <button type="button" class="commit-details" data-commit="a5ee30f171322f07c06e3846117f20c9e075ef95" aria-haspopup="dialog" aria-label="Commit details for docs(site): pin the rewritten milestone implementation commit">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/issues/102">Native baseline issue #102</a></li>
 </ul></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/a-closed-rust-boundary.md">Read the frozen Markdown source</a></div>
@@ -72,5 +72,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

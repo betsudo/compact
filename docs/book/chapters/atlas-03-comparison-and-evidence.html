@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Comparing the backend lines · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -35,7 +35,7 @@
 <div class="prose"><blockquote>
 <p>Editorial correction for this edition. The historical shorthand “386 source availability” means 386 proof-required exports. The Milestone 2 inventory covered 217 sources, 196 roots and 755 exports, including 369 non-proof exports.</p>
 <p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
-<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md">original chapter at docs(rust): visualize runtime primitive boundaries</a> <button type="button" class="commit-details" data-commit="51a079bd8598b9decb3df7de92ec10768ec9b8dc" aria-haspopup="dialog" aria-label="Commit details for docs(rust): visualize runtime primitive boundaries">Details</button>. The documented implementation cutoff is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span> on October 14. The documentation snapshot and implementation revision are distinct.</p>
 </blockquote>
 <h2 id="four-generations-on-consistent-dimensions">Four generations on consistent dimensions</h2>
 <table>
@@ -164,7 +164,7 @@
 <h2 id="milestone-evidence-snapshots">Milestone evidence snapshots</h2>
 <h3 id="milestone-1-local-native-baseline">Milestone 1 — local native baseline</h3>
 <ul>
-<li>Implementation cutoff: <code>ea4cc006</code>.</li>
+<li>Implementation cutoff: <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">test(rust): gate rejected Rust constructs and witness secrecy</a> <button type="button" class="commit-details" data-commit="ea4cc006f973632c4c7b1fb4569af2b4c93ff38a" aria-haspopup="dialog" aria-label="Commit details for test(rust): gate rejected Rust constructs and witness secrecy">Details</button></span></code>.</li>
 <li>128 generated sources current; 410 workspace test/doc-test groups passed.</li>
 <li>All 37 top-level oracle sources ran through the new path, plus selected
   <code>tiny</code>, election, Zerocash and passport flows.</li>
@@ -172,7 +172,7 @@
 </ul>
 <h3 id="milestone-2-usable-target-and-remote-closure">Milestone 2 — usable target and remote closure</h3>
 <ul>
-<li>Closed at <code>03c03a39</code> on 2026-10-06.</li>
+<li>Closed at <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c">ci(rust): bound Linux validation artifact storage</a> <button type="button" class="commit-details" data-commit="03c03a39a2d39c43c91143b9526ca1c2ffae706c" aria-haspopup="dialog" aria-label="Commit details for ci(rust): bound Linux validation artifact storage">Details</button></span></code> on 2026-10-06.</li>
 <li>386/386 source availability.</li>
 <li>Sampled 37-source / 203-row behavior.</li>
 <li>Selected original four Coracle plus seven microDAO proof selectors, with
@@ -182,7 +182,7 @@
 </ul>
 <h3 id="milestone-03-qualification-and-adoption">Milestone 0.3 — qualification and adoption</h3>
 <ul>
-<li>Qualified implementation <code>f9a49666</code>; closure <code>0d7610b2</code>.</li>
+<li>Qualified implementation <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">test(rust): create fresh relation key directories</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></span></code>; closure <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">docs(rust): close the 0.3.0 engineering milestone</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></span></code>.</li>
 <li>19/19 required outcomes; 93 criteria; 121 milestone ADRs.</li>
 <li>198 roots, 232 inputs and 1,055 functions classified.</li>
 <li>Runtime changed-line coverage 97.87%; mapped total 88.03%; testkit 97.62%;
@@ -196,7 +196,7 @@
 </ul>
 <p>Counts overlap and must not be summed into one “tests passed” figure.</p>
 <h3 id="effect-prototype-active-local-program">Effect prototype — active local program</h3>
-<p>At <code>f3cef799</code>, the saved story cutoff includes the historical-test process
+<p>At <code><span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span></code>, the saved story cutoff includes the historical-test process
 sharding change. The full installed validation kept 974 unique planned and
 executed IDs with no failures, errors, skips or unrun cases. Four independent
 process shards reduced the measured wall time from 10,270 seconds (about
@@ -252,5 +252,10 @@ assumptions observable in both directions.</p>
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

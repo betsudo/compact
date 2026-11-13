@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>Closing 0.3.0 · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -39,20 +39,20 @@
 <p>DID and Passport exercised different application cohorts. DID covered twelve stateful exports with bounded native/recorded scenarios and proof receipts. The accepted Passport cohort covered 75 pure exports and had zero proof applicability. Together they exposed API and representation assumptions that a tiny circuit never touches.</p>
 <p>Adoption was scoped. A proof-eligible selected export does not make every large contract cheap to prove. A partial contract exercise also needs to remain identified as such. Resource limits and the selected proof profile constrain what a local run establishes.</p>
 <h2 id="the-importance-of-preserving-a-failed-run">The importance of preserving a failed run</h2>
-<p>The closeout retained the original failed full run at revision 551f065c. Its final qualification joined the 423 successful unchanged-prefix commands with three recovery commands at the named source.</p>
+<p>The closeout retained the original failed full run at revision <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/551f065cd6267e07020a755db5469df03e41b775">test(rust): include child status in compatibility failures</a> <button type="button" class="commit-details" data-commit="551f065cd6267e07020a755db5469df03e41b775" aria-haspopup="dialog" aria-label="Commit details for test(rust): include child status in compatibility failures">Details</button></span>. Its final qualification joined the 423 successful unchanged-prefix commands with three recovery commands at the named source.</p>
 <p>That is more informative than deleting failure evidence and showing a green badge. It explains which inputs and source remained valid, where repairs entered, and why the composite receipt was accepted.</p>
 <h2 id="scope-changes-are-engineering-decisions">Scope changes are engineering decisions</h2>
 <p>ACC was explicitly removed from the 0.3.0 accepted scope after the construct inventory found no unique witness, struct or ledger mechanism requiring another qualification family. Its exact application composition remained unqualified. Decoder resource containment also had an explicit boundary, with broader aggregate containment left for follow-up.</p>
 <p>A milestone can close responsibly when its agreed outcomes are satisfied and its excluded work is documented. Reopening the same accepted work without a new defect would slow the next milestone while adding little confidence.</p>
 <h2 id="the-october-9-closure">The October 9 closure</h2>
-<p>The milestone label was 0.3.0, while the Rust packages remained version 0.2.0. The qualified compiler boundary used private IR 20 and runtime ABI 50. Qualified implementation f9a496660a4a69f4dd7c7927111767ad5c0c12b2 and closure 0d7610b2792d60fee5d3713d4eb0ede3c98cc82a define this checkpoint. The report records 19 required outcomes accepted, 136 issues closed and a 93-criterion crosswalk.</p>
+<p>The milestone label was 0.3.0, while the Rust packages remained version 0.2.0. The qualified compiler boundary used private IR 20 and runtime ABI 50. Qualified implementation <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">test(rust): create fresh relation key directories</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></span> and closure <span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">docs(rust): close the 0.3.0 engineering milestone</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></span> define this checkpoint. The report records 19 required outcomes accepted, 136 issues closed and a 93-criterion crosswalk.</p>
 <p>The accepted delivery was a dedicated working line and matching evidence. A broader merge or distribution decision remained its own operation.</p>
 <h2 id="what-was-better">What was better</h2>
 <p>The result was a usable, reviewed compiler target with a richer application corpus and an explicit compatibility story. Just as valuable was the discipline of retaining limitations beside the passing outcomes.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>
-<li><a href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">Qualified 0.3.0 implementation</a></li>
-<li><a href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">0.3.0 closeout</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">Qualified 0.3.0 implementation</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></li>
+<li><a href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">0.3.0 closeout</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></li>
 <li><a href="https://github.com/betsudo/compact/blob/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a/doc/rust/0.3.0-closure.md">Closure report</a></li>
 </ul></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/closing-zero-three.md">Read the frozen Markdown source</a></div>
@@ -72,5 +72,10 @@
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

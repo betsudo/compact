@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5f2eb">
 <title>The October architecture · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css">
-<link rel="stylesheet" href="../assets/book.css">
-<script defer src="../assets/book.js"></script>
+<link rel="stylesheet" href="../assets/book.css?v=ab6d7e4293fe">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
 @media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
 </style></noscript>
 </head>
@@ -34,7 +34,7 @@
 <h1>The October architecture</h1><p class="deck">Frontend, IR, renderer, generated crate and runtime.</p></header>
 <div class="prose"><blockquote>
 <p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
-<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/02-architecture.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/02-architecture.md">original chapter at docs(rust): visualize runtime primitive boundaries</a> <button type="button" class="commit-details" data-commit="51a079bd8598b9decb3df7de92ec10768ec9b8dc" aria-haspopup="dialog" aria-label="Commit details for docs(rust): visualize runtime primitive boundaries">Details</button>. The documented implementation cutoff is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span> on October 14. The documentation snapshot and implementation revision are distinct.</p>
 </blockquote>
 <h2 id="the-current-conceptual-pipeline">The current conceptual pipeline</h2>
 <pre><code class="language-text">Compact source
@@ -178,5 +178,10 @@ from the compiler IR schema.</p></div>
 </ul>
 </div>
 </aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
 </body></html>

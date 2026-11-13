@@ -211,3 +211,50 @@ body:has(.on-this-page) main { margin-right: 190px; }
   .sidebar { visibility: hidden; pointer-events: none; }
   body.menu-open .sidebar { visibility: visible; pointer-events: auto; }
 }
+
+.commit-reference {
+  overflow-wrap: anywhere;
+}
+.commit-details {
+  margin-left: .25rem;
+  padding: .15rem .45rem;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: .7rem;
+  line-height: 1.35;
+  vertical-align: baseline;
+}
+.commit-panel {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(100vw, 29rem);
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 1.5rem;
+  border: 0;
+  border-left: 1px solid var(--rule);
+  color: var(--ink);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.commit-panel::backdrop { background: rgb(0 0 0 / .3); }
+.commit-panel form { display: flex; justify-content: flex-end; }
+.commit-panel h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.commit-panel h3 { font-size: .95rem; }
+.commit-panel dl { font-size: .85rem; }
+.commit-panel dt { color: var(--muted); margin-top: .75rem; }
+.commit-panel dd { margin-left: 0; overflow-wrap: anywhere; }
+.commit-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: .9rem;
+}
+@media print { .commit-details, .commit-panel { display: none !important; } }

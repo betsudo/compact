@@ -24,11 +24,17 @@ import os
 import tempfile
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import markdown
+from revisions import DATA, References
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT.parents[1] / 'docs' / 'book'
 CHAPTERS = json.loads((ROOT / 'chapters.json').read_text())
 EDITION = json.loads((ROOT / 'sources' / 'edition.json').read_text())
+REFERENCES = References(json.loads(DATA.read_text()))
+ASSET_VERSIONS = {
+    name: hashlib.sha256((ROOT/'assets'/name).read_bytes()).hexdigest()[:12]
+    for name in ('book.css','book.js')
+}
 
 def escape(value):
     return html.escape(str(value), quote=True)
@@ -51,6 +57,8 @@ def navigation(prefix, selected=''):
     return ''.join(parts)
 
 def shell(title, body, *, prefix='./', selected='', toc='', description='The Compact engineering journey from Ledger 8 TypeScript to the Ledger 9 Rust AST backend.'):
+    body = REFERENCES.rewrite(body, prefix)
+    toc = REFERENCES.rewrite(toc, prefix, details=False)
     return f'''<!doctype html>
 <html lang="en" data-theme="light">
 <head>
@@ -60,10 +68,10 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 <meta name="theme-color" content="#f5f2eb">
 <title>{escape(title)} · The Compact journey</title>
 <link rel="stylesheet" href="{prefix}assets/fonts.css">
-<link rel="stylesheet" href="{prefix}assets/book.css">
-<script defer src="{prefix}assets/book.js"></script>
+<link rel="stylesheet" href="{prefix}assets/book.css?v={ASSET_VERSIONS["book.css"]}">
+<script defer src="{prefix}assets/book.js?v={ASSET_VERSIONS["book.js"]}"></script>
 <noscript><style>
-.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {{display:none}}
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {{display:none}}
 @media(max-width:740px){{.sidebar{{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}}.sidebar-tools{{display:grid}}}}
 </style></noscript>
 </head>
@@ -84,6 +92,11 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 </aside>
 <main id="content" tabindex="-1">{body}</main>
 {f'<aside class="on-this-page"><h2>In this chapter</h2>{toc}</aside>' if toc else ''}
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
 <footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="{prefix}sources.html">Edition and sources</a></footer>
 </body></html>'''
 
@@ -111,7 +124,7 @@ def build():
     shutil.copytree(ROOT/'assets', OUTPUT/'assets', dirs_exist_ok=True)
     (OUTPUT/'sources').mkdir()
     for name in ('edition.json','ledger9-adoption.md','ledger9-upstream-compatibility.md',
-                 'ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json'):
+                 'ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','revisions.json'):
         shutil.copyfile(ROOT/'sources'/name, OUTPUT/'sources'/name)
     (OUTPUT/'markdown').mkdir()
     for chapter in CHAPTERS:
@@ -193,14 +206,23 @@ def build():
             continue
         entries=[]
         for row in rows:
-            if row['publication']=='published':
-                identity=f'<a href="https://github.com/betsudo/compact/commit/{row["sha"]}">{row["sha"][:10]}</a>'
-            else:
-                identity=f'<code>{row["sha"][:10]}</code> · local at cutoff'
-            entries.append(f'<details class="iteration"><summary><span class="iteration-date">{row["date"]}</span>{escape(row["title"])}</summary><p>{escape(row["explanation"])}</p><p>{identity} · <a href="commits.html?query={row["sha"]}">Inspect commit identity</a></p></details>')
+            record = REFERENCES.records[row['sha']]
+            url = record['url'] or f'revisions.html#commit-{row["sha"]}'
+            label = 'View commit on GitHub' if record['url'] else 'View local revision'
+            entries.append(f'<details class="iteration"><summary><span class="iteration-date">{row["date"]}</span>{escape(row["title"])}</summary><p>{escape(row["explanation"])}</p><p><a href="{url}">{label}</a></p></details>')
         sections.append(f'<section class="iteration-phase"><h2>{escape(phase["title"])}</h2>{"".join(entries)}</section>')
     body=f'<article class="wide-reader"><header class="chapter-heading"><p class="eyebrow">MILESTONES TO IMPLEMENTATION STEPS</p><h1>The iteration ledger</h1><p class="deck">Open a step to read what changed, the problem it addressed, and the evidence boundary.</p></header><div class="prose"><p>These {len(iterations)} representative implementation and acceptance checkpoints connect the narrative to the commit graph. A checkpoint can summarize several commits. Its explanation records that distinction. The full catalogue remains available in the commit explorer.</p></div>{"".join(sections)}</article>'
     write('iterations.html',shell('The iteration ledger',body))
+    local_records = [record for record in REFERENCES.records.values() if not record['url']]
+    local_cards = []
+    for record in sorted(local_records, key=lambda row: row['authored'], reverse=True):
+        description = record['description'] or 'Local revision retained in the edition’s Git catalogue.'
+        local_cards.append(f'<section id="commit-{record["sha"]}"><h2>{escape(record["subject"])}</h2>'
+                           f'<p>{escape(description)}</p><p>Authored {record["authored"][:10]}</p>'
+                           f'<details class="revision-identity"><summary>Full commit identity</summary>'
+                           f'<code>{record["sha"]}</code></details></section>')
+    local_body = '<article class="reader"><header class="chapter-heading"><h1>Local revisions</h1><p class="deck">Commits preserved in the edition’s local evidence.</p></header><div class="prose">' + ''.join(local_cards) + '</div></article>'
+    write('revisions.html', shell('Local revisions', local_body))
     public_sources=''.join(f'<li><a href="sources/{escape(name)}">{escape(name)}</a></li>' for name in ('ledger9-adoption.md','ledger9-upstream-compatibility.md','ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','edition.json'))
     body=f'''<article class="reader"><header class="chapter-heading"><p class="eyebrow">HOW THIS EDITION WAS MADE</p><h1>Sources and boundaries</h1><p class="deck">A public, reproducible record of the material behind the story.</p></header>
 <div class="prose"><h2>Primary sources</h2><p>The narrative combines verified Git history, repository ADRs, qualification plans and reports, public issue and pull-request metadata, and the owner's Obsidian engineering journal. Private notes are summarized. Complete witness data, keys and workstation paths are excluded from the public edition.</p>
@@ -244,6 +266,9 @@ def build():
         raise
     OUTPUT = destination
     staging.cleanup()
+    # Keep the historical overview's source intact and update its reading view.
+    overview = (ROOT.parent/'rust-ast-storybook/index.html').read_text()
+    (OUTPUT.parent/'index.html').write_text(REFERENCES.rewrite(overview, './book/', details=False))
     print(f'Built {len(CHAPTERS)} chapters, {total_words:,} words and {EDITION["commit_count"]:,} commits in {OUTPUT}')
 
 if __name__=='__main__':
