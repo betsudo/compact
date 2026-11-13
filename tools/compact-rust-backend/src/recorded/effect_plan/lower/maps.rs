@@ -143,15 +143,19 @@ impl Lowerer<'_> {
             | StateAction::MapReset { field, index } => (field, *index),
             _ => return Err(invalid(path, "Map action dispatch requires a Map mutation")),
         };
-        // Default insertion checks its value declaration separately.
+        let insert_default = matches!(action, StateAction::MapInsertDefault { .. });
+        let (declaration, _) = self.field(name, index, path)?;
+        let slot = MapSlot { declaration, index };
         let scalar = !matches!(
             action,
-            StateAction::MapInsertDefault { .. }
-                | StateAction::MapRemove { .. }
+            StateAction::MapRemove { .. }
                 | StateAction::NestedMapInsert { .. }
                 | StateAction::MapInitChild { .. }
-        );
-        let (slot, key_type, value_type) = self.map_slot(name, index, scalar, path)?;
+        ) && !(insert_default && super::super::validate::maps::has_merkle_value(self.declarations, slot));
+        let (key_type, value_type) =
+            super::super::validate::maps::types(self.declarations, slot, scalar, path)?;
+        let key_type = key_type.clone();
+        let value_type = value_type.clone();
         let operation = match action {
             StateAction::NestedMapInsert {
                 outer,
@@ -186,7 +190,7 @@ impl Lowerer<'_> {
                     self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
                 let value = self.map_operand(
                     value,
-                    value_type.as_ref().expect("scalar mutation declaration"),
+                    &value_type,
                     scope,
                     bindings,
                     &format!("{path}.value"),
@@ -194,13 +198,12 @@ impl Lowerer<'_> {
                 Operation::MapInsert { slot, key, value }
             }
             StateAction::MapInsertDefault { key, .. } | StateAction::MapRemove { key, .. } => {
-                let insert_default = matches!(action, StateAction::MapInsertDefault { .. });
-                if insert_default {
-                    super::super::validate::maps::validate_default(self.declarations, slot, path)?;
-                }
                 let key =
                     self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
                 if insert_default {
+                    if !super::super::validate::maps::default_insert_value(self.declarations, &value_type, path)? {
+                        return Err(invalid(path, "Map default insertion requires a defaultable value"));
+                    }
                     Operation::MapInsertDefault { slot, key }
                 } else {
                     Operation::MapRemove { slot, key }

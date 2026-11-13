@@ -154,7 +154,14 @@ fn metadata_is_key_only_but_default_and_reset_preserve_scalar_codec_and_resource
         },
     ] {
         for kind in 0..2 {
-            assert!(checked(&contract(value.clone(), kind, true)).is_err());
+            let source = contract(value.clone(), kind, true);
+            let PlanError::Unsupported(gap) = checked(&source).unwrap_err() else {
+                panic!("expected a scalar Map refusal");
+            };
+            assert_eq!(gap.detail, "unsupported scalar Map value type");
+            let original = checked(&contract(Type::Field, kind, true)).unwrap().plan().clone();
+            let gap = validate::check(original, declarations(&source)).unwrap_err();
+            assert_eq!(gap.detail, "unsupported scalar Map value type");
         }
     }
     let huge = Type::Vector {

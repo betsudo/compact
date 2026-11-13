@@ -97,24 +97,24 @@ pub(in super::super) fn child_types(
     Ok((outer.clone(), inner.clone(), value.clone()))
 }
 
-pub(in super::super) fn validate_default(
+pub(in super::super) fn has_merkle_value(declarations: &Declarations, slot: MapSlot) -> bool {
+    declarations.field(slot.declaration).is_some_and(|field| matches!(
+        &field.declaration,
+        LedgerFieldKind::Map { value: Type::LedgerMerkle { .. }, .. }
+    ))
+}
+
+pub(in super::super) fn default_insert_value(
     declarations: &Declarations,
-    slot: MapSlot,
+    value: &Type,
     path: &str,
-) -> Result<(), RecordingGap> {
-    let (_, value) = types(declarations, slot, false, path)?;
+) -> Result<bool, RecordingGap> {
     if let Type::LedgerMerkle { depth, ty, .. } = value {
         declarations.types().validate_at(ty, path)?;
-        if (2..=32).contains(depth) && merkle_leaf_type(ty) {
-            return Ok(());
-        }
+        Ok((2..=32).contains(depth) && merkle_leaf_type(ty))
     } else {
-        declarations.types().validate_at(value, path)?;
-        if scalar_value_type(value) && default_value_type(value) {
-            return Ok(());
-        }
+        Ok(default_value_type(value))
     }
-    Err(invalid(path, "Map default insertion requires a defaultable value"))
 }
 
 pub(super) fn validate(
@@ -156,12 +156,13 @@ pub(super) fn validate(
         | Operation::MapRemove { slot, key }
         | Operation::MapInsertDefault { slot, key } => {
             used(key, scope, declarations, path)?;
-            let scalar = matches!(operation, Operation::MapLookup { .. });
+            let is_default = matches!(operation, Operation::MapInsertDefault { .. });
+            let scalar = matches!(operation, Operation::MapLookup { .. })
+                || (is_default && !has_merkle_value(declarations, *slot));
             let (declared_key, declared_value) = types(declarations, *slot, scalar, path)?;
-            if matches!(operation, Operation::MapInsertDefault { .. }) {
-                validate_default(declarations, *slot, path)?;
-            }
-            key.ty == *declared_key
+            let default_valid = !is_default
+                || default_insert_value(declarations, declared_value, path)?;
+            key.ty == *declared_key && default_valid
                 && *result
                     == match operation {
                         Operation::MapMember { .. } => Type::Boolean,
