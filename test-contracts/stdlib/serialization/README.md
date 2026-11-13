@@ -81,3 +81,21 @@ node test-contracts/stdlib/serialization/check-field.mjs \
 ```
 
 The stateful fixture measures k=9 and runs in the local slow proof lane.
+
+## Aggregate deserialization
+
+`products.compact` retains the five upstream struct, tuple and Vector
+decoders. It also covers a nested nominal tuple and an empty Vector whose
+input still evaluates a check. `aggregate.compact` retains the upstream
+`d1` and `d2` source and their ledger write. Compile both targets and run:
+
+```sh
+node test-contracts/stdlib/serialization/check-aggregate.mjs \
+  "$OUTPUT/aggregate" "$ZKIR_WASM_PACKAGE" "$OUTPUT/aggregate-preimages"
+```
+
+The runner checks Boolean offsets 0, 3 and 5 with bad bytes 2 and 255,
+little-endian Uint fields, rollback and rejection of a changed output.
+It exports binary ZKIR and three preimages for independent proof
+verification. The stateful `d2` fixture runs in the local slow proof lane
+at k=11.

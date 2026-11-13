@@ -2017,12 +2017,86 @@
                      (spread ,src ,len^ (bytes->vector ,src ,len^ ,expr))
                      (spread ,src ,len^^
                        (bytes->vector ,src ,len^^ (quote ,src ,(make-bytevector len^^ 0))))))))))
-      (define (serialized-byte-prefix src expr bytes-type len^ len)
-        (with-output-language (Ltypes Expression)
-          (if (= len^ len) expr
-              `(bytes-slice ,src ,bytes-type ,expr (quote ,src 0) ,len^))))
       (define (unsigned-serialized-width nat)
         (quotient (+ (integer-length nat) 7) 8))
+      ;; Follow the declaration order and fixed little-endian widths used
+      ;; by the standard library wire format. Alias identity is restored after
+      ;; decoding the underlying carrier.
+      (define (deserialized-width src type)
+        (nanopass-case (Ltypes Type) (de-alias type #t)
+          [(tboolean ,src^) 1]
+          [(tfield ,src^) (+ 1 (field-bytes))]
+          [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
+          [(tbytes ,src^ ,len) len]
+          [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+           (apply + (map (lambda (field-type) (deserialized-width src field-type)) type*))]
+          [(ttuple ,src^ ,type* ...)
+           (apply + (map (lambda (element-type) (deserialized-width src element-type)) type*))]
+          [(tvector ,src^ ,len ,type)
+           (* len (deserialized-width src type))]
+          [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))
+
+      (define (deserialize-value src type bytes-type len expr)
+        (define (decode expr)
+          (define (prefix index width)
+            (with-output-language (Ltypes Expression)
+              (if (and (= index 0) (= width len))
+                  expr
+                  `(bytes-slice ,src ,bytes-type ,expr (quote ,src ,index) ,width))))
+          (define (fields types start)
+            (let loop ([types types] [index start] [result '()])
+              (if (null? types)
+                  (reverse result)
+                  (let ([type (car types)])
+                    (loop (cdr types)
+                          (+ index (deserialized-width src type))
+                          (cons (at type index) result))))))
+          (define (at type index)
+            (let* ([carrier (de-alias type #t)]
+                   [value (with-output-language (Ltypes Expression)
+                            (nanopass-case (Ltypes Type) carrier
+                              [(tboolean ,src^)
+                               ;; Match upstream #772. Check the byte before equality.
+                               `(== ,src (tunsigned ,src 1)
+                                  (downcast-unsigned ,src 255 1
+                                    (tuple-ref ,src (bytes->vector ,src ,len ,expr) ,index))
+                                  (quote ,src 1))]
+                              [(tbytes ,src^ ,len^) (prefix index len^)]
+                              [(tfield ,src^)
+                               (let ([len^ (+ 1 (field-bytes))])
+                                 `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^)))]
+                              [(tunsigned ,src^ ,nat)
+                               (let ([len^ (unsigned-serialized-width nat)])
+                                 (if (= len^ 0)
+                                     `(quote ,src 0)
+                                     `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^))))]
+                              [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+                               `(new ,src ,carrier ,(fields type* index) ...)]
+                              [(ttuple ,src^ ,type* ...)
+                               `(tuple ,src ,(map (lambda (item) `(single ,src ,item))
+                                                  (fields type* index)) ...)]
+                              [(tvector ,src^ ,len^ ,type)
+                               (if (= (deserialized-width src carrier) 0)
+                                   `(default ,src ,carrier)
+                                   (let ([types (make-list len^ type)])
+                                     `(safe-cast ,src ,carrier (ttuple ,src ,types ...)
+                                        (tuple ,src ,(map (lambda (item) `(single ,src ,item))
+                                                           (fields types index)) ...))))]
+                              [else (assert cannot-happen)]))])
+              (maybe-safecast src type carrier value)))
+          (at type 0))
+        (let ([width (deserialized-width src type)])
+          (check-serialization-width src type width len)
+          ;; A zero-byte or aggregate result may omit or reuse its operand.
+          ;; Bind once to retain checks and prevent duplicate evaluation.
+          (if (or (= width 0)
+                  (T (de-alias type #t)
+                     [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...) #t]
+                     [(ttuple ,src^ ,type* ...) #t]
+                     [(tvector ,src^ ,len^ ,type) #t]))
+              (maybe-bind src bytes-type expr decode)
+              (decode expr))))
+
       (define (arithmetic-binop src op expr1 expr2 k)
         (let*-values ([(expr1 type1) (Care expr1)] [(expr2 type2) (Care expr2)])
           (define (condense type l/r)
@@ -3104,44 +3178,10 @@
          (unless (sametype? type^ bytes-type)
            (source-errorf src "expected deserialize argument to have type ~a, received ~a"
                           (format-type bytes-type) (format-type type^)))
-         (nanopass-case (Ltypes Type) (de-alias type #t)
-           [(tboolean ,src^)
-            (when (= len 0)
-              (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
-            ;; Match upstream #772: a byte other than 0 or 1 must fail the
-            ;; checked conversion before it can be compared with true.
-            (let ([decoded
-                    `(== ,src (tunsigned ,src 1)
-                       (downcast-unsigned ,src 255 1
-                         (tuple-ref ,src (bytes->vector ,src ,len ,expr) 0))
-                       (quote ,src 1))]
-                  [boolean-type (with-output-language (Ltypes Type) `(tboolean ,src))])
-              (values (maybe-safecast src type boolean-type decoded) type))]
-           [(tbytes ,src^ ,len^)
-            (check-serialization-width src type len^ len)
-            (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
-              (values (maybe-safecast src type carrier
-                        (serialized-byte-prefix src expr bytes-type len^ len))
-                      type))]
-           [(tfield ,src^)
-            (let ([len^ (+ 1 (field-bytes))]
-                  [carrier (with-output-language (Ltypes Type) `(tfield ,src))])
-              (check-serialization-width src type len^ len)
-              (values (maybe-safecast src type carrier
-                        `(cast-from-bytes ,src ,carrier ,len^
-                           ,(serialized-byte-prefix src expr bytes-type len^ len)))
-                      type))]
-           [(tunsigned ,src^ ,nat)
-            (let ([len^ (unsigned-serialized-width nat)]
-                  [carrier (with-output-language (Ltypes Type) `(tunsigned ,src ,nat))])
-              (check-serialization-width src type len^ len)
-              (let ([value (if (= len^ 0)
-                               (maybe-bind src bytes-type expr
-                                 (lambda (value) `(quote ,src 0)))
-                               `(cast-from-bytes ,src ,carrier ,len^
-                                  ,(serialized-byte-prefix src expr bytes-type len^ len)))])
-                (values (maybe-safecast src type carrier value) type)))]
-           [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))]
+         ;; Keep the existing Boolean width diagnostic stable.
+         (when (and (= len 0) (T (de-alias type #t) [(tboolean ,src^) #t]))
+           (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
+         (values (deserialize-value src type bytes-type len expr) type))]
       [(emit ,src ,[Care : expr type])
        (unless (feature-zkir-v3)
          (source-errorf src "emit requires ZKIR v3; recompile with --feature-zkir-v3"))

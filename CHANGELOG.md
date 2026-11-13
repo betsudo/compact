@@ -19,6 +19,8 @@ Unreleased Ledger 9 migration.
   the TypeScript and Rust targets.
 - Support canonical little-endian Field serialization in the TypeScript
   and Rust targets.
+- Decode fixed-width structs, tuples and vectors with checked Boolean
+  components in the TypeScript and Rust backends.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust. Successful circuit contexts expose the
   VM-decoded event and its emitting contract address.

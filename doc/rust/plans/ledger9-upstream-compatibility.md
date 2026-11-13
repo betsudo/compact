@@ -241,9 +241,17 @@ points and uses four shifted Base atoms for ledger transport. The original
 generator and its double pass Rust recording and VM replay. The write and
 projection statements have independently verified arm64 proofs at k=12
 and k=11, respectively. The write also passes a separate funded
-default-strict application and replay refusal. The generic
-`serialize` and `deserialize` APIs are still absent on this branch, so
-both original refusal sources fail during name resolution.
+default-strict application and replay refusal. The point refusal sources
+originally failed during name resolution. Point-specific diagnostics
+remain to be checked now that the generic wire codecs are available.
+
+The [wire codec fixtures](../../../test-contracts/stdlib/serialization)
+cover Boolean, Bytes, native Uint and Field encoding and decoding.
+The aggregate slice adds five upstream product decoders and the intact
+`d1`/`d2` checked-Boolean fixture. Three independent local proofs and one
+separate funded default-strict transaction cover `d2` at k=11. Product
+encoding, enum and wide Uint codecs and broader aggregate proof cases
+remain open.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

@@ -69038,6 +69038,41 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export circuit nested(x: Bytes<5>): Vector<2, [Boolean, Uint<8>]> {"
+      "  return deserialize<Vector<2, [Boolean, Uint<8>]>, 5>(x);"
+      "}"
+      "export circuit empty(x: Bytes<2>, valid: Boolean): Vector<0, Boolean> {"
+      "  return deserialize<Vector<0, Boolean>, 2>(checked(x, valid));"
+      "}"
+      "circuit checked(x: Bytes<2>, valid: Boolean): Bytes<2> {"
+      "  assert(valid, 'checked empty input');"
+      "  return x;"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('aggregate decoding checks each Boolean, ignores padding and evaluates empty inputs', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.nested(Ctxt, Uint8Array.of(1, 49, 0, 255, 255)).result).toEqual([[true, 49n], [false, 255n]]);"
+        "  expect(() => C.circuits.nested(Ctxt, Uint8Array.of(2, 49, 0, 255, 255))).toThrow(runtime.CompactError);"
+        "  expect(() => C.circuits.nested(Ctxt, Uint8Array.of(1, 49, 2, 255, 255))).toThrow(runtime.CompactError);"
+        "  expect(C.circuits.empty(Ctxt, Uint8Array.of(1, 2), true).result).toEqual([]);"
+        "  expect(() => C.circuits.empty(Ctxt, Uint8Array.of(1, 2), false)).toThrow(runtime.CompactError);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "struct Pair { flag: Boolean, count: Uint<16> }"
+      "export circuit bad(x: Bytes<2>): Pair { return deserialize<Pair, 2>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (3 2 "struct Pair<flag: Boolean, count: Uint<16>>"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

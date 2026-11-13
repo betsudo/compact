@@ -620,6 +620,24 @@
                   [else #f])
                 (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))))
 
+      ;; Checked nominal casts on products leave the generated carrier
+      ;; unchanged. Compare both Rust types before dropping the cast.
+      (define (nominal-product-type? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(talias ,src ,nominal? ,type-name ,type^)
+           (let loop ([type type^])
+             (nanopass-case (Lnodisclose Type) type
+               [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+               [(tstruct ,src ,struct-name (,elt-name* ,type*) ...) #t]
+               [(ttuple ,src ,type* ...) #t]
+               [(tvector ,src ,len ,type^) #t]
+               [else #f]))]
+          [else #f]))
+
+      (define (same-product-carrier? type type^ src)
+        (and (or (nominal-product-type? type) (nominal-product-type? type^))
+             (equal? (type-ir type src) (type-ir type^ src))))
+
       (define (bytes-carrier-width type)
         (nanopass-case (Lnodisclose Type) type
           [(tbytes ,src ,len) len]
@@ -852,6 +870,9 @@
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (let ([width (bytes-carrier-width type)])
                     (and width (eqv? width (bytes-carrier-width type^)))))
+           (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-product-carrier? type type^ src))
            (expression-ir expr src)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
@@ -2871,6 +2892,9 @@
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (let ([width (bytes-carrier-width type)])
                     (and width (eqv? width (bytes-carrier-width type^)))))
+           (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-product-carrier? type type^ src))
            (stateful-expression-ir expr src witness-ids)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
