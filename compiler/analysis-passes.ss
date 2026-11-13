@@ -68,6 +68,22 @@
             a))
         (unless (member standard-library-path (registered-source-pathnames))
           (register-source-pathname! standard-library-path)))
+      ;; These are ordinary exported standard-library generics. Import
+      ;; selection, prefixes and local name resolution use the existing path.
+      (define (serialization-declarations)
+        (let ([src (make-source-object (assert (stdlib-sfd)) 0 0 1 1)])
+          (with-output-language (Lpreexpand Circuit-Definition)
+            (list
+              `(circuit ,src #t #t serialize
+                 ((type-valued ,src T) (nat-valued ,src n))
+                 ((,src value (type-ref ,src T)))
+                 (tbytes ,src (type-size-ref ,src n))
+                 (return ,src (serialize ,src (type-size-ref ,src n) (type-ref ,src T) (var-ref ,src value))))
+              `(circuit ,src #t #t deserialize
+                 ((type-valued ,src T) (nat-valued ,src n))
+                 ((,src value (tbytes ,src (type-size-ref ,src n))))
+                 (type-ref ,src T)
+                 (return ,src (deserialize ,src (type-size-ref ,src n) (type-ref ,src T) (var-ref ,src value))))))))
       (define program-src)
       (module (make-instance-table instance-table-cell)
         (define (combine hash*)
@@ -631,6 +647,7 @@
                                                   '()
                                                   (append standard-library-pelt*
                                                           (native-declarations)
+                                                          (serialization-declarations)
                                                           (map (lambda (adt-defn)
                                                                   (nanopass-case (Lpreexpand ADT-Definition) adt-defn
                                                                     [(define-adt ,src ,exported? ,adt-name (,type-param* ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
@@ -1172,6 +1189,12 @@
                 [else #f])]
              [else #f])
            `(elt-ref ,src ,(Expression expr p) ,elt-name^))]
+      [(serialize ,src ,[Type-Size->nat : tsize p 0 -> * nat] ,[type] ,[expr])
+       (check-length! src "serialized Bytes" nat)
+       `(serialize ,src ,nat ,type ,expr)]
+      [(deserialize ,src ,[Type-Size->nat : tsize p 0 -> * nat] ,[type] ,[expr])
+       (check-length! src "serialized Bytes" nat)
+       `(deserialize ,src ,nat ,type ,expr)]
       [(call ,src ,[fun] ,expr* ...) ; force fun to be processed before expr* to get better error messages
        `(call ,src ,fun ,(map (lambda (e) (Expression e p)) expr*) ...)])
     (Function : Function (ir p) -> Function ()
@@ -3013,6 +3036,41 @@
                               ...)
                     ,expr)
                   body-type)))))]
+      [(serialize ,src ,len ,[type] ,[Care : expr type^])
+       (unless (subtype? type^ type)
+         (source-errorf src "expected serialize argument to have type ~a, received ~a"
+                        (format-type type) (format-type type^)))
+       (nanopass-case (Ltypes Type) (de-alias type #t)
+         [(tboolean ,src^)
+          (when (= len 0)
+            (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
+          (let ([no (make-bytevector len 0)] [yes (make-bytevector len 0)]
+                [expr (maybe-safecast src
+                        (with-output-language (Ltypes Type) `(tboolean ,src))
+                        type^ expr)])
+            (bytevector-u8-set! yes 0 1)
+            (values `(if ,src ,expr (quote ,src ,yes) (quote ,src ,no))
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [else (source-errorf src "serialize does not yet support type ~a" (format-type type))])]
+      [(deserialize ,src ,len ,[type] ,[Care : expr type^])
+       (let ([bytes-type (with-output-language (Ltypes Type) `(tbytes ,src ,len))])
+         (unless (sametype? type^ bytes-type)
+           (source-errorf src "expected deserialize argument to have type ~a, received ~a"
+                          (format-type bytes-type) (format-type type^)))
+         (nanopass-case (Ltypes Type) (de-alias type #t)
+           [(tboolean ,src^)
+            (when (= len 0)
+              (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
+            ;; Match upstream #772: a byte other than 0 or 1 must fail the
+            ;; checked conversion before it can be compared with true.
+            (let ([decoded
+                    `(== ,src (tunsigned ,src 1)
+                       (downcast-unsigned ,src 255 1
+                         (tuple-ref ,src (bytes->vector ,src ,len ,expr) 0))
+                       (quote ,src 1))]
+                  [boolean-type (with-output-language (Ltypes Type) `(tboolean ,src))])
+              (values (maybe-safecast src type boolean-type decoded) type))]
+           [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))]
       [(emit ,src ,[Care : expr type])
        (unless (feature-zkir-v3)
          (source-errorf src "emit requires ZKIR v3; recompile with --feature-zkir-v3"))

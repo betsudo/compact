@@ -570,6 +570,14 @@
                 `(tunsigned ,(type-origin type) ,maximum))
               type)))
 
+      ;; Compact resolves nominal identity before this pass. Boolean aliases
+      ;; share the same Rust carrier, so their checked casts are identity.
+      (define (boolean-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tboolean ,src) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (boolean-carrier? type^)]
+          [else #f]))
+
       ;; type-ir erases aliases to their Vector carrier. Use that carrier
       ;; for expected Vector context and cast dispatch, including reducer
       ;; Vector literals. Other alias families retain their current owners.
@@ -764,6 +772,9 @@
                       (cons "max" (number->string nat)))]
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (expression-ir expr src)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
            (typed-expression-ir expr type^ src)]
@@ -2778,6 +2789,9 @@
                          (cons "field" (symbol->string (id-sym ledger-field-name)))
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (stateful-expression-ir expr src witness-ids)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
            (stateful-typed-expression-ir expr type^ src witness-ids)]

@@ -766,6 +766,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact-rust-boolean-serialization-source-fixture"
+version = "0.1.0"
+dependencies = [
+ "compact-rust-backend",
+ "midnight-compact-runtime",
+ "midnight-onchain-vm",
+ "serde_json",
+]
+
+[[package]]
 name = "compact-rust-bounded-uint-oracle-fixture"
 version = "0.1.0"
 dependencies = [

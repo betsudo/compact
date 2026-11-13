@@ -1,0 +1,167 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "forceField",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "stateful.compact",
+        "line": 17,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+    {
+      "name": "deserialize",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "bytes",
+            "length": 1
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "body": {
+        "kind": "equal",
+        "left": {
+          "kind": "unsigned_cast",
+          "max": "1",
+          "value": {
+            "kind": "tuple_index",
+            "value": {
+              "kind": "bytes_to_vector",
+              "value": {
+                "kind": "parameter",
+                "name": "value"
+              },
+              "length": 1
+            },
+            "index": 0
+          }
+        },
+        "right": {
+          "kind": "unsigned_literal",
+          "value": "1",
+          "max": "1"
+        }
+      },
+      "source": {
+        "file": "standard-library.compact",
+        "line": 1,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "forceProof",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_3",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "field_literal",
+                "value": "7"
+              }
+            }
+          ],
+          "action": {
+            "kind": "cell_write",
+            "field": "forceField",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_3"
+            }
+          }
+        }
+      ],
+      "internal": true,
+      "source": {
+        "file": "stateful.compact",
+        "line": 17,
+        "column": 27
+      }
+    },
+    {
+      "name": "d1",
+      "parameters": [
+        {
+          "name": "bv",
+          "ty": {
+            "kind": "bytes",
+            "length": 1
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "call",
+          "name": "deserialize",
+          "arguments": [
+            {
+              "kind": "coerce",
+              "value": {
+                "kind": "parameter",
+                "name": "bv"
+              },
+              "ty": {
+                "kind": "bytes",
+                "length": 1
+              }
+            }
+          ]
+        }
+      },
+      "actions": [
+        {
+          "kind": "circuit_call",
+          "name": "forceProof",
+          "arguments": [
+          ]
+        }
+      ],
+      "source": {
+        "file": "stateful.compact",
+        "line": 18,
+        "column": 1
+      }
+    }
+  ]
+}

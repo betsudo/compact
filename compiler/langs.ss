@@ -412,6 +412,9 @@
       (+ ndecl
          adt-defn
          fixup-alias-defn))
+    (Expression (expr index)
+      (+ (serialize src tsize type expr) => (serialize tsize type expr)
+         (deserialize src tsize type expr) => (deserialize tsize type expr)))
     (Native-Declaration (ndecl)
       (+ (native src exported? function-name native-entry (type-param* ...) (arg* ...) type) =>
            (native function-name (type-param* ...) (arg* 0 ...) 4 type)))
@@ -569,11 +572,15 @@
       (- (block src (var-name* ...) expr)
          (new src tref new-field* ...)
          (tuple-slice src expr index tsize)
+         (serialize src tsize type expr)
+         (deserialize src tsize type expr)
          (for src var-name tsize0 tsize1 expr2))
       (+ (ledger-ref src ledger-field-name) => ledger-field-name
          (new src type new-field* ...)      => (new type #f new-field* ...)
          (enum-ref src type elt-name)       => (enum-ref type elt-name)
-         (tuple-slice src expr index len)   => (tuple-slice #f expr #f index #f len)))
+         (tuple-slice src expr index len)   => (tuple-slice #f expr #f index #f len)
+         (serialize src len type expr) => (serialize len type expr)
+         (deserialize src len type expr) => (deserialize len type expr)))
     (Function (fun)
       (- (fref src function-name)
          (fref src function-name (targ* ...)))

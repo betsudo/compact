@@ -68847,6 +68847,74 @@ groups than for single tests.
 (run-tests save-manifest
   (test
     '(
+      "import { serialize, deserialize } from CompactStandardLibrary prefix Wire_;"
+      "new type Flag = Boolean;"
+      "circuit serialize(x: Boolean): Boolean { return !x; }"
+      "export circuit encode(x: Boolean): Bytes<4> { return Wire_serialize<Boolean, 4>(serialize(x)); }"
+      "export circuit decode(x: Bytes<4>): Boolean { return Wire_deserialize<Boolean, 4>(x); }"
+      "export circuit encodeFlag(x: Flag): Bytes<1> { return Wire_serialize<Flag, 1>(x); }"
+      "export circuit decodeFlag(x: Bytes<1>): Flag { return Wire_deserialize<Flag, 1>(x); }"
+      "ledger forceField: Field; circuit forceProof(): [] { forceField = 7 as Field; }"
+      "export circuit d1(bv: Bytes<1>): Boolean { forceProof(); return Wire_deserialize<Boolean, 1>(bv); }"
+      )
+    (stage-javascript
+      '(
+        "test('Boolean serialization checks the first byte and preserves padding semantics', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  expect(C.circuits.encode(Ctxt, false).result).toEqual(Uint8Array.of(1, 0, 0, 0));"
+        "  expect(C.circuits.decode(Ctxt, Uint8Array.of(0, 23, 42, 255)).result).toBe(false);"
+        "  expect(C.circuits.decode(Ctxt, Uint8Array.of(1, 23, 42, 255)).result).toBe(true);"
+        "  expect(C.circuits.encodeFlag(Ctxt, true).result).toEqual(Uint8Array.of(1));"
+        "  expect(C.circuits.decodeFlag(Ctxt, Uint8Array.of(0)).result).toBe(false);"
+        "  expect(C.circuits.d1(Ctxt, Uint8Array.of(0)).result).toBe(false);"
+        "  expect(C.circuits.d1(Ctxt, Uint8Array.of(1)).result).toBe(true);"
+        "  expect(() => C.circuits.d1(Ctxt, Uint8Array.of(2))).toThrow(runtime.CompactError);"
+        "  expect(() => C.circuits.decode(Ctxt, Uint8Array.of(1))).toThrow(runtime.CompactError);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit tooShort(x: Bytes<0>): Boolean { return deserialize<Boolean, 0>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size 1 exceeds specified length 0 for type Boolean" ())))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "new type A = Boolean;"
+      "new type B = Boolean;"
+      "export circuit bad(x: A): Bytes<1> { return serialize<B, 1>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("testfile.compact line 4 char 45" "no compatible function named ~a is in scope at this call~@[~a~]~@[~a~]~@[~a~]" (serialize #f "\n    one function is incompatible with the supplied argument types\n      supplied argument types:\n        (A)\n      declared argument types for function at <standard library>:\n        (B)" #f))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger publicByte: Bytes<1>;"
+      "export circuit leak(x: Boolean): [] {"
+      "  publicByte = serialize<Boolean, 1>(x);"
+      "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("testfile.compact line 4 char 14" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the value of parameter x of exported circuit leak at line 3 char 21" ("\n    nature of the disclosure:\n      ledger operation might disclose the boolean value of the witness value\n    via this path through the program:\n      the argument to serialize at line 4 char 16\n      the right-hand side of = at line 4 char 14")))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger publicFlag: Boolean;"
+      "export circuit leak(x: Bytes<1>): [] {"
+      "  publicFlag = deserialize<Boolean, 1>(x);"
+      "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("testfile.compact line 4 char 14" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the value of parameter x of exported circuit leak at line 3 char 21" ("\n    nature of the disclosure:\n      ledger operation might disclose the result of a comparison involving the witness value\n    via this path through the program:\n      the argument to deserialize at line 4 char 16\n      the right-hand side of = at line 4 char 14")))))
+
+  (test
+    '(
       "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
