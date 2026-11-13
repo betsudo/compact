@@ -14630,6 +14630,26 @@ groups than for single tests.
 
 (run-tests infer-types
   (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { UnshieldedSpend }"
+      )
+    (returns
+      (program
+        (export-typedef UnshieldedSpend ()
+          (tstruct UnshieldedSpend
+            (sender (tstruct Either
+                      (is_left (tboolean))
+                      (left (tstruct ZswapCoinPublicKey (bytes (tbytes 32))))
+                      (right (tstruct ContractAddress (bytes (tbytes 32))))))
+            (domainSep (tbytes 32))
+            (tokenType (tbytes 32))
+            (amount (tunsigned
+                      340282366920938463463374607431768211455))))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )
+
+  (test
     '("import CompactStandardLibrary;")
     (returns
       (program (public-ledger-declaration %kernel.0 (Kernel))))
@@ -69868,6 +69888,30 @@ groups than for single tests.
         (oops
           message: "~a:\n  ~?"
           irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Bytes<32>;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(UnshieldedSpend {"
+      "    sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "      is_left: true,"
+      "      left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "      right: ContractAddress { bytes: secret() }"
+      "    },"
+      "    domainSep: disclose(n), tokenType: disclose(n), amount: 1 as Uint<128>"
+      "  });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
     )
 
   (test
