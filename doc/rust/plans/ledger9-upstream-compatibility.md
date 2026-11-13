@@ -623,11 +623,12 @@ open.
 
 The collection gate follow-up requires a clean-head original compiler recipe
 receipt for each new parity run. Its Nix realization binds the compiler and
-Scheme binaries to the source head/tree, and the proof gates check that the
-compiler inputs stay unchanged across stacked source commits. Funded gates
+Scheme binaries to the exact source head/tree used by the proof and funded
+gates. Funded gates
 retain the exact historical proof receipt pins while admitting new receipts
 through generated receipt, source, artifact and proof bindings. They normalize
-only the verified runtime checkout path in generated Cargo manifests. This
+only the verified runtime checkout path in generated Cargo manifests and
+rebuild the pinned standalone verifier for fresh proofs. This
 protocol has syntax and targeted binding checks so far; a full positive
 source-bound proof and funded rerun plus native Linux qualification remain
 required before treating the follow-up as accepted.

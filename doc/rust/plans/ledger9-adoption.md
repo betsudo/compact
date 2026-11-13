@@ -1344,10 +1344,12 @@ and native Linux remain separate gates.
 The draft collection PR review found two gate portability gaps. Future
 generated collection parity runs now require a clean-head original compiler
 recipe receipt from `record_compiler_recipe.py`; the parity and proof gates
-bind its source head/tree, Nix realization, compiler and Scheme binary bytes,
-and unchanged compiler inputs. Fresh funded runs accept a new proof receipt
+bind its exact source head/tree, Nix realization, compiler and Scheme binary
+bytes. Fresh funded runs accept a new proof receipt
 only when its generated receipt, compiler recipe, source, artifacts, proof
-and verifier hashes agree. Generated Cargo manifests are compared after
+and verifier hashes agree. They rebuild the pinned standalone verifier source
+and rerun separate-process proof verification and refusal controls. Generated
+Cargo manifests are compared after
 normalizing only the verified runtime checkout path. The original Set and
 Map proof receipts retain their historical byte pins. The new source-bound
 path still needs a full positive run with a current compiler recipe, followed

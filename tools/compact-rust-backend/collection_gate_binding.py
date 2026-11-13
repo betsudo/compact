@@ -9,6 +9,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,12 +17,9 @@ import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[2]
-COMPILER_INPUTS = (
-    'compiler', 'tools/compact', 'tools/compact-rust-backend/src',
-    'Cargo.toml', 'Cargo.lock', 'flake.nix', 'flake.lock',
-    'tools/compact-rust-backend/Cargo.lock',
-    'tools/compact-rust-backend/record_compiler_recipe.py',
-)
+RUNNER_MAIN_SHA256 = '2846dd67da2916bcf3a15db93e91a1007cfb5d6b97a1d0070e08c6fe312194e9'
+RUNNER_MANIFEST_SHA256 = '1e7a8f3a18ff81ba8eacfb982f20501f0a320668d2e7947612deb4c6986367e0'
+RUNNER_LOCK_SHA256 = 'c66ac3ad4ad9e2291ce67a90d764af5f7573fbffacdc48953619df7b92ec2ce5'
 
 
 def sha(path: Path) -> str:
@@ -46,12 +44,8 @@ def compiler_recipe(path: Path, compiler: Path, scheme: Path, *,
     require(receipt.get('head') == source_head and
             receipt.get('tree') == git('rev-parse', f'{source_head}^{{tree}}'),
             'compiler recipe source head/tree changed')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', source_head, current_head],
-                           cwd=ROOT).returncode == 0,
-            'compiler source is not an ancestor of the current checkout')
-    require(subprocess.run(['git', 'diff', '--quiet', source_head, current_head, '--',
-                            *COMPILER_INPUTS], cwd=ROOT).returncode == 0,
-            'compiler source inputs changed since the qualified build')
+    require(source_head == current_head,
+            'fresh collection qualification requires an exact-head compiler recipe')
     require(git('log', '-1', '--format=%G?', source_head) == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B', source_head),
             'compiler recipe source commit is not signed and DCO complete')
@@ -117,3 +111,67 @@ def generated_manifest(path: Path, *, expected_canonical_sha256: str,
     require(canonical == expected_canonical_sha256,
             'generated contract manifest fields changed')
     return canonical, checkout
+
+
+def verify_standalone_proof(proof: dict, gate: Path, *, raw_name: str,
+                            wrong_name: str, output: Path) -> dict:
+    """Rebuild the pinned verifier source and independently verify fresh proof bytes."""
+    source_root = Path(proof['proof_runner_build_cwd']).resolve(strict=True)
+    manifest = source_root / 'Cargo.toml'
+    sources = {'main': source_root / 'src/main.rs', 'manifest': manifest,
+               'lock': source_root / 'Cargo.lock'}
+    expected = {'main': RUNNER_MAIN_SHA256, 'manifest': RUNNER_MANIFEST_SHA256,
+                'lock': RUNNER_LOCK_SHA256}
+    require(proof['proof_runner_source_sha256'] == expected and
+            all(sha(sources[name]) == digest for name, digest in expected.items()),
+            'standalone verifier source changed')
+    require({path.relative_to(source_root).as_posix() for path in source_root.rglob('*')
+             if path.is_file()} == {'Cargo.toml', 'Cargo.lock', 'src/main.rs'},
+            'standalone verifier has unpinned local inputs')
+    manifest_data = tomllib.loads(manifest.read_text())
+    require(manifest_data['package']['name'] == 'secp256k1-unary-proof' and
+            not any(isinstance(dependency, dict) and 'path' in dependency
+                    for dependency in manifest_data['dependencies'].values()),
+            'standalone verifier manifest changed')
+    rustc = subprocess.check_output(['rustc', '+1.99.0', '-vV'], text=True)
+    require('release: 1.99.0' in rustc.splitlines() and
+            'commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4' in rustc.splitlines(),
+            'standalone verifier Rust toolchain changed')
+    cargo_home = Path.home() / '.cargo'
+    for directory in (source_root, *source_root.parents, cargo_home):
+        names = ('config', 'config.toml') if directory == cargo_home else (
+            '.cargo/config', '.cargo/config.toml')
+        for name in names:
+            require(not (directory / name).exists(),
+                    f'unpinned standalone verifier Cargo config: {directory / name}')
+    for directory in source_root.parents:
+        parent_manifest = directory / 'Cargo.toml'
+        if parent_manifest.is_file():
+            require('workspace' not in tomllib.loads(parent_manifest.read_text()),
+                    f'unpinned standalone verifier parent workspace: {parent_manifest}')
+    environment = {key: value for key, value in os.environ.items()
+                   if not (key.startswith('CARGO_') or key in
+                           {'RUSTFLAGS', 'RUSTDOCFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
+                            'RUSTC_WORKSPACE_WRAPPER', 'RUSTUP_TOOLCHAIN'})}
+    target = output / 'standalone-verifier-target'
+    environment['CARGO_TARGET_DIR'] = str(target)
+    command = ['cargo', '+1.99.0', 'build', '--locked', '--offline', '--bin',
+               'secp256k1-unary-proof', '--manifest-path', str(manifest)]
+    with (output / 'standalone-verifier-build.log').open('xb') as log:
+        subprocess.run(command, cwd=source_root, env=environment,
+                       stdout=log, stderr=subprocess.STDOUT, check=True)
+    runner = target / 'debug/secp256k1-unary-proof'
+    require(runner.is_file(), 'rebuilt standalone verifier missing')
+    verify = [str(runner), 'verify', str(gate / f'fresh-dual/zkir/{raw_name}.zkir'),
+              str(gate / 'preimage/honest.preimage'), str(gate / 'proof'),
+              str(gate / f'wrong-key/{wrong_name}.verifier')]
+    with (output / 'standalone-verifier-run.log').open('xb') as log:
+        subprocess.run(verify, cwd=ROOT, stdout=log,
+                       stderr=subprocess.STDOUT, check=True)
+    require('verified in separate process; rejected different verifier, changed binding and corrupt proof'
+            in (output / 'standalone-verifier-run.log').read_text(),
+            'standalone proof verification or refusal controls changed')
+    return {'runner_sha256': sha(runner),
+            'source_sha256': expected,
+            'build_log_sha256': sha(output / 'standalone-verifier-build.log'),
+            'verification_log_sha256': sha(output / 'standalone-verifier-run.log')}

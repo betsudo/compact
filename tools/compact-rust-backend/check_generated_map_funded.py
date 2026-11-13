@@ -17,7 +17,10 @@ import shutil
 import subprocess
 import tomllib
 
-from collection_gate_binding import compiler_recipe, generated_manifest as bind_generated_manifest
+from collection_gate_binding import (
+    compiler_recipe, generated_manifest as bind_generated_manifest,
+    verify_standalone_proof,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,7 +105,8 @@ def main() -> None:
         require(sha(generated_receipt) == proof['generated_receipt_sha256'],
                 'generated collection receipt changed')
         generated = json.loads(generated_receipt.read_text())
-        require(proof['compiler_receipt_sha256'] == generated['compiler_receipt_sha256']
+        require(proof['head'] == generated['head'] == head and
+                proof['compiler_receipt_sha256'] == generated['compiler_receipt_sha256']
                 == sha(recipe_path) and
                 proof['compiler_source_head'] == generated['head'] and
                 proof['compiler_source_tree'] == generated['tree'],
@@ -124,6 +128,11 @@ def main() -> None:
                 proof['fresh_rust_sha256'] == source['rust_sha256'] and
                 proof['fresh_rust_ir_sha256'] == source['ir_sha256'],
                 'proof artifacts differ from source-qualified collection output')
+        require(sha(generated_receipt.parent / 'map/zkir/put.zkir') ==
+                proof['fresh_put_zkir_sha256'] and
+                sha(generated_receipt.parent / 'map/zkir/has.zkir') ==
+                proof['fresh_has_zkir_sha256'],
+                'proof ZKIR differs from source-qualified collection output')
         require(proof['proof_gate_script_sha256'] == sha(
             ROOT / 'tools/compact-rust-backend/check_generated_map_proof.py'),
             'proof gate source changed')
@@ -159,6 +168,8 @@ def main() -> None:
     params = material / 'bls_midnight_2p7'
     require(sha(params) == proof['params_k7_sha256'], 'funded k=7 parameters changed')
     output.mkdir(parents=True)
+    standalone_verification = None if historical else verify_standalone_proof(
+        proof, gate, raw_name='put', wrong_name='has', output=output)
     consumer = output / 'consumer'
     consumer.mkdir()
     manifest = (base / 'Cargo.toml').read_text()
@@ -219,6 +230,7 @@ def main() -> None:
         'generated_manifest_sha256': sha(generated_manifest),
         'generated_manifest_canonical_sha256': canonical_manifest,
         'compiler_source_bound': not historical,
+        'standalone_verification': standalone_verification,
         'generated_runtime_checkout_head': proof['head'],
         'base_manifest_sha256': sha(base / 'Cargo.toml'),
         'base_lock_sha256': sha(base / 'Cargo.lock'),
