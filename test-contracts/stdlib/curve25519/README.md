@@ -28,7 +28,7 @@ defaults.
 
 
 The wide scalar case preserves the pinned mainstream Scheme source,
-callback and ZKIR expectations in `wide-cast/upstream.ss`. The family
+callback and ZKIR expectations in `wide-cast/upstream.ss.txt`. The family
 runner exercises the original values and verifies the three input limbs
 and their ordering. It also refuses the wrong width and field. The wide
 cast measures k=11 and 1,301 rows, so its original circuit uses the

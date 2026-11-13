@@ -166,7 +166,7 @@ test('runs the original wide scalar cast with the mainstream ZKIR limb order', a
   });
   expect(close).toEqual({op: 'impact', guard: '0x01', inputs: ['0x91']});
   expect(resultInstruction).toEqual({op: 'output', vals: [scalar]});
-  const original = readFileSync(join(root, 'wide-cast/upstream.ss'), 'utf8');
+  const original = readFileSync(join(root, 'wide-cast/upstream.ss.txt'), 'utf8');
   const callback = [...original.slice(original.indexOf('(stage-javascript'))
     .matchAll(/^\s*(?:'\()?("(?:[^"\\]|\\.)*")$/gm)]
     .map(match => JSON.parse(match[1])).join('\n');
