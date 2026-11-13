@@ -27,6 +27,8 @@ import subprocess
 import tempfile
 import tomllib
 
+from collection_gate_binding import compiler_recipe, git
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
@@ -52,7 +54,14 @@ def run(args: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> str:
     return result.stdout
 
 
-def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
+def qualify(output: Path, compiler: Path, scheme: Path,
+            compiler_receipt: Path) -> dict:
+    if git('status', '--porcelain'):
+        raise RuntimeError('source checkout must be clean')
+    head = git('rev-parse', 'HEAD')
+    tree = git('rev-parse', 'HEAD^{tree}')
+    compiler_recipe(compiler_receipt, compiler, scheme,
+                    source_head=head, current_head=head)
     if output.exists() and any(output.iterdir()):
         raise RuntimeError(f"output directory is not empty: {output}")
     output.mkdir(parents=True, exist_ok=True)
@@ -94,7 +103,12 @@ def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
     run(["cargo", "generate-lockfile"], env=env, cwd=consumer)
     consumer_output = run(["cargo", "run", "--locked", "--quiet"], env=env, cwd=consumer)
     assert "ordinary and recorded/replayed transitions match retained TypeScript oracles" in consumer_output
+    if git('status', '--porcelain') or git('rev-parse', 'HEAD') != head:
+        raise RuntimeError('source checkout changed during collection qualification')
     return {
+        "head": head,
+        "tree": tree,
+        "compiler_receipt_sha256": sha256(compiler_receipt),
         "compiler_sha256": sha256(compiler),
         "scheme_frontend_sha256": sha256(scheme),
         "runtime_compatibility_sha256": sha256(ROOT / "runtime-rs/compatibility.json"),
@@ -111,17 +125,23 @@ def qualify(output: Path, compiler: Path, scheme: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--compiler", type=Path, default=ROOT / "target/debug/compactc")
-    parser.add_argument("--scheme", type=Path, default=os.environ.get("COMPACTC_SCHEME"))
+    parser.add_argument("--compiler-receipt", type=Path, required=True)
+    parser.add_argument("--compiler", type=Path)
+    parser.add_argument("--scheme", type=Path)
     parser.add_argument("--output-root", type=Path)
     args = parser.parse_args()
-    if args.scheme is None or not args.compiler.is_file() or not args.scheme.is_file():
-        parser.error("built Rust compactc and Scheme frontend paths are required")
+    receipt = args.compiler_receipt.resolve(strict=True)
+    build = json.loads(receipt.read_text())
+    compiler = Path(build['compactc']['path']).resolve(strict=True)
+    scheme = Path(build['compactc-scheme']['path']).resolve(strict=True)
+    if ((args.compiler is not None and args.compiler.resolve(strict=True) != compiler) or
+            (args.scheme is not None and args.scheme.resolve(strict=True) != scheme)):
+        parser.error('compiler or Scheme frontend differs from the source-bound recipe')
     if args.output_root is None:
         with tempfile.TemporaryDirectory(prefix="ledger9-generated-collections-") as temporary:
-            result = qualify(Path(temporary), args.compiler.resolve(), args.scheme.resolve())
+            result = qualify(Path(temporary), compiler, scheme, receipt)
     else:
-        result = qualify(args.output_root.resolve(), args.compiler.resolve(), args.scheme.resolve())
+        result = qualify(args.output_root.resolve(), compiler, scheme, receipt)
         (args.output_root / "qualification.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, indent=2, sort_keys=True))
 

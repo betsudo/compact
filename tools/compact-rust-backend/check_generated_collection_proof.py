@@ -28,6 +28,8 @@ import shutil
 import subprocess
 import tomllib
 
+from collection_gate_binding import compiler_recipe
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-set-add-proof-v018.mjs'
@@ -64,7 +66,8 @@ def git(*args: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('generated-root', 'compiler', 'scheme', 'runtime-ts', 'zkir-wasm',
+    for name in ('generated-root', 'compiler', 'scheme', 'compiler-receipt',
+                 'runtime-ts', 'zkir-wasm',
                  'zkir', 'proof-runner', 'proof-runner-receipt', 'material', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
@@ -75,7 +78,8 @@ def main() -> None:
     if git('log', '-1', '--format=%G?') != 'G' or 'Signed-off-by:' not in git('log', '-1', '--format=%B'):
         parser.error('source commit must be signed and DCO complete')
     paths = {}
-    for name in ('generated_root', 'compiler', 'scheme', 'runtime_ts', 'zkir_wasm',
+    for name in ('generated_root', 'compiler', 'scheme', 'compiler_receipt',
+                 'runtime_ts', 'zkir_wasm',
                  'zkir', 'proof_runner', 'proof_runner_receipt', 'material'):
         paths[name] = getattr(args, name).resolve(strict=True)
     output = args.output.resolve()
@@ -83,6 +87,12 @@ def main() -> None:
         parser.error('output must be absent')
     generated = paths['generated_root']
     prior = json.loads((generated / 'qualification.json').read_text())
+    require(prior['compiler_receipt_sha256'] == sha(paths['compiler_receipt']),
+            'generated Set compiler recipe receipt changed')
+    require(prior['tree'] == git('rev-parse', f"{prior['head']}^{{tree}}"),
+            'generated Set source tree changed')
+    compiler_recipe(paths['compiler_receipt'], paths['compiler'], paths['scheme'],
+                    source_head=prior['head'], current_head=head)
     source = prior['sources_and_artifacts']['set']
     qualified_contract = generated / 'set/contract'
     qualified_raw = generated / 'set/zkir/add.zkir'
@@ -232,6 +242,11 @@ def main() -> None:
         'platform': f'{platform.system()} {platform.machine()}',
         'head': head, 'tree': tree,
         'generated_receipt_sha256': sha(generated / 'qualification.json'),
+        'generated_receipt_path': str(generated / 'qualification.json'),
+        'compiler_receipt_sha256': sha(paths['compiler_receipt']),
+        'compiler_source_head': prior['head'],
+        'compiler_source_tree': prior['tree'],
+        'proof_gate_script_sha256': sha(Path(__file__)),
         'source_sha256': sha(SOURCE), 'oracle_sha256': sha(ORACLE),
         'capture_source_sha256': sha(CAPTURE),
         'fresh_add_zkir_sha256': sha(fresh / 'zkir/add.zkir'),

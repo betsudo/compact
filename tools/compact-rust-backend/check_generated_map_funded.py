@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import tomllib
 
+from collection_gate_binding import compiler_recipe, generated_manifest as bind_generated_manifest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FUNDED = ROOT / 'runtime-rs/tests/fixtures/ledger9-map-funded.rs'
@@ -25,6 +27,7 @@ PROOF_RECEIPT_SHA256 = 'e6c263d3ae8ab4413b2f2c0e26bcc1ebe2377f6243c6d6d635f873ad
 BASE_MANIFEST_SHA256 = '7d69e964783ad25221daded85b38ef4ca3d603f166b3c0659207fd52a1f3deec'
 BASE_LOCK_SHA256 = '73ebbcf500f92f0105aa36eaff0879ef759df6da10e9f6c3f5f0f1adbe756362'
 GENERATED_MANIFEST_SHA256 = '4b1fb5361d89e374d8c838a09fa4c3d97fdb2ed7d0057861c4a0ad655d619194'
+GENERATED_MANIFEST_CANONICAL_SHA256 = '0c3627ae9a65082cf071d3d5f7d8619cdf7bcff12e8a45639ec43d152e9d4be9'
 
 
 def sha(path: Path) -> str:
@@ -67,6 +70,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('proof-gate', 'base-consumer', 'material', 'cargo-target', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--compiler-receipt', type=Path,
+                        help='source-bound compiler recipe for a newly generated proof receipt')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'source checkout must be clean')
     head = git('rev-parse', 'HEAD')
@@ -81,10 +86,47 @@ def main() -> None:
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     gate_receipt = gate / 'receipt.json'
-    require(sha(gate_receipt) == PROOF_RECEIPT_SHA256, 'proof gate receipt changed')
+    historical = sha(gate_receipt) == PROOF_RECEIPT_SHA256
     proof = json.loads(gate_receipt.read_text())
+    require(proof['tree'] == git('rev-parse', f"{proof['head']}^{{tree}}") and
+            git('log', '-1', '--format=%G?', proof['head']) == 'G' and
+            'Signed-off-by:' in git('log', '-1', '--format=%B', proof['head']),
+            'proof source commit/tree is not signed and DCO complete')
     require(subprocess.run(['git', 'merge-base', '--is-ancestor', proof['head'], head],
                            cwd=ROOT).returncode == 0, 'funded source is not stacked on proof source')
+    if not historical:
+        require(args.compiler_receipt is not None,
+                'fresh proof receipt requires a compiler build receipt')
+        recipe_path = args.compiler_receipt.resolve(strict=True)
+        generated_receipt = Path(proof['generated_receipt_path']).resolve(strict=True)
+        require(sha(generated_receipt) == proof['generated_receipt_sha256'],
+                'generated collection receipt changed')
+        generated = json.loads(generated_receipt.read_text())
+        require(proof['compiler_receipt_sha256'] == generated['compiler_receipt_sha256']
+                == sha(recipe_path) and
+                proof['compiler_source_head'] == generated['head'] and
+                proof['compiler_source_tree'] == generated['tree'],
+                'proof compiler source binding changed')
+        recipe = json.loads(recipe_path.read_text())
+        compiler = Path(recipe['compactc']['path']).resolve(strict=True)
+        scheme = Path(recipe['compactc-scheme']['path']).resolve(strict=True)
+        compiler_recipe(recipe_path, compiler, scheme,
+                        source_head=generated['head'], current_head=head)
+        require(proof['compiler_sha256'] == sha(compiler) and
+                proof['scheme_sha256'] == sha(scheme) and
+                Path(proof['fresh_compile_command'][0]).resolve(strict=True) == compiler,
+                'proof compiler binaries changed')
+        source = generated['sources_and_artifacts']['map']
+        require(proof['generated_receipt_sha256'] == sha(generated_receipt) and
+                proof['source_sha256'] == source['source_sha256'] and
+                proof['oracle_sha256'] == source['oracle_sha256'] and
+                proof['fresh_typescript_sha256'] == source['typescript_sha256'] and
+                proof['fresh_rust_sha256'] == source['rust_sha256'] and
+                proof['fresh_rust_ir_sha256'] == source['ir_sha256'],
+                'proof artifacts differ from source-qualified collection output')
+        require(proof['proof_gate_script_sha256'] == sha(
+            ROOT / 'tools/compact-rust-backend/check_generated_map_proof.py'),
+            'proof gate source changed')
     require(subprocess.run(['git', 'diff', '--quiet', proof['head'], head, '--',
                             'runtime-rs/src', 'runtime-rs/Cargo.toml',
                             'runtime-rs-macros/src', 'runtime-rs-macros/Cargo.toml'],
@@ -105,19 +147,12 @@ def main() -> None:
     ):
         require(sha(gate / relative) == proof[key], f'proof gate artifact changed: {relative}')
     generated_manifest = gate / 'fresh-dual/contract/Cargo.toml'
-    require(sha(generated_manifest) == GENERATED_MANIFEST_SHA256,
-            'generated contract manifest changed')
-    runtime_path = (generated_manifest.parent / Path(
-        tomllib.loads(generated_manifest.read_text())['dependencies']
-        ['midnight-compact-runtime']['path'])).resolve(strict=True)
-    runtime_checkout = Path(subprocess.check_output(
-        ['git', '-C', str(runtime_path), 'rev-parse', '--show-toplevel'], text=True).strip())
-    require(runtime_path == runtime_checkout / 'runtime-rs' and
-            subprocess.check_output(['git', '-C', str(runtime_checkout), 'rev-parse', 'HEAD'],
-                                    text=True).strip() == proof['head'] and
-            not subprocess.check_output(['git', '-C', str(runtime_checkout), 'status', '--porcelain'],
-                                        text=True).strip(),
-            'generated contract runtime checkout changed')
+    canonical_manifest, runtime_checkout = bind_generated_manifest(
+        generated_manifest, expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA256,
+        source_head=proof['head'])
+    if historical:
+        require(sha(generated_manifest) == GENERATED_MANIFEST_SHA256,
+                'historical generated contract manifest changed')
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA256 and
             sha(base / 'Cargo.lock') == BASE_LOCK_SHA256,
             'archived funded consumer changed')
@@ -182,6 +217,8 @@ def main() -> None:
         'platform': f'{platform.system()} {platform.machine()}', 'head': head, 'tree': tree,
         'proof_gate_receipt_sha256': sha(gate_receipt), 'funded_source_sha256': sha(FUNDED),
         'generated_manifest_sha256': sha(generated_manifest),
+        'generated_manifest_canonical_sha256': canonical_manifest,
+        'compiler_source_bound': not historical,
         'generated_runtime_checkout_head': proof['head'],
         'base_manifest_sha256': sha(base / 'Cargo.toml'),
         'base_lock_sha256': sha(base / 'Cargo.lock'),
