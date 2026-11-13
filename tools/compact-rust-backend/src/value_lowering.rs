@@ -68,6 +68,12 @@ pub(crate) fn fixed_bytes_conversion_syntax(
         FixedBytesConversion::FromVector { .. } => syn::parse_quote!(runtime::FixedBytes::new(
             (#value).into_array().map(|byte| u8::try_from(byte.value()).expect("Uint<8> fits a byte"))
         )),
+        FixedBytesConversion::ZeroPad { length } => syn::parse_quote!({
+            let input = (#value).into_array();
+            let mut output = [0u8; #length];
+            output[..input.len()].copy_from_slice(&input);
+            runtime::FixedBytes::new(output)
+        }),
         FixedBytesConversion::Slice { start, length } => {
             let end = start + length;
             syn::parse_quote!(runtime::FixedBytes::<#length>::new(

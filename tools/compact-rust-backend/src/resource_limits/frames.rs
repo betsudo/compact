@@ -123,6 +123,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -240,6 +241,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -298,6 +300,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }
@@ -378,6 +381,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::FieldCast { .. }
                 | E::VectorToBytes { .. }
                 | E::BytesToVector { .. }
+                | E::BytesZeroPad { .. }
                 | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
                 | E::JubjubCast { .. }

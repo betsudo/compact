@@ -211,6 +211,10 @@ pub enum RenderError {
         expected: Type,
         actual: Type,
     },
+    InvalidBytesPadding {
+        length: usize,
+        input_length: usize,
+    },
     InvalidBytesSlice {
         start: usize,
         length: usize,
@@ -364,6 +368,10 @@ impl fmt::Display for RenderError {
             Self::TypeMismatch { expected, actual } => {
                 write!(f, "expression has type {actual:?}, expected {expected:?}")
             }
+            Self::InvalidBytesPadding { length, input_length } => write!(
+                f,
+                "cannot zero-pad Bytes<{input_length}> to the shorter length {length}"
+            ),
             Self::InvalidBytesSlice {
                 start,
                 length,
@@ -860,6 +868,7 @@ fn collect_expression_types<'ir>(
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
+        | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
@@ -1534,7 +1543,10 @@ fn pure_conversion_expression(
         Expr::Secp256k1BytesCast { value, ty } => {
             ConversionSource::Secp256k1BytesCast { value, ty }
         }
-        Expr::VectorToBytes { .. } | Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => {
+        Expr::VectorToBytes { .. }
+        | Expr::BytesToVector { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesSlice { .. } => {
             let (value, operation) =
                 pure_semantics::conversion::FixedBytesConversion::from_expression(expr)
                     .expect("dispatcher selected a fixed bytes conversion");

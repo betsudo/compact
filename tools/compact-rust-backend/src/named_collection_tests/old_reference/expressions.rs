@@ -151,6 +151,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
+        | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins)?

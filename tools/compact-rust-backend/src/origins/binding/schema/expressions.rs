@@ -73,6 +73,10 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             unary!("bytes_to_vector", "value", value);
             s.size("length", *length);
         }
+        Expr::BytesZeroPad { value, length } => {
+            unary!("bytes_zero_pad", "value", value);
+            s.size("length", *length);
+        }
         Expr::BytesSlice {
             value,
             start,

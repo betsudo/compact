@@ -68916,6 +68916,70 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "new type Payload = Bytes<2>;"
+      "export circuit serialize_bytes(x: Bytes<10>): Bytes<10> {"
+      "  return serialize<Bytes<10>, 10>(x);"
+      "}"
+      "export circuit deserialize_bytes(x: Bytes<10>): Bytes<10> {"
+      "  return deserialize<Bytes<10>, 10>(x);"
+      "}"
+      "export circuit padPayload(x: Payload): Bytes<4> { return serialize<Payload, 4>(x); }"
+      "export circuit decodePayload(x: Bytes<4>): Payload { return deserialize<Payload, 4>(x); }"
+      "export circuit decodeEmpty(x: Bytes<4>): Bytes<0> { return deserialize<Bytes<0>, 4>(x); }"
+      "export circuit padEmpty(x: Bytes<0>): Bytes<4> { return serialize<Bytes<0>, 4>(x); }"
+      "circuit requireValid(x: Bytes<4>, valid: Boolean): Bytes<4> {"
+      "  assert(valid, 'invalid serialization input');"
+      "  return x;"
+      "}"
+      "export circuit checked(x: Bytes<4>, valid: Boolean): Bytes<0> {"
+      "  return deserialize<Bytes<0>, 4>(requireValid(x, valid));"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('fixed Bytes serialization preserves the prefix and checks evaluated inputs', () => {"
+        "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+        "  const original = Uint8Array.of(0, 1, 127, 128, 255, 0, 16, 2, 1, 0);"
+        "  expect(C.circuits.serialize_bytes(Ctxt, original).result).toEqual(original);"
+        "  expect(C.circuits.deserialize_bytes(Ctxt, original).result).toEqual(original);"
+        "  expect(C.circuits.padPayload(Ctxt, Uint8Array.of(128, 255)).result).toEqual(Uint8Array.of(128, 255, 0, 0));"
+        "  expect(C.circuits.decodePayload(Ctxt, Uint8Array.of(128, 255, 85, 170)).result).toEqual(Uint8Array.of(128, 255));"
+        "  expect(C.circuits.decodeEmpty(Ctxt, Uint8Array.of(128, 255, 85, 170)).result).toEqual(Uint8Array.of());"
+        "  expect(C.circuits.padEmpty(Ctxt, Uint8Array.of()).result).toEqual(Uint8Array.of(0, 0, 0, 0));"
+        "  expect(C.circuits.checked(Ctxt, Uint8Array.of(128, 255, 85, 170), true).result).toEqual(Uint8Array.of());"
+        "  expect(() => C.circuits.checked(Ctxt, Uint8Array.of(128, 255, 85, 170), false)).toThrow(runtime.CompactError);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<2>): Bytes<1> { return serialize<Bytes<2>, 1>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (2 1 "Bytes<2>"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<1>): Bytes<2> { return deserialize<Bytes<2>, 1>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (2 1 "Bytes<2>"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger stored: Bytes<4>;"
+      "export circuit bad(x: Bytes<2>): [] { stored = serialize<Bytes<2>, 4>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("testfile.compact line 3 char 46" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the value of parameter x of exported circuit bad at line 3 char 20" ("\n    nature of the disclosure:\n      ledger operation might disclose the witness value\n    via this path through the program:\n      the argument to serialize at line 3 char 48\n      the right-hand side of = at line 3 char 46")))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

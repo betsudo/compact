@@ -264,8 +264,18 @@ fn shielded_spend_event_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+const BYTES_ZERO_PAD: &[u8] = include_bytes!("bytes-zero-pad-expression.json");
+
+fn bytes_zero_pad_manifest() -> Result<Value, String> {
+    if digest(BYTES_ZERO_PAD) != "83e0e815ae24786000f0a1d6f1dd16d6a831356700a9533d7003cbe91b7df965" {
+        return Err("unreviewed Bytes zero-padding compatibility checkpoint".into());
+    }
+    serde_json::from_slice(BYTES_ZERO_PAD).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
+    let current = legacy_source(path, current, &bytes_zero_pad_manifest()?)?;
+    let current = legacy_source(path, &current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
     legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)
 }
 

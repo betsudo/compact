@@ -578,6 +578,12 @@
           [(talias ,src ,nominal? ,type-name ,type^) (boolean-carrier? type^)]
           [else #f]))
 
+      (define (bytes-carrier-width type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tbytes ,src ,len) len]
+          [(talias ,src ,nominal? ,type-name ,type^) (bytes-carrier-width type^)]
+          [else #f]))
+
       ;; type-ir erases aliases to their Vector carrier. Use that carrier
       ;; for expected Vector context and cast dispatch, including reducer
       ;; Vector literals. Other alias families retain their current owners.
@@ -686,14 +692,39 @@
           `(tvector ,src ,len (tunsigned ,src 255))))
 
       (define (vector-to-bytes-ir src len value lower)
-        (let ([value (nanopass-case (Lnodisclose Expression) value
-                       [(vector ,src^ ,tuple-arg* ...)
-                        (with-output-language (Lnodisclose Expression)
-                          `(tuple ,src^ ,tuple-arg* ...))]
-                       [else value])])
+        (define (from-vector value)
           (object (cons "kind" "vector_to_bytes")
                   (cons "value" (lower value (byte-vector-type src len)))
-                  (cons "length" len))))
+                  (cons "length" len)))
+        (define (zero-bytes? datum nat)
+          (and (bytevector? datum) (= nat (bytevector-length datum))
+               (let loop ([i 0])
+                 (or (= i nat)
+                     (and (= 0 (bytevector-u8-ref datum i))
+                          (loop (+ i 1)))))))
+        ;; Fixed-width serialization constructs a byte prefix followed by
+        ;; literal zero padding. Preserve that shape as one checked Rust
+        ;; conversion, irrespective of the declared width.
+        (define (zero-padded-prefix prefix suffix)
+          (nanopass-case (Lnodisclose Tuple-Argument) prefix
+            [(spread ,src1 ,nat1 (bytes->vector ,src2 ,len^ ,expr))
+             (and (= nat1 len^)
+                  (nanopass-case (Lnodisclose Tuple-Argument) suffix
+                    [(spread ,src1 ,nat2 (bytes->vector ,src2 ,len^^ (quote ,src3 ,datum)))
+                     (and (= nat2 len^^) (= (+ len^ len^^) len) (zero-bytes? datum nat2)
+                          (object (cons "kind" "bytes_zero_pad")
+                                  (cons "value" (lower expr (with-output-language (Lnodisclose Type)
+                                                              `(tbytes ,src ,len^))))
+                                  (cons "length" len)))]
+                    [else #f]))]
+            [else #f]))
+        (nanopass-case (Lnodisclose Expression) value
+          [(vector ,src^ ,tuple-arg* ...)
+           (or (and (= (length tuple-arg*) 2)
+                    (zero-padded-prefix (car tuple-arg*) (cadr tuple-arg*)))
+               (from-vector (with-output-language (Lnodisclose Expression)
+                              `(tuple ,src^ ,tuple-arg* ...))))]
+          [else (from-vector value)]))
 
       (define (bytes-slice-ir src value index length lower)
         (let ([start (maybe-nonnegative-integer-literal index src)])
@@ -774,6 +805,10 @@
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (let ([width (bytes-carrier-width type)])
+                    (and width (eqv? width (bytes-carrier-width type^)))))
            (expression-ir expr src)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))
@@ -2791,6 +2826,10 @@
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (boolean-carrier? type) (boolean-carrier? type^))
+           (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (let ([width (bytes-carrier-width type)])
+                    (and width (eqv? width (bytes-carrier-width type^)))))
            (stateful-expression-ir expr src witness-ids)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (guard (same-secp256k1-carrier? type type^))

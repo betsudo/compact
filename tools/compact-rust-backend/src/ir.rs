@@ -711,6 +711,10 @@ pub enum Expr {
         value: Box<Expr>,
         length: usize,
     },
+    BytesZeroPad {
+        value: Box<Expr>,
+        length: usize,
+    },
     BytesSlice {
         value: Box<Expr>,
         start: usize,

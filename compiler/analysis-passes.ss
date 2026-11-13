@@ -3051,6 +3051,22 @@
             (bytevector-u8-set! yes 0 1)
             (values `(if ,src ,expr (quote ,src ,yes) (quote ,src ,no))
                     (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tbytes ,src^ ,len^)
+          (when (> len^ len)
+            (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
+                           len^ len (format-type type)))
+          (let* ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))]
+                 [value (maybe-safecast src carrier type^ expr)]
+                 [len^^ (- len len^)])
+            (values
+              (if (= len^^ 0)
+                  value
+                  `(vector->bytes ,src ,len
+                     (vector ,src
+                       (spread ,src ,len^ (bytes->vector ,src ,len^ ,value))
+                       (spread ,src ,len^^
+                         (bytes->vector ,src ,len^^ (quote ,src ,(make-bytevector len^^ 0)))))))
+              (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
          [else (source-errorf src "serialize does not yet support type ~a" (format-type type))])]
       [(deserialize ,src ,len ,[type] ,[Care : expr type^])
        (let ([bytes-type (with-output-language (Ltypes Type) `(tbytes ,src ,len))])
@@ -3070,6 +3086,14 @@
                        (quote ,src 1))]
                   [boolean-type (with-output-language (Ltypes Type) `(tboolean ,src))])
               (values (maybe-safecast src type boolean-type decoded) type))]
+           [(tbytes ,src^ ,len^)
+            (when (> len^ len)
+              (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
+                             len^ len (format-type type)))
+            (let* ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))]
+                   [value (if (= len^ len) expr
+                              `(bytes-slice ,src ,bytes-type ,expr (quote ,src 0) ,len^))])
+              (values (maybe-safecast src type carrier value) type))]
            [else (source-errorf src "deserialize does not yet support type ~a" (format-type type))]))]
       [(emit ,src ,[Care : expr type])
        (unless (feature-zkir-v3)

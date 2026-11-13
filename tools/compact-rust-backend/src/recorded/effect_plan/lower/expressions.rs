@@ -93,6 +93,7 @@ impl Lowerer<'_> {
             Expr::FieldToBytes32 { .. } => Self::conversion_operation,
             Expr::VectorToBytes { .. }
             | Expr::BytesToVector { .. }
+            | Expr::BytesZeroPad { .. }
             | Expr::BytesSlice { .. }
             | Expr::JubjubCast { .. }
             | Expr::Secp256k1BytesCast { .. } => Self::conversion_operation,

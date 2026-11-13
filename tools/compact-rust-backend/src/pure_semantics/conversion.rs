@@ -70,6 +70,7 @@ pub(crate) enum FixedBytesConversion {
     ToVector { length: usize },
     FromVector { length: usize },
     Slice { start: usize, length: usize },
+    ZeroPad { length: usize },
 }
 
 impl FixedBytesConversion {
@@ -80,6 +81,9 @@ impl FixedBytesConversion {
             }
             Expr::BytesToVector { value, length } => {
                 Some((value, Self::ToVector { length: *length }))
+            }
+            Expr::BytesZeroPad { value, length } => {
+                Some((value, Self::ZeroPad { length: *length }))
             }
             Expr::BytesSlice {
                 value,
@@ -122,6 +126,15 @@ impl FixedBytesConversion {
                         expected,
                         actual: source.clone(),
                     });
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::ZeroPad { length } => {
+                let Type::Bytes { length: input_length } = *source else {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                };
+                if input_length > length {
+                    return Err(RenderError::InvalidBytesPadding { length, input_length });
                 }
                 Ok(Type::Bytes { length })
             }

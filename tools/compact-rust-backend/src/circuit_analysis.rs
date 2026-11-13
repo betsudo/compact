@@ -478,6 +478,7 @@ fn expression_contains_with_actions<'source>(
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
+        | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
         | Expr::JubjubCast { value, .. }

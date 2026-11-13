@@ -26,3 +26,25 @@ against generated TypeScript and the ZKIR 3.2.0 SDK. It also checks the
 public write, rollback on invalid input and rejection of a substituted
 Boolean output. Use the two emitted preimages for independent proof
 verification and use a separately proved transaction for strict application.
+
+## Fixed Bytes serialization
+
+`bytes.compact` retains the original `serialize_bytes` and
+`deserialize_bytes` exports and adds nominal alias, padding and
+zero-width cases. `bytes-stateful.compact` reads the first two bytes of
+a three-byte input, pads them to four bytes and records the result in a
+public cell. The stateful circuit currently measures k=11 and runs in
+the local slow proof lane.
+
+Compile both fixtures using the command above, substituting
+`bytes bytes-stateful` for the fixture names. Then run:
+
+```sh
+node test-contracts/stdlib/serialization/check-bytes.mjs \
+  "$OUTPUT/bytes" "$OUTPUT/bytes-stateful" "$ZKIR_WASM_PACKAGE" "$OUTPUT/bytes-preimages"
+```
+
+The runner checks the output and public write for all three cases and
+rejects substituted prefixes and nonzero output padding in the SDK.
+It writes the binary ZKIR and preimages into a new directory for proof
+generation and independent verification.

@@ -354,6 +354,27 @@ fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
 }
 
 #[test]
+fn bytes_zero_padding_requires_fixed_bytes_and_can_only_widen() {
+    use super::FixedBytesConversion::ZeroPad;
+
+    let input = Type::Bytes { length: 2 };
+    for length in [2, 4] {
+        assert_eq!(
+            ZeroPad { length }.result_type(&input).unwrap(),
+            Type::Bytes { length }
+        );
+    }
+    assert!(matches!(
+        ZeroPad { length: 1 }.result_type(&input),
+        Err(RenderError::InvalidBytesPadding { length: 1, input_length: 2 })
+    ));
+    assert!(matches!(
+        ZeroPad { length: 4 }.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
 fn vector_to_bytes_requires_a_fixed_vector_of_bounded_bytes() {
     let bytes = Type::Bytes { length: 32 };
     let vector = FixedBytesConversion::ToVector { length: 32 }

@@ -13,6 +13,8 @@ Unreleased Ledger 9 migration.
 
 - Support the CompactStandardLibrary Boolean serialization built-ins in
   TypeScript and Rust, with a checked decoder that accepts only 0 and 1.
+- Support fixed Bytes serialization and checked prefix decoding in the
+  TypeScript and Rust targets.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust. Successful circuit contexts expose the
   VM-decoded event and its emitting contract address.

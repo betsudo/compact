@@ -395,6 +395,7 @@ pub(crate) fn expression_contains<'source>(
         | Expr::FieldCast { value }
         | Expr::VectorToBytes { value, .. }
         | Expr::BytesToVector { value, .. }
+        | Expr::BytesZeroPad { value, .. }
         | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
         | Expr::JubjubCast { value, .. }
