@@ -26,6 +26,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -110,11 +111,33 @@ def main() -> None:
     for part, expected in (('main', RUNNER_MAIN_SHA256), ('manifest', RUNNER_MANIFEST_SHA256),
                            ('lock', RUNNER_LOCK_SHA256)):
         require(sha(Path(runner_source[part]['path'])) == expected, f'proof runner {part} source changed')
-    runner_build_env = os.environ.copy()
-    runner_build_env['CARGO_TARGET_DIR'] = str(paths['proof_runner'].parent.parent)
-    run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--manifest-path',
-         runner_source['manifest']['path']], env=runner_build_env)
-    require(sha(paths['proof_runner']) == RUNNER_SHA256, 'rebuilt proof runner differs from pinned binary')
+    manifest = Path(runner_source['manifest']['path']).resolve(strict=True)
+    source_root = manifest.parent
+    require(Path(runner_source['main']['path']).resolve(strict=True) == source_root / 'src/main.rs',
+            'pinned proof runner main is not Cargo default binary source')
+    require(Path(runner_source['lock']['path']).resolve(strict=True) == source_root / 'Cargo.lock',
+            'pinned proof runner lock is not the Cargo lock')
+    require({path.relative_to(source_root).as_posix() for path in source_root.rglob('*') if path.is_file()}
+            == {'Cargo.toml', 'Cargo.lock', 'src/main.rs'}, 'proof runner has unpinned local inputs')
+    manifest_data = tomllib.loads(manifest.read_text())
+    require(manifest_data['package']['name'] == 'secp256k1-unary-proof' and
+            not any(isinstance(dependency, dict) and 'path' in dependency
+                    for dependency in manifest_data['dependencies'].values()),
+            'proof runner manifest has a changed binary name or path dependency')
+    rustc_version = run(['rustc', '+1.99.0', '-vV']).strip()
+    require('release: 1.99.0' in rustc_version, 'proof runner Rust toolchain changed')
+    output.mkdir(parents=True)
+    runner_target = output / 'runner-target'
+    runner_build_env = {key: value for key, value in os.environ.items()
+                        if not (key.startswith('CARGO_') or key in
+                                {'RUSTFLAGS', 'RUSTDOCFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
+                                 'RUSTC_WORKSPACE_WRAPPER', 'RUSTUP_TOOLCHAIN'})}
+    runner_build_env['CARGO_TARGET_DIR'] = str(runner_target)
+    runner_command = ['cargo', '+1.99.0', 'build', '--locked', '--offline', '--bin',
+                      'secp256k1-unary-proof', '--manifest-path', str(manifest)]
+    run(runner_command, env=runner_build_env, log=output / 'runner-build.log')
+    rebuilt_runner = runner_target / 'debug/secp256k1-unary-proof'
+    require(rebuilt_runner.is_file(), 'fresh proof runner build produced no binary')
     material_receipt = json.loads((paths['material'].parent / 'material-receipt.json').read_text())
     params = paths['material'] / 'bls_midnight_2p6'
     require(sha(params) == material_receipt['files'][params.name]['sha256'], 'k=6 parameters changed')
@@ -124,7 +147,6 @@ def main() -> None:
             'ZKIR wasm version changed')
     require(run([str(paths['zkir']), '--version']).strip() == 'midnight-zkir 3.2.0',
             'native ZKIR version changed')
-    output.mkdir(parents=True)
     fresh = output / 'fresh-dual'
     compiler_env = os.environ.copy()
     compiler_env.pop('COMPACT_RUST_RUNTIME_DIR', None)
@@ -179,11 +201,11 @@ def main() -> None:
             'wrong-key compiler did not report k=6')
     proof = output / 'proof'
     proof.mkdir()
-    prove = run([str(paths['proof_runner']), 'prove', str(raw),
+    prove = run([str(rebuilt_runner), 'prove', str(raw),
                  str(capture_dir / 'honest.preimage'), str(proof), str(params)],
                 log=output / 'prove.log')
     require(prove.startswith('proved k=6,'), 'proof runner did not report k=6 proof')
-    verify = run([str(paths['proof_runner']), 'verify', str(raw),
+    verify = run([str(rebuilt_runner), 'verify', str(raw),
                   str(capture_dir / 'honest.preimage'), str(proof),
                   str(wrong / 'remove.verifier')], log=output / 'verify.log')
     require('verified in separate process; rejected different verifier, changed binding and corrupt proof' in verify,
@@ -208,10 +230,15 @@ def main() -> None:
         'proof_runner_source_sha256': {
             part: sha(Path(runner_source[part]['path'])) for part in ('main', 'manifest', 'lock')
         },
+        'proof_runner_build_command': runner_command,
+        'proof_runner_build_log_sha256': sha(output / 'runner-build.log'),
+        'proof_runner_rustc_version': rustc_version,
+        'proof_runner_path': str(rebuilt_runner),
         'compiler_sha256': sha(paths['compiler']), 'scheme_sha256': sha(paths['scheme']),
         'runtime_package_sha256': sha(paths['runtime_ts'] / 'package.json'),
         'zkir_wasm_package_sha256': sha(paths['zkir_wasm'] / 'package.json'),
-        'zkir_sha256': sha(paths['zkir']), 'proof_runner_sha256': sha(paths['proof_runner']),
+        'zkir_sha256': sha(paths['zkir']), 'proof_runner_sha256': sha(rebuilt_runner),
+        'archived_proof_runner_sha256': sha(paths['proof_runner']),
         'params_k6_sha256': sha(params), 'raw_add_sha256': sha(raw),
         'raw_remove_sha256': sha(wrong_raw),
         'typescript_sha256': source['typescript_sha256'], 'rust_sha256': source['rust_sha256'],
@@ -228,7 +255,7 @@ def main() -> None:
                    'corrupt proof refused'],
         'limitations': ['Local platform only; native Linux remains required.',
                         'No funded default-strict transaction or replay refusal in this slice.',
-                        'Proof runner is rebuilt from archived source pinned in this gate; native Linux remains required.'],
+                        'Compiler binary is pinned by the prior generated parity receipt and comes from that worktree.'],
     }
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(f'generated Ledger 9 Set.add proof and independent verification passed: {output}')
