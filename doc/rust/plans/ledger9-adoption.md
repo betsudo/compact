@@ -1323,3 +1323,10 @@ bytes. The replay error is raised at application; default-strict rechecking
 of the already applied transaction succeeds. The test inserts deployed
 contract state directly into the local ledger, so a deployment transaction,
 the real two-contract call and native Linux remain separate qualifications.
+
+The generated Map `put(true, 42)` proof follow-up compiles the frozen Map
+source to both targets and matches the retained Rust, TypeScript, IR and raw
+ZKIR hashes. ZKIR wasm accepts the honest preimage and refuses changed insert
+count and stored Field value. A fresh k=7 proof verifies in a separate process
+and refuses a same-k `has` verifier, changed binding and corrupt proof. Funded
+Map application and native Linux remain separate gates.

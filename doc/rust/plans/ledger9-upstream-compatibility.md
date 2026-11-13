@@ -606,6 +606,12 @@ rechecking by itself accepts the already applied transaction. Deployment is
 represented by direct insertion into the local test ledger. The broader
 two-contract and native Linux gates remain open.
 
+The generated Map `put(true, 42)` follow-up has a local k=7 proof from fresh
+both-target artifacts. The retained TypeScript preimage passes ZKIR wasm,
+while changed insert count and stored value refuse. A separate verifier
+process accepts the honest proof and rejects same-k `has`, changed binding
+and corrupt proof. Funded Map and native Linux qualification remain open.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9
