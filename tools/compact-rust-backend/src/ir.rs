@@ -1015,6 +1015,12 @@ pub enum Expr {
     EmitUnshieldedBurn {
         value: Box<Expr>,
     },
+    EmitPaused {
+        value: Box<Expr>,
+    },
+    EmitUnpaused {
+        value: Box<Expr>,
+    },
     KernelClaim {
         claim: KernelClaimKind,
         value: Box<Expr>,

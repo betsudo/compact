@@ -14644,6 +14644,54 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export { Paused }"
+      )
+    (returns
+      (program
+        (export-typedef Paused ()
+          (tstruct Paused))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit deserialize_Paused (x: Bytes<0>) : Paused {"
+      "  return deserialize<Paused, 0>(x);"
+      "}"
+      "export circuit serialize_Paused (x: Paused) : Bytes<0> {"
+      "  return serialize<Paused, 0>(x);"
+      "}"
+      )
+    (succeeds))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { Unpaused }"
+      )
+    (returns
+      (program
+        (export-typedef Unpaused ()
+          (tstruct Unpaused))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit deserialize_Unpaused (x: Bytes<0>) : Unpaused {"
+      "  return deserialize<Unpaused, 0>(x);"
+      "}"
+      "export circuit serialize_Unpaused (x: Unpaused) : Bytes<0> {"
+      "  return serialize<Unpaused, 0>(x);"
+      "}"
+      )
+    (succeeds))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export { UnshieldedBurn }"
       )
     (returns
@@ -70362,6 +70410,94 @@ groups than for single tests.
             "  const r = C.circuits.emit_two(Ctxt, n);"
             "  expect(r.context.events?.map(event => event.eventType)).toEqual(['unshielded-burn', 'unshielded-burn']);"
             "  expect(r.context.events?.map(event => event.version)).toEqual([1, 1]);"
+            "});"
+            ))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit emit_one(n: Bytes<32>): Bytes<32> {"
+      "  emit(Paused {});"
+      "  return n;"
+      "}"
+      "export circuit emit_two(n: Bytes<32>): Bytes<32> {"
+      "  emit(Paused {});"
+      "  emit(Paused {});"
+      "  return n;"
+      "}"
+      "export circuit cond_emit(b: Boolean, n: Bytes<32>): Bytes<32> {"
+      "  if (disclose(b)) { emit(Paused {}); }"
+      "  return n;"
+      "}"
+      "export circuit no_emit(n: Bytes<32>): Bytes<32> {"
+      "  return n;"
+      "}"
+      "export circuit serialize_Paused(x: Paused): Bytes<0> {"
+      "  return serialize<Paused, 0>(x);"
+      "}"
+      "export circuit deserialize_Paused(x: Bytes<0>): Paused {"
+      "  return deserialize<Paused, 0>(x);"
+      "}"
+      "export circuit roundtrip_Paused(orig: Paused): Paused {"
+      "  const bytes = serialize<Paused, 0>(orig);"
+      "  return deserialize<Paused, 0>(bytes);"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "const N32 = () => new Uint8Array(32).fill(0x42);"
+            ""
+            "test('single emit produces exactly one event tagged emit', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.emit_one(Ctxt, N32());"
+            "  expect(r.context.events!.length).toBe(1);"
+            "});"
+            ""
+            "test('emit event has decoded VersionedEmitItem fields', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.emit_one(Ctxt, N32());"
+            "  expect(r.context.events![0].version).toBe(1);"
+            "});"
+            ""
+            "test('two emit statements produce two events', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.emit_two(Ctxt, N32());"
+            "  expect(r.context.events!.length).toBe(2);"
+            "});"
+            ""
+            "test('conditional emit emits when condition is true', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.cond_emit(Ctxt, true, N32());"
+            "  expect(r.context.events!.length).toBe(1);"
+            "});"
+            ""
+            "test('conditional emit emits nothing when condition is false', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.cond_emit(Ctxt, false, N32());"
+            "  expect(r.context.events!.length).toBe(0);"
+            "});"
+            ""
+            "test('pure circuit (no emit) has no events field', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.no_emit(Ctxt, N32());"
+            "  expect(r.context.events).toEqual([]);"
+            "});"
+            ""
+            "test('serialize_Paused returns 0-byte payload', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.serialize_Paused(Ctxt, {});"
+            "  expect(r.result.length).toBe(0);"
+            "});"
+            ""
+            "test('roundtrip preserves empty Paused struct', async () => {"
+            "  const [C, Ctxt] = await startContract(contractCode, {}, 0);"
+            "  const r = await C.circuits.roundtrip_Paused(Ctxt, {});"
+            "  expect(r.result).toEqual({});"
             "});"
             ))
         (oops

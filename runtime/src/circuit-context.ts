@@ -319,6 +319,22 @@ export const emitUnshieldedBurn = (context: CircuitContext, proofData: PartialPr
   return emitEvent(context, proofData, 7n, payload, 113);
 };
 
+/** @internal */
+export const emitPaused = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 0) {
+    throw new CompactError('Paused payload must be Bytes<0>');
+  }
+  return emitEvent(context, proofData, 8n, payload, 0);
+};
+
+/** @internal */
+export const emitUnpaused = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 0) {
+    throw new CompactError('Unpaused payload must be Bytes<0>');
+  }
+  return emitEvent(context, proofData, 9n, payload, 0);
+};
+
 const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
   const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
     tag: 'cell',

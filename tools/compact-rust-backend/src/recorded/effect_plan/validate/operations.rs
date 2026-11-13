@@ -97,6 +97,10 @@ pub(super) fn validate(
             use_value(value)?;
             value.ty == (Type::Bytes { length: 113 }) && *ty == Type::Unit
         }
+        Operation::EmitPaused(value) | Operation::EmitUnpaused(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 0 }) && *ty == Type::Unit
+        }
         Operation::KernelMintShielded { domain, amount } => {
             use_value(domain)?;
             use_value(amount)?;

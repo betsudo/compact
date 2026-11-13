@@ -115,6 +115,16 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_burn(#payload)?;));
             syn::parse_quote!(())
         }
+        Operation::EmitPaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_paused(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnpaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unpaused(#payload)?;));
+            syn::parse_quote!(())
+        }
         Operation::KernelClaim { kind, value: input } => {
             let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));

@@ -3308,7 +3308,7 @@
             `(emit-log ,src 0 32 (elt-ref ,src ,expr ,elt-name 0))
             (with-output-language (Ltypes Type) `(ttuple ,src)))]
          [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
-          (guard (stdlib-src? src^) (memq struct-name '(ShieldedReceive ShieldedMint ShieldedBurn UnshieldedSpend UnshieldedReceive UnshieldedMint UnshieldedBurn)))
+          (guard (stdlib-src? src^) (memq struct-name '(ShieldedReceive ShieldedMint ShieldedBurn UnshieldedSpend UnshieldedReceive UnshieldedMint UnshieldedBurn Paused Unpaused)))
           (let-values ([(tag len) (case struct-name
                                     [(ShieldedReceive) (values 1 578)]
                                     [(ShieldedMint) (values 2 81)]
@@ -3316,7 +3316,9 @@
                                     [(UnshieldedSpend) (values 4 145)]
                                     [(UnshieldedReceive) (values 5 145)]
                                     [(UnshieldedMint) (values 6 80)]
-                                    [(UnshieldedBurn) (values 7 113)])])
+                                    [(UnshieldedBurn) (values 7 113)]
+                                    [(Paused) (values 8 0)]
+                                    [(Unpaused) (values 9 0)])])
             (values
               `(emit-log ,src ,tag ,len ,(serialize-product src type expr len))
               (with-output-language (Ltypes Type) `(ttuple ,src))))]

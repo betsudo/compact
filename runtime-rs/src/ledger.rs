@@ -398,7 +398,7 @@ mod counter;
 mod event;
 mod merkle;
 mod vm;
-pub(crate) use event::{shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program, unshielded_receive_program, unshielded_mint_program, unshielded_burn_program};
+pub(crate) use event::{shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program, unshielded_receive_program, unshielded_mint_program, unshielded_burn_program, paused_program, unpaused_program};
 
 pub(crate) use cell::{
     aligned_cell_value, cell_read_program, cell_write_program, decode_last_read,

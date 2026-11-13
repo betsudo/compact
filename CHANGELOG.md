@@ -42,6 +42,8 @@ Unreleased Ledger 9 migration.
   in ZKIR v3, TypeScript and Rust.
 - Support standalone `UnshieldedBurn` emission with its 113-byte payload
   in ZKIR v3, TypeScript and Rust.
+- Support `Paused` and `Unpaused` events and their zero-byte codecs
+  in ZKIR v3, TypeScript and Rust.
 - Support standalone `ShieldedBurn` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and

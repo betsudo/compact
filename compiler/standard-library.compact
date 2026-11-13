@@ -667,3 +667,7 @@ export struct UnshieldedBurn {
   tokenType: Bytes<32>,
   amount: Uint<128>,
 }
+
+export struct Paused {}
+
+export struct Unpaused {}

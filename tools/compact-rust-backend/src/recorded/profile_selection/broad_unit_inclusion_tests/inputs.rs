@@ -381,8 +381,18 @@ fn unshielded_burn_event_manifest() -> Result<Value, String> {
     serde_json::from_slice(UNSHIELDED_BURN_EVENT).map_err(|error| error.to_string())
 }
 
+const PAUSE_EVENT: &[u8] = include_bytes!("pause-event-expression.json");
+
+fn pause_event_manifest() -> Result<Value, String> {
+    if digest(PAUSE_EVENT) != "3e55f932ce64167aae680341d96956149e7eedd87b1a64634b814bea7a13867f" {
+        return Err("unreviewed pause event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(PAUSE_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &unshielded_burn_event_manifest()?)?;
+    let current = legacy_source(path, current, &pause_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_burn_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_mint_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_receive_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_spend_event_manifest()?)?;

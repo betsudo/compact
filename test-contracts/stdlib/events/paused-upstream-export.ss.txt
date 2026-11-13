@@ -1,0 +1,11 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { Paused }"
+      )
+    (returns
+      (program ()
+        (export-typedef Paused ()
+          (tstruct Paused))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )

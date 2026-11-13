@@ -291,6 +291,11 @@ maximum `Uint<128>` value.
 sender branches and their selector, the token type, and the amount.
 The fixture directory retains the original type and codec cases and
 identifies the standalone emission test as derived.
+`Paused` and `Unpaused` have empty payloads and distinct tags 8 and 9.
+The intact upstream Paused fixture preserves all seven exports and its
+eight JavaScript assertions. A derived transition fixture checks that
+both tags survive recording and replay in order. The original mixed
+Unpaused/Misc pass test remains retained for the Misc port.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

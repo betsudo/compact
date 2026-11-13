@@ -543,6 +543,8 @@ fn render_operation_expression(
         | Expr::EmitUnshieldedReceive { .. }
         | Expr::EmitUnshieldedMint { .. }
         | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -1373,6 +1375,8 @@ fn render_effect_operation(
         | Expr::EmitUnshieldedReceive { value: argument }
         | Expr::EmitUnshieldedMint { value: argument }
         | Expr::EmitUnshieldedBurn { value: argument }
+        | Expr::EmitPaused { value: argument }
+        | Expr::EmitUnpaused { value: argument }
         | Expr::KernelClaim {
             value: argument, ..
         }
@@ -1395,6 +1399,7 @@ fn render_effect_operation(
                 Expr::EmitUnshieldedReceive { .. } => 145,
                 Expr::EmitUnshieldedMint { .. } => 80,
                 Expr::EmitUnshieldedBurn { .. } => 113,
+                Expr::EmitPaused { .. } | Expr::EmitUnpaused { .. } => 0,
                 _ => 32,
             };
             let expected = Type::Bytes { length };
@@ -1431,6 +1436,12 @@ fn render_effect_operation(
                 }
                 Expr::EmitUnshieldedBurn { .. } => {
                     syn::parse_quote!(context.emit_unshielded_burn(#name)?)
+                }
+                Expr::EmitPaused { .. } => {
+                    syn::parse_quote!(context.emit_paused(#name)?)
+                }
+                Expr::EmitUnpaused { .. } => {
+                    syn::parse_quote!(context.emit_unpaused(#name)?)
                 }
                 Expr::KernelClaim { claim, .. } => {
                     use crate::ir::KernelClaimKind;

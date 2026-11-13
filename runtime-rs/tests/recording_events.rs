@@ -213,6 +213,40 @@ fn unshielded_spend_events_replay_in_order_with_the_exact_payload_and_gas() {
 }
 
 #[test]
+fn pause_events_replay_in_order_with_distinct_tags_and_empty_payloads() {
+    let payload = FixedBytes::new([]);
+    let native_first = context().emit_paused(payload).unwrap();
+    let native_second = native_first.context.emit_unpaused(payload).unwrap();
+    let recorded = RecordingFrame::new(context())
+        .emit_paused(payload)
+        .unwrap()
+        .emit_unpaused(payload)
+        .unwrap()
+        .finish(());
+    assert_eq!(
+        recorded.execution.gas_cost,
+        native_first.gas_cost + native_second.gas_cost
+    );
+    let replay = recorded
+        .public
+        .initial()
+        .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL)
+        .unwrap();
+    let events = recorded.execution.context.events();
+    assert_eq!(events.len(), 2);
+    assert!(events == native_second.context.events());
+    assert_eq!(replay.events.len(), 2);
+    assert_eq!(replay.context.state, context().query.state);
+    for ((event, log), tag) in events.iter().zip(replay.events).zip([LogEventType::Paused, LogEventType::Unpaused]) {
+        assert_eq!(event.address, context().query.address);
+        assert_eq!(event.log, log);
+        assert_eq!(log.version, 1);
+        assert_eq!(log.event_type, tag);
+        assert_eq!(read_cell::<FixedBytes<0>, _>(&log.data).unwrap(), payload);
+    }
+}
+
+#[test]
 fn unshielded_burn_events_replay_in_order_with_the_exact_payload_and_gas() {
     let mut bytes = [0; 113];
     bytes[1..33].fill(0x42);

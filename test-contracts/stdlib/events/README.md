@@ -145,3 +145,22 @@ node test-contracts/stdlib/events/check-unshielded-burn.mjs \
 Use the generated output of the derived emission fixture. The runner
 checks both structural sender variants and refuses changed inactive
 bytes, a malformed selector, and reordered logs.
+
+## Paused and Unpaused
+
+`Paused.compact` preserves the seven exports of the upstream Paused
+fixture at `672bd0f226f47a7d036c5c074ce71fbe1af1925e`. The compiler
+suite runs the original eight JavaScript assertions. The original
+type and codec pass assertions are retained beside the fixture.
+
+`PauseTransition.compact` is a derived fixture with both tags in one
+trace. It includes the original Unpaused codec sources.
+`check-pause-events.mjs` checks exact empty payload alignment and
+distinct tags, rejects a tag substitution and a reordered trace, and
+retains the SDK preimages for proving. The mixed Unpaused/Misc pass
+assertion remains available for the Misc port.
+
+```sh
+node test-contracts/stdlib/events/check-pause-events.mjs \
+  "$PAUSED_OUTPUT" "$TRANSITION_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/pause-preimages"
+```
