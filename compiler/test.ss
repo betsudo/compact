@@ -69240,6 +69240,38 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export circuit encode(x: Vector<0, Curve25519Point>): Bytes<2> {"
+      "  return serialize<Vector<0, Curve25519Point>, 2>(x);"
+      "}"
+      "export circuit decode(x: Bytes<2>): Vector<0, Curve25519Point> {"
+      "  return deserialize<Vector<0, Curve25519Point>, 2>(x);"
+      "}"
+      "export circuit nested(x: [Boolean, Vector<0, Curve25519Point>]): Bytes<2> {"
+      "  return serialize<[Boolean, Vector<0, Curve25519Point>], 2>(x);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('empty vectors need no element wire codec', () => {"
+        "  const { encode, decode, nested } = contractCode.pureCircuits;"
+        "  expect(encode([])).toEqual(Uint8Array.of(0, 0));"
+        "  expect(decode(Uint8Array.of(255, 255))).toEqual([]);"
+        "  expect(nested([true, []])).toEqual(Uint8Array.of(1, 0));"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Vector<1, Curve25519Point>): Bytes<64> {"
+      "  return serialize<Vector<1, Curve25519Point>, 64>(x);"
+      "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "serialization is not yet supported for curve type ~a" ("Curve25519Point"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"
       "}"

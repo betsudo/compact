@@ -255,7 +255,11 @@ ordinals, with stateful coverage at k=7. Wide Uint codecs cover 129-bit
 and 248-bit inputs. The stateful 129-bit write has a local k=8 proof
 lane. The six secp256k1, P-256 and Curve25519 field codecs use mainstream's
 32-byte encoding and modular decode. The stateful lanes measure k=10.
-JubjubScalar has a separate conversion path and remains open.
+Empty vectors occupy no wire bytes even when their element type lacks a
+codec. The pinned mainstream compiler and Compact 0.36.0 both compile
+the empty point-vector fixture. Both references fail internally for the
+tested JubjubScalar wire codecs. The Rust AST branch reports a source
+error for those codecs.
 Broader aggregate proofs and native Linux qualification remain open.
 
 The supplemental group fixture covers addition, scalar multiplication,

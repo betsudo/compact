@@ -28,6 +28,8 @@ Unreleased Ledger 9 migration.
 - Encode and decode Secp256k1Base with the Ledger 9 wire format in both backends.
 - Extend Ledger 9 wire encoding and modular decoding to the remaining
   secp256k1, P-256 and Curve25519 base and scalar fields.
+- Allow zero-length vectors in wire codecs when their element type
+  has no wire codec.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust. Successful circuit contexts expose the
   VM-decoded event and its emitting contract address.

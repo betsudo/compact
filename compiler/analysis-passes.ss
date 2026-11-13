@@ -2038,7 +2038,7 @@
           [(ttuple ,src^ ,type* ...)
            (apply + (maplr (lambda (element-type) (serialization-width src element-type operation)) type*))]
           [(tvector ,src^ ,len ,type)
-           (* len (serialization-width src type operation))]
+           (if (= len 0) 0 (* len (serialization-width src type operation)))]
           [(topaque ,src^ ,opaque-type)
            (guard (or (foreign-point-base opaque-type) (string=? opaque-type "JubjubPoint")))
            (source-errorf src
@@ -2077,7 +2077,7 @@
                        (loop (cdr types) (+ index 1)
                          (collect (car types) `(tuple-ref ,src ,expr ,index) parts))))]
                 [(tvector ,src^ ,len^ ,type^)
-                 (if (= (serialization-width src type^ "serialize") 0)
+                 (if (or (= len^ 0) (= (serialization-width src type^ "serialize") 0))
                      parts
                      (let loop ([index 0] [parts parts])
                        (if (= index len^)

@@ -167,3 +167,9 @@ stateful write uses the explicit k=10 slow lane.
 node test-contracts/stdlib/serialization/check-foreign-field-wire.mjs \
   "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/foreign-field-preimages"
 ```
+
+`empty-point-vector.compact` covers the upstream zero-length
+vector layout for an element type without a wire codec. Encoding
+pads the result with zeros. Decoding ignores the supplied padding.
+The compiler regression suite also checks a nested empty vector and
+the refusal for a nonempty vector of points.
