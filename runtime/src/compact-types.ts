@@ -15,6 +15,8 @@
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import {
+  MAX_CURVE25519_BASE,
+  MAX_CURVE25519_SCALAR,
   MAX_JUBJUB_SCALAR,
   MAX_SECP256K1_BASE,
   MAX_SECP256K1_SCALAR,
@@ -285,18 +287,20 @@ function checkedJubjubScalar(value: bigint): bigint {
   return value;
 }
 
-// Foreign field values are shifted by one in the field, then split into a
-// 192-bit low limb and a 64-bit high limb. Both FAB atoms are little-endian.
-class ForeignField8_24 implements CompactType<bigint> {
+// Foreign field values are shifted by one in the field and split into
+// two little-endian FAB atoms.
+class ForeignField implements CompactType<bigint> {
   constructor(
     readonly max: bigint,
     readonly name: string,
+    readonly lowBits = 192n,
+    readonly highBits = 64n,
   ) {}
 
   alignment(): ocrt.Alignment {
     return [
-      { tag: 'atom', value: { tag: 'bytes', length: 24 } },
-      { tag: 'atom', value: { tag: 'bytes', length: 8 } },
+      { tag: 'atom', value: { tag: 'bytes', length: Math.ceil(Number(this.lowBits) / 8) } },
+      { tag: 'atom', value: { tag: 'bytes', length: Math.ceil(Number(this.highBits) / 8) } },
     ];
   }
 
@@ -305,12 +309,12 @@ class ForeignField8_24 implements CompactType<bigint> {
       throw new CompactError(`expected ${this.name}`);
     }
     const [low, high] = value.splice(0, 2);
-    const low192 = ocrt.valueToBigInt([low]);
-    const high64 = ocrt.valueToBigInt([high]);
-    if (low192 >= 1n << 192n || high64 >= 1n << 64n) {
+    const lowLimb = ocrt.valueToBigInt([low]);
+    const highLimb = ocrt.valueToBigInt([high]);
+    if (lowLimb >= 1n << this.lowBits || highLimb >= 1n << this.highBits) {
       throw new CompactError(`expected ${this.name}`);
     }
-    const shifted = (high64 << 192n) | low192;
+    const shifted = (highLimb << this.lowBits) | lowLimb;
     if (shifted > this.max) {
       throw new CompactError(`expected ${this.name}`);
     }
@@ -322,29 +326,37 @@ class ForeignField8_24 implements CompactType<bigint> {
       throw new CompactError(`expected ${this.name}`);
     }
     const shifted = value === 0n ? this.max : value - 1n;
-    return ocrt.bigIntToValue(shifted & ((1n << 192n) - 1n)).concat(ocrt.bigIntToValue(shifted >> 192n));
+    return ocrt.bigIntToValue(shifted & ((1n << this.lowBits) - 1n)).concat(
+      ocrt.bigIntToValue(shifted >> this.lowBits),
+    );
   }
 }
 
 /**
  * Runtime type of the standard library's `Secp256k1Base` type.
  */
-export const CompactTypeSecp256k1Base: CompactType<bigint> = new ForeignField8_24(MAX_SECP256K1_BASE, 'Secp256k1Base');
+export const CompactTypeSecp256k1Base: CompactType<bigint> = new ForeignField(MAX_SECP256K1_BASE, 'Secp256k1Base');
 
 /**
  * Runtime type of the standard library's `Secp256k1Scalar` type.
  */
-export const CompactTypeSecp256k1Scalar: CompactType<bigint> = new ForeignField8_24(MAX_SECP256K1_SCALAR, 'Secp256k1Scalar');
+export const CompactTypeSecp256k1Scalar: CompactType<bigint> = new ForeignField(MAX_SECP256K1_SCALAR, 'Secp256k1Scalar');
 
 /**
  * Runtime type of a secp256r1 base field element
  */
-export const CompactTypeSecp256r1Base: CompactType<bigint> = new ForeignField8_24(MAX_SECP256R1_BASE, 'Secp256r1Base');
+export const CompactTypeSecp256r1Base: CompactType<bigint> = new ForeignField(MAX_SECP256R1_BASE, 'Secp256r1Base');
 
 /**
  * Runtime type of a secp256r1 scalar field element
  */
-export const CompactTypeSecp256r1Scalar: CompactType<bigint> = new ForeignField8_24(MAX_SECP256R1_SCALAR, 'Secp256r1Scalar');
+export const CompactTypeSecp256r1Scalar: CompactType<bigint> = new ForeignField(MAX_SECP256R1_SCALAR, 'Secp256r1Scalar');
+
+/** Runtime type of a Curve25519 base field element. */
+export const CompactTypeCurve25519Base: CompactType<bigint> = new ForeignField(MAX_CURVE25519_BASE, 'Curve25519Base');
+
+/** Runtime type of a Curve25519 scalar field element. */
+export const CompactTypeCurve25519Scalar: CompactType<bigint> = new ForeignField(MAX_CURVE25519_SCALAR, 'Curve25519Scalar', 204n, 51n);
 
 /** Runtime type of the standard library's `Secp256k1Point` type. */
 export const CompactTypeSecp256k1Point: CompactType<Secp256k1Point> = {

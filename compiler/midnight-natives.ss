@@ -79,6 +79,28 @@
   ([s (TypeRef Secp256k1Scalar) (discloses "the inverse of")])
   (TypeRef Secp256k1Scalar))
 
+;; -- Curve25519Base
+(declare-native-entry circuit neg
+  "__compactRuntime.curve25519BaseNeg"
+  ([s (TypeRef Curve25519Base) (discloses "the negation of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.curve25519BaseInv"
+  ([s (TypeRef Curve25519Base) (discloses "the inverse of")])
+  (TypeRef Curve25519Base))
+
+;; -- Curve25519Scalar
+(declare-native-entry circuit neg
+  "__compactRuntime.curve25519ScalarNeg"
+  ([s (TypeRef Curve25519Scalar) (discloses "the negation of")])
+  (TypeRef Curve25519Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.curve25519ScalarInv"
+  ([s (TypeRef Curve25519Scalar) (discloses "the inverse of")])
+  (TypeRef Curve25519Scalar))
+
 ;; ==== Secp256r1 unary field operations
 (declare-native-entry circuit neg
   "__compactRuntime.secp256r1BaseNeg"

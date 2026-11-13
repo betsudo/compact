@@ -81,6 +81,11 @@ export function convertBytesToSecp256r1Field(max: bigint, bytes: Uint8Array): bi
   return convertBytesToForeignField(max, bytes, 'secp256r1');
 }
 
+/** Reduce a Compact `Bytes<32>` cast modulo the destination Curve25519 field. @internal */
+export function convertBytesToCurve25519Field(max: bigint, bytes: Uint8Array): bigint {
+  return convertBytesToForeignField(max, bytes, 'Curve25519');
+}
+
 function convertBytesToForeignField(max: bigint, bytes: Uint8Array, curve: string): bigint {
   if (bytes.length !== 32) {
     throw new CompactError(`expected Bytes<32> for ${curve} field cast`);

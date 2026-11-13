@@ -288,9 +288,11 @@ fn recordable_cell_type(ty: &Type) -> bool {
         | Type::OpaqueBytes
         | Type::Secp256k1Base
         | Type::Secp256r1Base
+        | Type::Curve25519Base
         | Type::Secp256k1Scalar
         | Type::JubjubScalar
         | Type::Secp256r1Scalar
+        | Type::Curve25519Scalar
         | Type::Secp256k1Point
         | Type::Secp256r1Point
         | Type::LedgerMap { .. } => false,

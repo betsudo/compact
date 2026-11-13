@@ -3551,9 +3551,11 @@ fn render_with_refusals(
                     | Type::JubjubPoint
                     | Type::Secp256k1Base
                     | Type::Secp256r1Base
+                    | Type::Curve25519Base
                     | Type::Secp256k1Scalar
                     | Type::JubjubScalar
                     | Type::Secp256r1Scalar
+                    | Type::Curve25519Scalar
                     | Type::Secp256k1Point
                     | Type::Secp256r1Point
                     | Type::OpaqueString

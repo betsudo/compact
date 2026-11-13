@@ -55,7 +55,9 @@ pub(super) fn equivalent(
                 | (Type::Secp256k1Base, Type::Secp256k1Base)
                 | (Type::Secp256k1Scalar, Type::Secp256k1Scalar)
                 | (Type::Secp256r1Base, Type::Secp256r1Base)
+                | (Type::Curve25519Base, Type::Curve25519Base)
                 | (Type::Secp256r1Scalar, Type::Secp256r1Scalar)
+                | (Type::Curve25519Scalar, Type::Curve25519Scalar)
                 | (Type::Secp256k1Point, Type::Secp256k1Point)
                 | (Type::Secp256r1Point, Type::Secp256r1Point)
                 | (Type::OpaqueString, Type::OpaqueString)
@@ -150,8 +152,10 @@ pub(super) fn equivalent(
                     | Type::Secp256k1Base
                     | Type::Secp256k1Scalar
                     | Type::Secp256r1Base
+                    | Type::Curve25519Base
                     | Type::JubjubScalar
                     | Type::Secp256r1Scalar
+                    | Type::Curve25519Scalar
                     | Type::Secp256k1Point
                     | Type::Secp256r1Point
                     | Type::OpaqueString

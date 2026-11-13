@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import { ed25519 } from '@noble/curves/ed25519.js';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { p256 } from '@noble/curves/nist.js';
 import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
@@ -22,6 +23,7 @@ import { randomBytes } from '@noble/hashes/utils.js';
 import {
   MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS,
   SECP256R1_BASE_MODULUS, SECP256R1_SCALAR_MODULUS,
+  CURVE25519_BASE_MODULUS, CURVE25519_SCALAR_MODULUS,
 } from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
 import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
@@ -91,6 +93,122 @@ export function secp256k1ScalarInv(x: bigint): bigint {
     throw new CompactError('secp256k1 scalar field has no inverse for 0');
   }
   return inverseModuloPrime(x, SECP256K1_SCALAR_MODULUS);
+}
+
+// -- Curve25519Base
+/**
+ * Curve25519 base field addition
+ *
+ * This function returns x + y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseAdd(x: bigint, y: bigint): bigint {
+  const t = x + y;
+  return t < CURVE25519_BASE_MODULUS ? t : t - CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field negation
+ *
+ * This function returns the negation of x in the Curve25519 base field.  That
+ * is, a value y such that x + y = 0 (modulo CURVE25519_BASE_MODULUS).  x is
+ * assumed to be in the range [0, CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseNeg(x: bigint): bigint {
+  return x == 0n ? x : CURVE25519_BASE_MODULUS - x;
+}
+
+/**
+ * Curve25519 base field subtraction
+ *
+ * This function returns x - y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseSub(x: bigint, y: bigint): bigint {
+  const t = x - y;
+  return t >= 0n ? t : t + CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field multiplication
+ *
+ * This function returns x * y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field inverse
+ *
+ * This function returns the multiplicative inverse of x in the Curve25519 base
+ * field.  That is, a value y such that x * y = 1 (modulo CURVE25519_BASE_MODULUS).
+ * x is assumed to be in the range (0, CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('Curve25519 base field has no inverse for 0');
+  }
+  return ed25519.Point.Fp.inv(x);
+}
+
+// -- Curve25519Scalar
+/**
+ * Curve25519 scalar field addition
+ *
+ * This function returns x + y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarAdd(x: bigint, y: bigint): bigint {
+  const t = x + y;
+  return t < CURVE25519_SCALAR_MODULUS ? t : t - CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field negation
+ *
+ * This function returns the negation of x in the Curve25519 scalar field.  That
+ * is, a value y such that x + y = 0 (modulo CURVE25519_SCALAR_MODULUS).  x is
+ * assumed to be in the range [0, CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarNeg(x: bigint): bigint {
+  return x == 0n ? x : CURVE25519_SCALAR_MODULUS - x;
+}
+
+/**
+ * Curve25519 scalar field subtraction
+ *
+ * This function returns x - y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarSub(x: bigint, y: bigint): bigint {
+  const t = x - y;
+  return t >= 0n ? t : t + CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field multiplication
+ *
+ * This function returns x * y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field inverse
+ *
+ * This function returns the multiplicative inverse of x in the Curve25519 scalar
+ * field.  That is, a value y such that x * y = 1 (modulo CURVE25519_SCALAR_MODULUS).
+ * x is assumed to be in the range (0, CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('Curve25519 scalar field has no inverse for 0');
+  }
+  return ed25519.Point.Fn.inv(x);
 }
 
 /** Add two canonical P-256 base field elements. */

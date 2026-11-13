@@ -227,6 +227,13 @@ construction. Both runtimes preserve the shifted 24-byte and 8-byte
 ledger atoms. The explicit slow lane covers the original base roundtrip,
 the scalar roundtrip, and the two-field reset.
 
+The [Curve25519 field fixtures](../../../test-contracts/stdlib/curve25519)
+retain the two upstream round trips and six cast refusals. The Base and
+Scalar types have distinct Rust carriers. The Scalar ledger representation
+splits at bit 204 into 26- and 7-byte FAB atoms. Both intact round trips
+run in the explicit slow proof lane at k=11. The original Maybe/Either
+fixture also uses Curve25519Point and is retained for the point slice.
+
 The [P-256 byte cast fixtures](../../../test-contracts/stdlib/secp256r1/casts)
 cover modular little-endian conversion at the `Bytes<32>` boundary and
 guarded ledger writes. Both targets reject the original invalid widths and

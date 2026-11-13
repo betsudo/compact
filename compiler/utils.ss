@@ -63,6 +63,8 @@
         (case name
           [("Secp256r1Base") #xffffffff00000001000000000000000000000000fffffffffffffffffffffffe]
           [("Secp256r1Scalar") #xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632550]
+          [("Curve25519Base") #x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec]
+          [("Curve25519Scalar") #x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ec]
           [else #f])))
 
   (define (foreign-point-base name)

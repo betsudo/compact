@@ -50,6 +50,8 @@ export type Secp256k1Base = Opaque<'Secp256k1Base'>;
 export type Secp256k1Scalar = Opaque<'Secp256k1Scalar'>;
 export type Secp256r1Base = Opaque<'Secp256r1Base'>;
 export type Secp256r1Scalar = Opaque<'Secp256r1Scalar'>;
+export type Curve25519Base = Opaque<'Curve25519Base'>;
+export type Curve25519Scalar = Opaque<'Curve25519Scalar'>;
 export type Secp256k1Point = Opaque<'Secp256k1Point'>;
 export type Secp256r1Point = Opaque<'Secp256r1Point'>;
 

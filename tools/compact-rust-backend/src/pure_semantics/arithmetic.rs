@@ -111,7 +111,9 @@ impl Secp256k1Unary {
                     Type::Secp256k1Base
                         | Type::Secp256k1Scalar
                         | Type::Secp256r1Base
+                        | Type::Curve25519Base
                         | Type::Secp256r1Scalar
+                        | Type::Curve25519Scalar
                 ) {
                     Ok(operand.clone())
                 } else {
@@ -137,7 +139,9 @@ pub(crate) fn check_field_arithmetic_operand(ty: &Type) -> Result<(), RenderErro
             | Type::Secp256k1Base
             | Type::Secp256k1Scalar
             | Type::Secp256r1Base
+            | Type::Curve25519Base
             | Type::Secp256r1Scalar
+            | Type::Curve25519Scalar
     ) {
         return Ok(());
     }

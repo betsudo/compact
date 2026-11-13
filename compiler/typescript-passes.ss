@@ -1285,6 +1285,8 @@
                      [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
                      [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
                      [("Secp256r1Scalar") "__compactRuntime.CompactTypeSecp256r1Scalar"]
+                     [("Curve25519Base") "__compactRuntime.CompactTypeCurve25519Base"]
+                     [("Curve25519Scalar") "__compactRuntime.CompactTypeCurve25519Scalar"]
                      ; FIXME: what should happen with other opaque types?
                      [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                   [(tvector ,src ,len ,type)
@@ -1378,6 +1380,8 @@
                                   [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
                                   [("Secp256r1Base") "MAX_SECP256R1_BASE"]
                                   [("Secp256r1Scalar") "MAX_SECP256R1_SCALAR"]
+                                  [("Curve25519Base") "MAX_CURVE25519_BASE"]
+                                  [("Curve25519Scalar") "MAX_CURVE25519_SCALAR"]
                                   [else #f])])
                        (if max
                            (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= __compactRuntime.~a" var max)
@@ -2857,7 +2861,7 @@
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
                   [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
-                  [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "0n"]
+                  [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                [(tvector ,src ,len ,type)
@@ -2960,6 +2964,8 @@
                         [("Secp256k1Scalar") "secp256k1Scalar"]
                         [("Secp256r1Base") "secp256r1Base"]
                         [("Secp256r1Scalar") "secp256r1Scalar"]
+                        [("Curve25519Base") "curve25519Base"]
+                        [("Curve25519Scalar") "curve25519Scalar"]
                         [else (assert cannot-happen)])]
                      [else (assert cannot-happen)])]
              [suffix (case arithmetic-op [(+) "Add"] [(-) "Sub"] [(*) "Mul"] [else (assert cannot-happen)])])
@@ -3196,6 +3202,8 @@
                             [("Secp256k1Scalar") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_SCALAR")]
                             [("Secp256r1Base") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_BASE")]
                             [("Secp256r1Scalar") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_SCALAR")]
+                            [("Curve25519Base") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_BASE")]
+                            [("Curve25519Scalar") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_SCALAR")]
                             [else (assert cannot-happen)])])
               (make-Qconcat (compact-stdlib convert) "(__compactRuntime." maximum ", " expr ")"))]
            [else (assert cannot-happen)]))]
@@ -3405,7 +3413,7 @@
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
          [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
          [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
-         [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar") "bigint"]
+         [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
       [(tvector ,src ,len ,[Type : type -> * type])

@@ -352,6 +352,8 @@
              [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
              [(string=? opaque-type "Secp256r1Base") (kind "secp256r1_base")]
              [(string=? opaque-type "Secp256r1Scalar") (kind "secp256r1_scalar")]
+             [(string=? opaque-type "Curve25519Base") (kind "curve25519_base")]
+             [(string=? opaque-type "Curve25519Scalar") (kind "curve25519_scalar")]
              [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
              [(string=? opaque-type "Secp256r1Point") (kind "secp256r1_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
@@ -1427,9 +1429,11 @@
           [(native ,src ,function-name ,native-entry (,arg* ...) ,type)
            (let ([kind (case (native-entry-function native-entry)
                          [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg"
-                           "__compactRuntime.secp256r1BaseNeg" "__compactRuntime.secp256r1ScalarNeg") "secp256k1_neg"]
+                           "__compactRuntime.secp256r1BaseNeg" "__compactRuntime.secp256r1ScalarNeg"
+                           "__compactRuntime.curve25519BaseNeg" "__compactRuntime.curve25519ScalarNeg") "secp256k1_neg"]
                          [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv"
-                           "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv") "secp256k1_inv"]
+                           "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv"
+                           "__compactRuntime.curve25519BaseInv" "__compactRuntime.curve25519ScalarInv") "secp256k1_inv"]
                          [("__compactRuntime.secp256k1PointX" "__compactRuntime.secp256r1PointX") "secp256k1_point_x"]
                          [("__compactRuntime.secp256k1PointY" "__compactRuntime.secp256r1PointY") "secp256k1_point_y"]
                          [else #f])])

@@ -1605,7 +1605,7 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point")
+                      [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point" "Curve25519Base" "Curve25519Scalar")
                        `(topaque ,src ,type-name)]
                       [("Opaque")
                        (let ([name (get-assoc "tsType" alist)])

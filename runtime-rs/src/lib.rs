@@ -43,7 +43,9 @@ pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
 #[cfg(feature = "ledger-transaction")]
 pub mod transaction;
 
-pub use foreign_fields::{Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar};
+pub use foreign_fields::{
+    Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar,
+};
 pub use hash_input::{ExactHashInput, HashInputValue, exact_hash_input, exact_private_output};
 pub use jubjub_scalar::JubjubScalar;
 pub use midnight_compact_runtime_macros::{
@@ -106,6 +108,8 @@ pub enum CompactError {
     Secp256k1ScalarZeroInverse,
     Secp256r1BaseZeroInverse,
     Secp256r1ScalarZeroInverse,
+    Curve25519BaseZeroInverse,
+    Curve25519ScalarZeroInverse,
     Secp256k1IdentityX,
     Secp256k1IdentityY,
     Secp256r1IdentityX,
@@ -152,6 +156,12 @@ impl std::fmt::Display for CompactError {
             }
             Self::Secp256r1ScalarZeroInverse => {
                 write!(f, "secp256r1 scalar field has no inverse for 0")
+            }
+            Self::Curve25519BaseZeroInverse => {
+                write!(f, "Curve25519 base field has no inverse for 0")
+            }
+            Self::Curve25519ScalarZeroInverse => {
+                write!(f, "Curve25519 scalar field has no inverse for 0")
             }
             Self::Secp256k1IdentityX => {
                 write!(

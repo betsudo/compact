@@ -70,6 +70,16 @@ export const SECP256R1_SCALAR_MODULUS: bigint = 0xffffffff00000000ffffffffffffff
  */
 export const MAX_SECP256R1_SCALAR: bigint = SECP256R1_SCALAR_MODULUS - 1n;
 
+/** The order of the Curve25519 base field. */
+export const CURVE25519_BASE_MODULUS: bigint = 2n ** 255n - 19n;
+/** The largest canonical Curve25519 base field element. */
+export const MAX_CURVE25519_BASE: bigint = CURVE25519_BASE_MODULUS - 1n;
+
+/** The order of the Curve25519 scalar field. */
+export const CURVE25519_SCALAR_MODULUS: bigint = 2n ** 252n + 27742317777372353535851937790883648493n;
+/** The largest canonical Curve25519 scalar field element. */
+export const MAX_CURVE25519_SCALAR: bigint = CURVE25519_SCALAR_MODULUS - 1n;
+
 /**
  * A valid placeholder contract address
  *

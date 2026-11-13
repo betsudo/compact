@@ -374,8 +374,10 @@
                           (with-output-language (Lflattened Alignment)
                             (case opaque-type
                               [("JubjubPoint") (cons* `(afield) `(afield) encoded-alignment*)]
-                              [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar")
+                              [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base")
                                (cons* `(abytes 8) `(abytes 24) encoded-alignment*)]
+                              [("Curve25519Scalar")
+                               (cons* `(abytes 7) `(abytes 26) encoded-alignment*)]
                               [else (assert cannot-happen)]))
                           (cons* high low encoded-input*)))]
                      [else
@@ -437,11 +439,15 @@
                           [(foreign-field-max opaque-type) =>
                            (lambda (maximum)
                              ;; Zero is represented by modulus minus one on the ledger.
-                             (let-values ([(high low) (div-and-mod maximum (expt 2 192))])
-                               (loop (cdr atom*)
-                                 (with-output-language (Lflattened Alignment)
-                                   (cons* `(abytes 8) `(abytes 24) alignment*))
-                                 (cons* high low input*))))]
+                             (let* ([scalar? (string=? opaque-type "Curve25519Scalar")]
+                                    [low-bits (if scalar? 204 192)]
+                                    [low-bytes (if scalar? 26 24)]
+                                    [high-bytes (if scalar? 7 8)])
+                               (let-values ([(high low) (div-and-mod maximum (expt 2 low-bits))])
+                                 (loop (cdr atom*)
+                                   (with-output-language (Lflattened Alignment)
+                                     (cons* `(abytes ,high-bytes) `(abytes ,low-bytes) alignment*))
+                                   (cons* high low input*)))))]
                           [else
                            (assert (string=? opaque-type "JubjubPoint"))
                            (loop (cdr atom*)
@@ -823,6 +829,8 @@
           [("Secp256k1Scalar") "Scalar<Secp256k1>"]
           [("Secp256r1Base") "Base<Secp256r1>"]
           [("Secp256r1Scalar") "Scalar<Secp256r1>"]
+          [("Curve25519Base") "Base<Curve25519>"]
+          [("Curve25519Scalar") "Scalar<Curve25519>"]
           [("Secp256k1Point") "Point<Secp256k1>"]
           [("Secp256r1Point") "Point<Secp256r1>"]
           [else #f]))
