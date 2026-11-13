@@ -149,11 +149,29 @@ test('runs the original wide scalar cast with the mainstream ZKIR limb order', a
   expect(ir.instructions[4]).toMatchObject({
     op: 'from_bytes', type: 'Scalar<Curve25519>', bytes: assemble.output,
   });
+  // The existing emitter opens the ledger slot before encoding the value.
+  // Mainstream opens it immediately after encoding. Check both operations
+  // and the complete write and return sequence.
+  const scalar = ir.instructions[4].output;
+  const [open, encode, write, close, resultInstruction] = ir.instructions.slice(5);
+  expect(ir.instructions).toHaveLength(10);
+  expect(ir.outputs).toEqual(['Scalar<Curve25519>']);
+  expect(ir.do_communications_commitment).toBe(true);
+  expect(open).toEqual({op: 'impact', guard: '0x01', inputs: ['0x10', '0x01', '0x01', '0x01', '0x00']});
+  expect(encode).toMatchObject({op: 'encode', input: scalar});
+  expect(encode.outputs).toHaveLength(2);
+  expect(write).toEqual({
+    op: 'impact', guard: '0x01',
+    inputs: ['0x11', '0x01', '0x02', '0x1a', '0x07', ...encode.outputs],
+  });
+  expect(close).toEqual({op: 'impact', guard: '0x01', inputs: ['0x91']});
+  expect(resultInstruction).toEqual({op: 'output', vals: [scalar]});
   const original = readFileSync(join(root, 'wide-cast/upstream.ss'), 'utf8');
   const callback = [...original.slice(original.indexOf('(stage-javascript'))
     .matchAll(/^\s*(?:'\()?("(?:[^"\\]|\\.)*")$/gm)]
     .map(match => JSON.parse(match[1])).join('\n');
   expect(callback).toContain('10^42');
+  expect(callback.match(/\bexpect\(/g)).toHaveLength(10);
   expect(callback.endsWith('});')).toBe(true);
   const code = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
   const startContract = async (_, witnesses) => {
