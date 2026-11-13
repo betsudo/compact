@@ -69106,7 +69106,7 @@ groups than for single tests.
       )
     (oops
       message: "~a:\n  ~?"
-      irritants: '("<standard library>" "~a is not yet supported for curve type ~a" ("serialization" "Curve25519Point"))))
+      irritants: '("<standard library>" "serialization is not yet supported for curve type ~a" ("Curve25519Point"))))
   (test
     '(
       "import CompactStandardLibrary;"
@@ -69120,7 +69120,17 @@ groups than for single tests.
       )
     (oops
       message: "~a:\n  ~?"
-      irritants: '("<standard library>" "~a is not yet supported for curve type ~a" ("deserialization" "Curve25519Point"))))
+      irritants: '("<standard library>" "deserialization is not yet supported for curve type ~a" ("Curve25519Point"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "new type Point = Curve25519Point;"
+      "struct Points { first: Point, second: Secp256k1Point }"
+      "export circuit encode(x: Points): Bytes<128> { return serialize<Points, 128>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "serialization is not yet supported for curve type ~a" ("Curve25519Point"))))
 
   (test
     '(

@@ -2031,15 +2031,17 @@
           [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
            (unsigned-serialized-width (length elt-name*))]
           [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
-           (apply + (map (lambda (field-type) (serialization-width src field-type operation)) type*))]
+           (apply + (maplr (lambda (field-type) (serialization-width src field-type operation)) type*))]
           [(ttuple ,src^ ,type* ...)
-           (apply + (map (lambda (element-type) (serialization-width src element-type operation)) type*))]
+           (apply + (maplr (lambda (element-type) (serialization-width src element-type operation)) type*))]
           [(tvector ,src^ ,len ,type)
            (* len (serialization-width src type operation))]
           [(topaque ,src^ ,opaque-type)
            (guard (or (foreign-point-base opaque-type) (string=? opaque-type "JubjubPoint")))
-           (source-errorf src "~a is not yet supported for curve type ~a"
-                          (if (string=? operation "serialize") "serialization" "deserialization")
+           (source-errorf src
+                          (if (string=? operation "serialize")
+                              "serialization is not yet supported for curve type ~a"
+                              "deserialization is not yet supported for curve type ~a")
                           opaque-type)]
           [else (source-errorf src "~a does not yet support type ~a" operation (format-type type))]))
 
