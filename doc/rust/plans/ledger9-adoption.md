@@ -1311,3 +1311,13 @@ with ZKIR wasm, and proves at k=6. A separate process verifies the fresh
 proof and refuses a different same-k circuit verifier, changed binding and
 corrupt proof. A changed insert transcript is refused before proving.
 Funded default-strict application and native Linux remain separate gates.
+
+The generated Set `add(true)` follow-up uses the independently qualified
+preimage and proof artifacts to build a funded Ledger 9 call from the recorded
+Rust API. It checks all TypeScript preimage fields against the Rust-prepared
+preimage, applies a distinct transaction proof under default strictness with
+one positive-fee Dust spend, and refuses exact replay without changing ledger
+bytes. The replay error is raised at application; default-strict rechecking
+of the already applied transaction succeeds. The test inserts deployed
+contract state directly into the local ledger, so a deployment transaction,
+the real two-contract call and native Linux remain separate qualifications.

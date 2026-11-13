@@ -23,7 +23,6 @@ use midnight_serialize::{tagged_deserialize, tagged_serialize};
 use midnight_storage::{arena::Sp, storage::HashMap};
 use midnight_transient_crypto::{
     commitment::PedersenRandomness,
-    curve::Fr,
     proofs::{Proof, ProofPreimage, ProvingKeyMaterial, VerifierKey, Zkir},
 };
 use midnight_zkir::IrSource;
@@ -34,7 +33,7 @@ use r::{
     public_state::PublicStateSource,
     transaction::{Observation, ObservedCallError, ObservedContractState},
 };
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{SeedableRng, rngs::StdRng};
 use serde_json::json;
 use setcontract::{ledger_contract as contract, runtime as r};
 use std::{env, error::Error, fs, io, path::Path, sync::Arc};
@@ -106,9 +105,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             block_height: 0,
         },
     );
+    let typescript: ProofPreimage =
+        tagged_deserialize(fs::File::open(capture.join("honest.preimage"))?)?;
+    let (commitment, randomness) = typescript
+        .communications_commitment
+        .ok_or("missing commitment")?;
     let contract = contract::Contract::default();
     let call = || contract.recording().add_call(&observed, (), true);
-    let randomness: Fr = rand::rngs::OsRng.r#gen();
     assert!(matches!(call()?.prepare(wrong, randomness),
         Err(ObservedCallError::VerifierMismatch(ref name)) if name == "add"));
     let recorded = call()?;
@@ -126,12 +129,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(prepared.entry_point, entry);
     assert_eq!(prepared.op, op);
 
-    let typescript: ProofPreimage =
-        tagged_deserialize(fs::File::open(capture.join("honest.preimage"))?)?;
-    let commitment = typescript
-        .communications_commitment
-        .ok_or("missing commitment")?
-        .0;
     let ProofPreimageVersioned::V2(rust) = ProofPreimage::construct_proof(&prepared, commitment)
     else {
         return Err("expected current ledger preimage".into());
@@ -146,6 +143,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         rust.public_transcript_outputs,
         typescript.public_transcript_outputs
     );
+    assert_eq!(rust.key_location, typescript.key_location);
+    assert_eq!(
+        rust.communications_commitment,
+        typescript.communications_commitment
+    );
+    assert_eq!(rust.binding_input, typescript.binding_input);
 
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
         Intent::empty(&mut rng, state.time + state.ledger.parameters.global_ttl)
@@ -219,6 +222,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ok_or("missing applied state")?;
     assert_eq!(actual.data.get_ref(), &expected_state);
     assert_eq!(actual.operations.get(&entry).as_deref(), Some(&op));
+    let strict_recheck_refused = sealed
+        .well_formed(&updated, WellFormedStrictness::default(), state.time)
+        .is_err();
     ctx.ref_state = updated.clone();
     let (replayed, result) = updated.apply(&verified, &ctx);
     assert!(
@@ -240,6 +246,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(after, replay);
     fs::write(output.join("applied-transaction.bin"), &tx_bytes)?;
     fs::write(output.join("transaction-bound.proof"), &transaction_proof.0)?;
+    fs::write(output.join("standalone.proof.raw"), &standalone.0)?;
     fs::write(output.join("ledger-after.bin"), &after)?;
     fs::write(output.join("ledger-replay.bin"), &replay)?;
     println!(
@@ -250,6 +257,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "positive_fee_dust_spends":dust_spends,"default_strict":true,
             "wrong_verifier_refused":true,"replay_refusal":"IntentAlreadyExists",
             "replay_unchanged":true,"transaction_proof_distinct":true,
+            "strict_recheck_refused":strict_recheck_refused,
             "transaction_proof_bytes":transaction_proof.0.len(),
             "standalone_proof_bytes":standalone.0.len(),"transaction_bytes":tx_bytes.len()
         })

@@ -595,6 +595,15 @@ proof and rejects the same-k `remove` verifier, changed binding and corrupt
 proof. This is local macOS arm64 evidence, and funded default-strict
 application and native Linux qualification remain open.
 
+The follow-up generated Set funded gate checks the TypeScript and generated
+Rust proof preimage fields, builds a separate transaction proof, and applies
+one recorded `add(true)` call with a positive-fee Dust spend under Ledger 9
+default strictness. Exact replay returns `IntentAlreadyExists` at ledger
+application and leaves serialized ledger bytes unchanged; default-strict
+rechecking by itself accepts the already applied transaction. Deployment is
+represented by direct insertion into the local test ledger. The broader
+two-contract and native Linux gates remain open.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9

@@ -24,6 +24,7 @@ SOURCE = ROOT / 'runtime-rs/tests/fixtures/ledger9-set-transition-v018.compact'
 PROOF_RECEIPT_SHA256 = 'e9a7396152ba7a4303b0b9f73ef8f52bdd1ef2808657d6b5ecf80f7da8f5f555'
 BASE_MANIFEST_SHA256 = '7d69e964783ad25221daded85b38ef4ca3d603f166b3c0659207fd52a1f3deec'
 BASE_LOCK_SHA256 = '73ebbcf500f92f0105aa36eaff0879ef759df6da10e9f6c3f5f0f1adbe756362'
+GENERATED_MANIFEST_SHA256 = 'fdc667692e01cccebcd895f6fc65c257a173e120db348a1edc6a7d5585dd0978'
 
 
 def sha(path: Path) -> str:
@@ -45,10 +46,21 @@ def run(command: list[str], *, env: dict[str, str] | None = None, log: Path) -> 
                        stderr=subprocess.STDOUT, check=True)
 
 
-def registry_packages(path: Path) -> list[tuple]:
+def normalized_lock(path: Path) -> list[str]:
     packages = tomllib.loads(path.read_text())['package']
-    return sorted((row['name'], row['version'], row.get('source'), row.get('checksum'))
-                  for row in packages if row.get('source', '').startswith('registry+'))
+    old = ('ledger9-generated-set-funded', 'compact-contract-ledger9-set-transition-v018')
+    new = ('ledger9-mixed-foreign-casts-funded', 'compact-contract-constant')
+    rows = []
+    for package in packages:
+        row = dict(package)
+        for from_name, to_name in zip(old, new):
+            if row['name'] == from_name:
+                row['name'] = to_name
+            row['dependencies'] = [dependency.replace(from_name, to_name, 1)
+                                   if dependency.split(' ')[0] == from_name else dependency
+                                   for dependency in row.get('dependencies', [])]
+        rows.append(json.dumps(row, sort_keys=True))
+    return sorted(rows)
 
 
 def main() -> None:
@@ -87,6 +99,19 @@ def main() -> None:
         ('wrong-key/remove.verifier', 'wrong_same_k_verifier_sha256'),
     ):
         require(sha(gate / relative) == proof[key], f'proof gate artifact changed: {relative}')
+    generated_manifest = gate / 'fresh-dual/contract/Cargo.toml'
+    require(sha(generated_manifest) == GENERATED_MANIFEST_SHA256,
+            'generated contract manifest changed')
+    runtime_path = Path(tomllib.loads(generated_manifest.read_text())['dependencies']
+                        ['midnight-compact-runtime']['path']).resolve(strict=True)
+    runtime_checkout = Path(subprocess.check_output(
+        ['git', '-C', str(runtime_path), 'rev-parse', '--show-toplevel'], text=True).strip())
+    require(runtime_path == runtime_checkout / 'runtime-rs' and
+            subprocess.check_output(['git', '-C', str(runtime_checkout), 'rev-parse', 'HEAD'],
+                                    text=True).strip() == proof['head'] and
+            not subprocess.check_output(['git', '-C', str(runtime_checkout), 'status', '--porcelain'],
+                                        text=True).strip(),
+            'generated contract runtime checkout changed')
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA256 and
             sha(base / 'Cargo.lock') == BASE_LOCK_SHA256,
             'archived funded consumer changed')
@@ -109,14 +134,16 @@ def main() -> None:
     (consumer / 'Cargo.toml').write_text(manifest)
     shutil.copyfile(base / 'Cargo.lock', consumer / 'Cargo.lock')
     shutil.copyfile(FUNDED, consumer / 'main.rs')
+    require(sha(consumer / 'main.rs') == sha(FUNDED), 'copied funded source changed')
     env = os.environ.copy()
     env['CARGO_TARGET_DIR'] = str(cargo_target)
     run(['cargo', '+1.99.0', 'build', '--offline', '--manifest-path',
          str(consumer / 'Cargo.toml')], env=env, log=output / 'funded-build.log')
-    require(registry_packages(base / 'Cargo.lock') == registry_packages(consumer / 'Cargo.lock'),
-            'funded consumer changed pinned registry packages')
+    require(normalized_lock(base / 'Cargo.lock') == normalized_lock(consumer / 'Cargo.lock'),
+            'funded consumer changed pinned lock packages')
     run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--manifest-path',
          str(consumer / 'Cargo.toml')], env=env, log=output / 'funded-locked-build.log')
+    require(sha(consumer / 'main.rs') == sha(FUNDED), 'funded source changed during build')
     executable = cargo_target / 'debug/ledger9-generated-set-funded'
     require(executable.is_file(), 'funded consumer binary missing')
     funded_env = env.copy()
@@ -136,15 +163,19 @@ def main() -> None:
         require(row[key] is True, f'funded Set check missing: {key}')
     require(row['positive_fee_dust_spends'] == 1 and row['replay_refusal'] == 'IntentAlreadyExists',
             'funded fee or replay result changed')
+    require(row['strict_recheck_refused'] is False,
+            'default-strict replay recheck behavior changed')
     require((results / 'ledger-after.bin').read_bytes() ==
             (results / 'ledger-replay.bin').read_bytes(), 'replay changed ledger bytes')
-    require(sha(results / 'transaction-bound.proof') != sha(gate / 'proof/statement.proof'),
+    require(sha(results / 'transaction-bound.proof') != sha(results / 'standalone.proof.raw'),
             'transaction proof equals standalone proof')
     require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head,
             'source checkout changed during qualification')
     receipt = {
         'platform': f'{platform.system()} {platform.machine()}', 'head': head, 'tree': tree,
         'proof_gate_receipt_sha256': sha(gate_receipt), 'funded_source_sha256': sha(FUNDED),
+        'generated_manifest_sha256': sha(generated_manifest),
+        'generated_runtime_checkout_head': proof['head'],
         'base_manifest_sha256': sha(base / 'Cargo.toml'),
         'base_lock_sha256': sha(base / 'Cargo.lock'),
         'funded_lock_sha256': sha(consumer / 'Cargo.lock'),
@@ -154,10 +185,14 @@ def main() -> None:
         'funded_results': row,
         'applied_transaction_sha256': sha(results / 'applied-transaction.bin'),
         'transaction_bound_proof_sha256': sha(results / 'transaction-bound.proof'),
+        'standalone_proof_raw_sha256': sha(results / 'standalone.proof.raw'),
         'ledger_after_sha256': sha(results / 'ledger-after.bin'),
         'ledger_replay_sha256': sha(results / 'ledger-replay.bin'),
         'limitations': ['Local platform only; native Linux remains required.',
-                        'This is one Set.add contract call, not a two-contract transaction.'],
+                        'This is one Set.add contract call, not a two-contract transaction.',
+                        'Contract deployment is inserted into the local ledger test state, not applied as a deployment transaction.',
+                        'Wrong-verifier refusal is generated-client prepare refusal.',
+                        'A default-strict recheck of the already applied transaction succeeds; IntentAlreadyExists is refused at ledger application of the previously verified transaction.'],
     }
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(f'funded generated Set.add strict application and unchanged replay refusal passed: {output}')
