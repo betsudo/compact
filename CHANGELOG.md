@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Unreleased Ledger 9 migration.
 
+### Changed
+
+- Compare `Opaque<"Uint8Array">` values by length and contents in generated
+  TypeScript. Distinct arrays with identical bytes now compare equal.
+
 ### Added
 
 - Support the CompactStandardLibrary Boolean serialization built-ins in

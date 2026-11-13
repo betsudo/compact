@@ -87550,6 +87550,27 @@ groups than for single tests.
         "});"
         ))
     )
+  (test
+    '(
+      "struct Packet { chunks: Vector<2, Opaque<'Uint8Array'>>; }"
+      "export circuit same(a: Packet, b: Packet): Boolean { return disclose(a == b); }"
+      "export circuit different(a: Packet, b: Packet): Boolean { return disclose(a != b); }"
+      )
+    (stage-javascript
+      '(
+        "test('opaque byte array equality inside a struct and vector', () => {"
+        "  const a = { chunks: [Uint8Array.of(1, 0), new Uint8Array()] };"
+        "  const b = { chunks: [Uint8Array.of(1, 0), new Uint8Array()] };"
+        "  const shorter = { chunks: [Uint8Array.of(1), new Uint8Array()] };"
+        "  const changed = { chunks: [Uint8Array.of(1, 2), new Uint8Array()] };"
+        "  expect(contractCode.pureCircuits.same(a, b)).toEqual(true);"
+        "  expect(contractCode.pureCircuits.different(a, b)).toEqual(false);"
+        "  expect(contractCode.pureCircuits.same(a, shorter)).toEqual(false);"
+        "  expect(contractCode.pureCircuits.different(a, changed)).toEqual(true);"
+        "});"
+        ))
+    )
+
 )
 
 (run-javascript)
