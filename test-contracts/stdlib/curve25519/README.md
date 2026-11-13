@@ -25,3 +25,11 @@ slow proof lane. Each funded check uses its own transaction proof.
 The retained Maybe/Either fixture also names Curve25519Point. Run it
 with the point port. The standalone field reset checks the two field
 defaults.
+
+
+The wide scalar case preserves the pinned mainstream Scheme source,
+callback and ZKIR expectations in `wide-cast/upstream.ss`. The family
+runner exercises the original values and verifies the three input limbs
+and their ordering. It also refuses the wrong width and field. The wide
+cast measures k=11 and 1,301 rows, so its original circuit uses the
+explicit slow proof lane.

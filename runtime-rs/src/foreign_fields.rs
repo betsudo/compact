@@ -82,6 +82,13 @@ pub struct Curve25519Base([u8; 32]);
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Curve25519Scalar([u8; 32]);
 
+impl Curve25519Scalar {
+    /// Reduce a 64-byte little-endian integer modulo the Curve25519 scalar order.
+    pub fn from_le_wide_bytes_reduced(bytes: [u8; 64]) -> Self {
+        Self::from_inner(curve25519::Scalar::from_bytes_mod_order_wide(&bytes))
+    }
+}
+
 fn compare_le(left: &[u8; 32], right: &[u8; 32]) -> Ordering {
     left.iter().rev().cmp(right.iter().rev())
 }

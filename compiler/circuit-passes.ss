@@ -930,12 +930,13 @@
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
          (nanopass-case (Linlined Type) type
-           [(tbytes ,src ,len) (and (= len 32) 'bytes)]
-           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) 'field)]
+           [(tbytes ,src ,len) len]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) opaque-type)]
            [else #f]))
        (let ([from (kind source-type)] [to (kind type)])
-         (unless (or (and (eq? from 'bytes) (eq? to 'field))
-                     (and (eq? from 'field) (eq? to 'bytes)))
+         (unless (or (and (eqv? from 32) (string? to))
+                     (and (string? from) (eqv? to 32))
+                     (and (eqv? from 64) (equal? to "Curve25519Scalar")))
            (source-errorf src "invalid foreign field byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
@@ -3842,6 +3843,18 @@
                     (nanopass-case (Lflattened Primitive-Type) type2
                       [(tfield ,nat) (<= nat (- (expt 256 (field-bytes)) 1))] [else #f]))
          (source-errorf src "expected Bytes<32> limbs for a foreign field cast"))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,[* high] ,[* mid] ,[* low]))
+       (guard (string=? opaque-type "Curve25519Scalar"))
+       (verify-test src test)
+       (for-each
+         (lambda (type bits)
+           (unless (nanopass-case (Lflattened Primitive-Type) type
+                     [(tfield ,nat) (< nat (expt 2 bits))]
+                     [else #f])
+             (source-errorf src "expected Bytes<64> limbs for a Curve25519Scalar cast")))
+         (list high mid low) '(16 248 248))
        (with-output-language (Lflattened Primitive-Type)
          (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,[* type]))

@@ -15,10 +15,10 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR } from '@midnight-ntwrk/compact-runtime';
+import * as runtime from '@midnight-ntwrk/compact-runtime';
 import { createTestContract } from '@test/compact-test';
 import { expect, test } from 'vitest';
 
@@ -27,6 +27,7 @@ import baseRuntime from './base/roundtrip/runtime.pass.test.ts';
 import scalarCompile from './scalar/roundtrip/compile.pass.test.ts';
 import scalarRuntime from './scalar/roundtrip/runtime.pass.test.ts';
 
+const { MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR } = runtime;
 const root = fileURLToPath(new URL('.', import.meta.url));
 const runtimeRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const compiler = process.env.COMPACT_CURVE25519_TEST_COMPILER;
@@ -130,3 +131,52 @@ test('compiles both targets and checks field arithmetic, casts and persistent ha
     expect(ledger(hash.context.currentQueryContext.state).digest).toEqual(digest);
   }
 });
+
+test('runs the original wide scalar cast with the mainstream ZKIR limb order', async () => {
+  const { build, result } = compile('wide-cast', {}, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const ir = JSON.parse(readFileSync(join(build, 'zkir/test.zkir'), 'utf8'));
+  expect(ir.inputs.map(({type}) => type)).toEqual(Array(3).fill('Scalar<BLS12-381>'));
+  expect(ir.instructions.slice(0, 3).map(({op, val, bits}) => [op, val, bits])).toEqual(
+    [16, 248, 248].map((bits, index) => ['constrain_bits', ir.inputs[index].name, bits]),
+  );
+  const assemble = ir.instructions[3];
+  expect(assemble).toMatchObject({
+    op: 'bytes_from_natives',
+    len: 64,
+    inputs: ir.inputs.map(({name}) => name).reverse(),
+  });
+  expect(ir.instructions[4]).toMatchObject({
+    op: 'from_bytes', type: 'Scalar<Curve25519>', bytes: assemble.output,
+  });
+  const original = readFileSync(join(root, 'wide-cast/upstream.ss'), 'utf8');
+  const callback = [...original.slice(original.indexOf('(stage-javascript'))
+    .matchAll(/^\s*(?:'\()?("(?:[^"\\]|\\.)*")$/gm)]
+    .map(match => JSON.parse(match[1])).join('\n');
+  expect(callback).toContain('10^42');
+  expect(callback.endsWith('});')).toBe(true);
+  const code = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const startContract = async (_, witnesses) => {
+    const { contract, ctx } = await createTestContract(code.Contract, witnesses);
+    const call = contract.circuits.test;
+    const adapted = (...args) => {
+      const output = call(...args);
+      return {...output, context: {callContext: output.context}};
+    };
+    return [{circuits: {test: adapted}}, ctx];
+  };
+  const run = new Function('test', 'expect', 'contractCode', 'startContract', 'runtime', `return ${callback}`);
+  await run((_, check) => check(), expect, code, startContract, runtime);
+});
+
+for (const [fixture, message] of [
+  ['wrong-width', 'cannot cast from type Bytes<63> to type Curve25519Scalar'],
+  ['wrong-field', 'cannot cast from type Bytes<64> to type Curve25519Base'],
+]) {
+  test(`refuses wide scalar casts with the ${fixture}`, () => {
+    const { build, result } = compile(`wide-cast/${fixture}`, {}, ['ts', 'rust']);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(message);
+    expect(existsSync(build)).toBe(false);
+  });
+}

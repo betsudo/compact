@@ -3073,7 +3073,8 @@
                  (guard (foreign-field-max opaque-type))
                  (T type^
                     [(tbytes ,src2 ,len2)
-                     (guard (= len2 32))
+                     (guard (or (= len2 32)
+                                (and (= len2 64) (string=? opaque-type "Curve25519Scalar"))))
                      `(secp256k1-bytes-cast ,src ,type ,expr)])]
                 [(tbytes ,src1 ,len1)
                  (T type^
@@ -4111,12 +4112,13 @@
       [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
        (define (kind type)
          (nanopass-case (Lnodca Type) (de-alias type)
-           [(tbytes ,src ,len) (and (= len 32) 'bytes)]
-           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) 'field)]
+           [(tbytes ,src ,len) len]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) opaque-type)]
            [else #f]))
        (let ([from (kind source-type)] [to (kind type)])
-         (unless (or (and (eq? from 'bytes) (eq? to 'field))
-                     (and (eq? from 'field) (eq? to 'bytes)))
+         (unless (or (and (eqv? from 32) (string? to))
+                     (and (string? from) (eqv? to 32))
+                     (and (eqv? from 64) (equal? to "Curve25519Scalar")))
            (source-errorf src "invalid foreign field byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])

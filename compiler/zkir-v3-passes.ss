@@ -945,6 +945,14 @@
              `(from_bytes ,(assert (foreign-zkir-type opaque-type)) ,var-name ,bytes)
              `(bytes_from_natives ,bytes 32 ,triv2 ,triv1)
              instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2 ,triv3))
+       (guard (string=? opaque-type "Curve25519Scalar"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes "Scalar<Curve25519>" ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 64 ,triv3 ,triv2 ,triv1)
+             instr*)))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures

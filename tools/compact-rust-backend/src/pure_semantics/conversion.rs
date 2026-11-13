@@ -178,6 +178,7 @@ pub(crate) enum Secp256k1BytesCast {
     ToSecp256r1Scalar,
     ToCurve25519Base,
     ToCurve25519Scalar,
+    WideToCurve25519Scalar,
     ToBytes,
 }
 
@@ -190,6 +191,7 @@ impl Secp256k1BytesCast {
             (Type::Bytes { length: 32 }, Type::Secp256r1Scalar) => Ok(Self::ToSecp256r1Scalar),
             (Type::Bytes { length: 32 }, Type::Curve25519Base) => Ok(Self::ToCurve25519Base),
             (Type::Bytes { length: 32 }, Type::Curve25519Scalar) => Ok(Self::ToCurve25519Scalar),
+            (Type::Bytes { length: 64 }, Type::Curve25519Scalar) => Ok(Self::WideToCurve25519Scalar),
             (
                 Type::Secp256k1Base
                 | Type::Secp256k1Scalar

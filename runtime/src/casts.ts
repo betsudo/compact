@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { JUBJUB_SCALAR_MODULUS, MAX_FIELD } from './constants.js';
+import { JUBJUB_SCALAR_MODULUS, MAX_CURVE25519_SCALAR, MAX_FIELD } from './constants.js';
 import { CompactError } from './error.js';
 
 /** Convert a nonnegative Compact Field or Uint into the Jubjub scalar field. */
@@ -81,8 +81,11 @@ export function convertBytesToSecp256r1Field(max: bigint, bytes: Uint8Array): bi
   return convertBytesToForeignField(max, bytes, 'secp256r1');
 }
 
-/** Reduce a Compact `Bytes<32>` cast modulo the destination Curve25519 field. @internal */
+/** Reduce a Compact byte cast modulo the destination Curve25519 field. @internal */
 export function convertBytesToCurve25519Field(max: bigint, bytes: Uint8Array): bigint {
+  if (max === MAX_CURVE25519_SCALAR && bytes.length === 64) {
+    return reduceLittleEndian(max, bytes);
+  }
   return convertBytesToForeignField(max, bytes, 'Curve25519');
 }
 
@@ -90,6 +93,10 @@ function convertBytesToForeignField(max: bigint, bytes: Uint8Array, curve: strin
   if (bytes.length !== 32) {
     throw new CompactError(`expected Bytes<32> for ${curve} field cast`);
   }
+  return reduceLittleEndian(max, bytes);
+}
+
+function reduceLittleEndian(max: bigint, bytes: Uint8Array): bigint {
   let value = 0n;
   for (let i = bytes.length - 1; i >= 0; --i) {
     value = (value << 8n) | BigInt(bytes[i]);
