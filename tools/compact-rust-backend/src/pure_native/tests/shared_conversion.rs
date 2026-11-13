@@ -332,3 +332,22 @@ fn wrong_family_private_conversion_adapter_retains_misuse_contract() {
 }
 
 mod workers;
+
+#[test]
+fn enum_cast_ir_refuses_invalid_numeric_and_enum_pairs() {
+    let color = Type::Enum {
+        name: "Color".into(),
+        variants: vec!["Red".into(), "Green".into(), "Blue".into()],
+    };
+    for (source, target) in [(Type::Boolean, color.clone()), (color.clone(), color)] {
+        let expression = Expr::EnumCast {
+            value: Box::new(reference("value")),
+            ty: target.clone(),
+        };
+        let parameters = HashMap::from([("value", (&source, syn::parse_quote!(argument)))]);
+        assert_eq!(
+            observe(&expression, &parameters, &HashMap::new()),
+            Err(RenderError::InvalidEnumCast { source, target })
+        );
+    }
+}

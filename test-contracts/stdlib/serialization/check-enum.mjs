@@ -58,7 +58,8 @@ const context = runtime.createCircuitContext(runtime.dummyContractAddress(), ini
   initial.currentContractState, initial.currentPrivateState);
 const stored = (ctx) => ledger(ctx.currentQueryContext.state).stored;
 const name = 'store_color';
-const ir = jsonIrToBinary(await readFile(join(build, 'enum-stateful/zkir', name + '.zkir'), 'utf8'));
+const model = JSON.parse(await readFile(join(build, 'enum-stateful/zkir', name + '.zkir'), 'utf8'));
+const ir = jsonIrToBinary(JSON.stringify(model));
 const options = {
   lookupKey: async () => ({ ir, proverKey: new Uint8Array(), verifierKey: new Uint8Array() }),
   getParams: async () => { throw Error('unexpected parameter request'); },
@@ -86,11 +87,45 @@ for (const ordinal of [0, 1, 2]) {
   await assert.rejects(check(preimage(data, data.input, changed), options));
 }
 const data = contract.circuits.store_color(context, Uint8Array.of(2)).proofData;
+const ordinalPreimage = (ordinal) => {
+  const candidate = structuredClone(data);
+  const value = onchain.bigIntToValue(BigInt(ordinal))[0];
+  candidate.output.value[0] = value;
+  const write = candidate.publicTranscript.filter((op) => op.push?.storage);
+  assert.equal(write.length, 1);
+  assert.equal(write[0].push.value.tag, 'cell');
+  write[0].push.value.content.value[0] = value;
+  return preimage(candidate, aligned(ordinal), candidate.output);
+};
+await check(ordinalPreimage(1), options);
+
+// Establish that the forged statement agrees on input, write and return
+// by removing only the ordinal assertion from an independent control model.
+const assertion = model.instructions.findIndex((op) => op.op === 'assert');
+assert.equal(model.instructions.filter((op) => op.op === 'assert').length, 1);
+const guard = model.instructions[assertion - 1];
+assert.equal(guard.op, 'less_than');
+assert.equal(guard.output, model.instructions[assertion].cond);
+assert.equal(guard.b, '0x03');
+model.instructions.splice(assertion - 1, 2);
+const unguarded = jsonIrToBinary(JSON.stringify(model));
+const unguardedOptions = {
+  ...options,
+  lookupKey: async () => ({ ir: unguarded, proverKey: new Uint8Array(), verifierKey: new Uint8Array() }),
+};
 for (let ordinal = 3; ordinal < 256; ordinal++) {
   const input = Uint8Array.of(ordinal);
   assert.throws(() => pure.deserialize_enum(input), runtime.CompactError);
   assert.throws(() => contract.circuits.store_color(context, input), runtime.CompactError);
-  await assert.rejects(check(preimage(data, aligned(ordinal), data.output), options));
+  const forged = ordinalPreimage(ordinal);
+  await check(forged, unguardedOptions);
+  await assert.rejects(check(forged, options));
+}
+const direct = contract.circuits.store_ordinal(context, 1n);
+assert.equal(direct.result, 1n);
+assert.equal(stored(direct.context), 1);
+for (const ordinal of [2n, 3n, 255n]) {
+  assert.throws(() => contract.circuits.store_ordinal(context, ordinal), runtime.CompactError);
 }
 assert.equal(stored(context), 0);
 console.log('Three valid ordinals and all 253 invalid ordinals passed the generated and SDK controls.');

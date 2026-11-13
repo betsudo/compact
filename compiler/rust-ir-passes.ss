@@ -3172,6 +3172,12 @@
           [(secp256k1-bytes-cast ,src ,type ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
