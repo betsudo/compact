@@ -2036,6 +2036,11 @@
            (apply + (map (lambda (element-type) (serialization-width src element-type operation)) type*))]
           [(tvector ,src^ ,len ,type)
            (* len (serialization-width src type operation))]
+          [(topaque ,src^ ,opaque-type)
+           (guard (or (foreign-point-base opaque-type) (string=? opaque-type "JubjubPoint")))
+           (source-errorf src "~a is not yet supported for curve type ~a"
+                          (if (string=? operation "serialize") "serialization" "deserialization")
+                          opaque-type)]
           [else (source-errorf src "~a does not yet support type ~a" operation (format-type type))]))
 
       (define (enum-to-serialized-bytes src type carrier expr maximum width)

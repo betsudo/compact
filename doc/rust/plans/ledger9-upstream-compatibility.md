@@ -241,9 +241,9 @@ points and uses four shifted Base atoms for ledger transport. The original
 generator and its double pass Rust recording and VM replay. The write and
 projection statements have independently verified arm64 proofs at k=12
 and k=11, respectively. The write also passes a separate funded
-default-strict application and replay refusal. The point refusal sources
-originally failed during name resolution. Point-specific diagnostics
-remain to be checked now that the generic wire codecs are available.
+default-strict application and replay refusal. The intact upstream point
+serialization and deserialization fixtures refuse at the codec boundary
+with the same operation and point type diagnostics as mainstream.
 
 The [wire codec fixtures](../../../test-contracts/stdlib/serialization)
 cover Boolean, Bytes, native Uint and Field encoding and decoding.

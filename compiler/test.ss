@@ -69096,6 +69096,35 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "ledger F1: Curve25519Point;"
+      "ledger F2: Secp256k1Point;"
+      "ledger F3: Curve25519Point;"
+      "export circuit foo1(x: Curve25519Point): Bytes<64> {"
+      "  F1 = disclose(x);"
+      "  return serialize<Curve25519Point, 64>(F1);"
+      "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "~a is not yet supported for curve type ~a" ("serialization" "Curve25519Point"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger F1: Curve25519Point;"
+      "ledger F2: Secp256k1Point;"
+      "ledger F3: Secp256r1Point;"
+      "export circuit foo1(bv: Bytes<64>): Curve25519Point {"
+      "  F1 = deserialize<Curve25519Point, 64>(disclose(bv));"
+      "  return F1;"
+      "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "~a is not yet supported for curve type ~a" ("deserialization" "Curve25519Point"))))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "enum Color { RED, GREEN, BLUE }"
       "export circuit serialize_enum (c: Color): Bytes<1> {"
       "  return serialize<Color, 1>(c);"
