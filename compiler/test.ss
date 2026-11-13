@@ -69010,7 +69010,6 @@ groups than for single tests.
     '(
       "import CompactStandardLibrary;"
       "new type Element = Field;"
-      "new type Element = Secp256k1Base;"
       "export circuit encode(x: Element): Bytes<34> { return serialize<Element, 34>(x); }"
       "export circuit decode(x: Bytes<34>): Element { return deserialize<Element, 34>(x); }"
       )
@@ -69156,6 +69155,7 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "new type Element = Secp256k1Base;"
       "export circuit encode(x: Element): Bytes<34> { return serialize<Element, 34>(x); }"
       "export circuit decode(x: Bytes<34>): Element { return deserialize<Element, 34>(x); }"
       "export circuit nested(x: [Boolean, Element]): Bytes<34> {"
