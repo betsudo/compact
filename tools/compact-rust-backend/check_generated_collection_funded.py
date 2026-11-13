@@ -85,6 +85,11 @@ def main() -> None:
     proof = json.loads(gate_receipt.read_text())
     require(subprocess.run(['git', 'merge-base', '--is-ancestor', proof['head'], head],
                            cwd=ROOT).returncode == 0, 'funded source is not stacked on proof source')
+    require(subprocess.run(['git', 'diff', '--quiet', proof['head'], head, '--',
+                            'runtime-rs/src', 'runtime-rs/Cargo.toml',
+                            'runtime-rs-macros/src', 'runtime-rs-macros/Cargo.toml'],
+                           cwd=ROOT).returncode == 0,
+            'funded branch changed the runtime used by the generated contract')
     require(proof['source_sha256'] == sha(SOURCE), 'generated Set source changed')
     for relative, key in (
         ('fresh-dual/contract/index.js', 'fresh_typescript_sha256'),
