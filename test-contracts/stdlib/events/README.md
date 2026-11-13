@@ -126,3 +126,22 @@ node test-contracts/stdlib/events/check-unshielded-mint.mjs \
 
 The runner checks the wire layout with distinct byte fields and rejects
 a substituted token type and reordered logs.
+
+## UnshieldedBurn
+
+`UnshieldedBurn-codec.compact` retains the original two codec exports.
+The upstream type and codec-lowering assertions are retained alongside
+it. `UnshieldedBurn-emission-derived.compact` adapts the upstream Spend
+emission fixture to Burn and includes those two codec exports.
+
+Version 1, tag 7 encodes the selector and both sender branches, the
+token type, and a little-endian 128-bit amount in 113 bytes.
+
+```sh
+node test-contracts/stdlib/events/check-unshielded-burn.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/unshielded-burn-preimages"
+```
+
+Use the generated output of the derived emission fixture. The runner
+checks both structural sender variants and refuses changed inactive
+bytes, a malformed selector, and reordered logs.

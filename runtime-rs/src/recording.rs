@@ -353,6 +353,15 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_verify_program(ledger::unshielded_mint_program(payload)?)
     }
 
+    /// Record a public UnshieldedBurn event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_burn(
+        self,
+        payload: crate::FixedBytes<113>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unshielded_burn_program(payload)?)
+    }
+
     pub(crate) fn apply_verify_program(
         mut self,
         program: Vec<Op<ResultModeVerify, D>>,

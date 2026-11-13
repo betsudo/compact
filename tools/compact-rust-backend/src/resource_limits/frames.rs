@@ -200,6 +200,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedSpend { .. }
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -231,6 +232,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedSpend { .. }
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -393,6 +395,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedSpend { .. }
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -493,6 +496,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedSpend { .. }
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }

@@ -372,8 +372,18 @@ fn unshielded_mint_event_manifest() -> Result<Value, String> {
     serde_json::from_slice(UNSHIELDED_MINT_EVENT).map_err(|error| error.to_string())
 }
 
+const UNSHIELDED_BURN_EVENT: &[u8] = include_bytes!("unshielded-burn-event-expression.json");
+
+fn unshielded_burn_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_BURN_EVENT) != "4593d2d49d08f82329dce3bdb86faa21749f96d2f09f3281e8e40050566b1201" {
+        return Err("unreviewed UnshieldedBurn event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_BURN_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &unshielded_mint_event_manifest()?)?;
+    let current = legacy_source(path, current, &unshielded_burn_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_mint_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_receive_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_spend_event_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_receive_event_manifest()?)?;

@@ -287,6 +287,10 @@ bytes and reject an undisclosed witness in either branch.
 `UnshieldedMint` emits tag 6 with the domain separator, token type and
 little-endian amount. Its codec checks use distinct byte fields and the
 maximum `Uint<128>` value.
+`UnshieldedBurn` uses tag 7 and a 113-byte payload consisting of both
+sender branches and their selector, the token type, and the amount.
+The fixture directory retains the original type and codec cases and
+identifies the standalone emission test as derived.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

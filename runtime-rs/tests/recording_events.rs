@@ -213,6 +213,48 @@ fn unshielded_spend_events_replay_in_order_with_the_exact_payload_and_gas() {
 }
 
 #[test]
+fn unshielded_burn_events_replay_in_order_with_the_exact_payload_and_gas() {
+    let mut bytes = [0; 113];
+    bytes[1..33].fill(0x42);
+    bytes[33..65].fill(0xa5);
+    bytes[65..97].fill(0x67);
+    bytes[97..].copy_from_slice(&u128::MAX.to_le_bytes());
+    let right_sender = FixedBytes::new(bytes);
+    bytes[0] = 1;
+    let left_sender = FixedBytes::new(bytes);
+
+    let native_first = context().emit_unshielded_burn(left_sender).unwrap();
+    let native_second = native_first.context.emit_unshielded_burn(right_sender).unwrap();
+    let recorded = RecordingFrame::new(context())
+        .emit_unshielded_burn(left_sender)
+        .unwrap()
+        .emit_unshielded_burn(right_sender)
+        .unwrap()
+        .finish(());
+    assert_eq!(
+        recorded.execution.gas_cost,
+        native_first.gas_cost + native_second.gas_cost
+    );
+    let replay = recorded
+        .public
+        .initial()
+        .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL)
+        .unwrap();
+    let events = recorded.execution.context.events();
+    assert_eq!(events.len(), 2);
+    assert!(events == native_second.context.events());
+    assert_eq!(replay.events.len(), 2);
+    assert_eq!(replay.context.state, context().query.state);
+    for ((event, log), value) in events.iter().zip(replay.events).zip([left_sender, right_sender]) {
+        assert_eq!(event.address, context().query.address);
+        assert_eq!(event.log, log);
+        assert_eq!(log.version, 1);
+        assert_eq!(log.event_type, LogEventType::UnshieldedBurn);
+        assert_eq!(read_cell::<FixedBytes<113>, _>(&log.data).unwrap(), value);
+    }
+}
+
+#[test]
 fn unshielded_receive_events_replay_in_order_with_the_exact_payload_and_gas() {
     let mut bytes = [0; 145];
     bytes[1..33].fill(0x42);

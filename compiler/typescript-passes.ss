@@ -3317,6 +3317,7 @@
            [(4) "__compactRuntime.emitUnshieldedSpend"]
            [(5) "__compactRuntime.emitUnshieldedReceive"]
            [(6) "__compactRuntime.emitUnshieldedMint"]
+           [(7) "__compactRuntime.emitUnshieldedBurn"]
            [else (assert cannot-happen)])
          "(context, partialProofData, " expr ")")]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)

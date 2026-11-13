@@ -102,6 +102,24 @@ fn unshielded_spend_event_requires_exact_bytes145_in_the_checked_plan() {
 }
 
 #[test]
+fn unshielded_burn_event_requires_exact_bytes113_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedBurn(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 113 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 112 },
+        Type::Bytes { length: 114 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
 fn unshielded_receive_event_requires_exact_bytes145_in_the_checked_plan() {
     let event_plan = |ty: Type| {
         let input = value(0, ty);

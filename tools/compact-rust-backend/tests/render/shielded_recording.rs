@@ -125,6 +125,40 @@ fn unshielded_spend_emission_requires_the_exact_byte_width() {
 }
 
 #[test]
+fn unshielded_burn_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_burn".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 113 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedBurn {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_burn("));
+    assert!(rendered.source.contains("frame.emit_unshielded_burn("));
+    for ty in [Type::Bytes { length: 112 }, Type::Bytes { length: 114 }, Type::Field] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 113 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
 fn unshielded_receive_emission_requires_the_exact_byte_width() {
     let mut contract = identity(Type::Unit, Expr::Unit);
     contract.stateful_circuits.push(StatefulCircuit {

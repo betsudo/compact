@@ -1,0 +1,18 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { UnshieldedBurn }"
+      )
+    (returns
+      (program ()
+        (export-typedef UnshieldedBurn ()
+          (tstruct UnshieldedBurn
+            (sender (tstruct Either
+                      (is_left (tboolean))
+                      (left (tstruct ZswapCoinPublicKey (bytes (tbytes 32))))
+                      (right (tstruct ContractAddress (bytes (tbytes 32))))))
+            (tokenType (tbytes 32))
+            (amount (tunsigned
+                      340282366920938463463374607431768211455))))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )

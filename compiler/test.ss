@@ -14632,6 +14632,37 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export circuit deserialize_UnshieldedBurn (x: Bytes<113>) : UnshieldedBurn {"
+      "  return deserialize<UnshieldedBurn, 113>(x);"
+      "}"
+      "export circuit serialize_UnshieldedBurn (x: UnshieldedBurn) : Bytes<113> {"
+      "  return serialize<UnshieldedBurn, 113>(x);"
+      "}"
+      )
+    (succeeds))
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { UnshieldedBurn }"
+      )
+    (returns
+      (program
+        (export-typedef UnshieldedBurn ()
+          (tstruct UnshieldedBurn
+            (sender (tstruct Either
+                      (is_left (tboolean))
+                      (left (tstruct ZswapCoinPublicKey (bytes (tbytes 32))))
+                      (right (tstruct ContractAddress (bytes (tbytes 32))))))
+            (tokenType (tbytes 32))
+            (amount (tunsigned
+                      340282366920938463463374607431768211455))))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export { UnshieldedMint }"
       )
     (returns
@@ -70236,6 +70267,106 @@ groups than for single tests.
         (oops
           message: "~a:\n  ~?"
           irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Bytes<32>;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(UnshieldedBurn {"
+      "    sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "      is_left: true,"
+      "      left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "      right: ContractAddress { bytes: secret() }"
+      "    },"
+      "    tokenType: disclose(n), amount: 1 as Uint<128>"
+      "  });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit emit_one(n: Bytes<32>): Bytes<32> {"
+      "  emit(UnshieldedBurn {"
+      "    sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "      is_left: true,"
+      "      left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "      right: ContractAddress { bytes: disclose(n) }"
+      "    },"
+      "    tokenType: disclose(n),"
+      "    amount: 500 as Uint<128>"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit emit_two(n: Bytes<32>): Bytes<32> {"
+      "  emit(UnshieldedBurn {"
+      "    sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "      is_left: true,"
+      "      left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "      right: ContractAddress { bytes: disclose(n) }"
+      "    },"
+      "    tokenType: disclose(n),"
+      "    amount: 1 as Uint<128>"
+      "  });"
+      "  emit(UnshieldedBurn {"
+      "    sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "      is_left: false,"
+      "      left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "      right: ContractAddress { bytes: disclose(n) }"
+      "    },"
+      "    tokenType: disclose(n),"
+      "    amount: 2 as Uint<128>"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit cond_emit(b: Boolean, n: Bytes<32>): Bytes<32> {"
+      "  if (disclose(b)) {"
+      "    emit(UnshieldedBurn {"
+      "      sender: Either<ZswapCoinPublicKey, ContractAddress> {"
+      "        is_left: true,"
+      "        left: ZswapCoinPublicKey { bytes: disclose(n) },"
+      "        right: ContractAddress { bytes: disclose(n) }"
+      "      },"
+      "      tokenType: disclose(n),"
+      "      amount: 1 as Uint<128>"
+      "    });"
+      "  }"
+      "  return n;"
+      "}"
+      "export circuit no_emit(n: Bytes<32>): Bytes<32> {"
+      "  return n;"
+      "}"
+      "export circuit deserialize_UnshieldedBurn (x: Bytes<113>) : UnshieldedBurn {"
+      "  return deserialize<UnshieldedBurn, 113>(x);"
+      "}"
+      "export circuit serialize_UnshieldedBurn (x: UnshieldedBurn) : Bytes<113> {"
+      "  return serialize<UnshieldedBurn, 113>(x);"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "test('derived UnshieldedBurn emits two versioned logs in order', () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const n = new Uint8Array(32).fill(0x42);"
+            "  const r = C.circuits.emit_two(Ctxt, n);"
+            "  expect(r.context.events?.map(event => event.eventType)).toEqual(['unshielded-burn', 'unshielded-burn']);"
+            "  expect(r.context.events?.map(event => event.version)).toEqual([1, 1]);"
+            "});"
+            ))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
     )
 
   (test

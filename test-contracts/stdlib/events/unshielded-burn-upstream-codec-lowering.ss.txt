@@ -1,0 +1,113 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit deserialize_UnshieldedBurn (x: Bytes<113>) : UnshieldedBurn {"
+      "  return deserialize<UnshieldedBurn, 113>(x);"
+      "}"
+      "export circuit serialize_UnshieldedBurn (x: UnshieldedBurn) : Bytes<113> {"
+      "  return serialize<UnshieldedBurn, 113>(x);"
+      "}"
+      )
+    (returns
+      (program
+        (kernel-declaration (%kernel.0 () (Kernel)))
+        (public-ledger-declaration () (constructor () (tuple)))
+        (circuit %serialize.1 ([%value.2 (tstruct UnshieldedBurn
+                                           (sender (tstruct Either
+                                                     (is_left (tboolean))
+                                                     (left (tstruct ZswapCoinPublicKey
+                                                             (bytes (tbytes
+                                                                      32))))
+                                                     (right (tstruct ContractAddress
+                                                              (bytes (tbytes
+                                                                       32))))))
+                                           (tokenType (tbytes 32))
+                                           (amount (tunsigned
+                                                     340282366920938463463374607431768211455)))])
+             (tbytes 113)
+          (let* ([[%t.3 (tstruct Either
+                          (is_left (tboolean))
+                          (left (tstruct ZswapCoinPublicKey
+                                  (bytes (tbytes 32))))
+                          (right (tstruct ContractAddress
+                                   (bytes (tbytes 32)))))]
+                  (elt-ref %value.2 sender 0)])
+            (vector->bytes 113
+              (vector
+                (if (elt-ref %t.3 is_left 0)
+                    (safe-cast (tunsigned 255) (tunsigned 1) 1)
+                    (safe-cast (tunsigned 255) (tunsigned 0) 0))
+                (spread 32
+                  (bytes->vector 32 (elt-ref (elt-ref %t.3 left 1) bytes 0)))
+                (spread 32
+                  (bytes->vector 32 (elt-ref (elt-ref %t.3 right 2) bytes 0)))
+                (spread 32
+                  (bytes->vector 32 (elt-ref %value.2 tokenType 1)))
+                (spread 16
+                  (bytes->vector 16
+                    (field->bytes 16 (field-native)
+                      (safe-cast (tfield (field-native))
+                                 (tunsigned
+                                   340282366920938463463374607431768211455)
+                        (elt-ref %value.2 amount 2)))))))))
+        (circuit %deserialize.4 ([%value.5 (tbytes 113)])
+             (tstruct UnshieldedBurn
+               (sender (tstruct Either
+                         (is_left (tboolean))
+                         (left (tstruct ZswapCoinPublicKey
+                                 (bytes (tbytes 32))))
+                         (right (tstruct ContractAddress
+                                  (bytes (tbytes 32))))))
+               (tokenType (tbytes 32))
+               (amount (tunsigned
+                         340282366920938463463374607431768211455)))
+          (new (tstruct UnshieldedBurn
+                 (sender (tstruct Either
+                           (is_left (tboolean))
+                           (left (tstruct ZswapCoinPublicKey
+                                   (bytes (tbytes 32))))
+                           (right (tstruct ContractAddress
+                                    (bytes (tbytes 32))))))
+                 (tokenType (tbytes 32))
+                 (amount (tunsigned
+                           340282366920938463463374607431768211455)))
+            (new (tstruct Either
+                   (is_left (tboolean))
+                   (left (tstruct ZswapCoinPublicKey (bytes (tbytes 32))))
+                   (right (tstruct ContractAddress (bytes (tbytes 32)))))
+              (== (downcast-unsigned 8 1 (bytes-ref %value.5 0)) 1)
+              (new (tstruct ZswapCoinPublicKey (bytes (tbytes 32)))
+                (bytes-slice %value.5 1 32))
+              (new (tstruct ContractAddress (bytes (tbytes 32)))
+                (bytes-slice %value.5 33 32)))
+            (bytes-slice %value.5 65 32)
+            (cast-from-bytes (tunsigned
+                               340282366920938463463374607431768211455) 16
+              (bytes-slice %value.5 97 16))))
+        (circuit %deserialize_UnshieldedBurn.6 ([%x.7 (tbytes 113)])
+             (tstruct UnshieldedBurn
+               (sender (tstruct Either
+                         (is_left (tboolean))
+                         (left (tstruct ZswapCoinPublicKey
+                                 (bytes (tbytes 32))))
+                         (right (tstruct ContractAddress
+                                  (bytes (tbytes 32))))))
+               (tokenType (tbytes 32))
+               (amount (tunsigned
+                         340282366920938463463374607431768211455)))
+          (call %deserialize.4 %x.7))
+        (circuit %serialize_UnshieldedBurn.8 ([%x.9 (tstruct UnshieldedBurn
+                                                      (sender (tstruct Either
+                                                                (is_left (tboolean))
+                                                                (left (tstruct ZswapCoinPublicKey
+                                                                        (bytes (tbytes
+                                                                                 32))))
+                                                                (right (tstruct ContractAddress
+                                                                         (bytes (tbytes
+                                                                                  32))))))
+                                                      (tokenType (tbytes 32))
+                                                      (amount (tunsigned
+                                                                340282366920938463463374607431768211455)))])
+             (tbytes 113)
+          (call %serialize.1 %x.9))))
+    )

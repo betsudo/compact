@@ -311,6 +311,14 @@ export const emitUnshieldedMint = (context: CircuitContext, proofData: PartialPr
   return emitEvent(context, proofData, 6n, payload, 80);
 };
 
+/** @internal */
+export const emitUnshieldedBurn = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 113) {
+    throw new CompactError('UnshieldedBurn payload must be Bytes<113>');
+  }
+  return emitEvent(context, proofData, 7n, payload, 113);
+};
+
 const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
   const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
     tag: 'cell',

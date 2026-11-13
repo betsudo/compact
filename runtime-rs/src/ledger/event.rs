@@ -59,6 +59,12 @@ pub(crate) fn unshielded_mint_program<D: DB>(
     event_program(LogEventType::UnshieldedMint, payload)
 }
 
+pub(crate) fn unshielded_burn_program<D: DB>(
+    payload: FixedBytes<113>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::UnshieldedBurn, payload)
+}
+
 fn event_program<D: DB, const LENGTH: usize>(
     tag: LogEventType,
     bytes: FixedBytes<LENGTH>,

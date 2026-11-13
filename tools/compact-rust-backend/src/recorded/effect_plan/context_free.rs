@@ -77,7 +77,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
                 | Operation::KernelSelf
-                | Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::EmitUnshieldedSpend(_) | Operation::EmitUnshieldedReceive(_) | Operation::EmitUnshieldedMint(_)
+                | Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::EmitUnshieldedSpend(_) | Operation::EmitUnshieldedReceive(_) | Operation::EmitUnshieldedMint(_) | Operation::EmitUnshieldedBurn(_)
                 | Operation::KernelClaim { .. }
                 | Operation::KernelMintShielded { .. }
                 | Operation::List { .. }

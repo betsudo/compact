@@ -661,3 +661,9 @@ export struct UnshieldedMint {
   tokenType: Bytes<32>,
   amount: Uint<128>,
 }
+
+export struct UnshieldedBurn {
+  sender: Either<ZswapCoinPublicKey, ContractAddress>,
+  tokenType: Bytes<32>,
+  amount: Uint<128>,
+}
