@@ -70851,6 +70851,53 @@ groups than for single tests.
         ))
     )
 
+  ;; Pinned upstream SHA-512 point-pair circuit and runtime case.
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger hash: Bytes<64>;"
+      "export circuit test(pt0: Secp256k1Point, pt1: Secp256k1Point): [] {"
+      "  hash = disclose(sha512<[Secp256k1Point, Secp256k1Point]>([pt0, pt1]));"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "test('sha512 hashing', async () => {"
+            "  const [contract, context] = await startContract(contractCode, {}, 0);"
+            "  const p0 = runtime.secp256k1MulGenerator(5n);"
+            "  const p1 = runtime.secp256k1MulGenerator(7n);"
+            "  await contract.circuits.test(context, p0, p1);"
+            "});"
+            ))
+        (lambda args #t))
+    (if (feature-zkir-v3)
+        (output-file "compiler/testdir/zkir/test.zkir"
+          '(
+            "{"
+            "  \"version\": { \"major\": 3, \"minor\": 0 },"
+            "  \"do_communications_commitment\": true,"
+            "  \"inputs\": ["
+            "    { \"name\": \"%pt0.0\", \"type\": \"Point<Secp256k1>\" },"
+            "    { \"name\": \"%pt1.1\", \"type\": \"Point<Secp256k1>\" }"
+            "  ],"
+            "  \"outputs\": ["
+            "  ],"
+            "  \"instructions\": ["
+            "    { \"op\": \"encode\", \"outputs\": [\"%pt.5\", \"%pt.6\", \"%pt.3\", \"%pt.4\", \"%pt.2\"], \"input\": \"%pt0.0\" },"
+            "    { \"op\": \"encode\", \"outputs\": [\"%pt.10\", \"%pt.11\", \"%pt.8\", \"%pt.9\", \"%pt.7\"], \"input\": \"%pt1.1\" },"
+            "    { \"op\": \"sha512\", \"output\": \"%hash-bytes.12\", \"alignment\": [{ \"tag\": \"atom\", \"value\": { \"length\": 24, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 8, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 24, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 8, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"tag\": \"field\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 24, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 8, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 24, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"length\": 8, \"tag\": \"bytes\" } }, { \"tag\": \"atom\", \"value\": { \"tag\": \"field\" } }], \"inputs\": [\"%pt.5\", \"%pt.6\", \"%pt.3\", \"%pt.4\", \"%pt.2\", \"%pt.10\", \"%pt.11\", \"%pt.8\", \"%pt.9\", \"%pt.7\"] },"
+            "    { \"op\": \"bytes_into_natives\", \"outputs\": [\"%tmp.13\", \"%tmp.14\", \"%tmp.15\"], \"bytes\": \"%hash-bytes.12\" },"
+            "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x10\", \"0x01\", \"0x01\", \"0x01\", \"0x00\"] },"
+            "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x11\", \"0x01\", \"0x01\", \"0x40\", \"%tmp.15\", \"%tmp.14\", \"%tmp.13\"] },"
+            "    { \"op\": \"impact\", \"guard\": \"0x01\", \"inputs\": [\"0x91\"] }"
+            "  ]"
+            "}"))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("<standard library>" "~a requires ZKIR v3; recompile with --feature-zkir-v3" ("Secp256k1Point"))))
+    )
+
   (test
     '(
       "import CompactStandardLibrary;"

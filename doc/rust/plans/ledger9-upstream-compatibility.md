@@ -115,9 +115,17 @@ ZKIR v3 uses the pinned three-limb digest split. The
 covers fixed-width and empty bytes, tuples, a Field, and public writes over
 64-byte input and a tuple containing a Jubjub point. It shares the existing
 ledger alignment rules for point coordinates. The local ZKIR tool measured
-both public writes at k=14, so they require a slow proof lane. The original
-upstream SHA-512 cases that hash two secp256k1 points remain tracked with
-foreign-point representation.
+both public writes at k=14, so they require a slow proof lane. The intact
+[secp256k1 point-pair fixture](../../../test-contracts/stdlib/secp256k1/point/upstream-sha512.compact)
+uses the upstream 5G and 7G inputs. Both runtimes produced the same digest
+and byte-identical serialized preimages. The current and upstream v3 IR
+agree on the ten aligned point atoms and ledger write after accounting for
+the version and temporary names. The SDK refused swapped inputs and a
+changed digest. On macOS arm64, a fresh k=14 proof passed separate-process
+verification and wrong-verifier, changed-binding and corrupt-proof controls.
+A separately proved funded transaction built from generated Rust passed
+default-strict Ledger 9 verification, applied the digest and refused
+replay with byte-identical ledger state.
 
 The secp256k1 base and scalar carriers now use distinct checked Rust types
 and the pinned TypeScript descriptors. Their ledger encoding stores the
@@ -441,9 +449,12 @@ controls with verifier carriers.
 
 Generated cross-contract invocation and funded proof qualification are on
 hold while the remaining Ledger 9 compatibility work continues. The
-intact EntryPoint transfer model requires k=9. Resume with generated
-invocation and an explicit slow lane for the transfer proof, then verify
-both proofs and exercise strict application, replay and rollback.
+intact EntryPoint transfer model requires k=9. For generated invocation,
+follow the pinned mainstream module resolution, interface conformance and
+verifier checks before entering the callee context. Restore the caller and
+record the callee's result and commitment opening in the caller witness.
+Use an explicit slow lane for the transfer proof, verify both proofs and
+exercise strict application, replay and rollback.
 
 The upstream compiler runs 11 composable TypeScript suites with 47 active
 tests and five explicitly skipped reentry cases. Four composable compiler
