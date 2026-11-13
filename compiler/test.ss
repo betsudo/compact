@@ -69559,7 +69559,7 @@ groups than for single tests.
     (if (feature-zkir-v3)
         (oops
           message: "~a:\n  ~?"
-          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value\n    via this path through the program:\n      the argument to some at line 4 char 80"))))
         (oops
           message: "~a:\n  ~?"
           irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
@@ -69577,7 +69577,7 @@ groups than for single tests.
     (if (feature-zkir-v3)
         (oops
           message: "~a:\n  ~?"
-          irritants: '("testfile.compact line 5 char 5" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      performing this emit operation might disclose the witness value"))))
+          irritants: '("testfile.compact line 5 char 5" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      performing this emit operation might disclose the boolean value of the witness value\n    via this path through the program:\n      the conditional branch at line 4 char 3"))))
         (oops
           message: "~a:\n  ~?"
           irritants: '("testfile.compact line 5 char 5" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
