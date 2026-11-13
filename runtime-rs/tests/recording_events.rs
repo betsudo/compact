@@ -256,6 +256,46 @@ fn unshielded_receive_events_replay_in_order_with_the_exact_payload_and_gas() {
 }
 
 #[test]
+fn unshielded_mint_events_replay_in_order_with_the_exact_payload_and_gas() {
+    let mut bytes = [0; 80];
+    bytes[..32].fill(0x42);
+    bytes[32..64].fill(0xa5);
+    let first = FixedBytes::new(bytes);
+    bytes[64..].copy_from_slice(&u128::MAX.to_le_bytes());
+    let second = FixedBytes::new(bytes);
+
+    let native_first = context().emit_unshielded_mint(first).unwrap();
+    let native_second = native_first.context.emit_unshielded_mint(second).unwrap();
+    let recorded = RecordingFrame::new(context())
+        .emit_unshielded_mint(first)
+        .unwrap()
+        .emit_unshielded_mint(second)
+        .unwrap()
+        .finish(());
+    assert_eq!(
+        recorded.execution.gas_cost,
+        native_first.gas_cost + native_second.gas_cost
+    );
+    let replay = recorded
+        .public
+        .initial()
+        .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL)
+        .unwrap();
+    let events = recorded.execution.context.events();
+    assert_eq!(events.len(), 2);
+    assert!(events == native_second.context.events());
+    assert_eq!(replay.events.len(), 2);
+    assert_eq!(replay.context.state, context().query.state);
+    for ((event, log), value) in events.iter().zip(replay.events).zip([first, second]) {
+        assert_eq!(event.address, context().query.address);
+        assert_eq!(event.log, log);
+        assert_eq!(log.version, 1);
+        assert_eq!(log.event_type, LogEventType::UnshieldedMint);
+        assert_eq!(read_cell::<FixedBytes<80>, _>(&log.data).unwrap(), value);
+    }
+}
+
+#[test]
 fn rejected_vm_log_returns_no_successor_context() {
     let mut initial = context();
     initial.gas_limit = Some(RunningCost::ZERO);

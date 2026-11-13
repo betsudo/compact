@@ -111,3 +111,18 @@ node test-contracts/stdlib/events/check-unshielded-receive.mjs \
 
 The runner checks both recipient variants and refuses substituted inactive
 branch bytes, a malformed selector, and reordered logs.
+
+## UnshieldedMint
+
+`UnshieldedMint.compact` retains the seven upstream exports.
+`unshielded-mint-upstream.ss.txt` preserves the original compiler test.
+Version 1, tag 6 encodes the domain separator, token type and little-endian
+128-bit amount in 80 bytes.
+
+```sh
+node test-contracts/stdlib/events/check-unshielded-mint.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/unshielded-mint-preimages"
+```
+
+The runner checks the wire layout with distinct byte fields and rejects
+a substituted token type and reordered logs.

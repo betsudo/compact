@@ -175,6 +175,7 @@ pub(super) enum Operation {
     EmitShieldedReceive(Value),
     EmitUnshieldedSpend(Value),
     EmitUnshieldedReceive(Value),
+    EmitUnshieldedMint(Value),
     KernelClaim {
         kind: crate::ir::KernelClaimKind,
         value: Value,

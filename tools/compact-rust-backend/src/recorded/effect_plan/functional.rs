@@ -378,7 +378,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::Convert { .. } => Capability::Pure,
                 Operation::OwnPublicKey => Capability::ExecutionIdentity,
                 Operation::KernelSelf => Capability::KernelAddress,
-                Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::EmitUnshieldedSpend(_) | Operation::EmitUnshieldedReceive(_) => Capability::EventEmission,
+                Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::EmitUnshieldedSpend(_) | Operation::EmitUnshieldedReceive(_) | Operation::EmitUnshieldedMint(_) => Capability::EventEmission,
                 Operation::KernelClaim { .. } => Capability::KernelClaims,
                 Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
                 Operation::CreateZswapInput { .. } => Capability::ZswapInput,

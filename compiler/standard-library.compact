@@ -655,3 +655,9 @@ export struct UnshieldedReceive {
   tokenType: Bytes<32>,
   amount: Uint<128>,
 }
+
+export struct UnshieldedMint {
+  domainSep: Bytes<32>,
+  tokenType: Bytes<32>,
+  amount: Uint<128>,
+}

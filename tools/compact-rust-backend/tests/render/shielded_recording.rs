@@ -158,6 +158,40 @@ fn unshielded_receive_emission_requires_the_exact_byte_width() {
     }
 }
 
+#[test]
+fn unshielded_mint_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_mint".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 80 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedMint {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_mint("));
+    assert!(rendered.source.contains("frame.emit_unshielded_mint("));
+    for ty in [Type::Bytes { length: 79 }, Type::Bytes { length: 81 }, Type::Field] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 80 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
 // Optional raw-output gate for compositional expansions, separate from frozen
 // whole-oracle inclusion and funded proof qualification. Requires a fresh root.
 fn export_zswap_expansion(name: &str, contract: &Contract, generated: &str) {

@@ -38,6 +38,8 @@ Unreleased Ledger 9 migration.
   encoding in ZKIR v3, TypeScript and Rust.
 - Support standalone `UnshieldedReceive` emission with structural
   recipient encoding in ZKIR v3, TypeScript and Rust.
+- Support standalone `UnshieldedMint` emission with its 80-byte payload
+  in ZKIR v3, TypeScript and Rust.
 - Support standalone `ShieldedBurn` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and

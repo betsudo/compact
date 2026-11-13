@@ -14632,6 +14632,22 @@ groups than for single tests.
   (test
     '(
       "import CompactStandardLibrary;"
+      "export { UnshieldedMint }"
+      )
+    (returns
+      (program
+        (export-typedef UnshieldedMint ()
+          (tstruct UnshieldedMint
+            (domainSep (tbytes 32))
+            (tokenType (tbytes 32))
+            (amount (tunsigned
+                      340282366920938463463374607431768211455))))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
       "export { UnshieldedReceive }"
       )
     (returns
@@ -70095,6 +70111,131 @@ groups than for single tests.
         (oops
           message: "~a:\n  ~?"
           irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit emit_one(n: Bytes<32>): Bytes<32> {"
+      "  emit(UnshieldedMint {"
+      "    domainSep: disclose(n),"
+      "    tokenType: disclose(n),"
+      "    amount: 1000 as Uint<128>"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit emit_two(n: Bytes<32>): Bytes<32> {"
+      "  emit(UnshieldedMint {"
+      "    domainSep: disclose(n),"
+      "    tokenType: disclose(n),"
+      "    amount: 1 as Uint<128>"
+      "  });"
+      "  emit(UnshieldedMint {"
+      "    domainSep: disclose(n),"
+      "    tokenType: disclose(n),"
+      "    amount: 2 as Uint<128>"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit cond_emit(b: Boolean, n: Bytes<32>): Bytes<32> {"
+      "  if (disclose(b)) {"
+      "    emit(UnshieldedMint {"
+      "      domainSep: disclose(n),"
+      "      tokenType: disclose(n),"
+      "      amount: 5 as Uint<128>"
+      "    });"
+      "  }"
+      "  return n;"
+      "}"
+      "export circuit no_emit(n: Bytes<32>): Bytes<32> {"
+      "  return n;"
+      "}"
+      "export circuit serialize_UnshieldedMint(x: UnshieldedMint): Bytes<80> {"
+      "  return serialize<UnshieldedMint, 80>(x);"
+      "}"
+      "export circuit deserialize_UnshieldedMint(x: Bytes<80>): UnshieldedMint {"
+      "  return deserialize<UnshieldedMint, 80>(x);"
+      "}"
+      "export circuit roundtrip_UnshieldedMint(orig: UnshieldedMint): UnshieldedMint {"
+      "  const bytes = serialize<UnshieldedMint, 80>(orig);"
+      "  return deserialize<UnshieldedMint, 80>(bytes);"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "const N32 = () => new Uint8Array(32).fill(0x42);"
+            ""
+            "test('single emit produces exactly one event tagged emit', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_one(Ctxt, N32());"
+            "  expect(r.context.events?.length).toBe(1);"
+            "});"
+            ""
+            "test('emit event has decoded VersionedEmitItem fields', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_one(Ctxt, N32());"
+            "  expect(r.context.events?.[0].version).toBe(1);"
+            "});"
+            ""
+            "test('two emit statements produce two events', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_two(Ctxt, N32());"
+            "  expect(r.context.events?.length).toBe(2);"
+            "});"
+            ""
+            "test('conditional emit emits when condition is true', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.cond_emit(Ctxt, true, N32());"
+            "  expect(r.context.events?.length).toBe(1);"
+            "});"
+            ""
+            "test('conditional emit emits nothing when condition is false', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.cond_emit(Ctxt, false, N32());"
+            "  expect(r.context.events?.length).toBe(0);"
+            "});"
+            ""
+            "test('pure circuit (no emit) has no events field', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.no_emit(Ctxt, N32());"
+            "  expect(r.context.events).toEqual([]);"
+            "});"
+            ""
+            "test('serialize_UnshieldedMint returns 80-byte payload', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const orig = { domainSep: N32(), tokenType: N32(), amount: 999n };"
+            "  const r = C.circuits.serialize_UnshieldedMint(Ctxt, orig);"
+            "  expect(r.result.length).toBe(80);"
+            "});"
+            ""
+            "test('roundtrip preserves UnshieldedMint struct', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const orig = { domainSep: N32(), tokenType: N32(), amount: 12345n };"
+            "  const r = C.circuits.roundtrip_UnshieldedMint(Ctxt, orig);"
+            "  expect(r.result).toEqual(orig);"
+            "});"
+            ))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Uint<128>;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(UnshieldedMint { domainSep: disclose(n), tokenType: disclose(n), amount: secret() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
     )
 
   (test

@@ -284,6 +284,9 @@ the token type and the amount, and refuse a malformed selector.
 `UnshieldedReceive` uses the same structural shape for its recipient
 and emits with its own tag. Both targets preserve inactive recipient
 bytes and reject an undisclosed witness in either branch.
+`UnshieldedMint` emits tag 6 with the domain separator, token type and
+little-endian amount. Its codec checks use distinct byte fields and the
+maximum `Uint<128>` value.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is
