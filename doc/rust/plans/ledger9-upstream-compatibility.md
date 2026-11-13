@@ -573,6 +573,16 @@ recorded Rust consumers. The six raw v3 ZKIR files matched across targets.
 Proof, transaction and Linux qualification for this stateful fixture remain
 open.
 
+The Runtime 0.18.0 Set, Map and List recapture now has a fresh generated
+Rust consumer. `check_generated_collection_parity.py` compiles each frozen
+source to both targets with checked recording enabled, then executes the
+generated Rust circuits against the retained independent TypeScript state
+bytes. On local macOS arm64 with Rust 1.99, all three initial states and
+twelve transitions matched. The newly generated TypeScript modules were
+byte-identical to the paired Runtime 0.18.0 recapture outputs. The consumer
+does not prove these circuits or exercise a funded transaction; native Linux
+and recorded execution qualification remain open.
+
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
 [ledger9]: https://docs.midnight.network/relnotes/ledger-9

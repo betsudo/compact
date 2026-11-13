@@ -1290,3 +1290,13 @@ raw ZKIR, key tool and serialization version, platform and verified
 parameter bytes. Run the full required test and proof gates after
 compiler changes. Keep proof creation, verification, refusal and
 replay checks fresh.
+
+The next Runtime 0.18.0 collection slice compiles the frozen Set and Map
+transition fixtures and the List example to both targets, then runs a fresh
+generated Rust consumer against the retained independent TypeScript oracle
+bytes. Local macOS arm64 matched three initial states and twelve mutation
+steps, and the generated TypeScript files reproduced the paired recapture
+outputs byte for byte. The new check lives in
+`tools/compact-rust-backend/check_generated_collection_parity.py` and uses
+the repository's Rust 1.99 toolchain. Recorded execution, proofs, funded
+strict application and native Linux still require separate qualification.
