@@ -98,3 +98,17 @@ for (const [name, definition, runtimeTest, maximum] of [
     expect(existsSync(build)).toBe(false);
   });
 }
+
+test('emits field arithmetic, checked 32-byte casts and Scalar hashes for both targets', async () => {
+  const { build, result } = compile('operations', {}, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const { Contract } = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const { contract, ctx } = await createTestContract(Contract);
+  expect(contract.circuits.arithmetic(ctx, 3n, 5n).result).toEqual([5n, 7n]);
+  expect(() => contract.circuits.arithmetic(ctx, 0n, 1n)).toThrow(/Curve25519 base field has no inverse/);
+  expect(() => contract.circuits.arithmetic(ctx, 1n, 0n)).toThrow(/Curve25519 scalar field has no inverse/);
+  const bytes = new Uint8Array(32);
+  bytes[0] = 17;
+  expect(contract.circuits.casts(ctx, bytes).result).toEqual([bytes, bytes]);
+  expect(contract.circuits.hashScalar(ctx, 1n).result).toHaveLength(32);
+});

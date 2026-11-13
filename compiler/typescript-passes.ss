@@ -319,6 +319,7 @@
            "assert"
            "convertBytesToSecp256k1Field"
            "convertBytesToSecp256r1Field"
+           "convertBytesToCurve25519Field"
            "convertNumericToJubjubScalar"
            "convertFieldToBytes"
            "convertBytesToField"
@@ -330,6 +331,8 @@
            "secp256k1ScalarAdd" "secp256k1ScalarSub" "secp256k1ScalarMul"
            "secp256r1BaseAdd" "secp256r1BaseSub" "secp256r1BaseMul"
            "secp256r1ScalarAdd" "secp256r1ScalarSub" "secp256r1ScalarMul"
+           "curve25519BaseAdd" "curve25519BaseSub" "curve25519BaseMul"
+           "curve25519ScalarAdd" "curve25519ScalarSub" "curve25519ScalarMul"
            ))
       (define (compact-stdlib name)
         (unless (member name compact-stdlib-entries)
