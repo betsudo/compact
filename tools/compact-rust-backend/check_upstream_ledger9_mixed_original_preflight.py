@@ -69,7 +69,7 @@ def run(command: list[str], log: Path) -> str:
     completed = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
     log.write_text(completed.stdout + completed.stderr)
     require(completed.returncode == 0, f'{command[0]} failed; inspect {log}')
-    return completed.stdout + completed.stderr
+    return completed.stdout
 
 
 def original_cases() -> dict[str, tuple[bytes, bytes]]:
