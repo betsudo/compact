@@ -96,3 +96,18 @@ node test-contracts/stdlib/events/check-unshielded-spend.mjs \
 
 The runner covers exact payload bytes, both sender variants, an invalid
 selector, and refusal of a substituted inactive branch and reordered logs.
+
+## UnshieldedReceive
+
+`UnshieldedReceive.compact` retains the seven upstream exports.
+`unshielded-receive-upstream.ss.txt` preserves the original compiler test.
+Version 1, tag 5 uses the 145-byte layout with an `Either` recipient.
+Both branches retain their bytes through a codec roundtrip.
+
+```sh
+node test-contracts/stdlib/events/check-unshielded-receive.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/unshielded-receive-preimages"
+```
+
+The runner checks both recipient variants and refuses substituted inactive
+branch bytes, a malformed selector, and reordered logs.

@@ -354,8 +354,18 @@ fn unshielded_spend_event_manifest() -> Result<Value, String> {
     serde_json::from_slice(UNSHIELDED_SPEND_EVENT).map_err(|error| error.to_string())
 }
 
+const UNSHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("unshielded-receive-event-expression.json");
+
+fn unshielded_receive_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_RECEIVE_EVENT) != "3f6ae7f9c972cc30591c81e39bc5a731ef7846765cc6bf31ad4522a930d3e19c" {
+        return Err("unreviewed UnshieldedReceive event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &unshielded_spend_event_manifest()?)?;
+    let current = legacy_source(path, current, &unshielded_receive_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_spend_event_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_receive_event_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_mint_event_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_burn_event_manifest()?)?;

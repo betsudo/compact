@@ -916,7 +916,7 @@ fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
         Expr::KernelMintShielded { domain, amount } => {
@@ -1727,6 +1727,7 @@ fn pure_leaf_expression(
         | Expr::EmitShieldedMint { .. }
         | Expr::EmitShieldedReceive { .. }
         | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

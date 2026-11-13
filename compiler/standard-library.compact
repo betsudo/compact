@@ -648,3 +648,10 @@ export struct UnshieldedSpend {
   tokenType: Bytes<32>,
   amount: Uint<128>,
 }
+
+export struct UnshieldedReceive {
+  recipient: Either<ZswapCoinPublicKey, ContractAddress>,
+  domainSep: Bytes<32>,
+  tokenType: Bytes<32>,
+  amount: Uint<128>,
+}

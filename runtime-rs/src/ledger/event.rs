@@ -47,6 +47,12 @@ pub(crate) fn unshielded_spend_program<D: DB>(
     event_program(LogEventType::UnshieldedSpend, payload)
 }
 
+pub(crate) fn unshielded_receive_program<D: DB>(
+    payload: FixedBytes<145>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::UnshieldedReceive, payload)
+}
+
 fn event_program<D: DB, const LENGTH: usize>(
     tag: LogEventType,
     bytes: FixedBytes<LENGTH>,

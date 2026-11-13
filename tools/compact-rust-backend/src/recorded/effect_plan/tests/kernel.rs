@@ -102,6 +102,24 @@ fn unshielded_spend_event_requires_exact_bytes145_in_the_checked_plan() {
 }
 
 #[test]
+fn unshielded_receive_event_requires_exact_bytes145_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedReceive(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 145 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
 fn all_closed_claim_kinds_require_bytes32_live_input_and_unit_output() {
     for kind in [
         KernelClaimKind::Nullifier,

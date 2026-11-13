@@ -14,7 +14,7 @@
 // limitations under the License.
 
 use super::{CircuitContext, CircuitResult};
-use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program};
+use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program, unshielded_receive_program};
 use crate::{CompactError, FixedBytes};
 use midnight_onchain_vm::ops::{Op, VersionedLogItem};
 use midnight_onchain_vm::result_mode::ResultModeVerify;
@@ -96,6 +96,15 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         payload: FixedBytes<145>,
     ) -> Result<CircuitResult<Private, (), D>, CompactError> {
         self.emit_event(unshielded_spend_program(payload)?)
+    }
+
+    /// Emit a public UnshieldedReceive event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_receive(
+        self,
+        payload: FixedBytes<145>,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        self.emit_event(unshielded_receive_program(payload)?)
     }
 
     fn emit_event(

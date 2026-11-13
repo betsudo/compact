@@ -540,6 +540,7 @@ fn render_operation_expression(
         | Expr::EmitShieldedMint { .. }
         | Expr::EmitShieldedReceive { .. }
         | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -1367,6 +1368,7 @@ fn render_effect_operation(
         | Expr::EmitShieldedMint { value: argument }
         | Expr::EmitShieldedReceive { value: argument }
         | Expr::EmitUnshieldedSpend { value: argument }
+        | Expr::EmitUnshieldedReceive { value: argument }
         | Expr::KernelClaim {
             value: argument, ..
         }
@@ -1386,6 +1388,7 @@ fn render_effect_operation(
                 Expr::EmitShieldedMint { .. } => 81,
                 Expr::EmitShieldedReceive { .. } => 578,
                 Expr::EmitUnshieldedSpend { .. } => 145,
+                Expr::EmitUnshieldedReceive { .. } => 145,
                 _ => 32,
             };
             let expected = Type::Bytes { length };
@@ -1413,6 +1416,9 @@ fn render_effect_operation(
                 }
                 Expr::EmitUnshieldedSpend { .. } => {
                     syn::parse_quote!(context.emit_unshielded_spend(#name)?)
+                }
+                Expr::EmitUnshieldedReceive { .. } => {
+                    syn::parse_quote!(context.emit_unshielded_receive(#name)?)
                 }
                 Expr::KernelClaim { claim, .. } => {
                     use crate::ir::KernelClaimKind;

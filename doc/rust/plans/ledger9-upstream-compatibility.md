@@ -281,6 +281,9 @@ addresses and swapped event order.
 payload. The original fixture emits with each sender variant. The
 codec controls distinguish both sender branches, the domain separator,
 the token type and the amount, and refuse a malformed selector.
+`UnshieldedReceive` uses the same structural shape for its recipient
+and emits with its own tag. Both targets preserve inactive recipient
+bytes and reject an undisclosed witness in either branch.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

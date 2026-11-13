@@ -36,6 +36,8 @@ Unreleased Ledger 9 migration.
   commitment, ciphertext and contract-address wire order.
 - Support standalone `UnshieldedSpend` emission with structural sender
   encoding in ZKIR v3, TypeScript and Rust.
+- Support standalone `UnshieldedReceive` emission with structural
+  recipient encoding in ZKIR v3, TypeScript and Rust.
 - Support standalone `ShieldedBurn` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and

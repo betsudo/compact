@@ -1006,6 +1006,9 @@ pub enum Expr {
     EmitUnshieldedSpend {
         value: Box<Expr>,
     },
+    EmitUnshieldedReceive {
+        value: Box<Expr>,
+    },
     KernelClaim {
         claim: KernelClaimKind,
         value: Box<Expr>,
