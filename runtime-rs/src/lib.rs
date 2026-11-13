@@ -22,6 +22,7 @@
 #![forbid(unsafe_code)]
 
 pub mod context;
+mod curve25519_point;
 mod foreign_fields;
 #[cfg(feature = "experimental-functional")]
 pub mod functional;
@@ -43,6 +44,7 @@ pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
 #[cfg(feature = "ledger-transaction")]
 pub mod transaction;
 
+pub use curve25519_point::Curve25519Point;
 pub use foreign_fields::{
     Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar,
 };

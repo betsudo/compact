@@ -258,6 +258,7 @@ primitive_cell_value!(
     crate::Secp256r1Base,
     crate::Curve25519Base,
     crate::Curve25519Scalar,
+    crate::Curve25519Point,
     crate::Secp256r1Scalar,
 );
 

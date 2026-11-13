@@ -24,6 +24,7 @@ import {
   MAX_SECP256R1_SCALAR,
 } from './constants.js';
 import { CompactError } from './error.js';
+import { isValidCurve25519Point } from './utils.js';
 
 /**
  * A runtime representation of a type in Compact
@@ -701,5 +702,31 @@ export const ShieldedCoinRecipientDescriptor = {
     return CompactTypeBoolean.toValue(value.is_left).concat(
       ZswapCoinPublicKeyDescriptor.toValue(value.left).concat(ContractAddressDescriptor.toValue(value.right)),
     );
+  },
+};
+
+/** A canonical affine Curve25519 point. Identity is (0, 1). */
+export interface Curve25519Point {
+  readonly x: bigint;
+  readonly y: bigint;
+}
+
+/** Runtime type of a Curve25519 prime-order subgroup point. */
+export const CompactTypeCurve25519Point: CompactType<Curve25519Point> = {
+  alignment(): ocrt.Alignment {
+    return CompactTypeCurve25519Base.alignment().concat(CompactTypeCurve25519Base.alignment());
+  },
+  fromValue(value: ocrt.Value): Curve25519Point {
+    const point = {x: CompactTypeCurve25519Base.fromValue(value), y: CompactTypeCurve25519Base.fromValue(value)};
+    if (!isValidCurve25519Point(point)) {
+      throw new CompactError('expected Curve25519Point');
+    }
+    return point;
+  },
+  toValue(point: Curve25519Point): ocrt.Value {
+    if (!isValidCurve25519Point(point)) {
+      throw new CompactError('expected Curve25519Point');
+    }
+    return CompactTypeCurve25519Base.toValue(point.x).concat(CompactTypeCurve25519Base.toValue(point.y));
   },
 };

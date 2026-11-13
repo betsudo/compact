@@ -252,3 +252,31 @@
   ([coin (TypeRef ShieldedCoinInfo) (discloses nothing)]
    [recipient (TypeRef Either (TypeRef ZswapCoinPublicKey) (TypeRef ContractAddress)) (discloses nothing)])
   Void)
+
+;; -- Curve25519Point
+(declare-native-entry circuit curve25519PointX
+  "__compactRuntime.curve25519PointX"
+  ([pt (TypeRef Curve25519Point) (discloses "the x-coordinate of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit curve25519PointY
+  "__compactRuntime.curve25519PointY"
+  ([pt (TypeRef Curve25519Point) (discloses "the y-coordinate of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit ecAdd
+  "__compactRuntime.curve25519Add"
+  ([a (TypeRef Curve25519Point) (discloses "an elliptic curve sum including")]
+   [b (TypeRef Curve25519Point) (discloses "an elliptic curve sum including")])
+  (TypeRef Curve25519Point))
+
+(declare-native-entry circuit ecMul
+  "__compactRuntime.curve25519Mul"
+  ([a (TypeRef Curve25519Point) (discloses "an elliptic curve product including")]
+   [b (TypeRef Curve25519Scalar) (discloses "an elliptic curve product including")])
+  (TypeRef Curve25519Point))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.curve25519MulGenerator"
+  ([b (TypeRef Curve25519Scalar) (discloses "the product of the group generator with")])
+  (TypeRef Curve25519Point))

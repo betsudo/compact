@@ -16,7 +16,7 @@
 //! Exact source-value encoding for hashing, separate from ledger normal form.
 use crate::{
     BoundedUint, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueBytes, OpaqueString,
-    Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Point, Secp256k1Scalar, Secp256r1Base,
+    Curve25519Base, Curve25519Point, Curve25519Scalar, Secp256k1Base, Secp256k1Point, Secp256k1Scalar, Secp256r1Base,
     Secp256r1Point, Secp256r1Scalar,
     WideUint,
 };
@@ -89,6 +89,7 @@ fixed_leaf!(
     Field,
     JubjubPoint,
     Curve25519Base,
+    Curve25519Point,
     Curve25519Scalar,
     Secp256k1Base,
     Secp256k1Point,

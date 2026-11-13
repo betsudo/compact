@@ -45,6 +45,7 @@ pub(crate) fn copy_type(ty: &Type) -> bool {
         | Type::Curve25519Scalar
         | Type::Secp256k1Point
         | Type::Secp256r1Point
+        | Type::Curve25519Point
         | Type::Bytes { .. }
         | Type::Enum { .. }
         | Type::Unsigned { .. } => true,

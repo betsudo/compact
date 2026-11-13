@@ -1284,6 +1284,7 @@
                      [("JubjubScalar") "__compactRuntime.CompactTypeJubjubScalar"]
                      [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
                      [("Secp256r1Point") "__compactRuntime.CompactTypeSecp256r1Point"]
+                     [("Curve25519Point") "__compactRuntime.CompactTypeCurve25519Point"]
                      [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
                      [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
                      [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
@@ -1376,6 +1377,9 @@
                     [(topaque ,src ,opaque-type)
                      (guard (string=? opaque-type "Secp256r1Point"))
                      (format "__compactRuntime.isValidSecp256r1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Curve25519Point"))
+                     (format "__compactRuntime.isValidCurve25519Point(~a)" var)]
                     [(topaque ,src ,opaque-type)
                      (let ([max (case opaque-type
                                   [("JubjubScalar") "MAX_JUBJUB_SCALAR"]
@@ -2803,12 +2807,12 @@
                        elt-name*
                        type*)]
                     [(topaque ,src ,opaque-type)
-                     (guard (foreign-point-base opaque-type))
+                     (guard (and (foreign-point-base opaque-type) (not (string=? opaque-type "Curve25519Point"))))
                      (print-indent indent)
                      (printf "if (x~s.identity !== y~s.identity || (!x~s.identity && (x~s.x !== y~s.x || x~s.y !== y~s.y))) { return false; }\n"
                              i i i i i i i)]
                     [(topaque ,src ,opaque-type)
-                     (guard (string=? opaque-type "JubjubPoint"))
+                     (guard (member opaque-type '("JubjubPoint" "Curve25519Point")))
                      (for-each
                        (lambda (elt-name)
                          (print-indent indent)
@@ -2863,6 +2867,7 @@
                   [("string") "''"]
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
+                  [("Curve25519Point") "({x: 0n, y: 1n})"]
                   [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
                   [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
@@ -3416,6 +3421,7 @@
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
          [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
          [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
+         [("Curve25519Point") "__compactRuntime.Curve25519Point"]
          [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]

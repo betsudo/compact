@@ -26,9 +26,10 @@ import {
   CURVE25519_BASE_MODULUS, CURVE25519_SCALAR_MODULUS,
 } from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
-import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
+import type { Curve25519Point, Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
 import {
+  curve25519FromProjective, curve25519ToProjective,
   secp256k1FromProjective, secp256k1ToProjective, secp256r1FromProjective, secp256r1ToProjective,
 } from './utils.js';
 
@@ -778,4 +779,58 @@ export function jubjubSchnorrVerify<A>(
   const rhs = ecAdd(announcement, ecMul(verifyingKey, c));
 
   return lhs.x === rhs.x && lhs.y === rhs.y;
+}
+
+// -- Curve25519Point
+/**
+ * The Compact builtin `curve25519PointX` function
+ *
+ * This function extracts the x-coordinate of a Compact `Curve25519Point`.
+ */
+export function curve25519PointX(pt: Curve25519Point): bigint {
+  return pt.x;
+}
+
+/**
+ * The Compact builtin `curve25519PointY` function
+ *
+ * This function extracts the y-coordinate of a Compact `Curve25519Point`.
+ */
+export function curve25519PointY(pt: Curve25519Point): bigint {
+  return pt.y;
+}
+
+/**
+ * The Compact builtin `ecAdd` function for Curve25519 points.
+ *
+ * This function adds two elliptic curve points. The points are assumed to be
+ * valid, points passed from compiler-generated code are always valid ones.
+ * @internal
+ */
+export function curve25519Add(a: Curve25519Point, b: Curve25519Point): Curve25519Point {
+  return curve25519FromProjective(curve25519ToProjective(a).add(curve25519ToProjective(b)));
+}
+
+/**
+ * The Compact builtin `ecMul` function for Curve25519 points.
+ *
+ * The points are assumed to be valid, points passed from
+ * compiler-generated code are always valid ones.
+ * @internal
+ */
+export function curve25519Mul(a: Curve25519Point, b: bigint): Curve25519Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return curve25519FromProjective(curve25519ToProjective(a).multiplyUnsafe(b));
+}
+
+/**
+ * The Compact builtin `ecMulGenerator` function for Curve25519 points.
+ */
+export function curve25519MulGenerator(b: bigint): Curve25519Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return curve25519FromProjective(ed25519.Point.BASE.multiplyUnsafe(b));
 }

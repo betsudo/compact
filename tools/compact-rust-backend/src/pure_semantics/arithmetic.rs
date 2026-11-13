@@ -123,6 +123,7 @@ impl Secp256k1Unary {
             Self::PointX | Self::PointY => match operand {
                 Type::Secp256k1Point => Ok(Type::Secp256k1Base),
                 Type::Secp256r1Point => Ok(Type::Secp256r1Base),
+                Type::Curve25519Point => Ok(Type::Curve25519Base),
                 actual => Err(RenderError::TypeMismatch {
                     expected: Type::Secp256k1Point,
                     actual: actual.clone(),

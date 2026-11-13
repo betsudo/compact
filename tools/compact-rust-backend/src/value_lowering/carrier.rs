@@ -45,6 +45,7 @@ impl CarrierSink for NativeCarrierSink {
             Leaf::Curve25519Scalar => syn::parse_quote!(runtime::Curve25519Scalar),
             Leaf::Secp256k1Point => syn::parse_quote!(runtime::Secp256k1Point),
             Leaf::Secp256r1Point => syn::parse_quote!(runtime::Secp256r1Point),
+            Leaf::Curve25519Point => syn::parse_quote!(runtime::Curve25519Point),
             Leaf::OpaqueString => syn::parse_quote!(runtime::OpaqueString),
             Leaf::OpaqueBytes => syn::parse_quote!(runtime::OpaqueBytes),
             Leaf::Bytes(length) => {

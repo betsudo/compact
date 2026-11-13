@@ -610,6 +610,7 @@ pub enum Type {
     Curve25519Scalar,
     Secp256k1Point,
     Secp256r1Point,
+    Curve25519Point,
     OpaqueString,
     OpaqueBytes,
     Bytes {

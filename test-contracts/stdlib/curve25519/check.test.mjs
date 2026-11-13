@@ -26,6 +26,8 @@ import baseCompile from './base/roundtrip/compile.pass.test.ts';
 import baseRuntime from './base/roundtrip/runtime.pass.test.ts';
 import scalarCompile from './scalar/roundtrip/compile.pass.test.ts';
 import scalarRuntime from './scalar/roundtrip/runtime.pass.test.ts';
+import defaultCompile from './default/maybe_either/compile.pass.test.ts';
+import defaultRuntime from './default/maybe_either/runtime.pass.test.ts';
 
 const { MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR } = runtime;
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -197,4 +199,88 @@ for (const [fixture, message] of [
     expect(result.stderr).toContain(message);
     expect(existsSync(build)).toBe(false);
   });
+}
+
+async function runPointFixture(name, assertions) {
+  const { build, result } = compile(`point/${name}`, {
+    compilerArgs: ['--rust-require-recording'],
+  }, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const original = readFileSync(join(root, 'point', name, 'upstream.ss.txt'), 'utf8');
+  const callback = [...original.slice(original.indexOf('(stage-javascript'))
+    .matchAll(/^\s*(?:'\()?("(?:[^"\\]|\\.)*")$/gm)]
+    .map(match => JSON.parse(match[1])).join('\n');
+  expect(callback.match(/\bexpect\(/g)).toHaveLength(assertions);
+  const code = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const startContract = async (_, witnesses) => {
+    const { contract, ctx } = await createTestContract(code.Contract, witnesses);
+    const adapt = call => (context, ...args) => {
+      const output = call(context.callContext ?? context, ...args);
+      return {...output, context: {callContext: output.context}};
+    };
+    const circuits = Object.fromEntries(Object.entries(contract.circuits)
+      .map(([entry, call]) => [entry, adapt(call)]));
+    return [{circuits}, ctx];
+  };
+  const run = new Function('test', 'expect', 'contractCode', 'startContract', 'runtime', `return ${callback}`);
+  await run((_, check) => check(), expect, code, startContract, runtime);
+  return {build, code};
+}
+
+test('runs the original Curve25519 point ledger roundtrip and coordinate projection', async () => {
+  const {build, code} = await runPointFixture('roundtrip', 6);
+  const capabilities = JSON.parse(readFileSync(join(build, 'contract/rust-capabilities.json'), 'utf8'));
+  expect(capabilities.circuits.map(({name, recorded, observed_call}) => [name, recorded, observed_call]))
+    .toEqual([['test0', true, true], ['test1', true, true]]);
+  const { contract, ctx } = await createTestContract(code.Contract);
+  for (const point of [{x: 0n, y: 0n}, {x: 0n, y: MAX_CURVE25519_BASE}, {x: -1n, y: 1n}]) {
+    expect(() => contract.circuits.test0(ctx, point)).toThrow(/Curve25519Point/);
+  }
+});
+
+test('runs the original Curve25519 point equality and identity assertions', async () => {
+  await runPointFixture('equality', 8);
+});
+
+test('generates both targets for Curve25519 addition and scalar multiplication', async () => {
+  const {build, result} = compile('point/group', {compilerArgs: ['--rust-require-recording']}, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const ir = JSON.parse(readFileSync(join(build, 'zkir/group.zkir'), 'utf8'));
+  expect(ir.instructions.map(({op}) => op)).toEqual(expect.arrayContaining(['ec_mul_generator', 'ec_mul', 'add']));
+  const {Contract, ledger} = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const {contract, ctx} = await createTestContract(Contract);
+  const generator = runtime.curve25519MulGenerator(1n);
+  const doubled = runtime.curve25519MulGenerator(2n);
+  const identity = {x: 0n, y: 1n};
+  for (const [point, scalar, expected] of [
+    [generator, 1n, doubled],
+    [generator, 0n, identity],
+    [identity, 1n, generator],
+  ]) {
+    const call = contract.circuits.group(ctx, point, scalar);
+    expect(call.result).toEqual(expected);
+    expect(ledger(call.context.currentQueryContext.state).point).toEqual(expected);
+  }
+});
+
+test('runs the original Curve25519 Maybe and Either defaults', async () => {
+  expect(defaultCompile.result).toBe('pass');
+  expect(defaultRuntime.result).toBe('pass');
+  const { build, result } = compile('default/maybe_either', defaultCompile.options, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const { Contract, pureCircuits } = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  await defaultRuntime.run(Contract, pureCircuits);
+});
+
+for (const name of ['serialize', 'deserialize']) {
+  for (const targets of [['ts'], ['rust'], ['ts', 'rust']]) {
+    test(`refuses the original Curve25519 point ${name} for ${targets.join('+')}`, () => {
+      const { build, result } = compile(`point/${name}`, {}, targets);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(new RegExp(
+        `unbound identifier ${name}|(?:de)?serialization is not yet supported for curve type Curve25519Point`,
+      ));
+      expect(existsSync(build)).toBe(false);
+    });
+  }
 }

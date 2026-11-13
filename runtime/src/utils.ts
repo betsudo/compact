@@ -13,12 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { ed25519 } from '@noble/curves/ed25519.js';
 import { ContractAddress } from '@midnightntwrk/onchain-runtime-v4';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { p256 } from '@noble/curves/nist.js';
-import type { Secp256k1Point, Secp256r1Point } from './compact-types.js';
+import type { Curve25519Point, Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
-import { SECP256K1_BASE_MODULUS, SECP256R1_BASE_MODULUS } from './constants.js';
+import { CURVE25519_BASE_MODULUS, SECP256K1_BASE_MODULUS, SECP256R1_BASE_MODULUS } from './constants.js';
 import { EncodedContractAddress } from './zswap.js';
 
 /**
@@ -184,3 +185,58 @@ export function secp256r1EcdsaRecover(
 export const fromHex = (s: string): Uint8Array => Buffer.from(s, 'hex');
 
 export const toHex = (s: Uint8Array): string => Buffer.from(s).toString('hex');
+
+/**
+ * Check whether a value is a valid `Curve25519Point`: an object whose `x` and
+ * `y` are bigints in the base field and which lies in the prime-order subgroup
+ * of the curve. The identity is the ordinary affine point (0, 1).
+ */
+export function isValidCurve25519Point(p: unknown): p is Curve25519Point {
+  if (typeof p !== 'object' || p === null) {
+    return false;
+  }
+
+  const { x, y } = p as { x: unknown; y: unknown };
+  if (typeof x !== 'bigint' || typeof y !== 'bigint') {
+    return false;
+  }
+  // `fromAffine` only checks the coordinates fit in 256 bits, so the field range is checked here.
+  if (x < 0n || x >= CURVE25519_BASE_MODULUS || y < 0n || y >= CURVE25519_BASE_MODULUS) {
+    return false;
+  }
+  // `assertValidity` rejects the identity, so it is only called for other points.
+  if (x !== 0n || y !== 1n) {
+    try {
+      const pt = ed25519.Point.fromAffine({ x, y });
+      pt.assertValidity();
+      if (!pt.isTorsionFree()) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Lift the simple affine `Curve25519Point` representation into a noble-curves
+ * projective point. The point is assumed to be valid, points passed from
+ * compiler-generated code are always valid ones.
+ * @internal
+ */
+export function curve25519ToProjective(p: Curve25519Point): ReturnType<typeof ed25519.Point.fromAffine> {
+  if (p.x === 0n && p.y === 1n) {
+    return ed25519.Point.ZERO;
+  }
+  return ed25519.Point.fromAffine({ x: p.x, y: p.y });
+}
+
+/**
+ * Project a noble-curves point back down to the simple affine
+ * `Curve25519Point` representation.
+ */
+export function curve25519FromProjective(p: ReturnType<typeof ed25519.Point.fromAffine>): Curve25519Point {
+  const { x, y } = p.toAffine();
+  return { x: x, y: y };
+}

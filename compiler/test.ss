@@ -18050,7 +18050,7 @@ groups than for single tests.
       )
     (oops
       message: "~a:\n  ~?"
-      irritants: '("testfile.compact line 3 char 10" "no compatible function named ~a is in scope at this call~@[~a~]~@[~a~]~@[~a~]" (ecAdd #f "\n    three functions are incompatible with the supplied argument types\n      supplied argument types:\n        (Bytes<32>, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (JubjubPoint, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Secp256r1Point, Secp256r1Point)\n      declared argument types for function at <standard library>:\n        (Secp256k1Point, Secp256k1Point)" #f)))
+      irritants: '("testfile.compact line 3 char 10" "no compatible function named ~a is in scope at this call~@[~a~]~@[~a~]~@[~a~]" (ecAdd #f "\n    four functions are incompatible with the supplied argument types\n      supplied argument types:\n        (Bytes<32>, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Curve25519Point, Curve25519Point)\n      declared argument types for function at <standard library>:\n        (JubjubPoint, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Secp256r1Point, Secp256r1Point)\n      declared argument types for function at <standard library>:\n        (Secp256k1Point, Secp256k1Point)" #f)))
     )
 
   (test
@@ -18066,7 +18066,7 @@ groups than for single tests.
       )
     (oops
       message: "~a:\n  ~?"
-      irritants: '("testfile.compact line 7 char 10" "no compatible function named ~a is in scope at this call~@[~a~]~@[~a~]~@[~a~]" (ecAdd #f "\n    three functions are incompatible with the supplied argument types\n      supplied argument types:\n        (struct NonJubjubPoint<x: Field, y: Field>, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (JubjubPoint, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Secp256r1Point, Secp256r1Point)\n      declared argument types for function at <standard library>:\n        (Secp256k1Point, Secp256k1Point)" #f)))
+      irritants: '("testfile.compact line 7 char 10" "no compatible function named ~a is in scope at this call~@[~a~]~@[~a~]~@[~a~]" (ecAdd #f "\n    four functions are incompatible with the supplied argument types\n      supplied argument types:\n        (struct NonJubjubPoint<x: Field, y: Field>, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Curve25519Point, Curve25519Point)\n      declared argument types for function at <standard library>:\n        (JubjubPoint, JubjubPoint)\n      declared argument types for function at <standard library>:\n        (Secp256r1Point, Secp256r1Point)\n      declared argument types for function at <standard library>:\n        (Secp256k1Point, Secp256k1Point)" #f)))
     )
 
   (test
@@ -18113,13 +18113,23 @@ groups than for single tests.
                            [%b.21 (talias #f JubjubScalar
                                     (topaque "JubjubScalar"))])
              (talias #t JubjubPoint (topaque "JubjubPoint")))
-        (circuit %foo.22 ([%c.23 (talias #t JubjubPoint
+        (native %ecAdd.22 ([%a.23 (talias #f Curve25519Point
+                                    (topaque "Curve25519Point"))]
+                           [%b.24 (talias #f Curve25519Point
+                                    (topaque "Curve25519Point"))])
+             (talias #f Curve25519Point (topaque "Curve25519Point")))
+        (native %ecMul.25 ([%a.26 (talias #f Curve25519Point
+                                    (topaque "Curve25519Point"))]
+                           [%b.27 (talias #f Curve25519Scalar
+                                    (topaque "Curve25519Scalar"))])
+             (talias #f Curve25519Point (topaque "Curve25519Point")))
+        (circuit %foo.28 ([%c.29 (talias #t JubjubPoint
                                    (topaque "JubjubPoint"))])
              (talias #t JubjubPoint (topaque "JubjubPoint"))
           (call %ecAdd.13
-            %c.23
+            %c.29
             (call %ecMul.16
-              %c.23
+              %c.29
               (safe-cast (tfield) (tunsigned 3) 3))))))
     )
 

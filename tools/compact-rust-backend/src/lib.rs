@@ -3558,6 +3558,7 @@ fn render_with_refusals(
                     | Type::Curve25519Scalar
                     | Type::Secp256k1Point
                     | Type::Secp256r1Point
+                    | Type::Curve25519Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes
                     | Type::Unsigned { .. }

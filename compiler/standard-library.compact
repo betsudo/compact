@@ -54,6 +54,7 @@ export type Curve25519Base = Opaque<'Curve25519Base'>;
 export type Curve25519Scalar = Opaque<'Curve25519Scalar'>;
 export type Secp256k1Point = Opaque<'Secp256k1Point'>;
 export type Secp256r1Point = Opaque<'Secp256r1Point'>;
+export type Curve25519Point = Opaque<'Curve25519Point'>;
 
 // Merkle trees
 export struct MerkleTreeDigest { field: Field; }

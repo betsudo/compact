@@ -246,7 +246,7 @@
            (object (cons "kind" "ec_add")
                    (cons "left" (lower (car args)))
                    (cons "right" (lower (cadr args))))]
-          [(ecMul ecMulJubjubScalar secp256k1Mul secp256r1Mul)
+          [(ecMul ecMulJubjubScalar secp256k1Mul secp256r1Mul curve25519Mul)
            (unless (= (length args) 2)
              (source-errorf src "ecMul expects two arguments"))
            (object (cons "kind" "ec_mul")
@@ -259,7 +259,7 @@
                               (with-output-language (Lnodisclose Type) `(tfield ,src))
                               (lower (cadr args)))]
                            [else (lower (cadr args))])))]
-          [(ecMulGenerator ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator)
+          [(ecMulGenerator ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator curve25519MulGenerator)
            (unless (= (length args) 1)
              (source-errorf src "ecMulGenerator expects one argument"))
            (object (cons "kind" "ec_mul_generator")
@@ -356,6 +356,7 @@
              [(string=? opaque-type "Curve25519Scalar") (kind "curve25519_scalar")]
              [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
              [(string=? opaque-type "Secp256r1Point") (kind "secp256r1_point")]
+             [(string=? opaque-type "Curve25519Point") (kind "curve25519_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]
              [else (source-errorf src "Rust backend does not yet support this opaque type")])]
@@ -1434,20 +1435,22 @@
                          [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv"
                            "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv"
                            "__compactRuntime.curve25519BaseInv" "__compactRuntime.curve25519ScalarInv") "secp256k1_inv"]
-                         [("__compactRuntime.secp256k1PointX" "__compactRuntime.secp256r1PointX") "secp256k1_point_x"]
-                         [("__compactRuntime.secp256k1PointY" "__compactRuntime.secp256r1PointY") "secp256k1_point_y"]
+                         [("__compactRuntime.secp256k1PointX" "__compactRuntime.secp256r1PointX" "__compactRuntime.curve25519PointX") "secp256k1_point_x"]
+                         [("__compactRuntime.secp256k1PointY" "__compactRuntime.secp256r1PointY" "__compactRuntime.curve25519PointY") "secp256k1_point_y"]
                          [else #f])])
              (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))
            (let ([group (case (native-entry-function native-entry)
-                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add" "__compactRuntime.secp256r1Add") 'ecAdd]
+                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add" "__compactRuntime.secp256r1Add" "__compactRuntime.curve25519Add") 'ecAdd]
                           [("__compactRuntime.ecMul") 'ecMul]
                           [("__compactRuntime.ecMulGenerator") 'ecMulGenerator]
                           [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
                           [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
                           [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
                           [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
+                          [("__compactRuntime.curve25519Mul") 'curve25519Mul]
                           [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
                           [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
+                          [("__compactRuntime.curve25519MulGenerator") 'curve25519MulGenerator]
                           [else #f])])
              (when group (eq-hashtable-set! curve-group-natives function-name group)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)

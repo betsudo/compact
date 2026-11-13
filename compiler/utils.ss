@@ -71,6 +71,7 @@
     (case name
       [("Secp256k1Point") "Secp256k1Base"]
       [("Secp256r1Point") "Secp256r1Base"]
+      [("Curve25519Point") "Curve25519Base"]
       [else #f]))
 
   (define (foreign-native-type? name)

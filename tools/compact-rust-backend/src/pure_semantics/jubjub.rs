@@ -30,6 +30,7 @@ pub(crate) enum Curve {
     Jubjub,
     Secp256k1,
     Secp256r1,
+    Curve25519,
 }
 
 impl Curve {
@@ -37,6 +38,7 @@ impl Curve {
         match ty {
             Type::Secp256k1Point => Self::Secp256k1,
             Type::Secp256r1Point => Self::Secp256r1,
+            Type::Curve25519Point => Self::Curve25519,
             _ => Self::Jubjub,
         }
     }
@@ -45,6 +47,7 @@ impl Curve {
         match ty {
             Type::Secp256k1Scalar => Self::Secp256k1,
             Type::Secp256r1Scalar => Self::Secp256r1,
+            Type::Curve25519Scalar => Self::Curve25519,
             _ => Self::Jubjub,
         }
     }
@@ -54,6 +57,7 @@ impl Curve {
             Self::Jubjub => Type::JubjubPoint,
             Self::Secp256k1 => Type::Secp256k1Point,
             Self::Secp256r1 => Type::Secp256r1Point,
+            Self::Curve25519 => Type::Curve25519Point,
         }
     }
 
@@ -62,6 +66,7 @@ impl Curve {
             Self::Jubjub => Type::Field,
             Self::Secp256k1 => Type::Secp256k1Scalar,
             Self::Secp256r1 => Type::Secp256r1Scalar,
+            Self::Curve25519 => Type::Curve25519Scalar,
         }
     }
 }

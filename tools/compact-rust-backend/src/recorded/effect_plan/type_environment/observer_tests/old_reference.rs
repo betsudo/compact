@@ -144,7 +144,7 @@ impl TypeEnvironment {
                 | Type::Secp256r1Scalar
                 | Type::Curve25519Scalar
                 | Type::Secp256k1Point
-                | Type::Secp256r1Point => {
+                | Type::Curve25519Point | Type::Secp256r1Point => {
                     return Err(invalid(
                         path,
                         "type is outside checked recording value domain",

@@ -5757,6 +5757,7 @@ version = "0.2.0"
 dependencies = [
  "ecdsa 0.16.9",
  "ff 0.13.1",
+ "group 0.13.0",
  "hex",
  "k256 0.14.0",
  "midnight-base-crypto",

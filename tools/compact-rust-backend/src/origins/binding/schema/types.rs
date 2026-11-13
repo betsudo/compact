@@ -30,6 +30,7 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
         Type::Curve25519Scalar => s.unit("curve25519_scalar"),
         Type::Secp256k1Point => s.unit("secp256k1_point"),
         Type::Secp256r1Point => s.unit("secp256r1_point"),
+        Type::Curve25519Point => s.unit("curve25519_point"),
         Type::OpaqueString => s.unit("opaque_string"),
         Type::OpaqueBytes => s.unit("opaque_bytes"),
         Type::Bytes { length } => {

@@ -174,7 +174,7 @@
                (cons `(from_coordinates ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(degradeToTransient)
                (cons `(copy ,(car var-name*) ,(cadr triv*)) instr*)]
-              [(ecAdd secp256k1Add secp256r1Add)
+              [(ecAdd secp256k1Add secp256r1Add curve25519Add)
                (assert (= (length var-name*) 1))
                (cons `(add ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(ecNeg)
@@ -197,9 +197,9 @@
                (let ([scalar (make-temp-id src 'scalar)])
                  (cons `(ec_mul_generator ,(car var-name*) ,scalar)
                    (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
-              [(ecMulJubjubScalar secp256k1Mul secp256r1Mul)
+              [(ecMulJubjubScalar secp256k1Mul secp256r1Mul curve25519Mul)
                (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
-              [(ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator)
+              [(ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator curve25519MulGenerator)
                (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
@@ -216,10 +216,16 @@
                (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
               [(inv)
                (emit-inverse src test (car var-name*) (car triv*) instr*)]
+              [(curve25519PointX)
+               (let ([y (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,(car var-name*) ,y ,(car triv*)) instr*))]
               [(secp256k1PointX secp256r1PointX)
                (emit-point-coordinate src test
                  (if (eq? name 'secp256k1PointX) "Base<Secp256k1>" "Base<Secp256r1>")
                  (car triv*) (car var-name*) (make-temp-id src 'ignore) instr*)]
+              [(curve25519PointY)
+               (let ([x (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,x ,(car var-name*) ,(car triv*)) instr*))]
               [(secp256k1PointY secp256r1PointY)
                (emit-point-coordinate src test
                  (if (eq? name 'secp256k1PointY) "Base<Secp256k1>" "Base<Secp256r1>")
@@ -297,12 +303,15 @@
                    (case (native-entry-function native-entry)
                      [("__compactRuntime.secp256k1Add") 'secp256k1Add]
                      [("__compactRuntime.secp256r1Add") 'secp256r1Add]
+                     [("__compactRuntime.curve25519Add") 'curve25519Add]
                      [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
                      [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
                      [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
                      [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
+                     [("__compactRuntime.curve25519Mul") 'curve25519Mul]
                      [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
                      [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
+                     [("__compactRuntime.curve25519MulGenerator") 'curve25519MulGenerator]
                      [else (id-sym function-name)])
                    arg*)))]
           [else (void)]))
@@ -355,6 +364,15 @@
                           (with-output-language (Lflattened Alignment)
                             (cons `(afield) encoded-alignment*))
                           (cons field encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (guard (string=? opaque-type "Curve25519Point"))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 4))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
                      [(anative ,opaque-type)
                       (guard (foreign-point-base opaque-type))
                       (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
@@ -423,6 +441,12 @@
                      (nanopass-case (Lflattened Alignment) atom
                        [(anative ,opaque-type)
                         (cond
+                          [(string=? opaque-type "Curve25519Point")
+                           (let-values ([(high low) (div-and-mod (foreign-field-max "Curve25519Base") (expt 2 192))])
+                             (loop (cdr atom*)
+                               (with-output-language (Lflattened Alignment)
+                                 (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                               (cons* 0 0 high low input*)))]
                           [(foreign-point-base opaque-type) =>
                            (lambda (base)
                              ;; The identity has two zero coordinates and a native field flag.
@@ -833,6 +857,7 @@
           [("Curve25519Scalar") "Scalar<Curve25519>"]
           [("Secp256k1Point") "Point<Secp256k1>"]
           [("Secp256r1Point") "Point<Secp256r1>"]
+          [("Curve25519Point") "Point<Curve25519>"]
           [else #f]))
 
       (define (type->string primitive-type)
@@ -913,6 +938,7 @@
                   [scalar-type (case opaque-type
                                  [("Secp256k1Point") "Scalar<Secp256k1>"]
                                  [("Secp256r1Point") "Scalar<Secp256r1>"]
+                                 [("Curve25519Point") "Scalar<Curve25519>"]
                                  [else (assert cannot-happen)])])
               (cons* `(ec_mul_generator ,var-name ,scalar)
                      `(from_bytes ,scalar-type ,scalar ,bytes)

@@ -231,8 +231,24 @@ The [Curve25519 field fixtures](../../../test-contracts/stdlib/curve25519)
 retain the two upstream round trips and six cast refusals. The Base and
 Scalar types have distinct Rust carriers. The Scalar ledger representation
 splits at bit 204 into 26- and 7-byte FAB atoms. Both intact round trips
-run in the explicit slow proof lane at k=11. The original Maybe/Either
-fixture also uses Curve25519Point and is retained for the point slice.
+run in the explicit slow proof lane at k=11.
+
+The [Curve25519 point fixtures](../../../test-contracts/stdlib/curve25519/point)
+retain the original ledger roundtrip, coordinate projection, equality and
+point serialization refusals. Both targets also pass the original
+Maybe/Either defaults. Generated Rust accepts canonical affine subgroup
+points and uses four shifted Base atoms for ledger transport. The original
+generator and its double pass Rust recording and VM replay. The write and
+projection statements have independently verified arm64 proofs at k=12
+and k=11, respectively. The write also passes a separate funded
+default-strict application and replay refusal. The generic
+`serialize` and `deserialize` APIs are still absent on this branch, so
+both original refusal sources fail during name resolution.
+
+The supplemental group fixture covers addition, scalar multiplication,
+generator multiplication and zero and identity behavior. Its model is
+k=17. Ed25519 signature verification, the remaining original point
+fixtures and proof coverage for the group fixture remain open.
 
 The [P-256 byte cast fixtures](../../../test-contracts/stdlib/secp256r1/casts)
 cover modular little-endian conversion at the `Bytes<32>` boundary and
