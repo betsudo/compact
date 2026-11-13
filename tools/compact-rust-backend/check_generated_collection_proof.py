@@ -23,6 +23,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 
@@ -31,6 +32,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-set-add-proof-v018.mjs'
 SOURCE = ROOT / 'runtime-rs/tests/fixtures/ledger9-set-transition-v018.compact'
 ORACLE = ROOT / 'runtime-rs/tests/fixtures/ledger9-set-transition.json'
+RUNNER_SHA256 = 'b068a30c9e6b3ea42f5d7e8c9da472b2ba126604d413d7b7c785b488254121e6'
+RUNNER_MAIN_SHA256 = '2846dd67da2916bcf3a15db93e91a1007cfb5d6b97a1d0070e08c6fe312194e9'
+RUNNER_MANIFEST_SHA256 = '1e7a8f3a18ff81ba8eacfb982f20501f0a320668d2e7947612deb4c6986367e0'
+RUNNER_LOCK_SHA256 = 'c66ac3ad4ad9e2291ce67a90d764af5f7573fbffacdc48953619df7b92ec2ce5'
 
 
 def sha(path: Path) -> str:
@@ -77,22 +82,39 @@ def main() -> None:
     generated = paths['generated_root']
     prior = json.loads((generated / 'qualification.json').read_text())
     source = prior['sources_and_artifacts']['set']
-    contract = generated / 'set/contract'
-    raw = generated / 'set/zkir/add.zkir'
-    wrong_raw = generated / 'set/zkir/remove.zkir'
+    qualified_contract = generated / 'set/contract'
+    qualified_raw = generated / 'set/zkir/add.zkir'
+    qualified_wrong_raw = generated / 'set/zkir/remove.zkir'
     require(source['source'] == SOURCE.relative_to(ROOT).as_posix(), 'generated Set source path changed')
     require(source['source_sha256'] == sha(SOURCE), 'generated Set source hash changed')
     require(source['oracle_sha256'] == sha(ORACLE), 'generated Set oracle hash changed')
-    require(source['typescript_sha256'] == sha(contract / 'index.js'), 'generated TypeScript hash changed')
-    require(source['rust_sha256'] == sha(contract / 'lib.rs'), 'generated Rust hash changed')
-    require(source['ir_sha256'] == sha(contract / 'compact-rust-ir.json'), 'generated Rust IR hash changed')
+    require(source['typescript_sha256'] == sha(qualified_contract / 'index.js'), 'generated TypeScript hash changed')
+    require(source['rust_sha256'] == sha(qualified_contract / 'lib.rs'), 'generated Rust hash changed')
+    require(source['ir_sha256'] == sha(qualified_contract / 'compact-rust-ir.json'), 'generated Rust IR hash changed')
     require(prior['compiler_sha256'] == sha(paths['compiler']), 'compiler binary changed')
     require(prior['scheme_frontend_sha256'] == sha(paths['scheme']), 'Scheme compiler changed')
     require(prior['runtime_compatibility_sha256'] == sha(ROOT / 'runtime-rs/compatibility.json'),
             'runtime compatibility matrix changed')
     runner_receipt = json.loads(paths['proof_runner_receipt'].read_text())
-    require(runner_receipt['proof_runner']['sha256'] == sha(paths['proof_runner']),
+    require(runner_receipt['proof_runner']['sha256'] == RUNNER_SHA256 == sha(paths['proof_runner']),
             'proof runner changed from source-qualified binary')
+    require(runner_receipt['proof_runner']['source_main_sha256'] == RUNNER_MAIN_SHA256 and
+            runner_receipt['proof_runner']['source_manifest_sha256'] == RUNNER_MANIFEST_SHA256 and
+            runner_receipt['proof_runner']['source_lock_sha256'] == RUNNER_LOCK_SHA256,
+            'proof runner source hashes changed')
+    toolchain_record = runner_receipt['artifacts']['base_toolchain']
+    toolchain_path = Path(toolchain_record['path']).resolve(strict=True)
+    require(sha(toolchain_path) == toolchain_record['sha256'], 'proof runner toolchain record changed')
+    toolchain = json.loads(toolchain_path.read_text())
+    runner_source = toolchain['proof_runner_source']
+    for part, expected in (('main', RUNNER_MAIN_SHA256), ('manifest', RUNNER_MANIFEST_SHA256),
+                           ('lock', RUNNER_LOCK_SHA256)):
+        require(sha(Path(runner_source[part]['path'])) == expected, f'proof runner {part} source changed')
+    runner_build_env = os.environ.copy()
+    runner_build_env['CARGO_TARGET_DIR'] = str(paths['proof_runner'].parent.parent)
+    run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--manifest-path',
+         runner_source['manifest']['path']], env=runner_build_env)
+    require(sha(paths['proof_runner']) == RUNNER_SHA256, 'rebuilt proof runner differs from pinned binary')
     material_receipt = json.loads((paths['material'].parent / 'material-receipt.json').read_text())
     params = paths['material'] / 'bls_midnight_2p6'
     require(sha(params) == material_receipt['files'][params.name]['sha256'], 'k=6 parameters changed')
@@ -102,25 +124,31 @@ def main() -> None:
             'ZKIR wasm version changed')
     require(run([str(paths['zkir']), '--version']).strip() == 'midnight-zkir 3.2.0',
             'native ZKIR version changed')
-    add_model = run([str(paths['zkir']), 'mock-compile', str(raw)])
-    remove_model = run([str(paths['zkir']), 'mock-compile', str(wrong_raw)])
-    require('k=6' in add_model, 'Set.add is not k=6')
-    require('k=6' in remove_model, 'Set.remove wrong-key circuit is not k=6')
-
     output.mkdir(parents=True)
     fresh = output / 'fresh-dual'
     compiler_env = os.environ.copy()
+    compiler_env.pop('COMPACT_RUST_RUNTIME_DIR', None)
     compiler_env['COMPACTC_SCHEME'] = str(paths['scheme'])
-    run([str(paths['compiler']), '--target', 'ts', '--target', 'rust',
-         '--rust-runtime-root', str(ROOT), '--rust-require-recording', '--skip-zk',
-         '--compact-path', str(ROOT / 'compiler'), str(SOURCE), str(fresh)],
-        env=compiler_env, log=output / 'fresh-dual.log')
-    require(sha(fresh / 'zkir/add.zkir') == sha(raw), 'Set.add raw ZKIR differs from fresh source compile')
-    require(sha(fresh / 'zkir/remove.zkir') == sha(wrong_raw), 'Set.remove raw ZKIR differs from fresh source compile')
+    compile_command = [str(paths['compiler']), '--target', 'ts', '--target', 'rust',
+                       '--rust-runtime-root', str(ROOT), '--rust-require-recording', '--skip-zk',
+                       '--compact-path', str(ROOT / 'compiler'), str(SOURCE), str(fresh)]
+    run(compile_command, env=compiler_env, log=output / 'fresh-dual.log')
+    require(sha(fresh / 'zkir/add.zkir') == sha(qualified_raw), 'Set.add raw ZKIR differs from fresh source compile')
+    require(sha(fresh / 'zkir/remove.zkir') == sha(qualified_wrong_raw),
+            'Set.remove raw ZKIR differs from fresh source compile')
     require(sha(fresh / 'contract/index.js') == source['typescript_sha256'],
             'fresh generated TypeScript differs from qualified artifact')
     require(sha(fresh / 'contract/lib.rs') == source['rust_sha256'],
             'fresh generated Rust differs from qualified artifact')
+    require(sha(fresh / 'contract/compact-rust-ir.json') == source['ir_sha256'],
+            'fresh generated Rust IR differs from qualified artifact')
+    contract = fresh / 'contract'
+    raw = fresh / 'zkir/add.zkir'
+    wrong_raw = fresh / 'zkir/remove.zkir'
+    add_model = run([str(paths['zkir']), 'mock-compile', str(raw)])
+    remove_model = run([str(paths['zkir']), 'mock-compile', str(wrong_raw)])
+    require(re.search(r'\bk=6\b', add_model) is not None, 'Set.add is not k=6')
+    require(re.search(r'\bk=6\b', remove_model) is not None, 'Set.remove wrong-key circuit is not k=6')
     staged = output / 'set-contract'
     staged.mkdir()
     shutil.copyfile(contract / 'index.js', staged / 'index.js')
@@ -147,6 +175,8 @@ def main() -> None:
     run([str(paths['zkir']), 'compile', str(wrong_raw),
          str(wrong / 'remove.prover'), str(wrong / 'remove.verifier')],
         env=env, log=output / 'wrong-key.log')
+    require(re.search(r'\bk=6\b', (output / 'wrong-key.log').read_text()) is not None,
+            'wrong-key compiler did not report k=6')
     proof = output / 'proof'
     proof.mkdir()
     prove = run([str(paths['proof_runner']), 'prove', str(raw),
@@ -158,6 +188,8 @@ def main() -> None:
                   str(wrong / 'remove.verifier')], log=output / 'verify.log')
     require('verified in separate process; rejected different verifier, changed binding and corrupt proof' in verify,
             'independent verification or refusal controls did not pass')
+    require(sha(wrong / 'remove.verifier') != sha(proof / 'statement.verifier'),
+            'different-circuit verifier equals the Set.add verifier')
     if git('status', '--porcelain') or git('rev-parse', 'HEAD') != head:
         raise RuntimeError('source checkout changed during qualification')
     receipt = {
@@ -170,6 +202,12 @@ def main() -> None:
         'fresh_remove_zkir_sha256': sha(fresh / 'zkir/remove.zkir'),
         'fresh_typescript_sha256': sha(fresh / 'contract/index.js'),
         'fresh_rust_sha256': sha(fresh / 'contract/lib.rs'),
+        'fresh_rust_ir_sha256': sha(fresh / 'contract/compact-rust-ir.json'),
+        'fresh_compile_command': compile_command,
+        'fresh_compile_log_sha256': sha(output / 'fresh-dual.log'),
+        'proof_runner_source_sha256': {
+            part: sha(Path(runner_source[part]['path'])) for part in ('main', 'manifest', 'lock')
+        },
         'compiler_sha256': sha(paths['compiler']), 'scheme_sha256': sha(paths['scheme']),
         'runtime_package_sha256': sha(paths['runtime_ts'] / 'package.json'),
         'zkir_wasm_package_sha256': sha(paths['zkir_wasm'] / 'package.json'),
@@ -183,13 +221,14 @@ def main() -> None:
         'prover_sha256': sha(proof / 'statement.prover'),
         'verifier_sha256': sha(proof / 'statement.verifier'),
         'wrong_same_k_verifier_sha256': sha(wrong / 'remove.verifier'),
-        'checks': ['ZKIR wasm honest preimage accepted', 'changed insert refused',
+        'checks': ['Fresh dual-target TypeScript, Rust, Rust IR and ZKIR match qualified artifacts',
+                   'ZKIR wasm honest preimage accepted', 'changed insert refused',
                    'k=6 fresh proof', 'independent process verification',
                    'same-k different verifier refused', 'changed binding refused',
                    'corrupt proof refused'],
         'limitations': ['Local platform only; native Linux remains required.',
                         'No funded default-strict transaction or replay refusal in this slice.',
-                        'Proof runner source provenance is bound by the supplied prior qualification receipt.'],
+                        'Proof runner is rebuilt from archived source pinned in this gate; native Linux remains required.'],
     }
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(f'generated Ledger 9 Set.add proof and independent verification passed: {output}')
