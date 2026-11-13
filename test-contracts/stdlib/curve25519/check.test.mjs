@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -99,16 +100,33 @@ for (const [name, definition, runtimeTest, maximum] of [
   });
 }
 
-test('emits field arithmetic, checked 32-byte casts and Scalar hashes for both targets', async () => {
+test('compiles both targets and checks field arithmetic, casts and persistent hashing in TypeScript', async () => {
   const { build, result } = compile('operations', {}, ['ts', 'rust']);
   expect(result.status, result.stderr).toBe(0);
-  const { Contract } = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const { Contract, ledger } = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
   const { contract, ctx } = await createTestContract(Contract);
   expect(contract.circuits.arithmetic(ctx, 3n, 5n).result).toEqual([5n, 7n]);
+  const wrapped = contract.circuits.arithmetic(ctx, MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR);
+  expect(wrapped.result).toEqual([1n, 1n]);
+  const wrappedLedger = ledger(wrapped.context.currentQueryContext.state);
+  expect([wrappedLedger.base, wrappedLedger.scalar]).toEqual([1n, 1n]);
   expect(() => contract.circuits.arithmetic(ctx, 0n, 1n)).toThrow(/Curve25519 base field has no inverse/);
   expect(() => contract.circuits.arithmetic(ctx, 1n, 0n)).toThrow(/Curve25519 scalar field has no inverse/);
-  const bytes = new Uint8Array(32);
-  bytes[0] = 17;
-  expect(contract.circuits.casts(ctx, bytes).result).toEqual([bytes, bytes]);
-  expect(contract.circuits.hashScalar(ctx, 1n).result).toHaveLength(32);
+  const littleEndian = value => Uint8Array.from(
+    {length: 32}, (_, index) => Number(value >> BigInt(8 * index) & 255n),
+  );
+  const wide = (1n << 256n) - 1n;
+  const scalar = wide % (MAX_CURVE25519_SCALAR + 1n);
+  const cast = contract.circuits.casts(ctx, new Uint8Array(32).fill(255));
+  expect(cast.result).toEqual([littleEndian(37n), littleEndian(scalar)]);
+  const castLedger = ledger(cast.context.currentQueryContext.state);
+  expect([castLedger.base, castLedger.scalar]).toEqual([37n, scalar]);
+  for (const [value, offset] of [[1n, -1], [(1n << 204n) + 1n, 26]]) {
+    const binary = Buffer.alloc(33);
+    if (offset >= 0) binary[offset] = 1;
+    const digest = new Uint8Array(createHash('sha256').update(binary).digest());
+    const hash = contract.circuits.hashScalar(ctx, value);
+    expect(hash.result).toEqual(digest);
+    expect(ledger(hash.context.currentQueryContext.state).digest).toEqual(digest);
+  }
 });
