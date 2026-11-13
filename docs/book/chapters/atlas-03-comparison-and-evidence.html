@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="The original comparison, with its historical cutoff.">
+<meta name="theme-color" content="#f5f2eb">
+<title>Comparing the backend lines · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="atlas-03-comparison-and-evidence">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence" aria-current="page">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Historical atlas <span>· 4 min read</span></p>
+<h1>Comparing the backend lines</h1><p class="deck">The original comparison, with its historical cutoff.</p></header>
+<div class="prose"><blockquote>
+<p>Editorial correction for this edition. The historical shorthand “386 source availability” means 386 proof-required exports. The Milestone 2 inventory covered 217 sources, 196 roots and 755 exports, including 369 non-proof exports.</p>
+<p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+</blockquote>
+<h2 id="four-generations-on-consistent-dimensions">Four generations on consistent dimensions</h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>TypeScript / JS path</th>
+<th>Original Rust backend</th>
+<th>Rust-AST 0.3</th>
+<th>Effect prototype at cutoff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend boundary</td>
+<td>Established TS preparation/runtime path</td>
+<td>Reuses TypeScript-oriented IR</td>
+<td>Starts before TS-specific lowering and emits private typed IR</td>
+<td>Same private IR; adds shared checked semantic folds</td>
+</tr>
+<tr>
+<td>Rust construction</td>
+<td>Not applicable</td>
+<td>Scheme emits Rust text</td>
+<td><code>syn</code> + <code>quote</code> + <code>proc-macro2</code>, formatted by <code>prettyplease</code></td>
+<td>Same renderer, fed by checked effects/facts</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>JS/WASM providers and ledger APIs</td>
+<td>Native runtime with generated VM-oriented code</td>
+<td>Typed runtime over official ledger-8 primitives</td>
+<td>Same authority; clearer execution/result roles</td>
+</tr>
+<tr>
+<td>Recording admission</td>
+<td>Established TS semantics, different surface</td>
+<td>Shape/walker-driven Rust path</td>
+<td>Typed gaps plus many specialized recording profiles</td>
+<td>Compositional effect plan; old selectors retained as test oracles</td>
+</tr>
+<tr>
+<td>Source diagnostics</td>
+<td>Native frontend/source-map path</td>
+<td>Coupled to compiler emission</td>
+<td>Declaration locations + structural paths</td>
+<td>Authenticated origins improved; nested ranges still a stated limit at cutoff</td>
+</tr>
+<tr>
+<td>Proof evidence</td>
+<td>Existing reference ecosystem</td>
+<td>Bounded historical cases</td>
+<td>Selected exact-source prove/verify/application receipts</td>
+<td>Per-family receipts; final frozen EA13 matrix pending</td>
+</tr>
+<tr>
+<td>Product maturity</td>
+<td>Established integration</td>
+<td>Useful oracle/prototype branch</td>
+<td>Closed scoped milestones and generated consumer story</td>
+<td>Local prototype, not pushed/merged/released</td>
+</tr>
+</tbody>
+</table>
+<h2 id="evidence-is-a-ladder-not-a-number">Evidence is a ladder, not a number</h2>
+<table>
+<thead>
+<tr>
+<th>Evidence level</th>
+<th>What it establishes</th>
+<th>Typical artifact</th>
+<th>Does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source inventory</td>
+<td>Known inputs, exports and feature classification</td>
+<td>Source/capability census</td>
+<td>Behavior or proof</td>
+</tr>
+<tr>
+<td>Compiler acceptance</td>
+<td>Source reaches a checked target or is deliberately refused</td>
+<td>Frontend + IR fixtures</td>
+<td>Correct runtime result</td>
+</tr>
+<tr>
+<td>Generated compilation</td>
+<td>Public Rust surface type-checks externally</td>
+<td>Isolated Cargo consumer</td>
+<td>Semantic parity</td>
+</tr>
+<tr>
+<td>Native behavior</td>
+<td>Results, errors, state and witness order for named cases</td>
+<td>Rust/TS captured scenarios</td>
+<td>Recording/proof availability</td>
+</tr>
+<tr>
+<td>Recording/replay</td>
+<td>Ordered effects and replay invariants</td>
+<td>Recorded traces and replay checks</td>
+<td>Proof applicability</td>
+</tr>
+<tr>
+<td>Prove/verify</td>
+<td>Exact artifacts produce and verify a proof</td>
+<td>Source/key-bound receipt</td>
+<td>Ledger application or finality</td>
+</tr>
+<tr>
+<td>Ledger application</td>
+<td>Verified transaction applies under the pinned policy</td>
+<td>Offline or local ledger receipt</td>
+<td>Production network adoption</td>
+</tr>
+<tr>
+<td>Live observation</td>
+<td>A named node/indexer/wallet observed a transaction</td>
+<td>Historical network receipt</td>
+<td>Universal finality or current release status</td>
+</tr>
+</tbody>
+</table>
+<h2 id="milestone-evidence-snapshots">Milestone evidence snapshots</h2>
+<h3 id="milestone-1-local-native-baseline">Milestone 1 — local native baseline</h3>
+<ul>
+<li>Implementation cutoff: <code>ea4cc006</code>.</li>
+<li>128 generated sources current; 410 workspace test/doc-test groups passed.</li>
+<li>All 37 top-level oracle sources ran through the new path, plus selected
+  <code>tiny</code>, election, Zerocash and passport flows.</li>
+<li>No first-class proof/deployment pipeline; the wrapper forced <code>--skip-zk</code>.</li>
+</ul>
+<h3 id="milestone-2-usable-target-and-remote-closure">Milestone 2 — usable target and remote closure</h3>
+<ul>
+<li>Closed at <code>03c03a39</code> on 2026-10-06.</li>
+<li>386/386 source availability.</li>
+<li>Sampled 37-source / 203-row behavior.</li>
+<li>Selected original four Coracle plus seven microDAO proof selectors, with
+  three explicitly balancing-disabled smoke selectors.</li>
+<li>Ten required remote workflows passed at the final revision.</li>
+<li>No crates.io release, Windows certification or universal parity claim.</li>
+</ul>
+<h3 id="milestone-03-qualification-and-adoption">Milestone 0.3 — qualification and adoption</h3>
+<ul>
+<li>Qualified implementation <code>f9a49666</code>; closure <code>0d7610b2</code>.</li>
+<li>19/19 required outcomes; 93 criteria; 121 milestone ADRs.</li>
+<li>198 roots, 232 inputs and 1,055 functions classified.</li>
+<li>Runtime changed-line coverage 97.87%; mapped total 88.03%; testkit 97.62%;
+  backend and macro cohorts retained separately at 95.11% and 100%.</li>
+<li>DID v0.7.0: 12 stateful exports; 42 finite relation calls.</li>
+<li>Passport cohort: 17 files, 75 pure exports, 202 behavior cases and four
+  codec vectors. Full Passport ACC adoption was removed.</li>
+<li>Remote core: 742 cases in 63 result blocks at the named revision.</li>
+<li>RustSec: zero vulnerability matches, with four workspace / three standalone
+  notices and strict nonzero exit retained.</li>
+</ul>
+<p>Counts overlap and must not be summed into one “tests passed” figure.</p>
+<h3 id="effect-prototype-active-local-program">Effect prototype — active local program</h3>
+<p>At <code>f3cef799</code>, the saved story cutoff includes the historical-test process
+sharding change. The full installed validation kept 974 unique planned and
+executed IDs with no failures, errors, skips or unrun cases. Four independent
+process shards reduced the measured wall time from 10,270 seconds (about
+171 minutes) to 3,308 seconds (about 55 minutes), a 3.105× result on this
+frozen machine and source.</p>
+<p>What remained unchanged matters more than the headline:</p>
+<ul>
+<li>the original 940 cases and their assertions remained;</li>
+<li>workers reconstructed independent temporary state;</li>
+<li>live source/manifest mutation checks still ran;</li>
+<li>original case IDs and accounting remained exact;</li>
+<li>eight new corruption/source controls lived outside frozen discovery;</li>
+<li>no validation result cache or live path cache was introduced.</li>
+</ul>
+<p>It is a measured local optimization, not a universal CI speed claim.</p>
+<h2 id="parity-findings-that-changed-the-design">Parity findings that changed the design</h2>
+<p>The TypeScript comparison was not a ceremonial check. It found genuine Rust
+divergences, including incorrect hash-to-curve representation, the wrong
+Jubjub Schnorr predicate, permissive Boolean/bounded-unsigned decoding, and a
+validated-point alias that could panic for attacker-controlled coordinates.</p>
+<p>Rust also found genuine source/runtime defects: malformed native widths that
+JS silently sliced, and Merkle update underflow before a capacity check. The
+right conclusion is not “Rust won.” Independent implementations made hidden
+assumptions observable in both directions.</p>
+<h2 id="current-limitations">Current limitations</h2>
+<ul>
+<li>No formal proof of complete Compact semantics or universal TS parity.</li>
+<li>Proof support is per applicable export and exact artifact set.</li>
+<li>The effect prototype is local and not yet EA13-closed.</li>
+<li>Source locations at the cutoff are owner locations plus structural paths,
+  not complete nested ranges.</li>
+<li>Aggregate decoded heap/object/CPU containment remains separate work.</li>
+<li>Experimental WASM does not imply a production browser prover.</li>
+<li>No Windows certification, package registry release or upstream adoption is
+  implied by the closed local/fork milestones.</li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/atlas-03-comparison-and-evidence.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-02-architecture.html"><small>Previous chapter</small>The October architecture</a><a class="next" href="atlas-06-generated-rust-examples.html"><small>Next chapter</small>Read the generated Rust <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#four-generations-on-consistent-dimensions">Four generations on consistent dimensions</a></li>
+<li><a href="#evidence-is-a-ladder-not-a-number">Evidence is a ladder, not a number</a></li>
+<li><a href="#milestone-evidence-snapshots">Milestone evidence snapshots</a><ul>
+<li><a href="#milestone-1-local-native-baseline">Milestone 1 — local native baseline</a></li>
+<li><a href="#milestone-2-usable-target-and-remote-closure">Milestone 2 — usable target and remote closure</a></li>
+<li><a href="#milestone-03-qualification-and-adoption">Milestone 0.3 — qualification and adoption</a></li>
+<li><a href="#effect-prototype-active-local-program">Effect prototype — active local program</a></li>
+</ul>
+</li>
+<li><a href="#parity-findings-that-changed-the-design">Parity findings that changed the design</a></li>
+<li><a href="#current-limitations">Current limitations</a></li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

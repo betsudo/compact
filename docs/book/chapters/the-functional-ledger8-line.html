@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="One immutable request, shared execution, explicit target adapters.">
+<meta name="theme-color" content="#f5f2eb">
+<title>The functional Ledger 8 line · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="the-functional-ledger8-line">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line" aria-current="page">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Functional Ledger 8 <span>· 2 min read</span></p>
+<h1>The functional Ledger 8 line</h1><p class="deck">One immutable request, shared execution, explicit target adapters.</p></header>
+<div class="prose"><h2 id="the-next-experiment">The next experiment</h2>
+<p>With checked effects available, the team explored an immutable Ledger 8 program request interpreted through shared execution logic. Native and recorded target adapters could consume the same admitted request while retaining their different output responsibilities.</p>
+<p>This aimed to reduce the amount of contract-specific generated control flow. It also made the programme's operation inventory available for review.</p>
+<p>An illustrative consumer shape is shown below. Constructing the immutable request performs no effects. Executing it against a context performs the admitted programme.</p>
+<pre><code class="language-rust">let request = replace::Program::new(next);
+let recorded = request.execute_recorded(context)?;
+</code></pre>
+<p>The generated module and parameter types depend on the contract. The example shows the ownership boundary and is not a standalone runnable contract.</p>
+<h2 id="keep-metadata-out-of-the-execution-body">Keep metadata out of the execution body</h2>
+<p>Review metadata is useful for auditing a generated programme. Large strings and inventories can also dominate an otherwise small Rust file.</p>
+<p>The follow-up separated metadata assets while retaining stable public access, exact identities and execution behavior. That made generated code easier to read without erasing the material needed for review.</p>
+<h2 id="witnesses-and-effects-still-need-order">Witnesses and effects still need order</h2>
+<p>An immutable description does not make execution order irrelevant. Witness callbacks can return values and update private state. Ledger operations observe and change public state. A Unit-valued call may still have an essential effect.</p>
+<p>Later slices preserved ordered Unit initializers, terminal effects, tuple returns and named bind receivers. Each one corrected a boundary where a superficially small expression could lose behavior during lowering.</p>
+<h2 id="from-the-prototype-to-the-working-branch">From the prototype to the working branch</h2>
+<p>The October 18 local prototype checkpoint was documented at ec7262e49 with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.</p>
+<p>PR #664 later integrated the reviewed Ledger 8 baseline. The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.</p>
+<h2 id="what-was-better">What was better</h2>
+<p>The programme model made native and recording behavior easier to relate. The generated API could express a request whose operations had already passed semantic checks, with review material outside its main execution text.</p>
+<h2 id="what-remained">What remained</h2>
+<p>The broader functional scope was a proposal with its own acceptance work. A narrow prototype result could not silently establish the entire roadmap. Source admission and proof coverage continued as independent deliveries.</p>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/pull/664">Functional prototype PR #664</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/c353907d8c323db16eedb35d5a7f0151aab859bb">Working-line integration</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/665">Metadata ownership #665</a></li>
+<li><a href="https://github.com/betsudo/compact/pull/694">Ordered Unit initializers #694</a></li>
+<li><a href="https://github.com/betsudo/compact/pull/693">DID lifecycle #693</a></li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/the-functional-ledger8-line.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="operations-instead-of-shapes.html"><small>Previous chapter</small>Operations instead of shapes</a><a class="next" href="forge-and-the-cost-of-evidence.html"><small>Next chapter</small>Forge and the cost of evidence <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#the-next-experiment">The next experiment</a></li>
+<li><a href="#keep-metadata-out-of-the-execution-body">Keep metadata out of the execution body</a></li>
+<li><a href="#witnesses-and-effects-still-need-order">Witnesses and effects still need order</a></li>
+<li><a href="#from-the-prototype-to-the-working-branch">From the prototype to the working branch</a></li>
+<li><a href="#what-was-better">What was better</a></li>
+<li><a href="#what-remained">What remained</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

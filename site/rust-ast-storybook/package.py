@@ -23,7 +23,7 @@ def build() -> None:
         rmtree(DIST)
     DIST.mkdir()
     PAGES.mkdir(exist_ok=True)
-    unexpected = sorted(path.name for path in PAGES.iterdir() if path.name not in (*ASSETS, ".nojekyll"))
+    unexpected = sorted(path.name for path in PAGES.iterdir() if path.name not in (*ASSETS, ".nojekyll", "book"))
     if unexpected:
         raise SystemExit(f"Refusing to replace unexpected GitHub Pages files: {unexpected}")
     ARCHIVE.parent.mkdir(exist_ok=True)

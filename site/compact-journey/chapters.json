@@ -1,0 +1,186 @@
+[
+  {
+    "slug": "a-contract-crosses-a-boundary",
+    "title": "A contract crosses a boundary",
+    "phase": "Orientation",
+    "subtitle": "The question that connects the whole journey.",
+    "source": "chapters/a-contract-crosses-a-boundary.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "typescript-and-fixed-ground",
+    "title": "TypeScript and fixed ground",
+    "phase": "Ledger 8 foundations",
+    "subtitle": "A shared semantic reference before a second target.",
+    "source": "chapters/typescript-and-fixed-ground.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "the-first-rust-emitter",
+    "title": "The first Rust emitter",
+    "phase": "Ledger 8 foundations",
+    "subtitle": "Make the second target useful, then learn from its maintenance cost.",
+    "source": "chapters/the-first-rust-emitter.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "a-closed-rust-boundary",
+    "title": "A closed Rust boundary",
+    "phase": "Native AST milestone",
+    "subtitle": "Milestone 1 turns supported Compact nodes into typed Rust syntax.",
+    "source": "chapters/a-closed-rust-boundary.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "recording-is-an-execution",
+    "title": "Recording is an execution",
+    "phase": "Recorded contracts milestone",
+    "subtitle": "Milestone 2 makes ordered effects and installed state visible.",
+    "source": "chapters/recording-is-an-execution.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "closing-zero-three",
+    "title": "Closing 0.3.0",
+    "phase": "Qualified consumers milestone",
+    "subtitle": "What a milestone closeout actually promises.",
+    "source": "chapters/closing-zero-three.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "operations-instead-of-shapes",
+    "title": "Operations instead of shapes",
+    "phase": "Compositional recording",
+    "subtitle": "The architectural ceiling that drove 0.4.0.",
+    "source": "chapters/operations-instead-of-shapes.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "the-functional-ledger8-line",
+    "title": "The functional Ledger 8 line",
+    "phase": "Functional Ledger 8",
+    "subtitle": "One immutable request, shared execution, explicit target adapters.",
+    "source": "chapters/the-functional-ledger8-line.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "forge-and-the-cost-of-evidence",
+    "title": "Forge and the cost of evidence",
+    "phase": "A deferred experiment",
+    "subtitle": "A useful detour, measured limits, and a deliberate return.",
+    "source": "chapters/forge-and-the-cost-of-evidence.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "ergonomics-one-semantic-gap-at-a-time",
+    "title": "Ergonomics, one semantic gap at a time",
+    "phase": "Semantic delivery",
+    "subtitle": "Why apparently small source features deserve complete slices.",
+    "source": "chapters/ergonomics-one-semantic-gap-at-a-time.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "ledger9-is-a-protocol-migration",
+    "title": "Ledger 9 is a protocol migration",
+    "phase": "Ledger 9 foundation",
+    "subtitle": "Package pins, representation identities, and real transactions.",
+    "source": "chapters/ledger9-is-a-protocol-migration.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "porting-the-cryptographic-surface",
+    "title": "Porting the cryptographic surface",
+    "phase": "Upstream compatibility",
+    "subtitle": "Typed values across compiler, runtime, ZKIR and ledger.",
+    "source": "chapters/porting-the-cryptographic-surface.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "wire-values-events-and-state",
+    "title": "Wire values, events and state",
+    "phase": "Upstream compatibility",
+    "subtitle": "The details that make two backends observe the same contract.",
+    "source": "chapters/wire-values-events-and-state.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "cross-contract-calls-and-the-held-boundary",
+    "title": "Cross-contract calls and the held boundary",
+    "phase": "Remaining milestone",
+    "subtitle": "Authenticate a call before making its syntax convenient.",
+    "source": "chapters/cross-contract-calls-and-the-held-boundary.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "a-proof-is-one-stage",
+    "title": "A proof is one stage",
+    "phase": "Technical guide",
+    "subtitle": "An evidence ladder for contributors and reviewers.",
+    "source": "chapters/a-proof-is-one-stage.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "the-next-reader-inherits-a-map",
+    "title": "The next reader inherits a map",
+    "phase": "Living milestone",
+    "subtitle": "What is delivered, what remains, and how to keep the story accurate.",
+    "source": "chapters/the-next-reader-inherits-a-map.md",
+    "kind": "narrative"
+  },
+  {
+    "slug": "atlas-02-architecture",
+    "title": "The October architecture",
+    "phase": "Historical atlas",
+    "subtitle": "Frontend, IR, renderer, generated crate and runtime.",
+    "source": "chapters/atlas-02-architecture.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-03-comparison-and-evidence",
+    "title": "Comparing the backend lines",
+    "phase": "Historical atlas",
+    "subtitle": "The original comparison, with its historical cutoff.",
+    "source": "chapters/atlas-03-comparison-and-evidence.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-06-generated-rust-examples",
+    "title": "Read the generated Rust",
+    "phase": "Historical atlas",
+    "subtitle": "Source, native path, typed slots and recording.",
+    "source": "chapters/atlas-06-generated-rust-examples.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-07-runtime-and-macros-domain-model",
+    "title": "Runtime and macro ownership",
+    "phase": "Historical atlas",
+    "subtitle": "Core types and mechanical derives.",
+    "source": "chapters/atlas-07-runtime-and-macros-domain-model.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-08-gas-errors-and-fixes",
+    "title": "Gas, errors and corrected boundaries",
+    "phase": "Historical atlas",
+    "subtitle": "How the original target assigned errors and costs.",
+    "source": "chapters/atlas-08-gas-errors-and-fixes.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-04-decisions-and-corrections",
+    "title": "The original decision ledger",
+    "phase": "Historical atlas",
+    "subtitle": "Corrections and choices as recorded in October.",
+    "source": "chapters/atlas-04-decisions-and-corrections.md",
+    "kind": "archive"
+  },
+  {
+    "slug": "atlas-glossary",
+    "title": "A working glossary",
+    "phase": "Historical atlas",
+    "subtitle": "Vocabulary used throughout the journey.",
+    "source": "chapters/atlas-glossary.md",
+    "kind": "archive"
+  }
+]

@@ -1,0 +1,802 @@
+[
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-16T16:21:37Z",
+    "number": 654,
+    "state": "OPEN",
+    "title": "ci(rust): require public Rust-AST regression gates",
+    "url": "https://github.com/betsudo/compact/issues/654"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-12T11:57:06Z",
+    "number": 726,
+    "state": "OPEN",
+    "title": "Ledger 9 upstream compatibility for the Rust AST backend",
+    "url": "https://github.com/betsudo/compact/issues/726"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-05T19:22:59Z",
+    "number": 706,
+    "state": "OPEN",
+    "title": "ci: qualify canonical Rust AST merge heads on Linux pushes",
+    "url": "https://github.com/betsudo/compact/issues/706"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-12T11:57:27Z",
+    "number": 730,
+    "state": "OPEN",
+    "title": "Support secure Ledger 9 cross-contract calls in the Rust AST backend",
+    "url": "https://github.com/betsudo/compact/issues/730"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-16T18:32:04Z",
+    "number": 658,
+    "state": "OPEN",
+    "title": "feat(ci): add reversible workflow controls for Rust-AST delivery",
+    "url": "https://github.com/betsudo/compact/issues/658"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-12T12:31:46Z",
+    "number": 733,
+    "state": "OPEN",
+    "title": "Ledger 9 compiler accepts undeclared witness disclosure through a vector spread",
+    "url": "https://github.com/betsudo/compact/issues/733"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-04T19:10:53Z",
+    "number": 702,
+    "state": "OPEN",
+    "title": "fix(compiler): integrate preserved zero-width ZKIRv2 boundary qualification",
+    "url": "https://github.com/betsudo/compact/issues/702"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-05T19:28:04Z",
+    "number": 707,
+    "state": "OPEN",
+    "title": "feat(rust): admit typed equality guards in constructor Vector loops",
+    "url": "https://github.com/betsudo/compact/issues/707"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-12T11:57:29Z",
+    "number": 732,
+    "state": "OPEN",
+    "title": "Qualify Ledger 9 SDK, tooling and native Linux compatibility",
+    "url": "https://github.com/betsudo/compact/issues/732"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-13T15:55:58Z",
+    "number": 628,
+    "state": "OPEN",
+    "title": "fix(rust): preserve nested Boolean equality in generated syntax",
+    "url": "https://github.com/betsudo/compact/issues/628"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T13:30:38Z",
+    "number": 574,
+    "state": "OPEN",
+    "title": "fix(rust): preserve stateful arguments in native pure-call statements",
+    "url": "https://github.com/betsudo/compact/issues/574"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-17T16:28:13Z",
+    "number": 663,
+    "state": "OPEN",
+    "title": "feat(rust): prototype immutable ledger8 effect programs and target adapters",
+    "url": "https://github.com/betsudo/compact/issues/663"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-06T18:44:44Z",
+    "number": 367,
+    "state": "OPEN",
+    "title": "feat(codegen-rust): expose Ledger8 transaction proof data from generated circuits",
+    "url": "https://github.com/betsudo/compact/issues/367"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T15:55:14Z",
+    "number": 524,
+    "state": "OPEN",
+    "title": "fix(rust): normalize fixed-byte casts inside tuple expressions",
+    "url": "https://github.com/betsudo/compact/issues/524"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-18T16:45:15Z",
+    "number": 680,
+    "state": "OPEN",
+    "title": "perf(ci): restrict bounded Rust cache publication to trusted pushes",
+    "url": "https://github.com/betsudo/compact/issues/680"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-13T19:01:29Z",
+    "number": 630,
+    "state": "OPEN",
+    "title": "fix(rust): assemble checked pure function syntax without reparsing deep bodies",
+    "url": "https://github.com/betsudo/compact/issues/630"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T15:54:57Z",
+    "number": 523,
+    "state": "OPEN",
+    "title": "fix(rust): qualify tuple equality beyond Rust trait arity limits",
+    "url": "https://github.com/betsudo/compact/issues/523"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T02:53:49Z",
+    "number": 507,
+    "state": "OPEN",
+    "title": "refactor(rust): give recording effect observations an explicit owner",
+    "url": "https://github.com/betsudo/compact/issues/507"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:15:42Z",
+    "number": 492,
+    "state": "OPEN",
+    "title": "[R040-09] Qualify and close the Rust backend 0.4.0 milestone",
+    "url": "https://github.com/betsudo/compact/issues/492"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-08T06:17:16Z",
+    "number": 495,
+    "state": "OPEN",
+    "title": "[CoPS-001] Define aggregate resource limits for ledger8 decoding across runtimes",
+    "url": "https://github.com/betsudo/compact/issues/495"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-18T07:53:43Z",
+    "number": 666,
+    "state": "OPEN",
+    "title": "feat(rust): complete the functional Ledger8 checked-operation surface",
+    "url": "https://github.com/betsudo/compact/issues/666"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-18T06:38:36Z",
+    "number": 665,
+    "state": "OPEN",
+    "title": "refactor(rust): separate functional review metadata from generated Rust",
+    "url": "https://github.com/betsudo/compact/issues/665"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T13:35:06Z",
+    "number": 599,
+    "state": "OPEN",
+    "title": "refactor(rust): emit only reachable recorded helpers",
+    "url": "https://github.com/betsudo/compact/issues/599"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-13T09:37:27Z",
+    "number": 625,
+    "state": "OPEN",
+    "title": "fix(compiler): qualify the ledger8 backport of witness spread analysis fix",
+    "url": "https://github.com/betsudo/compact/issues/625"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T23:09:27Z",
+    "number": 619,
+    "state": "OPEN",
+    "title": "fix(rust): separate execution results from FAB input admission",
+    "url": "https://github.com/betsudo/compact/issues/619"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:14:14Z",
+    "number": 482,
+    "state": "OPEN",
+    "title": "[R040-01] Establish a versioned Rust IR boundary and exhaustive traversal",
+    "url": "https://github.com/betsudo/compact/issues/482"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T09:03:28Z",
+    "number": 563,
+    "state": "OPEN",
+    "title": "fix(rust): separate internal recording interfaces from public encoding limits",
+    "url": "https://github.com/betsudo/compact/issues/563"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T10:57:48Z",
+    "number": 567,
+    "state": "OPEN",
+    "title": "fix(rust): close implicit Merkle digest declarations in witness ledger views",
+    "url": "https://github.com/betsudo/compact/issues/567"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T07:23:51Z",
+    "number": 558,
+    "state": "OPEN",
+    "title": "research(rust): qualify composite public interfaces for membership recording",
+    "url": "https://github.com/betsudo/compact/issues/558"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-09-30T17:01:01Z",
+    "number": 95,
+    "state": "OPEN",
+    "title": "[research] Emit Rust from a syntax tree (syn/quote/prettyplease) instead of formatted text \u2014 and decouple emission from Ltypescript",
+    "url": "https://github.com/betsudo/compact/issues/95"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:14:14Z",
+    "number": 484,
+    "state": "OPEN",
+    "title": "[R040-04] Generate compatibility artifacts from one ABI registry",
+    "url": "https://github.com/betsudo/compact/issues/484"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-08T06:25:44Z",
+    "number": 496,
+    "state": "OPEN",
+    "title": "[CoPS-002] Provide Rust contract-client and provider boundaries comparable to MidnightJS",
+    "url": "https://github.com/betsudo/compact/issues/496"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T09:03:26Z",
+    "number": 562,
+    "state": "OPEN",
+    "title": "feat(rust): compose canonical wide unsigned casts in recording plans",
+    "url": "https://github.com/betsudo/compact/issues/562"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T13:08:38Z",
+    "number": 598,
+    "state": "OPEN",
+    "title": "feat(rust): separate checked recording execution from transaction preparation",
+    "url": "https://github.com/betsudo/compact/issues/598"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:14:14Z",
+    "number": 483,
+    "state": "OPEN",
+    "title": "[R040-03] Carry nested source ranges into Rust backend diagnostics",
+    "url": "https://github.com/betsudo/compact/issues/483"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-13T07:53:26Z",
+    "number": 622,
+    "state": "OPEN",
+    "title": "refactor(rust): share syntax-free native pure semantic typing",
+    "url": "https://github.com/betsudo/compact/issues/622"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T17:33:42Z",
+    "number": 609,
+    "state": "OPEN",
+    "title": "feat(rust): compose remaining typed Map effects",
+    "url": "https://github.com/betsudo/compact/issues/609"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T06:43:31Z",
+    "number": 556,
+    "state": "OPEN",
+    "title": "fix(rust): reject lossy opaque values at generated public call boundaries",
+    "url": "https://github.com/betsudo/compact/issues/556"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T17:05:18Z",
+    "number": 608,
+    "state": "OPEN",
+    "title": "feat(rust): compose typed List effects and observations",
+    "url": "https://github.com/betsudo/compact/issues/608"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-11-05T23:25:55Z",
+    "number": 708,
+    "state": "OPEN",
+    "title": "perf(ci): split compiler qualification into dependency-owned parallel lanes",
+    "url": "https://github.com/betsudo/compact/issues/708"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T05:17:57Z",
+    "number": 550,
+    "state": "OPEN",
+    "title": "Retire immediate-send shape admission into checked composition",
+    "url": "https://github.com/betsudo/compact/issues/550"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T20:02:54Z",
+    "number": 540,
+    "state": "OPEN",
+    "title": "feat(rust): compose ordinary Set operations over typed storage values",
+    "url": "https://github.com/betsudo/compact/issues/540"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T12:25:01Z",
+    "number": 571,
+    "state": "OPEN",
+    "title": "feat(rust): compose typed inequality effects",
+    "url": "https://github.com/betsudo/compact/issues/571"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T13:37:15Z",
+    "number": 600,
+    "state": "OPEN",
+    "title": "refactor(rust): retire guarded Struct-pure recording admission",
+    "url": "https://github.com/betsudo/compact/issues/600"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T05:45:39Z",
+    "number": 582,
+    "state": "OPEN",
+    "title": "feat(rust): compose aligned FAB hashing and hash-to-curve effects",
+    "url": "https://github.com/betsudo/compact/issues/582"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T11:07:28Z",
+    "number": 593,
+    "state": "OPEN",
+    "title": "feat(rust): admit Unit roots through validated public interfaces",
+    "url": "https://github.com/betsudo/compact/issues/593"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-13T18:02:11Z",
+    "number": 629,
+    "state": "OPEN",
+    "title": "fix(rust): derive lexical local symbols from checked names without IR panics",
+    "url": "https://github.com/betsudo/compact/issues/629"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:15:01Z",
+    "number": 487,
+    "state": "OPEN",
+    "title": "[R040-08][RFC] Define cargo compact, prover distribution, and backend extension boundaries",
+    "url": "https://github.com/betsudo/compact/issues/487"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T11:39:36Z",
+    "number": 569,
+    "state": "OPEN",
+    "title": "refactor(rust): retire reset payout shape admission",
+    "url": "https://github.com/betsudo/compact/issues/569"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:15:02Z",
+    "number": 490,
+    "state": "OPEN",
+    "title": "[R040-07][RFC] Decide whether generated contract APIs need typestate",
+    "url": "https://github.com/betsudo/compact/issues/490"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T10:48:06Z",
+    "number": 566,
+    "state": "OPEN",
+    "title": "refactor(rust): replace guarded-deposit admission with checked composition",
+    "url": "https://github.com/betsudo/compact/issues/566"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T13:30:25Z",
+    "number": 573,
+    "state": "OPEN",
+    "title": "feat(rust): compose certified pure Unit statements",
+    "url": "https://github.com/betsudo/compact/issues/573"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T12:04:27Z",
+    "number": 570,
+    "state": "OPEN",
+    "title": "refactor(rust): retire shielded payout shape admission",
+    "url": "https://github.com/betsudo/compact/issues/570"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:15:01Z",
+    "number": 486,
+    "state": "OPEN",
+    "title": "[R040-05] Publish a versioned capability book and regression gate",
+    "url": "https://github.com/betsudo/compact/issues/486"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T20:25:58Z",
+    "number": 541,
+    "state": "OPEN",
+    "title": "feat(rust): compose checked unsigned subtraction and multiplication",
+    "url": "https://github.com/betsudo/compact/issues/541"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T12:25:22Z",
+    "number": 596,
+    "state": "OPEN",
+    "title": "refactor(rust): retire typed opaque Map-write admission",
+    "url": "https://github.com/betsudo/compact/issues/596"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-12T12:25:37Z",
+    "number": 597,
+    "state": "OPEN",
+    "title": "fix(rust): preserve checked resource refusal diagnostics",
+    "url": "https://github.com/betsudo/compact/issues/597"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T05:03:44Z",
+    "number": 549,
+    "state": "OPEN",
+    "title": "Retire phase-reset shape admission after whole-family inclusion checks",
+    "url": "https://github.com/betsudo/compact/issues/549"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T10:23:22Z",
+    "number": 565,
+    "state": "OPEN",
+    "title": "refactor(rust): retire merge shape admission after whole-family inclusion",
+    "url": "https://github.com/betsudo/compact/issues/565"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T10:06:17Z",
+    "number": 564,
+    "state": "OPEN",
+    "title": "feat(rust): compose native-compatible wide unsigned addition in recording plans",
+    "url": "https://github.com/betsudo/compact/issues/564"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T08:51:34Z",
+    "number": 561,
+    "state": "OPEN",
+    "title": "refactor(rust): retire shielded-send admission after whole-family inclusion",
+    "url": "https://github.com/betsudo/compact/issues/561"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T00:01:43Z",
+    "number": 506,
+    "state": "OPEN",
+    "title": "refactor(rust): establish readable compiler, runtime and harness component boundaries",
+    "url": "https://github.com/betsudo/compact/issues/506"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T11:21:06Z",
+    "number": 568,
+    "state": "OPEN",
+    "title": "feat(rust): compose own public key as a typed recording effect",
+    "url": "https://github.com/betsudo/compact/issues/568"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-07T20:14:15Z",
+    "number": 485,
+    "state": "OPEN",
+    "title": "[R040-02] Prove compositional recorded-effect lowering on one vertical slice",
+    "url": "https://github.com/betsudo/compact/issues/485"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-09T11:45:21Z",
+    "number": 508,
+    "state": "OPEN",
+    "title": "epic(rust): replace recording shape admission with typed effect composition",
+    "url": "https://github.com/betsudo/compact/issues/508"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T06:32:02Z",
+    "number": 555,
+    "state": "OPEN",
+    "title": "research(rust): define opaque public recording ABI boundaries",
+    "url": "https://github.com/betsudo/compact/issues/555"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T13:04:42Z",
+    "number": 572,
+    "state": "OPEN",
+    "title": "refactor(rust): retire funded-mint shape admission",
+    "url": "https://github.com/betsudo/compact/issues/572"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T07:53:18Z",
+    "number": 559,
+    "state": "OPEN",
+    "title": "feat(rust): compose typed tuple projections in recording plans",
+    "url": "https://github.com/betsudo/compact/issues/559"
+  },
+  {
+    "closedAt": "2026-10-06T13:39:07Z",
+    "createdAt": "2026-10-04T12:26:06Z",
+    "number": 167,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: keep AST backend clean under Rust 1.99 Clippy",
+    "url": "https://github.com/betsudo/compact/issues/167"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-15T17:37:19Z",
+    "number": 643,
+    "state": "OPEN",
+    "title": "feat(compiler): add opt-in Forge artifact caching with uncached fallback",
+    "url": "https://github.com/betsudo/compact/issues/643"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-10T08:10:51Z",
+    "number": 560,
+    "state": "OPEN",
+    "title": "feat(rust): retire membership shape admission through checked effects",
+    "url": "https://github.com/betsudo/compact/issues/560"
+  },
+  {
+    "closedAt": "2026-11-05T19:24:29Z",
+    "createdAt": "2026-10-18T08:53:20Z",
+    "number": 674,
+    "state": "CLOSED",
+    "title": "fix(rust): distinguish fixed-vector indexing from tuple projection",
+    "url": "https://github.com/betsudo/compact/issues/674"
+  },
+  {
+    "closedAt": null,
+    "createdAt": "2026-10-18T16:37:19Z",
+    "number": 679,
+    "state": "OPEN",
+    "title": "feat(forge): adopt authenticated key reuse in compiler and bounded CI",
+    "url": "https://github.com/betsudo/compact/issues/679"
+  },
+  {
+    "closedAt": "2026-10-17T13:29:05Z",
+    "createdAt": "2026-10-07T20:15:28Z",
+    "number": 491,
+    "state": "CLOSED",
+    "title": "[R040-06] Baseline and improve generated Rust readability",
+    "url": "https://github.com/betsudo/compact/issues/491"
+  },
+  {
+    "closedAt": "2026-10-06T13:40:02Z",
+    "createdAt": "2026-10-04T16:48:14Z",
+    "number": 177,
+    "state": "CLOSED",
+    "title": "feat(rust-backend): record typed Counter reset for proof calls",
+    "url": "https://github.com/betsudo/compact/issues/177"
+  },
+  {
+    "closedAt": "2026-11-05T19:25:30Z",
+    "createdAt": "2026-10-17T10:57:52Z",
+    "number": 661,
+    "state": "CLOSED",
+    "title": "feat(rust): record direct stateful Fold through checked effects",
+    "url": "https://github.com/betsudo/compact/issues/661"
+  },
+  {
+    "closedAt": "2026-10-06T13:35:38Z",
+    "createdAt": "2026-10-02T23:05:40Z",
+    "number": 130,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: preserve legacy compactc Rust target aliases",
+    "url": "https://github.com/betsudo/compact/issues/130"
+  },
+  {
+    "closedAt": "2026-10-06T13:35:32Z",
+    "createdAt": "2026-10-02T22:04:46Z",
+    "number": 129,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: record and prove Vector-key Set and Map circuits",
+    "url": "https://github.com/betsudo/compact/issues/129"
+  },
+  {
+    "closedAt": "2026-11-05T19:25:26Z",
+    "createdAt": "2026-10-12T17:47:31Z",
+    "number": 610,
+    "state": "CLOSED",
+    "title": "fix(rust): support nested Map size expressions in the frontend and IR",
+    "url": "https://github.com/betsudo/compact/issues/610"
+  },
+  {
+    "closedAt": "2026-10-08T18:35:49Z",
+    "createdAt": "2026-10-06T18:36:22Z",
+    "number": 352,
+    "state": "CLOSED",
+    "title": "[R030-08] Create developer-friendly Rust backend documentation",
+    "url": "https://github.com/betsudo/compact/issues/352"
+  },
+  {
+    "closedAt": "2026-10-06T13:39:13Z",
+    "createdAt": "2026-10-04T12:44:04Z",
+    "number": 168,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: eliminate unnecessary clones in generated Rust",
+    "url": "https://github.com/betsudo/compact/issues/168"
+  },
+  {
+    "closedAt": "2026-10-06T13:43:06Z",
+    "createdAt": "2026-10-05T02:47:15Z",
+    "number": 210,
+    "state": "CLOSED",
+    "title": "feat(rust): record standalone Unit witness in test-center Counter",
+    "url": "https://github.com/betsudo/compact/issues/210"
+  },
+  {
+    "closedAt": "2026-10-06T13:36:34Z",
+    "createdAt": "2026-10-03T06:32:56Z",
+    "number": 140,
+    "state": "CLOSED",
+    "title": "Build subsequent Rust calls from confirmed ledger-8 contract state",
+    "url": "https://github.com/betsudo/compact/issues/140"
+  },
+  {
+    "closedAt": "2026-10-06T13:55:15Z",
+    "createdAt": "2026-10-06T06:13:03Z",
+    "number": 341,
+    "state": "CLOSED",
+    "title": "ci: align extracted compiler timeout with the cold-build budget",
+    "url": "https://github.com/betsudo/compact/issues/341"
+  },
+  {
+    "closedAt": "2026-10-07T11:16:47Z",
+    "createdAt": "2026-10-07T10:04:41Z",
+    "number": 454,
+    "state": "CLOSED",
+    "title": "fix(rust): lower fallible vector coercions in the enclosing result",
+    "url": "https://github.com/betsudo/compact/issues/454"
+  },
+  {
+    "closedAt": "2026-10-07T08:26:02Z",
+    "createdAt": "2026-10-06T18:36:31Z",
+    "number": 360,
+    "state": "CLOSED",
+    "title": "[R030-16] Define version, compatibility and migration contracts",
+    "url": "https://github.com/betsudo/compact/issues/360"
+  },
+  {
+    "closedAt": "2026-10-06T13:36:00Z",
+    "createdAt": "2026-10-03T01:07:17Z",
+    "number": 134,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: pair sealed deployment and call at wallet handoff",
+    "url": "https://github.com/betsudo/compact/issues/134"
+  },
+  {
+    "closedAt": "2026-10-06T13:32:59Z",
+    "createdAt": "2026-09-29T08:17:12Z",
+    "number": 93,
+    "state": "CLOSED",
+    "title": "codegen-rust: `Vector<N, Field>` ledger ADT operation arguments (`Set.member` renders `[0, 1]`; `Set`/`Map` `insert` of a vector key does not build)",
+    "url": "https://github.com/betsudo/compact/issues/93"
+  },
+  {
+    "closedAt": "2026-10-06T13:35:27Z",
+    "createdAt": "2026-10-02T21:29:54Z",
+    "number": 128,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: record and prove historic Merkle append",
+    "url": "https://github.com/betsudo/compact/issues/128"
+  },
+  {
+    "closedAt": "2026-10-06T13:36:22Z",
+    "createdAt": "2026-10-03T03:52:21Z",
+    "number": 138,
+    "state": "CLOSED",
+    "title": "Route generated witness ledger reads through typed slots",
+    "url": "https://github.com/betsudo/compact/issues/138"
+  },
+  {
+    "closedAt": "2026-10-01T17:18:57Z",
+    "createdAt": "2026-10-01T17:18:48Z",
+    "number": 102,
+    "state": "CLOSED",
+    "title": "rust-backend-v1: native execution baseline delivery and 126-commit index",
+    "url": "https://github.com/betsudo/compact/issues/102"
+  },
+  {
+    "closedAt": "2026-10-06T13:45:51Z",
+    "createdAt": "2026-10-05T06:37:27Z",
+    "number": 239,
+    "state": "CLOSED",
+    "title": "Rust backend v2: record plain Merkle hash append",
+    "url": "https://github.com/betsudo/compact/issues/239"
+  },
+  {
+    "closedAt": "2026-10-07T11:29:48Z",
+    "createdAt": "2026-10-07T11:14:07Z",
+    "number": 460,
+    "state": "CLOSED",
+    "title": "fix(rust): preserve element types for empty vectors in composed maps",
+    "url": "https://github.com/betsudo/compact/issues/460"
+  },
+  {
+    "closedAt": "2026-10-06T13:46:01Z",
+    "createdAt": "2026-10-05T06:44:35Z",
+    "number": 241,
+    "state": "CLOSED",
+    "title": "feat(rust): record asset removal through scoped opaque key",
+    "url": "https://github.com/betsudo/compact/issues/241"
+  },
+  {
+    "closedAt": "2026-10-06T13:36:06Z",
+    "createdAt": "2026-10-03T01:11:06Z",
+    "number": 135,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: unify generated contract recording access",
+    "url": "https://github.com/betsudo/compact/issues/135"
+  },
+  {
+    "closedAt": "2026-10-06T13:48:08Z",
+    "createdAt": "2026-10-05T09:34:14Z",
+    "number": 265,
+    "state": "CLOSED",
+    "title": "feat(rust-backend): record guarded asset watch Set mutations",
+    "url": "https://github.com/betsudo/compact/issues/265"
+  },
+  {
+    "closedAt": "2026-10-07T04:14:33Z",
+    "createdAt": "2026-10-06T18:36:24Z",
+    "number": 353,
+    "state": "CLOSED",
+    "title": "[R030-09] Adopt Midnight DID v0.7.0",
+    "url": "https://github.com/betsudo/compact/issues/353"
+  },
+  {
+    "closedAt": "2026-10-06T13:46:12Z",
+    "createdAt": "2026-10-05T07:39:32Z",
+    "number": 243,
+    "state": "CLOSED",
+    "title": "feat(rust): record guarded custody grant lookup",
+    "url": "https://github.com/betsudo/compact/issues/243"
+  },
+  {
+    "closedAt": "2026-10-06T13:35:55Z",
+    "createdAt": "2026-10-03T00:25:41Z",
+    "number": 133,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: share recorded Field callees inside expressions",
+    "url": "https://github.com/betsudo/compact/issues/133"
+  },
+  {
+    "closedAt": "2026-10-06T13:35:43Z",
+    "createdAt": "2026-10-02T23:24:41Z",
+    "number": 131,
+    "state": "CLOSED",
+    "title": "rust-backend-v2: align generated crate guides with ABI 15",
+    "url": "https://github.com/betsudo/compact/issues/131"
+  }
+]

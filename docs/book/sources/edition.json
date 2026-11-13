@@ -1,0 +1,91 @@
+{
+  "title": "From source to proof",
+  "date": "2026-11-13",
+  "repository": "betsudo/compact",
+  "historical_site": "51a079bd8598b9decb3df7de92ec10768ec9b8dc",
+  "ledger8_cutoff": "9dc8d22b67eda0a90a8e99950556ef64b4e6f986",
+  "merged_foundation": "05912594fa3c483cf4e7031de83c5f9a103ef95c",
+  "compatibility_cutoff": "7a4fab772ee34c19053ce293d08052b501ce4b50",
+  "isolated_followups": [
+    "6eef58425bb53883c8f3b417b601246820c7d675",
+    "30a2d76550beb7d920a92bab2be6b1180243f658"
+  ],
+  "checkpoint": 73,
+  "upstream": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
+  "release": "Compact 0.36.0",
+  "sdk": "Ledger 9.1.0.1",
+  "platform": "macOS arm64 for local compatibility evidence",
+  "phases": [
+    {
+      "id": "oracle",
+      "title": "Original Rust oracle",
+      "head": "589c92ef961ce89ac730140e81b76d4c08222a70"
+    },
+    {
+      "id": "native",
+      "title": "Native AST milestone",
+      "head": "ea4cc006f973632c4c7b1fb4569af2b4c93ff38a"
+    },
+    {
+      "id": "recording",
+      "title": "Recorded contracts milestone",
+      "head": "03c03a39a2d39c43c91143b9526ca1c2ffae706c"
+    },
+    {
+      "id": "qualified",
+      "title": "Qualified consumers milestone",
+      "head": "0d7610b2792d60fee5d3713d4eb0ede3c98cc82a"
+    },
+    {
+      "id": "effects",
+      "title": "Compositional recording",
+      "head": "0437c894cd069af475bd8d5b254c24cc73615a09"
+    },
+    {
+      "id": "functional",
+      "title": "Functional Ledger 8",
+      "head": "c353907d8c323db16eedb35d5a7f0151aab859bb"
+    },
+    {
+      "id": "semantics",
+      "title": "Semantic delivery",
+      "head": "9dc8d22b67eda0a90a8e99950556ef64b4e6f986"
+    },
+    {
+      "id": "ledger9",
+      "title": "Ledger 9 foundation",
+      "head": "05912594fa3c483cf4e7031de83c5f9a103ef95c"
+    },
+    {
+      "id": "compatibility",
+      "title": "Upstream compatibility",
+      "head": "7a4fab772ee34c19053ce293d08052b501ce4b50"
+    },
+    {
+      "id": "pending",
+      "title": "Isolated local follow-ups",
+      "head": "30a2d76550beb7d920a92bab2be6b1180243f658"
+    }
+  ],
+  "commit_count": 1664,
+  "main_line_commit_count": 1555,
+  "original_only_count": 109,
+  "classification": "Earliest named phase head containing the commit, in listed order. Original-oracle-only commits have their own phase. Topics use subject matching. Dates shown by default are author dates.",
+  "published_rule": "Reachable from the verified working-line, existing Pages documentation, or original codegen-rust public head recorded in published_heads. Other records are labeled local at this cutoff.",
+  "snapshots": {
+    "ledger9-adoption.md": {
+      "sha256": "c3aa35520fe39a37813d100fa00ba4f6d9e7b049db6ddce1eeef370f2a01327a",
+      "source_sha256": "7e2d8acf79165c31dbfa7c5f1bd15a5f3654b23d2ae075b4e3dbb968a2a7f73d"
+    },
+    "ledger9-upstream-compatibility.md": {
+      "sha256": "c678c00b42f0c037b9533bd46dc19d137821cdd3befcc7bac40dc4d4175c079a",
+      "source_sha256": "24f92c540e4d99b1e19de1203aa890d96d769f92d095165fd6c028101719cc8c"
+    }
+  },
+  "chapter_count": 23,
+  "published_heads": {
+    "working_line": "05912594fa3c483cf4e7031de83c5f9a103ef95c",
+    "documentation": "51a079bd8598b9decb3df7de92ec10768ec9b8dc",
+    "original_oracle": "b9fdb80bfd474c24ce0553e66b7219e32d0add90"
+  }
+}

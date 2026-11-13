@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Typed values across compiler, runtime, ZKIR and ledger.">
+<meta name="theme-color" content="#f5f2eb">
+<title>Porting the cryptographic surface · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="porting-the-cryptographic-surface">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface" aria-current="page">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Upstream compatibility <span>· 3 min read</span></p>
+<h1>Porting the cryptographic surface</h1><p class="deck">Typed values across compiler, runtime, ZKIR and ledger.</p></header>
+<div class="prose"><h2 id="a-curve-name-is-only-the-beginning">A curve name is only the beginning</h2>
+<p>Supporting P-256 or secp256k1 means more than exposing a verification function. The compiler needs source types, defaults, casts and operations. Generated Rust needs distinct carriers. The runtime needs checked decoders and ledger layouts. ZKIR must receive the intended operands. Witnesses and public interfaces must preserve their representation.</p>
+<p>The migration proceeded through those layers in small families.</p>
+<h2 id="fields-before-points">Fields before points</h2>
+<p>Base and scalar fields have different moduli. Rust types preserve that distinction, so an ordinary call cannot accidentally substitute one carrier for another. Explicit source casts have their defined modular behavior. An untrusted host decoder still needs a canonicality check.</p>
+<p>Foreign field ledger transport also uses shifted values and split atoms. For the selected K1 and P-256 layouts, the low and high parts occupy 24 and 8 bytes. A plain integer comparison would miss a representation error.</p>
+<h2 id="unary-and-guarded-operations">Unary and guarded operations</h2>
+<p>Inversion of zero must fail on an active path, including when the result is discarded. A proof VM may evaluate an operation eagerly even when source control flow makes its result inactive.</p>
+<p>Guarded lowering therefore supplies a typed neutral input to the inactive operation while preserving active-path refusal. These cases show why the source semantics, host runtime and constraint model need to be checked together.</p>
+<h2 id="points-and-group-operations">Points and group operations</h2>
+<p>The K1 and P-256 families added typed point construction, equality, coordinate access, addition, multiplication and generator multiplication. Tests cover identity, off-curve input, coordinate-specific refusal and cross-curve rejection.</p>
+<p>Curve25519 adds subgroup and encoding obligations. Its scalar transport splits at bit 204, and its point transport uses four shifted Base atoms. The original generator and its double passed ordinary Rust, recording and VM replay.</p>
+<h2 id="signatures-hashes-and-recovery">Signatures, hashes and recovery</h2>
+<p>K1 ECDSA and Ethereum address derivation retain the original message and byte-order rules. P-256 ECDSA uses the upstream Compact implementation, with known-answer and Wycheproof accounting. Ed25519 uses SHA-512 and canonical scalar conversion, with identity and mixed-order key refusals.</p>
+<p>The host recovery helper returns a checked point. In the K1 owner-binding fixture, the recovery ID guides a witness, and the circuit authenticates that point through its signature and derived address. P-256 host recovery remains a host API with its own tests. Applications requiring a specific signer must compare the recovered key to their trusted key.</p>
+<h2 id="honest-corpus-accounting">Honest corpus accounting</h2>
+<p>The P-256 report accounts for 484 Wycheproof vectors. It drives 265 through the selected circuit interface and records 219 encoding exclusions. The driven outcomes include true, false, scalar-boundary refusal and abort.</p>
+<p>An excluded encoding is part of the coverage report. It should not be counted as a successful in-circuit test. The same discipline applies to intact fixtures whose newer language pragma remains refused.</p>
+<h2 id="selected-proof-depth">Selected proof depth</h2>
+<p>Local arm64 lanes include independent proofs and funded transactions for selected field, point, group, signature and recovery statements. The sequential signature fixtures also preserve witness order and substituted-key refusals.</p>
+<p>The complete original group and mixed-circuit proof matrix remains open. The available typed APIs and selected proof evidence are substantial, with scope determined by each receipt.</p>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/issues/729">Cryptography compatibility issue #729</a></li>
+<li><a href="https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e">Pinned upstream</a></li>
+<li><a href="../sources/ledger9-upstream-compatibility.md">Ledger 9 compatibility plan snapshot</a></li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/porting-the-cryptographic-surface.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="ledger9-is-a-protocol-migration.html"><small>Previous chapter</small>Ledger 9 is a protocol migration</a><a class="next" href="wire-values-events-and-state.html"><small>Next chapter</small>Wire values, events and state <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#a-curve-name-is-only-the-beginning">A curve name is only the beginning</a></li>
+<li><a href="#fields-before-points">Fields before points</a></li>
+<li><a href="#unary-and-guarded-operations">Unary and guarded operations</a></li>
+<li><a href="#points-and-group-operations">Points and group operations</a></li>
+<li><a href="#signatures-hashes-and-recovery">Signatures, hashes and recovery</a></li>
+<li><a href="#honest-corpus-accounting">Honest corpus accounting</a></li>
+<li><a href="#selected-proof-depth">Selected proof depth</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

@@ -1,0 +1,298 @@
+[
+  {
+    "sha": "67f7cbc8b2ea3164d9fb225c7f9fd67a9aa3d552",
+    "title": "rust-passes: lower Ltypescript → Rust crate (8-file module suite)",
+    "phase": "oracle",
+    "date": "2026-06-03",
+    "publication": "published",
+    "explanation": "Retained eight-file Ltypescript text-emission suite; compiler/rust-passes.ss, compiler/rust-passes-walker.ss, compiler/README-rust-passes.md."
+  },
+  {
+    "sha": "e1e963f2c9504456646a27ae5c7bd0da985b0b30",
+    "title": "feat(rust-codegen): digital-passport contract + cross-module struct-name disambiguation (#2)",
+    "phase": "oracle",
+    "date": "2026-07-15",
+    "publication": "published",
+    "explanation": "Digital-passport codegen and cross-module structural-name disambiguation; compiler/rust-passes-naming.ss, compiler/rust-passes-types.ss, compiler/rust-passes-walker.ss."
+  },
+  {
+    "sha": "17e33f485e1d8e229aabef1608eaabae376de4b2",
+    "title": "fix(rust): reject unsupported constructor bodies instead of dropping state changes",
+    "phase": "native",
+    "date": "2026-10-01",
+    "publication": "published",
+    "explanation": "Unsupported constructors now refuse instead of discarding state changes; compiler/rust-ir-passes.ss."
+  },
+  {
+    "sha": "36ffbfff048d22dd5a0686350915814000dc77e3",
+    "title": "feat(rust): execute Cell and Counter changes through ledger VM",
+    "phase": "native",
+    "date": "2026-10-01",
+    "publication": "published",
+    "explanation": "Real Cell/Counter ledger VM execution and captured state parity; runtime-rs/src/ledger.rs, runtime-rs/tests/counter_vm.rs, runtime-rs/tests/counter_parity.rs."
+  },
+  {
+    "sha": "4a83f5cb9ab104dc622a4b9ae8b0481dbd99eb79",
+    "title": "feat(rust): add typed witness return and aligned private transcript",
+    "phase": "native",
+    "date": "2026-10-01",
+    "publication": "published",
+    "explanation": "Typed witness returns and aligned private transcript; compiler/rust-ir-passes.ss, runtime-rs/src/context.rs, examples/rust_backend/witness_minimal.compact."
+  },
+  {
+    "sha": "67064813977a9af901792e5cfb62e295e49bff43",
+    "title": "feat(rust): start typed Rust backend from ledger-8",
+    "phase": "native",
+    "date": "2026-10-01",
+    "publication": "published",
+    "explanation": "AST restart from ledger8, schema1 and pure vertical slice; compiler/rust-ir-passes.ss, tools/compact-rust-backend/src/ir.rs, doc/rust-backend-ast.md."
+  },
+  {
+    "sha": "ea4cc006f973632c4c7b1fb4569af2b4c93ff38a",
+    "title": "test(rust): gate rejected Rust constructs and witness secrecy",
+    "phase": "native",
+    "date": "2026-10-01",
+    "publication": "published",
+    "explanation": "M1 accepted implementation cut and rejection/secrecy gates; tools/compact-rust-backend/check_rejections.py, tests-rust-backend/tiny-oracle/tests/tiny_oracle.rs."
+  },
+  {
+    "sha": "159d4bc51a30390c7cece1abe5a6ac35a0f06014",
+    "title": "feat(compiler): make Rust a first-class compactc target",
+    "phase": "recording",
+    "date": "2026-10-02",
+    "publication": "published",
+    "explanation": "First-class compiler Rust target and packaging integration; compiler/compactc.ss, compiler/passes.ss, flake.nix."
+  },
+  {
+    "sha": "aaece8fd387efda22777a4f3522585a27627c00e",
+    "title": "feat(runtime): prepare ledger calls from recorded circuits",
+    "phase": "recording",
+    "date": "2026-10-02",
+    "publication": "published",
+    "explanation": "Reusable checked call preparation; runtime-rs/src/transaction.rs, tools/compact-rust-proof-smoke/src/main.rs."
+  },
+  {
+    "sha": "e816df333c0ff7a4273eb5b458f77cc753fb9bd6",
+    "title": "feat(runtime): record replayable ledger cell and counter traces",
+    "phase": "recording",
+    "date": "2026-10-02",
+    "publication": "published",
+    "explanation": "Replayable native Cell/Counter traces; runtime-rs/src/recording.rs, runtime-rs/tests/recording_cell.rs."
+  },
+  {
+    "sha": "015b4e2ddddf2788df97dd9c76ddc652711d87f1",
+    "title": "feat(rust-backend): carry typed observed calls into ledger preparation",
+    "phase": "recording",
+    "date": "2026-10-03",
+    "publication": "published",
+    "explanation": "Typed observed-call identity/public input into preparation; runtime-rs/src/transaction.rs, doc/rust-backend-ast.md, generated fixture tests-rust-backend/aliases-oracle/lib.rs."
+  },
+  {
+    "sha": "83e1c715e2a515958c393fe6c0cd960d7db9c730",
+    "title": "chore(rust-backend): align wallet handoff with ledger 8.0.3",
+    "phase": "recording",
+    "date": "2026-10-03",
+    "publication": "published",
+    "explanation": "Coordinated Rust/JS ledger8.0.3 and Nix graph alignment; runtime-rs/Cargo.toml, flake.nix, tools/compact-rust-backend/wallet-handoff/package.json."
+  },
+  {
+    "sha": "e75f13ba2fdc954a29114177c31994a63e3cbec2",
+    "title": "test(rust-backend): build generated consumer from release archives",
+    "phase": "recording",
+    "date": "2026-10-04",
+    "publication": "published",
+    "explanation": "Archive consumer integration; also exact tree used for separately documented ABI28 live wallet admission; tools/compact-rust-backend/check_archive_consumer.py."
+  },
+  {
+    "sha": "03c03a39a2d39c43c91143b9526ca1c2ffae706c",
+    "title": "ci(rust): bound Linux validation artifact storage",
+    "phase": "recording",
+    "date": "2026-10-06",
+    "publication": "published",
+    "explanation": "M2 final exact-head acceptance tree; final change bounds Linux validation storage; .github/workflows/build-compiler.yml."
+  },
+  {
+    "sha": "9ec520a3af2273b2642d4e383245af85e9a154ff",
+    "title": "test(rust): cover original DID native lifecycle and pure APIs",
+    "phase": "qualified",
+    "date": "2026-10-07",
+    "publication": "published",
+    "explanation": "Original DID native lifecycle and independent pure/lifecycle captures; tests-rust-backend/did-adoption/oracle/lifecycle.json, tests-rust-backend/did-adoption/tests/lifecycle.rs."
+  },
+  {
+    "sha": "b6fcb06cec7e8913e91faae167926805c4872ffb",
+    "title": "feat(rust): version public runtime APIs and align standalone dependencies",
+    "phase": "qualified",
+    "date": "2026-10-07",
+    "publication": "published",
+    "explanation": "Explicit public package compatibility line; runtime-rs/compatibility.json, runtime-rs/Cargo.toml, tools/compact-rust-backend/Cargo.toml."
+  },
+  {
+    "sha": "ceaac44c49ccf361250550d65e170a9c52e1ece2",
+    "title": "feat(rust): add ContractLab for typed ledger scenarios and replay",
+    "phase": "qualified",
+    "date": "2026-10-07",
+    "publication": "published",
+    "explanation": "ContractLab typed scenarios, checkpoints and replay; testkit-rs/src/lab.rs, testkit-rs/tests/generated_scenarios.rs."
+  },
+  {
+    "sha": "1aa606228502e131f0c901fe4cb932cc6051df7f",
+    "title": "test(rust): establish versioned specification conformance baseline",
+    "phase": "qualified",
+    "date": "2026-10-08",
+    "publication": "published",
+    "explanation": "Versioned specification inventory/conformance baseline; tools/compact-rust-backend/specification_conformance.json, tools/compact-rust-backend/specification_conformance.py."
+  },
+  {
+    "sha": "f9a496660a4a69f4dd7c7927111767ad5c0c12b2",
+    "title": "test(rust): create fresh relation key directories",
+    "phase": "qualified",
+    "date": "2026-10-08",
+    "publication": "published",
+    "explanation": "0.3 qualified implementation tree; last fix creates fresh DID relation key directories; tools/compact-rust-backend/did_relation_gate.py."
+  },
+  {
+    "sha": "0d7610b2792d60fee5d3713d4eb0ede3c98cc82a",
+    "title": "docs(rust): close the 0.3.0 engineering milestone",
+    "phase": "qualified",
+    "date": "2026-10-09",
+    "publication": "published",
+    "explanation": "0.3 closure and93-criterion evidence crosswalk; doc/rust/0.3.0-closure.md, doc/rust/evidence/0.3.0/closure/crosswalk.md."
+  },
+  {
+    "sha": "0437c894cd069af475bd8d5b254c24cc73615a09",
+    "title": "feat(rust): replace recording shape admission with checked effects [skip ci] (#641)",
+    "phase": "effects",
+    "date": "2026-10-16",
+    "publication": "published",
+    "explanation": "Public integration of production shape-admission replacement. The current production path is select_checked_observed → lower → composition check → independent validator → render. The original ledger accounts for 84 boundaries: 69 retired production routes, seven retained semantic/integration obligations and eight historical artifacts. No 84/84 removal or language-coverage claim."
+  },
+  {
+    "sha": "ffe3010ddd08e13b20b48116f3aabc0c2ae6865f",
+    "title": "docs(rust): publish recording algebra closure records [skip ci] (#651)",
+    "phase": "functional",
+    "date": "2026-10-16",
+    "publication": "published",
+    "explanation": "Publishes the scoped closure/accounting narrative. Retained exact 974-case historical acceptance belongs to frozen ab132650 authorities and its own epoch; original evidence is not all public or portable. Published derivative inventory is not a new historical run. Useful distinction between implementation closure, evidence availability and broad 0.4.0 milestone scope."
+  },
+  {
+    "sha": "5c16fcd35a2389af35d8e59ad752ecec4ee43395",
+    "title": "feat(rust): compose typed functional witnesses, calls and Map/Set effects (#676)",
+    "phase": "functional",
+    "date": "2026-10-19",
+    "publication": "published",
+    "explanation": "Moves functional surface beyond simple values: typed witnesses and checked calls, scalar Map/Set operations and structural nested-Map inspection/removal. Reuses existing frames/slots/codecs. ADR0549/0550 explain why Map membership/size/removal must not require the scalar codec needed for lookup/write; capabilities express actual operations."
+  },
+  {
+    "sha": "eef53870e3e92097678bdbde0d2aabaf6fd1af01",
+    "title": "feat(rust): compose typed List, Counter, VectorMap and Merkle effects (#677)",
+    "phase": "functional",
+    "date": "2026-10-19",
+    "publication": "published",
+    "explanation": "Completes further functional domains through typed leaf adapters while retaining Merkle depth/history and physical paths. The Oct18 snapshot reports 71 of 72 top-level Operation variants conditionally admitted; excluded Keccak belongs to this pinned Ledger8.1.3/ZKIRv2 target. 71/72 measures one enum dimension, not language coverage."
+  },
+  {
+    "sha": "cfb28592d3e213d3dda58a3dc02f6aa66b61e777",
+    "title": "refactor(compiler): isolate the deferred Forge experiment",
+    "phase": "functional",
+    "date": "2026-10-25",
+    "publication": "published",
+    "explanation": "Owner redirected effort to primary Rust AST work. experiment/zkir-forge preserves continuation; primary compiler cache options/helper/dependencies, qualification/snapshot workflows and three-lap cache drivers were removed. Backend proof implementations, ordinary proof gates, compiler build-once improvements and uncached native ZKIR generation remain. Whole-CI cache value was unknown, not disproved."
+  },
+  {
+    "sha": "fa8e8ab178c1f7aa5bebf6b4c9ec1d25554c1909",
+    "title": "feat(rust): qualify checked vector projection APIs and proofs",
+    "phase": "semantics",
+    "date": "2026-10-26",
+    "publication": "published",
+    "explanation": "Frontend already accepted a statically in-range Vector index and transported tuple_index, while Rust owners admitted tuples only. Add a checked Vector projection fact with existing FixedVector<T,N> API and source bounds, rather than a new public executor/index trait. Genuine generated APIs, compile-fail controls and selected proof/application cases expose the semantic gap precisely."
+  },
+  {
+    "sha": "acf529effc5d4b9bc8428d91dcaf21e641965a13",
+    "title": "feat(rust): integrate typed tuple return wrappers (#692)",
+    "phase": "semantics",
+    "date": "2026-10-27",
+    "publication": "published",
+    "explanation": "TS accepted inferred Field pairs around terminal Set effects, while Rust required explicit component casts. Frontend wrapper/ReturnPlan recognition reuses existing bounded Coerce/AST/recorded owners, binds the aggregate once, then converts components in order. Actual return remains (Field, Field) or typed mixed tuple. No new IR/ABI/builder; no arbitrary arity/product admission."
+  },
+  {
+    "sha": "feefa65770e39580b5044b6a4a0307783c8bfe93",
+    "title": "merge(rust): integrate checked direct Fold semantics (#690)",
+    "phase": "semantics",
+    "date": "2026-10-27",
+    "publication": "published",
+    "explanation": "Existing pure-helper Fold support did not imply direct checked stateful Fold support. The bounded slice integrates the existing checked operation/order owners into direct source behavior. Map size #689 and scalar terminal wrappers #691 landed in this same delivery period; see their own source/qualification plans rather than treating every Fold form as accepted."
+  },
+  {
+    "sha": "13b94f62a4b9b642fe99700389fd8c4f80ccf8f5",
+    "title": "fix(rust): compose product children in outer Vector widening",
+    "phase": "semantics",
+    "date": "2026-11-03",
+    "publication": "published",
+    "explanation": "The selector omitted tuple children directly below the outer Vector element tuple, although recursive checked coercion and AST/validator owners already handled products. Add the existing component-product relation at the frontend selector, preserve shape/arity/identity/narrowing limits. This follows Nov2 API qualification of aliases, aggregate projections, struct literals, stateful returns/locals and product-vector combinations."
+  },
+  {
+    "sha": "633840d7669309ca28e946c193796b3d538f16da",
+    "title": "test(rust): add complete outer-Vector semantic qualification gate",
+    "phase": "semantics",
+    "date": "2026-11-04",
+    "publication": "published",
+    "explanation": "Whole original source and whole declared 15-export family are modeled before selecting proofs; 16 observed exports, 15 in-cap selected proofs, intact k9 case unproved. API, independent private-IR/recorded validation, empty/dead annotations, exact Program identity, compile refusals and TS/native/recorded comparisons matter because type correctness alone cannot detect same-type operand substitution."
+  },
+  {
+    "sha": "e605f962cdb7ec01e20818bf93d453eb875c14d5",
+    "title": "feat(rust): preserve wide Uint multiplication by typed zero (#700)",
+    "phase": "semantics",
+    "date": "2026-11-05",
+    "publication": "published",
+    "explanation": "x: Uint<200>; x * 0 was legal source but refused. Applicability is based on canonical declared bounds, never runtime operand values. Evaluate both operands once left-to-right before constructing zero so failures/witnesses remain visible. Existing checked WideUint/BoundedUint carriers suffice. Zero-singleton proof encoding exposed a separate gap; selected successful proof APIs use Uint8 and do not imply singleton result proof support."
+  },
+  {
+    "sha": "10de5d1c1865d1648db3db6371bfc2307ab0d746",
+    "title": "feat(rust): start Ledger 9 runtime adoption",
+    "phase": "ledger9",
+    "date": "2026-11-11",
+    "publication": "published",
+    "explanation": "Start from published AST after #723 (09c75e289), pin published Ledger9.1.0.1 graph and adapt transaction signature, observation metadata and TTL. Fresh independent Compact0.36.0 / Runtime0.21.0 / Onchain4.0.1 state captures for collections remain separate from Ledger8 oracles. First model/runtime passes did not yet establish funded proof/application support."
+  },
+  {
+    "sha": "fa8f2670a19ebac5956d059a1edc065d374e8ca5",
+    "title": "fix(compiler): preserve Ledger 9 ZKIR impact boundaries",
+    "phase": "ledger9",
+    "date": "2026-11-11",
+    "publication": "published",
+    "explanation": "Standalone Counter proof passed but transaction prover exhausted skip entries. The old v3 emitter grouped expanded ledger operations; Ledger9 consumes one skip entry per transcript operation. Preserve those boundaries and omit suppressed operations. Counter's three impact instructions then match released output; exact IR supports standalone verification plus separately proved funded default-strict transaction/replay. Concrete reason a ledger migration is more than Cargo edits."
+  },
+  {
+    "sha": "05912594fa3c483cf4e7031de83c5f9a103ef95c",
+    "title": "Migrate the Rust AST backend to Ledger 9 (#725)",
+    "phase": "ledger9",
+    "date": "2026-11-12",
+    "publication": "published",
+    "explanation": "Compiler0.31.211 + runtime TS0.17.0 + ZKIR3.2.0 + Rust1.99; generated ABI54. Includes native, recording, placement, proof/verifier, wallet and consumer graph; old Ledger8 line/oracles preserved. Message records 311 selected standalone verifications plus separately proved funded applications at arm64 epoch 88ad250dd; that population overlaps later gates and is not a total coverage percentage. Merged foundation does not mean complete upstream feature compatibility."
+  },
+  {
+    "sha": "9409b7da1cc652940469903a8380000b0b707239",
+    "title": "docs(rust): record literal projection Ledger 9 proofs",
+    "phase": "ledger9",
+    "date": "2026-11-12",
+    "publication": "published",
+    "explanation": "Adoption doc explicitly binds the passing local_parity_gate.py --full macOS arm64/Rust1.99 run here: 286 fixtures, 87 generated consumers, 688 selected exports including626 proof-eligible, nine child proof gates/87 selected calls. Another 25 standalone migration cases retain distinct epochs and overlap. Current locked packaged ZKIR has a different binary hash from the earlier full run and receives separate Counter artifact/key/proof/application checks."
+  },
+  {
+    "sha": "48aa0eb416535a1c4d7f1f16780fff8c6ccd0fcb",
+    "title": "feat(rust): port upstream Ledger 9 Ed25519 verification",
+    "phase": "compatibility",
+    "date": "2026-11-13",
+    "publication": "local",
+    "explanation": "Reuse pinned upstream Compact signature implementation and Curve25519/SHA512/canonical scalar owners; preserve sign-bit, message/key/signature, identity and mixed-order refusals. Two original stateful exports have fresh independently verified arm64 k17 proofs; one RFC8032 one-byte case has separate funded strict application/replay. 151-vector and sequential witness sources retain original pragmas; pragma-only derivatives are not intact-source language admission. Local compatibility work, not a merged #725 feature."
+  },
+  {
+    "sha": "7a4fab772ee34c19053ce293d08052b501ce4b50",
+    "title": "test(ledger9): cover nested opaque byte equality",
+    "phase": "compatibility",
+    "date": "2026-11-13",
+    "publication": "local",
+    "explanation": "Research HEAD follows 57e228179 fixing opaque byte arrays to compare contents, then retains nested equality regression controls and reference documentation. A useful final zoom-in: after large architecture/protocol changes, precise value semantics still need source-level regression cases. This is a local compatibility checkpoint, not overall journey completion."
+  }
+]

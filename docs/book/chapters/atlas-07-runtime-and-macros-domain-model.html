@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Core types and mechanical derives.">
+<meta name="theme-color" content="#f5f2eb">
+<title>Runtime and macro ownership · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="atlas-07-runtime-and-macros-domain-model">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model" aria-current="page">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Historical atlas <span>· 5 min read</span></p>
+<h1>Runtime and macro ownership</h1><p class="deck">Core types and mechanical derives.</p></header>
+<div class="prose"><blockquote>
+<p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/07-runtime-and-macros-domain-model.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+</blockquote>
+<p>The Rust backend is not one generated file. It is a set of ownership
+boundaries. The most useful mental model is a transition from a source-owned
+contract to a ledger-owned call, with the runtime carrying typed evidence
+between them.</p>
+<h2 id="domain-map">Domain map</h2>
+<pre><code class="language-text">generated contract
+  ├─ types ─────────────── derives ────── FAB / field / binary representation
+  ├─ ledger_slots ──────── typed path ─── canonical ledger-8 VM operation
+  ├─ Witnesses ─────────── private step ─ private state + private FAB output
+  ├─ native circuit ────── CircuitFrame / CircuitResult
+  └─ recorded circuit ──── RecordingFrame / RecordedCircuitResult
+                                      │
+                                      ▼
+observation ── RecordedCall ── replay + partition ── ContractCallPrototype
+                                                       │
+                                  verifier/prover/ledger application
+</code></pre>
+<h2 id="core-execution-types">Core execution types</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Owns</th>
+<th>Must not be mistaken for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConstructorContext&lt;Private&gt;</code></td>
+<td>Initial private state, wallet-local Zswap state and source-ordered circuit intents</td>
+<td>A deployed ledger contract</td>
+</tr>
+<tr>
+<td><code>ConstructorResult&lt;Private&gt;</code></td>
+<td>Constructed charged ledger state plus private/Zswap successors</td>
+<td>Proof or deployment evidence</td>
+</tr>
+<tr>
+<td><code>CircuitContext&lt;Private&gt;</code></td>
+<td>Private state, upstream <code>QueryContext</code>, cost model, per-query gas limit, Zswap plan and optional execution key</td>
+<td>A replayable trace</td>
+</tr>
+<tr>
+<td><code>WitnessContext</code></td>
+<td>Borrowed private state, typed ledger view and contract address</td>
+<td>Permission to disclose witness values</td>
+</tr>
+<tr>
+<td><code>WitnessReadMeter</code></td>
+<td>Canonical VM reads made through witness projections and their observed cost</td>
+<td>A public verifying operation</td>
+</tr>
+<tr>
+<td><code>CircuitResult&lt;Private, Output&gt;</code></td>
+<td>Successor context, source result, summed query gas and private FAB outputs</td>
+<td>A proof-ready transaction</td>
+</tr>
+<tr>
+<td><code>CircuitFrame</code></td>
+<td>Ordered native composition of nested calls, witness steps and their costs/outputs</td>
+<td>A procedural macro or compiler IR</td>
+</tr>
+</tbody>
+</table>
+<p><code>CircuitContext.gas_limit</code> is a ledger-8 limit applied to each individual VM
+query. <code>CircuitResult.gas_cost</code> is the accumulated diagnostic cost of accepted
+queries. A whole-circuit budget is not implied.</p>
+<h2 id="primitive-ownership-map">Primitive ownership map</h2>
+<p>The facade is deliberately thin. It preserves Compact names and checked
+conversion points while keeping the ledger-8 types authoritative:</p>
+<table>
+<thead>
+<tr>
+<th>Compact surface</th>
+<th>Rust runtime facade</th>
+<th>Ledger / ZK authority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Field</code></td>
+<td><code>runtime::Field</code> / <code>runtime::Fr</code></td>
+<td>Alias of <code>midnight_transient_crypto::curve::Fr</code></td>
+</tr>
+<tr>
+<td><code>Bytes&lt;N&gt;</code>, <code>Vector&lt;N,T&gt;</code></td>
+<td><code>FixedBytes&lt;N&gt;</code>, <code>FixedVector&lt;T,N&gt;</code> with FAB and field/binary representations</td>
+<td><code>midnight_base_crypto::fab::{AlignedValue, Value, Alignment}</code> plus <code>midnight_transient_crypto::repr</code></td>
+</tr>
+<tr>
+<td><code>Cell</code>, <code>Set</code>, <code>Map</code>, <code>List</code>, Merkle declarations</td>
+<td>Typed <code>*Slot</code> values and <code>CircuitContext</code> operations</td>
+<td><code>midnight_onchain_runtime::QueryContext</code>, <code>midnight_onchain_vm::Op</code>, <code>midnight_onchain_state::StateValue</code>, and storage collections</td>
+</tr>
+<tr>
+<td>Coin information, recipient and shielded intents</td>
+<td>Conversion helpers plus <code>CircuitZswapPlan</code></td>
+<td><code>midnight_coin_structure</code> and <code>midnight_zswap</code></td>
+</tr>
+<tr>
+<td><code>JubjubPoint</code>, hashes and commitments</td>
+<td>Checked <code>JubjubPoint</code> wrapper and native functions</td>
+<td><code>midnight_transient_crypto</code> plus checked decoding through <code>midnight_curves</code></td>
+</tr>
+<tr>
+<td>Recorded call and verifier material</td>
+<td><code>RecordedCall</code> to <code>ContractCallPrototype</code></td>
+<td><code>midnight_ledger</code> transaction construction; proof providers use the pinned <code>midnight-proofs</code> / <code>midnight-zkir</code> graph</td>
+</tr>
+</tbody>
+</table>
+<p>The last row is a boundary rather than a type alias. Generated code creates a
+typed recorded call and enters preparation. It does not hide proving or ledger
+application inside emitted syntax. The proof testkit uses
+<code>midnight_zkir::LocalProvingProvider</code>; the runtime transaction adapter binds
+<code>VerifierKey</code> and <code>ProofPreimage</code> from the ledger's transient-crypto graph.</p>
+<pre><code class="language-text">generated types ── FAB / FieldRepr ── ledger value representation
+typed slots ────── checked VM ops ─── QueryContext + StateValue
+Zswap intents ─── explicit binding ── Offer + ledger Zswap state
+recorded call ─── replay/partition ── ContractCallPrototype
+                                          │
+                              provider proves / ledger applies
+</code></pre>
+<h2 id="ledger-slots">Ledger slots</h2>
+<p>The generated declaration fixes a value type and a physical path. Runtime slot
+types expose only operations appropriate to that declaration:</p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Representative operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CellSlot&lt;T&gt;</code></td>
+<td>typed read/write, local inspection, witness read, recorded read/write</td>
+</tr>
+<tr>
+<td><code>CounterSlot</code></td>
+<td>increment/decrement, less-than query, witness and recorded forms</td>
+</tr>
+<tr>
+<td><code>SetSlot&lt;T&gt;</code></td>
+<td>insert/remove/member/size/is-empty with structural and metered views</td>
+</tr>
+<tr>
+<td><code>MapSlot&lt;K,V&gt;</code></td>
+<td>typed key/value operations; nested <code>MapNode</code> distinguishes non-scalar values</td>
+</tr>
+<tr>
+<td><code>ListSlot&lt;T&gt;</code></td>
+<td>push/pop/head/length with declared physical path</td>
+</tr>
+<tr>
+<td><code>MerkleSlot&lt;T, DEPTH, HISTORIC&gt;</code></td>
+<td>typed leaves, declared depth and compile-time historic capability</td>
+</tr>
+</tbody>
+</table>
+<p>Slots prevent the generator from rebuilding VM opcodes for every contract.
+They do not make arbitrary paths valid: runtime builders still check operand
+width, root/reset semantics, alignment and upstream query rejection.</p>
+<h2 id="recording-domain">Recording domain</h2>
+<p><code>RecordingFrame</code> executes admitted operations while retaining two products:</p>
+<ol>
+<li><code>CircuitResult</code> — what native execution did, including private outputs and
+   observed query gas;</li>
+<li><code>PublicTrace</code> — initial public context plus ordered ledger-8 Verify
+   operations and sealed execution/Zswap identities.</li>
+</ol>
+<p><code>RecordedCircuitResult</code> pairs those products without claiming that replay,
+proof or transaction preparation has succeeded.</p>
+<h2 id="transaction-domain">Transaction domain</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Boundary it authenticates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Observation</code></td>
+<td>Caller-supplied transaction/block identity; explicitly not finality proof</td>
+</tr>
+<tr>
+<td><code>ObservedContractState</code></td>
+<td>Address + public contract + observation + allocation/execution identity policy</td>
+</tr>
+<tr>
+<td><code>RecordedCall</code></td>
+<td>Recorded trace + source entry point + typed FAB input + originating observed state</td>
+</tr>
+<tr>
+<td><code>CallSpec</code></td>
+<td>Exact verifier, key location, entry point, public input and commitment randomness</td>
+</tr>
+<tr>
+<td><code>ContractCallPrototype</code></td>
+<td>Replayed and partitioned ledger call ready for later proving/transaction construction</td>
+</tr>
+</tbody>
+</table>
+<p>Preparation checks address, initial state, execution key, installed operation
+and verifier identity before replay/partition. Errors such as
+<code>StateMismatch</code>, <code>VerifierMismatch</code>, <code>ReplayEffectsMismatch</code> and
+<code>PartitionEffectsMismatch</code> are trust-boundary failures rather than Compact
+source type errors.</p>
+<p>The evidence flow is intentionally longer than a generated function call:</p>
+<pre><code class="language-text">Generate          Execute          Record             Prepare
+types + slots  -&gt; CircuitResult -&gt; RecordedResult  -&gt; ContractCallPrototype
+                                                           |
+                                                           v
+Apply          &lt;- Verify/prove  &lt;- ProofPreimage + exact artifact identity
+Intent/Tx          provider          provider / ZKIR / parameters
+</code></pre>
+<p>Each arrow can fail independently. This is why native execution, recording,
+preparation, proof verification and ledger application are reported as
+different capabilities.</p>
+<h2 id="shielded-intent-domain">Shielded intent domain</h2>
+<p><code>CircuitZswapPlan</code> records ordered circuit input/output intents and allocation
+state. Its output indices can be provisional during native execution or exact
+when bound to an authoritative offer. It is deliberately separate from wallet
+state and from a validated offer.</p>
+<h2 id="what-the-macros-own">What the macros own</h2>
+<p>The proc-macro crate is intentionally narrow:</p>
+<table>
+<thead>
+<tr>
+<th>Macro</th>
+<th>Mechanical responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CompactCellValue</code></td>
+<td>FAB alignment/conversion and checked Cell decoding</td>
+</tr>
+<tr>
+<td><code>CompactEnum</code></td>
+<td>Default first variant, checked ordinal, field and binary representations</td>
+</tr>
+<tr>
+<td><code>CompactStructRepr</code></td>
+<td>Fully qualified delegation of field/binary representations for named concrete structs</td>
+</tr>
+<tr>
+<td><code>CompactMerkleTreeDigest</code>, <code>CompactMerklePathEntry</code>, <code>CompactMerklePath</code></td>
+<td>Mechanical Merkle representation glue</td>
+</tr>
+<tr>
+<td><code>compact_witness_bridge</code></td>
+<td>Generate fallible <code>TryWitnesses</code> and the infallible adapter from one visible trait</td>
+</tr>
+</tbody>
+</table>
+<p>Macros do <strong>not</strong> decide Compact control flow, recording admission, ledger
+paths, disclosure, gas policy or proof support. Those stay in the frontend,
+typed backend and runtime respectively. This boundary follows
+<a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0004-derive-only-mechanical-rust-representation-rules.md">RUST-ADR-0004</a>,
+<a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0005-use-a-typed-runtime-dsl-instead-of-a-body-wide-macro.md">RUST-ADR-0005</a>
+and <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0038-declare-generated-witness-signatures-once.md">RUST-ADR-0038</a>.</p>
+<h2 id="compatibility-boundaries">Compatibility boundaries</h2>
+<p>At the documented head, generated code asserts runtime ABI 50 at compile time.
+The Chez-to-Rust private IR is schema 20 and the capability report is schema 3.
+Those numbers describe different internal contracts and must not be compared
+as one version line. The runtime reuses ledger-8.0.3 primitives; a matching ABI
+does not by itself establish proof keys, network compatibility or application
+adoption.</p></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/atlas-07-runtime-and-macros-domain-model.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-06-generated-rust-examples.html"><small>Previous chapter</small>Read the generated Rust</a><a class="next" href="atlas-08-gas-errors-and-fixes.html"><small>Next chapter</small>Gas, errors and corrected boundaries <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#domain-map">Domain map</a></li>
+<li><a href="#core-execution-types">Core execution types</a></li>
+<li><a href="#primitive-ownership-map">Primitive ownership map</a></li>
+<li><a href="#ledger-slots">Ledger slots</a></li>
+<li><a href="#recording-domain">Recording domain</a></li>
+<li><a href="#transaction-domain">Transaction domain</a></li>
+<li><a href="#shielded-intent-domain">Shielded intent domain</a></li>
+<li><a href="#what-the-macros-own">What the macros own</a></li>
+<li><a href="#compatibility-boundaries">Compatibility boundaries</a></li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

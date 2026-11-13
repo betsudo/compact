@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="An evidence ladder for contributors and reviewers.">
+<meta name="theme-color" content="#f5f2eb">
+<title>A proof is one stage · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="a-proof-is-one-stage">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage" aria-current="page">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Technical guide <span>· 2 min read</span></p>
+<h1>A proof is one stage</h1><p class="deck">An evidence ladder for contributors and reviewers.</p></header>
+<div class="prose"><h2 id="follow-one-circuit-all-the-way">Follow one circuit all the way</h2>
+<p>The pipeline explorer shows eight stages. Each stage has an owner, a useful output and a failure that the next stage can expose.</p>
+<h3 id="source-admission">Source admission</h3>
+<p>The frontend checks Compact syntax, types, disclosure and supported target capabilities. A newer language pragma may fail before a circuit is considered. A derivative with that pragma removed is useful for investigating semantics, with its changed source identity recorded explicitly.</p>
+<h3 id="typed-lowering-and-rust-emission">Typed lowering and Rust emission</h3>
+<p>The internal IR preserves types and operations, and carries source origins where the frontend supplies them. Checked lowering establishes a Rust representation and legal control flow. Syntax emission renders the admitted model. Generated code compilation catches Rust-level errors in the public API. Structural and type checks do not establish source semantic equivalence. A same-typed operand or slot substitution needs an independent behavioral observation.</p>
+<h3 id="native-execution">Native execution</h3>
+<p>Execute the generated function against the selected ledger runtime. Compare returns, state, witnesses, private state and gas with an independent reference case.</p>
+<h3 id="recorded-execution-and-replay">Recorded execution and replay</h3>
+<p>Record the same admitted effects and replay them through the ledger VM. Compare the resulting state and ordered observations. Losing a Unit-valued effect can be detected here even when the return value looks harmless.</p>
+<h3 id="sdk-preflight">SDK preflight</h3>
+<p>Interpret the exact ZKIR against the serialized preimage. Check its raw identities and compare input, output, public transcript and private transcript fields. Mutated statements should be refused when they violate the original circuit.</p>
+<h3 id="fresh-standalone-proof-and-verification">Fresh standalone proof and verification</h3>
+<p>Generate the selected keys from pinned parameters and exact IR. Produce a new proof. Verify in an independent process with the verifier rederived from those identities. Exercise wrong-verifier, changed-binding and corrupt-proof controls.</p>
+<h3 id="funded-transaction">Funded transaction</h3>
+<p>Construct a separate transaction-bound proof. Preserve the observed installed operation. Include genuine fee funding and default-strict ledger verification. Compare the applied state and events to generated native execution.</p>
+<h3 id="replay-and-rollback">Replay and rollback</h3>
+<p>Apply the same verified transaction again. The accepted result in the selected lanes is IntentAlreadyExists with unchanged whole-ledger bytes and no repeated events. A broader transaction failure may also require rollback tests.</p>
+<h2 id="why-compile-fail-tests-belong-in-the-guide">Why compile-fail tests belong in the guide</h2>
+<p>The generated Rust API should reject invalid ordinary use at compile time where the type system can express the constraint. Passing a P-256 carrier to a K1 method is one example.</p>
+<p>Unknown bytes, installed verifier material and decoded protocol data cross untrusted boundaries. Those inputs need explicit diagnostics and runtime errors. A useful API makes that distinction predictable.</p>
+<h2 id="a-review-checklist">A review checklist</h2>
+<ul>
+<li>Identify the exact source, compiler, backend, runtime and SDK family.</li>
+<li>Check the affected ordinary entry points, including previously generated consumers.</li>
+<li>Inspect positive behavior and the most relevant invalid-use controls.</li>
+<li>Bind raw IR, generated library, keys, parameters and immutable verifier identity.</li>
+<li>Read the actual application and replay receipts.</li>
+<li>State the platform and the source revision for every aggregate count.</li>
+</ul>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/doc/rust/guides/proof-integration.md">Proof integration guide</a></li>
+<li><a href="../sources/ledger9-adoption.md">Ledger 9 adoption plan snapshot</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/727">Coverage issue #727</a></li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/a-proof-is-one-stage.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="cross-contract-calls-and-the-held-boundary.html"><small>Previous chapter</small>Cross-contract calls and the held boundary</a><a class="next" href="the-next-reader-inherits-a-map.html"><small>Next chapter</small>The next reader inherits a map <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#follow-one-circuit-all-the-way">Follow one circuit all the way</a><ul>
+<li><a href="#source-admission">Source admission</a></li>
+<li><a href="#typed-lowering-and-rust-emission">Typed lowering and Rust emission</a></li>
+<li><a href="#native-execution">Native execution</a></li>
+<li><a href="#recorded-execution-and-replay">Recorded execution and replay</a></li>
+<li><a href="#sdk-preflight">SDK preflight</a></li>
+<li><a href="#fresh-standalone-proof-and-verification">Fresh standalone proof and verification</a></li>
+<li><a href="#funded-transaction">Funded transaction</a></li>
+<li><a href="#replay-and-rollback">Replay and rollback</a></li>
+</ul>
+</li>
+<li><a href="#why-compile-fail-tests-belong-in-the-guide">Why compile-fail tests belong in the guide</a></li>
+<li><a href="#a-review-checklist">A review checklist</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

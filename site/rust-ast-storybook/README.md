@@ -1,5 +1,7 @@
 # Compact Rust-AST engineering storybook
 
+The full Ledger 8 → Ledger 9 interactive book now lives in [site/compact-journey](../compact-journey/README.md) and publishes beside this historical overview at /compact/book/.
+
 A dependency-free, single-page visualization of the Compact Rust backend
 journey: the ledger-8 foundation, TypeScript/JavaScript reference path,
 original Scheme-to-Rust text emitter, typed Rust-AST backend and current

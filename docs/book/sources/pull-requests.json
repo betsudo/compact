@@ -1,0 +1,282 @@
+[
+  {
+    "number": 725,
+    "title": "Migrate the Rust AST backend to Ledger 9",
+    "state": "closed",
+    "merged_at": "2026-11-12T16:53:40Z",
+    "head": "2e9142e7c336194301bbe2f07bcbd3a40e097466"
+  },
+  {
+    "number": 724,
+    "title": "feat(rust): diagnose transient-derived persistence with typed IR provenance",
+    "state": "open",
+    "merged_at": null,
+    "head": "f9333167f7648b246712b2ebf78d002448c3d722"
+  },
+  {
+    "number": 723,
+    "title": "ci: reuse exact compiler Nix environment across consumers",
+    "state": "closed",
+    "merged_at": "2026-11-09T21:19:10Z",
+    "head": "91502076b95c13991eb69da71d39cef0765ad44c"
+  },
+  {
+    "number": 722,
+    "title": "fix(rust): lower implicit tuple constructor guards safely",
+    "state": "closed",
+    "merged_at": "2026-11-09T21:18:38Z",
+    "head": "c5296acb58cb8c120e75197532448f982690a266"
+  },
+  {
+    "number": 721,
+    "title": "fix(rust): preserve constructor equality operand widening",
+    "state": "closed",
+    "merged_at": "2026-11-09T21:17:43Z",
+    "head": "eafe83ab4e3b79a71e81f2f5be42df7f43c04114"
+  },
+  {
+    "number": 719,
+    "title": "feat(rust): qualify typed equality guards in constructor Vector loops",
+    "state": "closed",
+    "merged_at": "2026-11-07T23:41:39Z",
+    "head": "97bbb44a8ce8096c3a00933d0f8c48bf90d08b21"
+  },
+  {
+    "number": 716,
+    "title": "ci: split compiler qualification into measured parallel owners",
+    "state": "closed",
+    "merged_at": "2026-11-06T16:54:01Z",
+    "head": "b550e4d2023a71e84eda83aa74b65f6a4790f6c4"
+  },
+  {
+    "number": 709,
+    "title": "ci: move complete fixture freshness ahead of compiler qualification",
+    "state": "closed",
+    "merged_at": null,
+    "head": "eaa84c5ed01538d81e6829c63ff72e57eaf726bc"
+  },
+  {
+    "number": 705,
+    "title": "feat(rust): qualify constructor Vector expression loops",
+    "state": "closed",
+    "merged_at": "2026-11-07T00:16:05Z",
+    "head": "9cda68a928b8384794cf305fefa39b318185af2f"
+  },
+  {
+    "number": 704,
+    "title": "ci(rust): qualify all eligible outer-Vector proofs on Linux",
+    "state": "closed",
+    "merged_at": "2026-11-05T19:21:47Z",
+    "head": "69c132cdae0faae82a69543ca5555b10c476fb69"
+  },
+  {
+    "number": 703,
+    "title": "fix(rust): reconcile outer-Vector stack with canonical backend",
+    "state": "closed",
+    "merged_at": "2026-11-05T16:49:31Z",
+    "head": "cb39def701ad5aedd8b26a0e9d220bc65964f477"
+  },
+  {
+    "number": 700,
+    "title": "feat(rust): preserve wide Uint multiplication by typed zero",
+    "state": "closed",
+    "merged_at": "2026-11-05T00:13:35Z",
+    "head": "452c76d8d6ad9dcaacc46340cc22a76816d69ca9"
+  },
+  {
+    "number": 699,
+    "title": "feat(rust): emit local constant-valued Vector projections",
+    "state": "closed",
+    "merged_at": "2026-11-01T11:08:22Z",
+    "head": "6166ab906d749f525c89aebf38cbe87381f08940"
+  },
+  {
+    "number": 698,
+    "title": "test(rust): qualify an isolated witnessed functional SDK",
+    "state": "closed",
+    "merged_at": "2026-10-28T22:21:24Z",
+    "head": "8967127159419db0d56a1fdbe868ccfb695656f8"
+  },
+  {
+    "number": 697,
+    "title": "test(rust): qualify the current-profile standalone Passport SDK",
+    "state": "closed",
+    "merged_at": "2026-10-28T18:35:58Z",
+    "head": "c3bb0b37e0cd2336c05c3d1cb83cc4a29faf94e0"
+  },
+  {
+    "number": 696,
+    "title": "feat(rust): sequence Unit mutation initializers in statement scopes",
+    "state": "closed",
+    "merged_at": "2026-10-28T15:03:43Z",
+    "head": "9667072e7a078e6311848b846e309ad43efe39f8"
+  },
+  {
+    "number": 695,
+    "title": "fix(rust): name functional Circuit bind receivers",
+    "state": "closed",
+    "merged_at": "2026-10-28T05:23:42Z",
+    "head": "7134fb240d79d5557a31e38f7d1cce278be19c68"
+  },
+  {
+    "number": 694,
+    "title": "feat(rust): preserve ordered Unit mutation initializers",
+    "state": "closed",
+    "merged_at": "2026-10-28T02:32:43Z",
+    "head": "c0eb15915b66ac9045ed7f90dbdadb42413ba70b"
+  },
+  {
+    "number": 693,
+    "title": "fix(rust): preserve functional Unit calls and qualify original DID lifecycle",
+    "state": "closed",
+    "merged_at": "2026-10-28T00:04:01Z",
+    "head": "18d79363da5ca8010af4d6609de2ec3688ea52b5"
+  },
+  {
+    "number": 692,
+    "title": "fix(rust): preserve typed pair returns around terminal effects",
+    "state": "closed",
+    "merged_at": "2026-10-27T20:08:24Z",
+    "head": "98d6b141ca4452f6f2b17af704822d0c90e2c0e5"
+  },
+  {
+    "number": 691,
+    "title": "fix(rust): preserve effects through terminal return widenings",
+    "state": "closed",
+    "merged_at": "2026-10-27T17:26:26Z",
+    "head": "e568b6064f80306e4f6a2f66acc2ff49b529bdb3"
+  },
+  {
+    "number": 690,
+    "title": "feat(rust): support direct Fold with checked ownership and effects",
+    "state": "closed",
+    "merged_at": "2026-10-27T11:39:21Z",
+    "head": "fa8c8cc11dcaebd40fdbfdb5d47203c2ae36983c"
+  },
+  {
+    "number": 689,
+    "title": "feat(rust): support checked Map size expressions",
+    "state": "closed",
+    "merged_at": "2026-10-27T11:37:04Z",
+    "head": "0fccce1beaea8034699a2c606d0b33283e1bb260"
+  },
+  {
+    "number": 688,
+    "title": "feat(rust): support checked constant vector projection",
+    "state": "closed",
+    "merged_at": "2026-10-27T11:36:22Z",
+    "head": "a9854331374339d86e71008cf0dec172540441ab"
+  },
+  {
+    "number": 664,
+    "title": "feat(rust): integrate typed Ledger8 programs and isolate Forge experiment",
+    "state": "closed",
+    "merged_at": "2026-10-27T11:35:25Z",
+    "head": "de0c9ae5fb4218f2203b4c9507511ed1151c1a8a"
+  },
+  {
+    "number": 660,
+    "title": "feat: improve generated Rust readability and checked proof CI",
+    "state": "closed",
+    "merged_at": "2026-10-17T13:28:06Z",
+    "head": "842218ae9daa578b21c3c461018b74f1425d0980"
+  },
+  {
+    "number": 657,
+    "title": "feat(test): qualify public Forge artifacts and isolated CI snapshots",
+    "state": "closed",
+    "merged_at": "2026-10-17T04:55:29Z",
+    "head": "907458e7388925a46de9a9c7e7120aa6d959f3a6"
+  },
+  {
+    "number": 656,
+    "title": "test(rust): publish authentication controls and required AST gates",
+    "state": "closed",
+    "merged_at": "2026-10-17T04:54:38Z",
+    "head": "bb912c9cf681b3571fb970cb740b233b03597d16"
+  },
+  {
+    "number": 651,
+    "title": "docs(rust): publish recording algebra closure records [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T16:13:35Z",
+    "head": "f607d1164425bede4812e41a916bfb346fa7f6e7"
+  },
+  {
+    "number": 650,
+    "title": "docs(rust): reconcile source pairing and fixture provenance [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T15:35:58Z",
+    "head": "95fda0f4c1cf55619a45958aeaafd85c38b60154"
+  },
+  {
+    "number": 649,
+    "title": "docs(test): summarize historical path-validation results [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T15:35:19Z",
+    "head": "5c7e529d838d7e3d220241ee7709f2d5a1782d4a"
+  },
+  {
+    "number": 648,
+    "title": "test(rust): publish portable ledger8 wide-add capture [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T15:08:54Z",
+    "head": "65326ad0220bca507909ba5e480e6a6ecbfc95dd"
+  },
+  {
+    "number": 647,
+    "title": "test(rust): publish retained input authentication controls [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T13:14:37Z",
+    "head": "9a151d314541a2183fcdff5375b5f1f608f9886b"
+  },
+  {
+    "number": 646,
+    "title": "test(rust): strengthen checked recording regressions [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T12:39:19Z",
+    "head": "d730d014a1d64fc402bdeaac126230e7f5512344"
+  },
+  {
+    "number": 645,
+    "title": "perf(test): publish optional historical process sharding [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T12:38:47Z",
+    "head": "ef49263e1fd3b3ed67d3b5515703d9e842dc72c1"
+  },
+  {
+    "number": 642,
+    "title": "test(rust): add optional local Forge artifact reuse [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T10:25:50Z",
+    "head": "8cddd64d8fb46553f8c17f314e94f90e30e898ad"
+  },
+  {
+    "number": 641,
+    "title": "feat(rust): replace recording shape admission with checked effects [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T09:50:50Z",
+    "head": "d7232e98c10dbadb7392299e4aa142b755b2242a"
+  },
+  {
+    "number": 638,
+    "title": "fix(compiler): normalize inactive Jubjub point operands [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T07:10:47Z",
+    "head": "c9aa17255c0e81fe3b364ba0699bfd290f5559f6"
+  },
+  {
+    "number": 637,
+    "title": "refactor(rust): organize compiler runtime and proof components [skip ci]",
+    "state": "closed",
+    "merged_at": "2026-10-16T07:09:57Z",
+    "head": "6754b911214bdad6a4b3b7bb880290ebcd835e40"
+  },
+  {
+    "number": 634,
+    "title": "feat(rust): replace recording shape admission with checked effect composition",
+    "state": "open",
+    "merged_at": null,
+    "head": "ea5408f7339d2caaa5f85305fdf48d23369eaaea"
+  }
+]

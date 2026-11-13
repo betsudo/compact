@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Package pins, representation identities, and real transactions.">
+<meta name="theme-color" content="#f5f2eb">
+<title>Ledger 9 is a protocol migration · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="ledger9-is-a-protocol-migration">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration" aria-current="page">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Ledger 9 foundation <span>· 2 min read</span></p>
+<h1>Ledger 9 is a protocol migration</h1><p class="deck">Package pins, representation identities, and real transactions.</p></header>
+<div class="prose"><h2 id="why-a-branch-boundary-mattered">Why a branch boundary mattered</h2>
+<p>Ledger 9 adoption began on a dedicated line so the Ledger 8 implementation and its evidence remained available. Changing a dependency family can affect state tags, serialization, gas, proof version, fee material, transaction APIs and installed operations.</p>
+<p>Rust source compilation alone would establish only a small part of that migration.</p>
+<h2 id="the-dependency-and-abi-contract">The dependency and ABI contract</h2>
+<p>The runtime adopted the published Ledger 9.1.0.1 package set. The compiler/runtime pairing moved to ABI 54, ordinary Rust generation selected ZKIR v3, and the workspace and Nix Rust tools moved to Rust 1.99.0.</p>
+<p>The synchronous local Compact runtime used minor 0.17.0 with Onchain Runtime 4.0.1. Released Compact 0.36.0 used its own asynchronous runtime pairing. Comparing them required matching captures and explicit adapters, with cross-version refusal controls.</p>
+<h2 id="a-failing-transaction-exposed-an-emitter-bug">A failing transaction exposed an emitter bug</h2>
+<p>The initial standalone Counter proof passed, but transaction proving exhausted its skip entries. The earlier emitter grouped expanded ledger operations into one impact. Ledger 9 consumes a skip entry for each transcript operation.</p>
+<p>The repair preserved those boundaries and omitted suppressed operations. The Counter's three impacts then matched the released reference. This is a particularly useful migration lesson. A proof result from an isolated statement can pass while the transaction consumer exposes an incompatibility in the same generated circuit.</p>
+<h2 id="funding-is-part-of-the-test">Funding is part of the test</h2>
+<p>The Ledger 9 lane used released dust/10/spend material. The retained Ledger 8 dust/9/spend material belonged to the historical line. The contract verifier and the Dust verifier also serve different roles.</p>
+<p>The qualified Counter run generated fresh keys and a standalone proof. A separate process verified that proof and refused changed bindings, commitment, wrong verifier and corrupt bytes. A separately proved, Dust-funded transaction then passed default strictness, applied the expected state and refused exact replay with unchanged ledger bytes.</p>
+<h2 id="the-integrated-local-result">The integrated local result</h2>
+<p>At frozen source 9409b7da1cc652940469903a8380000b0b707239, the full local parity gate on macOS arm64 with Rust 1.99.0 checked 286 fixtures and bound 87 generated consumers to their executed artifacts. Checked recording was observed for 688 selected exports, including 626 proof-eligible exports.</p>
+<p>Nine child proof gates passed for 87 selected calls. Those counts overlap across gates and belong to that frozen revision. They are not an aggregate count of every later compatibility proof.</p>
+<h2 id="foundation-publication">Foundation publication</h2>
+<p>PR #725 merged on November 12. The publication and CI repair history belongs to that PR. The extensive subsequent upstream ports remained a separate local compatibility milestone.</p>
+<p>The book therefore marks the foundation as merged and the later corpus work as local qualification. It makes no new claim about every final-head CI result from a historical local receipt.</p>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/pull/725">Migration PR #725</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/05912594fa3c483cf4e7031de83c5f9a103ef95c">Merged foundation</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/9fb0ca9c7c7e075461d3122b9f606a00c88de06a">Ledger 9 foundation source</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/726">Current compatibility issue #726</a></li>
+</ul>
+<p>The frozen initial full receipt has SHA-256 12ee47fd5280d03c3c708553034d0bd35976e0f682a0810f9cf4866d8b497746. Its public summary is retained in this book's source snapshots.</p></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/ledger9-is-a-protocol-migration.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="ergonomics-one-semantic-gap-at-a-time.html"><small>Previous chapter</small>Ergonomics, one semantic gap at a time</a><a class="next" href="porting-the-cryptographic-surface.html"><small>Next chapter</small>Porting the cryptographic surface <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#why-a-branch-boundary-mattered">Why a branch boundary mattered</a></li>
+<li><a href="#the-dependency-and-abi-contract">The dependency and ABI contract</a></li>
+<li><a href="#a-failing-transaction-exposed-an-emitter-bug">A failing transaction exposed an emitter bug</a></li>
+<li><a href="#funding-is-part-of-the-test">Funding is part of the test</a></li>
+<li><a href="#the-integrated-local-result">The integrated local result</a></li>
+<li><a href="#foundation-publication">Foundation publication</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

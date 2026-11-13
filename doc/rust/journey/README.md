@@ -1,5 +1,7 @@
 # The Compact Rust journey
 
+The [complete interactive book](https://betsudo.github.io/compact/book/) continues this historical October account through the Ledger 9 migration. Its [Markdown sources and build guide](../../../site/compact-journey/README.md) preserve the current edition and the original atlas.
+
 > From a ledger-8 experiment to a typed Rust target—and from a catalogue of
 > recording shapes to checked effect composition.
 

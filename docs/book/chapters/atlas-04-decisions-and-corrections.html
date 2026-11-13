@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Corrections and choices as recorded in October.">
+<meta name="theme-color" content="#f5f2eb">
+<title>The original decision ledger · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="atlas-04-decisions-and-corrections">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections" aria-current="page">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Historical atlas <span>· 4 min read</span></p>
+<h1>The original decision ledger</h1><p class="deck">Corrections and choices as recorded in October.</p></header>
+<div class="prose"><blockquote>
+<p>Editorial correction for this edition. The ACC-removal rationale below is superseded by ADR 0316. The owner removed ACC after the construct inventory found no unique witness, struct or ledger mechanisms. Its exact application composition was unqualified. The later narrative uses that recorded reason.</p>
+<p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/04-decisions-and-corrections.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+</blockquote>
+<p>The useful history is not a straight line. These are representative moments
+where the evidence changed the architecture or narrowed a claim.</p>
+<h2 id="1-preserve-the-old-backend-instead-of-deleting-it">1. Preserve the old backend instead of deleting it</h2>
+<p><strong>Problem.</strong> A clean rewrite could regress behavior while making comparison
+impossible.</p>
+<p><strong>Decision.</strong> Keep <code>codegen-rust</code> as an oracle and compare exact sources,
+results, state, transcripts and refusals.</p>
+<p><strong>Evidence.</strong> The first Rust-AST milestone ran all 37 exact top-level oracle
+sources through the new path.</p>
+<p><strong>Benefit.</strong> The project could change the architecture without rewriting its
+own history.</p>
+<p><strong>Limit.</strong> An oracle can contain defects; agreement is evidence, not truth.</p>
+<h2 id="2-use-a-closed-ir-not-a-rust-source-escape-hatch">2. Use a closed IR, not a Rust-source escape hatch</h2>
+<p><strong>Problem.</strong> Text fragments let unsupported source shapes leak into output and
+made exhaustive review difficult.</p>
+<p><strong>Decision.</strong> Model Compact types, expressions, actions and returns as strict
+serde variants and reject unknown input.</p>
+<p><strong>Evidence.</strong> Compiler-backed refusal probes, fixture regeneration and external
+Cargo consumers accompanied schema changes.</p>
+<p><strong>Benefit.</strong> New constructs require an explicit compiler/backend decision.</p>
+<p><strong>Limit.</strong> The private schema still couples the Chez producer and Rust consumer;
+its version is not a public language specification.</p>
+<h2 id="3-generated-syntax-is-necessary-not-sufficient">3. Generated syntax is necessary, not sufficient</h2>
+<p><strong>Problem.</strong> <code>syn</code> guarantees parseable Rust construction, but semantic bugs
+can still live inside valid syntax.</p>
+<p><strong>Decision.</strong> Keep AST construction and add execution, independent expected
+values, TypeScript observations, negative controls, replay and proof gates.</p>
+<p><strong>Evidence.</strong> Field modular arithmetic, Boolean witness order, source-defined
+returns and output-recovery tests caught stale or overly textual assumptions.</p>
+<p><strong>Benefit.</strong> Generated code is checked as a program, not a string.</p>
+<p><strong>Limit.</strong> Hundreds of substring assertions remain useful smoke tests but are
+not semantic proof.</p>
+<h2 id="4-the-point-type-was-too-safe">4. The point type was too “safe”</h2>
+<p><strong>Problem.</strong> Rust represented Compact <code>JubjubPoint</code> as a validated subgroup
+point. Compact's source value is a coordinate pair, and the upstream constructor
+could panic on some invalid/subgroup-external coordinates.</p>
+<p><strong>Decision.</strong> Separate source representation from checked operation admission;
+validate only where an operation requires a real point.</p>
+<p><strong>Evidence.</strong> Cross-language parity tests reproduced the divergent values and
+panic boundary.</p>
+<p><strong>Benefit.</strong> Rust no longer changes source representation under the banner of
+type safety.</p>
+<p><strong>Limit.</strong> A checked backend may still deliberately refuse behavior that the
+reference path accepts; that difference must be documented, not hidden.</p>
+<h2 id="5-shape-recognizers-reached-their-ceiling">5. Shape recognizers reached their ceiling</h2>
+<p><strong>Problem.</strong> Every useful application family added another whole-program
+admission profile. Supported operations did not compose automatically.</p>
+<p><strong>Decision.</strong> Introduce a typed <code>RecordedPlan</code>, migrate one family at a time,
+and retain the old paths as differential oracles until retirement evidence
+exists.</p>
+<p><strong>Evidence.</strong> Per-family default/feature tests, generated-source inventories,
+source-bound proof/application cases and an explicit retirement ledger.</p>
+<p><strong>Benefit.</strong> The unit of reuse becomes an operation plus its invariants.</p>
+<p><strong>Limit.</strong> A compositional IR can centralize bugs too; exhaustive variants,
+resource limits and old-first laws remain necessary.</p>
+<h2 id="6-full-passport-acc-adoption-was-the-wrong-milestone-goal">6. Full Passport ACC adoption was the wrong milestone goal</h2>
+<p><strong>Problem.</strong> A large ledger9-era application risked turning unrelated foreign
+curve, WebAuthn and newer-ledger requirements into alleged ledger-8 support.</p>
+<p><strong>Decision.</strong> Inventory constructs, retain generic Jubjub work, remove full ACC
+adoption and keep bounded passport/DID cohorts separately evidenced.</p>
+<p><strong>Evidence.</strong> The 0.3 closure records the removed outcome and the exact retained
+application cases.</p>
+<p><strong>Benefit.</strong> Useful compiler work survived without a misleading product claim.</p>
+<p><strong>Limit.</strong> The bounded passport cohort is not the full ACC application.</p>
+<h2 id="7-a-faster-test-gate-may-not-skip-authentication">7. A faster test gate may not skip authentication</h2>
+<p><strong>Problem.</strong> Historical validation took about 171 minutes, more than 99% in
+historical checks. Naive memoization would have hidden live mutation.</p>
+<p><strong>Decision.</strong> Reject path/result caches and shard whole modules into isolated
+processes, preserving fixture boundaries and independent temporary state.</p>
+<p><strong>Evidence.</strong> All 974 IDs and assertions remained; corruption and source
+mutation controls passed; measured wall time fell to about 55 minutes.</p>
+<p><strong>Benefit.</strong> Faster feedback without turning a historical assurance suite into
+a snapshot replay.</p>
+<p><strong>Limit.</strong> The result is machine/source specific and still needs the full gate
+at final freeze.</p>
+<h2 id="8-source-provenance-must-be-honest">8. Source provenance must be honest</h2>
+<p><strong>Problem.</strong> Hand-built IR can make a backend look more source-compatible than
+the frontend actually is, while absolute paths and private artifacts are unsafe
+to publish.</p>
+<p><strong>Decision.</strong> Authenticate source, IR and artifact sidecars; distinguish
+original occurrences, owned snapshots and missing origins; carry safe logical
+source identity and structural paths.</p>
+<p><strong>Evidence.</strong> Authenticated input views, original-source guards and publication
+manifests preserve exact hashes and failure cases.</p>
+<p><strong>Benefit.</strong> A passing fixture can be tied back to a real Compact source.</p>
+<p><strong>Limit.</strong> Nested expression ranges and transient-value provenance are not
+claimed implemented at this cutoff.</p>
+<h2 id="independent-review-boundary">Independent review boundary</h2>
+<p>The project used independent coding-agent reviews for architecture, dependency,
+correctness and final-slice checks. They found actionable issues and provided a
+useful second model. They are not a human security audit, formal verification
+or production certification. The story uses the exact phrase “independent
+coding-agent review” for that reason.</p></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/atlas-04-decisions-and-corrections.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-08-gas-errors-and-fixes.html"><small>Previous chapter</small>Gas, errors and corrected boundaries</a><a class="next" href="atlas-glossary.html"><small>Next chapter</small>A working glossary <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#1-preserve-the-old-backend-instead-of-deleting-it">1. Preserve the old backend instead of deleting it</a></li>
+<li><a href="#2-use-a-closed-ir-not-a-rust-source-escape-hatch">2. Use a closed IR, not a Rust-source escape hatch</a></li>
+<li><a href="#3-generated-syntax-is-necessary-not-sufficient">3. Generated syntax is necessary, not sufficient</a></li>
+<li><a href="#4-the-point-type-was-too-safe">4. The point type was too “safe”</a></li>
+<li><a href="#5-shape-recognizers-reached-their-ceiling">5. Shape recognizers reached their ceiling</a></li>
+<li><a href="#6-full-passport-acc-adoption-was-the-wrong-milestone-goal">6. Full Passport ACC adoption was the wrong milestone goal</a></li>
+<li><a href="#7-a-faster-test-gate-may-not-skip-authentication">7. A faster test gate may not skip authentication</a></li>
+<li><a href="#8-source-provenance-must-be-honest">8. Source provenance must be honest</a></li>
+<li><a href="#independent-review-boundary">Independent review boundary</a></li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

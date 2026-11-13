@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="How the original target assigned errors and costs.">
+<meta name="theme-color" content="#f5f2eb">
+<title>Gas, errors and corrected boundaries · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="atlas-08-gas-errors-and-fixes">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes" aria-current="page">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Historical atlas <span>· 5 min read</span></p>
+<h1>Gas, errors and corrected boundaries</h1><p class="deck">How the original target assigned errors and costs.</p></header>
+<div class="prose"><blockquote>
+<p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
+<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/08-gas-errors-and-fixes.md">original chapter at 51a079bd</a>. The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.</p>
+</blockquote>
+<p>The backend became more trustworthy by moving failures to the earliest layer
+that has enough information to explain them—without pretending every failure
+can happen at compile time.</p>
+<h2 id="the-gas-accounting-correction">The gas-accounting correction</h2>
+<p>The original comparison looked alarming: Rust reported much more gas than the
+TypeScript wrapper for the same <code>tiny</code> circuit. The implementations were not
+using the same reporting denominator.</p>
+<p>TypeScript replaced <code>context.gasCost</code> after each query and exposed the last
+query. Generated Rust accumulated every query. The accepted decision in
+<a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0010-report-total-rust-circuit-gas-across-ledger-queries.md">RUST-ADR-0010</a>
+kept the Rust total and changed the comparison to the sum of captured
+TypeScript query costs. For <code>clear</code>, <code>set</code> and <code>get</code>, all four dimensions then
+matched exactly at commit
+<a href="https://github.com/betsudo/compact/commit/3799746acec6e5898e5e7b121621045d8dac925a"><code>3799746a</code></a>.</p>
+<pre><code class="language-text">reported TS wrapper cost       = last query only
+captured TS comparison cost    = Σ every executed query
+Rust CircuitResult.gas_cost    = Σ every executed query
+transaction gas                = replay/partition result, separately owned
+</code></pre>
+<p>The four dimensions are read time, compute time, bytes written and bytes
+deleted. They should not be collapsed into one scalar.</p>
+<h2 id="witness-reads-became-visible">Witness reads became visible</h2>
+<p>A witness could read a ledger Cell structurally while TypeScript executed a VM
+read. Rust therefore underreported the call. The explicit <code>WitnessReadMeter</code>
+introduced at
+<a href="https://github.com/betsudo/compact/commit/98d33ca7d8ee52ab129d861f0604dc0826d929ca"><code>98d33ca7</code></a>
+charges canonical witness projection queries while keeping their private value
+out of the public trace. The Set extension followed at
+<a href="https://github.com/betsudo/compact/commit/2ca64f6f26390b17f018ba5319f5330dd4ec3922"><code>2ca64f6f</code></a>.</p>
+<p>One witnessed Cell write moved from an incomplete Rust read-time total of
+85,000,000 to the exact captured total of 255,000,000: 170,000,000 for the
+witness read plus 85,000,000 for the write. That is corrected accounting, not
+a cheaper VM operation.</p>
+<h2 id="per-query-guard-whole-circuit-observation">Per-query guard, whole-circuit observation</h2>
+<p>At ledger-8, <code>CircuitContext.gas_limit</code> guards each query independently. A
+circuit containing two accepted reads may therefore report a total above the
+configured one-query limit. Commit
+<a href="https://github.com/betsudo/compact/commit/7c4898929a7c9ab8bc357d844a1843c5531129c8"><code>7c489892</code></a>
+made that contract explicit and tested. Silently turning it into a cumulative
+budget would diverge from the pinned TypeScript/ledger behavior and introduce
+new rollback questions.</p>
+<h2 id="compile-time-versus-runtime-failures">Compile-time versus runtime failures</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Example</th>
+<th>Why it belongs there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Compact frontend</td>
+<td>Type mismatch, invalid disclosure or source recursion</td>
+<td>The source language has complete typing/scope information</td>
+</tr>
+<tr>
+<td>Private IR admission</td>
+<td>Unknown schema node, recursive direct IR call, invalid declaration reference</td>
+<td>Prevent malformed or forged compiler input from reaching emission</td>
+</tr>
+<tr>
+<td>Rust backend</td>
+<td>Emitted-name collision, unsupported wide operation, incomplete recording capability</td>
+<td>Target naming and backend capability are known before publication</td>
+</tr>
+<tr>
+<td>Proc macro / rustc</td>
+<td>Data-carrying <code>CompactEnum</code>, hostile introduced name, wrong witness impl signature</td>
+<td>The error is a Rust representation/consumer integration defect</td>
+</tr>
+<tr>
+<td>Native runtime</td>
+<td>Failed Compact assertion, unsigned overflow, invalid ledger Cell, rejected VM query</td>
+<td>Depends on call values or ledger state</td>
+</tr>
+<tr>
+<td>Recording</td>
+<td>Unsupported complete effect plan, replay-visible invariant failure</td>
+<td>Native execution may exist while complete recording does not</td>
+</tr>
+<tr>
+<td>Preparation</td>
+<td>Address/state/verifier mismatch, empty transcript, unbound Zswap intent</td>
+<td>Requires observed state and exact artifacts</td>
+</tr>
+<tr>
+<td>Ledger/prover</td>
+<td>Invalid proof, unsatisfied transaction policy, application refusal</td>
+<td>Owned by authoritative proof and ledger validation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="representative-issues-that-were-fixed">Representative issues that were fixed</h2>
+<h3 id="invalid-rust-became-a-source-located-compiler-error">Invalid Rust became a source-located compiler error</h3>
+<p>Distinct Compact circuit names such as <code>a$b</code> and <code>a_b</code> normalize to the same
+Rust identifier. Before, rustc rejected a duplicated function after emission.
+Commit
+<a href="https://github.com/betsudo/compact/commit/c70dd63cf91ce59e2bda82a0f27f32073639c669"><code>c70dd63c</code></a>
+added target-namespace preflight and reports both source names at the later
+declaration. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0246-reject-circuit-collisions-in-emitted-rust-namespaces.md">RUST-ADR-0246</a>.</p>
+<h3 id="macro-expansion-stopped-depending-on-caller-names">Macro expansion stopped depending on caller names</h3>
+<p>Derives introduced unqualified <code>Result</code>, <code>Option</code>, <code>Vec</code> and <code>From</code>, so valid
+consumer names could break compilation. Commit
+<a href="https://github.com/betsudo/compact/commit/77c9ee144f3c326f29cb44a69b7174c5d81b8945"><code>77c9ee14</code></a>
+fully qualified macro-owned names. Source structs named <code>Option</code>, <code>Fr</code>,
+<code>MemWrite</code>, <code>runtime</code> or <code>FieldRepr</code> exposed a second failure in upstream
+derive/import expansion; the owned <code>CompactStructRepr</code> boundary fixed the
+bounded generated shapes at
+<a href="https://github.com/betsudo/compact/commit/ee768a60706607580d4ff8b3c949f22c882501b0"><code>ee768a60</code></a>.</p>
+<h3 id="forged-recursive-ir-stopped-becoming-recursive-rust">Forged recursive IR stopped becoming recursive Rust</h3>
+<p>The normal frontend rejected recursive Compact, but direct schema-20 IR could
+still emit recursive pure Rust. Commit
+<a href="https://github.com/betsudo/compact/commit/dbfd7dc248b6bbe3b188a5a362142facf06621de"><code>dbfd7dc2</code></a>
+moved the refusal to private-IR semantic admission while preserving acyclic
+shared helpers. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0332-reject-recursive-pure-calls-at-the-private-ir-admission-boundary.md">RUST-ADR-0332</a>.</p>
+<h3 id="malformed-ledger-paths-stopped-panicking-or-truncating">Malformed ledger paths stopped panicking or truncating</h3>
+<p>Merkle/list reset builders used <code>split_last().expect</code>; other builders narrowed
+path lengths before constructing compact VM operands. Commit
+<a href="https://github.com/betsudo/compact/commit/e68078846260e4c6b2d18f40ec9ec1a2571cae33"><code>e6807884</code></a>
+checks the actual 4-bit <code>Ins</code>/<code>Idx</code> encoding limits and returns the existing
+fallible ledger error rather than panicking, truncating or emitting an
+ambiguous program. See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0351-check-merkle-vm-path-operands-before-program-construction.md">RUST-ADR-0351</a>.</p>
+<h3 id="a-truthful-refusal-replaced-a-misleading-bounds-error">A truthful refusal replaced a misleading bounds error</h3>
+<p>Valid wide unsigned types could be represented, but subtraction,
+multiplication and ordered comparison were unsupported. They were incorrectly
+reported as malformed maxima. Commit
+<a href="https://github.com/betsudo/compact/commit/6aa345fd76cf99ba491a761c42a39608d7e207eb"><code>6aa345fd</code></a>
+added <code>UnsupportedWideUnsignedOperation</code> without widening accepted behavior.
+See <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/adr/0352-distinguish-unsupported-wide-operations-from-malformed-uint-bounds.md">RUST-ADR-0352</a>.</p>
+<h2 id="the-architectural-rule">The architectural rule</h2>
+<p>Move a failure earlier only when the earlier layer has authoritative facts.
+Source recursion and name collisions belong before Rust publication. An
+assertion depending on current ledger state remains a runtime <code>Result</code>.
+Verifier identity cannot be authenticated until preparation. Proof and ledger
+rejection must not be simulated by compiler heuristics.</p></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/atlas-08-gas-errors-and-fixes.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-07-runtime-and-macros-domain-model.html"><small>Previous chapter</small>Runtime and macro ownership</a><a class="next" href="atlas-04-decisions-and-corrections.html"><small>Next chapter</small>The original decision ledger <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#the-gas-accounting-correction">The gas-accounting correction</a></li>
+<li><a href="#witness-reads-became-visible">Witness reads became visible</a></li>
+<li><a href="#per-query-guard-whole-circuit-observation">Per-query guard, whole-circuit observation</a></li>
+<li><a href="#compile-time-versus-runtime-failures">Compile-time versus runtime failures</a></li>
+<li><a href="#representative-issues-that-were-fixed">Representative issues that were fixed</a><ul>
+<li><a href="#invalid-rust-became-a-source-located-compiler-error">Invalid Rust became a source-located compiler error</a></li>
+<li><a href="#macro-expansion-stopped-depending-on-caller-names">Macro expansion stopped depending on caller names</a></li>
+<li><a href="#forged-recursive-ir-stopped-becoming-recursive-rust">Forged recursive IR stopped becoming recursive Rust</a></li>
+<li><a href="#malformed-ledger-paths-stopped-panicking-or-truncating">Malformed ledger paths stopped panicking or truncating</a></li>
+<li><a href="#a-truthful-refusal-replaced-a-misleading-bounds-error">A truthful refusal replaced a misleading bounds error</a></li>
+</ul>
+</li>
+<li><a href="#the-architectural-rule">The architectural rule</a></li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

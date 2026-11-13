@@ -1,0 +1,2585 @@
+{
+  "address_comparison_standalone_proofs": {
+    "receipt": "receipt.json",
+    "source_sha256": "a74b2a22346792695d5c68048179116c1f7dda394114c3c4e5344e2a32445b1f",
+    "head": "8e7acd5baea75866b93337141837acc23362589d",
+    "platform": "macOS arm64",
+    "scope": "Fresh standalone proofs with generated TypeScript preimages and raw ZKIR shared with Rust. Separate verification processes. Rust native and recorded comparisons passed. Funded application and replay, actual cross-contract invocation, and native Linux remain open."
+  },
+  "caller_statement": {
+    "receipt": "receipt.json",
+    "source_sha256": "e9898ab6b9caf290d62bf89b3d1ddab241bfa9d0a26b9f08bc44ed7acefd4bd8",
+    "head": "8d9664abfcc98c26de04966eb54332e30d14b82b",
+    "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+    "scope": "Intact caller's emitted ZKIR with callee result via test adapter. Generated cross-contract invocation, callee proof, joint funded transaction, strict replay and native Linux not reached."
+  },
+  "internal_call_only": {
+    "receipt": "receipt.json",
+    "source_sha256": "2b7d64ccb69b2d617d200caf588311c50db3f06d719791fd020ffef9ad1fb434",
+    "head": "563ec34306d4e2436658d1808c2e9a1f1bba2753",
+    "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+    "rust": "1.99.0",
+    "compiler_checks": 3906
+  },
+  "entrypoint_pair": {
+    "receipt": "receipt.json",
+    "source_sha256": "e91bd15a6c7ef5498068210b011b3858fe5c8d79b6fd734b005cbaae51b58ac2",
+    "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+    "scope": "Verified pair preparation with synthetic verifier carriers. Generated invocation and funded proofs are on hold. Prior standalone pay proof and compiler WIP preserved."
+  },
+  "keccak_activation": {
+    "receipt": "receipt.json",
+    "source_sha256": "308af39057159c782c0c59ebd86375a90f56fb8743ecc82cfb218a411287e520",
+    "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+    "scope": "Generated source from pragma-only probe derivatives. Rust and TypeScript execution, key-free stateful ZKIR preimage acceptance and digest substitution refusal. Exact integrated outputs and earlier EntryPoint proof reverified. Intact language admission and stateful proof still pending."
+  },
+  "keccak_upstream_corpus": {
+    "receipt": "receipt.json",
+    "source_sha256": "b721fcb9272d2f61dd04d10a666c8d12bd990ba1e84a3a7e4daa53d4202486ee",
+    "head": "a7b6fc37bf127f6eb190b7b8722ba3db975d6235",
+    "tree": "cb5a113b7b8680d9c56dbb70ea0941013a33fff6",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0"
+  },
+  "sha512_ordinary": {
+    "receipt": "receipt.json",
+    "source_sha256": "411235e9f922efbf090c9641232599a98ab9820f1af9a38f28c2c70f7c6f1014",
+    "head": "6afae352666ff99b8e1451e8240d80bd58dabb37",
+    "tree": "10d32b43f5711c120e546ba70219ec10f31a8b65",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0"
+  },
+  "secp256k1_fields": {
+    "receipt": "receipt.json",
+    "source_sha256": "d3a6bed4a7c551cfa885c316b3d8f7e4ddf22a8c1e71c18acb89686d18a728de",
+    "head": "3b6674997f7b5ab10f2b598ae5e6bf9d8e0b347a",
+    "tree": "6fbe77579f358875278d5bade125a6ee80f494a3",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1880
+  },
+  "secp256k1_byte_casts": {
+    "receipt": "receipt.json",
+    "source_sha256": "0d6ef66ce2ddc2ff169cef65154129e20acc55340467008edc660e5d8ccdadc8",
+    "head": "4d99be24dfef9367ca5adb48de33bc2b25866778",
+    "tree": "e78471214abcb4c0b595b0939003dbf329740d98",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1882
+  },
+  "secp256k1_field_arithmetic": {
+    "receipt": "receipt.json",
+    "source_sha256": "7a2c6b19e0adf80763faa407a07b32a8d51891367c3be2094e80ae15eaf5149b",
+    "head": "9292d3b7315a1521ab22b7ae94c81fcfccedea24",
+    "tree": "7c8f8e15be0732ce7d7a4fe000bf2440a0b686c3",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1884,
+    "standalone_proof_cases": [
+      "addb",
+      "muls",
+      "inlinedSelfSub"
+    ]
+  },
+  "secp256k1_field_unary": {
+    "receipt": "receipt.json",
+    "source_sha256": "1e5b74a3762d9ba0e3547d892fafc75f56923285658e6c401d4f88593c2e9670",
+    "head": "22967afcd53603cc5673438fbc248ab962fc2382",
+    "tree": "d78319ab730e9bcded95bd000b1d5561d0a73dd5",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1886,
+    "standalone_proof_cases": [
+      "original-base-v2",
+      "original-scalar",
+      "guarded-base-off",
+      "guarded-scalar-on",
+      "discarded-scalar"
+    ]
+  },
+  "secp256k1_point": {
+    "receipt": "receipt.json",
+    "source_sha256": "db031e2b2cdf9abb3d35f4fb03ff84258911589e646eb928e9475e1f48e19aec",
+    "head": "ab5bf9e9856dfe84e6bed3dc353478bf2b0d7fae",
+    "tree": "e2e4acb427d7d112d42d87785994d851d221642d",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1887,
+    "standalone_proof_cases": [
+      "point-ledger--readPoint",
+      "point-ledger--resetPoint",
+      "point-ledger--storePoint",
+      "upstream-equality--pointsEqual",
+      "upstream-equality--pointsNotEqual",
+      "upstream-identity-795--hashPoint",
+      "upstream-identity-795--storePoint",
+      "upstream-keccak-pair--test1",
+      "upstream-sha512--test"
+    ]
+  },
+  "secp256k1_point_accessors": {
+    "receipt": "receipt.json",
+    "source_sha256": "ba6784e87e85588116ef762098c491986178a3b2e0532d1e9ac722f01a03f8da",
+    "head": "26c0e970a577ea93455b9b09e4a417a5f629139d",
+    "tree": "8ccd1c7ba66f3d099a9a099775993d90095c037e",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3910,
+    "backend_passed": 1887,
+    "standalone_proof_cases": [
+      "guarded-accessors--discardX",
+      "guarded-accessors--writeX-active",
+      "guarded-accessors--writeX-inactive",
+      "guarded-accessors--writeY-active",
+      "guarded-accessors--writeY-inactive",
+      "upstream-assertion--storePoint",
+      "upstream-assertion--storeXChecked",
+      "upstream-ledger--storePoint",
+      "upstream-ledger--storeX",
+      "upstream-ledger--storeY"
+    ]
+  },
+  "secp256k1_group_operations": {
+    "receipt": "receipt.json",
+    "source_sha256": "68eb17b1e68abb07f604b12eb6b08d802b002240b04103157da5a087b0d66522",
+    "head": "d75c0da65102cdced50da17e24f2ea4cb511f659",
+    "tree": "cbd6cb70ab8c5964bfb8fe2dd432d22f4eba4286",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "backend_passed": 1887,
+    "standalone_proofs": 10,
+    "scope": "local",
+    "selected_funded_results": [
+      {
+        "case": 0,
+        "circuit": "storeXOfMul",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "secp256k1_ethereum_address": {
+    "receipt": "receipt.json",
+    "source_sha256": "1e9674e9e768325c26bfe68c6dc5a4af624e4c2e14579cd3d3db4d7cfb5aff02",
+    "head": "df6da9da4196639a03b3065fdf718d2a9a92ec26",
+    "tree": "8bdbb617b9db24bb11b84f9982bb828fbae41fdd",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "backend_passed": 1889,
+    "standalone_proofs": 3,
+    "scope": "local",
+    "selected_funded_results": [
+      {
+        "case": 0,
+        "circuit": "test",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "secp256k1_ecdsa_verification": {
+    "receipt": "receipt.json",
+    "source_sha256": "452e1274738fffcc6c5f7f1e3cab1d8bc470abfd5b20dc92d38e0131aaa3585f",
+    "head": "c35fe984018f42a6401a2f530fc4843c044a8331",
+    "tree": "147ad993e44c92ac7f5abc4f80ea6f6d0130f3ad",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "backend_passed": 1891,
+    "standalone_proof_cases": [
+      "double-609",
+      "ordinary-low-s",
+      "ordinary-original-false"
+    ],
+    "scope": "local",
+    "selected_funded_results": [
+      {
+        "case": 0,
+        "circuit": "foo",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "secp256k1_recovery_owner": {
+    "receipt": "receipt.json",
+    "source_sha256": "b34708c2f6c8fb0f020b2b46725a03a51e77f6c2594c1b4fade30ddc8cee7771",
+    "head": "eb696a355712c2c38c9e6d0ec4e0271ad5f49b7a",
+    "tree": "2826d7a12df6931a3ad2c6188b908775c95f53dd",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "backend_passed": 1891,
+    "standalone_proof_cases": [
+      "owner-low-s",
+      "set-owner",
+      "owner-high-s"
+    ],
+    "scope": "local",
+    "selected_funded_results": [
+      {
+        "case": 0,
+        "circuit": "verifyOwnerSignature",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "secp256k1_known_answer_probe": {
+    "receipt": "receipt.json",
+    "source_sha256": "2498ab799a6109f9e1504a3fb2d55c4e4d258b4beb391fbb9c42ad1de3c3068f",
+    "head": "82606a173f0dcc803526f0bbddbff2104026d498",
+    "tree": "32fc08f1099f253953fa2cd2c0d4fcff71c603b9",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "scope": "local, pragma-only derivatives; intact-source admission open"
+  },
+  "secp256k1_slow_probe": {
+    "receipt": "receipt.json",
+    "source_sha256": "34c57e6b0ca33d64d3710375fefc7ff2713c2f999130652eca53aa353cebddca",
+    "head": "a24bec69aef62701c49a9c9bf741a0fdcd84e344",
+    "tree": "b9224dd92fe1f6e88daa8009f3ebeda271a5977c",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "standalone_proof_cases": [
+      "storeEthereumAddress",
+      "two",
+      "three"
+    ],
+    "scope": "pragma-only derivatives; original source admission remains open",
+    "selected_funded_results": [
+      {
+        "circuit": "storeEthereumAddress",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "two",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "three",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 3
+  },
+  "secp256r1_field_carriers": {
+    "receipt": "receipt.json",
+    "source_sha256": "bf3fba0d5c33454fc379cf7cefe785c4e61344b0b23878a67eb37859a34e9535",
+    "head": "97fc77d4b6b8b3b1854910f2e2edd76a6b2bdcd9",
+    "tree": "66eb5982a562e74b7cd6d167df91c58ff5938dd1",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "secp256r1_base_roundtrip",
+      "scalarRoundtrip",
+      "resetFields"
+    ],
+    "scope": "intact P-256 field carriers and roundtrip; local arm64",
+    "selected_funded_results": [
+      {
+        "circuit": "secp256r1_base_roundtrip",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "scalarRoundtrip",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "resetFields",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 3
+  },
+  "secp256r1_byte_casts": {
+    "receipt": "receipt.json",
+    "source_sha256": "f1732a89220b11ba922a27ba437c1aebdedfb319ed16ed4da8c55aaa8797c298",
+    "head": "7188041e0c3469c82a61f3e678f92e9436d45536",
+    "tree": "1241491b532331513872466620b81afacf0dd084",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "decode-14",
+      "encode-14",
+      "guarded-save",
+      "guarded-decode",
+      "guarded-encode",
+      "constant-false",
+      "constant-zero",
+      "unused",
+      "unused-field"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "decode-14",
+        "circuit": "test",
+        "fixture": "decode",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "encode-14",
+        "circuit": "test",
+        "fixture": "encode",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-save",
+        "circuit": "save",
+        "fixture": "guarded-save",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-decode",
+        "circuit": "test",
+        "fixture": "guarded-decode",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-encode",
+        "circuit": "test",
+        "fixture": "guarded-encode",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "constant-false",
+        "circuit": "castR1",
+        "fixture": "constant",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "constant-zero",
+        "circuit": "castZero",
+        "fixture": "constant",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "unused",
+        "circuit": "unusedR1",
+        "fixture": "unused",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "unused-field",
+        "circuit": "unusedFieldR1",
+        "fixture": "unused",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 9
+  },
+  "secp256r1_field_arithmetic": {
+    "receipt": "receipt.json",
+    "source_sha256": "7fefde323109464d37a5a9b995fa8213449b4e4469a5a1495750eea571533d8e",
+    "head": "921006b5b72ca9069995c0c5b2f28afa97918cc7",
+    "tree": "ba4726c21efc81434f64aac6026bb08d229dbf17",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "addb-4",
+      "subb-4",
+      "mulb-6",
+      "adds-4",
+      "subs-4",
+      "muls-6"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "addb-4",
+        "circuit": "addb",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "subb-4",
+        "circuit": "subb",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "mulb-6",
+        "circuit": "mulb",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "adds-4",
+        "circuit": "adds",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "subs-4",
+        "circuit": "subs",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "muls-6",
+        "circuit": "muls",
+        "fixture": "arithmetic",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 6
+  },
+  "secp256r1_unary": {
+    "receipt": "receipt.json",
+    "source_sha256": "2c3e8da4d95e230f7ea0ed24e5632128f6f5e497b4d8db16621adc8d891654d8",
+    "head": "781c8f0cd4b53787ae836091998bb9d9567be3c7",
+    "tree": "2df4cd68a72ac35dafa3276dfe04c102e4c09b0c",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "upstream-base-test-3",
+      "upstream-scalar-test-3",
+      "unary-controls-guardedInvBase-0",
+      "unary-controls-guardedInvScalar-0"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "upstream-base-test-3",
+        "circuit": "test",
+        "fixture": "upstream-base",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-scalar-test-3",
+        "circuit": "test",
+        "fixture": "upstream-scalar",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "unary-controls-guardedInvBase-0",
+        "circuit": "guardedInvBase",
+        "fixture": "unary-controls",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "unary-controls-guardedInvScalar-0",
+        "circuit": "guardedInvScalar",
+        "fixture": "unary-controls",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 4
+  },
+  "secp256r1_point": {
+    "receipt": "receipt.json",
+    "source_sha256": "a1c183d88a87d46323fc3b41aa3f2a5fe70989129aefc98fe4c4b9c47f7d7e70",
+    "head": "48f984098ef1feefc40de2291c9ae8ec2ebd7cde",
+    "tree": "3d9ce1234e6d2822052a97df89ae6a768e1876a1",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "pointsEqual-0",
+      "pointsNotEqual-0",
+      "storePoint-1",
+      "storePoint-3",
+      "hashPoint-2"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "pointsEqual-0",
+        "circuit": "pointsEqual",
+        "fixture": "upstream-equality",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "pointsNotEqual-0",
+        "circuit": "pointsNotEqual",
+        "fixture": "upstream-equality",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "storePoint-1",
+        "circuit": "storePoint",
+        "fixture": "upstream-identity",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "storePoint-3",
+        "circuit": "storePoint",
+        "fixture": "upstream-identity",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "hashPoint-2",
+        "circuit": "hashPoint",
+        "fixture": "upstream-identity",
+        "status": "passed",
+        "k": 13,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 5
+  },
+  "secp256r1_accessors": {
+    "receipt": "receipt.json",
+    "source_sha256": "2c9db6bfb96da19b84328dd4e04aadc3c76bcdfd0c879f53a7937a8b08483292",
+    "head": "c8a31881f573d1a09ea6ffdf20c4537d092d645b",
+    "tree": "9cb83006c0d3bf814bd75b97f1cb79ee3825fdef",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "upstream-roundtrip-test0-0",
+      "upstream-roundtrip-test1-0",
+      "upstream-ledger-storePoint-0",
+      "upstream-ledger-storeX-0",
+      "upstream-ledger-storeY-0",
+      "upstream-asserted-storePoint-0",
+      "upstream-asserted-storeXChecked-0",
+      "guarded-writes-guardedX-0",
+      "guarded-writes-guardedX-2",
+      "guarded-writes-guardedY-0",
+      "guarded-writes-guardedY-2"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "upstream-roundtrip-test0-0",
+        "circuit": "test0",
+        "fixture": "upstream-roundtrip",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-roundtrip-test1-0",
+        "circuit": "test1",
+        "fixture": "upstream-roundtrip",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-ledger-storePoint-0",
+        "circuit": "storePoint",
+        "fixture": "upstream-ledger",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-ledger-storeX-0",
+        "circuit": "storeX",
+        "fixture": "upstream-ledger",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-ledger-storeY-0",
+        "circuit": "storeY",
+        "fixture": "upstream-ledger",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-asserted-storePoint-0",
+        "circuit": "storePoint",
+        "fixture": "upstream-asserted",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-asserted-storeXChecked-0",
+        "circuit": "storeXChecked",
+        "fixture": "upstream-asserted",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-writes-guardedX-0",
+        "circuit": "guardedX",
+        "fixture": "guarded-writes",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-writes-guardedX-2",
+        "circuit": "guardedX",
+        "fixture": "guarded-writes",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-writes-guardedY-0",
+        "circuit": "guardedY",
+        "fixture": "guarded-writes",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-writes-guardedY-2",
+        "circuit": "guardedY",
+        "fixture": "guarded-writes",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 11
+  },
+  "secp256r1_group": {
+    "receipt": "receipt.json",
+    "source_sha256": "ffcd1d2a7cdfecf4a0d47d03bab82f2303670e07a5e4c4791d350bcca133774e",
+    "head": "b8cd6278b7cc87be0e90c7e994ef1d94c07e06cf",
+    "tree": "a259fafdd1ac1710de58430bc93396113e0321a6",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "upstream-computed-storePoint-0",
+      "upstream-computed-storeXOfGenerator-0",
+      "upstream-computed-storeXOfMul-0",
+      "upstream-computed-storeXOfSum-0",
+      "guarded-group-guardedAdd-0",
+      "guarded-group-guardedAdd-1",
+      "guarded-group-guardedMul-0",
+      "guarded-group-guardedMul-1",
+      "guarded-group-guardedGenerator-0",
+      "guarded-group-guardedGenerator-1"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "upstream-computed-storePoint-0",
+        "circuit": "storePoint",
+        "fixture": "upstream-computed",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-computed-storeXOfGenerator-0",
+        "circuit": "storeXOfGenerator",
+        "fixture": "upstream-computed",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-computed-storeXOfMul-0",
+        "circuit": "storeXOfMul",
+        "fixture": "upstream-computed",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-computed-storeXOfSum-0",
+        "circuit": "storeXOfSum",
+        "fixture": "upstream-computed",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedAdd-0",
+        "circuit": "guardedAdd",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedAdd-1",
+        "circuit": "guardedAdd",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedMul-0",
+        "circuit": "guardedMul",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedMul-1",
+        "circuit": "guardedMul",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedGenerator-0",
+        "circuit": "guardedGenerator",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "guarded-group-guardedGenerator-1",
+        "circuit": "guardedGenerator",
+        "fixture": "guarded-group",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 10
+  },
+  "secp256r1_witness_hash": {
+    "receipt": "receipt.json",
+    "source_sha256": "9dcb2cd6cd45454a7cbd959b483872d842dec5b006e42d8bad497edc302f3533",
+    "head": "5d0d77dd39fbeb572e2a81ac7d0ffcfcab79d5d4",
+    "tree": "c5597aca86329eb04a25ed429fe32e3930ef82a6",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "standalone_proof_cases": [
+      "upstream-witness-test0",
+      "upstream-witness-test1",
+      "upstream-hash608-test-0"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "upstream-witness-test0",
+        "circuit": "test0",
+        "fixture": "upstream-witness",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-witness-test1",
+        "circuit": "test1",
+        "fixture": "upstream-witness",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "upstream-hash608-test-0",
+        "circuit": "test",
+        "fixture": "upstream-hash608",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 3
+  },
+  "secp256r1_ecdsa": {
+    "receipt": "receipt.json",
+    "source_sha256": "249dc9bedfb2fd66d4ddd1717390b12bd724ead728dfd17cf9f19e191d50af14",
+    "head": "7d908c9004fc2299661edf04db70ee7e2ae9cc1c",
+    "tree": "a1295ec368c24d3fa4cbe8101cc79fa3872ab195",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3911,
+    "standalone_proof_cases": [
+      "original",
+      "twin",
+      "wrong-key"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "original",
+        "circuit": "verify",
+        "fixture": "upstream-ordinary",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "twin",
+        "circuit": "verify",
+        "fixture": "upstream-ordinary",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "wrong-key",
+        "circuit": "verify",
+        "fixture": "upstream-ordinary",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 3
+  },
+  "secp256r1_signature_suites": {
+    "receipt": "receipt.json",
+    "source_sha256": "3bd21c086a46ac29dcd521739ac4e2ab326793d04e940c5983ea57bafb391a56",
+    "head": "ff387a4607b575c6b4146633e6c930190aea78fd",
+    "tree": "2bb4fcfce487c4af4986496befdbfa27f3475a86",
+    "platform": "Darwin arm64",
+    "rust": "1.99.0",
+    "standalone_proof_cases": [
+      "two",
+      "three"
+    ],
+    "selected_funded_results": [
+      {
+        "case": "two",
+        "circuit": "two",
+        "fixture": "verify-sequential",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "three",
+        "circuit": "three",
+        "fixture": "verify-sequential",
+        "status": "passed",
+        "k": 18,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "secp256r1_host_recovery": {
+    "receipt": "receipt.json",
+    "source_sha256": "6b767f584bd85ce03a55d548dc90b7ee97a05e88727895af1dbd9716274564c7",
+    "head": "fd174242900038bd0bb4f8a595fe64406c3e3b24",
+    "tree": "ce403621acdc0c7d758c215ea38d7aedf5e04db8",
+    "platform": "macOS arm64",
+    "rust": "1.99.0"
+  },
+  "jubjub_scalar": {
+    "receipt": "receipt.json",
+    "source_sha256": "94a76ec293a329f68e07ea7bf2289e95ad00330eed7f7eb11d1fa9b616a84ad9",
+    "head": "eb79ee55e81cc182afa496b12a235a88083867f7",
+    "tree": "509c7f70f085879631d01e6c7b2b38e9d18df817",
+    "platform": "macOS arm64",
+    "compiler_checks": 3912,
+    "selected_funded_results": [
+      {
+        "circuit": "store",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "clear",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "mixed_native_collection_baseline": {
+    "receipt": "receipt.json",
+    "source_sha256": "741c47c3184f1244d42168a8e897f0bf4bf3251d183290cb432157499f75abc8",
+    "head": "eb79ee55e81cc182afa496b12a235a88083867f7",
+    "platform": "macOS arm64"
+  },
+  "mixed_native_collection_implementation": {
+    "receipt": "implementation-receipt.json",
+    "source_sha256": "d42790b0c84f62e77bc6815859ac82e7617b08283c281f2f3ab44d0fe9272311",
+    "head": "bee98b8f55fe81b335191b37c9cd1a55d46b1f4c",
+    "tree": "c59f79c2596a829a75aa9f97835fdfd60c1b52ff",
+    "platform": "macOS arm64",
+    "compiler_checks": 3914,
+    "selected_funded_results": [
+      {
+        "circuit": "write",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "lookup",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "curve25519_fields": {
+    "receipt": "qualification.json",
+    "source_sha256": "76e507d4a145b1802de3badb6cc20aa2a05b3cbb9bebccfbadd94235fa44bf23",
+    "head": "1b7ae1c401b85174c17278c0482f0a7f1d80e21e",
+    "tree": "15c4ed760a978a0f6d472c06f8bdddff4c061cf5",
+    "platform": "macOS arm64",
+    "selected_funded_results": [
+      {
+        "circuit": "curve25519_base_roundtrip",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "curve25519_scalar_roundtrip",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "curve25519_wide_cast": {
+    "receipt": "qualification.json",
+    "source_sha256": "9b762f9e596a238db1861f0e260d8a1cf26d8aa0454aae77afdaa30a4eb5bdb2",
+    "head": "a85e5329249f2c6eba8c3abb55f75e2ff7388e6d",
+    "tree": "d329de500b0845ce9a9f3e29e870d8e505e4178e",
+    "platform": "macOS arm64",
+    "original_cases": 5,
+    "selected_funded_results": [
+      {
+        "circuit": "test",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "curve25519_point": {
+    "receipt": "qualification.json",
+    "source_sha256": "ef1e40088855f54c04654ca0154e444fa7038207fd1e1bfebf27592457ff947c",
+    "head": "8ee96fe126b8e4309bcf358f09bbbbe71b52d76c",
+    "tree": "e2a09b23ea603f8990f5cb3331fb379a60c8bd2b",
+    "platform": "macOS arm64",
+    "selected_funded_results": [
+      {
+        "circuit": "test0",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "ed25519": {
+    "receipt": "qualification.json",
+    "source_sha256": "67891e18f7de070c38479443928e4ea886dc29182b70642314a5f802d85aac12",
+    "head": "34f81af7d8115e9442e3dabe9d3749ac510498df",
+    "tree": "bdcde11a0504376c0ae83b16ecba9dfb819d1890",
+    "platform": "macOS arm64",
+    "compiler_checks": 3914,
+    "rust_library_tests": 1896,
+    "intact_language_admission": false,
+    "standalone_proofs": 4,
+    "selected_funded_results": [
+      {
+        "circuit": "verify1",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "standalone_shielded_spend": {
+    "receipt": "qualification.json",
+    "source_sha256": "732f05746de26888b8dfc18a0d373f65a9b45dc5fc03f2baeffae106d5818cd5",
+    "head": "318c6ab1a09482e66dc43918effb1c3f1da75fe1",
+    "tree": "8df417f56f26a7ac5de7cf3e2b87690aad7f914f",
+    "platform": "macOS arm64",
+    "compiler_checks": 3914,
+    "selected_funded_results": [
+      {
+        "circuit": "innerEmit",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "boolean_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "f437fd383a976a2cb369b2822cec781b0d39545200b23a891458191534eccff0",
+    "head": "2143c8bbac30af6fe0dda3f455742646d49584f7",
+    "tree": "1ab3556211fb59d65d12362882f5bd60f2fc2e83",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3924,
+    "standalone_proofs": 2,
+    "selected_funded_results": [
+      {
+        "circuit": "d1",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "fixed_bytes_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "fd555daba840abe3c3e1f312903c0aee3d153a1dd42b2e9ec88549320e784ce0",
+    "head": "99f5f719e6808eea4925790f3720f50c43f7571c",
+    "tree": "68a29b1d63533f6abb6b799e600f5083a2335a70",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3932,
+    "backend_passed": 1897,
+    "standalone_proofs": 3,
+    "selected_funded_results": [
+      {
+        "circuit": "store_prefix",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "native_uint_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "fcdf5981cccc04fc4f50412372f72b04a58fda221ee01c4914435cd849ede681",
+    "head": "3c0699e13d6b0b77ae4c7ddb5d78abbbed238eda",
+    "tree": "cbb2d235515ef9cb60477852a965b39771b3f5d6",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3936,
+    "backend_passed": 1898,
+    "standalone_proofs": 2,
+    "selected_funded_results": [
+      {
+        "circuit": "store_word",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "native_field_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "0c149b77467473358abc99293ba7456db409798a3aa6cf7a5308b2ec5abcf13e",
+    "head": "ce15c6e469e69b029bc19067e8087435376e7a14",
+    "tree": "76dd66285ebf7f4a33712b5a9e77e07a8d03aebe",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3940,
+    "backend_passed": 1899,
+    "standalone_proofs": 2,
+    "selected_funded_results": [
+      {
+        "circuit": "store_field",
+        "status": "passed",
+        "k": 9,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "aggregate_deserialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "25b86ff21aba1e17dfff221550957be8c49d73e75cc8b515cbf1d2b9d2310ca4",
+    "head": "03ec8402e9a0c0b7b6fb3b7f182faf76927f6bbd",
+    "tree": "8c8f40fd6cba50db33c8312c858ba30625a73ad0",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3944,
+    "backend_passed": 1899,
+    "standalone_proofs": 3,
+    "selected_funded_results": [
+      {
+        "circuit": "d2",
+        "status": "passed",
+        "k": 11,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "aggregate_encoding": {
+    "receipt": "qualification.json",
+    "source_sha256": "926fd725b400df4862476549e8e65f0f611e28482250d79cbc2a280cb4cba7ff",
+    "head": "2ac0862c56cc073b6d6b6b0f6dcb8e6276745cb9",
+    "tree": "80f1df46c60646b2fc29f6933b1ac37c10b23b8c",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3948,
+    "backend_passed": 1900,
+    "standalone_proofs": 2,
+    "selected_funded_results": [
+      {
+        "circuit": "foo",
+        "status": "passed",
+        "k": 12,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "unfoo",
+        "status": "passed",
+        "k": 13,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "enum_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "74a242d7a3b3e8fd8bba61fe50dd93352bfde5b200d25eada2982504c16175cc",
+    "head": "d58d4045a7f8b7f2310d9d91fa5791c15976dd87",
+    "tree": "31b35678a86f942235d9c0ab85ca397421f675ba",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3950,
+    "backend_passed": 1903,
+    "standalone_proofs": 4,
+    "selected_funded_results": [
+      {
+        "circuit": "store_color",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "wide_uint_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "47f689bb9b02f8f8340a1997c985d8578b5d63e47ea5470ebf756d937a15d320",
+    "head": "1385cd09440f95e0b729a17ac4dca841d597c6a5",
+    "tree": "64ece38e7bdf511c168149b08672cdde534d04be",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3950,
+    "backend_passed": 1904,
+    "standalone_proofs": 3,
+    "selected_funded_results": [
+      {
+        "circuit": "store_word",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "point_wire_refusals": {
+    "receipt": "qualification.json",
+    "source_sha256": "8dce48ea866bf227c369abe733d53673c2689672fc7a03bb2dc36472a1f3e54c",
+    "head": "0726d1dc2e9cce6c1fb1a197477cea817a34da25",
+    "tree": "1154d660271f74235f2c32bf214b6c6251160ad4",
+    "platform": "macOS arm64",
+    "compiler_checks": 3956
+  },
+  "secp256k1_base_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "3543c9958e013ed7f0e8e9790aec2854777b8cb43369523f7afbd64876942160",
+    "head": "eaa58521b83c93f591d49e722330596b3cbc6105",
+    "tree": "1dd19dfb35fb01c524912f59910b000bbbb00512",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3962,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "store_word",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "foreign_field_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "378b7de627876ca5607c977e7442f468af2ce72290d37fccbd4190f33c87368e",
+    "head": "7b7591d8330b9cf4a24cefc01dd8a644a11ccc62",
+    "tree": "93dac1859be31a7399c1f84ea46551bcfc956341",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3968,
+    "standalone_proofs": 5,
+    "selected_funded_results": [
+      {
+        "circuit": "store_k1_scalar",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "store_r1_base",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "store_r1_scalar",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "store_c25519_base",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "store_c25519_scalar",
+        "status": "passed",
+        "k": 10,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 5
+  },
+  "empty_vector_serialization": {
+    "receipt": "qualification.json",
+    "source_sha256": "a30921917de3047588f2f33896faf37cdbdb9849d51df616d4c5494aed89cf8d",
+    "head": "64683013dda801f0de2d280e4cbba66512cd54c9",
+    "tree": "953fe8b58325eea36ac525a5fa6c26f48dee0145",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3972
+  },
+  "shielded_burn": {
+    "receipt": "qualification.json",
+    "source_sha256": "2ee2f6b8d974a75ffaaf78d161ac34cc9c0370027d5554b23b2b7a82230fb4ef",
+    "head": "658ccf19beab2eb472168ff94609781158836554",
+    "tree": "abc05d7458f33577c6b8bc25ca019ac36b33a75c",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3974,
+    "backend_passed": 1904,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "shielded_mint": {
+    "receipt": "qualification.json",
+    "source_sha256": "d4caef3dbe00b89ce79905bf780bf607880f8e4e663cf95cc9abbc62b4ac8c29",
+    "head": "464e796258f3b9522d797f6d893163bf02381019",
+    "tree": "7f89bee33ccf6fd8c1a7737bc46d292c08b408da",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3988,
+    "backend_passed": 1905,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "shielded_receive": {
+    "receipt": "qualification.json",
+    "source_sha256": "94eeed9e652d95ae85ed51ccf6ad9691292feb7f307196738ffe2ce4046ff79a",
+    "head": "61cf4c8734912fb8a991feaaf1ddcada86ac952c",
+    "tree": "2fcdd5945bd143f40762812528dbda44399c5f2f",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3994,
+    "backend_passed": 1906,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 18,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "unshielded_spend": {
+    "receipt": "qualification.json",
+    "source_sha256": "45e6509455d7a72b18f8827181462eb4d751e2e3cdfca493a805d6c4a84fd958",
+    "head": "0408bc828353fedb4b5d7ad332cb164926db7216",
+    "tree": "70a2c1edba7ba9295aeb6e57fb7d857fddab3fad",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 3999,
+    "backend_passed": 1907,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "unshielded_receive": {
+    "receipt": "qualification.json",
+    "source_sha256": "c3f85375cb6956a8e17134ea492bf7699095f6016a72e1239f7e9bdd18500e58",
+    "head": "99296686e372ae38045359c7e5b8ae8646783471",
+    "tree": "cb836f62241deb028e292e4130a641740324e246",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4004,
+    "backend_passed": 1908,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 16,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "unshielded_mint": {
+    "receipt": "qualification.json",
+    "source_sha256": "3ebbbf3bf7b8ad3e431cd910d0570a65a43074ce1b702ca9c1e7a7d466e19ecf",
+    "head": "554808b059f369dd400b2c97ebd28441ce47faa1",
+    "tree": "d937b33c787f5d0069ab5aab6ca9acc4930b0e08",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4009,
+    "backend_passed": 1909,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "unshielded_burn": {
+    "receipt": "qualification.json",
+    "source_sha256": "f0a83f0994b705ff141122602053e97fd15a9bafa09efa0b4980a73c10933acb",
+    "head": "bfe7263da69bd2095fa34feffaa25615dd68187a",
+    "tree": "0e643bbc470c40c220253b4f6d3a9a6bf34eb8c4",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4015,
+    "backend_passed": 1910,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 15,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "pause_events": {
+    "receipt": "qualification.json",
+    "source_sha256": "f2006d73de683ddda92b5c6fab9635fc2b6cd98a129b7c9196e2e8440f587e65",
+    "head": "106b19f6a9cdbdb8f0b132e0aabfceb845feb7d4",
+    "tree": "838b815581cc88c66cc076d603eb44e236e6ff5b",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4021,
+    "backend_passed": 1911,
+    "standalone_proofs": 2,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "transition",
+        "status": "passed",
+        "k": 8,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "misc_event": {
+    "receipt": "qualification.json",
+    "source_sha256": "8790454c4c8ad8dc29e5f393d6c7887d34635d87f79635eae044a44d26384ea2",
+    "head": "e821843626fe41ffed11b30c7965bd0f822795d7",
+    "tree": "10a5789b11f00bba443d6343c1a29122deb31f38",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4026,
+    "backend_passed": 1912,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "emit_two",
+        "status": "passed",
+        "k": 17,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "deep_merkle_defaults": {
+    "receipt": "qualification.json",
+    "source_sha256": "f2843295ac2eb8b9c6bc59998e064eea6909789fef21f880ad125c2e98453018",
+    "head": "3a178e916c3e1bf9d92777736bdba1ac46cea9b5",
+    "tree": "8847bbb797105b5058ec21ae704ef7ac5517ebc2",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4026,
+    "backend_passed": 2262,
+    "standalone_proofs": 8,
+    "selected_funded_results": [
+      {
+        "circuit": "insert",
+        "status": "passed",
+        "k": 13,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "reset",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "insert_default",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "insert_default_value",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "insert",
+        "status": "passed",
+        "k": 13,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "reset",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "insert_default",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "circuit": "insert_default_value",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 8
+  },
+  "sha512_secp256k1_point_pair": {
+    "receipt": "qualification.json",
+    "source_sha256": "1ea779c0504970b3fb346667ccb64e5ddc4173b57f0e9807be4ecb915d161f57",
+    "head": "360af593b84fe3b2786bbdd3a2408ef472e69777",
+    "tree": "2cdc27750608c0c2dad6518f35b164358727081a",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4028,
+    "standalone_proofs": 1,
+    "selected_funded_results": [
+      {
+        "circuit": "test",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 1
+  },
+  "sha512_ordinary_funded": {
+    "receipt": "qualification.json",
+    "source_sha256": "6809735ef83b3a0216475eee02ff421c6e2b3d68afa1d3cf7b18e7b5a232a1fc",
+    "head": "360af593b84fe3b2786bbdd3a2408ef472e69777",
+    "tree": "2cdc27750608c0c2dad6518f35b164358727081a",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "selected_funded_results": [
+      {
+        "case": "writeDigest-0",
+        "circuit": "writeDigest",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "writeDigest-1",
+        "circuit": "writeDigest",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "writePointDigest-0",
+        "circuit": "writePointDigest",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 3
+  },
+  "keccak_stateful_pragma_probe": {
+    "receipt": "qualification.json",
+    "source_sha256": "c36d81590e139517b4a38a1f289e64ac36613e7619b7202a7506db0cce0968c5",
+    "head": "360af593b84fe3b2786bbdd3a2408ef472e69777",
+    "tree": "2cdc27750608c0c2dad6518f35b164358727081a",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "scope": "Pragma-only derivative, intact language admission remains open",
+    "selected_funded_results": [
+      {
+        "case": "zero",
+        "circuit": "keccak256_writes_ledger",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "trailing-zero",
+        "circuit": "keccak256_writes_ledger",
+        "status": "passed",
+        "k": 14,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 2
+  },
+  "opaque_string_bom_funded": {
+    "receipt": "qualification.json",
+    "source_sha256": "a36b67601c5c7b228f2a1eaa4f57f5b7df3cf16725085ab61ef8d45627819dd1",
+    "head": "360af593b84fe3b2786bbdd3a2408ef472e69777",
+    "tree": "2cdc27750608c0c2dad6518f35b164358727081a",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "selected_funded_results": [
+      {
+        "case": "store",
+        "circuit": "store",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "receipt",
+        "circuit": "receipt",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "archive",
+        "circuit": "archive",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "matches",
+        "circuit": "matches",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "markSeen",
+        "circuit": "markSeen",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "wasSeen",
+        "circuit": "wasSeen",
+        "status": "passed",
+        "k": 6,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 6
+  },
+  "opaque_byte_equality": {
+    "receipt": "qualification.json",
+    "source_sha256": "3f9e8079bfe3552aa8133304825fd56785cb912ea1bc80b744b8e8bb031c9fdf",
+    "head": "7a4fab772ee34c19053ce293d08052b501ce4b50",
+    "tree": "3ab4468ee7554d66c3d9744a70aff468e2b51d98",
+    "platform": "macOS arm64",
+    "rust": "1.99.0",
+    "compiler_checks": 4032,
+    "original_cases": 23,
+    "standalone_proofs": 23,
+    "selected_funded_results": [
+      {
+        "case": "testEquals-0",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-1",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-2",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-3",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-4",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-5",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-6",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-7",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEquals-8",
+        "circuit": "testEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-9",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-10",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-11",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-12",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-13",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-14",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-15",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-16",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testNotEquals-17",
+        "circuit": "testNotEquals",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEqualsDefault-18",
+        "circuit": "testEqualsDefault",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEqualsDefault-19",
+        "circuit": "testEqualsDefault",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEqualsDefault-20",
+        "circuit": "testEqualsDefault",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEqualsDefault-21",
+        "circuit": "testEqualsDefault",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      },
+      {
+        "case": "testEqualsDefault-22",
+        "circuit": "testEqualsDefault",
+        "status": "passed",
+        "k": 7,
+        "default_strict": true,
+        "positive_fee_dust_spends": 1,
+        "replay_refusal": "IntentAlreadyExists",
+        "replay_unchanged": true,
+        "ledger_matches_native": true,
+        "typescript_preimage_fields_match": true
+      }
+    ],
+    "selected_funded_result_count": 23
+  },
+  "jubjub_identity_guard_v73": {
+    "receipt": "checkpoint-v73.json",
+    "source_sha256": "1fb50c4982e7e2c5a4c86bb68baf946324d66eb28beb607ec7dd003c576cdf01",
+    "platform": "macOS arm64",
+    "scope": "Local evidence only; neither slice is canonically integrated or finally accepted. Required Linux and broader Ledger 9 qualification remain open."
+  },
+  "keccak_opaque_diagnostic_v73": {
+    "receipt": "checkpoint-v73.json",
+    "source_sha256": "1fb50c4982e7e2c5a4c86bb68baf946324d66eb28beb607ec7dd003c576cdf01",
+    "platform": "macOS arm64",
+    "scope": "Local evidence only; neither slice is canonically integrated or finally accepted. Required Linux and broader Ledger 9 qualification remain open."
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Milestone 1 turns supported Compact nodes into typed Rust syntax.">
+<meta name="theme-color" content="#f5f2eb">
+<title>A closed Rust boundary · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css">
+<script defer src="../assets/book.js"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="a-closed-rust-boundary">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary" aria-current="page">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>A deferred experiment</h2><ul><li><a href="../chapters/forge-and-the-cost-of-evidence.html" data-chapter="forge-and-the-cost-of-evidence">Forge and the cost of evidence</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Native AST milestone <span>· 2 min read</span></p>
+<h1>A closed Rust boundary</h1><p class="deck">Milestone 1 turns supported Compact nodes into typed Rust syntax.</p></header>
+<div class="prose"><h2 id="the-new-pipeline">The new pipeline</h2>
+<p>After shared Compact analysis, Chez Scheme lowered supported constructs into a versioned JSON model. Rust deserialized and checked that model, selected typed runtime operations, and built output through syn, quote, proc-macro2 and prettyplease.</p>
+<p>The crucial word is supported. A closed internal representation gives each admitted node an explicit meaning. Unsupported constructs should produce a diagnostic at a known boundary. Silently manufacturing a placeholder would conceal a missing semantic case.</p>
+<h2 id="a-vertical-slice-before-a-framework">A vertical slice before a framework</h2>
+<p>The first slice used schema 1 for pure Field, Boolean, Unit, tuple and vector circuits, including Field addition. It explicitly refused ledger and witness constructs. Ledger-backed primitive types, Cell and Counter state changes, typed values and typed reads followed. Set, Map and List operations expanded that native surface. Pure conditionals, local bindings and circuit calls expanded the usable source subset.</p>
+<p>Each slice joined several owners. Scheme supplied the source node and type. The Rust model represented it. Checked lowering established a legal operation. Syntax emission built the Rust expression. The runtime delegated ledger behavior to the VM. Generated consumers exercised the ordinary API.</p>
+<h2 id="why-structured-syntax-helped">Why structured syntax helped</h2>
+<p>A Rust syntax tree gives the emitter a representation for expressions, statements, blocks, paths and types. The formatter can render those nodes without encoding semantics in whitespace or string fragments.</p>
+<p>That benefit has a boundary. Constructing an AST does not prove that the correct field operation or source conversion was chosen. The semantic checks still need to occur before rendering. The long-term architecture therefore pairs structured syntax with checked lowering.</p>
+<h2 id="the-milestone-1-result">The Milestone 1 result</h2>
+<p>The broad local native baseline closed at ea4cc006f973632c4c7b1fb4569af2b4c93ff38a. Publication followed at a5ee30f171322f07c06e3846117f20c9e075ef95 on October 2. Historical notes record 128 generated sources and 410 workspace test/doc-test groups.</p>
+<p>The milestone used private IR schema 6 and runtime ABI 3. Its wrapper forced skip-zk. That is an essential scope boundary when reading the early success report.</p>
+<h2 id="what-was-solved">What was solved</h2>
+<p>Compact could generate useful typed Rust that executed a supported contract subset natively through the ledger runtime. The compiler boundary became inspectable, and new source cases had named owners.</p>
+<h2 id="what-was-still-open">What was still open</h2>
+<p>Recording a transcript, preparing a call, generating a proof and applying a funded transaction were later deliveries. Native execution established an important foundation for them.</p>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/commit/67064813977a9af901792e5cfb62e295e49bff43">Start typed Rust from Ledger 8</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">Milestone 1 local baseline</a></li>
+<li><a href="https://github.com/betsudo/compact/commit/a5ee30f171322f07c06e3846117f20c9e075ef95">Published native baseline</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/102">Native baseline issue #102</a></li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/a-closed-rust-boundary.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="the-first-rust-emitter.html"><small>Previous chapter</small>The first Rust emitter</a><a class="next" href="recording-is-an-execution.html"><small>Next chapter</small>Recording is an execution <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#the-new-pipeline">The new pipeline</a></li>
+<li><a href="#a-vertical-slice-before-a-framework">A vertical slice before a framework</a></li>
+<li><a href="#why-structured-syntax-helped">Why structured syntax helped</a></li>
+<li><a href="#the-milestone-1-result">The Milestone 1 result</a></li>
+<li><a href="#what-was-solved">What was solved</a></li>
+<li><a href="#what-was-still-open">What was still open</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>
