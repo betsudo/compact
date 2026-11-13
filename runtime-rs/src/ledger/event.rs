@@ -65,6 +65,12 @@ pub(crate) fn unshielded_burn_program<D: DB>(
     event_program(LogEventType::UnshieldedBurn, payload)
 }
 
+pub(crate) fn misc_program<D: DB>(
+    payload: FixedBytes<288>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::Misc, payload)
+}
+
 pub(crate) fn paused_program<D: DB>(
     payload: FixedBytes<0>,
 ) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {

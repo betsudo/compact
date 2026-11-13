@@ -294,8 +294,13 @@ identifies the standalone emission test as derived.
 `Paused` and `Unpaused` have empty payloads and distinct tags 8 and 9.
 The intact upstream Paused fixture preserves all seven exports and its
 eight JavaScript assertions. A derived transition fixture checks that
-both tags survive recording and replay in order. The original mixed
-Unpaused/Misc pass test remains retained for the Misc port.
+both tags survive recording and replay in order.
+`Misc` uses tag 10 and encodes its 32-byte name followed by its
+256-byte payload. The intact standalone fixture exercises all seven
+exports. The mixed Unpaused/Misc assertion runs against the local
+flattened IR, with the same operation order and payload operands.
+The whole codec assertions for all three types run at local type
+inference, where serialization is expanded.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

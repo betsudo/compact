@@ -158,9 +158,24 @@ trace. It includes the original Unpaused codec sources.
 `check-pause-events.mjs` checks exact empty payload alignment and
 distinct tags, rejects a tag substitution and a reordered trace, and
 retains the SDK preimages for proving. The mixed Unpaused/Misc pass
-assertion remains available for the Misc port.
+assertion runs against the local flattened IR.
 
 ```sh
 node test-contracts/stdlib/events/check-pause-events.mjs \
   "$PAUSED_OUTPUT" "$TRANSITION_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/pause-preimages"
 ```
+
+## Misc
+
+`Misc.compact` preserves all seven upstream exports. The local compiler
+suite runs the original standalone assertions and compares the mixed
+Unpaused/Misc pass against the corresponding local IR. Both targets
+serialize the 32-byte name followed by the 256-byte payload.
+
+```sh
+node test-contracts/stdlib/events/check-misc.mjs \
+  "$MISC_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/misc-preimages"
+```
+
+The SDK checks cover both conditional branches and refuse changes to the
+name, payload, trailing zero byte and event tag.

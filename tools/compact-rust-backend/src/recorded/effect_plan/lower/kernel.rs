@@ -33,6 +33,7 @@ impl Lowerer<'_> {
             Expr::EmitUnshieldedReceive { value } => (value, 145, Operation::EmitUnshieldedReceive),
             Expr::EmitUnshieldedMint { value } => (value, 80, Operation::EmitUnshieldedMint),
             Expr::EmitUnshieldedBurn { value } => (value, 113, Operation::EmitUnshieldedBurn),
+            Expr::EmitMisc { value } => (value, 288, Operation::EmitMisc),
             Expr::EmitPaused { value } => (value, 0, Operation::EmitPaused),
             Expr::EmitUnpaused { value } => (value, 0, Operation::EmitUnpaused),
             _ => return Err(invalid(path, "expected an event expression")),

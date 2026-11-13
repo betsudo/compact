@@ -390,8 +390,18 @@ fn pause_event_manifest() -> Result<Value, String> {
     serde_json::from_slice(PAUSE_EVENT).map_err(|error| error.to_string())
 }
 
+const MISC_EVENT: &[u8] = include_bytes!("misc-event-expression.json");
+
+fn misc_event_manifest() -> Result<Value, String> {
+    if digest(MISC_EVENT) != "3ad3ea878b6c99d1a7f0b6a73769cf691a294480a0056ee8ff471d25cd31ec86" {
+        return Err("unreviewed Misc event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(MISC_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &pause_event_manifest()?)?;
+    let current = legacy_source(path, current, &misc_event_manifest()?)?;
+    let current = legacy_source(path, &current, &pause_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_burn_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_mint_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_receive_event_manifest()?)?;

@@ -3320,6 +3320,7 @@
            [(7) "__compactRuntime.emitUnshieldedBurn"]
            [(8) "__compactRuntime.emitPaused"]
            [(9) "__compactRuntime.emitUnpaused"]
+           [(10) "__compactRuntime.emitMisc"]
            [else (assert cannot-happen)])
          "(context, partialProofData, " expr ")")]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)

@@ -2745,6 +2745,7 @@
                                   [(7) "emit_unshielded_burn"]
                                   [(8) "emit_paused"]
                                   [(9) "emit_unpaused"]
+                                  [(10) "emit_misc"]
                                   [else (assert cannot-happen)]))
                    (cons "value" (stateful-expression-ir expr src witness-ids)))]
           [(assert ,src ,expr ,mesg)

@@ -1015,6 +1015,9 @@ pub enum Expr {
     EmitUnshieldedBurn {
         value: Box<Expr>,
     },
+    EmitMisc {
+        value: Box<Expr>,
+    },
     EmitPaused {
         value: Box<Expr>,
     },

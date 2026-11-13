@@ -1,0 +1,41 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit deserialize_Misc (x: Bytes<288>) : Misc {"
+      "  return deserialize<Misc, 288>(x);"
+      "}"
+      "export circuit serialize_Misc (x: Misc) : Bytes<288> {"
+      "  return serialize<Misc, 288>(x);"
+      "}"
+      )
+    (returns
+      (program
+        (kernel-declaration (%kernel.0 () (Kernel)))
+        (public-ledger-declaration () (constructor () (tuple)))
+        (circuit %serialize.1 ([%value.2 (tstruct Misc
+                                           (name (tbytes 32))
+                                           (payload (tbytes 256)))])
+             (tbytes 288)
+          (vector->bytes
+            288
+            (vector
+              (spread 32 (bytes->vector 32 (elt-ref %value.2 name 0)))
+              (spread
+                256
+                (bytes->vector 256 (elt-ref %value.2 payload 1))))))
+        (circuit %deserialize.3 ([%value.4 (tbytes 288)])
+             (tstruct Misc (name (tbytes 32)) (payload (tbytes 256)))
+          (new (tstruct Misc
+                 (name (tbytes 32))
+                 (payload (tbytes 256)))
+            (bytes-slice %value.4 0 32)
+            (bytes-slice %value.4 32 256)))
+        (circuit %deserialize_Misc.5 ([%x.6 (tbytes 288)])
+             (tstruct Misc (name (tbytes 32)) (payload (tbytes 256)))
+          (call %deserialize.3 %x.6))
+        (circuit %serialize_Misc.7 ([%x.8 (tstruct Misc
+                                            (name (tbytes 32))
+                                            (payload (tbytes 256)))])
+             (tbytes 288)
+          (call %serialize.1 %x.8))))
+    )

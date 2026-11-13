@@ -177,6 +177,7 @@ pub(super) enum Operation {
     EmitUnshieldedReceive(Value),
     EmitUnshieldedMint(Value),
     EmitUnshieldedBurn(Value),
+    EmitMisc(Value),
     EmitPaused(Value),
     EmitUnpaused(Value),
     KernelClaim {

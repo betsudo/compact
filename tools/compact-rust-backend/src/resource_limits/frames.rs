@@ -201,6 +201,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
                 | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
                 | E::EmitPaused { .. }
                 | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
@@ -235,6 +236,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
                 | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
                 | E::EmitPaused { .. }
                 | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
@@ -400,6 +402,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
                 | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
                 | E::EmitPaused { .. }
                 | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
@@ -503,6 +506,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EmitUnshieldedReceive { .. }
                 | E::EmitUnshieldedMint { .. }
                 | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
                 | E::EmitPaused { .. }
                 | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }

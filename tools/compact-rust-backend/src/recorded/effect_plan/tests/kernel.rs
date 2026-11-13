@@ -117,6 +117,24 @@ fn pause_events_require_zero_byte_payloads_in_the_checked_plan() {
 }
 
 #[test]
+fn misc_event_requires_exact_bytes288_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitMisc(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 288 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 287 },
+        Type::Bytes { length: 289 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
 fn unshielded_burn_event_requires_exact_bytes113_in_the_checked_plan() {
     let event_plan = |ty: Type| {
         let input = value(0, ty);

@@ -671,3 +671,8 @@ export struct UnshieldedBurn {
 export struct Paused {}
 
 export struct Unpaused {}
+
+export struct Misc {
+  name: Bytes<32>,
+  payload: Bytes<256>,
+}

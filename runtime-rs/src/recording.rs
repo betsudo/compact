@@ -362,6 +362,15 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_verify_program(ledger::unshielded_burn_program(payload)?)
     }
 
+    /// Record a public Misc event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_misc(
+        self,
+        payload: crate::FixedBytes<288>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::misc_program(payload)?)
+    }
+
     /// Record a public Paused event with its fixed-width wire payload.
     #[doc(hidden)]
     pub fn emit_paused(

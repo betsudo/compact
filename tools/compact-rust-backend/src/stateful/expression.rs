@@ -543,6 +543,7 @@ fn render_operation_expression(
         | Expr::EmitUnshieldedReceive { .. }
         | Expr::EmitUnshieldedMint { .. }
         | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
         | Expr::EmitPaused { .. }
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
@@ -1375,6 +1376,7 @@ fn render_effect_operation(
         | Expr::EmitUnshieldedReceive { value: argument }
         | Expr::EmitUnshieldedMint { value: argument }
         | Expr::EmitUnshieldedBurn { value: argument }
+        | Expr::EmitMisc { value: argument }
         | Expr::EmitPaused { value: argument }
         | Expr::EmitUnpaused { value: argument }
         | Expr::KernelClaim {
@@ -1399,6 +1401,7 @@ fn render_effect_operation(
                 Expr::EmitUnshieldedReceive { .. } => 145,
                 Expr::EmitUnshieldedMint { .. } => 80,
                 Expr::EmitUnshieldedBurn { .. } => 113,
+                Expr::EmitMisc { .. } => 288,
                 Expr::EmitPaused { .. } | Expr::EmitUnpaused { .. } => 0,
                 _ => 32,
             };
@@ -1436,6 +1439,9 @@ fn render_effect_operation(
                 }
                 Expr::EmitUnshieldedBurn { .. } => {
                     syn::parse_quote!(context.emit_unshielded_burn(#name)?)
+                }
+                Expr::EmitMisc { .. } => {
+                    syn::parse_quote!(context.emit_misc(#name)?)
                 }
                 Expr::EmitPaused { .. } => {
                     syn::parse_quote!(context.emit_paused(#name)?)

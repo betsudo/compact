@@ -320,6 +320,14 @@ export const emitUnshieldedBurn = (context: CircuitContext, proofData: PartialPr
 };
 
 /** @internal */
+export const emitMisc = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 288) {
+    throw new CompactError('Misc payload must be Bytes<288>');
+  }
+  return emitEvent(context, proofData, 10n, payload, 288);
+};
+
+/** @internal */
 export const emitPaused = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
   if (payload.length !== 0) {
     throw new CompactError('Paused payload must be Bytes<0>');
