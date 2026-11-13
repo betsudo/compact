@@ -31,3 +31,40 @@ fn binary_vector_map_empty_tuple_stays_empty() {
     let result = empty_tuple::pure_circuits::vector_map_empty_tuple().unwrap();
     assert_eq!(result.0.len(), 0);
 }
+
+#[test]
+fn binary_bytes_operands_and_widened_formals_match_compact() {
+    use regressions::runtime::{BoundedUint, FixedBytes, FixedVector};
+
+    let left = FixedBytes::new([1, 2]);
+    let right = FixedBytes::new([10, 20]);
+    assert_eq!(
+        regressions::pure_circuits::bytes_map(left.clone(), right.clone()).unwrap(),
+        FixedVector::new([
+            BoundedUint::<65535>::new(12).unwrap(),
+            BoundedUint::<65535>::new(24).unwrap(),
+        ]),
+    );
+    assert_eq!(
+        regressions::pure_circuits::widened_bytes_map(left, right).unwrap(),
+        FixedVector::new([
+            BoundedUint::<511>::new(1).unwrap(),
+            BoundedUint::<511>::new(2).unwrap(),
+        ]),
+    );
+    let a = FixedVector::new([
+        BoundedUint::<255>::new(1).unwrap(),
+        BoundedUint::<255>::new(2).unwrap(),
+    ]);
+    let b = FixedVector::new([
+        BoundedUint::<255>::new(10).unwrap(),
+        BoundedUint::<255>::new(20).unwrap(),
+    ]);
+    assert_eq!(
+        regressions::pure_circuits::widened_vector_map(a, b).unwrap(),
+        FixedVector::new([
+            BoundedUint::<65535>::new(1).unwrap(),
+            BoundedUint::<65535>::new(2).unwrap(),
+        ]),
+    );
+}

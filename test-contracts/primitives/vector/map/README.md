@@ -10,6 +10,11 @@ The `empty_tuple` circuit maps two empty operands and returns an empty vector.
 Neither upstream family declares a refusal case. Both exports are pure and
 have no proof statement.
 
+`review_regressions.compact` is a local supplement for two reproduced review
+findings: binary map over `Bytes<2>` operands and element widening from
+`Uint<8>` to `Uint<9>` or `Uint<16>`. The gate checks three parameterized
+circuits on generated Rust and TypeScript. It is not an upstream fixture.
+
 Run the local source-bound adapter from a clean signed checkout:
 
 ```sh
