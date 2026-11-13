@@ -833,6 +833,127 @@
                   (cons "start" start)
                   (cons "length" length))))
 
+      ;; The Rust IR has one VectorMap source. Zip multiple Compact map
+      ;; operands into a vector of tuples, then bind the original formals from
+      ;; each tuple. Bind every operand once, in source order, including for an
+      ;; empty vector: an operand can still fail before the map body is skipped.
+      (define (vector-map-source-element-type source-type index src)
+        (nanopass-case (Lnodisclose Type) source-type
+          [(talias ,src^ ,nominal? ,type-name ,type)
+           (vector-map-source-element-type type index src)]
+          [(tbytes ,src^ ,len)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src 255))]
+          [(tvector ,src^ ,len ,type) type]
+          [(ttuple ,src^ ,type* ...) (list-ref type* index)]
+          [else (source-errorf src "Rust backend requires a Vector, Tuple, or Bytes map operand")]))
+
+      (define (vector-map-projection-ir src source-name index element-type formal-type)
+        (let* ([projection
+                 (with-output-language (Lnodisclose Expression)
+                   `(tuple-ref ,src (var-ref ,src ,source-name) ,index))]
+               [value (typed-expression-ir projection element-type src)]
+               [actual (type-ir element-type src)]
+               [target (type-ir formal-type src)])
+          (if (equal? actual target)
+              value
+              (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target)))))
+
+      (define (multi-vector-map-ir src len arg* result-type body map-arg*)
+        (unless (= (length arg*) (length map-arg*))
+          (source-errorf src "Vector map argument count differs from its function arity"))
+        (let* ([input*
+                (map (lambda (arg map-arg)
+                       (nanopass-case (Lnodisclose Argument) arg
+                         [(,var-name ,type^)
+                          (nanopass-case (Lnodisclose Map-Argument) map-arg
+                            [(,expr1 ,type1 ,type2)
+                             (list var-name type^ expr1 type1 type2)])]))
+                     arg* map-arg*)]
+               [source-name*
+                (map (lambda (input) (make-source-id src 'vector_map_source)) input*)]
+               [item-name (make-source-id src 'vector_map_item)]
+               [item-type
+                (object (cons "kind" "tuple")
+                        (cons "elements"
+                              (list->vector
+                                (map (lambda (input) (type-ir (cadr input) src))
+                                     input*))))]
+               [source
+                (object (cons "kind" "let")
+                        (cons "bindings"
+                              (list->vector
+                                (map (lambda (name input)
+                                       (object (cons "name" (sourced-rust-var-name name))
+                                               (cons "ty"
+                                                     (type-ir
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (byte-vector-type src len)
+                                                           (list-ref input 3)) src))
+                                               (cons "value"
+                                                     (let ([value
+                                                             (typed-expression-ir
+                                                               (list-ref input 2) (list-ref input 3) src)])
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (object (cons "kind" "bytes_to_vector")
+                                                                   (cons "value" value)
+                                                                   (cons "length" len))
+                                                           value)))))
+                                     source-name* input*)))
+                        (cons "body"
+                              (object (cons "kind" "vector")
+                                      (cons "element" item-type)
+                                      (cons "elements"
+                                            (list->vector
+                                              (let loop ([index 0] [items '()])
+                                                (if (= index len)
+                                                    (reverse items)
+                                                    (loop (+ index 1)
+                                                      (cons
+                                                        (object (cons "kind" "tuple")
+                                                                (cons "elements"
+                                                                      (list->vector
+                                                                        (map
+                                                                          (lambda (name input)
+                                                                            (vector-map-projection-ir
+                                                                              src name index
+                                                                              (vector-map-source-element-type
+                                                                                (list-ref input 3) index src)
+                                                                              (cadr input)))
+                                                                          source-name* input*))))
+                                                        items)))))))))]
+               [item-ref (object (cons "kind" "parameter")
+                                 (cons "name" (rust-var-name item-name)))])
+          (when (current-variable-types)
+            (for-each
+              (lambda (input)
+                (eq-hashtable-set! (current-variable-types) (car input) (cadr input)))
+              input*))
+          (object (cons "kind" "vector_map")
+                  (cons "parameter"
+                        (object (cons "name" (sourced-rust-var-name item-name))
+                                (cons "ty" item-type)))
+                  (cons "source" source)
+                  (cons "body"
+                        (object (cons "kind" "let")
+                                (cons "bindings"
+                                      (list->vector
+                                        (let loop ([index 0] [inputs input*] [items '()])
+                                          (if (null? inputs)
+                                              (reverse items)
+                                              (let ([input (car inputs)])
+                                                (loop (+ index 1) (cdr inputs)
+                                                  (cons
+                                                    (object (cons "name" (sourced-rust-var-name (car input)))
+                                                            (cons "ty" (type-ir (cadr input) src))
+                                                            (cons "value"
+                                                                  (object (cons "kind" "tuple_index")
+                                                                          (cons "value" item-ref)
+                                                                          (cons "index" index))))
+                                                    items)))))))
+                                (cons "body" (typed-expression-ir body result-type src))))
+                  (cons "result" (type-ir result-type src))
+                  (cons "length" len))))
+
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (expression-ir expr owner-src)]
@@ -1000,26 +1121,27 @@
            (reject-spreads tuple-arg* "vector")
            (source-errorf src "Rust backend does not yet support this Vector construction")]
           [(map ,src ,len ,fun ,map-arg ,map-arg* ...)
-           (unless (null? map-arg*)
-             (source-errorf src "Rust backend supports unary Vector map only"))
            (nanopass-case (Lnodisclose Function) fun
              [(circuit ,src^ (,arg* ...) ,type ,expr)
-              (unless (= (length arg*) 1)
-                (source-errorf src "Rust backend supports unary Vector map only"))
-              (nanopass-case (Lnodisclose Argument) (car arg*)
-                [(,var-name ,type^)
-                 (nanopass-case (Lnodisclose Map-Argument) map-arg
-                   [(,expr1 ,type1 ,type2)
-                    (when (current-variable-types)
-                      (eq-hashtable-set! (current-variable-types) var-name type^))
-                    (object (cons "kind" "vector_map")
-                            (cons "parameter"
-                                  (object (cons "name" (sourced-rust-var-name var-name))
-                                          (cons "ty" (type-ir type^ src))))
-                            (cons "source" (typed-expression-ir expr1 type1 src))
-                            (cons "body" (typed-expression-ir expr type src))
-                            (cons "result" (type-ir type src))
-                            (cons "length" len))])])]
+              (if (null? map-arg*)
+                  (begin
+                    (unless (= (length arg*) 1)
+                      (source-errorf src "Rust backend supports one formal for unary Vector map"))
+                    (nanopass-case (Lnodisclose Argument) (car arg*)
+                      [(,var-name ,type^)
+                       (nanopass-case (Lnodisclose Map-Argument) map-arg
+                         [(,expr1 ,type1 ,type2)
+                          (when (current-variable-types)
+                            (eq-hashtable-set! (current-variable-types) var-name type^))
+                          (object (cons "kind" "vector_map")
+                                  (cons "parameter"
+                                        (object (cons "name" (sourced-rust-var-name var-name))
+                                                (cons "ty" (type-ir type^ src))))
+                                  (cons "source" (typed-expression-ir expr1 type1 src))
+                                  (cons "body" (typed-expression-ir expr type src))
+                                  (cons "result" (type-ir type src))
+                                  (cons "length" len))])]))
+                  (multi-vector-map-ir src len arg* type expr (cons map-arg map-arg*)))]
              [else (source-errorf src "Rust backend supports inline Vector map functions only")])]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (unless (null? map-arg*)
