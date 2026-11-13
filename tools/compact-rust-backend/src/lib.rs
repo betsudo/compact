@@ -890,7 +890,7 @@ fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value } | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
         Expr::KernelMintShielded { domain, amount } => {
@@ -1688,6 +1688,7 @@ fn pure_leaf_expression(
         Expr::EnumVariant { ty, variant } => LeafSource::EnumVariant { ty, variant },
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

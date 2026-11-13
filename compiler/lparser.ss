@@ -230,6 +230,7 @@
       (cast src type kwd expr) => (cast type #f expr)
       (parenthesized src lparen expr rparen) => (parenthesized expr)
       (disclose src kwd lparen expr rparen) => (disclose expr)
+      (emit src kwd lparen expr rparen) => (emit expr)
       (assert src kwd lparen expr comma mesg rparen) => (assert #f expr #f mesg)
       )
     (Function (fun)

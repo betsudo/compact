@@ -1221,6 +1221,9 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                     scan.push(Node::Expr(child), visit_depth + 1, owner)?;
                 }
             }
+            Expr::EmitShieldedSpend { value } => {
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+            }
             Expr::KernelClaim { claim, value } => {
                 scan.push(Node::KernelClaimKind(claim), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;

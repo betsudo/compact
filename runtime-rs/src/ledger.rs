@@ -395,8 +395,10 @@ fn field_at_path<'a, D: DB>(
 mod cell;
 mod collections;
 mod counter;
+mod event;
 mod merkle;
 mod vm;
+pub(crate) use event::shielded_spend_program;
 
 pub(crate) use cell::{
     aligned_cell_value, cell_read_program, cell_write_program, decode_last_read,

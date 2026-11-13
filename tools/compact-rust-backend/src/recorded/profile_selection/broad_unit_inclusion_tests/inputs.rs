@@ -254,8 +254,19 @@ fn nested_map_manifest(bytes: &[u8]) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
 
+// The event variant extends the historical walkers with an explicit operand or refusal.
+const SHIELDED_SPEND_EVENT: &[u8] = include_bytes!("shielded-spend-event-expression.json");
+
+fn shielded_spend_event_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "76f84b0985527396e52f606d44e35171f82c67aff119b1e59f6a61be7653ea34" {
+        return Err("unreviewed ShieldedSpend event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &nested_map_manifest(NESTED_MAP)?)
+    let current = legacy_source(path, current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
+    legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)
 }
 
 fn before_jubjub_cast(path: &str, current: &str) -> Result<String, String> {

@@ -535,6 +535,7 @@ fn render_operation_expression(
         ),
         Expr::KernelSelf { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -1350,7 +1351,8 @@ fn render_effect_operation(
                 false,
             ))
         }
-        Expr::KernelClaim {
+        Expr::EmitShieldedSpend { value: argument }
+        | Expr::KernelClaim {
             value: argument, ..
         }
         | Expr::KernelMintShielded {
@@ -1375,6 +1377,9 @@ fn render_effect_operation(
             *next_temp += 1;
             statements.push(syn::parse_quote!(let #name = #rendered;));
             let call: syn::Expr = match value {
+                Expr::EmitShieldedSpend { .. } => {
+                    syn::parse_quote!(context.emit_shielded_spend(#name)?)
+                }
                 Expr::KernelClaim { claim, .. } => {
                     use crate::ir::KernelClaimKind;
                     let (method, carrier) = match claim {

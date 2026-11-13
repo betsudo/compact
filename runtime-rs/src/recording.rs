@@ -291,6 +291,14 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_checked_verify_program(program)
     }
 
+    /// Record the public ShieldedSpend event and charge the ledger's VM cost.
+    pub fn emit_shielded_spend(
+        self,
+        nullifier: crate::FixedBytes<32>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_spend_program(nullifier)?)
+    }
+
     pub(crate) fn apply_verify_program(
         mut self,
         program: Vec<Op<ResultModeVerify, D>>,
@@ -305,6 +313,7 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
                 &self.state.context.cost_model,
             )
             .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
+        self.state.context.append_events(result.events);
         self.state.context.query = result.context;
         self.state.observed_gas += result.gas_cost;
         self.state.verify_ops.extend(program);

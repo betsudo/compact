@@ -619,3 +619,8 @@ export circuit ed25519Verify<#n>(
               ) as Curve25519Scalar;
   return ecMulGenerator(s) == ecAdd(r, ecMul(pk, k));
 }
+
+// Ledger 9 event payload.
+export struct ShieldedSpend {
+  nullifier: Bytes<32>,
+}

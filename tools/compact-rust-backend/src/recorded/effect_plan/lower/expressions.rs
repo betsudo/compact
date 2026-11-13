@@ -76,6 +76,7 @@ impl Lowerer<'_> {
             Expr::VectorFoldCall { .. } => Self::vector_fold_call,
             Expr::VectorFold { .. } => Self::vector_fold,
             Expr::CreateZswapInput { .. } | Expr::CreateZswapOutput { .. } => Self::zswap,
+            Expr::EmitShieldedSpend { .. } => Self::shielded_spend_event,
             Expr::KernelClaim { .. } | Expr::KernelMintShielded { .. } => Self::kernel,
             Expr::NativeWitnessCall {
                 builtin: NativeWitnessBuiltin::OwnPublicKey,

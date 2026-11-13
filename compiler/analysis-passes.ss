@@ -19,6 +19,7 @@
   (export analysis-passes fixup-analysis-passes)
   (import (except (chezscheme) errorf)
           (utils)
+          (config-params)
           (datatype)
           (nanopass)
           (langs)
@@ -3012,6 +3013,17 @@
                               ...)
                     ,expr)
                   body-type)))))]
+      [(emit ,src ,[Care : expr type])
+       (unless (feature-zkir-v3)
+         (source-errorf src "emit requires ZKIR v3; recompile with --feature-zkir-v3"))
+       (nanopass-case (Ltypes Type) (de-alias type #t)
+         [(tstruct ,src^ ,struct-name (,elt-name (tbytes ,src^^ ,len)))
+          (guard (stdlib-src? src^) (eq? struct-name 'ShieldedSpend)
+                 (eq? elt-name 'nullifier) (= len 32))
+          (values
+            `(emit-shielded-spend ,src (elt-ref ,src ,expr ,elt-name 0))
+            (with-output-language (Ltypes Type) `(ttuple ,src)))]
+         [else (source-errorf src "~a is not a declared event type" (format-type type))])]
       [(assert ,src ,[Care : expr type0] ,mesg)
        (unless (nanopass-case (Ltypes Type) (de-alias type0 #t)
                  [(tboolean ,src1) #t]
@@ -4023,6 +4035,12 @@
            (let ([type (Care expr)])
              (for-each unset-idtype! var-name*)
              type)))]
+      [(emit-shielded-spend ,src ,[Care : expr -> * type])
+       (unless (nanopass-case (Lnodca Type) (de-alias type)
+                 [(tbytes ,src^ ,len) (= len 32)]
+                 [else #f])
+         (source-errorf src "ShieldedSpend payload must have type Bytes<32>"))
+       (with-output-language (Lnodca Type) `(ttuple ,src))]
       [(assert ,src ,[Care : expr -> * type] ,mesg)
        (unless (nanopass-case (Lnodca Type) (de-alias type)
                  [(tboolean ,src1) #t]
@@ -4384,7 +4402,8 @@
         make-cc-call-condition cc-call-condition?
         (function-name cc-call-condition-function-name)
         (src cc-call-condition-src)
-        (reason cc-call-condition-reason))
+        (reason cc-call-condition-reason)
+        (event? cc-call-condition-event?))
       ; function-ht maps ids (circuit names) to one of:
       ;   an Lnodca Expression:  a circuit that has yet to be processed
       ;   inprocess-circuit:     a circuit that is being processed; used to detect cycles
@@ -4438,10 +4457,14 @@
            (when (cc-call-condition? result)
              (let ([offending-function-name (cc-call-condition-function-name result)])
                (if (eq? offending-function-name #f)
-                   (source-errorf src "constructor cannot call external contracts but ~a at ~a"
+                   (source-errorf src (if (cc-call-condition-event? result)
+                                          "constructor cannot emit an event but ~a at ~a"
+                                          "constructor cannot call external contracts but ~a at ~a")
                                   (cc-call-condition-reason result)
                                   (format-source-object (cc-call-condition-src result)))
-                   (source-errorf src "constructor cannot call external contracts but calls (directly or indirectly) ~a, which ~a at ~a"
+                   (source-errorf src (if (cc-call-condition-event? result)
+                                          "constructor cannot emit an event but calls (directly or indirectly) ~a, which ~a at ~a"
+                                          "constructor cannot call external contracts but calls (directly or indirectly) ~a, which ~a at ~a")
                                   (id-sym offending-function-name)
                                   (cc-call-condition-reason result)
                                   (format-source-object (cc-call-condition-src result))))))))
@@ -4454,7 +4477,10 @@
        (raise (make-cc-call-condition function-name src
                 (format "calls circuit ~a from external contract ~a"
                   elt-name
-                  (name-of-contract type))))])
+                  (name-of-contract type))
+                #f))]
+      [(emit-shielded-spend ,src ,expr)
+       (raise (make-cc-call-condition function-name src "emits an event" #t))])
     (Ledger-Accessor : Ledger-Accessor (ir function-name) -> Ledger-Accessor ())
     (Function : Function (ir function-name) -> Function ()
       [(fref ,src ,function-name)
@@ -4554,6 +4580,8 @@
        ir]
       [else ir])
     (Expression : Expression (ir function-name) -> Expression ()
+      [(emit-shielded-spend ,src ,expr)
+       (raise (make-impure-condition function-name src "emits a public event"))]
       [(public-ledger ,src ,ledger-field-name ,sugar? ,accessor* ...)
        (raise (make-impure-condition function-name src
                 (format "accesses ledger field ~s" (id-sym ledger-field-name))))]
@@ -5591,6 +5619,13 @@
       ; define-pass doesn't realize above pattern covers let*
       [(let* ,src ([,local* ,[* abs*]] ...) ,expr) (assert cannot-happen)]
 
+      [(emit-shielded-spend ,src ,[* abs])
+       (unless (null? control-witness*)
+         (record-leak! src "performing this emit operation" control-witness*))
+       (let ([witness* (abs->witnesses abs)])
+         (unless (null? witness*)
+           (record-leak! src "emit payload" witness*)))
+       (Abs-multiple '())]
       [(assert ,src ,[* abs] ,mesg) (Abs-multiple '())]
 
       [(cast-from-enum ,src ,type ,type^ ,[* abs]) abs]

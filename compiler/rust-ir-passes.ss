@@ -126,6 +126,7 @@
           [(new ,src ,type ,expr* ...) src]
           [(seq ,src ,expr* ... ,expr) src]
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
+          [(emit-shielded-spend ,src ,expr) src]
           [(assert ,src ,expr ,mesg) src]
           [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) src]
           [(jubjub-cast ,src ,type ,expr) src]
@@ -1641,8 +1642,8 @@
             (parameterize ([current-counter-environment environment])
               (state-action-ir-value expr owner-src environment witness-ids))) (expression-operation-origin expr)))
 
-      (define (state-action-ir-value expr owner-src environment witness-ids)
-        (nanopass-case (Lnodisclose Expression) expr
+      (define (state-action-ir-value action owner-src environment witness-ids)
+        (nanopass-case (Lnodisclose Expression) action
           [(tuple ,src ,tuple-arg* ...)
            (if (null? tuple-arg*)
                (object (cons "kind" "sequence") (cons "actions" (vector)))
@@ -1663,16 +1664,19 @@
                   (eq-hashtable-ref secp256k1-unary-natives function-name #f)
                   (eq-hashtable-ref curve-group-natives function-name #f))
               (object (cons "kind" "expression")
-                      (cons "value" (stateful-expression-ir expr src witness-ids)))]
+                      (cons "value" (stateful-expression-ir action src witness-ids)))]
              [(eq-hashtable-ref native-witness-ids function-name #f)
               (if (and (eq? (id-sym function-name) 'ownPublicKey) (null? expr*))
                   (object (cons "kind" "native_witness_call") (cons "builtin" "own_public_key"))
                   (object (cons "kind" "expression")
-                          (cons "value" (stateful-expression-ir expr src witness-ids))))]
+                          (cons "value" (stateful-expression-ir action src witness-ids))))]
              [else
               (object (cons "kind" (if (id-pure? function-name) "pure_call" "circuit_call"))
                       (cons "name" (rust-function-name function-name))
                       (cons "arguments" (stateful-call-arguments-ir function-name expr* src witness-ids)))])]
+          [(emit-shielded-spend ,src ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir action src witness-ids)))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
@@ -1708,7 +1712,7 @@
               (cond
                 [(eq? adt-name 'Kernel)
                  (object (cons "kind" "expression")
-                         (cons "value" (stateful-expression-ir expr src witness-ids)))]
+                         (cons "value" (stateful-expression-ir action src witness-ids)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'increment)
                       (= (length expr*) 1))
@@ -2582,6 +2586,9 @@
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
+          [(emit-shielded-spend ,src ,expr)
+           (object (cons "kind" "emit_shielded_spend")
+                   (cons "value" (stateful-expression-ir expr src witness-ids)))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
@@ -2928,6 +2935,9 @@
 
       (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
+          [(emit-shielded-spend ,src ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(quote ,src ,datum)
            (guard (boolean? datum))
            (object (cons "kind" "expression")

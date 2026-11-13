@@ -61,6 +61,7 @@ fn expression_with_calls(
         Expr::JubjubScalarFromNative { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

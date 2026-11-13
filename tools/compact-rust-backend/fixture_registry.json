@@ -961,11 +961,11 @@
     },
     {
       "source": "examples/rust_backend/effect_plan_composite.compact",
-      "source_sha256": "8b12ff6b568b310df478a65cf7cde610c2ecbbd4a0303e363904e518378977a4",
+      "source_sha256": "d43043ff31791132d118744855b7aa8e32fa67140cd987c37f4c88ce4209ba3d",
       "frontend_outcome": "accepted",
       "frontend_flags": [],
-      "retained_ir": "tools/compact-rust-backend/tests/effect-plan-composite-schema20-ir.json",
-      "retained_ir_sha256": "761962cc54ad860f5a6e2bee947da27f19345ff8a99442b4f12b7589afcbcd28",
+      "retained_ir": "tools/compact-rust-backend/tests/effect-plan-composite-register-output-schema20-ir.json",
+      "retained_ir_sha256": "c20bdef418b1b7fae555840c4ddf8c08b1bd6593cdc42e7e42aec7fcaa6dc0de",
       "role": "generated_consumer",
       "manifest": "tests-rust-backend/effect-plan-composite-source/Cargo.toml",
       "library": "tests-rust-backend/effect-plan-composite-source/fixture.rs",
@@ -975,8 +975,8 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/effect-plan-composite-source/Cargo.toml": "2e2d1dc29158ee6c94c0c14ec7f577bed70132cda211546a750daf3911be152f",
-        "tests-rust-backend/effect-plan-composite-source/fixture.rs": "d6d9eb558046aabf7e3d61685202d58c7ad543d1a42d552cc529cc05414b69e6",
-        "tests-rust-backend/effect-plan-composite-source/build.rs": "ba3f980272c7de40a3cb9f260739f5e6c846776aef77d187692de028d5a9ed6b"
+        "tests-rust-backend/effect-plan-composite-source/fixture.rs": "26705c455665efa87226ed82f2800c74a4a18fcd48a6fe84a3bf07cd58f40ff2",
+        "tests-rust-backend/effect-plan-composite-source/build.rs": "dd25f546925fb42a9cf315e8d3022533949ff20cd2986cac5175989586ab92e2"
       },
       "qualification": "Positive whole retained-IR build-script consumer. OUT_DIR output included without rewriting the generated contract. Fresh genuine frontend/source binding, compilation and runtime/proof applicability remain final-gate obligations."
     },

@@ -2072,6 +2072,7 @@ of expression.
 |                    | \|      | `Bytes` `[` [*bytes-arg*](#syntax-of-expressions) `,` ⋯ `,` [*bytes-arg*](#syntax-of-expressions) `,`<sup>opt</sup> `]`                                                                    |
 |                    | \|      | [*tref*](#primitive-types) `{` [*struct-arg*](#syntax-of-expressions) `,` ⋯ `,` [*struct-arg*](#syntax-of-expressions) `,`<sup>opt</sup> `}`                                               |
 |                    | \|      | `assert` `(` [*expr*](#syntax-of-expressions) `,` [*str*](#terminal-names) `)`                                                                                                             |
+|                    | \|      | `emit` `(` [*expr*](#syntax-of-expressions) `)`                                                                                                                                            |
 |                    | \|      | `disclose` `(` [*expr*](#syntax-of-expressions) `)`                                                                                                                                        |
 |                    | \|      | [*term*](#syntax-of-expressions)                                                                                                                                                           |
 | *term*             | &xrarr; | [*id*](#terminal-names)                                                                                                                                                                    |
@@ -3161,6 +3162,21 @@ error, i.e., the `assert` form halts computation of the enclosing top-level
 circuit or constructor with the message *msg*.
 
 Each assertion is checked at run time and constrained in-circuit.
+
+### Contract events
+
+`emit(event)` appends a public Ledger 9 log and returns `[]`. With
+`--feature-zkir-v3`, the supported payload is the standard library's
+`ShieldedSpend { nullifier: Bytes<32> }`. An exported circuit that emits
+an event is provable even when it has no ledger fields.
+
+Emission follows circuit execution order and respects its enclosing
+condition. Apply `disclose` to private data that should determine the
+payload or whether an event occurs. Pure circuits and constructors
+cannot emit events, including through a helper. The Ledger VM binds the
+version, event type and payload to the proof. Generated Rust exposes
+successful emissions through `CircuitContext::events()`, and generated
+TypeScript exposes them through the returned context's `events` array.
 
 ### Explicit disclosure
 

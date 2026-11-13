@@ -65,7 +65,7 @@ pub(super) fn validate(
             *ty == crate::ir::NativeWitnessBuiltin::OwnPublicKey.result_type()
         }
         Operation::KernelSelf => *ty == crate::ir::contract_address_type(),
-        Operation::KernelClaim { value, .. } => {
+        Operation::EmitShieldedSpend(value) | Operation::KernelClaim { value, .. } => {
             use_value(value)?;
             value.ty == (Type::Bytes { length: 32 }) && *ty == Type::Unit
         }

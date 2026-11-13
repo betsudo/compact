@@ -81,6 +81,27 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         migrated_proof_wrappers = set()
         for row in current['sources']:
             original = originals[row['source']]
+            if row['source'] == 'examples/rust_backend/effect_plan_composite.compact':
+                # Ledger 9 reserves emit. The renamed helper has a fresh source/IR
+                # pair, while the Ledger 8 registry keeps the original identities.
+                for key, expected in {
+                    'source_sha256': 'd43043ff31791132d118744855b7aa8e32fa67140cd987c37f4c88ce4209ba3d',
+                    'retained_ir': 'tools/compact-rust-backend/tests/effect-plan-composite-register-output-schema20-ir.json',
+                    'retained_ir_sha256': 'c20bdef418b1b7fae555840c4ddf8c08b1bd6593cdc42e7e42aec7fcaa6dc0de',
+                }.items():
+                    self.assertEqual(row[key], expected)
+                    row[key] = original[key]
+                self.assertEqual(fingerprint(inventory.ROOT / original['retained_ir']),
+                                 original['retained_ir_sha256'])
+                for path, expected in {
+                    'tests-rust-backend/effect-plan-composite-source/build.rs':
+                        'dd25f546925fb42a9cf315e8d3022533949ff20cd2986cac5175989586ab92e2',
+                    'tests-rust-backend/effect-plan-composite-source/fixture.rs':
+                        '26705c455665efa87226ed82f2800c74a4a18fcd48a6fe84a3bf07cd58f40ff2',
+                }.items():
+                    self.assertEqual(fingerprint(inventory.ROOT / path), expected)
+                    self.assertEqual(row['consumer_input_sha256'][path], expected)
+                    row['consumer_input_sha256'][path] = original['consumer_input_sha256'][path]
             if row['source'] in refreshed:
                 self.assertEqual(row['retained_ir_sha256'], refreshed[row['source']])
                 self.assertEqual(fingerprint(inventory.ROOT / row['retained_ir']),

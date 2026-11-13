@@ -75,6 +75,11 @@ pub(super) fn render(
             steps.push(zswap::output(coin, recipient));
             syn::parse_quote!(())
         }
+        Operation::EmitShieldedSpend(input) => {
+            let nullifier = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_spend(#nullifier)?;));
+            syn::parse_quote!(())
+        }
         Operation::KernelClaim { kind, value: input } => {
             let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));

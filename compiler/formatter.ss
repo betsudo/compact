@@ -1123,6 +1123,8 @@
                  (cons*
                    nbsp (make-Qtoken str)
                    (add-closer 1 #f rparen '()))))))]
+      [(emit ,src ,kwd ,lparen ,expr ,rparen)
+       (// src (make-Qcall (make-Qtoken kwd) lparen (list (Expression expr)) '() rparen))]
       [(assert ,src ,kwd ,lparen ,expr ,comma ,mesg ,rparen)
        (// src
            (let ([qexpr* (list (Expression expr) (make-Qtoken mesg))]

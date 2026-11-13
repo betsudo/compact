@@ -2950,6 +2950,21 @@ circuit or constructor with the message *msg*.
 
 Each assertion is checked at run time and constrained in-circuit.
 
+### Contract events
+
+`emit(event)` appends a public Ledger 9 log and returns `[]`. With
+`--feature-zkir-v3`, the supported payload is the standard library's
+`ShieldedSpend { nullifier: Bytes<32> }`. An exported circuit that emits
+an event is provable even when it has no ledger fields.
+
+Emission follows circuit execution order and respects its enclosing
+condition. Apply `disclose` to private data that should determine the
+payload or whether an event occurs. Pure circuits and constructors
+cannot emit events, including through a helper. The Ledger VM binds the
+version, event type and payload to the proof. Generated Rust exposes
+successful emissions through `CircuitContext::events()`, and generated
+TypeScript exposes them through the returned context's `events` array.
+
 ### Explicit disclosure
 
 Private data can enter a Compact contract via the arguments to exported circuits

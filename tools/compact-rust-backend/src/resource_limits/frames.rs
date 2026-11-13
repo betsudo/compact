@@ -186,6 +186,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::MapIsEmpty { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -210,6 +211,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::ListHead { .. } => 51,
                 E::KernelSelf { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -351,6 +353,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::JubjubScalarFromNative { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
@@ -437,6 +440,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EcNeg { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
                 | E::KernelMintShielded { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }

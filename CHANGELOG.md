@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Unreleased Ledger 9 migration.
 
+### Added
+
+- Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
+  ordinary and recorded Rust. Successful circuit contexts expose the
+  VM-decoded event and its emitting contract address.
+
 ### Changed
 
 - Pair the synchronous TypeScript runtime with the published Ledger 9 Onchain

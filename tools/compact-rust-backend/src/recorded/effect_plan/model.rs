@@ -168,6 +168,7 @@ pub(super) enum Operation {
     OwnPublicKey,
     /// Ordered official VM observation of the current contract address.
     KernelSelf,
+    EmitShieldedSpend(Value),
     KernelClaim {
         kind: crate::ir::KernelClaimKind,
         value: Value,

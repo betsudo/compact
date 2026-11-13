@@ -850,6 +850,12 @@
          (let ([type (Care expr)])
            (for-each unset-idtype! var-name*)
            type))]
+      [(emit-shielded-spend ,src ,[Care : expr -> * type])
+       (unless (nanopass-case (Linlined Type) type
+                 [(tbytes ,src^ ,len) (= len 32)]
+                 [else #f])
+         (source-errorf src "ShieldedSpend payload must have type Bytes<32>"))
+       (with-output-language (Linlined Type) `(ttuple ,src))]
       [(assert ,src ,[Care : expr -> * type] ,mesg)
        (unless (nanopass-case (Linlined Type) type
                  [(tboolean ,src1) #t]
@@ -1606,6 +1612,8 @@
          [else (values
                  `(downcast-unsigned ,src ,nat? ,nat ,expr)
                  (CTV-unknown no-var-name))])]
+      [(emit-shielded-spend ,src ,[expr ctv])
+       (values `(emit-shielded-spend ,src ,expr) (CTV-tuple no-var-name '()))]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,[path-elt] ...) ,src^ ,[adt-op] ,[expr* ctv*] ...)
        (values
          `(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt ...) ,src^ ,adt-op ,expr* ...)
@@ -1796,6 +1804,8 @@
        (values
          `(downcast-unsigned ,src ,nat? ,nat ,expr)
          idset)]
+      [(emit-shielded-spend ,src ,[Value : expr idset])
+       (values `(emit-shielded-spend ,src ,expr) idset)]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,[path-elt idset^*] ...) ,src^ ,adt-op ,[Value : expr* idset*] ...)
        (values
          `(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt ...) ,src^ ,adt-op ,expr* ...)
@@ -1923,7 +1933,7 @@
     (Program-Element : Program-Element (ir pelt*) -> * (pelt*)
       [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
        (if (and (id-exported? function-name)
-                (guard (c [(eq? c 'ledger) #t])
+                (guard (c [(memq c '(ledger emit)) #t])
                   (Expression expr)
                   #f))
            (begin
@@ -1932,6 +1942,8 @@
            pelt*)]
       [else (cons ir pelt*)])
     (Expression : Expression (ir) -> Expression ()
+      [(emit-shielded-spend ,src ,expr)
+       (raise 'emit)]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[expr*] ...)
        (raise 'ledger)]))
 
@@ -2079,6 +2091,12 @@
          (lambda (triv*)
            (k (with-output-language (Lcircuit Rhs)
                 `(call ,src ,function-name ,triv* ...)))))]
+      [(emit-shielded-spend ,src ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (cons (with-output-language (Lcircuit Statement)
+                   `(emit-shielded-spend ,src ,test ,triv))
+                 (k (with-output-language (Lcircuit Rhs) `(tuple))))))]
       [(assert ,src ,expr ,mesg)
        (Triv expr test
          (lambda (triv)
@@ -2425,6 +2443,10 @@
        `(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...))])
     (Statement : Statement (ir) -> * (stmt*)
       [(= ,[Single-Triv : test] ,var-name ,rhs) (Rhs rhs test var-name)]
+      [(emit-shielded-spend ,src ,[Single-Triv : test] ,triv)
+       (let ([triv* (wump->elts (Triv triv))])
+         (with-output-language (Lflattened Statement)
+           (list `(emit-shielded-spend ,src ,test ,triv* ...))))]
       [(assert ,src ,[Single-Triv : test] ,mesg)
        (with-output-language (Lflattened Statement)
          (list `(assert ,src ,test ,mesg)))])
@@ -2997,6 +3019,11 @@
              (for-each (lambda (var-name) (hashtable-set! var->triv var-name 0) (undefined! var-name)) var-name*)
              rstmt*)
            (FWD-Multiple multiple test var-name* rstmt*))]
+      [(emit-shielded-spend ,src ,[FWD-Triv : test] ,[FWD-Triv : triv*] ...)
+       (if (eqv? test 0)
+           rstmt*
+           (with-output-language (Lflattened Statement)
+             (cons `(emit-shielded-spend ,src ,test ,triv* ...) rstmt*)))]
       [(assert ,src ,[FWD-Triv : test] ,mesg)
        (if (or (eqv? test 1) (undefined? test))
            rstmt*
@@ -3349,6 +3376,9 @@
                  (,var-name* ...)
                  (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,triv* ...))
              stmt*)]
+      [(emit-shielded-spend ,src ,[BWD-Triv : test] ,[BWD-Triv : triv*] ...)
+       (with-output-language (Lflattened Statement)
+         (cons `(emit-shielded-spend ,src ,test ,triv* ...) stmt*))]
       [(assert ,src ,[BWD-Triv : test] ,mesg)
        (cons `(assert ,src ,test ,mesg) stmt*)]
       [else (internal-errorf 'BWD-Statement "unexpected ir ~s" ir)])
@@ -3447,6 +3477,7 @@
       [(= ,test (,var-name* ...) ,multiple)
        (when (eqv? test 1) (for-each defined! var-name*))
        (list ir)]
+      [(emit-shielded-spend ,src ,test ,triv* ...) (list ir)]
       [(assert ,src ,test ,mesg) (list ir)])
     (Single : Single (ir test var-name) -> * (stmt*)
       [(< ,bits ,triv1 ,triv2)
@@ -3905,6 +3936,11 @@
                 (set-idtype! var-name (Idtype-Base type)))
               var-name*
               type*))])]
+      [(emit-shielded-spend ,src ,test ,[Triv : triv* -> * type*] ...)
+       (verify-test src test)
+       (unless (= (length type*) (div (+ 32 (- (field-bytes) 1)) (field-bytes)))
+         (source-errorf src "invalid flattened ShieldedSpend payload"))
+       (for-each (lambda (type) (check-tfield "ShieldedSpend payload" type)) type*)]
       [(assert ,src ,test ,mesg)
        (verify-test src test)]
       [else (internal-errorf 'Statement "unhandled form ~s" ir)])

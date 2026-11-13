@@ -680,6 +680,7 @@
             [("size") (list #x04)]
 
             ;; neg --> 0x08
+            [("log") (list #x09)]
             [("neg") (list #x08)]
 
             ;; root --> 0x0a
@@ -1006,6 +1007,17 @@
                (let ([quo (make-temp-id default-src 'quo)])
                  (loop (cdr var-name*) quo
                    (cons `(div_mod_power_of_two ,quo ,(car var-name*) ,var ,8) instr*))))))]
+      [(emit-shielded-spend ,src ,test ,triv* ...)
+       (let* ([alignment* (with-output-language (Lflattened Alignment) (list `(abytes 32)))]
+              [env (list (cons 'payload (make-zkir-val alignment* triv*)))]
+              [vm-code (make-vm-code
+                         #'((push [storage #f]
+                                  [value (state-value 'array
+                                           ((state-value 'cell (align 1 4))
+                                            (state-value 'cell (align 0 1))
+                                            (state-value 'cell payload)))])
+                            (log)))])
+         (assemble test '() '() '() src '() env vm-code instr*))]
       [(= ,test (,var-name* ...) (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...)
                              ,src^ ,adt-op ,triv* ...))
        (nanopass-case (Lflattened ADT-Op) adt-op

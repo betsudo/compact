@@ -62,6 +62,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::EnumVariant { ty, variant } => Source::Leaf(LeafSource::EnumVariant { ty, variant }),
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

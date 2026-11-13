@@ -23,6 +23,12 @@ import {
 } from './zswap.js';
 import { PartialProofData, ProofData } from './proof-data.js';
 import { CompactError } from './error.js';
+import { CompactTypeBytes } from './compact-types.js';
+
+/** A Ledger VM log with the address of the emitting contract. */
+export type LogEvent = Extract<ocrt.GatherResult, { tag: 'log' }>['content'] & {
+  address: ocrt.ContractAddress;
+};
 
 /**
  * The external information accessible from within a Compact circuit call
@@ -48,6 +54,8 @@ export interface CircuitContext<PS = any> {
    * The gas limit for this circuit.
    */
   gasLimit?: ocrt.RunningCost;
+  /** Events emitted by successful calls, in execution order. */
+  events?: readonly LogEvent[];
 }
 
 /**
@@ -148,6 +156,7 @@ export const createCircuitContext = <PS>(
     currentQueryContext: initialQueryContext,
     costModel: costModel ?? ocrt.CostModel.initialCostModel(),
     gasLimit,
+    events: [],
   };
 };
 
@@ -202,8 +211,21 @@ export const queryLedgerState = (
   try {
     const res = circuitContext.currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
     circuitContext.currentQueryContext = res.context;
-    // @ts-expect-error: We use a hidden variable to track running cost so we can move it to `CircuitResults` at the end
-    circuitContext['gasCost'] = res.gasCost;
+    // Generated circuits move this internal accumulator to CircuitResults.
+    const context = circuitContext as CircuitContext & { gasCost?: ocrt.RunningCost };
+    const previous = context.gasCost ?? emptyRunningCost();
+    context.gasCost = {
+      readTime: previous.readTime + res.gasCost.readTime,
+      computeTime: previous.computeTime + res.gasCost.computeTime,
+      bytesWritten: previous.bytesWritten + res.gasCost.bytesWritten,
+      bytesDeleted: previous.bytesDeleted + res.gasCost.bytesDeleted,
+    };
+    const logs = res.events
+      .filter((event) => event.tag === 'log')
+      .map((event) => ({ ...event.content, address: res.context.address }));
+    if (logs.length !== 0) {
+      circuitContext.events = [...(circuitContext.events ?? []), ...logs];
+    }
     const reads = res.events.filter((e) => e.tag === 'read');
     let i = 0;
     partialProofData.publicTranscript = partialProofData.publicTranscript.concat(
@@ -231,4 +253,32 @@ export const queryLedgerState = (
     }
     throw err;
   }
+};
+
+/** @internal */
+export const emitShieldedSpend = (context: CircuitContext, proofData: PartialProofData, nullifier: Uint8Array): [] => {
+  if (nullifier.length !== 32) {
+    throw new CompactError('ShieldedSpend nullifier must be Bytes<32>');
+  }
+  const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
+    tag: 'cell',
+    content: { value, alignment: [{ tag: 'atom', value: { tag: 'bytes', length } }] },
+  });
+  queryLedgerState(context, proofData, [
+    {
+      push: {
+        storage: false,
+        value: {
+          tag: 'array',
+          content: [
+            cell(ocrt.bigIntToValue(1n), 4),
+            cell(ocrt.bigIntToValue(0n), 1),
+            cell(new CompactTypeBytes(32).toValue(nullifier), 32),
+          ],
+        },
+      },
+    },
+    'log',
+  ]);
+  return [];
 };

@@ -963,6 +963,9 @@ pub enum Expr {
         name: String,
         arguments: Vec<Expr>,
     },
+    EmitShieldedSpend {
+        value: Box<Expr>,
+    },
     KernelClaim {
         claim: KernelClaimKind,
         value: Box<Expr>,

@@ -258,6 +258,7 @@
       (seq src expr* ... expr)                            => (seq #f expr* ... #f expr)
       (cast src type expr)                                => (cast type #f expr)
       (disclose src expr)                                 => (disclose expr)
+      (emit src expr)                                    => (emit expr)
       (assert src expr mesg)                              => (assert #f expr #f mesg)
       )
     (Function (fun)
@@ -713,6 +714,7 @@
       (new src type expr* ...)                => (new type #f expr* ...)
       (seq src expr* ... expr)                => (seq #f expr* ... #f expr)
       (let* src ([local* expr*] ...) expr)    => (let* ([bracket local* 0 expr*] 0 ...) #f expr)
+      (emit-shielded-spend src expr)         => (emit-shielded-spend expr)
       (assert src expr mesg)                  => (assert expr mesg)
       (secp256k1-arithmetic src arithmetic-op type expr1 expr2) => (secp256k1-arithmetic arithmetic-op type expr1 expr2)
       (jubjub-cast src type expr)             => (jubjub-cast type expr)
@@ -1014,6 +1016,7 @@
       (var-name type) => (bracket var-name type))
     (Statement (stmt)
       (= test var-name rhs)             => (= test var-name 2 rhs)
+      (emit-shielded-spend src test triv) => (emit-shielded-spend test triv)
       (assert src test mesg)            => (assert test #f mesg))
     (Rhs (rhs)
       triv
@@ -1083,6 +1086,9 @@
       (- (circuit src function-name (arg* ...) type stmt* ... triv))
       (+ (circuit src function-name (arg* ...) type stmt* ... (triv* ...)) =>
             (circuit function-name (arg* 0 ...) 4 type #f stmt* ... #f (triv* ...))))
+    (Statement (stmt)
+      (- (emit-shielded-spend src test triv))
+      (+ (emit-shielded-spend src test triv* ...) => (emit-shielded-spend test triv* ...)))
     (Public-Ledger-Binding (public-binding)
       (- (src ledger-field-name (path-index* ...) type))
       (+ (src ledger-field-name (path-index* ...) primitive-type) =>
