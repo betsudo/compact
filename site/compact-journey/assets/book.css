@@ -147,7 +147,8 @@ body:has(.on-this-page) main { margin-right: 190px; }
 .backend-comparison > section { min-width: 0; }
 .backend-comparison h3 { margin-top: 1rem; }
 .backend-comparison pre { padding: .8rem; }
-.backend-comparison pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.reader:has(.backend-comparison) { max-width: 1120px; }
+.backend-comparison pre code { white-space: pre-wrap; overflow-wrap: normal; }
 .prose table { background: var(--surface); border-radius: 8px; overflow: hidden; width: 100%; font-family: var(--serif); font-size: .9em; border-collapse: collapse; margin: 2rem 0; line-height: 1.7; }
 .prose th, .prose td { text-align: left; padding: .8rem; border: 1px solid var(--rule); vertical-align: top; }
 .prose th { color: var(--ink); background: var(--wash); }
